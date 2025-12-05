@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Franchise, DailySummary, Sale } from "@/entities/all"; // Mudei para DailySummary
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { MessageSquare, TrendingUp, Users, Target } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import StatsCard from "../components/dashboard/StatsCard";
+import AIInsightsWidget from "../components/dashboard/AIInsightsWidget";
 import TopFranchises from "../components/dashboard/TopFranchises";
 import MessagesTrend from "../components/dashboard/MessagesTrend";
 import ConversionMetrics from "../components/dashboard/ConversionMetrics";
@@ -115,6 +118,13 @@ export default function Dashboard() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* AI Insights Widget - Só mostrar se não estiver filtrado ou se o usuário quiser ver geral */}
+        {selectedFranchiseId === 'all' && (
+          <div className="mb-8">
+            <AIInsightsWidget />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
