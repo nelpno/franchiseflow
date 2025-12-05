@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, DollarSign, Search, Filter, Trash2 } from "lucide-react";
+import { Plus, Edit, DollarSign, Search, Filter, Trash2, BrainCircuit } from "lucide-react";
+import LeadAnalysisModal from "../components/sales/LeadAnalysisModal";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -321,15 +322,17 @@ function SalesContent() {
                       </div>
                     </div>
                     
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditSale(sale)}
-                      className="ml-4"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Editar
-                    </Button>
+                    <div className="flex gap-2 ml-4">
+                      <LeadAnalysisModal sale={sale} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditSale(sale)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
