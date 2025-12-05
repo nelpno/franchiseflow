@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Franchise, Sale, DailyUniqueContact, DailySummary, User } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,9 @@ import SalesRevenueChart from "../components/reports/SalesRevenueChart";
 import LeadSourceChart from "../components/reports/LeadSourceChart";
 import ConversionAnalysis from "../components/reports/ConversionAnalysis";
 import TopPerformers from "../components/reports/TopPerformers";
+import FranchiseComparisonChart from "../components/reports/FranchiseComparisonChart";
+import PeriodComparison from "../components/reports/PeriodComparison";
+import ExportButton from "../components/reports/ExportButton";
 
 export default function Reports() {
   const [franchises, setFranchises] = useState([]);
@@ -26,6 +28,8 @@ export default function Reports() {
   const [selectedFranchise, setSelectedFranchise] = useState('all');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [periodType, setPeriodType] = useState('monthly'); // monthly, quarterly, yearly
+  const [selectedSource, setSelectedSource] = useState('all');
 
   useEffect(() => {
     loadInitialData();
@@ -54,17 +58,26 @@ export default function Reports() {
         const filteredSummaries = summariesData.filter(summary =>
           summary.date >= startDate && summary.date <= endDate
         );
-        
+
         // Filtrar por franquia se selecionada
+        let finalSales = filteredSales;
+        let finalContacts = filteredContacts;
+        let finalSummaries = filteredSummaries;
+
         if (selectedFranchise !== 'all') {
-          setSales(filteredSales.filter(s => s.franchise_id === selectedFranchise));
-          setDailyContacts(filteredContacts.filter(c => c.franchise_id === selectedFranchise));
-          setSummaries(filteredSummaries.filter(s => s.franchise_id === selectedFranchise));
-        } else {
-          setSales(filteredSales);
-          setDailyContacts(filteredContacts);
-          setSummaries(filteredSummaries);
+          finalSales = finalSales.filter(s => s.franchise_id === selectedFranchise);
+          finalContacts = finalContacts.filter(c => c.franchise_id === selectedFranchise);
+          finalSummaries = finalSummaries.filter(s => s.franchise_id === selectedFranchise);
         }
+
+        // Filtrar por origem se selecionada
+        if (selectedSource !== 'all') {
+          finalSales = finalSales.filter(s => s.source === selectedSource);
+        }
+
+        setSales(finalSales);
+        setDailyContacts(finalContacts);
+        setSummaries(finalSummaries);
 
       } catch (error) {
         console.error("Erro ao carregar dados do relatório:", error);
@@ -75,7 +88,7 @@ export default function Reports() {
     if (currentUser) {
       loadReportData();
     }
-  }, [selectedFranchise, startDate, endDate, currentUser]);
+    }, [selectedFranchise, startDate, endDate, selectedSource, currentUser]);
 
   const loadInitialData = async () => {
     try {
@@ -169,7 +182,7 @@ export default function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
               <div>
                 <Label htmlFor="startDate">Data Inicial</Label>
                 <Input
@@ -179,7 +192,7 @@ export default function Reports() {
                   onChange={(e) => setStartDate(e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="endDate">Data Final</Label>
                 <Input
@@ -189,7 +202,7 @@ export default function Reports() {
                   onChange={(e) => setEndDate(e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="franchise">Franquia</Label>
                 <Select value={selectedFranchise} onValueChange={setSelectedFranchise}>
@@ -206,12 +219,51 @@ export default function Reports() {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="flex items-end">
-                <Button onClick={updateReportData} className="w-full">
+
+              <div>
+                <Label htmlFor="source">Origem do Lead</Label>
+                <Select value={selectedSource} onValueChange={setSelectedSource}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Origens</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="phone_call">Telefone</SelectItem>
+                    <SelectItem value="in_person">Presencial</SelectItem>
+                    <SelectItem value="website">Site</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="periodType">Tipo de Período</Label>
+                <Select value={periodType} onValueChange={setPeriodType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="quarterly">Trimestral</SelectItem>
+                    <SelectItem value="yearly">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                <Button onClick={updateReportData}>
                   {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TrendingUp className="w-4 h-4 mr-2" />}
                   Atualizar
                 </Button>
+                <ExportButton 
+                  summaries={summaries} 
+                  franchises={availableFranchises}
+                  startDate={startDate}
+                  endDate={endDate}
+                />
               </div>
             </div>
             
@@ -254,6 +306,22 @@ export default function Reports() {
             />
           </div>
 
+          {/* Comparação entre Franquias */}
+          <FranchiseComparisonChart
+            summaries={summaries}
+            franchises={availableFranchises}
+            isLoading={isLoading}
+          />
+
+          {/* Análise por Período */}
+          <PeriodComparison
+            summaries={summaries}
+            isLoading={isLoading}
+            periodType={periodType}
+            startDate={startDate}
+            endDate={endDate}
+          />
+
           {/* Top Performers */}
           <TopPerformers 
             summaries={summaries}
@@ -262,7 +330,7 @@ export default function Reports() {
             startDate={startDate}
             endDate={endDate}
           />
-        </div>
+          </div>
       </div>
     </div>
   );
