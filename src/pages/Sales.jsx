@@ -191,6 +191,19 @@ function SalesContent() {
     return franchise?.city || franchiseId;
   };
 
+  const formatDateSafe = (dateString) => {
+    if (!dateString) return 'Data não informada';
+    try {
+      const date = parseISO(dateString);
+      if (isNaN(date.getTime())) {
+          return 'Data inválida';
+      }
+      return format(date, 'dd/MM/yyyy', { locale: ptBR });
+    } catch (error) {
+      return 'Erro na data';
+    }
+  };
+
   // Determinar quais franquias o usuário pode criar vendas
   const availableFranchises = currentUser?.role === 'admin' 
     ? franchises 
@@ -303,7 +316,7 @@ function SalesContent() {
                           <span className="font-medium">Franquia:</span> {getFranchiseName(sale.franchise_id)}
                         </div>
                         <div>
-                          <span className="font-medium">Data:</span> {sale.sale_date ? format(parseISO(sale.sale_date), 'dd/MM/yyyy', { locale: ptBR }) : 'Data não informada'}
+                          <span className="font-medium">Data:</span> {formatDateSafe(sale.sale_date)}
                         </div>
                       </div>
                     </div>
