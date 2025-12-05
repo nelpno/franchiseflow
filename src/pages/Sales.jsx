@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { Sale, Franchise, User } from "@/entities/all";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -304,7 +303,7 @@ function SalesContent() {
                           <span className="font-medium">Franquia:</span> {getFranchiseName(sale.franchise_id)}
                         </div>
                         <div>
-                          <span className="font-medium">Data:</span> {format(parseISO(sale.sale_date), 'dd/MM/yyyy', { locale: ptBR })}
+                          <span className="font-medium">Data:</span> {sale.sale_date ? format(parseISO(sale.sale_date), 'dd/MM/yyyy', { locale: ptBR }) : 'Data não informada'}
                         </div>
                       </div>
                     </div>
