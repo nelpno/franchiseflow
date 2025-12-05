@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -19,7 +18,7 @@ import {
 "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DailyUniqueContact, Sale, User } from "@/entities/all";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 
 const MaxiMassasLogo = ({ size }) => {
   const logoSize = size || "w-12 h-12";
@@ -122,15 +121,15 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <SidebarProvider>
-      <style jsx global>{`
-        .sidebar-menu-button[data-active="true"] {
-          background-color: rgb(239 68 68);
-          color: white;
-        }
-        .sidebar-menu-button[data-active="true"]:hover {
-          background-color: rgb(220 38 38);
-        }
-      `}</style>
+        <style>{`
+          .sidebar-menu-button[data-active="true"] {
+            background-color: rgb(239 68 68);
+            color: white;
+          }
+          .sidebar-menu-button[data-active="true"]:hover {
+            background-color: rgb(220 38 38);
+          }
+        `}</style>
       
       <div className="min-h-screen flex w-full bg-gradient-to-br from-emerald-50 to-teal-50">
         <Sidebar className="border-r border-emerald-200/60 bg-white/95 backdrop-blur-sm">
