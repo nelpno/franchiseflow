@@ -1,19 +1,21 @@
 import Dashboard from './pages/Dashboard';
-import Franchises from './pages/Franchises';
-import UserManagement from './pages/UserManagement';
-import Sales from './pages/Sales';
-import Reports from './pages/Reports';
 import FranchiseSettings from './pages/FranchiseSettings';
+import Franchises from './pages/Franchises';
+import Home from './pages/Home';
+import Reports from './pages/Reports';
+import Sales from './pages/Sales';
+import UserManagement from './pages/UserManagement';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Dashboard": Dashboard,
-    "Franchises": Franchises,
-    "UserManagement": UserManagement,
-    "Sales": Sales,
-    "Reports": Reports,
     "FranchiseSettings": FranchiseSettings,
+    "Franchises": Franchises,
+    "Home": Home,
+    "Reports": Reports,
+    "Sales": Sales,
+    "UserManagement": UserManagement,
 }
 
 export const pagesConfig = {

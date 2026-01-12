@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Franchise, DailyUniqueContact, User } from "@/entities/all";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MapPin, Phone, User as UserIcon, Activity, MessageCircle } from "lucide-react"; // Renamed User to UserIcon to avoid conflict
+import { Plus, MapPin, Phone, User as UserIcon, Activity, MessageCircle, Trash2 } from "lucide-react"; // Renamed User to UserIcon to avoid conflict
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -194,6 +193,23 @@ export default function Franchises() {
     setIsSubmitting(false);
   };
 
+  const handleDeleteFranchise = async (franchiseId, franchiseCity) => {
+    if (currentUser?.role !== 'admin') {
+      alert("Apenas administradores podem excluir franquias.");
+      return;
+    }
+
+    if (window.confirm(`Tem certeza que deseja excluir a franquia de ${franchiseCity}? Esta ação não pode ser desfeita.`)) {
+      try {
+        await Franchise.delete(franchiseId);
+        loadFranchises();
+      } catch (error) {
+        console.error("Erro ao excluir franquia:", error);
+        alert("Erro ao excluir franquia. Verifique se você tem permissão.");
+      }
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -287,6 +303,23 @@ export default function Franchises() {
                       </span>
                     </div>
                   </div>
+                  
+                  {currentUser?.role === 'admin' && (
+                    <div className="pt-3 border-t border-slate-200 flex justify-end">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFranchise(franchise.id, franchise.city);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir Franquia
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
