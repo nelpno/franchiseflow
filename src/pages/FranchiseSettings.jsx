@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FranchiseConfiguration, Franchise, User } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +21,6 @@ const initialFormData = {
   accepted_payment_methods: '', // Alterado para string
   opening_hours: '',
   price_table_url: '',
-  online_menu_url: '', // NEW FIELD
   agent_name: '',
   promotions_combo: '',
   shipping_rules_costs: '',
@@ -638,9 +636,6 @@ function FranchiseSettingsContent() {
                       {config.pix_key_data &&
                         <div className="text-sm"><strong className="text-slate-600">PIX:</strong> {config.pix_key_data}</div>
                       }
-                      {config.online_menu_url &&
-                        <div className="text-sm"><strong className="text-slate-600">Cardápio Online:</strong> <a href={config.online_menu_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{config.online_menu_url}</a></div>
-                      }
                     </CardContent>
                   </Card>
                 );
@@ -824,16 +819,6 @@ function FranchiseSettingsContent() {
                     onChange={(e) => handleInputChange('price_table_url', e.target.value)}
                     placeholder="https://..." />
 
-                </div>
-
-                <div>
-                  <Label htmlFor="online_menu_url">Link do Cardápio Online/iFood</Label>
-                  <Input
-                    id="online_menu_url"
-                    type="url"
-                    value={formData.online_menu_url}
-                    onChange={(e) => handleInputChange('online_menu_url', e.target.value)}
-                    placeholder="https://..." />
                 </div>
 
                 <div>
