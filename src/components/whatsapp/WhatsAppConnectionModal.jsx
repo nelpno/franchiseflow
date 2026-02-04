@@ -12,6 +12,8 @@ export default function WhatsAppConnectionModal({
   onCheckStatus,
   isCheckingStatus 
 }) {
+  const [qrCodeError, setQrCodeError] = React.useState(false);
+
   const getStatusInfo = () => {
     switch (status) {
       case 'connected':
@@ -91,19 +93,23 @@ export default function WhatsAppConnectionModal({
                 Escaneie o QR Code abaixo com seu WhatsApp:
               </p>
               <div className="bg-white p-4 rounded-lg border-2 border-slate-200 inline-block">
-                <img 
-                  src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
-                  alt="QR Code WhatsApp"
-                  className="w-48 h-48 mx-auto"
-                  onError={(e) => {
-                    console.error('Erro ao carregar QR Code:', qrCode);
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
-                  }}
-                />
-                <div className="hidden text-red-500 text-sm mt-2">
-                  Erro ao carregar QR Code. Tente gerar novamente.
-                </div>
+                {!qrCodeError ? (
+                  <img 
+                    src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
+                    alt="QR Code WhatsApp"
+                    className="w-48 h-48 mx-auto"
+                    onError={() => {
+                      console.error('Erro ao carregar QR Code:', qrCode);
+                      setQrCodeError(true);
+                    }}
+                  />
+                ) : (
+                  <div className="w-48 h-48 flex items-center justify-center">
+                    <p className="text-red-500 text-sm text-center">
+                      Erro ao carregar QR Code. Tente gerar novamente.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="mt-4 text-xs text-slate-500 space-y-1">
                 <p>1. Abra o WhatsApp no seu celular</p>
