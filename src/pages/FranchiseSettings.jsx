@@ -106,11 +106,12 @@ function FranchiseSettingsContent() {
     }
   }, [isLoading, currentUser, franchises, configurations]);
 
-  // Novo useEffect para controlar o modal de forma segura
+  // Sincroniza o modal com os dados
   useEffect(() => {
-    if (modalData && modalData.qrCode) {
-      // Só mostra o modal após garantir que os dados estão prontos
+    if (modalData) {
       setShowWhatsAppModal(true);
+    } else {
+      setShowWhatsAppModal(false);
     }
   }, [modalData]);
 
@@ -285,7 +286,6 @@ function FranchiseSettingsContent() {
   };
 
   const handleConnectWhatsApp = useCallback(async (config) => {
-    // Verificações iniciais de segurança
     if (!config || !config.franchise_evolution_instance_id) {
       alert('Configuração inválida. Por favor, recarregue a página e tente novamente.');
       return;
@@ -296,18 +296,13 @@ function FranchiseSettingsContent() {
       return;
     }
 
-    // 1. Ativa o loading no botão
     setIsConnectingWhatsApp(true);
     setSelectedConfigForWhatsApp(config);
-    
-    // Limpar modal anterior e fechar o modal explicitamente para resetar
     setModalData(null);
-    setShowWhatsAppModal(false);
 
     try {
       console.log('Tentando conectar WhatsApp para:', config.franchise_evolution_instance_id);
 
-      // 2. Chama a função do backend
       const response = await connectWhatsappRobot({
         franchise_evolution_instance_id: config.franchise_evolution_instance_id
       });
@@ -315,9 +310,7 @@ function FranchiseSettingsContent() {
       const data = response.data || response;
       console.log('Resposta do connectWhatsappRobot:', data);
 
-      // 3. Processar resposta e atualizar estados
       if (data.status === 'connected' || data.connected === true) {
-        // Já está conectado, apenas atualiza o status na lista e notifica
         updateConfigurationStatus(config.id, {
           whatsapp_status: 'connected',
           whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
@@ -326,26 +319,19 @@ function FranchiseSettingsContent() {
         alert('Este WhatsApp já está conectado!');
         
       } else if (data.qrCode || data.qr_code || data.qrcode) {
-        // Recebeu QR Code
         const qrCodeValue = data.qrCode || data.qr_code || data.qrcode;
         if (qrCodeValue && typeof qrCodeValue === 'string' && qrCodeValue.trim().length > 0) {
-            // Atualiza a configuração na lista com o novo status e QR
             updateConfigurationStatus(config.id, {
               whatsapp_status: 'pending_qr',
               whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
               whatsapp_qr_code: qrCodeValue
             });
 
-            // 4. Prepara os dados para o modal de forma segura
-            // Usar setTimeout para garantir que o estado seja atualizado antes de mostrar o modal
-            setTimeout(() => {
-              setModalData({
-                  qrCode: qrCodeValue,
-                  status: 'pending_qr',
-                  instanceId: data.instanceId || data.instance_id || config.whatsapp_instance_id || ''
-              });
-            }, 100);
-            // O useEffect [modalData] agora cuidará de setShowWhatsAppModal(true)
+            setModalData({
+                qrCode: qrCodeValue,
+                status: 'pending_qr',
+                instanceId: data.instanceId || data.instance_id || config.whatsapp_instance_id || ''
+            });
         } else {
             throw new Error('QR Code recebido é inválido ou vazio');
         }
@@ -356,22 +342,18 @@ function FranchiseSettingsContent() {
     } catch (error) {
       console.error("Erro detalhado ao conectar WhatsApp:", error);
 
-      // Log detalhado do erro para debugging
       if (error.response) {
         console.error("Response status:", error.response.status);
         console.error("Response data:", error.response.data);
       }
 
-      // Lógica para exibir um alerta de erro mais informativo
       alert(error.response?.status === 403 ?
         "Você não tem permissão para conectar o WhatsApp desta franquia. Entre em contato com o administrador." :
         "Falha ao conectar. Tente novamente."
       );
-      setShowWhatsAppModal(false); // Garante que o modal não seja exibido em caso de erro
-      setModalData(null); // Limpa o modalData também em caso de erro
+      setModalData(null);
 
     } finally {
-        // 5. Desativa o loading no botão
         setIsConnectingWhatsApp(false);
     }
   }, [currentUser, updateConfigurationStatus]);
@@ -421,15 +403,12 @@ function FranchiseSettingsContent() {
   };
 
   const handleCloseModalAndCheckStatus = () => {
-    setShowWhatsAppModal(false); // Fecha o modal imediatamente
-    setModalData(null); // Limpar dados do modal
-
-    // Verificar status em segundo plano (sem mostrar loading na tela)
+    setModalData(null);
+    
     if (selectedConfigForWhatsApp) {
-      // Pequeno delay para garantir que o modal feche antes de iniciar a checagem, se necessário
       setTimeout(() => {
         handleCheckWhatsAppStatus();
-      }, 1000); // 1 segundo de atraso
+      }, 500);
     }
   };
 
