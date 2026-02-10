@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const N8N_WEBHOOK_URL = 'https://webhook.dynamicagents.tech/webhook/a9c45ef7-36f7-4a64-ad9e-edadb69a31af';
 
@@ -31,20 +31,50 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
                 instanceName: franchise_evolution_instance_id,
-                action: 'smart_connect' // Ação que o n8n deve interpretar como: verificar primeiro, se não conectado então gerar QR
+                action: 'smart_connect'
             }),
         });
 
-        if (!n8nResponse.ok) {
-            const errorText = await n8nResponse.text();
-            console.error('Erro do webhook n8n:', errorText);
+        let result;
+        const responseText = await n8nResponse.text();
+        
+        // Tenta fazer parse do JSON
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            // Se falhar o parse, trata como erro
+            console.error('Erro ao fazer parse da resposta:', responseText);
+            
+            // Verifica se a mensagem de erro contém "already logged in"
+            if (responseText.includes('already logged in')) {
+                console.log('WhatsApp já está conectado - tratando como sucesso');
+                
+                // Busca a configuração e marca como conectada
+                const configurations = await base44.entities.FranchiseConfiguration.filter({
+                    franchise_evolution_instance_id: franchise_evolution_instance_id
+                });
+                
+                if (configurations.length > 0) {
+                    const config = configurations[0];
+                    await base44.entities.FranchiseConfiguration.update(config.id, {
+                        whatsapp_status: 'connected',
+                        whatsapp_qr_code: null
+                    });
+                    
+                    return Response.json({
+                        status: 'connected',
+                        connected: true,
+                        message: 'WhatsApp já está conectado!',
+                        instanceId: config.whatsapp_instance_id
+                    }, { status: 200 });
+                }
+            }
+            
             return Response.json({ 
                 error: `Erro ao conectar: ${n8nResponse.statusText}`,
-                details: errorText
+                details: responseText
             }, { status: n8nResponse.status });
         }
-
-        const result = await n8nResponse.json();
         console.log('Resposta do n8n:', JSON.stringify(result, null, 2));
         
         // Busca a configuração da franquia
