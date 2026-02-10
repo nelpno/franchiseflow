@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const N8N_WEBHOOK_URL = 'https://webhook.dynamicagents.tech/webhook/a9c45ef7-36f7-4a64-ad9e-edadb69a31af';
 
