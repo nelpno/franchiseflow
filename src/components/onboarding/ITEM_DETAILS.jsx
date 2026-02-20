@@ -51,7 +51,10 @@ export const ITEM_DETAILS = {
   "4-3": { text: "Este item é responsabilidade do franqueador. Será marcado quando estiver pronto." },
   "4-4": { text: "Este item é responsabilidade do franqueador. Será marcado quando estiver pronto." },
   "4-5": { text: "Este item é responsabilidade do franqueador. Será marcado quando estiver pronto." },
-  "4-6": { text: "Este item é responsabilidade do franqueador. Será marcado quando estiver pronto." },
+  "4-6": {
+    text: "O primeiro mês de conteúdo é programado diretamente pelo Drive de treinamento. Acesse o material de conteúdo e siga as instruções para programar os posts do seu perfil.",
+    links: [{ label: "📂 Acessar Drive de Treinamento", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
+  },
   "4-7": {
     text: "Acesse o Meta Business Suite (business.facebook.com) com a conta vinculada. Aprenda a ver:\n• Alcance dos posts (quantas pessoas viram)\n• Engajamento (curtidas, comentários, compartilhamentos)\n• Resultados dos anúncios (leads gerados, custo por lead)\n\nAssista o vídeo de treinamento no Drive.",
     links: [{ label: "📂 Vídeos no Drive", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
