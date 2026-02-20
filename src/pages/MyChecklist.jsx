@@ -142,7 +142,12 @@ export default function MyChecklist() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, []);
+
+  const handleFranchiseChange = (franchiseId) => {
+    const selected = availableFranchises.find((f) => f.evolution_instance_id === franchiseId);
+    if (selected) loadData(selected);
+  };
 
   const saveChecklist = useCallback(
     async (newItems) => {
