@@ -12,7 +12,7 @@ import { createPageUrl } from "@/utils";
 import {
   TrendingUp, Users, AlertTriangle, CheckCircle2, Search, RefreshCw, Copy, X, ChevronDown, ChevronUp, Trophy
 } from "lucide-react";
-import FranchiseeDetailModal from "../components/acompanhamento/FranchiseeDetailModal";
+import FranchiseeDetailModal from "@/components/acompanhamento/FranchiseeDetailModal";
 
 const today = () => format(new Date(), "yyyy-MM-dd");
 const daysAgo = (n) => format(subDays(new Date(), n), "yyyy-MM-dd");
