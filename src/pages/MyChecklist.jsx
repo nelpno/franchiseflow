@@ -24,7 +24,7 @@ const DAILY_ITEMS = {
     { key: "md2", label: "Selecionar 5-10 contatos \"Remarketing\" e enviar mensagem personalizada" },
     { key: "md3", label: "Selecionar 3-5 contatos \"Não Fechou\" (30+ dias) e tentar novamente" },
     { key: "md4", label: "Responder TODOS os comentários e DMs no Instagram" },
-    { key: "md5", label: "Verificar desempenho dos anúncios no Meta Business Suite" },
+    { key: "md5", label: "Verificar agendamento das postagens do dia (Instagram e WhatsApp)" },
     { key: "md6", label: "Atualizar etiquetas conforme evolução das conversas" },
     { key: "md7", label: "Enviar mensagem para 2-3 \"Clientes Recorrentes\" (relacionamento)" },
   ],
