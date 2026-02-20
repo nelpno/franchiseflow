@@ -200,9 +200,9 @@ export default function Reports() {
 
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
-                <Button onClick={updateReportData}>
+                <Button disabled={isLoading}>
                   {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TrendingUp className="w-4 h-4 mr-2" />}
-                  Atualizar
+                  {isLoading ? 'Carregando...' : 'Atualizado'}
                 </Button>
                 <ExportButton 
                   summaries={summaries} 
