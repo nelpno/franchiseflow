@@ -136,4 +136,4 @@ export const ROLE_TAGS = {
   auto: { label: "AUTOMÁTICO", className: "bg-slate-100 text-slate-600 border-slate-300" },
 };
 
-export const TOTAL_ITEMS = 49;
+export const TOTAL_ITEMS = 50;
