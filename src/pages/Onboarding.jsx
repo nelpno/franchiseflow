@@ -374,6 +374,17 @@ export default function Onboarding() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
                     {isSaving && <span className="text-xs text-slate-400 animate-pulse">Salvando...</span>}
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteOnboarding}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Excluir onboarding"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
