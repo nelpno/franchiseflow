@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { BarChart3, Users, TrendingUp, Settings, Home, LogOut, SlidersHorizontal, ClipboardList, Activity } from "lucide-react";
+import { BarChart3, Users, TrendingUp, Settings, Home, LogOut, SlidersHorizontal, ClipboardList, Activity, Rocket } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
