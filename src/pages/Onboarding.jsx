@@ -254,6 +254,49 @@ export default function Onboarding() {
           </div>
         )}
 
+        {/* Admin franchisee list */}
+        {isAdmin && franchises.length > 0 && (
+          <Card className="mb-6 border-0 shadow-sm bg-white/90">
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-100">
+                {franchises.map(f => {
+                  const ob = allChecklists.find(c => c.franchise_id === f.evolution_instance_id);
+                  const pct = ob?.completion_percentage || 0;
+                  const status = ob?.status || null;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => handleSelectFranchise(f.evolution_instance_id)}
+                      className={`w-full flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition-colors text-left ${selectedFranchise?.id === f.id ? "bg-amber-50" : ""}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-800 text-sm">{f.owner_name}</div>
+                        <div className="text-xs text-slate-400">{f.city}</div>
+                      </div>
+                      {ob ? (
+                        <>
+                          <div className="w-32 hidden sm:block">
+                            <div className="bg-slate-100 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="h-2 rounded-full bg-amber-500 transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1 text-right">{pct}%</div>
+                          </div>
+                          <StatusBadge status={status} />
+                        </>
+                      ) : (
+                        <Badge className="bg-slate-100 text-slate-500 border border-slate-200">Não iniciado</Badge>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Franchise selector (admin) */}
         {isAdmin && (
           <Card className="mb-6 border-0 shadow-sm">
