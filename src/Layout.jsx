@@ -100,6 +100,16 @@ export default function Layout({ children, currentPageName }) {
     try {
       const user = await User.me();
       setCurrentUser(user);
+      // Check onboarding status for non-admin users
+      if (user.role !== 'admin' && user.managed_franchise_ids?.length > 0) {
+        const { base44 } = await import('@/api/base44Client');
+        const obs = await base44.entities.OnboardingChecklist.filter({
+          franchise_id: user.managed_franchise_ids[0]
+        });
+        if (obs.length > 0 && obs[0].status === 'approved') {
+          setOnboardingApproved(true);
+        }
+      }
     } catch (error) {
       console.error("Erro ao carregar usuário:", error);
     }
