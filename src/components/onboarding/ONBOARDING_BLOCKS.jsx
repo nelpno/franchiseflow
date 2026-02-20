@@ -1,3 +1,4 @@
+
 export const BLOCKS = [
   {
     id: 1,
@@ -24,8 +25,6 @@ export const BLOCKS = [
       { key: "8-3", label: "Vídeos do Drive assistidos: Configuração do Robô de Atendimento", role: "franchisee" },
       { key: "8-4", label: "Reunião de kick-off com Celso (CS) realizada", role: "both" },
       { key: "8-5", label: "Checklist de Ações Diárias para Vendas lido e compreendido", role: "franchisee" },
-      { key: "8-6", label: "Scripts de venda praticados", role: "franchisee" },
-      { key: "8-7", label: "Simulação de venda completa realizada (do lead à entrega)", role: "both" },
     ],
   },
   {
