@@ -164,7 +164,7 @@ export default function Dashboard() {
           </div>
           {selectedFranchiseId === 'all' &&
             <div>
-              <TopFranchises franchises={franchises} sales={sales} isLoading={isLoading} />
+              <TopFranchises franchises={franchises} summaries={summaries} isLoading={isLoading} />
             </div>
           }
         </div>
