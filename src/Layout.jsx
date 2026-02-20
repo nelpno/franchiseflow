@@ -125,7 +125,7 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const filteredNavigationItems = navigationItems.filter((item) => {
-    if (item.title === "Usuários") {
+    if (item.adminOnly) {
       return currentUser?.role === 'admin';
     }
     return true;
