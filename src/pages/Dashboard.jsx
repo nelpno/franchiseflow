@@ -34,16 +34,15 @@ export default function Dashboard() {
     if (showLoading) setIsLoading(true);
     
     try {
-      // Agora buscamos os dados pré-agregados
-      const [franchisesData, summariesData, salesForTopFranchise] = await Promise.all([
+      const [franchisesData, summariesData] = await Promise.all([
         Franchise.list(),
-        DailySummary.list('-date', 1000), // Busca os últimos 1000 dias de resumos
-        Sale.list('-sale_date', 500) // Temporariamente mantido para o componente TopFranchises
+        DailySummary.list('-date', 365), // Últimos 365 dias é suficiente
       ]);
 
       setFranchises(franchisesData);
       setSummaries(summariesData);
-      setSales(salesForTopFranchise); // Mantém os dados brutos de vendas por enquanto
+      // TopFranchises agora usa summaries, não sales
+      setSales([]);
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
