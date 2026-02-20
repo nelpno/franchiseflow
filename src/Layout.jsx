@@ -65,9 +65,16 @@ const navigationItems = [
   icon: ClipboardList
 },
 {
+  title: "Acompanhamento",
+  url: createPageUrl("Acompanhamento"),
+  icon: Activity,
+  adminOnly: true
+},
+{
   title: "Usuários",
   url: createPageUrl("UserManagement"),
-  icon: Settings
+  icon: Settings,
+  adminOnly: true
 }];
 
 
