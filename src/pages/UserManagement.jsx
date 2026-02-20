@@ -150,15 +150,24 @@ export default function UserManagement() {
                     </div>
                     
                     {user.role !== 'admin' && (
-                      <Button
-                        onClick={() => handleEditUser(user)}
-                        variant="outline"
-                        size="sm"
-                        className="ml-4"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Editar Permissões
-                      </Button>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          onClick={() => handleEditUser(user)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Editar Permissões
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteUser(user)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardContent>
