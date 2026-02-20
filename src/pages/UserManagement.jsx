@@ -56,6 +56,12 @@ export default function UserManagement() {
     );
   };
 
+  const handleDeleteUser = async (user) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o usuário "${user.full_name}"? Esta ação não pode ser desfeita.`)) return;
+    await User.delete(user.id);
+    setUsers(prev => prev.filter(u => u.id !== user.id));
+  };
+
   const handleSavePermissions = async () => {
     setIsSaving(true);
     try {
