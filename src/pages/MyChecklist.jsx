@@ -246,7 +246,22 @@ export default function MyChecklist() {
                 <ClipboardList className="w-6 h-6 text-red-600" />
                 <h1 className="text-2xl font-bold text-slate-900">Checklist Diário de Vendas</h1>
               </div>
-              <p className="text-slate-600 font-medium">{franchise.owner_name} · {franchise.city}</p>
+              {availableFranchises.length > 1 ? (
+                <Select value={franchise.evolution_instance_id} onValueChange={handleFranchiseChange}>
+                  <SelectTrigger className="w-64 mt-1 border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableFranchises.map((f) => (
+                      <SelectItem key={f.evolution_instance_id} value={f.evolution_instance_id}>
+                        {f.owner_name} · {f.city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-slate-600 font-medium">{franchise.owner_name} · {franchise.city}</p>
+              )}
               <p className="text-slate-400 text-sm mt-0.5">{todayFormattedCapitalized}</p>
             </div>
             <Button variant="outline" size="sm" onClick={handleResetDay} className="text-red-600 border-red-200 hover:bg-red-50">
