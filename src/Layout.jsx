@@ -145,6 +145,10 @@ export default function Layout({ children, currentPageName }) {
     if (item.adminOnly) {
       return currentUser?.role === 'admin';
     }
+    if (item.showOnboarding) {
+      if (currentUser?.role === 'admin') return true;
+      return !onboardingApproved;
+    }
     return true;
   });
 
