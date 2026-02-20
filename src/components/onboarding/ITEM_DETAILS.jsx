@@ -66,7 +66,7 @@ export const ITEM_DETAILS = {
     text: "A tabela de preços é definida em conjunto com o franqueador, considerando seus custos e o mercado da sua região. A margem recomendada garante competitividade e lucro. Essa tabela será enviada pelo franqueador.",
   },
   "5-2": {
-    text: "Use a Planilha de Pedido oficial (disponível no Dashboard) para fazer seu primeiro pedido à fábrica. Para o estoque inicial, recomendamos variedade: pelo menos 2-3 unidades de cada sabor para conhecer a demanda da sua região.",
+    text: "O franqueador irá enviar a planilha modelo com pedido sugestivo para o estoque inicial. Aguarde o recebimento por e-mail ou WhatsApp e siga as instruções da planilha para realizar seu primeiro pedido à fábrica.",
   },
   "5-3": {
     text: "Ao receber o pedido, confira TUDO:\n• Quantidades batem com o pedido?\n• Produtos bem embalados e congelados?\n• Datas de validade adequadas?\n\n⚠️ Se houver divergência, registre com foto e informe o franqueador imediatamente.",
