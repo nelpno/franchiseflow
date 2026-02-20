@@ -89,6 +89,7 @@ export default function Layout({ children, currentPageName }) {
   const [todaySales, setTodaySales] = useState(0);
   const [todayContacts, setTodayContacts] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
+  const [onboardingApproved, setOnboardingApproved] = useState(false);
 
   useEffect(() => {
     loadQuickStats();
