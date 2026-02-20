@@ -47,30 +47,30 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import Acompanhamento from './pages/Acompanhamento';
 import Dashboard from './pages/Dashboard';
 import FranchiseSettings from './pages/FranchiseSettings';
 import Franchises from './pages/Franchises';
 import Home from './pages/Home';
+import MyChecklist from './pages/MyChecklist';
+import Onboarding from './pages/Onboarding';
 import Reports from './pages/Reports';
 import Sales from './pages/Sales';
 import UserManagement from './pages/UserManagement';
-import MyChecklist from './pages/MyChecklist';
-import Acompanhamento from './pages/Acompanhamento';
-import Onboarding from './pages/Onboarding';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Acompanhamento": Acompanhamento,
     "Dashboard": Dashboard,
     "FranchiseSettings": FranchiseSettings,
     "Franchises": Franchises,
     "Home": Home,
+    "MyChecklist": MyChecklist,
+    "Onboarding": Onboarding,
     "Reports": Reports,
     "Sales": Sales,
     "UserManagement": UserManagement,
-    "MyChecklist": MyChecklist,
-    "Acompanhamento": Acompanhamento,
-    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {
