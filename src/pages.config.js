@@ -56,6 +56,7 @@ import Sales from './pages/Sales';
 import UserManagement from './pages/UserManagement';
 import MyChecklist from './pages/MyChecklist';
 import Acompanhamento from './pages/Acompanhamento';
+import Onboarding from './pages/Onboarding';
 import __Layout from './Layout.jsx';
 
 
@@ -69,6 +70,7 @@ export const PAGES = {
     "UserManagement": UserManagement,
     "MyChecklist": MyChecklist,
     "Acompanhamento": Acompanhamento,
+    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {
