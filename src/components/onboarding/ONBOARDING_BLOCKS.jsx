@@ -53,7 +53,7 @@ export const BLOCKS = [
       { key: "4-3", label: "Franqueado adicionado como administrador em ambas", role: "franchisor" },
       { key: "4-4", label: "WhatsApp Business vinculado como conta vinculada", role: "franchisor" },
       { key: "4-5", label: "Meta Business Suite configurado", role: "franchisor" },
-      { key: "4-6", label: "Primeiro mês de conteúdo programado", role: "franchisor" },
+      { key: "4-6", label: "Primeiro mês de conteúdo programado", role: "franchisee" },
       { key: "4-7", label: "Franqueado sabe acessar e ler métricas no Meta Business Suite", role: "franchisee" },
       { key: "4-8", label: "Endereço e ponto adicionado no Google My Maps (lista de franquias ativas)", role: "franchisor" },
     ],
