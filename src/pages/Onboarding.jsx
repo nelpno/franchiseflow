@@ -307,14 +307,14 @@ export default function Onboarding() {
           </button>
         )}
 
-        {/* Franchise selector (admin) - hidden, kept for handleSelectFranchise compatibility */}
-        {isAdmin && false && (
+        {/* Franchise selector (admin) - to start onboarding for any franchisee */}
+        {isAdmin && !selectedFranchise && (
           <Card className="mb-6 border-0 shadow-sm">
             <CardContent className="p-4">
               <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
-                <Users className="w-4 h-4" /> Selecionar Franqueado
+                <Users className="w-4 h-4" /> Selecionar Franqueado para iniciar onboarding
               </label>
-              <Select value={selectedFranchise?.evolution_instance_id || ""} onValueChange={handleSelectFranchise}>
+              <Select value="" onValueChange={handleSelectFranchise}>
                 <SelectTrigger className="w-full md:w-96">
                   <SelectValue placeholder="Escolha um franqueado..." />
                 </SelectTrigger>
