@@ -60,6 +60,11 @@ const navigationItems = [
   icon: SlidersHorizontal
 },
 {
+  title: "Meu Checklist",
+  url: createPageUrl("MyChecklist"),
+  icon: ClipboardList
+},
+{
   title: "Usuários",
   url: createPageUrl("UserManagement"),
   icon: Settings
