@@ -5,47 +5,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export default function TopFranchises({ franchises, sales, isLoading }) {
+export default function TopFranchises({ franchises, summaries, isLoading }) {
   const getTopPerformingFranchises = () => {
-    // 1. Define o ano e mês atuais para a filtragem
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1; // getMonth() é 0-indexado (0-11)
+    const currentMonthStr = format(today, 'yyyy-MM');
 
-    // 2. Filtra as vendas do mês corrente, comparando a string da data para evitar problemas de fuso horário.
-    const monthlySales = sales.filter(s => {
-      if (!s.sale_date || typeof s.sale_date !== 'string' || !s.sale_date.includes('-')) {
-        // Pula registros com data inválida
-        return false;
-      }
-      
-      const parts = s.sale_date.split('-'); // ex: ['2025', '08', '31']
-      if (parts.length < 2) return false;
-
-      const saleYear = parseInt(parts[0], 10);
-      const saleMonth = parseInt(parts[1], 10);
-
-      // Compara se a venda pertence ao ano e mês atuais
-      return saleYear === currentYear && saleMonth === currentMonth;
-    });
-
-    // 3. Calcula as estatísticas de cada franquia
+    // Usa summaries (já agregados) para calcular totais do mês
     const franchiseStats = franchises.map(franchise => {
-      const franchiseSales = monthlySales.filter(s => 
-        String(s.franchise_id) === String(franchise.evolution_instance_id)
+      const monthlySummaries = summaries.filter(s => 
+        s.franchise_id === franchise.evolution_instance_id &&
+        s.date && s.date.startsWith(currentMonthStr)
       );
       
-      const totalValue = franchiseSales.reduce((sum, s) => sum + (s.value || 0), 0);
-      const salesCount = franchiseSales.length;
+      const totalValue = monthlySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+      const salesCount = monthlySummaries.reduce((sum, s) => sum + (s.sales_count || 0), 0);
       
-      return {
-        ...franchise,
-        totalValue,
-        salesCount,
-      };
+      return { ...franchise, totalValue, salesCount };
     });
     
-    // 4. Ordena e retorna o top 5
     return franchiseStats
       .sort((a, b) => b.totalValue - a.totalValue)
       .slice(0, 5);
