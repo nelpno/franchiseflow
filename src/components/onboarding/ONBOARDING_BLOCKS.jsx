@@ -14,6 +14,22 @@ export const BLOCKS = [
   },
   {
     id: 2,
+    title: "Treinamento",
+    color: "#5C6BC0",
+    bgColor: "bg-indigo-50",
+    borderColor: "border-indigo-200",
+    items: [
+      { key: "8-1", label: "Vídeos do Drive assistidos: Configuração do WhatsApp Business", role: "franchisee" },
+      { key: "8-2", label: "Vídeos do Drive assistidos: Meta Business Suite", role: "franchisee" },
+      { key: "8-3", label: "Vídeos do Drive assistidos: Configuração do Robô de Atendimento", role: "franchisee" },
+      { key: "8-4", label: "Reunião de kick-off com Celso (CS) realizada", role: "both" },
+      { key: "8-5", label: "Checklist de Ações Diárias para Vendas lido e compreendido", role: "franchisee" },
+      { key: "8-6", label: "Scripts de venda praticados", role: "franchisee" },
+      { key: "8-7", label: "Simulação de venda completa realizada (do lead à entrega)", role: "both" },
+    ],
+  },
+  {
+    id: 3,
     title: "Equipamentos e Espaço",
     color: "#0288D1",
     bgColor: "bg-blue-50",
@@ -27,7 +43,7 @@ export const BLOCKS = [
     ],
   },
   {
-    id: 3,
+    id: 4,
     title: "WhatsApp Business",
     color: "#43A047",
     bgColor: "bg-green-50",
@@ -42,7 +58,7 @@ export const BLOCKS = [
     ],
   },
   {
-    id: 4,
+    id: 5,
     title: "Redes Sociais",
     color: "#8E24AA",
     bgColor: "bg-purple-50",
@@ -59,7 +75,7 @@ export const BLOCKS = [
     ],
   },
   {
-    id: 5,
+    id: 6,
     title: "Produtos e Estoque",
     color: "#C49A2A",
     bgColor: "bg-yellow-50",
@@ -74,7 +90,7 @@ export const BLOCKS = [
     ],
   },
   {
-    id: 6,
+    id: 7,
     title: "Logística de Entrega",
     color: "#F57C00",
     bgColor: "bg-orange-50",
@@ -88,7 +104,7 @@ export const BLOCKS = [
     ],
   },
   {
-    id: 7,
+    id: 8,
     title: "Financeiro",
     color: "#2E7D32",
     bgColor: "bg-emerald-50",
@@ -98,22 +114,6 @@ export const BLOCKS = [
       { key: "7-2", label: "Chave PIX configurada e testada", role: "franchisee" },
       { key: "7-3", label: "Planilha de controle financeiro configurada", role: "franchisee" },
       { key: "7-4", label: "Meta de vendas do primeiro mês definida com o CS", role: "both" },
-    ],
-  },
-  {
-    id: 8,
-    title: "Treinamento",
-    color: "#5C6BC0",
-    bgColor: "bg-indigo-50",
-    borderColor: "border-indigo-200",
-    items: [
-      { key: "8-1", label: "Vídeos do Drive assistidos: Configuração do WhatsApp Business", role: "franchisee" },
-      { key: "8-2", label: "Vídeos do Drive assistidos: Meta Business Suite", role: "franchisee" },
-      { key: "8-3", label: "Vídeos do Drive assistidos: Configuração do Robô de Atendimento", role: "franchisee" },
-      { key: "8-4", label: "Reunião de kick-off com Celso (CS) realizada", role: "both" },
-      { key: "8-5", label: "Checklist de Ações Diárias para Vendas lido e compreendido", role: "franchisee" },
-      { key: "8-6", label: "Scripts de venda praticados", role: "franchisee" },
-      { key: "8-7", label: "Simulação de venda completa realizada (do lead à entrega)", role: "both" },
     ],
   },
 ];
