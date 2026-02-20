@@ -88,45 +88,7 @@ export default function Reports() {
     }
   };
 
-  const updateReportData = async () => {
-    setIsLoading(true);
-    try {
-      // Carregar dados agregados e brutos concorrentemente
-      const [salesData, contactsData, summariesData] = await Promise.all([
-        Sale.list('-sale_date', 1000),
-        DailyUniqueContact.list('-date', 1000),
-        DailySummary.list('-date', 1000)
-      ]);
 
-      // Filtrar por data
-      const filteredSales = salesData.filter(sale => 
-        sale.sale_date >= startDate && sale.sale_date <= endDate
-      );
-      
-      const filteredContacts = contactsData.filter(contact =>
-        contact.date >= startDate && contact.date <= endDate
-      );
-
-      const filteredSummaries = summariesData.filter(summary =>
-        summary.date >= startDate && summary.date <= endDate
-      );
-      
-      // Filtrar por franquia se selecionada
-      if (selectedFranchise !== 'all') {
-        setSales(filteredSales.filter(s => s.franchise_id === selectedFranchise));
-        setDailyContacts(filteredContacts.filter(c => c.franchise_id === selectedFranchise));
-        setSummaries(filteredSummaries.filter(s => s.franchise_id === selectedFranchise));
-      } else {
-        setSales(filteredSales);
-        setDailyContacts(filteredContacts);
-        setSummaries(filteredSummaries);
-      }
-
-    } catch (error) {
-      console.error("Erro ao carregar dados do relatório:", error);
-    }
-    setIsLoading(false);
-  };
 
   const setQuickDateRange = (days) => {
     const end = new Date();
