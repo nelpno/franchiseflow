@@ -65,6 +65,12 @@ const navigationItems = [
   icon: ClipboardList
 },
 {
+  title: "Onboarding",
+  url: createPageUrl("Onboarding"),
+  icon: Rocket,
+  showOnboarding: true
+},
+{
   title: "Acompanhamento",
   url: createPageUrl("Acompanhamento"),
   icon: Activity,
