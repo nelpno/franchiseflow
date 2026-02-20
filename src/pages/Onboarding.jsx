@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Rocket, ClipboardCheck, Users, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Rocket, ClipboardCheck, Users, CheckCircle2, Clock, AlertCircle, Trash2 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARDING_BLOCKS";
 import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
