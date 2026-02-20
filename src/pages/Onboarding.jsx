@@ -112,9 +112,10 @@ export default function Onboarding() {
     if (!checklist) return;
     if (!window.confirm("Tem certeza que deseja excluir este onboarding? Esta ação não pode ser desfeita.")) return;
     await base44.entities.OnboardingChecklist.delete(checklist.id);
+    setAllChecklists(prev => prev.filter(c => c.id !== checklist.id));
     setChecklist(null);
     setItems({});
-    setAllChecklists(prev => prev.filter(c => c.id !== checklist.id));
+    setSelectedFranchise(null);
   };
 
   const handleStartOnboarding = async () => {
