@@ -75,6 +75,7 @@ const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
 export default function MyChecklist() {
   const [franchise, setFranchise] = useState(null);
+  const [availableFranchises, setAvailableFranchises] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [checklist, setChecklist] = useState(null); // entity record
   const [items, setItems] = useState({});
@@ -82,19 +83,23 @@ export default function MyChecklist() {
   const [isLoading, setIsLoading] = useState(true);
   const saveTimerRef = useRef(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (selectedFranchise = null) => {
     setIsLoading(true);
     const user = await base44.auth.me();
     setCurrentUser(user);
 
-    const franchises = await Franchise.list();
-    let myFranchise;
+    const allFranchises = await Franchise.list();
+    let myFranchises;
     if (user.role === "admin") {
-      myFranchise = franchises[0]; // admin vê a primeira por padrão
+      myFranchises = allFranchises;
     } else {
       const ids = user.managed_franchise_ids || [];
-      myFranchise = franchises.find((f) => ids.includes(f.evolution_instance_id));
+      myFranchises = allFranchises.filter((f) => ids.includes(f.evolution_instance_id));
     }
+
+    setAvailableFranchises(myFranchises);
+
+    const myFranchise = selectedFranchise || myFranchises[0];
 
     if (!myFranchise) {
       setIsLoading(false);
