@@ -1,4 +1,3 @@
-
 export const BLOCKS = [
   {
     id: 1,
@@ -136,4 +135,4 @@ export const ROLE_TAGS = {
   auto: { label: "AUTOMÁTICO", className: "bg-slate-100 text-slate-600 border-slate-300" },
 };
 
-export const TOTAL_ITEMS = 50;
+export const TOTAL_ITEMS = 49;
