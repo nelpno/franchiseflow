@@ -37,33 +37,20 @@ export default function Reports() {
   }, []);
 
   useEffect(() => {
+    if (!currentUser) return;
+
     const loadReportData = async () => {
       setIsLoading(true);
       try {
-        // Carregar dados agregados e brutos concorrentemente
         const [salesData, contactsData, summariesData] = await Promise.all([
-          Sale.list('-sale_date', 1000),
-          DailyUniqueContact.list('-date', 1000),
-          DailySummary.list('-date', 1000) // Busca resumos para análise de conversão
+          Sale.list('-sale_date', 500),
+          DailyUniqueContact.list('-date', 500),
+          DailySummary.list('-date', 500)
         ]);
 
-        // Filtrar por data
-        const filteredSales = salesData.filter(sale => 
-          sale.sale_date >= startDate && sale.sale_date <= endDate
-        );
-        
-        const filteredContacts = contactsData.filter(contact =>
-          contact.date >= startDate && contact.date <= endDate
-        );
-
-        const filteredSummaries = summariesData.filter(summary =>
-          summary.date >= startDate && summary.date <= endDate
-        );
-
-        // Filtrar por franquia se selecionada
-        let finalSales = filteredSales;
-        let finalContacts = filteredContacts;
-        let finalSummaries = filteredSummaries;
+        let finalSales = salesData.filter(s => s.sale_date >= startDate && s.sale_date <= endDate);
+        let finalContacts = contactsData.filter(c => c.date >= startDate && c.date <= endDate);
+        let finalSummaries = summariesData.filter(s => s.date >= startDate && s.date <= endDate);
 
         if (selectedFranchise !== 'all') {
           finalSales = finalSales.filter(s => s.franchise_id === selectedFranchise);
@@ -71,7 +58,6 @@ export default function Reports() {
           finalSummaries = finalSummaries.filter(s => s.franchise_id === selectedFranchise);
         }
 
-        // Filtrar por origem se selecionada
         if (selectedSource !== 'all') {
           finalSales = finalSales.filter(s => s.source === selectedSource);
         }
@@ -79,17 +65,14 @@ export default function Reports() {
         setSales(finalSales);
         setDailyContacts(finalContacts);
         setSummaries(finalSummaries);
-
       } catch (error) {
         console.error("Erro ao carregar dados do relatório:", error);
       }
       setIsLoading(false);
     };
 
-    if (currentUser) {
-      loadReportData();
-    }
-    }, [selectedFranchise, startDate, endDate, selectedSource, currentUser]);
+    loadReportData();
+  }, [selectedFranchise, startDate, endDate, selectedSource, currentUser]);
 
   const loadInitialData = async () => {
     try {
