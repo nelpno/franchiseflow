@@ -1,7 +1,6 @@
 import React from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import ChecklistItem from "./ChecklistItem";
 
 export default function ChecklistBlock({
   title,
@@ -17,12 +16,10 @@ export default function ChecklistBlock({
 }) {
   const [collapsed, setCollapsed] = React.useState(defaultCollapsed);
 
-  const checkedCount = items.filter(i => checkedItems[i.key]).length;
+  const checkedCount = items.filter((i) => checkedItems[i.key]).length;
 
   return (
-    <div
-      className={`rounded-2xl overflow-hidden shadow-md ${highlight ? "ring-4 ring-red-600 ring-offset-2" : ""}`}
-    >
+    <div className={`rounded-2xl overflow-hidden shadow-md ${highlight ? "ring-4 ring-red-600 ring-offset-2" : ""}`}>
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-4 cursor-pointer select-none"
@@ -56,27 +53,12 @@ export default function ChecklistBlock({
       {!collapsed && (
         <div className="bg-white divide-y divide-slate-100">
           {items.map((item) => (
-            <label
+            <ChecklistItem
               key={item.key}
-              className={`flex items-start gap-4 px-5 py-4 cursor-pointer transition-colors duration-150 hover:bg-slate-50 ${
-                checkedItems[item.key] ? "bg-green-50" : ""
-              }`}
-            >
-              <Checkbox
-                checked={!!checkedItems[item.key]}
-                onCheckedChange={() => onToggle(item.key)}
-                className="mt-0.5 flex-shrink-0"
-              />
-              <span
-                className={`text-sm leading-relaxed ${
-                  checkedItems[item.key]
-                    ? "line-through text-slate-400"
-                    : "text-slate-800"
-                }`}
-              >
-                {item.label}
-              </span>
-            </label>
+              item={item}
+              checked={!!checkedItems[item.key]}
+              onToggle={onToggle}
+            />
           ))}
         </div>
       )}
