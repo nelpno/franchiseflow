@@ -8,7 +8,6 @@ export const BLOCKS = [
     borderColor: "border-red-200",
     items: [
       { key: "1-1", label: "Contrato de franquia assinado", role: "franchisee" },
-      { key: "1-2", label: "Dados bancários configurados para recebimentos", role: "franchisee" },
       { key: "1-3", label: "Acesso ao Drive de treinamento liberado", role: "franchisor" },
       { key: "1-4", label: "Acesso ao Dashboard e planilhas liberado", role: "franchisor" },
       { key: "1-5", label: "Kit de Boas-Vindas recebido (uniforme, materiais da marca)", role: "franchisor" },
