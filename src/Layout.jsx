@@ -124,6 +124,7 @@ export default function Layout({ children, currentPageName }) {
     return true;
   });
 
+
   return (
     <SidebarProvider>
         <style>{`
