@@ -1,4 +1,3 @@
-
 export const BLOCKS = [
   {
     id: 1,
@@ -53,6 +52,7 @@ export const BLOCKS = [
       { key: "3-3", label: "Perfil completo: foto da marca, descrição, endereço, horário", role: "franchisee" },
       { key: "3-7", label: "8 etiquetas criadas: Novo Lead, Em Negociação, Pedido Confirmado, Cliente, Cliente Recorrente, Remarketing, Não Fechou, Indicação", role: "franchisee" },
       { key: "3-9", label: "Robô de atendimento (IA) configurado e testado", role: "both" },
+      { key: "3-10", label: "WhatsApp Business adicionado no grupo da franquia", role: "franchisor" },
     ],
   },
   {
