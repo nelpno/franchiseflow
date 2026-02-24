@@ -52,8 +52,7 @@ export const BLOCKS = [
       { key: "3-2", label: "WhatsApp Business instalado e configurado", role: "franchisee" },
       { key: "3-3", label: "Perfil completo: foto da marca, descrição, endereço, horário", role: "franchisee" },
       { key: "3-7", label: "8 etiquetas criadas: Novo Lead, Em Negociação, Pedido Confirmado, Cliente, Cliente Recorrente, Remarketing, Não Fechou, Indicação", role: "franchisee" },
-      { key: "3-8", label: "Respostas rápidas cadastradas (mínimo 5 mensagens prontas)", role: "franchisee" },
-      { key: "3-9", label: "Robô de atendimento (IA) configurado e testado", role: "franchisor" },
+      { key: "3-9", label: "Robô de atendimento (IA) configurado e testado", role: "both" },
     ],
   },
   {
