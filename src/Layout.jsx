@@ -134,8 +134,8 @@ export default function Layout({ children, currentPageName }) {
 
   const handleLogout = async () => {
     try {
-      await User.logout();
-      window.location.href = createPageUrl("Login"); // Redirect to login page after logout
+      const { base44 } = await import('@/api/base44Client');
+      base44.auth.logout();
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
