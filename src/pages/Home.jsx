@@ -1,10 +1,10 @@
-// Placeholder file, this should be overridden by the generated code
-
+import { useEffect } from "react";
+import { createPageUrl } from "@/utils";
 
 export default function Home() {
+  useEffect(() => {
+    window.location.replace(createPageUrl("Dashboard"));
+  }, []);
 
-  return (
-    <div>
-    </div>
-  );
+  return null;
 }
