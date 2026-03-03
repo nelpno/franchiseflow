@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, ChevronRight, ExternalLink } from "lucide-react";
+import { Lock, ChevronDown, ExternalLink, Info } from "lucide-react";
 import { ROLE_TAGS } from "./ONBOARDING_BLOCKS";
 import { ITEM_DETAILS } from "./ITEM_DETAILS";
 
