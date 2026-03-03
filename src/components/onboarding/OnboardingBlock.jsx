@@ -109,18 +109,25 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                   </div>
 
                   {/* Text + expand area */}
-                  <div
-                    className="flex-1 min-w-0 flex items-start gap-1 cursor-pointer select-none"
-                    onClick={(e) => toggleExpand(item.key, e)}
-                  >
-                    <span className={`text-sm ${checked ? "line-through text-slate-400" : "text-slate-700"}`}>
-                      {item.label}
-                    </span>
-                    {details && (
-                      <ChevronRight
-                        className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
-                      />
-                    )}
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="flex items-start gap-1 cursor-pointer select-none group"
+                      onClick={(e) => toggleExpand(item.key, e)}
+                    >
+                      <span className={`text-sm ${checked ? "line-through text-slate-400" : "text-slate-700"}`}>
+                        {item.label}
+                      </span>
+                      {details && (
+                        <span className={`inline-flex items-center gap-0.5 flex-shrink-0 mt-0.5 text-[10px] font-medium px-1 py-0.5 rounded transition-all duration-200 ${
+                          isExpanded
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-slate-100 text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-600"
+                        }`}>
+                          <Info className="w-2.5 h-2.5" />
+                          <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {tag && (
