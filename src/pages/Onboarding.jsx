@@ -332,6 +332,20 @@ export default function Onboarding() {
           </Card>
         )}
 
+        {/* No checklist yet (franchisee) */}
+        {!isAdmin && franchises.length > 0 && !checklist && !isLoading && (
+          <Card className="mb-6 text-center border-dashed border-2 border-amber-300 bg-amber-50/60">
+            <CardContent className="p-8">
+              <Rocket className="w-12 h-12 mx-auto mb-3 text-amber-500" />
+              <h3 className="font-bold text-slate-800 mb-1">Nenhum onboarding iniciado</h3>
+              <p className="text-slate-500 text-sm mb-4">Clique abaixo para iniciar seu checklist de inauguração.</p>
+              <Button onClick={() => handleStartOnboarding()} className="bg-amber-600 hover:bg-amber-700 text-white">
+                Iniciar Onboarding
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* No checklist yet (admin) */}
         {isAdmin && selectedFranchise && !checklist && (
           <Card className="mb-6 text-center border-dashed border-2 border-amber-300 bg-amber-50/60">
