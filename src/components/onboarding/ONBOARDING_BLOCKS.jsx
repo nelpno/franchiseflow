@@ -108,7 +108,6 @@ export const BLOCKS = [
     items: [
       { key: "7-1", label: "Formas de pagamento definidas (PIX, transferência, cartão)", role: "franchisee" },
       { key: "7-2", label: "Chave PIX configurada e testada", role: "franchisee" },
-      { key: "7-3", label: "Planilha de controle financeiro configurada", role: "franchisee" },
       { key: "7-4", label: "Meta de vendas do primeiro mês definida com o CS", role: "both" },
     ],
   },
