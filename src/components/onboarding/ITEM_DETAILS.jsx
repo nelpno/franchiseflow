@@ -23,7 +23,7 @@ export const ITEM_DETAILS = {
     text: "Use um termômetro digital para freezer (encontra no Mercado Livre por R$15-25). Anote a temperatura todas as manhãs no Bloco Manhã do Checklist Diário.",
   },
   "2-4": {
-    text: "Para entregas via motoboy, use sacolas térmicas ou isopor com gelo seco/gel para manter os produtos congelados.\n\nTempo máximo de transporte: 30 minutos sem bolsa térmica, 1-2 horas com bolsa.\n\n🛍️ SACOLAS RECOMENDADAS (para lojas e entrega):\n• Sacola Boca de Palhaço 30x40 — pacote com ~350 unidades\n• Sacola Boca de Palhaço 35x45 — pacote com ~265 unidades\n📞 Fornecedor: Rafael — (11) 98253-8000\n\n📄 Panfleto e cartão de visita: sempre úteis para apresentar os produtos ao cliente.",
+    text: "Para as entregas e retiradas, use sacolas Boca de Palhaço — são o modelo ideal para acomodar os produtos com segurança e apresentação.\n\n🛍️ Modelos recomendados:\n• 30x40 — pacote com ~350 unidades\n• 35x45 — pacote com ~265 unidades\n\n📞 Fornecedor em SP: Rafael — (11) 98253-8000\n\n📄 Aproveite para incluir um panfleto ou cartão de visita na sacola — ótima forma de apresentar os produtos e gerar indicações.",
   },
   "2-5": {
     text: "Você vai usar o celular o dia inteiro para WhatsApp Business, Instagram e Meta Business Suite. Garanta: internet estável (Wi-Fi ou 4G), pelo menos 2GB de espaço livre, bateria boa ou carregador acessível.",
