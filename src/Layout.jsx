@@ -106,7 +106,8 @@ export default function Layout({ children, currentPageName }) {
         const obs = await base44.entities.OnboardingChecklist.filter({
           franchise_id: user.managed_franchise_ids[0]
         });
-        if (obs.length > 0 && obs[0].status === 'approved') {
+        // Hide menu if no onboarding exists OR if it's already approved
+        if (obs.length === 0 || obs[0].status === 'approved') {
           setOnboardingApproved(true);
         }
       }
