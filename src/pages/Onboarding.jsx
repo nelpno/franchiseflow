@@ -80,19 +80,6 @@ export default function Onboarding() {
     if (existing.length > 0) {
       setChecklist(existing[0]);
       setItems(existing[0].items || {});
-    } else if (user?.role !== "admin") {
-      // Auto-create for franchisee
-      const created = await base44.entities.OnboardingChecklist.create({
-        franchise_id: franchise.evolution_instance_id,
-        status: "in_progress",
-        items: {},
-        completed_count: 0,
-        total_items: TOTAL_ITEMS,
-        completion_percentage: 0,
-        started_at: new Date().toISOString(),
-      });
-      setChecklist(created);
-      setItems({});
     } else {
       setChecklist(null);
       setItems({});
