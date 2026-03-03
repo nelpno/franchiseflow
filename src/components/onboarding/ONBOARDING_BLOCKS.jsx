@@ -1,3 +1,4 @@
+
 export const BLOCKS = [
   {
     id: 1,
@@ -96,7 +97,6 @@ export const BLOCKS = [
       { key: "6-2", label: "Apps de parceiros de entrega instalados (Uber, 99, etc.)", role: "franchisee" },
       { key: "6-3", label: "Política de entrega definida (valor mínimo, taxa, prazo estimado)", role: "franchisee" },
       { key: "6-4", label: "Local de retirada preparado (se oferece retirada em casa)", role: "franchisee" },
-      { key: "6-5", label: "Embalagem padrão definida para manter produtos congelados no transporte", role: "franchisee" },
     ],
   },
   {
