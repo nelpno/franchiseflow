@@ -34,7 +34,6 @@ export const BLOCKS = [
     items: [
       { key: "2-1", label: "Freezer funcionando e na temperatura adequada (-18°C ou menos)", role: "franchisee" },
       { key: "2-2", label: "Espaço dedicado para armazenamento organizado", role: "franchisee" },
-      { key: "2-3", label: "Termômetro para controle diário de temperatura", role: "franchisee" },
       { key: "2-4", label: "Embalagens térmicas para entrega (se aplicável)", role: "franchisee" },
       { key: "2-5", label: "Celular com internet estável e espaço de armazenamento", role: "franchisee" },
     ],
