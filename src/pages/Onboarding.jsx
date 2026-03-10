@@ -406,7 +406,7 @@ export default function Onboarding() {
                     />
                   </div>
                   <span className="font-bold text-slate-700 w-16 text-right">
-                    {checklist.completed_count}/{TOTAL_ITEMS}
+                    {liveCounts.completed_count}/{TOTAL_ITEMS}
                   </span>
                 </div>
                 <div className="text-right text-sm text-slate-500 mt-1">{progressPct}% concluído</div>
