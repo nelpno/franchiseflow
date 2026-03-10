@@ -176,7 +176,9 @@ export default function Onboarding() {
 
   const isAdmin = currentUser?.role === "admin";
   const b18Complete = blocks1to8Complete(items);
-  const progressPct = checklist?.completion_percentage || 0;
+  // Recalculate live from current items to avoid stale stored value
+  const liveCounts = checklist ? computeCounts(items) : { completed_count: 0, completion_percentage: 0 };
+  const progressPct = liveCounts.completion_percentage;
 
   // Admin summary counts
   const inProgressCount = allChecklists.filter(c => c.status === "in_progress").length;
