@@ -11,7 +11,7 @@ export const ITEM_DETAILS = {
     links: [{ label: "📊 Acessar Dashboard", url: "https://maximassas.tech" }],
   },
   "1-5": {
-    text: "O Kit inclui: 2 camisetas polo com logo, 1 avental, cartões de visita com QR code, ímãs de geladeira, adesivos para embalagens, documentos impressos e termômetro de freezer. Se não recebeu algum item, informe o franqueador.",
+    text: "Entre em contato com o franqueador para obter os dados do fornecedor de uniformes. Informe seu tamanho (PP, P, M, G, GG) para que o pedido seja feito. O uniforme padrão inclui 2 camisetas polo com logo da marca.",
   },
   "2-1": {
     text: "O freezer deve manter temperatura de -18°C ou menos. Verifique diariamente com o termômetro. Produto descongelado = produto perdido.\n\n💡 Dica: não sobrecarregue o freezer — deixe espaço para o ar circular.",
