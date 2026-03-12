@@ -8,7 +8,7 @@ export const BLOCKS = [
     items: [
       { key: "1-1", label: "Contrato de franquia assinado", role: "franchisee" },
       { key: "1-3", label: "Acesso ao Drive de treinamento liberado", role: "franchisee" },
-      { key: "1-5", label: "Kit de Boas-Vindas recebido (uniforme, materiais da marca)", role: "franchisor" },
+      { key: "1-5", label: "Tamanho do uniforme informado ao fornecedor", role: "franchisee" },
     ],
   },
   {
