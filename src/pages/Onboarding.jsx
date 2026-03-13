@@ -65,8 +65,8 @@ export default function Onboarding() {
       setFranchises(myFranchises);
 
       if (myFranchises.length > 0) {
-        await loadFranchiseChecklist(myFranchises[0], user);
         setSelectedFranchise(myFranchises[0]);
+        await loadFranchiseChecklist(myFranchises[0], user);
       }
     }
     setIsLoading(false);
