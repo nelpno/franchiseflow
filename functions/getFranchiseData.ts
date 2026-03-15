@@ -11,8 +11,18 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const instanceId = body.franchise_evolution_instance_id;
+    // Accept instanceId from body (POST) or query params (GET)
+    let instanceId;
+    if (req.method === "POST") {
+      const text = await req.text();
+      if (text) {
+        const body = JSON.parse(text);
+        instanceId = body.franchise_evolution_instance_id;
+      }
+    }
+    if (!instanceId) {
+      instanceId = url.searchParams.get("franchise_evolution_instance_id");
+    }
 
     if (!instanceId) {
       return Response.json({ error: "Missing franchise_evolution_instance_id" }, { status: 400 });
