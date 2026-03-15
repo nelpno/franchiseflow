@@ -11,17 +11,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Accept instanceId from body (POST) or query params (GET)
-    let instanceId;
-    if (req.method === "POST") {
+    // Accept instanceId from query params (GET) or body (POST)
+    let instanceId = url.searchParams.get("franchise_evolution_instance_id");
+    if (!instanceId && req.method === "POST") {
       const text = await req.text();
-      if (text) {
+      if (text && text.trim()) {
         const body = JSON.parse(text);
         instanceId = body.franchise_evolution_instance_id;
       }
-    }
-    if (!instanceId) {
-      instanceId = url.searchParams.get("franchise_evolution_instance_id");
     }
 
     if (!instanceId) {
