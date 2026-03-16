@@ -36,15 +36,24 @@ export default function Dashboard() {
     if (showLoading) setIsLoading(true);
     
     try {
-      const [franchisesData, summariesData] = await Promise.all([
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+
+      const [franchisesData, summariesData, todayContacts, yesterdayContacts, todaySales, yesterdaySales] = await Promise.all([
         Franchise.list(),
-        DailySummary.list('-date', 365), // Últimos 365 dias é suficiente
+        DailySummary.list('-date', 365),
+        DailyUniqueContact.filter({ date: todayStr }),
+        DailyUniqueContact.filter({ date: yesterdayStr }),
+        Sale.filter({ sale_date: todayStr }),
+        Sale.filter({ sale_date: yesterdayStr }),
       ]);
 
       setFranchises(franchisesData);
       setSummaries(summariesData);
-      // TopFranchises agora usa summaries, não sales
-      setSales([]);
+      setTodayContactsRaw(todayContacts);
+      setYesterdayContactsRaw(yesterdayContacts);
+      setTodaySalesRaw(todaySales);
+      setYesterdaySalesRaw(yesterdaySales);
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
