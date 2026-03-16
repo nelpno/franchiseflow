@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Edit, DollarSign, Search, Filter, Trash2, BrainCircuit } from "lucide-react";
 import LeadAnalysisModal from "../components/sales/LeadAnalysisModal";
 import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import ErrorBoundary from "../components/ErrorBoundary";
 
 function SalesContent() {
