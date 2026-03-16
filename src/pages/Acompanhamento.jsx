@@ -99,55 +99,54 @@ export default function Acompanhamento() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-    const user = await base44.auth.me();
-    setCurrentUser(user);
+      const user = await base44.auth.me();
+      setCurrentUser(user);
 
-    if (user.role !== "admin") {
-      setIsLoading(false);
-      return;
-    }
+      if (user.role !== "admin") {
+        setIsLoading(false);
+        return;
+      }
 
-    const allFranchises = await Franchise.filter({ status: "active" });
-    setFranchises(allFranchises);
+      const allFranchises = await Franchise.filter({ status: "active" });
+      setFranchises(allFranchises);
 
-    const sevenDaysAgoStr = daysAgo(6);
-    const thirtyDaysAgoStr = daysAgo(29);
+      const sevenDaysAgoStr = daysAgo(6);
+      const thirtyDaysAgoStr = daysAgo(29);
 
-    const allChecklistsRaw = await base44.entities.DailyChecklist.list("-date", 500);
+      const allChecklistsRaw = await base44.entities.DailyChecklist.list("-date", 500);
 
-    const enriched = allFranchises.map(franchise => {
-      const fid = franchise.evolution_instance_id;
-      const franchiseChecklists = allChecklistsRaw.filter(c => c.franchise_id === fid);
-      const checklists7days = franchiseChecklists.filter(c => c.date >= sevenDaysAgoStr);
-      const checklists30days = franchiseChecklists.filter(c => c.date >= thirtyDaysAgoStr);
-      const semaforo = getSemaforo(checklists7days);
-      const adherencia = getAdherencia7days(checklists7days);
-      const streak = getStreak(franchiseChecklists);
-      const lastActivity = getLastActivity(franchiseChecklists);
-      const daysSince = getDaysSinceActivity(lastActivity);
+      const enriched = allFranchises.map(franchise => {
+        const fid = franchise.evolution_instance_id;
+        const franchiseChecklists = allChecklistsRaw.filter(c => c.franchise_id === fid);
+        const checklists7days = franchiseChecklists.filter(c => c.date >= sevenDaysAgoStr);
+        const checklists30days = franchiseChecklists.filter(c => c.date >= thirtyDaysAgoStr);
+        const semaforo = getSemaforo(checklists7days);
+        const adherencia = getAdherencia7days(checklists7days);
+        const streak = getStreak(franchiseChecklists);
+        const lastActivity = getLastActivity(franchiseChecklists);
+        const daysSince = getDaysSinceActivity(lastActivity);
 
-      return {
-        franchise,
-        semaforo,
-        adherencia,
-        streak,
-        lastActivity,
-        daysSince,
-        checklists7days,
-        checklists30days,
-        allChecklists: franchiseChecklists,
-      };
-    });
+        return {
+          franchise,
+          semaforo,
+          adherencia,
+          streak,
+          lastActivity,
+          daysSince,
+          checklists7days,
+          checklists30days,
+          allChecklists: franchiseChecklists,
+        };
+      });
 
-    // Sort: red first, then yellow, then green; within same color by adherencia asc
-    enriched.sort((a, b) => {
-      const colorDiff = SEMAFORO_ORDER[a.semaforo] - SEMAFORO_ORDER[b.semaforo];
-      if (colorDiff !== 0) return colorDiff;
-      return a.adherencia - b.adherencia;
-    });
+      enriched.sort((a, b) => {
+        const colorDiff = SEMAFORO_ORDER[a.semaforo] - SEMAFORO_ORDER[b.semaforo];
+        if (colorDiff !== 0) return colorDiff;
+        return a.adherencia - b.adherencia;
+      });
 
-    setFranchiseData(enriched);
-    setLastRefresh(new Date());
+      setFranchiseData(enriched);
+      setLastRefresh(new Date());
     } catch (error) {
       console.error("Erro ao carregar dados de acompanhamento:", error);
     }

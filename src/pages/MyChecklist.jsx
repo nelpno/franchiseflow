@@ -87,57 +87,54 @@ export default function MyChecklist() {
   const loadData = useCallback(async (selectedFranchise = null) => {
     setIsLoading(true);
     try {
-    const user = await base44.auth.me();
-    setCurrentUser(user);
+      const user = await base44.auth.me();
+      setCurrentUser(user);
 
-    const allFranchises = await Franchise.list();
-    let myFranchises;
-    if (user.role === "admin") {
-      myFranchises = allFranchises;
-    } else {
-      const ids = user.managed_franchise_ids || [];
-      myFranchises = allFranchises.filter((f) => ids.includes(f.evolution_instance_id));
-    }
+      const allFranchises = await Franchise.list();
+      let myFranchises;
+      if (user.role === "admin") {
+        myFranchises = allFranchises;
+      } else {
+        const ids = user.managed_franchise_ids || [];
+        myFranchises = allFranchises.filter((f) => ids.includes(f.evolution_instance_id));
+      }
 
-    setAvailableFranchises(myFranchises);
+      setAvailableFranchises(myFranchises);
 
-    const myFranchise = selectedFranchise || myFranchises[0];
+      const myFranchise = selectedFranchise || myFranchises[0];
 
-    if (!myFranchise) {
-      setIsLoading(false);
-      return;
-    }
-    setFranchise(myFranchise);
+      if (!myFranchise) {
+        setIsLoading(false);
+        return;
+      }
+      setFranchise(myFranchise);
 
-    // Buscar histórico (últimos 7 dias)
-    const today = new Date();
-    const sevenDaysAgo = format(subDays(today, 6), "yyyy-MM-dd");
-    const allChecklists = await base44.entities.DailyChecklist.filter({
-      franchise_id: myFranchise.evolution_instance_id,
-    });
-
-    const recentHistory = allChecklists.filter((c) => c.date >= sevenDaysAgo);
-    setHistory(recentHistory);
-
-    // Buscar checklist de hoje
-    const todayChecklist = allChecklists.find((c) => c.date === todayStr());
-
-    if (todayChecklist) {
-      setChecklist(todayChecklist);
-      setItems(todayChecklist.items || {});
-    } else {
-      // Criar novo
-      const newChecklist = await base44.entities.DailyChecklist.create({
+      const today = new Date();
+      const sevenDaysAgo = format(subDays(today, 6), "yyyy-MM-dd");
+      const allChecklists = await base44.entities.DailyChecklist.filter({
         franchise_id: myFranchise.evolution_instance_id,
-        date: todayStr(),
-        items: {},
-        completed_count: 0,
-        total_items: TOTAL_DAILY,
-        completion_percentage: 0,
       });
-      setChecklist(newChecklist);
-      setItems({});
-    }
+
+      const recentHistory = allChecklists.filter((c) => c.date >= sevenDaysAgo);
+      setHistory(recentHistory);
+
+      const todayChecklist = allChecklists.find((c) => c.date === todayStr());
+
+      if (todayChecklist) {
+        setChecklist(todayChecklist);
+        setItems(todayChecklist.items || {});
+      } else {
+        const newChecklist = await base44.entities.DailyChecklist.create({
+          franchise_id: myFranchise.evolution_instance_id,
+          date: todayStr(),
+          items: {},
+          completed_count: 0,
+          total_items: TOTAL_DAILY,
+          completion_percentage: 0,
+        });
+        setChecklist(newChecklist);
+        setItems({});
+      }
     } catch (error) {
       console.error("Erro ao carregar checklist:", error);
     }
