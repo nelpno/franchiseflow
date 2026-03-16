@@ -64,8 +64,16 @@ function ReportsContent() {
   }, []);
 
   // Filtragem local — sem re-fetch, sem piscar
+  // Só roda quando os dados raw já foram carregados (isLoading=false)
   useEffect(() => {
-    let finalSales = rawSales.filter(s => s.sale_date >= startDate && s.sale_date <= endDate);
+    if (isLoading) return;
+
+    const endDateInclusive = endDate + 'T23:59:59';
+
+    let finalSales = rawSales.filter(s => {
+      const d = s.sale_date?.substring(0, 10);
+      return d >= startDate && d <= endDate;
+    });
     let finalContacts = rawContacts.filter(c => c.date >= startDate && c.date <= endDate);
     let finalSummaries = rawSummaries.filter(s => s.date >= startDate && s.date <= endDate);
 
@@ -82,7 +90,7 @@ function ReportsContent() {
     setSales(finalSales);
     setDailyContacts(finalContacts);
     setSummaries(finalSummaries);
-  }, [selectedFranchise, startDate, endDate, selectedSource, rawSales, rawContacts, rawSummaries]);
+  }, [selectedFranchise, startDate, endDate, selectedSource, rawSales, rawContacts, rawSummaries, isLoading]);
 
 
 
