@@ -85,10 +85,7 @@ function SalesContent() {
   const handleNewSale = () => {
     resetForm();
     setEditingSale(null);
-    // Pequeno delay para garantir que o estado seja limpo antes de mostrar o modal
-    setTimeout(() => {
-      setShowForm(true);
-    }, 50);
+    setShowForm(true);
   };
 
   const handleEditSale = (sale) => {
@@ -97,14 +94,11 @@ function SalesContent() {
       contact_phone: sale.contact_phone,
       customer_name: sale.customer_name || '',
       value: sale.value.toString(),
-      sale_date: sale.sale_date,
+      sale_date: sale.sale_date?.substring(0, 10) || '',
       source: sale.source
     });
     setEditingSale(sale);
-    // Pequeno delay para garantir que o estado seja atualizado antes de mostrar o modal
-    setTimeout(() => {
-      setShowForm(true);
-    }, 50);
+    setShowForm(true);
   };
 
   const handleSubmit = async (e) => {
