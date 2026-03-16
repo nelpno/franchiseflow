@@ -15,7 +15,6 @@ import TopPerformers from "../components/reports/TopPerformers";
 import FranchiseComparisonChart from "../components/reports/FranchiseComparisonChart";
 import PeriodComparison from "../components/reports/PeriodComparison";
 import ExportButton from "../components/reports/ExportButton";
-import SalesInsightsWidget from "../components/reports/SalesInsightsWidget";
 
 export default function Reports() {
   const [franchises, setFranchises] = useState([]);
