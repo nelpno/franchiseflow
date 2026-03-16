@@ -139,7 +139,7 @@ export default function Franchises() {
 
   const loadCurrentUser = async () => {
     try {
-      const user = await User.me();
+      const user = await base44.auth.me();
       setCurrentUser(user);
     } catch (error) {
       console.error("Erro ao carregar usuário atual:", error);
@@ -149,31 +149,24 @@ export default function Franchises() {
 
   const loadFranchises = async () => {
     setIsLoading(true);
-    
-    // Get today's date in 'yyyy-MM-dd' format for filtering daily contacts
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    try {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
 
-    // Fetch franchises and daily unique contacts concurrently
-    const [franchisesData, dailyContactsToday] = await Promise.all([
-      Franchise.list(),
-      DailyUniqueContact.filter({ date: todayStr })
-    ]);
+      const [franchisesData, dailyContactsToday] = await Promise.all([
+        Franchise.list(),
+        DailyUniqueContact.filter({ date: todayStr })
+      ]);
 
-    // Map franchise data to include daily unique contacts
-  const franchisesWithContacts = franchisesData.map(f => {
-  // Count how many unique daily contact entries match this franchise's evolution_instance_id
-  const contacts = dailyContactsToday.filter(c => c.franchise_id === f.evolution_instance_id).length;
-  
-  // Debug - remover depois
-  // console.log(`Franquia ${f.city} (${f.evolution_instance_id}): ${contacts} contatos`);
-  
-  return {
-    ...f,
-    daily_unique_contacts: contacts
-  }
-});
+      const franchisesWithContacts = franchisesData.map(f => ({
+        ...f,
+        daily_unique_contacts: dailyContactsToday.filter(c => c.franchise_id === f.evolution_instance_id).length
+      }));
 
-    setFranchises(franchisesWithContacts);
+      setFranchises(franchisesWithContacts);
+    } catch (error) {
+      console.error("Erro ao carregar franquias:", error);
+      setFranchises([]);
+    }
     setIsLoading(false);
   };
 
