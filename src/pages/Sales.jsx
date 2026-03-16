@@ -350,8 +350,8 @@ function SalesContent() {
           </div>
         )}
 
-        {/* Modal do Formulário - Renderizar apenas quando showForm for true E dados estiverem prontos */}
-        {showForm && availableFranchises.length > 0 && (
+        {/* Modal do Formulário */}
+        {showForm && (
           <Dialog open={showForm} onOpenChange={() => setShowForm(false)}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
