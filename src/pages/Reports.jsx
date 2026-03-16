@@ -44,9 +44,9 @@ function ReportsContent() {
         const [currentUserData, franchisesData, salesData, contactsData, summariesData] = await Promise.all([
           base44.auth.me(),
           Franchise.list(),
-          Sale.list('-sale_date', 500),
-          DailyUniqueContact.list('-date', 500),
-          DailySummary.list('-date', 500)
+          Sale.list('-sale_date', 2000),
+          DailyUniqueContact.list('-date', 2000),
+          DailySummary.list('-date', 2000)
         ]);
 
         setCurrentUser(currentUserData);
