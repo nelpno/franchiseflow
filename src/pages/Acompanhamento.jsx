@@ -98,6 +98,7 @@ export default function Acompanhamento() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    try {
     const user = await base44.auth.me();
     setCurrentUser(user);
 
