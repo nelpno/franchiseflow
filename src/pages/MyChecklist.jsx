@@ -138,7 +138,9 @@ export default function MyChecklist() {
       setChecklist(newChecklist);
       setItems({});
     }
-
+    } catch (error) {
+      console.error("Erro ao carregar checklist:", error);
+    }
     setIsLoading(false);
   }, []);
 
