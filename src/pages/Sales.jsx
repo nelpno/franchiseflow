@@ -43,7 +43,7 @@ function SalesContent() {
   const loadData = async () => {
     try {
       const [currentUserData, franchisesData] = await Promise.all([
-        User.me(),
+        base44.auth.me(),
         Franchise.list()
       ]);
 
