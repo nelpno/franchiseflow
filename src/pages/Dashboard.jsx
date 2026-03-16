@@ -65,41 +65,20 @@ export default function Dashboard() {
   const filteredSummaries = selectedFranchiseId === 'all' ?
     summaries :
     summaries.filter(s => s.franchise_id === selectedFranchiseId);
-  
-  // Agregando os resumos filtrados para obter totais
-  const getAggregatedMetrics = (summariesList) => {
-    const todayStr = format(new Date(), 'yyyy-MM-dd');
-    const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-  
-    const metrics = {
-      todayContacts: 0,
-      yesterdayContacts: 0,
-      todaySalesCount: 0,
-      yesterdaySalesCount: 0,
-      todaySalesValue: 0,
-      yesterdaySalesValue: 0,
-    };
-  
-    summariesList.forEach(summary => {
-      if (summary.date === todayStr) {
-        metrics.todayContacts += summary.unique_contacts || 0;
-        metrics.todaySalesCount += summary.sales_count || 0;
-        metrics.todaySalesValue += summary.sales_value || 0;
-      } else if (summary.date === yesterdayStr) {
-        metrics.yesterdayContacts += summary.unique_contacts || 0;
-        metrics.yesterdaySalesCount += summary.sales_count || 0;
-        metrics.yesterdaySalesValue += summary.sales_value || 0;
-      }
-    });
 
-    return metrics;
-  };
-  
-  const { 
-    todayContacts, yesterdayContacts, 
-    todaySalesCount, yesterdaySalesCount,
-    todaySalesValue, yesterdaySalesValue
-  } = getAggregatedMetrics(filteredSummaries);
+  // Métricas de hoje/ontem lidas diretamente das entidades (não dependem do DailySummary)
+  const filterByFranchise = (arr) => selectedFranchiseId === 'all' ? arr : arr.filter(r => r.franchise_id === selectedFranchiseId);
+
+  const todayContacts = filterByFranchise(todayContactsRaw).length;
+  const yesterdayContacts = filterByFranchise(yesterdayContactsRaw).length;
+
+  const todaySalesFiltered = filterByFranchise(todaySalesRaw);
+  const yesterdaySalesFiltered = filterByFranchise(yesterdaySalesRaw);
+
+  const todaySalesCount = todaySalesFiltered.length;
+  const yesterdaySalesCount = yesterdaySalesFiltered.length;
+  const todaySalesValue = todaySalesFiltered.reduce((sum, s) => sum + (s.value || 0), 0);
+  const yesterdaySalesValue = yesterdaySalesFiltered.reduce((sum, s) => sum + (s.value || 0), 0);
 
   const conversionRate = todayContacts > 0 ? (todaySalesCount / todayContacts) * 100 : 0;
 
