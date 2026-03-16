@@ -148,6 +148,9 @@ export default function Acompanhamento() {
 
     setFranchiseData(enriched);
     setLastRefresh(new Date());
+    } catch (error) {
+      console.error("Erro ao carregar dados de acompanhamento:", error);
+    }
     setIsLoading(false);
   }, []);
 

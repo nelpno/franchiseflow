@@ -86,6 +86,7 @@ export default function MyChecklist() {
 
   const loadData = useCallback(async (selectedFranchise = null) => {
     setIsLoading(true);
+    try {
     const user = await base44.auth.me();
     setCurrentUser(user);
 
