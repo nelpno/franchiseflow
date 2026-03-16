@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Franchise, DailySummary, Sale } from "@/entities/all"; // Mudei para DailySummary
+import { Franchise, DailySummary, Sale, DailyUniqueContact } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { MessageSquare, TrendingUp, Users, Target } from "lucide-react";
