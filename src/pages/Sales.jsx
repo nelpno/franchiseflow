@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, DollarSign, Search, Filter, Trash2, BrainCircuit } from "lucide-react";
+import { Plus, Edit, DollarSign, Search, Filter, Trash2 } from "lucide-react";
 import LeadAnalysisModal from "../components/sales/LeadAnalysisModal";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
