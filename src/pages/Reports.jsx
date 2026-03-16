@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Franchise, Sale, DailyUniqueContact, DailySummary, User } from "@/entities/all";
+import { Franchise, Sale, DailyUniqueContact, DailySummary } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +18,7 @@ import FranchiseComparisonChart from "../components/reports/FranchiseComparisonC
 import PeriodComparison from "../components/reports/PeriodComparison";
 import ExportButton from "../components/reports/ExportButton";
 
-export default function Reports() {
+function ReportsContent() {
   const [franchises, setFranchises] = useState([]);
   const [sales, setSales] = useState([]);
   const [dailyContacts, setDailyContacts] = useState([]);
@@ -76,7 +78,7 @@ export default function Reports() {
   const loadInitialData = async () => {
     try {
       const [currentUserData, franchisesData] = await Promise.all([
-        User.me(),
+        base44.auth.me(),
         Franchise.list()
       ]);
 
@@ -279,5 +281,13 @@ export default function Reports() {
           </div>
       </div>
     </div>
+  );
+}
+
+export default function Reports() {
+  return (
+    <ErrorBoundary>
+      <ReportsContent />
+    </ErrorBoundary>
   );
 }

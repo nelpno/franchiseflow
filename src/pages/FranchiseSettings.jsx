@@ -100,8 +100,8 @@ function FranchiseSettingsContent() {
       });
 
       setDisplayConfigurations(configsToDisplay);
-    } else if (!isLoading && (!currentUser || franchises.length === 0 || configurations.length === 0)) {
-        // If data is not loaded or no relevant data, ensure displayConfigurations is empty
+    } else if (!isLoading && currentUser) {
+        // No matching configs found — show empty state
         setDisplayConfigurations([]);
     }
   }, [isLoading, currentUser, franchises, configurations]);
