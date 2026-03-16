@@ -25,69 +25,64 @@ function ReportsContent() {
   const [summaries, setSummaries] = useState([]); // Adicionado para análise de conversão
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [rawSales, setRawSales] = useState([]);
+  const [rawContacts, setRawContacts] = useState([]);
+  const [rawSummaries, setRawSummaries] = useState([]);
+
   // Filtros
   const [selectedFranchise, setSelectedFranchise] = useState('all');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [periodType, setPeriodType] = useState('monthly'); // monthly, quarterly, yearly
+  const [periodType, setPeriodType] = useState('monthly');
   const [selectedSource, setSelectedSource] = useState('all');
 
+  // Carrega tudo uma vez só
   useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const loadReportData = async () => {
+    const loadAllData = async () => {
       setIsLoading(true);
       try {
-        const [salesData, contactsData, summariesData] = await Promise.all([
+        const [currentUserData, franchisesData, salesData, contactsData, summariesData] = await Promise.all([
+          base44.auth.me(),
+          Franchise.list(),
           Sale.list('-sale_date', 500),
           DailyUniqueContact.list('-date', 500),
           DailySummary.list('-date', 500)
         ]);
 
-        let finalSales = salesData.filter(s => s.sale_date >= startDate && s.sale_date <= endDate);
-        let finalContacts = contactsData.filter(c => c.date >= startDate && c.date <= endDate);
-        let finalSummaries = summariesData.filter(s => s.date >= startDate && s.date <= endDate);
-
-        if (selectedFranchise !== 'all') {
-          finalSales = finalSales.filter(s => s.franchise_id === selectedFranchise);
-          finalContacts = finalContacts.filter(c => c.franchise_id === selectedFranchise);
-          finalSummaries = finalSummaries.filter(s => s.franchise_id === selectedFranchise);
-        }
-
-        if (selectedSource !== 'all') {
-          finalSales = finalSales.filter(s => s.source === selectedSource);
-        }
-
-        setSales(finalSales);
-        setDailyContacts(finalContacts);
-        setSummaries(finalSummaries);
+        setCurrentUser(currentUserData);
+        setFranchises(franchisesData);
+        setRawSales(salesData);
+        setRawContacts(contactsData);
+        setRawSummaries(summariesData);
       } catch (error) {
-        console.error("Erro ao carregar dados do relatório:", error);
+        console.error("Erro ao carregar dados:", error);
       }
       setIsLoading(false);
     };
 
-    loadReportData();
-  }, [selectedFranchise, startDate, endDate, selectedSource, currentUser]);
+    loadAllData();
+  }, []);
 
-  const loadInitialData = async () => {
-    try {
-      const [currentUserData, franchisesData] = await Promise.all([
-        base44.auth.me(),
-        Franchise.list()
-      ]);
+  // Filtragem local — sem re-fetch, sem piscar
+  useEffect(() => {
+    let finalSales = rawSales.filter(s => s.sale_date >= startDate && s.sale_date <= endDate);
+    let finalContacts = rawContacts.filter(c => c.date >= startDate && c.date <= endDate);
+    let finalSummaries = rawSummaries.filter(s => s.date >= startDate && s.date <= endDate);
 
-      setCurrentUser(currentUserData);
-      setFranchises(franchisesData);
-    } catch (error) {
-      console.error("Erro ao carregar dados iniciais:", error);
+    if (selectedFranchise !== 'all') {
+      finalSales = finalSales.filter(s => s.franchise_id === selectedFranchise);
+      finalContacts = finalContacts.filter(c => c.franchise_id === selectedFranchise);
+      finalSummaries = finalSummaries.filter(s => s.franchise_id === selectedFranchise);
     }
-  };
+
+    if (selectedSource !== 'all') {
+      finalSales = finalSales.filter(s => s.source === selectedSource);
+    }
+
+    setSales(finalSales);
+    setDailyContacts(finalContacts);
+    setSummaries(finalSummaries);
+  }, [selectedFranchise, startDate, endDate, selectedSource, rawSales, rawContacts, rawSummaries]);
 
 
 
