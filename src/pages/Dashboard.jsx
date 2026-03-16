@@ -14,8 +14,11 @@ import DailyRevenueChart from "../components/dashboard/DailyRevenueChart";
 
 export default function Dashboard() {
   const [franchises, setFranchises] = useState([]);
-  const [summaries, setSummaries] = useState([]); // <- Novo estado para resumos
-  const [sales, setSales] = useState([]); // <- Mantido apenas para TopFranchises por enquanto
+  const [summaries, setSummaries] = useState([]);
+  const [todayContactsRaw, setTodayContactsRaw] = useState([]);
+  const [todaySalesRaw, setTodaySalesRaw] = useState([]);
+  const [yesterdayContactsRaw, setYesterdayContactsRaw] = useState([]);
+  const [yesterdaySalesRaw, setYesterdaySalesRaw] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFranchiseId, setSelectedFranchiseId] = useState('all');
 
