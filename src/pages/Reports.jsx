@@ -233,9 +233,6 @@ export default function Reports() {
         {/* Relatórios */}
         <div className="space-y-8">
 
-          {/* Widget de Insights IA */}
-          <SalesInsightsWidget />
-
           {/* Faturamento e Volume */}
           <SalesRevenueChart 
             sales={sales} 
