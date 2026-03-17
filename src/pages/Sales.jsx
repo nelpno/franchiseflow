@@ -205,9 +205,10 @@ function SalesContent() {
   };
 
   // Determinar quais franquias o usuário pode criar vendas
+  // Para usuários normais, o RLS já filtra no backend — use o que vier
   const availableFranchises = currentUser?.role === 'admin' 
     ? franchises 
-    : franchises.filter(f => currentUser?.managed_franchise_ids?.includes(f.evolution_instance_id));
+    : franchises;
 
   return (
     <div className="p-4 md:p-8 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
