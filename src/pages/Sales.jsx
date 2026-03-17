@@ -370,9 +370,8 @@ function SalesContent() {
                   <div>
                     <Label htmlFor="franchise_id">Franquia *</Label>
                     <Select 
-                      value={formData.franchise_id} 
+                      value={formData.franchise_id || undefined} 
                       onValueChange={(value) => setFormData({...formData, franchise_id: value})}
-                      required
                     >
                       <SelectTrigger id="franchise_id">
                         <SelectValue placeholder="Selecione a franquia" />
