@@ -145,7 +145,7 @@ function SalesContent() {
       sale.franchise_id === filterFranchise;
     
     const matchesDate = !filterDate || 
-      sale.sale_date === filterDate;
+      sale.sale_date?.substring(0, 10) === filterDate;
     
     return matchesSearch && matchesFranchise && matchesDate;
   });
