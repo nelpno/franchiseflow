@@ -50,21 +50,9 @@ function SalesContent() {
       setCurrentUser(currentUserData);
       setFranchises(franchisesData);
 
-      // Determinar quais franquias o usuário pode ver
-      let allowedFranchiseIds;
-      if (currentUserData.role === 'admin') {
-        allowedFranchiseIds = franchisesData.map(f => f.evolution_instance_id);
-      } else {
-        allowedFranchiseIds = currentUserData.managed_franchise_ids || [];
-      }
-
-      // Buscar vendas filtradas
+      // O RLS já filtra vendas e franquias por permissão do usuário
       const salesData = await Sale.list('-sale_date', 500);
-      const filteredSales = salesData.filter(sale => 
-        allowedFranchiseIds.includes(sale.franchise_id)
-      );
-
-      setSales(filteredSales);
+      setSales(salesData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
