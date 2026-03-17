@@ -72,19 +72,23 @@ function SalesContent() {
   };
 
   const resetForm = () => {
+    // Pré-selecionar a franquia se o usuário só gerencia uma
+    const defaultFranchiseId = availableFranchises.length === 1
+      ? availableFranchises[0].evolution_instance_id
+      : '';
     setFormData({
-      franchise_id: '',
+      franchise_id: defaultFranchiseId,
       contact_phone: '',
       customer_name: '',
       value: '',
-      sale_date: '',
+      sale_date: format(new Date(), 'yyyy-MM-dd'),
       source: 'whatsapp'
     });
   };
 
   const handleNewSale = () => {
-    resetForm();
     setEditingSale(null);
+    resetForm();
     setShowForm(true);
   };
 
