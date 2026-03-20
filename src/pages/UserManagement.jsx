@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserCheck, Settings, Save, X, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -30,7 +31,7 @@ export default function UserManagement() {
 
       // Verificar se o usuário atual é admin
       if (currentUserData?.role !== 'admin') {
-        alert("Acesso negado. Apenas administradores podem acessar esta página.");
+        toast.error("Acesso negado. Apenas administradores podem acessar esta página.");
         return;
       }
 
@@ -79,7 +80,7 @@ export default function UserManagement() {
       setEditingUser(null);
     } catch (error) {
       console.error("Erro ao salvar permissões:", error);
-      alert("Erro ao salvar permissões. Tente novamente.");
+      toast.error("Erro ao salvar permissões. Tente novamente.");
     }
     setIsSaving(false);
   };

@@ -408,7 +408,7 @@ function SalesContent() {
           <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-md">
             <CardContent className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Ticket Médio</span>
+                <span className="text-sm font-medium text-slate-500">Valor Médio</span>
                 <TrendingUp className="w-5 h-5 text-orange-500" />
               </div>
               <p className="text-2xl md:text-3xl font-bold text-slate-900">{formatCurrency(monthStats.average)}</p>

@@ -52,7 +52,6 @@ import Catalog from './pages/Catalog';
 import Dashboard from './pages/Dashboard';
 import FranchiseSettings from './pages/FranchiseSettings';
 import Franchises from './pages/Franchises';
-import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
 import MyChecklist from './pages/MyChecklist';
@@ -69,7 +68,6 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "FranchiseSettings": FranchiseSettings,
     "Franchises": Franchises,
-    "Home": Home,
     "Inventory": Inventory,
     "Marketing": Marketing,
     "MyChecklist": MyChecklist,

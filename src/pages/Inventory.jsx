@@ -389,7 +389,7 @@ export default function Inventory() {
             <Package className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Inventario</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Controle de Estoque</h1>
             <p className="text-sm text-gray-500">
               Controle de estoque dos produtos
             </p>

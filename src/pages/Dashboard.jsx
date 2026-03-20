@@ -110,7 +110,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
-            title="Contatos Únicos Hoje"
+            title="Contatos Hoje"
             value={todayContacts}
             previousValue={yesterdayContacts}
             icon={MessageSquare}
@@ -135,7 +135,7 @@ export default function Dashboard() {
             isValue={true} />
 
           <StatsCard
-            title="Taxa de Conversão"
+            title="Conversão"
             value={`${conversionRate.toFixed(1)}%`}
             icon={Users}
             color="cyan" />
