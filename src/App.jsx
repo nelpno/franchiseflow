@@ -12,6 +12,18 @@ const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
+const ADMIN_ONLY_PAGES = new Set([
+  'Reports', 'Catalog', 'Acompanhamento', 'Franchises', 'UserManagement'
+]);
+
+function AdminRoute({ children }) {
+  const { user } = useAuth();
+  if (user && user.role !== 'admin') {
+    return <Navigate to="/Dashboard" replace />;
+  }
+  return children;
+}
+
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
@@ -43,17 +55,24 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
+      {Object.entries(Pages).map(([path, Page]) => {
+        const pageElement = (
+          <LayoutWrapper currentPageName={path}>
+            <Page />
+          </LayoutWrapper>
+        );
+        return (
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={
+              ADMIN_ONLY_PAGES.has(path)
+                ? <AdminRoute>{pageElement}</AdminRoute>
+                : pageElement
+            }
+          />
+        );
+      })}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

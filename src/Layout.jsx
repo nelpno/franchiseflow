@@ -35,70 +35,76 @@ const MaxiMassasLogo = ({ size }) => {
 };
 
 const navigationItems = [
-{
-  title: "Dashboard",
-  url: createPageUrl("Dashboard"),
-  icon: Home
-},
-{
-  title: "Vendas",
-  url: createPageUrl("Sales"),
-  icon: TrendingUp
-},
-{
-  title: "Estoque",
-  url: createPageUrl("Inventory"),
-  icon: Package
-},
-{
-  title: "Catálogo",
-  url: createPageUrl("Catalog"),
-  icon: ImageIcon
-},
-{
-  title: "Meu Checklist",
-  url: createPageUrl("MyChecklist"),
-  icon: ClipboardList
-},
-{
-  title: "Relatórios",
-  url: createPageUrl("Reports"),
-  icon: BarChart3
-},
-{
-  title: "Marketing",
-  url: createPageUrl("Marketing"),
-  icon: Megaphone
-},
-{
-  title: "Configurações",
-  url: createPageUrl("FranchiseSettings"),
-  icon: SlidersHorizontal
-},
-{
-  title: "Onboarding",
-  url: createPageUrl("Onboarding"),
-  icon: Rocket,
-  showOnboarding: true
-},
-{
-  title: "Acompanhamento",
-  url: createPageUrl("Acompanhamento"),
-  icon: Activity,
-  adminOnly: true
-},
-{
-  title: "Franqueados",
-  url: createPageUrl("Franchises"),
-  icon: Users,
-  adminOnly: true
-},
-{
-  title: "Usuários",
-  url: createPageUrl("UserManagement"),
-  icon: UserCheck,
-  adminOnly: true
-}];
+  {
+    title: "Dashboard",
+    franchiseeLabel: "Minha Loja",
+    adminLabel: "Painel Geral",
+    url: createPageUrl("Dashboard"),
+    icon: Home,
+  },
+  {
+    title: "Vendas",
+    url: createPageUrl("Sales"),
+    icon: TrendingUp,
+  },
+  {
+    title: "Estoque",
+    url: createPageUrl("Inventory"),
+    icon: Package,
+  },
+  {
+    title: "Catálogo",
+    url: createPageUrl("Catalog"),
+    icon: ImageIcon,
+    adminOnly: true,
+  },
+  {
+    title: "Marketing",
+    url: createPageUrl("Marketing"),
+    icon: Megaphone,
+  },
+  {
+    title: "Meu Checklist",
+    url: createPageUrl("MyChecklist"),
+    icon: ClipboardList,
+  },
+  {
+    title: "Relatórios",
+    url: createPageUrl("Reports"),
+    icon: BarChart3,
+    adminOnly: true,
+  },
+  {
+    title: "Configurações",
+    franchiseeLabel: "Minha Unidade",
+    url: createPageUrl("FranchiseSettings"),
+    icon: SlidersHorizontal,
+  },
+  {
+    title: "Onboarding",
+    url: createPageUrl("Onboarding"),
+    icon: Rocket,
+    showOnboarding: true,
+  },
+  {
+    title: "Acompanhamento",
+    url: createPageUrl("Acompanhamento"),
+    icon: Activity,
+    adminOnly: true,
+  },
+  {
+    title: "Franqueados",
+    url: createPageUrl("Franchises"),
+    icon: Users,
+    adminOnly: true,
+  },
+  {
+    title: "Usuários",
+    url: createPageUrl("UserManagement"),
+    icon: UserCheck,
+    adminOnly: true,
+  },
+];
 
 
 export default function Layout({ children, currentPageName }) {
@@ -110,7 +116,6 @@ export default function Layout({ children, currentPageName }) {
   const [onboardingApproved, setOnboardingApproved] = useState(false);
 
   useEffect(() => {
-    loadQuickStats();
     loadCurrentUser();
   }, []);
 
@@ -118,6 +123,9 @@ export default function Layout({ children, currentPageName }) {
     try {
       const user = await User.me();
       setCurrentUser(user);
+      if (user.role === 'admin') {
+        loadQuickStats();
+      }
       // Check onboarding status for non-admin users
       if (user.role !== 'admin' && user.managed_franchise_ids?.length > 0) {
         const obs = await OnboardingChecklist.filter({
@@ -154,16 +162,22 @@ export default function Layout({ children, currentPageName }) {
     logout();
   };
 
-  const filteredNavigationItems = navigationItems.filter((item) => {
-    if (item.adminOnly) {
-      return currentUser?.role === 'admin';
-    }
-    if (item.showOnboarding) {
-      if (currentUser?.role === 'admin') return true;
-      return !onboardingApproved;
-    }
-    return true;
-  });
+  const isAdmin = currentUser?.role === 'admin';
+
+  const filteredNavigationItems = navigationItems
+    .filter((item) => {
+      if (item.adminOnly) return isAdmin;
+      if (item.showOnboarding) {
+        return isAdmin || !onboardingApproved;
+      }
+      return true;
+    })
+    .map((item) => ({
+      ...item,
+      title: isAdmin
+        ? (item.adminLabel || item.title)
+        : (item.franchiseeLabel || item.title),
+    }));
 
 
   return (
@@ -219,6 +233,7 @@ export default function Layout({ children, currentPageName }) {
               </SidebarGroupContent>
             </SidebarGroup>
 
+            {isAdmin && (
             <SidebarGroup className="mt-8">
               <SidebarGroupLabel className="text-slate-500 uppercase tracking-wider text-xs font-semibold mb-3">
                 RESUMO DE HOJE
@@ -228,13 +243,14 @@ export default function Layout({ children, currentPageName }) {
                   <div className="text-red-600 text-sm font-medium">Vendas</div>
                   <div className="text-red-800 text-2xl font-bold">{todaySales}</div>
                 </div>
-                
+
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 hover:shadow-sm transition-all duration-200">
                   <div className="text-emerald-600 text-sm font-medium">Contatos</div>
                   <div className="text-emerald-800 text-2xl font-bold">{todayContacts}</div>
                 </div>
               </SidebarGroupContent>
             </SidebarGroup>
+            )}
           </SidebarContent>
 
           <SidebarFooter className="border-t border-emerald-200/60 p-4">
