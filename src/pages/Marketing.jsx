@@ -140,9 +140,6 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
     try {
       for (const file of files) {
         const ext = file.name.split(".").pop();
-        const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const storagePath = `${month}/${category}/${safeName}`;
-
         const { file_url } = await base44.integrations.Core.UploadFile({ file });
         const storagePath = file_url;
 
