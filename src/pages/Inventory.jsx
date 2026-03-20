@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User, InventoryItem, Franchise } from "@/entities/all";
+import { User, Franchise } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
+
+const InventoryItem = base44.entities.InventoryItem;
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

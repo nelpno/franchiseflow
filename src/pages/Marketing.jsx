@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { MarketingFile, Franchise } from "@/entities/all";
-import { supabase } from "@/api/supabaseClient";
+import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
+
+const MarketingFile = base44.entities.MarketingFile;
+const Franchise = base44.entities.Franchise;
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,9 +63,8 @@ function isImageFile(filePath) {
 }
 
 function getFilePublicUrl(filePath) {
-  if (!filePath) return null;
-  const { data } = supabase.storage.from("marketing-assets").getPublicUrl(filePath);
-  return data?.publicUrl || null;
+  // filePath is now a full URL from Base44 UploadFile
+  return filePath || null;
 }
 
 function generateMonthOptions() {
@@ -142,10 +143,8 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
         const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const storagePath = `${month}/${category}/${safeName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("marketing-assets")
-          .upload(storagePath, file);
-        if (uploadError) throw uploadError;
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const storagePath = file_url;
 
         const fileTitle = files.length > 1 ? `${title} (${file.name})` : title;
         await MarketingFile.create({
@@ -365,8 +364,6 @@ function FileCard({ file, isAdmin, onDelete }) {
     if (!confirm("Tem certeza que deseja excluir este material?")) return;
     setDeleting(true);
     try {
-      // Delete from storage
-      await supabase.storage.from("marketing-assets").remove([file.file_path]);
       // Delete record
       await MarketingFile.delete(file.id);
       toast.success("Material excluído.");
