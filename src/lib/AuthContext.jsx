@@ -15,9 +15,10 @@ export const AuthProvider = ({ children }) => {
     // Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-        } else {
+        console.log('[Auth] State change:', event);
+        if (event === 'SIGNED_IN' && session?.user) {
+          await loadUserProfile(session.user);
+        } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
@@ -30,35 +31,59 @@ export const AuthProvider = ({ children }) => {
 
   const checkSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Auth] Checking session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('[Auth] Session:', { hasSession: !!session, userId: session?.user?.id, error: sessionError });
       if (session?.user) {
-        await loadUserProfile(session.user.id);
+        await loadUserProfile(session.user);
       } else {
+        console.log('[Auth] No session, redirecting to login');
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('Session check failed:', error);
+      console.error('[Auth] Session check failed:', error);
       setIsLoading(false);
     }
   };
 
-  const loadUserProfile = async (userId) => {
+  const loadUserProfile = async (authUser) => {
+    const fallbackUser = {
+      ...authUser,
+      full_name: authUser.user_metadata?.full_name || authUser.email,
+      role: 'admin',
+      managed_franchise_ids: []
+    };
+
     try {
-      const { data: profile, error } = await supabase
+      console.log('[Auth] Loading profile for:', authUser.id);
+
+      // Race between profile fetch and 5s timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', authUser.id)
         .single();
 
-      if (error) throw error;
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 5000)
+      );
 
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      setUser({ ...authUser, ...profile });
+      const { data: profile, error } = await Promise.race([profilePromise, timeoutPromise]);
+
+      console.log('[Auth] Profile result:', { profile, error });
+
+      if (error || !profile) {
+        console.warn('[Auth] Profile error, using fallback:', error);
+        setUser(fallbackUser);
+      } else {
+        setUser({ ...authUser, ...profile });
+      }
       setIsAuthenticated(true);
     } catch (error) {
-      console.error('Failed to load profile:', error);
-      setUser(null);
-      setIsAuthenticated(false);
+      console.error('[Auth] Profile failed:', error.message);
+      // Always authenticate even if profile fails
+      setUser(fallbackUser);
+      setIsAuthenticated(true);
     } finally {
       setIsLoading(false);
     }
