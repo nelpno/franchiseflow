@@ -71,10 +71,14 @@ VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 - Config optimization: `{N8N_WEBHOOK_BASE}/adc276df-8162-46ca-bec6-5aedb9cb2b14`
 
 ## UX por Role
-- **Franqueado**: menu com 5 itens (Minha Loja, Vendas, Estoque, Checklist, Configurações)
+- **Franqueado**: menu com 6 itens (Minha Loja, Vendas, Estoque, Marketing, Checklist, Minha Unidade)
 - **Admin**: menu completo (12 itens, incluindo Relatórios, Acompanhamento, Franqueados, Usuários)
 - Terminologia simplificada: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio")
+- Dashboard franqueado: motivacional (meta diária, ranking, streak, acesso rápido)
+- Dashboard admin: monitoramento (alertas semáforo, ranking franquias, filtro de período)
+- Rotas admin-only (Reports, Catalog, etc.) protegidas com redirect
 - Análise UX completa em `docs/analise-ux-completa.md`
+- Spec do dashboard por role em `docs/superpowers/specs/2026-03-20-dashboard-por-role-design.md`
 - Análise vendedor genérico em `docs/analise-vinculacao-vendedor.md`
 
 ## Regras Críticas
