@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
-import { Franchise } from "@/entities/all";
+import { Franchise, User, OnboardingChecklist } from "@/entities/all";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +48,7 @@ export default function Onboarding() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const user = await base44.auth.me();
+    const user = await User.me();
     setCurrentUser(user);
 
     const allFranchises = await Franchise.filter({ status: "active" });
@@ -57,7 +56,7 @@ export default function Onboarding() {
     if (user.role === "admin") {
       setFranchises(allFranchises);
       // Load all onboarding records for admin summary
-      const allOb = await base44.entities.OnboardingChecklist.list();
+      const allOb = await OnboardingChecklist.list();
       setAllChecklists(allOb);
     } else {
       const ids = user.managed_franchise_ids || [];
@@ -73,7 +72,7 @@ export default function Onboarding() {
   }, []);
 
   const loadFranchiseChecklist = async (franchise, user) => {
-    const existing = await base44.entities.OnboardingChecklist.filter({
+    const existing = await OnboardingChecklist.filter({
       franchise_id: franchise.evolution_instance_id,
     });
 
@@ -98,7 +97,7 @@ export default function Onboarding() {
   const handleDeleteOnboarding = async () => {
     if (!checklist) return;
     if (!window.confirm("Tem certeza que deseja excluir este onboarding? Esta ação não pode ser desfeita.")) return;
-    await base44.entities.OnboardingChecklist.delete(checklist.id);
+    await OnboardingChecklist.delete(checklist.id);
     setAllChecklists(prev => prev.filter(c => c.id !== checklist.id));
     setChecklist(null);
     setItems({});
@@ -107,7 +106,7 @@ export default function Onboarding() {
 
   const handleStartOnboarding = async () => {
     if (!selectedFranchise) return;
-    const created = await base44.entities.OnboardingChecklist.create({
+    const created = await OnboardingChecklist.create({
       franchise_id: selectedFranchise.evolution_instance_id,
       status: "in_progress",
       items: {},
@@ -159,7 +158,7 @@ export default function Onboarding() {
       setTimeout(() => setCelebrated(false), 5000);
     }
 
-    const updated = await base44.entities.OnboardingChecklist.update(currentChecklist.id, updateData);
+    const updated = await OnboardingChecklist.update(currentChecklist.id, updateData);
     setChecklist(updated);
     setIsSaving(false);
   }, []);

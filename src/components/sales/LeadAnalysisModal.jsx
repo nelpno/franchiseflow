@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { BrainCircuit, Loader2, ThumbsUp, ThumbsDown, Minus } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { analyzeLead } from "@/api/functions";
 import { Progress } from "@/components/ui/progress";
 
 export default function LeadAnalysisModal({ sale, trigger }) {
@@ -13,7 +13,7 @@ export default function LeadAnalysisModal({ sale, trigger }) {
   const handleAnalyze = async () => {
     setIsLoading(true);
     try {
-      const { data } = await base44.functions.invoke('analyzeLead', {
+      const data = await analyzeLead({
         phone: sale.contact_phone,
         name: sale.customer_name,
         value: sale.value,

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lightbulb, TrendingDown, Activity, Loader2, RefreshCcw } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { generateSalesReportsAI } from "@/api/functions";
 import { motion } from "framer-motion";
 
 export default function SalesInsightsWidget() {
@@ -12,7 +12,7 @@ export default function SalesInsightsWidget() {
   const loadInsights = async () => {
     setIsLoading(true);
     try {
-      const { data } = await base44.functions.invoke('generateSalesReportsAI');
+      const data = await generateSalesReportsAI();
       setInsights(data);
     } catch (error) {
       console.error("Erro ao carregar insights de relatórios:", error);

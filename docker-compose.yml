@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  franchiseflow:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_N8N_WEBHOOK_BASE: ${VITE_N8N_WEBHOOK_BASE:-https://webhook.dynamicagents.tech/webhook}
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.franchiseflow.rule=Host(`dashboard.maximass.tech`)"
+      - "traefik.http.routers.franchiseflow.entrypoints=websecure"
+      - "traefik.http.routers.franchiseflow.tls.certresolver=letsencrypt"

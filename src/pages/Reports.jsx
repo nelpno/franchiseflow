@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Franchise, Sale, DailyUniqueContact, DailySummary } from "@/entities/all";
-import { base44 } from "@/api/base44Client";
+import { Franchise, Sale, DailyUniqueContact, DailySummary, User } from "@/entities/all";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,7 @@ function ReportsContent() {
       setIsLoading(true);
       try {
         const [currentUserData, franchisesData, salesData, contactsData, summariesData] = await Promise.all([
-          base44.auth.me(),
+          User.me(),
           Franchise.list(),
           Sale.list('-sale_date', 2000),
           DailyUniqueContact.list('-date', 2000),

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
-import { Franchise } from "@/entities/all";
+import { Franchise, User, DailyChecklist } from "@/entities/all";
 import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,7 +98,7 @@ export default function Acompanhamento() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
+      const user = await User.me();
       setCurrentUser(user);
 
       if (user.role !== "admin") {
@@ -113,7 +112,7 @@ export default function Acompanhamento() {
       const sevenDaysAgoStr = daysAgo(6);
       const thirtyDaysAgoStr = daysAgo(29);
 
-      const allChecklistsRaw = await base44.entities.DailyChecklist.list("-date", 500);
+      const allChecklistsRaw = await DailyChecklist.list("-date", 500);
 
       const enriched = allFranchises.map(franchise => {
         const fid = franchise.evolution_instance_id;

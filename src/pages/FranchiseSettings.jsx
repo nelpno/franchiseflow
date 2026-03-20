@@ -7,10 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit, SlidersHorizontal, Info, Trash2, Sparkles, Loader2, Smartphone, Wifi, WifiOff } from "lucide-react";
-import { optimizeConfig } from "@/functions/optimizeConfig";
-import { connectWhatsappRobot } from "@/functions/connectWhatsappRobot";
-import { checkWhatsappStatus } from "@/functions/checkWhatsappStatus";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Edit, SlidersHorizontal, Info, Trash2, Sparkles, Loader2, Smartphone, Wifi, WifiOff, Building2, CreditCard, Truck, Megaphone, MessageCircle, CheckCircle2 } from "lucide-react";
+import { optimizeConfig, connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
 
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -682,147 +681,218 @@ function FranchiseSettingsContent() {
                   <p><strong>Franquia:</strong> {getFranchiseByInstanceId(formData.franchise_evolution_instance_id)?.city}</p>
                 }
 
-                <div>
-                  <Label htmlFor="franchise_name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Cidade/bairro da Franquia (para IA)</Label>
-                  <Input
-                    id="franchise_name"
-                    value={formData.franchise_name}
-                    onChange={(e) => handleInputChange('franchise_name', e.target.value)}
-                    placeholder="Ex: Cordeirópolis e Iracemápolis" />
+                {/* Progress indicator */}
+                {(() => {
+                  const tabsComplete = [
+                    // Tab 1 - Dados da Unidade
+                    !!(formData.franchise_name && formData.unit_address && formData.opening_hours),
+                    // Tab 2 - Pagamentos
+                    !!(formData.accepted_payment_methods && formData.pix_key_data),
+                    // Tab 3 - Delivery
+                    !!formData.shipping_rules_costs,
+                    // Tab 4 - Marketing
+                    !!(formData.agent_name || formData.promotions_combo || formData.price_table_url || formData.social_media_links?.instagram),
+                    // Tab 5 - WhatsApp
+                    !!formData.personal_phone_for_summary
+                  ];
+                  const completedCount = tabsComplete.filter(Boolean).length;
+                  return (
+                    <div className="flex items-center gap-2 px-1 py-2 bg-slate-50 rounded-lg">
+                      <CheckCircle2 className={`w-4 h-4 ${completedCount === 5 ? 'text-green-600' : 'text-slate-400'}`} />
+                      <span className="text-sm text-slate-600">
+                        <strong>{completedCount}</strong> de <strong>5</strong> seções completas
+                      </span>
+                      <div className="flex gap-1 ml-auto">
+                        {tabsComplete.map((complete, i) => (
+                          <div key={i} className={`w-2 h-2 rounded-full ${complete ? 'bg-green-500' : 'bg-slate-300'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-                </div>
+                <Tabs defaultValue="unidade" className="w-full">
+                  <TabsList className="w-full h-auto flex overflow-x-auto justify-start gap-1 bg-slate-100 p-1 rounded-lg">
+                    <TabsTrigger value="unidade" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Dados da Unidade</span>
+                      <span className="sm:hidden">Unidade</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="pagamentos" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Pagamentos</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="delivery" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>Delivery</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="marketing" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
+                      <Megaphone className="w-3.5 h-3.5" />
+                      <span>Marketing</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="whatsapp" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>WhatsApp</span>
+                    </TabsTrigger>
+                  </TabsList>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="agent_name">Nome do Atendente</Label>
-                    <Input
-                      id="agent_name"
-                      value={formData.agent_name}
-                      onChange={(e) => handleInputChange('agent_name', e.target.value)}
-                      placeholder="Ex: Maria Silva" />
+                  {/* Tab 1 - Dados da Unidade */}
+                  <TabsContent value="unidade" className="grid gap-4 mt-4">
+                    <div>
+                      <Label htmlFor="franchise_name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Cidade/bairro da Franquia (para IA)</Label>
+                      <Input
+                        id="franchise_name"
+                        value={formData.franchise_name}
+                        onChange={(e) => handleInputChange('franchise_name', e.target.value)}
+                        placeholder="Ex: Cordeirópolis e Iracemápolis" />
+                    </div>
+                    <div>
+                      <Label htmlFor="unit_address" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Endereço da Unidade (Rua, nº, Bairro, Cidade)</Label>
+                      <Input
+                        id="unit_address"
+                        value={formData.unit_address}
+                        onChange={(e) => handleInputChange('unit_address', e.target.value)}
+                        placeholder="Rua, número, bairro, cidade, CEP..."
+                        className="w-full" />
+                    </div>
+                    <div>
+                      <Label htmlFor="address_reference">Ponto de Referência e Detalhes da Região</Label>
+                      <textarea
+                        id="address_reference"
+                        value={formData.address_reference}
+                        onChange={(e) => handleInputChange('address_reference', e.target.value)}
+                        placeholder="Ex: Próximo à praça, casa com portão azul..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
+                    </div>
+                    <div>
+                      <Label htmlFor="opening_hours" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horários e Regras de Funcionamento</Label>
+                      <textarea
+                        id="opening_hours"
+                        value={formData.opening_hours}
+                        onChange={(e) => handleInputChange('opening_hours', e.target.value)}
+                        placeholder="Ex: Seg-Sex: 08h-18h, Sáb: 09h-13h&#10;Não funcionamos nos feriados&#10;Entregas até 20h"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
+                    </div>
+                  </TabsContent>
 
-                  </div>
-                  <div>
-                    <Label htmlFor="personal_phone_for_summary">Telefone Pessoal para Resumo</Label>
-                    <Input
-                      id="personal_phone_for_summary"
-                      value={formData.personal_phone_for_summary}
-                      onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
-                      placeholder="Ex: 5511999999999" />
+                  {/* Tab 2 - Pagamentos */}
+                  <TabsContent value="pagamentos" className="grid gap-4 mt-4">
+                    <div>
+                      <Label htmlFor="accepted_payment_methods" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Métodos e Regras de Pagamento</Label>
+                      <textarea
+                        id="accepted_payment_methods"
+                        value={formData.accepted_payment_methods}
+                        onChange={(e) => handleInputChange('accepted_payment_methods', e.target.value)}
+                        placeholder="Ex: Entregas: Pix, Link de Cartão | Retirada: Pix, Dinheiro"
+                        className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
+                    </div>
+                    <div>
+                      <Label htmlFor="pix_key_data">Dados Chave PIX</Label>
+                      <Input
+                        id="pix_key_data"
+                        value={formData.pix_key_data}
+                        onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
+                        placeholder="Chave PIX ou informações de pagamento" />
+                    </div>
+                    <div>
+                      <Label htmlFor="payment_link">Link de Pagamento</Label>
+                      <Input
+                        id="payment_link"
+                        type="url"
+                        value={formData.payment_link}
+                        onChange={(e) => handleInputChange('payment_link', e.target.value)}
+                        placeholder="https://..." />
+                    </div>
+                  </TabsContent>
 
-                  </div>
-                </div>
+                  {/* Tab 3 - Delivery */}
+                  <TabsContent value="delivery" className="grid gap-4 mt-4">
+                    <div>
+                      <Label htmlFor="shipping_rules_costs">Regras de Frete e Valores Cobrados</Label>
+                      <textarea
+                        id="shipping_rules_costs"
+                        value={formData.shipping_rules_costs}
+                        onChange={(e) => handleInputChange('shipping_rules_costs', e.target.value)}
+                        placeholder="Descreva as regras de entrega e valores de frete..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[100px] resize-y" />
+                    </div>
+                  </TabsContent>
 
-                <div>
-                  <Label htmlFor="opening_hours" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horários e Regras de Funcionamento</Label>
-                  <textarea
-                    id="opening_hours"
-                    value={formData.opening_hours}
-                    onChange={(e) => handleInputChange('opening_hours', e.target.value)}
-                    placeholder="Ex: Seg-Mex: 08h-18h, Sáb: 09h-13h&#10;Não funcionamos nos feriados&#10;Entregas até 20h"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
+                  {/* Tab 4 - Marketing */}
+                  <TabsContent value="marketing" className="grid gap-4 mt-4">
+                    <div>
+                      <Label htmlFor="agent_name">Nome do Agente IA</Label>
+                      <Input
+                        id="agent_name"
+                        value={formData.agent_name}
+                        onChange={(e) => handleInputChange('agent_name', e.target.value)}
+                        placeholder="Ex: Maria Silva" />
+                    </div>
+                    <div>
+                      <Label htmlFor="promotions_combo">Promoções/Combo</Label>
+                      <textarea
+                        id="promotions_combo"
+                        value={formData.promotions_combo}
+                        onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
+                        placeholder="Descreva as promoções e combos disponíveis..."
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
+                    </div>
+                    <div>
+                      <Label htmlFor="price_table_url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">URL da Tabela de Estoque</Label>
+                      <Input
+                        id="price_table_url"
+                        type="url"
+                        value={formData.price_table_url}
+                        onChange={(e) => handleInputChange('price_table_url', e.target.value)}
+                        placeholder="https://..." />
+                    </div>
+                    <div>
+                      <Label htmlFor="social_instagram">Instagram</Label>
+                      <Input
+                        id="social_instagram"
+                        value={formData.social_media_links.instagram}
+                        onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
+                        placeholder="URL do perfil no Instagram" />
+                    </div>
+                  </TabsContent>
 
-                </div>
-
-                <div>
-                  <Label htmlFor="unit_address" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Endereço da Unidade (Rua, nº, Bairro, Cidade)</Label>
-                  <Input
-                    id="unit_address"
-                    value={formData.unit_address}
-                    onChange={(e) => handleInputChange('unit_address', e.target.value)}
-                    placeholder="Rua, número, bairro, cidade, CEP..."
-                    className="w-full" />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="address_reference">Ponto de Referência e Detalhes da Região</Label>
-                  <textarea
-                    id="address_reference"
-                    value={formData.address_reference}
-                    onChange={(e) => handleInputChange('address_reference', e.target.value)}
-                    placeholder="Ex: Próximo à praça, casa com portão azul..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="accepted_payment_methods" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Métodos e Regras de Pagamento</Label>
-                  <textarea
-                    id="accepted_payment_methods"
-                    value={formData.accepted_payment_methods}
-                    onChange={(e) => handleInputChange('accepted_payment_methods', e.target.value)}
-                    placeholder="Ex: Entregas: Pix, Link de Cartão | Retirada: Pix, Dinheiro"
-                    className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="pix_key_data">Dados Chave PIX</Label>
-                  <Input
-                    id="pix_key_data"
-                    value={formData.pix_key_data}
-                    onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
-                    placeholder="Chave PIX ou informações de pagamento" />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="promotions_combo">Promoções/Combo</Label>
-                  <textarea
-                    id="promotions_combo"
-                    value={formData.promotions_combo}
-                    onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
-                    placeholder="Descreva as promoções e combos disponíveis..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="shipping_rules_costs">Regras de Frete e Valores Cobrados</Label>
-                  <textarea
-                    id="shipping_rules_costs"
-                    value={formData.shipping_rules_costs}
-                    onChange={(e) => handleInputChange('shipping_rules_costs', e.target.value)}
-                    placeholder="Descreva as regras de entrega e valores de frete..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="price_table_url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">URL da Tabela de Estoque</Label>
-                  <Input
-                    id="price_table_url"
-                    type="url"
-                    value={formData.price_table_url}
-                    onChange={(e) => handleInputChange('price_table_url', e.target.value)}
-                    placeholder="https://..." />
-
-                </div>
-
-                <div>
-                  <Label htmlFor="payment_link">Link de Pagamento</Label>
-                  <Input
-                    id="payment_link"
-                    type="url"
-                    value={formData.payment_link}
-                    onChange={(e) => handleInputChange('payment_link', e.target.value)}
-                    placeholder="https://..." />
-
-                </div>
-
-                <h4 className="font-semibold text-slate-800 pt-2 border-t mt-2">Redes Sociais</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="social_instagram">Instagram</Label>
-                    <Input
-                      id="social_instagram"
-                      value={formData.social_media_links.instagram}
-                      onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
-                      placeholder="URL do perfil no Instagram" />
-
-                  </div>
-                </div>
+                  {/* Tab 5 - WhatsApp */}
+                  <TabsContent value="whatsapp" className="grid gap-4 mt-4">
+                    {editingConfig && (
+                      <div className="flex flex-col gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="w-5 h-5 text-green-700" />
+                            <span className="font-medium text-green-800">Conexão WhatsApp</span>
+                          </div>
+                          {getWhatsAppStatusBadge(editingConfig)}
+                        </div>
+                        {editingConfig.whatsapp_status !== 'connected' && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleConnectWhatsApp(editingConfig)}
+                            disabled={isConnectingWhatsApp && selectedConfigForWhatsApp?.id === editingConfig.id}
+                            className="bg-green-100 text-green-700 border-green-300 hover:bg-green-200 w-full sm:w-auto">
+                            {isConnectingWhatsApp && selectedConfigForWhatsApp?.id === editingConfig.id ?
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
+                              <Smartphone className="w-4 h-4 mr-2" />
+                            }
+                            Conectar Robô WhatsApp
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    <div>
+                      <Label htmlFor="personal_phone_for_summary">Telefone Pessoal para Resumo</Label>
+                      <Input
+                        id="personal_phone_for_summary"
+                        value={formData.personal_phone_for_summary}
+                        onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
+                        placeholder="Ex: 5511999999999" />
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </form>
               <DialogFooter className="flex justify-between w-full">
                 {editingConfig &&

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Franchise, DailyUniqueContact } from "@/entities/all";
-import { base44 } from "@/api/base44Client";
+import { Franchise, DailyUniqueContact, User } from "@/entities/all";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -139,7 +138,7 @@ export default function Franchises() {
 
   const loadCurrentUser = async () => {
     try {
-      const user = await base44.auth.me();
+      const user = await User.me();
       setCurrentUser(user);
     } catch (error) {
       console.error("Erro ao carregar usuário atual:", error);

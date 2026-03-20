@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
-import { Franchise } from "@/entities/all";
+import { Franchise, User, DailyChecklist } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -87,7 +86,7 @@ export default function MyChecklist() {
   const loadData = useCallback(async (selectedFranchise = null) => {
     setIsLoading(true);
     try {
-      const user = await base44.auth.me();
+      const user = await User.me();
       setCurrentUser(user);
 
       const allFranchises = await Franchise.list();
@@ -111,7 +110,7 @@ export default function MyChecklist() {
 
       const today = new Date();
       const sevenDaysAgo = format(subDays(today, 6), "yyyy-MM-dd");
-      const allChecklists = await base44.entities.DailyChecklist.filter({
+      const allChecklists = await DailyChecklist.filter({
         franchise_id: myFranchise.evolution_instance_id,
       });
 
@@ -124,7 +123,7 @@ export default function MyChecklist() {
         setChecklist(todayChecklist);
         setItems(todayChecklist.items || {});
       } else {
-        const newChecklist = await base44.entities.DailyChecklist.create({
+        const newChecklist = await DailyChecklist.create({
           franchise_id: myFranchise.evolution_instance_id,
           date: todayStr(),
           items: {},
@@ -163,7 +162,7 @@ export default function MyChecklist() {
       const completed_count = allDailyKeys.filter((k) => newItems[k]).length;
       const completion_percentage = Math.round((completed_count / TOTAL_DAILY) * 100);
 
-      await base44.entities.DailyChecklist.update(checklist.id, {
+      await DailyChecklist.update(checklist.id, {
         items: newItems,
         completed_count,
         total_items: TOTAL_DAILY,

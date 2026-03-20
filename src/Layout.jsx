@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { BarChart3, Users, TrendingUp, Settings, Home, LogOut, SlidersHorizontal, ClipboardList, Activity, Rocket } from "lucide-react";
+import { BarChart3, Users, TrendingUp, Settings, Home, LogOut, SlidersHorizontal, ClipboardList, Activity, Rocket, Package, ImageIcon, Megaphone, UserCheck } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,7 +17,8 @@ import {
   SidebarTrigger } from
 "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { DailyUniqueContact, Sale, User } from "@/entities/all";
+import { DailyUniqueContact, Sale, User, OnboardingChecklist } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { format, startOfDay } from "date-fns";
 
 const MaxiMassasLogo = ({ size }) => {
@@ -40,14 +41,24 @@ const navigationItems = [
   icon: Home
 },
 {
-  title: "Franqueados",
-  url: createPageUrl("Franchises"),
-  icon: Users
-},
-{
   title: "Vendas",
   url: createPageUrl("Sales"),
   icon: TrendingUp
+},
+{
+  title: "Estoque",
+  url: createPageUrl("Inventory"),
+  icon: Package
+},
+{
+  title: "Catálogo",
+  url: createPageUrl("Catalog"),
+  icon: ImageIcon
+},
+{
+  title: "Meu Checklist",
+  url: createPageUrl("MyChecklist"),
+  icon: ClipboardList
 },
 {
   title: "Relatórios",
@@ -55,14 +66,14 @@ const navigationItems = [
   icon: BarChart3
 },
 {
-  title: "Configurações IA",
-  url: createPageUrl("FranchiseSettings"),
-  icon: SlidersHorizontal
+  title: "Marketing",
+  url: createPageUrl("Marketing"),
+  icon: Megaphone
 },
 {
-  title: "Meu Checklist",
-  url: createPageUrl("MyChecklist"),
-  icon: ClipboardList
+  title: "Configurações",
+  url: createPageUrl("FranchiseSettings"),
+  icon: SlidersHorizontal
 },
 {
   title: "Onboarding",
@@ -77,9 +88,15 @@ const navigationItems = [
   adminOnly: true
 },
 {
+  title: "Franqueados",
+  url: createPageUrl("Franchises"),
+  icon: Users,
+  adminOnly: true
+},
+{
   title: "Usuários",
   url: createPageUrl("UserManagement"),
-  icon: Settings,
+  icon: UserCheck,
   adminOnly: true
 }];
 
@@ -102,8 +119,7 @@ export default function Layout({ children, currentPageName }) {
       setCurrentUser(user);
       // Check onboarding status for non-admin users
       if (user.role !== 'admin' && user.managed_franchise_ids?.length > 0) {
-        const { base44 } = await import('@/api/base44Client');
-        const obs = await base44.entities.OnboardingChecklist.filter({
+        const obs = await OnboardingChecklist.filter({
           franchise_id: user.managed_franchise_ids[0]
         });
         // Hide menu if no onboarding exists OR if it's already approved
@@ -135,8 +151,8 @@ export default function Layout({ children, currentPageName }) {
 
   const handleLogout = async () => {
     try {
-      const { base44 } = await import('@/api/base44Client');
-      base44.auth.logout();
+      await supabase.auth.signOut();
+      window.location.href = '/login';
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }

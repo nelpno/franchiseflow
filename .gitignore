@@ -1,6 +1,8 @@
-#env
+# Env (NUNCA commitar!)
 .env
-.env.*
+.env.local
+.env.production
+!.env.example
 
 # Logs
 logs
