@@ -4,10 +4,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { format, subDays } from "date-fns";
 import { MessageSquare } from "lucide-react";
 
-export default function MessagesTrend({ summaries, isLoading }) {
+export default function MessagesTrend({ summaries, isLoading, days = 7 }) {
   const getLast7DaysData = () => {
     const data = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
       
@@ -30,7 +30,7 @@ export default function MessagesTrend({ summaries, isLoading }) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
           <MessageSquare className="w-5 h-5 text-emerald-500" />
-          Contatos Únicos dos Últimos 7 Dias
+          Contatos Únicos dos Últimos {days} Dias
         </CardTitle>
       </CardHeader>
       <CardContent>

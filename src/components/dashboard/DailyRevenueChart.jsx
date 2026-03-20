@@ -4,10 +4,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { format, subDays } from "date-fns";
 import { DollarSign } from "lucide-react";
 
-export default function DailyRevenueChart({ summaries, isLoading }) {
+export default function DailyRevenueChart({ summaries, isLoading, days = 7 }) {
   const getRevenueData = () => {
     const data = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
       
@@ -29,7 +29,7 @@ export default function DailyRevenueChart({ summaries, isLoading }) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
           <DollarSign className="w-5 h-5 text-teal-500" />
-          Faturamento dos Últimos 7 Dias
+          Faturamento dos Últimos {days} Dias
         </CardTitle>
       </CardHeader>
       <CardContent>
