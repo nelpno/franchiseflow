@@ -66,7 +66,7 @@ function formatPrice(value) {
 // ── Image Upload Helper ──────────────────────────────────────────────
 async function uploadImage(file) {
   const fileExt = file.name.split(".").pop();
-  const fileName = `${Date.now()}.${fileExt}`;
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${fileExt}`;
   const { error } = await supabase.storage
     .from("catalog-images")
     .upload(fileName, file);

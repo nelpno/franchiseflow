@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, SlidersHorizontal, Info, Trash2, Sparkles, Loader2, Smartphone, Wifi, WifiOff, Building2, CreditCard, Truck, Megaphone, MessageCircle, CheckCircle2 } from "lucide-react";
 import { optimizeConfig, connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
+import { toast } from "sonner";
 
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -67,7 +68,7 @@ function FranchiseSettingsContent() {
       setCurrentUser(currentUserData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      alert("Erro ao carregar configurações. Por favor, recarregue a página.");
+      toast.error("Erro ao carregar configurações. Por favor, recarregue a página.");
     }
     setIsLoading(false);
   }, []);
@@ -198,7 +199,7 @@ function FranchiseSettingsContent() {
         setIsDirty(false);
       } catch (error) {
         console.error("Erro ao excluir:", error);
-        alert("Falha ao excluir configuração.");
+        toast.error("Falha ao excluir configuração.");
       }
       setIsSubmitting(false);
     }
@@ -237,7 +238,7 @@ function FranchiseSettingsContent() {
       setIsDirty(false);
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Falha ao salvar configuração.");
+      toast.error("Falha ao salvar configuração.");
     }
     setIsSubmitting(false);
   };
@@ -276,22 +277,22 @@ function FranchiseSettingsContent() {
       }));
 
       setIsDirty(true); // Marca o formulário como alterado
-      alert("Textos otimizados com IA! Revise as sugestões e salve as alterações.");
+      toast.success("Textos otimizados com IA! Revise as sugestões e salve as alterações.");
     } catch (error) {
       console.error("Erro ao otimizar com IA:", error);
-      alert("Ocorreu um erro ao tentar otimizar os dados. Tente novamente.");
+      toast.error("Ocorreu um erro ao tentar otimizar os dados. Tente novamente.");
     }
     setIsOptimizing(false);
   };
 
   const handleConnectWhatsApp = useCallback(async (config) => {
     if (!config || !config.franchise_evolution_instance_id) {
-      alert('Configuração inválida. Por favor, recarregue a página e tente novamente.');
+      toast.error('Configuração inválida. Por favor, recarregue a página e tente novamente.');
       return;
     }
 
     if (!currentUser) {
-      alert('Usuário não identificado. Por favor, faça login novamente.');
+      toast.error('Usuário não identificado. Por favor, faça login novamente.');
       return;
     }
 
@@ -303,7 +304,7 @@ function FranchiseSettingsContent() {
       console.log('Tentando conectar WhatsApp para:', config.franchise_evolution_instance_id);
 
       const response = await connectWhatsappRobot({
-        franchise_evolution_instance_id: config.franchise_evolution_instance_id
+        instanceName: config.franchise_evolution_instance_id
       });
 
       const data = response.data || response;
@@ -315,7 +316,7 @@ function FranchiseSettingsContent() {
           whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
           whatsapp_qr_code: null
         });
-        alert('Este WhatsApp já está conectado!');
+        toast.success('Este WhatsApp já está conectado!');
         
       } else if (data.qrCode || data.qr_code || data.qrcode) {
         const qrCodeValue = data.qrCode || data.qr_code || data.qrcode;
@@ -346,7 +347,7 @@ function FranchiseSettingsContent() {
         console.error("Response data:", error.response.data);
       }
 
-      alert(error.response?.status === 403 ?
+      toast.error(error.response?.status === 403 ?
         "Você não tem permissão para conectar o WhatsApp desta franquia. Entre em contato com o administrador." :
         "Falha ao conectar. Tente novamente."
       );
@@ -365,7 +366,7 @@ function FranchiseSettingsContent() {
       console.log('Verificando status do WhatsApp para:', selectedConfigForWhatsApp.franchise_evolution_instance_id);
 
       const { data } = await checkWhatsappStatus({
-        franchise_evolution_instance_id: selectedConfigForWhatsApp.franchise_evolution_instance_id
+        instanceName: selectedConfigForWhatsApp.franchise_evolution_instance_id
       });
 
       console.log('Resposta do status check:', data);
@@ -393,9 +394,9 @@ function FranchiseSettingsContent() {
 
       // Verificar se é problema de permissões
       if (error.response?.status === 403 || error.response?.status === 401) {
-        alert("Você não tem permissão para verificar o status do WhatsApp desta franquia.");
+        toast.error("Você não tem permissão para verificar o status do WhatsApp desta franquia.");
       } else {
-        alert("Erro ao verificar status do WhatsApp.");
+        toast.error("Erro ao verificar status do WhatsApp.");
       }
     }
     setIsCheckingStatus(false);
@@ -419,7 +420,7 @@ function FranchiseSettingsContent() {
       console.log('Verificando status do badge para:', config.franchise_evolution_instance_id);
 
       const { data } = await checkWhatsappStatus({
-        franchise_evolution_instance_id: config.franchise_evolution_instance_id
+        instanceName: config.franchise_evolution_instance_id
       });
 
       console.log('Resposta do status badge check:', data);
@@ -442,9 +443,9 @@ function FranchiseSettingsContent() {
 
       // Verificar se é problema de permissões
       if (error.response?.status === 403 || error.response?.status === 401) {
-        alert("Você não tem permissão para verificar o status do WhatsApp desta franquia.");
+        toast.error("Você não tem permissão para verificar o status do WhatsApp desta franquia.");
       } else {
-        alert("Erro ao verificar status do WhatsApp.");
+        toast.error("Erro ao verificar status do WhatsApp.");
       }
     }
     setCheckingStatusFor(null);

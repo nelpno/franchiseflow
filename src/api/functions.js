@@ -9,6 +9,7 @@ export async function connectWhatsappRobot({ instanceName, action }) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instanceName, action: action || 'smart_connect' })
   });
+  if (!response.ok) throw new Error('Webhook error: ' + response.status);
   return response.json();
 }
 
@@ -18,6 +19,7 @@ export async function checkWhatsappStatus({ instanceName }) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instanceName, action: 'check_status' })
   });
+  if (!response.ok) throw new Error('Webhook error: ' + response.status);
   return response.json();
 }
 
@@ -28,6 +30,7 @@ export async function optimizeConfig(configData) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(configData)
   });
+  if (!response.ok) throw new Error('Webhook error: ' + response.status);
   return response.json();
 }
 

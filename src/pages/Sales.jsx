@@ -155,8 +155,10 @@ function SalesContent() {
       }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar dados. Tente recarregar a página.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const resetForm = () => {
@@ -341,7 +343,9 @@ function SalesContent() {
   // Determinar quais franquias o usuário pode criar vendas
   const availableFranchises = currentUser?.role === 'admin'
     ? franchises
-    : franchises;
+    : franchises.filter(f =>
+        currentUser?.managed_franchise_ids?.includes(f.evolution_instance_id)
+      );
 
   const goalTarget = salesGoal?.target_value || 0;
   const goalProgress = goalTarget > 0 ? Math.min((monthStats.revenue / goalTarget) * 100, 100) : 0;

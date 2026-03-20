@@ -9,48 +9,26 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial session
-    checkSession();
-
-    // Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[Auth] State change:', event);
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (session?.user) {
           await loadUserProfile(session.user);
-        } else if (event === 'SIGNED_OUT') {
+        } else {
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
         }
       }
     );
-
     return () => subscription.unsubscribe();
   }, []);
-
-  const checkSession = async () => {
-    try {
-      console.log('[Auth] Checking session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('[Auth] Session:', { hasSession: !!session, userId: session?.user?.id, error: sessionError });
-      if (session?.user) {
-        await loadUserProfile(session.user);
-      } else {
-        console.log('[Auth] No session, redirecting to login');
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('[Auth] Session check failed:', error);
-      setIsLoading(false);
-    }
-  };
 
   const loadUserProfile = async (authUser) => {
     const fallbackUser = {
       ...authUser,
       full_name: authUser.user_metadata?.full_name || authUser.email,
-      role: 'admin',
+      role: 'franchisee',
       managed_franchise_ids: []
     };
 
@@ -112,7 +90,7 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings: null,
       logout,
       navigateToLogin,
-      checkAppState: checkSession
+      checkAppState: () => {}
     }}>
       {children}
     </AuthContext.Provider>

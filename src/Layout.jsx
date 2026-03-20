@@ -18,7 +18,7 @@ import {
 "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DailyUniqueContact, Sale, User, OnboardingChecklist } from "@/entities/all";
-import { supabase } from "@/api/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
 import { format, startOfDay } from "date-fns";
 
 const MaxiMassasLogo = ({ size }) => {
@@ -103,6 +103,7 @@ const navigationItems = [
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
+  const { logout } = useAuth();
   const [todaySales, setTodaySales] = useState(0);
   const [todayContacts, setTodayContacts] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
@@ -149,13 +150,8 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      window.location.href = '/login';
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   const filteredNavigationItems = navigationItems.filter((item) => {
