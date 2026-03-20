@@ -88,6 +88,16 @@ export const SalesGoal = createEntity('sales_goals');
 export const ActivityLog = createEntity('activity_log');
 export const MarketingFile = createEntity('marketing_files');
 
+// RPC helpers
+export async function getFranchiseRanking(date, franchiseId) {
+  const { data, error } = await supabase.rpc('get_franchise_ranking', {
+    p_date: date,
+    p_franchise_id: franchiseId,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // User é especial - tem método .me() além dos métodos padrão
 export const User = {
   ...createEntity('profiles'),

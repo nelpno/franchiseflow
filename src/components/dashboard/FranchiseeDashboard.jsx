@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, Franchise, DailyChecklist, InventoryItem } from "@/entities/all";
+import { Sale, DailySummary, Franchise, DailyChecklist, InventoryItem, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { supabase } from "@/api/supabaseClient";
 import { format, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,7 +47,7 @@ export default function FranchiseeDashboard() {
       ] = await Promise.all([
         Sale.filter({ sale_date: today, franchise_id: franchiseId }),
         Sale.filter({ sale_date: yesterday, franchise_id: franchiseId }),
-        DailySummary.list("-date", 365),
+        DailySummary.list("-date", 30),
         InventoryItem.filter({ franchise_id: franchiseId }),
         myFranchise?.evolution_instance_id
           ? DailyChecklist.filter({ franchise_id: myFranchise.evolution_instance_id, date: today })
@@ -70,10 +69,7 @@ export default function FranchiseeDashboard() {
       }
 
       try {
-        const { data: rankData } = await supabase.rpc("get_franchise_ranking", {
-          p_date: today,
-          p_franchise_id: franchiseId,
-        });
+        const rankData = await getFranchiseRanking(today, franchiseId);
         setRanking(rankData);
       } catch {
         setRanking(null);

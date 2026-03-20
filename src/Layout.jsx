@@ -65,6 +65,7 @@ const navigationItems = [
   },
   {
     title: "Meu Checklist",
+    franchiseeLabel: "Checklist",
     url: createPageUrl("MyChecklist"),
     icon: ClipboardList,
   },
