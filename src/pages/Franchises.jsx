@@ -569,14 +569,16 @@ export default function Franchises() {
                           <MaterialIcon icon="mail" size={14} className="mr-1" />
                           Convidar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs h-8 rounded-lg text-[#b91c1c] hover:bg-[#b91c1c]/10"
-                          onClick={(e) => handleDeleteFranchiseQuick(e, franchise)}
-                        >
-                          <MaterialIcon icon="delete" size={14} />
-                        </Button>
+                        {currentUser?.role === "admin" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-8 rounded-lg text-[#b91c1c] hover:bg-[#b91c1c]/10"
+                            onClick={(e) => handleDeleteFranchiseQuick(e, franchise)}
+                          >
+                            <MaterialIcon icon="delete" size={14} />
+                          </Button>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -892,8 +894,8 @@ export default function Franchises() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Gerente</SelectItem>
+                    <SelectItem value="admin">Admin — acesso total</SelectItem>
+                    <SelectItem value="manager">Gerente — visualiza tudo, sem excluir</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
