@@ -87,6 +87,8 @@ export const FranchiseInvite = createEntity('franchise_invites');
 export const SalesGoal = createEntity('sales_goals');
 export const ActivityLog = createEntity('activity_log');
 export const MarketingFile = createEntity('marketing_files');
+export const SaleItem = createEntity('sale_items');
+export const Expense = createEntity('expenses');
 
 // RPC helpers
 export async function getFranchiseRanking(date, franchiseId) {
