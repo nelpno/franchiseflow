@@ -139,7 +139,8 @@ export default function TabEstoque({
 
     const { itemId, field } = editingCell;
     const item = items.find((i) => i.id === itemId);
-    const newValue = parseFloat(editValue);
+    const isIntField = field === "quantity" || field === "min_stock";
+    const newValue = isIntField ? parseInt(editValue, 10) : parseFloat(editValue);
 
     if (isNaN(newValue) || newValue < 0) {
       toast.error("Valor invalido. Insira um numero positivo.");
@@ -219,9 +220,9 @@ export default function TabEstoque({
         franchise_id: franchiseId,
         product_name: formData.product_name.trim(),
         category: formData.category || null,
-        quantity: parseFloat(formData.quantity) || 0,
+        quantity: parseInt(formData.quantity, 10) || 0,
         unit: formData.unit,
-        min_stock: parseFloat(formData.min_stock) || 0,
+        min_stock: parseInt(formData.min_stock, 10) || 0,
         cost_price: parseFloat(formData.cost_price) || null,
         sale_price: parseFloat(formData.sale_price) || null,
       };
@@ -576,7 +577,7 @@ export default function TabEstoque({
                               ref={editInputRef}
                               type="number"
                               min="0"
-                              step="0.01"
+                              step="1"
                               value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
                               onBlur={handleCellBlur}
@@ -604,7 +605,7 @@ export default function TabEstoque({
                               ref={editInputRef}
                               type="number"
                               min="0"
-                              step="0.01"
+                              step="1"
                               value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
                               onBlur={handleCellBlur}
@@ -716,7 +717,7 @@ export default function TabEstoque({
                                 ref={editInputRef}
                                 type="number"
                                 min="0"
-                                step="0.01"
+                                step="1"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 onBlur={handleCellBlur}
@@ -748,7 +749,7 @@ export default function TabEstoque({
                                 ref={editInputRef}
                                 type="number"
                                 min="0"
-                                step="0.01"
+                                step="1"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 onBlur={handleCellBlur}
@@ -876,7 +877,7 @@ export default function TabEstoque({
                 <Input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="1"
                   value={formData.quantity}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -917,7 +918,7 @@ export default function TabEstoque({
               <Input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 value={formData.min_stock}
                 onChange={(e) =>
                   setFormData((prev) => ({

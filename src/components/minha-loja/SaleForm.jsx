@@ -90,7 +90,12 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
                 p.id === selectedId ? "bg-[#b91c1c]/5 text-[#b91c1c]" : "text-[#1b1c1d]"
               }`}
             >
-              <span>{p.product_name}</span>
+              <span>
+                {p.product_name}
+                {(p.quantity || 0) <= 0 && (
+                  <span className="text-[#b91c1c] text-xs ml-1.5 font-medium">(sem estoque)</span>
+                )}
+              </span>
               {p.sale_price > 0 && (
                 <span className="text-xs text-[#534343]/60 font-mono-numbers">
                   R$ {(p.sale_price || 0).toFixed(2)}
@@ -528,12 +533,19 @@ export default function SaleForm({
       <div className="space-y-3">
         <Label className="text-sm font-medium text-[#1b1c1d]">Produtos</Label>
 
-        {items.map((item, index) => (
+        {items.map((item, index) => {
+          const selectedInv = item.inventory_item_id
+            ? inventoryItems.find((p) => p.id === item.inventory_item_id)
+            : null;
+          const isZeroStock = selectedInv && (selectedInv.quantity || 0) <= 0;
+
+          return (
           <div
             key={index}
             data-sale-item
-            className="flex flex-col md:flex-row gap-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5"
+            className="flex flex-col gap-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5"
           >
+            <div className="flex flex-col md:flex-row gap-2">
             {/* Product search */}
             <div className="flex-1 min-w-0">
               <ProductSearch
@@ -589,8 +601,17 @@ export default function SaleForm({
                 </button>
               )}
             </div>
+            </div>
+
+            {isZeroStock && (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 bg-[#fffbeb] rounded-lg border border-[#d4af37]/30">
+                <MaterialIcon icon="warning" size={14} className="text-[#d4af37] shrink-0" />
+                <span className="text-xs text-[#92400e]">Estoque zerado — atualize seu estoque</span>
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
 
         <Button
           type="button"
