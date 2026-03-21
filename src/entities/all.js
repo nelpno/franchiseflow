@@ -89,6 +89,8 @@ export const ActivityLog = createEntity('activity_log');
 export const MarketingFile = createEntity('marketing_files');
 export const SaleItem = createEntity('sale_items');
 export const Expense = createEntity('expenses');
+export const PurchaseOrder = createEntity('purchase_orders');
+export const PurchaseOrderItem = createEntity('purchase_order_items');
 
 // RPC helpers
 export async function getFranchiseRanking(date, franchiseId) {
