@@ -86,7 +86,7 @@ src/
 │   └── ui/           # shadcn/ui + MaterialIcon.jsx
 ├── hooks/            # useWhatsAppConnection.js, custom hooks
 ├── lib/              # AuthContext, franchiseUtils.js
-├── pages/            # Uma página por rota
+├── pages/            # Uma página por rota (MyContacts.jsx, Sales.jsx, Franchises.jsx unificado, etc.)
 └── assets/           # logo-maxi-massas.png, imagens estáticas
 ```
 
@@ -126,8 +126,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 - Config optimization: `{N8N_WEBHOOK_BASE}/adc276df-8162-46ca-bec6-5aedb9cb2b14`
 
 ## UX por Role
-- **Franqueado**: menu com 6 itens (Minha Loja, Vendas, Estoque, Marketing, Checklist, Meu Vendedor)
-- **Admin**: menu com 11 itens (sem Catálogo — removido na FASE 4)
+- **Franqueado**: menu com 7 itens (Minha Loja, Meus Clientes, Vendas, Estoque, Marketing, Checklist, Meu Vendedor)
+- **Admin**: menu com 10 itens (sem Catálogo — removido FASE 4, sem Usuários — absorvido em Franqueados FASE 5)
 - Terminologia simplificada: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio")
 - Dashboard franqueado: motivacional (meta diária, ranking, streak, acesso rápido)
 - Dashboard admin: monitoramento (alertas semáforo, ranking franquias, filtro de período) — AdminHeader fixo no topo (substitui Layout top bar)
@@ -178,9 +178,10 @@ npm run typecheck # TypeScript check
 - Sprint 3: UX improvements (3 ondas — bugs, labels, features) ✅
 - FASE 4: Design Stitch + Material Symbols + padronização Atelier ✅
 - **FASE 5 Etapa 1**: Tabela contacts + auto-vinculação + triggers ✅
-- **FASE 5 Etapa 2**: Adaptar vendedor genérico n8n (7 nós + dadosunidade Base44→Supabase) (PRÓXIMO)
-- **FASE 5 Etapa 3**: UI "Meus Clientes" + Sales vinculada a contatos + Franqueados unificado
-- **FASE 5 Etapa 4**: Limpeza (remover Base44, pausar clientes_franquias, deploy Docker)
+- **FASE 5 Etapa 3a**: Franqueados unificado (absorveu Usuários) + Meus Clientes (pipeline) + Vendas com auto-complete ✅
+- **FASE 5 Etapa 3b**: Vendas completas (overview negócio, taxa cartão, frete, lucro, Meus Clientes como aba) (PRÓXIMO)
+- **FASE 5 Etapa 2**: Adaptar vendedor genérico n8n (7 nós + dadosunidade Base44→Supabase)
+- **FASE 5 Etapa 4**: Dashboard+Checklist turbinados + flag config vendedor + limpeza + deploy Docker
 
 ## Supabase Management API
 - Project ref: `sulgicnqqopyhulglakd`
