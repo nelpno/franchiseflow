@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { startOfMonth, startOfDay, endOfDay, format } from "date-fns";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
 import TabLancar from "@/components/minha-loja/TabLancar";
+import TabResultado from "@/components/minha-loja/TabResultado";
 
 const TAB_MAP = {
   lancar: "lancar",
@@ -339,15 +340,10 @@ export default function MinhaLoja() {
           </TabsContent>
 
           <TabsContent value="resultado" className="mt-4">
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <MaterialIcon icon="analytics" size={64} className="text-[#cac0c0] mb-4" />
-              <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
-                Resultado do Negocio
-              </h3>
-              <p className="text-sm text-[#534343] max-w-sm">
-                Em breve voce vera o resultado financeiro completo da sua loja.
-              </p>
-            </div>
+            <TabResultado
+              franchiseId={franchiseId}
+              currentUser={currentUser}
+            />
           </TabsContent>
 
           <TabsContent value="estoque" className="mt-4">
