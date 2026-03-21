@@ -131,6 +131,33 @@ export default function TabEstoque({
     return matchesSearch && matchesCategory;
   });
 
+  // --- Grouping by product type (first word of product_name) ---
+
+  const itemGroups = useMemo(() => {
+    const ORDER = ["Canelone", "Conchiglione", "Massa", "Nhoque", "Fatiado", "Rondelli", "Sofioli", "Molho"];
+    const groups = [];
+    const groupMap = {};
+
+    filteredItems.forEach((item) => {
+      const firstWord = item.product_name.split(" ")[0];
+      const groupKey = ORDER.includes(firstWord) ? firstWord : "Outros";
+      if (!groupMap[groupKey]) {
+        groupMap[groupKey] = { label: groupKey, items: [] };
+        groups.push(groupMap[groupKey]);
+      }
+      groupMap[groupKey].items.push(item);
+    });
+
+    groups.sort((a, b) => {
+      const orderWithOutros = [...ORDER, "Outros"];
+      const ai = orderWithOutros.indexOf(a.label);
+      const bi = orderWithOutros.indexOf(b.label);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+
+    return groups;
+  }, [filteredItems]);
+
   // --- Inline edit ---
 
   const handleCellClick = (itemId, field, currentValue) => {
@@ -529,135 +556,142 @@ export default function TabEstoque({
       ) : (
         <>
           {/* Mobile: card layout */}
-          <div className="md:hidden space-y-3">
-            {filteredItems.map((item) => {
-              const isLowStock =
-                item.min_stock > 0 && item.quantity < item.min_stock;
+          <div className="md:hidden space-y-4">
+            {itemGroups.map((group) => (
+              <div key={group.label} className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta px-1">
+                  {group.label}
+                </h3>
+                {group.items.map((item) => {
+                  const isLowStock =
+                    item.min_stock > 0 && item.quantity < item.min_stock;
 
-              return (
-                <Card
-                  key={item.id}
-                  className={`rounded-2xl shadow-sm border ${
-                    isLowStock
-                      ? "border-[#b91c1c]/20 bg-[#b91c1c]/5"
-                      : "border-[#291715]/5 bg-white"
-                  }`}
-                >
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-[#1b1c1d] truncate">
-                          {item.product_name}
-                        </h4>
-                        <p className="text-xs text-[#534343]">
-                          {item.category || "Sem categoria"} · {getUnitLabel(item.unit)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-[#534343] hover:text-[#b91c1c]"
-                          onClick={() => handleOpenEditDialog(item)}
-                        >
-                          <MaterialIcon icon="edit" size={14} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-[#cac0c0] hover:text-[#b91c1c]"
-                          onClick={() => setDeleteConfirmId(item.id)}
-                        >
-                          <MaterialIcon icon="delete" size={14} />
-                        </Button>
-                      </div>
-                    </div>
+                  return (
+                    <Card
+                      key={item.id}
+                      className={`rounded-2xl shadow-sm border ${
+                        isLowStock
+                          ? "border-[#b91c1c]/20 bg-[#b91c1c]/5"
+                          : "border-[#291715]/5 bg-white"
+                      }`}
+                    >
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-[#1b1c1d] truncate">
+                              {item.product_name}
+                            </h4>
+                            <p className="text-xs text-[#534343]">
+                              {item.category || "Sem categoria"} · {getUnitLabel(item.unit)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-[#534343] hover:text-[#b91c1c]"
+                              onClick={() => handleOpenEditDialog(item)}
+                            >
+                              <MaterialIcon icon="edit" size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-[#cac0c0] hover:text-[#b91c1c]"
+                              onClick={() => setDeleteConfirmId(item.id)}
+                            >
+                              <MaterialIcon icon="delete" size={14} />
+                            </Button>
+                          </div>
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
-                          Quantidade
-                        </span>
-                        <p
-                          className="font-bold text-[#1b1c1d] cursor-pointer hover:text-[#775a19]"
-                          onClick={() =>
-                            handleCellClick(item.id, "quantity", item.quantity)
-                          }
-                        >
-                          {editingCell?.itemId === item.id &&
-                          editingCell?.field === "quantity" ? (
-                            <Input
-                              ref={editInputRef}
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={handleCellBlur}
-                              onKeyDown={handleCellKeyDown}
-                              className="w-20 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
-                            />
-                          ) : (
-                            <>{item.quantity ?? 0} {item.unit}</>
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
-                          Min.
-                        </span>
-                        <p
-                          className="font-bold text-[#1b1c1d] cursor-pointer hover:text-[#775a19]"
-                          onClick={() =>
-                            handleCellClick(item.id, "min_stock", item.min_stock)
-                          }
-                        >
-                          {editingCell?.itemId === item.id &&
-                          editingCell?.field === "min_stock" ? (
-                            <Input
-                              ref={editInputRef}
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={handleCellBlur}
-                              onKeyDown={handleCellKeyDown}
-                              className="w-20 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
-                            />
-                          ) : (
-                            <>{item.min_stock ?? 0}</>
-                          )}
-                        </p>
-                      </div>
-                    </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
+                              Quantidade
+                            </span>
+                            <p
+                              className="font-bold text-[#1b1c1d] cursor-pointer hover:text-[#775a19]"
+                              onClick={() =>
+                                handleCellClick(item.id, "quantity", item.quantity)
+                              }
+                            >
+                              {editingCell?.itemId === item.id &&
+                              editingCell?.field === "quantity" ? (
+                                <Input
+                                  ref={editInputRef}
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellBlur}
+                                  onKeyDown={handleCellKeyDown}
+                                  className="w-20 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
+                                />
+                              ) : (
+                                <>{item.quantity ?? 0} {item.unit}</>
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
+                              Min.
+                            </span>
+                            <p
+                              className="font-bold text-[#1b1c1d] cursor-pointer hover:text-[#775a19]"
+                              onClick={() =>
+                                handleCellClick(item.id, "min_stock", item.min_stock)
+                              }
+                            >
+                              {editingCell?.itemId === item.id &&
+                              editingCell?.field === "min_stock" ? (
+                                <Input
+                                  ref={editInputRef}
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellBlur}
+                                  onKeyDown={handleCellKeyDown}
+                                  className="w-20 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
+                                />
+                              ) : (
+                                <>{item.min_stock ?? 0}</>
+                              )}
+                            </p>
+                          </div>
+                        </div>
 
-                    {/* Prices */}
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
-                          Custo
-                        </span>
-                        <p className="text-[#534343]">{formatBRL(item.cost_price)}</p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
-                          Venda
-                        </span>
-                        <p className="text-[#534343]">{formatBRL(item.sale_price)}</p>
-                      </div>
-                    </div>
+                        {/* Prices */}
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
+                              Custo
+                            </span>
+                            <p className="text-[#534343]">{formatBRL(item.cost_price)}</p>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
+                              Venda
+                            </span>
+                            <p className="text-[#534343]">{formatBRL(item.sale_price)}</p>
+                          </div>
+                        </div>
 
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {getStockBadge(item)}
-                      {getGiroBadge(item)}
-                      {getSugestaoCompra(item)}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {getStockBadge(item)}
+                          {getGiroBadge(item)}
+                          {getSugestaoCompra(item)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           {/* Desktop: table layout */}
@@ -701,126 +735,137 @@ export default function TabEstoque({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredItems.map((item) => {
-                      const isLowStock =
-                        item.min_stock > 0 && item.quantity < item.min_stock;
-
-                      return (
-                        <TableRow
-                          key={item.id}
-                          className={
-                            isLowStock
-                              ? "bg-[#b91c1c]/5 hover:bg-[#b91c1c]/10"
-                              : "hover:bg-[#f5f3f4]"
-                          }
-                        >
-                          <TableCell className="font-medium text-[#1b1c1d]">
-                            {item.product_name}
-                          </TableCell>
-
-                          <TableCell className="text-sm text-[#4a3d3d]">
-                            {item.category || "—"}
-                          </TableCell>
-
-                          {/* Quantity - inline edit */}
-                          <TableCell className="text-center">
-                            {editingCell?.itemId === item.id &&
-                            editingCell?.field === "quantity" ? (
-                              <Input
-                                ref={editInputRef}
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onBlur={handleCellBlur}
-                                onKeyDown={handleCellKeyDown}
-                                className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
-                              />
-                            ) : (
-                              <span
-                                className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
-                                onClick={() =>
-                                  handleCellClick(item.id, "quantity", item.quantity)
-                                }
-                                title="Clique para editar"
-                              >
-                                {item.quantity ?? 0}
-                              </span>
-                            )}
-                          </TableCell>
-
-                          <TableCell className="text-sm text-[#4a3d3d]">
-                            {getUnitLabel(item.unit)}
-                          </TableCell>
-
-                          {/* Min stock - inline edit */}
-                          <TableCell className="text-center">
-                            {editingCell?.itemId === item.id &&
-                            editingCell?.field === "min_stock" ? (
-                              <Input
-                                ref={editInputRef}
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onBlur={handleCellBlur}
-                                onKeyDown={handleCellKeyDown}
-                                className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
-                              />
-                            ) : (
-                              <span
-                                className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
-                                onClick={() =>
-                                  handleCellClick(item.id, "min_stock", item.min_stock)
-                                }
-                                title="Clique para editar"
-                              >
-                                {item.min_stock ?? 0}
-                              </span>
-                            )}
-                          </TableCell>
-
-                          {/* Cost price */}
-                          <TableCell className="text-right text-sm text-[#4a3d3d]">
-                            {formatBRL(item.cost_price)}
-                          </TableCell>
-
-                          {/* Sale price */}
-                          <TableCell className="text-right text-sm text-[#4a3d3d]">
-                            {formatBRL(item.sale_price)}
-                          </TableCell>
-
-                          <TableCell>{getStockBadge(item)}</TableCell>
-
-                          <TableCell>{getGiroBadge(item)}</TableCell>
-
-                          <TableCell>{getSugestaoCompra(item)}</TableCell>
-
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-[#534343] hover:text-[#b91c1c]"
-                                onClick={() => handleOpenEditDialog(item)}
-                              >
-                                <MaterialIcon icon="edit" size={16} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-[#cac0c0] hover:text-[#b91c1c]"
-                                onClick={() => setDeleteConfirmId(item.id)}
-                              >
-                                <MaterialIcon icon="delete" size={16} />
-                              </Button>
-                            </div>
+                    {itemGroups.map((group) => (
+                      <React.Fragment key={group.label}>
+                        <TableRow className="bg-[#fbf9fa] border-t border-[#291715]/10">
+                          <TableCell colSpan={999} className="py-2">
+                            <span className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta">
+                              {group.label}
+                            </span>
                           </TableCell>
                         </TableRow>
-                      );
-                    })}
+                        {group.items.map((item) => {
+                          const isLowStock =
+                            item.min_stock > 0 && item.quantity < item.min_stock;
+
+                          return (
+                            <TableRow
+                              key={item.id}
+                              className={
+                                isLowStock
+                                  ? "bg-[#b91c1c]/5 hover:bg-[#b91c1c]/10"
+                                  : "hover:bg-[#f5f3f4]"
+                              }
+                            >
+                              <TableCell className="font-medium text-[#1b1c1d]">
+                                {item.product_name}
+                              </TableCell>
+
+                              <TableCell className="text-sm text-[#4a3d3d]">
+                                {item.category || "—"}
+                              </TableCell>
+
+                              {/* Quantity - inline edit */}
+                              <TableCell className="text-center">
+                                {editingCell?.itemId === item.id &&
+                                editingCell?.field === "quantity" ? (
+                                  <Input
+                                    ref={editInputRef}
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onBlur={handleCellBlur}
+                                    onKeyDown={handleCellKeyDown}
+                                    className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                  />
+                                ) : (
+                                  <span
+                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
+                                    onClick={() =>
+                                      handleCellClick(item.id, "quantity", item.quantity)
+                                    }
+                                    title="Clique para editar"
+                                  >
+                                    {item.quantity ?? 0}
+                                  </span>
+                                )}
+                              </TableCell>
+
+                              <TableCell className="text-sm text-[#4a3d3d]">
+                                {getUnitLabel(item.unit)}
+                              </TableCell>
+
+                              {/* Min stock - inline edit */}
+                              <TableCell className="text-center">
+                                {editingCell?.itemId === item.id &&
+                                editingCell?.field === "min_stock" ? (
+                                  <Input
+                                    ref={editInputRef}
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onBlur={handleCellBlur}
+                                    onKeyDown={handleCellKeyDown}
+                                    className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                  />
+                                ) : (
+                                  <span
+                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
+                                    onClick={() =>
+                                      handleCellClick(item.id, "min_stock", item.min_stock)
+                                    }
+                                    title="Clique para editar"
+                                  >
+                                    {item.min_stock ?? 0}
+                                  </span>
+                                )}
+                              </TableCell>
+
+                              {/* Cost price */}
+                              <TableCell className="text-right text-sm text-[#4a3d3d]">
+                                {formatBRL(item.cost_price)}
+                              </TableCell>
+
+                              {/* Sale price */}
+                              <TableCell className="text-right text-sm text-[#4a3d3d]">
+                                {formatBRL(item.sale_price)}
+                              </TableCell>
+
+                              <TableCell>{getStockBadge(item)}</TableCell>
+
+                              <TableCell>{getGiroBadge(item)}</TableCell>
+
+                              <TableCell>{getSugestaoCompra(item)}</TableCell>
+
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-[#534343] hover:text-[#b91c1c]"
+                                    onClick={() => handleOpenEditDialog(item)}
+                                  >
+                                    <MaterialIcon icon="edit" size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-[#cac0c0] hover:text-[#b91c1c]"
+                                    onClick={() => setDeleteConfirmId(item.id)}
+                                  >
+                                    <MaterialIcon icon="delete" size={16} />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
