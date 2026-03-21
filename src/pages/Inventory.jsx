@@ -245,14 +245,6 @@ export default function Inventory() {
   // --- Deletar produto ---
 
   const handleDelete = async (item) => {
-    if (
-      !window.confirm(
-        `Tem certeza que deseja excluir "${item.product_name}"? Esta acao nao pode ser desfeita.`
-      )
-    ) {
-      return;
-    }
-
     try {
       await InventoryItem.delete(item.id);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
@@ -397,16 +389,14 @@ export default function Inventory() {
         </div>
 
         <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button
-              variant="outline"
-              onClick={handleExportCSV}
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={handleExportCSV}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
           <Button onClick={handleOpenAddDialog} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
             <Plus className="h-4 w-4" />
             Adicionar Produto

@@ -359,7 +359,6 @@ function FileCard({ file, isAdmin, onDelete }) {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Tem certeza que deseja excluir este material?")) return;
     setDeleting(true);
     try {
       // Delete record
@@ -446,7 +445,7 @@ export default function Marketing() {
   const [showUpload, setShowUpload] = useState(false);
 
   // Filters
-  const [filterMonth, setFilterMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [filterMonth, setFilterMonth] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterFranchise, setFilterFranchise] = useState("all");
 

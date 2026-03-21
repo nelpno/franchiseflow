@@ -224,6 +224,10 @@ function SalesContent() {
 
   const handleQuickSaleSubmit = async (e) => {
     e.preventDefault();
+    if (!availableFranchises || availableFranchises.length === 0) {
+      toast.error('Nenhuma franquia disponível para registrar venda.');
+      return;
+    }
     if (!quickForm.value || !quickForm.customer_name) return;
     setIsSubmitting(true);
 
@@ -255,19 +259,17 @@ function SalesContent() {
   const handleDeleteSale = async () => {
     if (!editingSale) return;
 
-    if (window.confirm('Tem certeza que deseja excluir esta venda? Esta ação não pode ser desfeita.')) {
-      setIsSubmitting(true);
-      try {
-        await Sale.delete(editingSale.id);
-        setShowForm(false);
-        toast.success("Venda excluída.");
-        loadData();
-      } catch (error) {
-        console.error("Erro ao deletar venda:", error);
-        toast.error("Erro ao deletar venda. Tente novamente.");
-      }
-      setIsSubmitting(false);
+    setIsSubmitting(true);
+    try {
+      await Sale.delete(editingSale.id);
+      setShowForm(false);
+      toast.success("Venda excluída.");
+      loadData();
+    } catch (error) {
+      console.error("Erro ao deletar venda:", error);
+      toast.error("Erro ao deletar venda. Tente novamente.");
     }
+    setIsSubmitting(false);
   };
 
   // Inline edit handler
@@ -451,19 +453,21 @@ function SalesContent() {
                 />
               </div>
 
-              <Select value={filterFranchise} onValueChange={setFilterFranchise}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por franquia" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as Franquias</SelectItem>
-                  {availableFranchises.map(f => (
-                    <SelectItem key={f.id} value={f.evolution_instance_id}>
-                      {f.city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(availableFranchises.length > 1 || currentUser?.role === 'admin') && (
+                <Select value={filterFranchise} onValueChange={setFilterFranchise}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrar por franquia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Franquias</SelectItem>
+                    {availableFranchises.map(f => (
+                      <SelectItem key={f.id} value={f.evolution_instance_id}>
+                        {f.city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Input
                 type="date"
@@ -683,12 +687,11 @@ function SalesContent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="contact_phone">Telefone *</Label>
+                    <Label htmlFor="contact_phone">Telefone</Label>
                     <Input
                       id="contact_phone"
                       value={formData.contact_phone}
                       onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
-                      required
                     />
                   </div>
 
@@ -704,7 +707,7 @@ function SalesContent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="source">Origem do Lead</Label>
+                    <Label htmlFor="source">Canal de Venda</Label>
                     <Select
                       value={formData.source}
                       onValueChange={(value) => setFormData({...formData, source: value})}
