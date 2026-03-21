@@ -18,7 +18,9 @@ Adapter pattern: cada entidade expõe `.list()/.filter()/.create()/.update()/.de
 Importar sempre de `@/entities/all` — NÃO usar supabase.from() diretamente nas páginas.
 
 ### Autenticação (src/lib/AuthContext.jsx)
-Supabase Auth com roles: admin, franchisee, manager.
+Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supabase signInWithPassword.
+AuthContext usa getSession() + onAuthStateChange(). Timeout de 5s como safety net.
+Logout via supabase.auth.signOut() — React Router redireciona automaticamente (sem window.location).
 Fluxo de convite: admin cria franquia + email → convite automático → franqueado vinculado.
 
 ### Row Level Security
@@ -40,7 +42,7 @@ Fluxo de convite: admin cria franquia + email → convite automático → franqu
 ## Estrutura de Pastas
 ```
 src/
-├── api/           # supabaseClient.js, functions.js
+├── api/           # supabaseClient.js (com custom lock bypass), functions.js (n8n webhooks)
 ├── entities/      # all.js (adapter Supabase com interface Base44-compatível)
 ├── components/    # Componentes por feature (dashboard/, checklist/, onboarding/, etc.)
 ├── hooks/         # Custom hooks
@@ -91,6 +93,12 @@ VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 7. Supabase anon key DEVE ser formato JWT (eyJ...), NÃO o novo formato sb_publishable_
 8. NUNCA usar alert() — sempre sonner toast
 9. NUNCA importar supabase direto nas páginas — usar entities/all.js ou AuthContext
+10. Toaster DEVE ser importado de `"sonner"` no App.jsx — NÃO de `"@/components/ui/toaster"` (shadcn legado)
+11. supabaseClient.js DEVE ter custom lock function para evitar deadlock do Navigator Locks API (extensões browser com SES/lockdown travam o SDK)
+12. Rotas usam `createPageUrl("PageName")` que gera `"/PageName"` (capitalizado) — NUNCA usar paths lowercase
+13. Base44 foi COMPLETAMENTE removido — NÃO existe mais `base44Client.js`, `@base44/sdk`, nem `lib/entities.js`
+14. DailyChecklist usa `franchise_id` = `evolution_instance_id` da franquia, NÃO o UUID
+15. Entity de estoque é `InventoryItem` (NÃO `Inventory`)
 
 ## Scripts
 ```bash
