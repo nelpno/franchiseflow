@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, MapPin, Phone, User as UserIcon, Activity, MessageCircle, Trash2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 
@@ -112,7 +112,7 @@ export default function Franchises() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
+      case 'active': return 'bg-[#b91c1c]/10 text-[#b91c1c]';
       case 'inactive': return 'bg-gray-100 text-gray-800'; 
       case 'suspended': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -129,19 +129,19 @@ export default function Franchises() {
   };
 
   return (
-    <div className="p-4 md:p-8 bg-gradient-to-br from-emerald-50 to-teal-50 min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Franqueados MaxiMassas</h1>
-            <p className="text-slate-600 mt-1">Gerencie todas as suas franquias</p>
+            <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d]">Franqueados MaxiMassas</h1>
+            <p className="text-[#4a3d3d] mt-1">Gerencie todas as suas franquias</p>
           </div>
           {currentUser?.role === 'admin' && (
             <Button 
               onClick={() => setShowForm(true)}
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <MaterialIcon icon="add" size={16} className="mr-2" />
               Nova Franquia
             </Button>
           )}
@@ -165,38 +165,38 @@ export default function Franchises() {
             ))
           ) : (
             franchises.map((franchise) => (
-              <Card key={franchise.id} className="bg-white/80 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-300 cursor-pointer">
+              <Card key={franchise.id} className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-lg transition-all duration-300 cursor-pointer">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold text-slate-900">
+                    <CardTitle className="text-xl font-bold font-plus-jakarta text-[#1b1c1d]">
                       {franchise.city}
                     </CardTitle>
                     <Badge className={getStatusColor(franchise.status)}>
-                      <Activity className="w-3 h-3 mr-1" />
+                      <MaterialIcon icon="monitoring" size={12} className="mr-1" />
                       {getStatusText(franchise.status)}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <UserIcon className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-[#534343]">
+                    <MaterialIcon icon="person" size={16} />
                     <span className="text-sm">{franchise.owner_name}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <MapPin className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-[#534343]">
+                    <MaterialIcon icon="location_on" size={16} />
                     <span className="text-sm">{franchise.city}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <Phone className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-[#534343]">
+                    <MaterialIcon icon="phone" size={16} />
                     <span className="text-sm">{franchise.phone_number}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <MessageCircle className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-[#534343]">
+                    <MaterialIcon icon="chat_bubble" size={16} />
                     <span className="text-sm">Contatos Hoje: {franchise.daily_unique_contacts}</span>
                   </div>
                   
                   {currentUser?.role === 'admin' && (
-                    <div className="pt-3 border-t border-slate-200 flex justify-end">
+                    <div className="pt-3 border-t border-[#291715]/5 flex justify-end">
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -206,7 +206,7 @@ export default function Franchises() {
                           handleDeleteFranchise(franchise.id, franchise.city);
                         }}
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <MaterialIcon icon="delete" size={16} className="mr-2" />
                         Excluir Franquia
                       </Button>
                     </div>
@@ -219,24 +219,24 @@ export default function Franchises() {
 
         {!isLoading && franchises.length === 0 && (
           <div className="text-center py-16">
-            <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <UserIcon className="w-12 h-12 text-emerald-400" />
+            <div className="w-24 h-24 bg-[#b91c1c]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MaterialIcon icon="person" size={48} className="text-[#b91c1c]/40" />
             </div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">Nenhuma franquia cadastrada</h3>
+            <h3 className="text-xl font-semibold text-[#1b1c1d] mb-2">Nenhuma franquia cadastrada</h3>
             {currentUser?.role === 'admin' && (
               <>
-                <p className="text-slate-600 mb-6">Comece adicionando sua primeira franquia ao sistema</p>
+                <p className="text-[#534343] mb-6">Comece adicionando sua primeira franquia ao sistema</p>
                 <Button 
                   onClick={() => setShowForm(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <MaterialIcon icon="add" size={16} className="mr-2" />
                   Adicionar Franquia
                 </Button>
               </>
             )}
             {currentUser?.role !== 'admin' && (
-              <p className="text-slate-600 mb-6">Contate um administrador para adicionar novas franquias.</p>
+              <p className="text-[#534343] mb-6">Contate um administrador para adicionar novas franquias.</p>
             )}
           </div>
         )}

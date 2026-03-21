@@ -85,9 +85,9 @@ export default function FranchiseeDetailModal({ data, onClose }) {
   const todayItems = todayRecord?.items || {};
 
   const dayColors = {
-    complete: "bg-green-500 text-white",
-    partial: "bg-amber-400 text-white",
-    none: "bg-slate-200 text-slate-400",
+    complete: "bg-[#16a34a] text-white",
+    partial: "bg-[#d4af37] text-white",
+    none: "bg-[#e9e8e9] text-[#857372]",
   };
 
   return (
@@ -96,13 +96,13 @@ export default function FranchiseeDetailModal({ data, onClose }) {
         <DialogHeader>
           <DialogTitle className="text-xl">
             {franchise.owner_name}
-            <span className="text-slate-500 font-normal text-base ml-2">· {franchise.city}</span>
+            <span className="text-[#534343] font-normal text-base ml-2">· {franchise.city}</span>
           </DialogTitle>
         </DialogHeader>
 
         {/* Calendar 30 days */}
         <div>
-          <h3 className="font-semibold text-slate-700 mb-3">Calendário dos últimos 30 dias</h3>
+          <h3 className="font-semibold text-[#291715] mb-3">Calendário dos últimos 30 dias</h3>
           <div className="grid grid-cols-10 gap-1">
             {calendarDays.map(({ dateStr, status, label }) => (
               <div key={dateStr} className="flex flex-col items-center gap-1">
@@ -115,27 +115,27 @@ export default function FranchiseeDetailModal({ data, onClose }) {
               </div>
             ))}
           </div>
-          <div className="flex gap-4 mt-2 text-xs text-slate-500">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500 inline-block"></span> Completo</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400 inline-block"></span> Parcial</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-200 inline-block"></span> Sem registro</span>
+          <div className="flex gap-4 mt-2 text-xs text-[#534343]">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#16a34a] inline-block"></span> Completo</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#d4af37] inline-block"></span> Parcial</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-[#e9e8e9] inline-block"></span> Sem registro</span>
           </div>
         </div>
 
         {/* Weekly bars */}
         <div>
-          <h3 className="font-semibold text-slate-700 mb-3">Aderência semanal (últimas 4 semanas)</h3>
+          <h3 className="font-semibold text-[#291715] mb-3">Aderência semanal (últimas 4 semanas)</h3>
           <div className="flex gap-3 items-end h-24">
             {weeklyAdherence.map(week => (
               <div key={week.label} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-xs font-semibold text-slate-700">{week.adherencia}%</span>
-                <div className="w-full bg-slate-100 rounded-t-md" style={{ height: "60px", display: "flex", alignItems: "flex-end" }}>
+                <span className="text-xs font-semibold text-[#291715]">{week.adherencia}%</span>
+                <div className="w-full bg-[#f5f3f4] rounded-t-md" style={{ height: "60px", display: "flex", alignItems: "flex-end" }}>
                   <div
-                    className={`w-full rounded-t-md transition-all ${week.adherencia >= 70 ? "bg-green-500" : week.adherencia >= 40 ? "bg-amber-400" : "bg-red-400"}`}
+                    className={`w-full rounded-t-md transition-all ${week.adherencia >= 70 ? "bg-[#16a34a]" : week.adherencia >= 40 ? "bg-[#d4af37]" : "bg-[#b91c1c]"}`}
                     style={{ height: `${Math.max(4, week.adherencia * 0.6)}px` }}
                   />
                 </div>
-                <span className="text-xs text-slate-400">{week.label}</span>
+                <span className="text-xs text-[#857372]">{week.label}</span>
               </div>
             ))}
           </div>
@@ -143,7 +143,7 @@ export default function FranchiseeDetailModal({ data, onClose }) {
 
         {/* Today's items */}
         <div>
-          <h3 className="font-semibold text-slate-700 mb-3">
+          <h3 className="font-semibold text-[#291715] mb-3">
             Itens do checklist de hoje
             {todayRecord && (
               <Badge className="ml-2" variant={todayRecord.completion_percentage >= 100 ? "default" : "outline"}>
@@ -152,15 +152,15 @@ export default function FranchiseeDetailModal({ data, onClose }) {
             )}
           </h3>
           {!todayRecord ? (
-            <p className="text-slate-400 text-sm">Nenhum checklist registrado hoje.</p>
+            <p className="text-[#857372] text-sm">Nenhum checklist registrado hoje.</p>
           ) : (
             <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto">
               {DAILY_KEYS.map(key => (
-                <div key={key} className="flex items-center gap-2 text-sm py-1 border-b border-slate-50">
-                  <span className={todayItems[key] ? "text-green-500" : "text-slate-300"}>
+                <div key={key} className="flex items-center gap-2 text-sm py-1 border-b border-[#fbf9fa]">
+                  <span className={todayItems[key] ? "text-green-500" : "text-[#cac0c0]"}>
                     {todayItems[key] ? "✅" : "⬜"}
                   </span>
-                  <span className={todayItems[key] ? "text-slate-700" : "text-slate-400"}>
+                  <span className={todayItems[key] ? "text-[#291715]" : "text-[#857372]"}>
                     {ITEM_LABELS[key] || key}
                   </span>
                 </div>

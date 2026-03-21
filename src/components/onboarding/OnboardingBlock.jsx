@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock, ChevronDown, ExternalLink, Info } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { ROLE_TAGS } from "./ONBOARDING_BLOCKS";
 import { ITEM_DETAILS } from "./ITEM_DETAILS";
 
@@ -22,7 +22,7 @@ function ItemDetails({ details }) {
               className="inline-flex items-center gap-1 text-blue-600 underline underline-offset-2 hover:text-blue-800 font-medium"
             >
               {link.label}
-              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              <MaterialIcon icon="open_in_new" size={12} className="flex-shrink-0" />
             </a>
           ))}
         </div>
@@ -87,7 +87,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                   >
                     {locked && item.role !== "auto" ? (
                       <div className="w-4 h-4 rounded border-2 border-slate-300 bg-slate-100 flex items-center justify-center">
-                        <Lock className="w-2.5 h-2.5 text-slate-400" />
+                        <MaterialIcon icon="lock" size={10} className="text-slate-400" />
                       </div>
                     ) : (
                       <div
@@ -123,8 +123,8 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                             ? "bg-amber-100 text-amber-700"
                             : "bg-slate-100 text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-600"
                         }`}>
-                          <Info className="w-2.5 h-2.5" />
-                          <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                          <MaterialIcon icon="info" size={10} />
+                          <MaterialIcon icon="expand_more" size={10} className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
                         </span>
                       )}
                     </div>

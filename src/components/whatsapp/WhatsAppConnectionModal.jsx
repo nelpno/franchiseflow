@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, CheckCircle, AlertCircle, QrCode } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function WhatsAppConnectionModal({ 
   isOpen, 
@@ -18,27 +18,27 @@ export default function WhatsAppConnectionModal({
     switch (status) {
       case 'connected':
         return {
-          icon: CheckCircle,
+          iconName: 'check_circle',
           color: 'bg-green-100 text-green-800',
           text: 'Conectado'
         };
       case 'pending_qr':
         return {
-          icon: QrCode,
+          iconName: 'qr_code_2',
           color: 'bg-yellow-100 text-yellow-800',
           text: 'Aguardando QR Code'
         };
       case 'error':
         return {
-          icon: AlertCircle,
+          iconName: 'error',
           color: 'bg-red-100 text-red-800',
           text: 'Erro'
         };
       default:
         return {
-          icon: AlertCircle,
+          iconName: 'error',
           color: 'bg-gray-100 text-gray-800',
-          text: 'Desconectado'
+          text: 'Desconhecido'
         };
     }
   };
@@ -49,7 +49,6 @@ export default function WhatsAppConnectionModal({
   };
 
   const statusInfo = getStatusInfo();
-  const StatusIcon = statusInfo.icon;
 
   // Verificação robusta do QR Code
   const hasValidQrCode = qrCode && 
@@ -63,7 +62,7 @@ export default function WhatsAppConnectionModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <QrCode className="w-5 h-5 text-green-600" />
+            <MaterialIcon icon="qr_code_2" size={20} className="text-green-600" />
             Conectar WhatsApp
           </DialogTitle>
         </DialogHeader>
@@ -72,14 +71,14 @@ export default function WhatsAppConnectionModal({
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-600">Status da Conexão:</span>
             <Badge className={statusInfo.color}>
-              <StatusIcon className="w-3 h-3 mr-1" />
+              <MaterialIcon icon={statusInfo.iconName} size={12} className="mr-1" />
               {statusInfo.text}
             </Badge>
           </div>
 
           {status === 'connected' ? (
             <div className="text-center py-8">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <MaterialIcon icon="check_circle" size={64} className="text-green-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
                 WhatsApp Conectado com Sucesso!
               </h3>
@@ -121,11 +120,11 @@ export default function WhatsAppConnectionModal({
           ) : (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <QrCode className="w-8 h-8 text-slate-400" />
+                <MaterialIcon icon="qr_code_2" size={32} className="text-slate-400" />
               </div>
               {status === 'pending_qr' ? (
                 <div className="space-y-2">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto" />
+                  <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-blue-500 mx-auto" />
                   <p className="text-slate-600">
                     Gerando QR Code...
                   </p>
@@ -146,9 +145,9 @@ export default function WhatsAppConnectionModal({
               className="flex-1"
             >
               {isCheckingStatus ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <MaterialIcon icon="progress_activity" size={16} className="mr-2 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <MaterialIcon icon="refresh" size={16} className="mr-2" />
               )}
               Verificar Status
             </Button>

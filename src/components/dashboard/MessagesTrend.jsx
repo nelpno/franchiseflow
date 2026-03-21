@@ -1,79 +1,59 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import React, { useMemo } from 'react';
 import { format, subDays } from "date-fns";
-import { MessageSquare } from "lucide-react";
+
+const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export default function MessagesTrend({ summaries, isLoading, days = 7 }) {
-  const getLast7DaysData = () => {
+  const chartData = useMemo(() => {
     const data = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      
-      // Filtra os resumos para o dia e soma os contatos
       const daySummaries = summaries.filter(s => s.date === dateStr);
       const totalContacts = daySummaries.reduce((sum, s) => sum + (s.unique_contacts || 0), 0);
-      
       data.push({
-        date: format(date, 'dd/MM'),
-        contatos: totalContacts
+        dayLabel: DAY_LABELS[date.getDay()],
+        contacts: totalContacts,
+        isLast: i === 0,
       });
     }
     return data;
-  };
+  }, [summaries, days]);
 
-  const chartData = getLast7DaysData();
+  const totalContacts = chartData.reduce((sum, d) => sum + d.contacts, 0);
+  const maxContacts = Math.max(...chartData.map(d => d.contacts), 1);
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-          <MessageSquare className="w-5 h-5 text-emerald-500" />
-          Contatos Únicos dos Últimos {days} Dias
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          {!isLoading ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <YAxis 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                  }}
-                />
-                <Bar 
-                  dataKey="contatos" 
-                  fill="#10b981" 
-                  name="Contatos Únicos"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-pulse text-slate-500">Carregando gráfico...</div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#291715]/5">
+      <div className="flex justify-between items-center mb-6">
+        <h4 className="font-bold text-[#291715] font-plus-jakarta">
+          Contatos Recebidos
+        </h4>
+        <span className="text-xs font-black text-[#775a19] uppercase tracking-tight">
+          {totalContacts} LEADS
+        </span>
+      </div>
+      <div className="h-48 flex items-end justify-between gap-3 px-2">
+        {chartData.map((d, i) => {
+          const heightPct = maxContacts > 0 ? Math.max((d.contacts / maxContacts) * 100, 4) : 4;
+          return (
+            <div
+              key={i}
+              className={`flex-1 rounded-t-lg ${
+                d.isLast
+                  ? "bg-gradient-to-t from-[#775a19]/40 to-[#775a19]"
+                  : "bg-gradient-to-t from-[#775a19]/20 to-[#775a19]/40"
+              }`}
+              style={{ height: `${heightPct}%` }}
+            />
+          );
+        })}
+      </div>
+      <div className="flex justify-between mt-4 text-[10px] font-bold text-[#291715]/40 uppercase tracking-widest font-plus-jakarta">
+        {chartData.map((d, i) => (
+          <span key={i}>{d.dayLabel}</span>
+        ))}
+      </div>
+    </div>
   );
 }

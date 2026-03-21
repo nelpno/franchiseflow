@@ -26,17 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Package,
-  Plus,
-  Download,
-  AlertTriangle,
-  Check,
-  Trash2,
-  Loader2,
-  Search,
-  PackageOpen,
-} from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -263,7 +253,7 @@ export default function Inventory() {
       return;
     }
 
-    const getFranchiseName = (franchiseId) => {
+    const getFranchiseNameCSV = (franchiseId) => {
       const f = franchises.find(
         (fr) => fr.id === franchiseId || fr.evolution_instance_id === franchiseId
       );
@@ -281,7 +271,7 @@ export default function Inventory() {
     ];
 
     const rows = filteredItems.map((item) => [
-      getFranchiseName(item.franchise_id),
+      getFranchiseNameCSV(item.franchise_id),
       item.product_name,
       item.category || "",
       item.quantity,
@@ -323,19 +313,19 @@ export default function Inventory() {
 
   const getStockBadge = (item) => {
     if (!item.min_stock || item.min_stock <= 0) {
-      return <Badge className="bg-gray-100 text-gray-600">Sem minimo</Badge>;
+      return <Badge className="bg-[#e9e8e9] text-[#534343] rounded-full px-2 py-0.5 text-[10px] font-bold">Sem minimo</Badge>;
     }
     if (item.quantity < item.min_stock) {
       return (
-        <Badge className="bg-red-100 text-red-700">
-          <AlertTriangle className="h-3 w-3 mr-1" />
+        <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[10px] font-bold">
+          <MaterialIcon icon="warning" size={12} className="mr-1" />
           Estoque baixo
         </Badge>
       );
     }
     return (
-      <Badge className="bg-green-100 text-green-700">
-        <Check className="h-3 w-3 mr-1" />
+      <Badge className="bg-[#b91c1c]/10 text-[#9c4143] rounded-full px-2 py-0.5 text-[10px] font-bold">
+        <MaterialIcon icon="check" size={12} className="mr-1" />
         OK
       </Badge>
     );
@@ -366,23 +356,23 @@ export default function Inventory() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-        <span className="ml-3 text-gray-500">Carregando inventario...</span>
+        <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
+        <span className="ml-3 text-[#534343]">Carregando inventario...</span>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-100 rounded-lg">
-            <Package className="h-6 w-6 text-emerald-600" />
+          <div className="p-2 bg-[#b91c1c]/10 rounded-xl">
+            <MaterialIcon icon="inventory_2" size={24} className="text-[#b91c1c]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Controle de Estoque</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Controle de Estoque</h1>
+            <p className="text-sm text-[#534343]">
               Controle de estoque dos produtos
             </p>
           </div>
@@ -392,13 +382,13 @@ export default function Inventory() {
           <Button
             variant="outline"
             onClick={handleExportCSV}
-            className="gap-2"
+            className="gap-2 border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
           >
-            <Download className="h-4 w-4" />
+            <MaterialIcon icon="upload" size={18} />
             Exportar CSV
           </Button>
-          <Button onClick={handleOpenAddDialog} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="h-4 w-4" />
+          <Button onClick={handleOpenAddDialog} className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl">
+            <MaterialIcon icon="add" size={18} />
             Adicionar Produto
           </Button>
         </div>
@@ -406,38 +396,38 @@ export default function Inventory() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Package className="h-5 w-5 text-blue-600" />
+        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+          <CardContent className="p-0 flex items-center gap-3">
+            <div className="p-2 bg-[#775a19]/10 rounded-xl">
+              <MaterialIcon icon="inventory_2" size={20} className="text-[#775a19]" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total de Produtos</p>
-              <p className="text-xl font-bold">{totalProducts}</p>
+              <p className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Total de Produtos</p>
+              <p className="text-xl font-bold text-[#1b1c1d]">{totalProducts}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-red-50 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+          <CardContent className="p-0 flex items-center gap-3">
+            <div className="p-2 bg-[#b91c1c]/10 rounded-xl">
+              <MaterialIcon icon="warning" size={20} className="text-[#b91c1c]" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Estoque Baixo</p>
-              <p className="text-xl font-bold text-red-600">{lowStockCount}</p>
+              <p className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Estoque Baixo</p>
+              <p className="text-xl font-bold text-[#b91c1c]">{lowStockCount}</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-green-50 rounded-lg">
-              <Check className="h-5 w-5 text-green-600" />
+        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+          <CardContent className="p-0 flex items-center gap-3">
+            <div className="p-2 bg-[#9c4143]/10 rounded-xl">
+              <MaterialIcon icon="check_circle" size={20} className="text-[#9c4143]" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Estoque OK</p>
-              <p className="text-xl font-bold text-green-600">
+              <p className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Estoque OK</p>
+              <p className="text-xl font-bold text-[#9c4143]">
                 {totalProducts - lowStockCount}
               </p>
             </div>
@@ -446,17 +436,17 @@ export default function Inventory() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Busca */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <MaterialIcon icon="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a3d3d]/50" />
               <Input
                 placeholder="Buscar por produto ou categoria..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
+                className="pl-10 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
               />
             </div>
 
@@ -466,7 +456,7 @@ export default function Inventory() {
                 value={selectedFranchise}
                 onValueChange={setSelectedFranchise}
               >
-                <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px] bg-[#e9e8e9] border-none rounded-xl">
                   <SelectValue placeholder="Todas as franquias" />
                 </SelectTrigger>
                 <SelectContent>
@@ -485,7 +475,7 @@ export default function Inventory() {
 
             {/* Filtro categoria */}
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px] bg-[#e9e8e9] border-none rounded-xl">
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
@@ -502,15 +492,15 @@ export default function Inventory() {
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
         <CardContent className="p-0">
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <PackageOpen className="h-16 w-16 text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-1">
+              <MaterialIcon icon="package_2" size={64} className="text-[#cac0c0] mb-4" />
+              <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
                 Nenhum produto encontrado
               </h3>
-              <p className="text-sm text-gray-500 mb-4 max-w-sm">
+              <p className="text-sm text-[#534343] mb-4 max-w-sm">
                 {searchTerm || filterCategory !== "all"
                   ? "Nenhum produto corresponde aos filtros aplicados."
                   : "Comece adicionando produtos ao inventario da franquia."}
@@ -518,9 +508,9 @@ export default function Inventory() {
               {!searchTerm && filterCategory === "all" && (
                 <Button
                   onClick={handleOpenAddDialog}
-                  className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
                 >
-                  <Plus className="h-4 w-4" />
+                  <MaterialIcon icon="add" size={18} />
                   Adicionar Primeiro Produto
                 </Button>
               )}
@@ -529,17 +519,17 @@ export default function Inventory() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    {isAdmin && <TableHead>Franquia</TableHead>}
-                    <TableHead>Produto</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="text-center">Quantidade</TableHead>
-                    <TableHead>Unidade</TableHead>
-                    <TableHead className="text-center">
+                  <TableRow className="border-b border-[#cac0c0]/30">
+                    {isAdmin && <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Franquia</TableHead>}
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Produto</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Categoria</TableHead>
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Quantidade</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Unidade</TableHead>
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
                       Estoque Minimo
                     </TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Atualizado em</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Status</TableHead>
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">Atualizado em</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -553,21 +543,21 @@ export default function Inventory() {
                         key={item.id}
                         className={
                           isLowStock
-                            ? "bg-red-50/50 hover:bg-red-50"
-                            : "hover:bg-gray-50"
+                            ? "bg-[#b91c1c]/5 hover:bg-[#b91c1c]/10"
+                            : "hover:bg-[#f5f3f4]"
                         }
                       >
                         {isAdmin && (
-                          <TableCell className="font-medium text-sm">
+                          <TableCell className="font-medium text-sm text-[#1b1c1d]">
                             {getFranchiseName(item.franchise_id)}
                           </TableCell>
                         )}
 
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-[#1b1c1d]">
                           {item.product_name}
                         </TableCell>
 
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="text-sm text-[#4a3d3d]">
                           {item.category || "—"}
                         </TableCell>
 
@@ -584,11 +574,11 @@ export default function Inventory() {
                               onChange={(e) => setEditValue(e.target.value)}
                               onBlur={handleCellBlur}
                               onKeyDown={handleCellKeyDown}
-                              className="w-20 mx-auto text-center h-8"
+                              className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
                             />
                           ) : (
                             <span
-                              className="cursor-pointer px-2 py-1 rounded hover:bg-emerald-50 hover:text-emerald-700 transition-colors inline-block min-w-[3rem]"
+                              className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
                               onClick={() =>
                                 handleCellClick(
                                   item.id,
@@ -603,7 +593,7 @@ export default function Inventory() {
                           )}
                         </TableCell>
 
-                        <TableCell className="text-sm">
+                        <TableCell className="text-sm text-[#4a3d3d]">
                           {getUnitLabel(item.unit)}
                         </TableCell>
 
@@ -620,11 +610,11 @@ export default function Inventory() {
                               onChange={(e) => setEditValue(e.target.value)}
                               onBlur={handleCellBlur}
                               onKeyDown={handleCellKeyDown}
-                              className="w-20 mx-auto text-center h-8"
+                              className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
                             />
                           ) : (
                             <span
-                              className="cursor-pointer px-2 py-1 rounded hover:bg-emerald-50 hover:text-emerald-700 transition-colors inline-block min-w-[3rem]"
+                              className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
                               onClick={() =>
                                 handleCellClick(
                                   item.id,
@@ -641,7 +631,7 @@ export default function Inventory() {
 
                         <TableCell>{getStockBadge(item)}</TableCell>
 
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-[#4a3d3d]">
                           {item.updated_at
                             ? format(
                                 new Date(item.updated_at),
@@ -655,10 +645,10 @@ export default function Inventory() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-gray-400 hover:text-red-600"
+                            className="h-8 w-8 text-[#cac0c0] hover:text-[#b91c1c]"
                             onClick={() => handleDelete(item)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <MaterialIcon icon="delete" size={16} />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -673,10 +663,10 @@ export default function Inventory() {
 
       {/* Add product dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-emerald-600" />
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d]">
+              <MaterialIcon icon="inventory_2" size={20} className="text-[#b91c1c]" />
               Adicionar Produto
             </DialogTitle>
           </DialogHeader>
@@ -685,14 +675,14 @@ export default function Inventory() {
             {/* Franquia */}
             {(isAdmin || availableFranchises.length > 1) && (
               <div className="space-y-2">
-                <Label>Franquia *</Label>
+                <Label className="text-[#1b1c1d]">Franquia *</Label>
                 <Select
                   value={formData.franchise_id || ""}
                   onValueChange={(val) =>
                     setFormData((prev) => ({ ...prev, franchise_id: val }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
                     <SelectValue placeholder="Selecione a franquia" />
                   </SelectTrigger>
                   <SelectContent>
@@ -711,7 +701,7 @@ export default function Inventory() {
 
             {/* Nome do produto */}
             <div className="space-y-2">
-              <Label>Nome do Produto *</Label>
+              <Label className="text-[#1b1c1d]">Nome do Produto *</Label>
               <Input
                 value={formData.product_name}
                 onChange={(e) =>
@@ -722,12 +712,13 @@ export default function Inventory() {
                 }
                 placeholder="Ex: Lasanha Bolonhesa 500g"
                 required
+                className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
               />
             </div>
 
             {/* Categoria */}
             <div className="space-y-2">
-              <Label>Categoria</Label>
+              <Label className="text-[#1b1c1d]">Categoria</Label>
               <Select
                 value={formData.category || "none"}
                 onValueChange={(val) =>
@@ -737,7 +728,7 @@ export default function Inventory() {
                   }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -754,7 +745,7 @@ export default function Inventory() {
             {/* Quantidade e Unidade */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Quantidade</Label>
+                <Label className="text-[#1b1c1d]">Quantidade</Label>
                 <Input
                   type="number"
                   min="0"
@@ -767,18 +758,19 @@ export default function Inventory() {
                     }))
                   }
                   placeholder="0"
+                  className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Unidade</Label>
+                <Label className="text-[#1b1c1d]">Unidade</Label>
                 <Select
                   value={formData.unit}
                   onValueChange={(val) =>
                     setFormData((prev) => ({ ...prev, unit: val }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -794,7 +786,7 @@ export default function Inventory() {
 
             {/* Estoque minimo */}
             <div className="space-y-2">
-              <Label>Estoque Minimo</Label>
+              <Label className="text-[#1b1c1d]">Estoque Minimo</Label>
               <Input
                 type="number"
                 min="0"
@@ -807,8 +799,9 @@ export default function Inventory() {
                   }))
                 }
                 placeholder="0"
+                className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[#534343]">
                 Voce sera alertado quando a quantidade ficar abaixo deste valor.
               </p>
             </div>
@@ -820,22 +813,23 @@ export default function Inventory() {
                 variant="outline"
                 onClick={() => setShowAddDialog(false)}
                 disabled={isSubmitting}
+                className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-emerald-600 hover:bg-emerald-700 gap-2"
+                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-2"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
                     Salvando...
                   </>
                 ) : (
                   <>
-                    <Plus className="h-4 w-4" />
+                    <MaterialIcon icon="add" size={18} />
                     Adicionar
                   </>
                 )}

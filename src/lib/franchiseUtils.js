@@ -1,0 +1,89 @@
+/**
+ * Franchise utilities — centraliza lógica de filtro e lookup de franquias.
+ * Resolve a inconsistência UUID vs evolution_instance_id.
+ */
+
+/**
+ * Filtra franquias que o usuário pode acessar.
+ * Verifica tanto UUID (id) quanto evolution_instance_id,
+ * porque managed_franchise_ids pode conter qualquer um dos dois.
+ */
+export function getAvailableFranchises(franchises, currentUser) {
+  if (!currentUser || !franchises) return [];
+  if (currentUser.role === "admin") return franchises;
+
+  const ids = currentUser.managed_franchise_ids || [];
+  return franchises.filter(
+    (f) => ids.includes(f.id) || ids.includes(f.evolution_instance_id)
+  );
+}
+
+/**
+ * Encontra a franquia principal do usuário (primeira da lista).
+ */
+export function getPrimaryFranchise(franchises, currentUser) {
+  const available = getAvailableFranchises(franchises, currentUser);
+  return available[0] || null;
+}
+
+/**
+ * Dado um franchiseId (que pode ser UUID ou evolution_instance_id),
+ * encontra a franquia correspondente.
+ */
+export function findFranchise(franchises, franchiseId) {
+  if (!franchiseId || !franchises) return null;
+  return franchises.find(
+    (f) => f.id === franchiseId || f.evolution_instance_id === franchiseId
+  );
+}
+
+/**
+ * Labels amigáveis para métodos de pagamento.
+ */
+export const PAYMENT_METHODS = [
+  { value: "pix", label: "PIX", icon: "qr_code_2" },
+  { value: "payment_link", label: "Link de Pagamento", icon: "link" },
+  { value: "card_machine", label: "Máquina de Cartão", icon: "credit_card" },
+  { value: "cash", label: "Dinheiro", icon: "payments" },
+];
+
+/**
+ * Labels para métodos de entrega.
+ */
+export const DELIVERY_METHODS = [
+  { value: "own_fleet", label: "Motoboy próprio", description: "Leva máquina de cartão" },
+  { value: "third_party", label: "Uber / Flash / iFood", description: "Só PIX ou link (sem máquina)" },
+  { value: "both", label: "Ambos", description: "Próprio + terceirizado" },
+];
+
+/**
+ * Labels para personalidade do bot.
+ */
+export const BOT_PERSONALITIES = [
+  { value: "formal", label: "Formal", description: "Sério e executivo" },
+  { value: "friendly", label: "Amigável", description: "Caloroso e prestativo" },
+  { value: "casual", label: "Descontraído", description: "Jovial e direto" },
+];
+
+/**
+ * Labels para tipo de chave PIX.
+ */
+export const PIX_KEY_TYPES = [
+  { value: "cpf", label: "CPF" },
+  { value: "phone", label: "Telefone" },
+  { value: "email", label: "E-mail" },
+  { value: "random", label: "Chave aleatória" },
+];
+
+/**
+ * Dias da semana para chips.
+ */
+export const WEEKDAYS = [
+  { value: "seg", label: "Seg" },
+  { value: "ter", label: "Ter" },
+  { value: "qua", label: "Qua" },
+  { value: "qui", label: "Qui" },
+  { value: "sex", label: "Sex" },
+  { value: "sab", label: "Sáb" },
+  { value: "dom", label: "Dom" },
+];

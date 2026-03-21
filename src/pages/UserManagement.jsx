@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UserCheck, Settings, Save, X, Trash2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -89,20 +89,20 @@ export default function UserManagement() {
     return (
       <div className="p-8 text-center">
         <h1 className="text-2xl font-bold text-red-600">Acesso Negado</h1>
-        <p className="text-slate-600 mt-2">Apenas administradores podem acessar esta página.</p>
+        <p className="text-[#534343] mt-2">Apenas administradores podem acessar esta página.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <UserCheck className="w-8 h-8 text-blue-600" />
+          <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
+            <MaterialIcon icon="how_to_reg" size={32} className="text-[#b91c1c]" />
             Gerenciamento de Usuários
           </h1>
-          <p className="text-slate-600 mt-1">Defina quais franquias cada usuário pode gerenciar</p>
+          <p className="text-[#4a3d3d] mt-1">Defina quais franquias cada usuário pode gerenciar</p>
         </div>
 
         {isLoading ? (
@@ -119,33 +119,33 @@ export default function UserManagement() {
         ) : (
           <div className="grid gap-6">
             {users.map((user) => (
-              <Card key={user.id} className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
+              <Card key={user.id} className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-slate-900">{user.full_name}</h3>
+                        <h3 className="text-lg font-semibold text-[#1b1c1d]">{user.full_name}</h3>
                         <Badge variant={user.role === 'admin' ? 'destructive' : 'default'}>
                           {user.role === 'admin' ? 'Administrador' : 'Usuário'}
                         </Badge>
                       </div>
-                      <p className="text-slate-600 text-sm mb-3">{user.email}</p>
+                      <p className="text-[#534343] text-sm mb-3">{user.email}</p>
                       
                       <div>
-                        <p className="text-sm font-medium text-slate-700 mb-2">Franquias permitidas:</p>
+                        <p className="text-sm font-medium text-[#4a3d3d] mb-2">Franquias permitidas:</p>
                         {user.managed_franchise_ids && user.managed_franchise_ids.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
                             {user.managed_franchise_ids.map((franchiseId) => {
                               const franchise = franchises.find(f => f.evolution_instance_id === franchiseId);
                               return (
-                                <Badge key={franchiseId} variant="outline" className="bg-emerald-50 text-emerald-700">
+                                <Badge key={franchiseId} variant="outline" className="bg-[#b91c1c]/10 text-[#b91c1c]">
                                   {franchise?.city || franchiseId}
                                 </Badge>
                               );
                             })}
                           </div>
                         ) : (
-                          <p className="text-slate-500 text-sm">Nenhuma franquia atribuída</p>
+                          <p className="text-[#534343] text-sm">Nenhuma franquia atribuída</p>
                         )}
                       </div>
                     </div>
@@ -157,7 +157,7 @@ export default function UserManagement() {
                           variant="outline"
                           size="sm"
                         >
-                          <Settings className="w-4 h-4 mr-2" />
+                          <MaterialIcon icon="settings" size={16} className="mr-2" />
                           Editar Permissões
                         </Button>
                         <Button
@@ -166,7 +166,7 @@ export default function UserManagement() {
                           size="sm"
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <MaterialIcon icon="delete" size={16} />
                         </Button>
                       </div>
                     )}
@@ -183,13 +183,13 @@ export default function UserManagement() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
+                  <MaterialIcon icon="settings" size={20} />
                   Editar Permissões - {editingUser.full_name}
                 </DialogTitle>
               </DialogHeader>
               
               <div className="py-4">
-                <p className="text-sm text-slate-600 mb-4">
+                <p className="text-sm text-[#534343] mb-4">
                   Selecione quais franquias este usuário pode gerenciar:
                 </p>
                 
@@ -207,7 +207,7 @@ export default function UserManagement() {
                       >
                         <div>
                           <p className="font-semibold">{franchise.city}</p>
-                          <p className="text-slate-500 text-xs">{franchise.owner_name}</p>
+                          <p className="text-[#534343] text-xs">{franchise.owner_name}</p>
                         </div>
                       </label>
                     </div>
@@ -217,11 +217,11 @@ export default function UserManagement() {
               
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setEditingUser(null)}>
-                  <X className="w-4 h-4 mr-2" />
+                  <MaterialIcon icon="close" size={16} className="mr-2" />
                   Cancelar
                 </Button>
                 <Button onClick={handleSavePermissions} disabled={isSaving}>
-                  <Save className="w-4 h-4 mr-2" />
+                  <MaterialIcon icon="save" size={16} className="mr-2" />
                   {isSaving ? 'Salvando...' : 'Salvar Permissões'}
                 </Button>
               </div>

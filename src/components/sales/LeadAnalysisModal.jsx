@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BrainCircuit, Loader2, ThumbsUp, ThumbsDown, Minus } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { analyzeLead } from "@/api/functions";
 import { Progress } from "@/components/ui/progress";
 
@@ -38,9 +38,9 @@ export default function LeadAnalysisModal({ sale, trigger }) {
 
   const getSentimentIcon = (sentiment) => {
     switch(sentiment) {
-      case 'positive': return <ThumbsUp className="w-5 h-5 text-green-500" />;
-      case 'negative': return <ThumbsDown className="w-5 h-5 text-red-500" />;
-      default: return <Minus className="w-5 h-5 text-gray-500" />;
+      case 'positive': return <MaterialIcon icon="thumb_up" size={20} className="text-green-500" />;
+      case 'negative': return <MaterialIcon icon="thumb_down" size={20} className="text-red-500" />;
+      default: return <MaterialIcon icon="remove" size={20} className="text-gray-500" />;
     }
   };
 
@@ -49,7 +49,7 @@ export default function LeadAnalysisModal({ sale, trigger }) {
       <DialogTrigger asChild>
         {trigger || (
             <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
-                <BrainCircuit className="w-4 h-4 mr-2" />
+                <MaterialIcon icon="psychology" size={16} className="mr-2" />
                 Análise IA
             </Button>
         )}
@@ -57,7 +57,7 @@ export default function LeadAnalysisModal({ sale, trigger }) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BrainCircuit className="w-5 h-5 text-indigo-600" />
+            <MaterialIcon icon="psychology" size={20} className="text-indigo-600" />
             Análise de Potencial do Lead
           </DialogTitle>
         </DialogHeader>
@@ -65,7 +65,7 @@ export default function LeadAnalysisModal({ sale, trigger }) {
         <div className="py-4">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+              <MaterialIcon icon="progress_activity" size={32} className="text-indigo-600 animate-spin" />
               <p className="text-sm text-slate-500">Analisando histórico e perfil...</p>
             </div>
           ) : analysis ? (

@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import ChecklistItem from "./ChecklistItem";
 
 export default function ChecklistBlock({
@@ -43,8 +43,8 @@ export default function ChecklistBlock({
           </span>
           {collapsible && (
             collapsed
-              ? <ChevronDown className="w-5 h-5 text-white" />
-              : <ChevronUp className="w-5 h-5 text-white" />
+              ? <MaterialIcon icon="expand_more" size={20} className="text-white" />
+              : <MaterialIcon icon="expand_less" size={20} className="text-white" />
           )}
         </div>
       </div>

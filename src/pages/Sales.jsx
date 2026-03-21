@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Edit, DollarSign, Search, Filter, Trash2, Zap, TrendingUp, Target, ShoppingCart } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import LeadAnalysisModal from "../components/sales/LeadAnalysisModal";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -57,7 +57,7 @@ function InlineEdit({ value, onSave, type = "text", formatDisplay }) {
         onChange={(e) => setEditValue(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className="h-7 w-auto min-w-[80px] max-w-[200px] text-sm"
+        className="h-7 w-auto min-w-[80px] max-w-[200px] text-sm bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
       />
     );
   }
@@ -65,7 +65,7 @@ function InlineEdit({ value, onSave, type = "text", formatDisplay }) {
   return (
     <span
       onClick={() => { setEditValue(value); setEditing(true); }}
-      className="cursor-pointer hover:bg-yellow-50 hover:ring-1 hover:ring-yellow-300 rounded px-1 py-0.5 transition-all"
+      className="cursor-pointer hover:bg-[#d4af37]/10 hover:ring-1 hover:ring-[#d4af37]/40 rounded px-1 py-0.5 transition-all"
       title="Clique para editar"
     >
       {formatDisplay ? formatDisplay(value) : value}
@@ -302,11 +302,11 @@ function SalesContent() {
 
   const getSourceBadge = (source) => {
     const colors = {
-      whatsapp: 'bg-green-100 text-green-800',
-      phone_call: 'bg-blue-100 text-blue-800',
-      in_person: 'bg-purple-100 text-purple-800',
-      website: 'bg-orange-100 text-orange-800',
-      other: 'bg-gray-100 text-gray-800'
+      whatsapp: 'bg-[#b91c1c]/10 text-[#b91c1c]',
+      phone_call: 'bg-[#775a19]/10 text-[#775a19]',
+      in_person: 'bg-[#534343]/10 text-[#534343]',
+      website: 'bg-[#d4af37]/15 text-[#775a19]',
+      other: 'bg-[#e9e8e9] text-[#534343]'
     };
 
     const labels = {
@@ -318,7 +318,7 @@ function SalesContent() {
     };
 
     return (
-      <Badge className={colors[source] || colors.other}>
+      <Badge className={`${colors[source] || colors.other} rounded-full px-2 py-0.5 text-[10px] font-bold`}>
         {labels[source] || source}
       </Badge>
     );
@@ -346,6 +346,7 @@ function SalesContent() {
   const availableFranchises = currentUser?.role === 'admin'
     ? franchises
     : franchises.filter(f =>
+        currentUser?.managed_franchise_ids?.includes(f.id) ||
         currentUser?.managed_franchise_ids?.includes(f.evolution_instance_id)
       );
 
@@ -353,16 +354,16 @@ function SalesContent() {
   const goalProgress = goalTarget > 0 ? Math.min((monthStats.revenue / goalTarget) * 100, 100) : 0;
 
   return (
-    <div className="p-4 md:p-8 bg-gradient-to-br from-green-50 to-emerald-50 min-h-screen">
+    <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header com botões */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <DollarSign className="w-8 h-8 text-green-600" />
+            <h1 className="text-3xl font-bold text-[#1b1c1d] font-plus-jakarta flex items-center gap-3">
+              <MaterialIcon icon="attach_money" size={32} className="text-[#b91c1c]" />
               Gerenciar Vendas
             </h1>
-            <p className="text-slate-600 mt-1">Visualize, confirme e edite as vendas registradas</p>
+            <p className="text-[#534343] mt-1">Visualize, confirme e edite as vendas registradas</p>
           </div>
 
           {availableFranchises.length > 0 && (
@@ -372,13 +373,13 @@ function SalesContent() {
                   setQuickForm({ value: '', customer_name: '', contact_phone: '' });
                   setShowQuickSale(true);
                 }}
-                className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 text-base px-6 py-5"
+                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg shadow-[#b91c1c]/20 text-base px-6 py-5"
               >
-                <Zap className="w-5 h-5 mr-2" />
+                <MaterialIcon icon="bolt" size={20} className="mr-2" />
                 Venda Rápida
               </Button>
-              <Button onClick={handleNewSale} variant="outline" className="border-green-300 text-green-700 hover:bg-green-50">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button onClick={handleNewSale} variant="outline" className="border-[#b91c1c] text-[#b91c1c] rounded-xl hover:bg-[#b91c1c]/5">
+                <MaterialIcon icon="add" size={18} className="mr-2" />
                 Nova Venda
               </Button>
             </div>
@@ -387,75 +388,75 @@ function SalesContent() {
 
         {/* Performance Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-md">
-            <CardContent className="p-4 md:p-6">
+          <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+            <CardContent className="p-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Vendas do Mês</span>
-                <ShoppingCart className="w-5 h-5 text-blue-500" />
+                <span className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Vendas do Mês</span>
+                <MaterialIcon icon="shopping_cart" size={20} className="text-[#775a19]" />
               </div>
-              <p className="text-2xl md:text-3xl font-bold text-slate-900">{monthStats.count}</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#1b1c1d]">{monthStats.count}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-md">
-            <CardContent className="p-4 md:p-6">
+          <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+            <CardContent className="p-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Receita do Mês</span>
-                <DollarSign className="w-5 h-5 text-green-500" />
+                <span className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Receita do Mês</span>
+                <MaterialIcon icon="attach_money" size={20} className="text-[#b91c1c]" />
               </div>
-              <p className="text-2xl md:text-3xl font-bold text-slate-900">{formatCurrency(monthStats.revenue)}</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#1b1c1d]">{formatCurrency(monthStats.revenue)}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-md">
-            <CardContent className="p-4 md:p-6">
+          <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+            <CardContent className="p-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Valor Médio</span>
-                <TrendingUp className="w-5 h-5 text-orange-500" />
+                <span className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Valor Médio</span>
+                <MaterialIcon icon="trending_up" size={20} className="text-[#d4af37]" />
               </div>
-              <p className="text-2xl md:text-3xl font-bold text-slate-900">{formatCurrency(monthStats.average)}</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#1b1c1d]">{formatCurrency(monthStats.average)}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-md">
-            <CardContent className="p-4 md:p-6">
+          <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
+            <CardContent className="p-0">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-500">Meta</span>
-                <Target className="w-5 h-5 text-purple-500" />
+                <span className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">Meta</span>
+                <MaterialIcon icon="flag" size={20} className="text-[#9c4143]" />
               </div>
               {goalTarget > 0 ? (
                 <>
-                  <p className="text-lg font-bold text-slate-900 mb-2">
+                  <p className="text-lg font-bold text-[#1b1c1d] mb-2">
                     {formatCurrency(monthStats.revenue)}{' '}
-                    <span className="text-sm font-normal text-slate-500">/ {formatCurrency(goalTarget)}</span>
+                    <span className="text-sm font-normal text-[#534343]">/ {formatCurrency(goalTarget)}</span>
                   </p>
                   <Progress value={goalProgress} className="h-2.5" />
-                  <p className="text-xs text-slate-500 mt-1">{goalProgress.toFixed(0)}% da meta</p>
+                  <p className="text-xs text-[#534343] mt-1">{goalProgress.toFixed(0)}% da meta</p>
                 </>
               ) : (
-                <p className="text-sm text-slate-400 mt-1">Nenhuma meta definida</p>
+                <p className="text-sm text-[#4a3d3d]/60 mt-1">Nenhuma meta definida</p>
               )}
             </CardContent>
           </Card>
         </div>
 
         {/* Filtros */}
-        <Card className="mb-6">
+        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 mb-6">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <MaterialIcon icon="search" size={18} className="absolute left-3 top-3 text-[#4a3d3d]/50" />
                 <Input
                   placeholder="Buscar por nome ou telefone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                 />
               </div>
 
               {(availableFranchises.length > 1 || currentUser?.role === 'admin') && (
                 <Select value={filterFranchise} onValueChange={setFilterFranchise}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
                     <SelectValue placeholder="Filtrar por franquia" />
                   </SelectTrigger>
                   <SelectContent>
@@ -474,6 +475,7 @@ function SalesContent() {
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
                 placeholder="Filtrar por data"
+                className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
               />
 
               <Button
@@ -483,8 +485,9 @@ function SalesContent() {
                   setFilterFranchise('all');
                   setFilterDate('');
                 }}
+                className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
               >
-                <Filter className="w-4 h-4 mr-2" />
+                <MaterialIcon icon="filter_list_off" size={18} className="mr-2" />
                 Limpar Filtros
               </Button>
             </div>
@@ -495,10 +498,10 @@ function SalesContent() {
         {isLoading ? (
           <div className="grid gap-4">
             {[...Array(5)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
+              <Card key={i} className="animate-pulse bg-white rounded-2xl shadow-sm border border-[#291715]/5">
                 <CardContent className="p-6">
-                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-[#e9e8e9] rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-[#e9e8e9] rounded w-1/2"></div>
                 </CardContent>
               </Card>
             ))}
@@ -506,18 +509,18 @@ function SalesContent() {
         ) : (
           <div className="grid gap-4">
             {filteredSales.map((sale) => (
-              <Card key={sale.id} className="bg-white/90 backdrop-blur-sm shadow-lg border-0 hover:shadow-xl transition-all duration-300">
+              <Card key={sale.id} className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-md transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-lg font-semibold text-slate-900">
+                        <h3 className="text-lg font-semibold text-[#1b1c1d]">
                           <InlineEdit
                             value={sale.customer_name || 'Cliente não informado'}
                             onSave={(val) => handleInlineUpdate(sale.id, 'customer_name', val)}
                           />
                         </h3>
-                        <Badge className="bg-green-100 text-green-800">
+                        <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[10px] font-bold">
                           <InlineEdit
                             value={sale.value || 0}
                             type="number"
@@ -528,15 +531,15 @@ function SalesContent() {
                         {getSourceBadge(sale.source)}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#4a3d3d]">
                         <div>
-                          <span className="font-medium">Telefone:</span> {sale.contact_phone}
+                          <span className="font-medium text-[#1b1c1d]">Telefone:</span> {sale.contact_phone}
                         </div>
                         <div>
-                          <span className="font-medium">Franquia:</span> {getFranchiseName(sale.franchise_id)}
+                          <span className="font-medium text-[#1b1c1d]">Franquia:</span> {getFranchiseName(sale.franchise_id)}
                         </div>
                         <div>
-                          <span className="font-medium">Data:</span> {formatDateSafe(sale.sale_date)}
+                          <span className="font-medium text-[#1b1c1d]">Data:</span> {formatDateSafe(sale.sale_date)}
                         </div>
                       </div>
                     </div>
@@ -547,8 +550,9 @@ function SalesContent() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditSale(sale)}
+                        className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
                       >
-                        <Edit className="w-4 h-4 mr-2" />
+                        <MaterialIcon icon="edit" size={16} className="mr-2" />
                         Editar
                       </Button>
                     </div>
@@ -559,11 +563,11 @@ function SalesContent() {
 
             {filteredSales.length === 0 && !isLoading && (
               <div className="text-center py-16">
-                <DollarSign className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                <MaterialIcon icon="attach_money" size={64} className="text-[#cac0c0] mx-auto mb-4 block" />
+                <h3 className="text-xl font-semibold text-[#1b1c1d] mb-2 font-plus-jakarta">
                   Nenhuma venda encontrada
                 </h3>
-                <p className="text-slate-600">
+                <p className="text-[#534343]">
                   {sales.length === 0
                     ? 'Ainda não há vendas registradas.'
                     : 'Tente ajustar os filtros de busca.'
@@ -576,17 +580,17 @@ function SalesContent() {
 
         {/* Modal Venda Rápida */}
         <Dialog open={showQuickSale} onOpenChange={setShowQuickSale}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-emerald-700">
-                <Zap className="w-5 h-5" />
+              <DialogTitle className="flex items-center gap-2 text-[#b91c1c] font-plus-jakarta">
+                <MaterialIcon icon="bolt" size={20} />
                 Venda Rápida
               </DialogTitle>
             </DialogHeader>
 
             <form onSubmit={handleQuickSaleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="quick_value" className="text-base">Valor (R$) *</Label>
+                <Label htmlFor="quick_value" className="text-base text-[#1b1c1d]">Valor (R$) *</Label>
                 <Input
                   id="quick_value"
                   type="number"
@@ -594,39 +598,39 @@ function SalesContent() {
                   placeholder="0,00"
                   value={quickForm.value}
                   onChange={(e) => setQuickForm({ ...quickForm, value: e.target.value })}
-                  className="text-lg h-12 mt-1"
+                  className="text-lg h-12 mt-1 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                   required
                   autoFocus
                 />
               </div>
 
               <div>
-                <Label htmlFor="quick_customer" className="text-base">Nome do Cliente *</Label>
+                <Label htmlFor="quick_customer" className="text-base text-[#1b1c1d]">Nome do Cliente *</Label>
                 <Input
                   id="quick_customer"
                   placeholder="Nome do cliente"
                   value={quickForm.customer_name}
                   onChange={(e) => setQuickForm({ ...quickForm, customer_name: e.target.value })}
-                  className="h-12 mt-1"
+                  className="h-12 mt-1 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="quick_phone" className="text-base">Telefone <span className="text-slate-400 text-sm">(opcional)</span></Label>
+                <Label htmlFor="quick_phone" className="text-base text-[#1b1c1d]">Telefone <span className="text-[#4a3d3d]/60 text-sm">(opcional)</span></Label>
                 <Input
                   id="quick_phone"
                   placeholder="(11) 99999-9999"
                   value={quickForm.contact_phone}
                   onChange={(e) => setQuickForm({ ...quickForm, contact_phone: e.target.value })}
-                  className="h-12 mt-1"
+                  className="h-12 mt-1 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={isSubmitting || !quickForm.value || !quickForm.customer_name}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-lg h-14 shadow-lg"
+                className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl text-lg h-14 shadow-lg shadow-[#b91c1c]/20"
               >
                 {isSubmitting ? 'Registrando...' : 'Registrar'}
               </Button>
@@ -637,9 +641,9 @@ function SalesContent() {
         {/* Modal do Formulário Completo */}
         {showForm && (
           <Dialog open={showForm} onOpenChange={() => setShowForm(false)}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl rounded-2xl">
               <DialogHeader>
-                <DialogTitle className="flex items-center justify-between">
+                <DialogTitle className="flex items-center justify-between font-plus-jakarta text-[#1b1c1d]">
                   <span>{editingSale ? 'Editar Venda' : 'Nova Venda'}</span>
                 </DialogTitle>
               </DialogHeader>
@@ -647,12 +651,12 @@ function SalesContent() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="franchise_id">Franquia *</Label>
+                    <Label htmlFor="franchise_id" className="text-[#1b1c1d]">Franquia *</Label>
                     <Select
                       value={formData.franchise_id || undefined}
                       onValueChange={(value) => setFormData({...formData, franchise_id: value})}
                     >
-                      <SelectTrigger id="franchise_id">
+                      <SelectTrigger id="franchise_id" className="bg-[#e9e8e9] border-none rounded-xl">
                         <SelectValue placeholder="Selecione a franquia" />
                       </SelectTrigger>
                       <SelectContent>
@@ -666,7 +670,7 @@ function SalesContent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="value">Valor da Venda *</Label>
+                    <Label htmlFor="value" className="text-[#1b1c1d]">Valor da Venda *</Label>
                     <Input
                       id="value"
                       type="number"
@@ -674,45 +678,49 @@ function SalesContent() {
                       value={formData.value}
                       onChange={(e) => setFormData({...formData, value: e.target.value})}
                       required
+                      className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="customer_name">Nome do Cliente</Label>
+                    <Label htmlFor="customer_name" className="text-[#1b1c1d]">Nome do Cliente</Label>
                     <Input
                       id="customer_name"
                       value={formData.customer_name}
                       onChange={(e) => setFormData({...formData, customer_name: e.target.value})}
+                      className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="contact_phone">Telefone</Label>
+                    <Label htmlFor="contact_phone" className="text-[#1b1c1d]">Telefone</Label>
                     <Input
                       id="contact_phone"
                       value={formData.contact_phone}
                       onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
+                      className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="sale_date">Data da Venda *</Label>
+                    <Label htmlFor="sale_date" className="text-[#1b1c1d]">Data da Venda *</Label>
                     <Input
                       id="sale_date"
                       type="date"
                       value={formData.sale_date}
                       onChange={(e) => setFormData({...formData, sale_date: e.target.value})}
                       required
+                      className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="source">Canal de Venda</Label>
+                    <Label htmlFor="source" className="text-[#1b1c1d]">Canal de Venda</Label>
                     <Select
                       value={formData.source}
                       onValueChange={(value) => setFormData({...formData, source: value})}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -735,17 +743,18 @@ function SalesContent() {
                         size="sm"
                         onClick={handleDeleteSale}
                         disabled={isSubmitting}
+                        className="rounded-xl"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
+                        <MaterialIcon icon="delete" size={16} className="mr-2" />
                         Excluir
                       </Button>
                     )}
                   </div>
                   <div className="flex justify-end gap-3">
-                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                    <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]">
                       Cancelar
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl">
                       {isSubmitting ? 'Salvando...' : editingSale ? 'Atualizar' : 'Criar Venda'}
                     </Button>
                   </div>

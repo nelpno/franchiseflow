@@ -22,7 +22,7 @@ export default function ChecklistHistory({ history }) {
   // (simplificado: conta apenas nos últimos 7)
 
   const getCircleStyle = (pct) => {
-    if (pct === 100) return "bg-green-500 text-white";
+    if (pct === 100) return "bg-[#b91c1c] text-white";
     if (pct > 0) return "bg-yellow-400 text-yellow-900";
     return "bg-slate-200 text-slate-500";
   };
@@ -34,7 +34,7 @@ export default function ChecklistHistory({ history }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-md p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h3 className="text-lg font-bold text-slate-800">Histórico — Últimos 7 dias</h3>
         <div className="flex items-center gap-2">

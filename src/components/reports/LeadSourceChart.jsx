@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Target, Loader2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function LeadSourceChart({ sales, isLoading }) {
   const getSourceData = () => {
@@ -50,7 +50,7 @@ export default function LeadSourceChart({ sales, isLoading }) {
     <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-          <Target className="w-6 h-6 text-purple-600" />
+          <MaterialIcon icon="gps_fixed" size={24} className="text-purple-600" />
           Vendas por Origem do Lead
         </CardTitle>
         <div className="text-sm text-slate-600">
@@ -97,7 +97,7 @@ export default function LeadSourceChart({ sales, isLoading }) {
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-slate-400" />
             </div>
           )}
         </div>

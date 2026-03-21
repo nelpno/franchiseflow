@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, TrendingUp, Users, DollarSign, Target, Loader2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function TopPerformers({ summaries, franchises, isLoading, startDate, endDate }) {
   const getPerformanceData = () => {
@@ -37,13 +37,13 @@ export default function TopPerformers({ summaries, franchises, isLoading, startD
   };
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
+    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-          <Crown className="w-6 h-6 text-yellow-600" />
+        <CardTitle className="flex items-center gap-2 text-xl font-bold font-plus-jakarta text-[#1b1c1d]">
+          <MaterialIcon icon="emoji_events" size={24} className="text-[#d4af37]" />
           Ranking de Franquias no Período
         </CardTitle>
-        <p className="text-slate-600 text-sm">Desempenho detalhado ordenado por faturamento</p>
+        <p className="text-[#534343] text-sm">Desempenho detalhado ordenado por faturamento</p>
       </CardHeader>
       <CardContent>
         {!isLoading ? (
@@ -53,60 +53,60 @@ export default function TopPerformers({ summaries, franchises, isLoading, startD
                 key={franchise.id} 
                 className={`p-4 rounded-xl border transition-all duration-200 hover:shadow-md ${
                   index === 0 ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200' :
-                  index === 1 ? 'bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200' :
+                  index === 1 ? 'bg-gradient-to-r from-slate-50 to-slate-100 border-[#291715]/5' :
                   index === 2 ? 'bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200' :
-                  'bg-slate-50 border-slate-200'
+                  'bg-slate-50 border-[#291715]/5'
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-4">
                     <div className="text-2xl font-bold">{getMedalIcon(index)}</div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-lg">{franchise.city}</h3>
-                      <p className="text-slate-600 text-sm">{franchise.owner_name}</p>
+                      <h3 className="font-bold text-[#1b1c1d] text-lg">{franchise.city}</h3>
+                      <p className="text-[#534343] text-sm">{franchise.owner_name}</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
-                      <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
-                        <DollarSign className="w-4 h-4" />
+                      <div className="flex items-center justify-center gap-1 text-[#b91c1c] mb-1">
+                        <MaterialIcon icon="attach_money" size={16} />
                       </div>
-                      <div className="font-bold text-green-700">R$ {franchise.totalRevenue.toFixed(2)}</div>
-                      <div className="text-xs text-slate-500">Faturamento</div>
+                      <div className="font-bold text-[#991b1b]">R$ {franchise.totalRevenue.toFixed(2)}</div>
+                      <div className="text-xs text-[#534343]">Faturamento</div>
                     </div>
                     
                     <div>
                       <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
-                        <TrendingUp className="w-4 h-4" />
+                        <MaterialIcon icon="trending_up" size={16} />
                       </div>
                       <div className="font-bold text-blue-700">{franchise.salesCount}</div>
-                      <div className="text-xs text-slate-500">Vendas</div>
+                      <div className="text-xs text-[#534343]">Vendas</div>
                     </div>
                     
                     <div>
                       <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
-                        <Users className="w-4 h-4" />
+                        <MaterialIcon icon="group" size={16} />
                       </div>
                       <div className="font-bold text-purple-700">{franchise.contactsCount}</div>
-                      <div className="text-xs text-slate-500">Contatos</div>
+                      <div className="text-xs text-[#534343]">Contatos</div>
                     </div>
                     
                     <div>
                       <div className="flex items-center justify-center gap-1 text-orange-600 mb-1">
-                        <Target className="w-4 h-4" />
+                        <MaterialIcon icon="gps_fixed" size={16} />
                       </div>
                       <div className="font-bold text-orange-700">{franchise.conversionRate.toFixed(1)}%</div>
-                      <div className="text-xs text-slate-500">Conversão</div>
+                      <div className="text-xs text-[#534343]">Conversão</div>
                     </div>
                   </div>
                 </div>
                 
                 {franchise.avgTicket > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className="mt-3 pt-3 border-t border-[#291715]/5">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-600">Ticket Médio:</span>
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700">
+                      <span className="text-[#534343]">Ticket Médio:</span>
+                      <Badge variant="outline" className="bg-[#b91c1c]/10 text-[#b91c1c]">
                         R$ {franchise.avgTicket.toFixed(2)}
                       </Badge>
                     </div>
@@ -116,14 +116,14 @@ export default function TopPerformers({ summaries, franchises, isLoading, startD
             ))}
             
             {performanceData.filter(f => f.totalRevenue > 0).length === 0 && (
-              <div className="text-center text-slate-500 py-8">
+              <div className="text-center text-[#534343] py-8">
                 Nenhuma venda registrada no período selecionado.
               </div>
             )}
           </div>
         ) : (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+            <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-slate-400" />
           </div>
         )}
       </CardContent>

@@ -13,7 +13,7 @@ const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
 const ADMIN_ONLY_PAGES = new Set([
-  'Reports', 'Catalog', 'Acompanhamento', 'Franchises', 'UserManagement'
+  'Reports', 'Acompanhamento', 'Franchises', 'UserManagement'
 ]);
 
 function AdminRoute({ children }) {
@@ -66,7 +66,7 @@ function AppRoutes() {
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-[#e9e8e9] border-t-[#b91c1c] rounded-full animate-spin"></div>
       </div>
     );
   }

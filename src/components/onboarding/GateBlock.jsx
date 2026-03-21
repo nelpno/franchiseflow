@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Rocket, ChevronRight, ExternalLink } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { GATE_BLOCK, ROLE_TAGS } from "./ONBOARDING_BLOCKS";
 import { ITEM_DETAILS } from "./ITEM_DETAILS";
 
@@ -22,7 +22,7 @@ function ItemDetails({ details }) {
               className="inline-flex items-center gap-1 text-blue-600 underline underline-offset-2 hover:text-blue-800 font-medium"
             >
               {link.label}
-              <ExternalLink className="w-3 h-3 flex-shrink-0" />
+              <MaterialIcon icon="open_in_new" size={12} className="flex-shrink-0" />
             </a>
           ))}
         </div>
@@ -57,7 +57,7 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
             9
           </div>
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-amber-600" />
+            <MaterialIcon icon="rocket_launch" size={16} className="text-amber-600" />
             Gate de Liberação
           </h3>
           <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold">
@@ -103,7 +103,7 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                             </svg>
                           ) : null
                         ) : (
-                          <Lock className="w-3 h-3 text-amber-400" />
+                          <MaterialIcon icon="lock" size={12} className="text-amber-400" />
                         )}
                       </div>
                     ) : (
@@ -130,8 +130,10 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                       {item.label}
                     </span>
                     {details && (
-                      <ChevronRight
-                        className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                      <MaterialIcon
+                        icon="chevron_right"
+                        size={14}
+                        className={`flex-shrink-0 mt-0.5 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                       />
                     )}
                   </div>

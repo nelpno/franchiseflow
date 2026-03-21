@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Rocket, ClipboardCheck, Users, CheckCircle2, Clock, AlertCircle, Trash2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { createPageUrl } from "@/utils";
 import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARDING_BLOCKS";
 import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
@@ -29,9 +29,9 @@ function blocks1to8Complete(items) {
 }
 
 function StatusBadge({ status }) {
-  if (status === "approved") return <Badge className="bg-green-100 text-green-800 border border-green-300">✅ Aprovado — Pronto para vendas!</Badge>;
-  if (status === "pending_approval") return <Badge className="bg-blue-100 text-blue-800 border border-blue-300">⏳ Aguardando Aprovação</Badge>;
-  return <Badge className="bg-amber-100 text-amber-800 border border-amber-300">🔄 Em andamento</Badge>;
+  if (status === "approved") return <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] border border-[#b91c1c]/30">✅ Aprovado — Pronto para vendas!</Badge>;
+  if (status === "pending_approval") return <Badge className="bg-[#d4af37]/10 text-[#775a19] border border-[#d4af37]/30">⏳ Aguardando Aprovação</Badge>;
+  return <Badge className="bg-[#d4af37]/10 text-[#775a19] border border-[#d4af37]/40">🔄 Em andamento</Badge>;
 }
 
 export default function Onboarding() {
@@ -187,8 +187,8 @@ export default function Onboarding() {
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
-        <div className="text-center text-slate-500">
-          <ClipboardCheck className="w-10 h-10 mx-auto mb-3 animate-pulse text-blue-400" />
+        <div className="text-center text-[#534343]">
+          <MaterialIcon icon="task_alt" size={40} className="mx-auto mb-3 animate-pulse text-[#b91c1c]" />
           Carregando onboarding...
         </div>
       </div>
@@ -199,53 +199,53 @@ export default function Onboarding() {
     if (franchises.length === 0) {
       return (
         <div className="p-8 text-center">
-          <h1 className="text-xl font-bold text-slate-700">Nenhuma franquia associada</h1>
-          <p className="text-slate-500 mt-2">Entre em contato com o administrador.</p>
+          <h1 className="text-xl font-bold text-[#4a3d3d]">Nenhuma franquia associada</h1>
+          <p className="text-[#534343] mt-2">Entre em contato com o administrador.</p>
         </div>
       );
     }
   }
 
   return (
-    <div className="p-4 md:p-8 bg-gradient-to-br from-slate-50 to-amber-50 min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <Rocket className="w-8 h-8 text-amber-600" />
+          <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
+            <MaterialIcon icon="rocket_launch" size={32} className="text-[#d4af37]" />
             Checklist de Iniciação
           </h1>
-          <p className="text-slate-500 mt-1">Tudo que precisa estar pronto antes da sua primeira venda</p>
+          <p className="text-[#534343] mt-1">Tudo que precisa estar pronto antes da sua primeira venda</p>
         </div>
 
         {/* Admin summary */}
         {isAdmin && (
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <Card className="bg-amber-50 border-amber-200 border">
+            <Card className="bg-[#d4af37]/10 border-[#d4af37]/30 border">
               <CardContent className="p-4 flex items-center gap-3">
-                <Clock className="w-6 h-6 text-amber-600" />
+                <MaterialIcon icon="schedule" size={24} className="text-[#d4af37]" />
                 <div>
-                  <div className="text-2xl font-bold text-amber-700">{inProgressCount}</div>
-                  <div className="text-xs text-slate-500">Em andamento</div>
+                  <div className="text-2xl font-bold text-[#775a19]">{inProgressCount}</div>
+                  <div className="text-xs text-[#534343]">Em andamento</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-blue-50 border-blue-200 border">
+            <Card className="bg-[#d4af37]/10 border-[#d4af37]/30 border">
               <CardContent className="p-4 flex items-center gap-3">
-                <AlertCircle className="w-6 h-6 text-blue-600" />
+                <MaterialIcon icon="error" size={24} className="text-[#d4af37]" />
                 <div>
-                  <div className="text-2xl font-bold text-blue-700">{pendingCount}</div>
-                  <div className="text-xs text-slate-500">Aguardando aprovação</div>
+                  <div className="text-2xl font-bold text-[#775a19]">{pendingCount}</div>
+                  <div className="text-xs text-[#534343]">Aguardando aprovação</div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-green-50 border-green-200 border">
+            <Card className="bg-[#b91c1c]/5 border-[#b91c1c]/20 border">
               <CardContent className="p-4 flex items-center gap-3">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
+                <MaterialIcon icon="check_circle" size={24} className="text-[#b91c1c]" />
                 <div>
-                  <div className="text-2xl font-bold text-green-700">{approvedCount}</div>
-                  <div className="text-xs text-slate-500">Aprovados</div>
+                  <div className="text-2xl font-bold text-[#b91c1c]">{approvedCount}</div>
+                  <div className="text-xs text-[#534343]">Aprovados</div>
                 </div>
               </CardContent>
             </Card>
@@ -254,10 +254,10 @@ export default function Onboarding() {
 
         {/* Admin franchisee list - only those who started */}
         {isAdmin && !selectedFranchise && (
-          <Card className="mb-6 border-0 shadow-sm bg-white/90">
+          <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-[#291715]/5">
             <CardContent className="p-0">
               {franchises.filter(f => allChecklists.find(c => c.franchise_id === f.evolution_instance_id)).length === 0 ? (
-                <div className="p-8 text-center text-slate-400">Nenhum franqueado iniciou o onboarding ainda.</div>
+                <div className="p-8 text-center text-[#534343]/60">Nenhum franqueado iniciou o onboarding ainda.</div>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {franchises
@@ -270,20 +270,20 @@ export default function Onboarding() {
                         <button
                           key={f.id}
                           onClick={() => handleSelectFranchise(f.evolution_instance_id)}
-                          className="w-full flex items-center gap-4 px-5 py-4 hover:bg-amber-50 transition-colors text-left"
+                          className="w-full flex items-center gap-4 px-5 py-4 hover:bg-[#d4af37]/10 transition-colors text-left"
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-slate-800 text-sm">{f.owner_name}</div>
-                            <div className="text-xs text-slate-400">{f.city}</div>
+                            <div className="font-semibold text-[#1b1c1d] text-sm">{f.owner_name}</div>
+                            <div className="text-xs text-[#534343]/60">{f.city}</div>
                           </div>
                           <div className="w-32 hidden sm:block">
                             <div className="bg-slate-100 rounded-full h-2 overflow-hidden">
                               <div
-                                className="h-2 rounded-full bg-amber-500 transition-all"
+                                className="h-2 rounded-full bg-[#d4af37]/100 transition-all"
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
-                            <div className="text-xs text-slate-400 mt-1 text-right">{pct}%</div>
+                            <div className="text-xs text-[#534343]/60 mt-1 text-right">{pct}%</div>
                           </div>
                           <StatusBadge status={status} />
                         </button>
@@ -299,7 +299,7 @@ export default function Onboarding() {
         {isAdmin && selectedFranchise && (
           <button
             onClick={() => { setSelectedFranchise(null); setChecklist(null); setItems({}); }}
-            className="mb-4 flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
+            className="mb-4 flex items-center gap-2 text-sm text-[#534343] hover:text-[#1b1c1d] transition-colors"
           >
             ← Voltar para a lista
           </button>
@@ -309,8 +309,8 @@ export default function Onboarding() {
         {isAdmin && !selectedFranchise && (
           <Card className="mb-6 border-0 shadow-sm">
             <CardContent className="p-4">
-              <label className="text-sm font-medium text-slate-700 mb-2 block flex items-center gap-2">
-                <Users className="w-4 h-4" /> Selecionar Franqueado para iniciar onboarding
+              <label className="text-sm font-medium text-[#4a3d3d] mb-2 block flex items-center gap-2">
+                <MaterialIcon icon="group" size={16} /> Selecionar Franqueado para iniciar onboarding
               </label>
               <Select value="" onValueChange={handleSelectFranchise}>
                 <SelectTrigger className="w-full md:w-96">
@@ -322,8 +322,8 @@ export default function Onboarding() {
                     return (
                       <SelectItem key={f.id} value={f.evolution_instance_id}>
                         <span className="font-medium">{f.owner_name}</span>
-                        <span className="text-slate-400 ml-2">· {f.city}</span>
-                        {ob && <span className="ml-2 text-xs text-slate-400">{ob.completion_percentage}%</span>}
+                        <span className="text-[#534343]/60 ml-2">· {f.city}</span>
+                        {ob && <span className="ml-2 text-xs text-[#534343]/60">{ob.completion_percentage}%</span>}
                       </SelectItem>
                     );
                   })}
@@ -335,12 +335,12 @@ export default function Onboarding() {
 
         {/* No checklist yet (franchisee) */}
         {!isAdmin && franchises.length > 0 && !checklist && !isLoading && (
-          <Card className="mb-6 text-center border-dashed border-2 border-amber-300 bg-amber-50/60">
+          <Card className="mb-6 text-center border-dashed border-2 border-[#d4af37]/40 bg-[#d4af37]/10/60">
             <CardContent className="p-8">
-              <Rocket className="w-12 h-12 mx-auto mb-3 text-amber-500" />
-              <h3 className="font-bold text-slate-800 mb-1">Nenhum onboarding iniciado</h3>
-              <p className="text-slate-500 text-sm mb-4">Clique abaixo para iniciar seu checklist de inauguração.</p>
-              <Button onClick={() => handleStartOnboarding()} className="bg-amber-600 hover:bg-amber-700 text-white">
+              <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-[#d4af37]" />
+              <h3 className="font-bold text-[#1b1c1d] mb-1">Nenhum onboarding iniciado</h3>
+              <p className="text-[#534343] text-sm mb-4">Clique abaixo para iniciar seu checklist de inauguração.</p>
+              <Button onClick={() => handleStartOnboarding()} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl">
                 Iniciar Onboarding
               </Button>
             </CardContent>
@@ -349,12 +349,12 @@ export default function Onboarding() {
 
         {/* No checklist yet (admin) */}
         {isAdmin && selectedFranchise && !checklist && (
-          <Card className="mb-6 text-center border-dashed border-2 border-amber-300 bg-amber-50/60">
+          <Card className="mb-6 text-center border-dashed border-2 border-[#d4af37]/40 bg-[#d4af37]/10/60">
             <CardContent className="p-8">
-              <Rocket className="w-12 h-12 mx-auto mb-3 text-amber-500" />
-              <h3 className="font-bold text-slate-800 mb-1">Nenhum onboarding iniciado</h3>
-              <p className="text-slate-500 text-sm mb-4">Este franqueado ainda não tem um onboarding.</p>
-              <Button onClick={handleStartOnboarding} className="bg-amber-600 hover:bg-amber-700 text-white">
+              <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-[#d4af37]" />
+              <h3 className="font-bold text-[#1b1c1d] mb-1">Nenhum onboarding iniciado</h3>
+              <p className="text-[#534343] text-sm mb-4">Este franqueado ainda não tem um onboarding.</p>
+              <Button onClick={handleStartOnboarding} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl">
                 Iniciar Onboarding
               </Button>
             </CardContent>
@@ -365,18 +365,18 @@ export default function Onboarding() {
         {checklist && (
           <>
             {/* Franchise info + progress */}
-            <Card className="mb-6 border-0 shadow-sm bg-white/90">
+            <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-[#291715]/5">
               <CardContent className="p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900">
+                    <h2 className="text-xl font-bold text-[#1b1c1d]">
                       {selectedFranchise?.owner_name || franchises[0]?.owner_name}
                     </h2>
-                    <p className="text-slate-500 text-sm">{selectedFranchise?.city || franchises[0]?.city}</p>
+                    <p className="text-[#534343] text-sm">{selectedFranchise?.city || franchises[0]?.city}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
-                    {isSaving && <span className="text-xs text-slate-400 animate-pulse">Salvando...</span>}
+                    {isSaving && <span className="text-xs text-[#534343]/60 animate-pulse">Salvando...</span>}
                     {isAdmin && (
                       <Button
                         variant="ghost"
@@ -385,7 +385,7 @@ export default function Onboarding() {
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         title="Excluir onboarding"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <MaterialIcon icon="delete" size={16} />
                       </Button>
                     )}
                   </div>
@@ -404,19 +404,19 @@ export default function Onboarding() {
                       }}
                     />
                   </div>
-                  <span className="font-bold text-slate-700 w-16 text-right">
+                  <span className="font-bold text-[#4a3d3d] w-16 text-right">
                     {liveCounts.completed_count}/{TOTAL_ITEMS}
                   </span>
                 </div>
-                <div className="text-right text-sm text-slate-500 mt-1">{progressPct}% concluído</div>
+                <div className="text-right text-sm text-[#534343] mt-1">{progressPct}% concluído</div>
 
                 {/* Celebration banner */}
                 {(celebrated || checklist.status === "approved") && (
-                  <div className="mt-4 bg-green-50 border border-green-300 rounded-xl p-4 text-center animate-pulse">
-                    <p className="text-green-800 font-bold text-lg">🎉 Parabéns! Onboarding completo!</p>
-                    <p className="text-green-600 text-sm mt-1">O tráfego pago será ativado em breve.</p>
+                  <div className="mt-4 bg-[#b91c1c]/5 border border-[#b91c1c]/30 rounded-xl p-4 text-center animate-pulse">
+                    <p className="text-[#b91c1c] font-bold text-lg">🎉 Parabéns! Onboarding completo!</p>
+                    <p className="text-[#991b1b] text-sm mt-1">O tráfego pago será ativado em breve.</p>
                     {checklist.approved_by && (
-                      <p className="text-green-500 text-xs mt-1">Aprovado por {checklist.approved_by}</p>
+                      <p className="text-[#b91c1c]/70 text-xs mt-1">Aprovado por {checklist.approved_by}</p>
                     )}
                   </div>
                 )}
@@ -449,8 +449,8 @@ export default function Onboarding() {
 
         {/* Nothing selected yet (admin) */}
         {isAdmin && !selectedFranchise && (
-          <div className="text-center py-16 text-slate-400">
-            <ClipboardCheck className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <div className="text-center py-16 text-[#534343]/60">
+            <MaterialIcon icon="task_alt" size={48} className="mx-auto mb-3 opacity-40" />
             <p>Selecione um franqueado para ver o onboarding</p>
           </div>
         )}

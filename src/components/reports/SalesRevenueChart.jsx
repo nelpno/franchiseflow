@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart } from "recharts";
 import { format, eachDayOfInterval } from "date-fns";
-import { DollarSign, Loader2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function SalesRevenueChart({ sales, isLoading, startDate, endDate }) {
   const getChartData = () => {
@@ -36,7 +36,7 @@ export default function SalesRevenueChart({ sales, isLoading, startDate, endDate
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-              <DollarSign className="w-6 h-6 text-green-600" />
+              <MaterialIcon icon="attach_money" size={24} className="text-green-600" />
               Faturamento e Volume de Vendas
             </CardTitle>
             <p className="text-slate-600 text-sm mt-1">Evolução diária no período selecionado</p>
@@ -109,7 +109,7 @@ export default function SalesRevenueChart({ sales, isLoading, startDate, endDate
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-slate-400" />
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { format } from "date-fns";
 
 export default function ExportButton({ summaries, franchises, startDate, endDate }) {
@@ -51,7 +51,7 @@ export default function ExportButton({ summaries, franchises, startDate, endDate
 
   return (
     <Button onClick={exportToCSV} variant="outline" className="gap-2">
-      <Download className="w-4 h-4" />
+      <MaterialIcon icon="download" size={16} />
       Exportar CSV
     </Button>
   );

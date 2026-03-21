@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronRight, Copy, Check } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { CHECKLIST_DETAILS } from "./CHECKLIST_DETAILS";
 
 export default function ChecklistItem({ item, checked, onToggle }) {
@@ -27,7 +27,7 @@ export default function ChecklistItem({ item, checked, onToggle }) {
   };
 
   return (
-    <div className={`border-b border-slate-100 last:border-b-0 transition-colors duration-150 ${checked ? "bg-green-50" : "bg-white"}`}>
+    <div className={`border-b border-slate-100 last:border-b-0 transition-colors duration-150 ${checked ? "bg-red-50" : "bg-white"}`}>
       {/* Main row */}
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Checkbox - click only marks */}
@@ -55,8 +55,10 @@ export default function ChecklistItem({ item, checked, onToggle }) {
             {item.label}
           </span>
           {details && (
-            <ChevronRight
-              className={`flex-shrink-0 mt-0.5 w-4 h-4 text-slate-400 transition-transform duration-200 ${
+            <MaterialIcon
+              icon="chevron_right"
+              size={16}
+              className={`flex-shrink-0 mt-0.5 text-slate-400 transition-transform duration-200 ${
                 expanded ? "rotate-90" : ""
               }`}
             />
@@ -91,14 +93,14 @@ export default function ChecklistItem({ item, checked, onToggle }) {
                 onClick={handleCopy}
                 className={`mt-3 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all duration-200 ${
                   copied
-                    ? "bg-green-100 text-green-700"
+                    ? "bg-red-100 text-[#b91c1c]"
                     : "bg-amber-100 text-amber-800 hover:bg-amber-200"
                 }`}
               >
                 {copied ? (
-                  <><Check className="w-3 h-3" /> Copiado!</>
+                  <><MaterialIcon icon="check" size={12} /> Copiado!</>
                 ) : (
-                  <><Copy className="w-3 h-3" /> Copiar script</>
+                  <><MaterialIcon icon="content_copy" size={12} /> Copiar script</>
                 )}
               </button>
             </div>

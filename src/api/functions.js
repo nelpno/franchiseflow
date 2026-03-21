@@ -1,4 +1,4 @@
-const N8N_WEBHOOK_BASE = 'https://webhook.dynamicagents.tech/webhook';
+const N8N_WEBHOOK_BASE = import.meta.env.VITE_N8N_WEBHOOK_BASE || 'https://webhook.dynamicagents.tech/webhook';
 
 // WhatsApp - chamadas diretas ao n8n
 export async function connectWhatsappRobot({ instanceName, action }) {

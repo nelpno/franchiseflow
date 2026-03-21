@@ -4,7 +4,7 @@ import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, ClipboardList } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import ChecklistBlock from "../components/checklist/ChecklistBlock";
 import ChecklistProgress from "../components/checklist/ChecklistProgress";
 import ChecklistHistory from "../components/checklist/ChecklistHistory";
@@ -219,9 +219,9 @@ export default function MyChecklist() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#fbf9fa] flex items-center justify-center">
         <div className="text-center">
-          <ClipboardList className="w-12 h-12 text-red-500 mx-auto mb-3 animate-pulse" />
+          <MaterialIcon icon="checklist" size={48} className="text-red-500 mx-auto mb-3 animate-pulse" />
           <p className="text-slate-600 font-medium">Carregando checklist...</p>
         </div>
       </div>
@@ -230,9 +230,9 @@ export default function MyChecklist() {
 
   if (!franchise) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center p-8">
+      <div className="min-h-screen bg-[#fbf9fa] flex items-center justify-center p-8">
         <div className="text-center max-w-md">
-          <ClipboardList className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <MaterialIcon icon="checklist" size={64} className="text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-700 mb-2">Nenhuma franquia vinculada</h2>
           <p className="text-slate-500">Fale com o administrador para vincular uma franquia à sua conta.</p>
         </div>
@@ -241,16 +241,16 @@ export default function MyChecklist() {
   }
 
   return (
-    <div className="min-h-screen bg-amber-50">
+    <div className="min-h-screen bg-[#fbf9fa]">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
         {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <ClipboardList className="w-6 h-6 text-red-600" />
-                <h1 className="text-2xl font-bold text-slate-900">Checklist Diário de Vendas</h1>
+                <MaterialIcon icon="checklist" size={24} className="text-[#b91c1c]" />
+                <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Checklist Diário de Vendas</h1>
               </div>
               {availableFranchises.length > 1 ? (
                 <Select value={franchise.evolution_instance_id} onValueChange={handleFranchiseChange}>
@@ -271,7 +271,7 @@ export default function MyChecklist() {
               <p className="text-slate-400 text-sm mt-0.5">{todayFormattedCapitalized}</p>
             </div>
             <Button variant="outline" size="sm" onClick={handleResetDay} className={`border-red-200 hover:bg-red-50 ${confirmingReset ? "text-white bg-red-600 hover:bg-red-700" : "text-red-600"}`}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <MaterialIcon icon="refresh" size={16} className="mr-2" />
               {confirmingReset ? "Confirmar limpeza?" : "Limpar marcações de hoje"}
             </Button>
           </div>

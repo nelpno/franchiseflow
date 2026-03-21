@@ -3,14 +3,17 @@ import { supabase } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import MaterialIcon from "@/components/ui/MaterialIcon";
+
+const LOGO_URL = 'https://lh3.googleusercontent.com/aida/ADBb0ugCTVY4RLjpZaVmTunw5aAOVsOWhVE1VFKJ6dJHWLlp0NQfYLn9e4nf9xumxgvXGuTESxzw_4nnRZgPRRibxsHY0CyQlUftQtsLyFxxoLXrjZ9yh6wRWly1I5gyuQoTheiTmM0sVUrURcN8eyeGxJOyzmOT72i8UzXFg-evAPSA6UvoOVQd-kWWxbtTNct5HKj-ohG7BatXZ9fA1b31kExHOSI4eTLHw0EqlGNPzXA_UntQmHThWuSkHImL_zw6eC5ItbV45m5s3Q';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResetMode, setIsResetMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -49,98 +52,213 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 mb-2">
-            <img
-              src="/logo.png"
-              alt="Maxi Massas"
-              className="w-full h-full object-contain"
-              onError={(e) => { e.target.style.display = 'none'; }}
-            />
+    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-screen flex items-center justify-center p-4 md:p-8">
+      <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
+        {/* Left Side: Hero Area (Hidden on Mobile) */}
+        <section className="hidden lg:flex lg:w-3/5 relative bg-gradient-to-br from-[#fff5f5] to-white p-16 flex-col justify-between overflow-hidden">
+          {/* Background Decorative Pattern */}
+          <div
+            className="absolute inset-0 opacity-60"
+            style={{
+              backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(227, 24, 24, 0.05) 1px, transparent 0)',
+              backgroundSize: '24px 24px'
+            }}
+          />
+          {/* Abstract Pasta Shapes (Geometric Illustration) */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none opacity-20">
+            <svg className="w-full h-full" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+              <circle className="text-[#e31818]" cx="100" cy="100" r="40" fill="none" stroke="currentColor" strokeWidth="2" />
+              <rect className="text-[#B8860B]" x="250" y="50" width="60" height="60" rx="12" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path className="text-[#e31818]" d="M50 300 Q100 250 150 300 T250 300" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path className="text-[#B8860B]" d="M300 200 L340 240 M340 200 L300 240" stroke="currentColor" strokeWidth="2" />
+            </svg>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">
-            FranchiseFlow
-          </CardTitle>
-          <CardDescription className="text-slate-500">
-            {isResetMode ? 'Recuperar senha' : 'Dashboard Maxi Massas'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={isResetMode ? handleResetPassword : handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-4 mb-12">
+              <img
+                src={LOGO_URL}
+                alt="Maxi Massas Logo"
+                className="h-12 w-auto object-contain"
+              />
+              <span className="text-xl font-extrabold tracking-tighter text-[#1b1c1d]">Maxi Massas</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-[#1b1c1d] tracking-tight leading-[1.15] max-w-md" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Gestão inteligente para sua franquia de massas artesanais
+            </h1>
+          </div>
+
+          {/* Floating Stat Cards */}
+          <div className="relative z-10 grid grid-cols-1 gap-4 w-fit">
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-[#bccac0]/10 flex items-center gap-4 translate-x-4">
+              <div className="w-10 h-10 rounded-full bg-[#e31818]/10 flex items-center justify-center text-[#e31818]">
+                <MaterialIcon icon="payments" size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[#3d4a42] font-semibold">Faturamento Diário</p>
+                <p className="text-lg font-bold text-[#1b1c1d]">R$ 4.850</p>
+              </div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-[#bccac0]/10 flex items-center gap-4 translate-x-12">
+              <div className="w-10 h-10 rounded-full bg-[#B8860B]/10 flex items-center justify-center text-[#B8860B]">
+                <MaterialIcon icon="shopping_basket" size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[#3d4a42] font-semibold">Pedidos Hoje</p>
+                <p className="text-lg font-bold text-[#1b1c1d]">32 vendas</p>
+              </div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-[#bccac0]/10 flex items-center gap-4 translate-x-8">
+              <div className="w-10 h-10 rounded-full bg-[#6b38d4]/10 flex items-center justify-center text-[#6b38d4]">
+                <MaterialIcon icon="fact_check" size={20} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-[#3d4a42] font-semibold">Qualidade</p>
+                <p className="text-lg font-bold text-[#1b1c1d]">96% checklist</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Right Side: Login Form */}
+        <section className="w-full lg:w-2/5 p-8 md:p-16 flex flex-col justify-center">
+          <div className="max-w-md mx-auto w-full">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex justify-center mb-8">
+              <img
+                src={LOGO_URL}
+                alt="Maxi Massas Logo"
+                className="h-20 w-auto"
               />
             </div>
-            {!isResetMode && (
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-            <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700" disabled={isLoading}>
-              {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : 'Entrar'}
-            </Button>
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsResetMode(!isResetMode)}
-                className="text-sm text-emerald-600 hover:text-emerald-700 underline"
-              >
-                {isResetMode ? 'Voltar ao login' : 'Esqueci minha senha'}
-              </button>
-            </div>
-          </form>
 
-          {!isResetMode && (
-            <>
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-slate-500">ou</span>
+            <div className="mb-10 text-center lg:text-left">
+              <h2 className="text-3xl font-bold text-[#e31818] tracking-tight mb-2">Maxi Massas</h2>
+              <p className="text-[#3d4a42]">
+                {isResetMode ? 'Recuperar senha' : 'Acesse sua franquia'}
+              </p>
+            </div>
+
+            <form onSubmit={isResetMode ? handleResetPassword : handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-[#3d4a42] ml-1">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-3.5 bg-[#e9e8e9] rounded-xl border-none focus:ring-2 focus:ring-[#e31818]/20 transition-all text-[#1b1c1d] placeholder:text-[#6d7a72]/60 outline-none"
+                  />
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={async () => {
-                  const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { redirectTo: window.location.origin }
-                  });
-                  if (error) toast.error('Erro ao conectar com Google: ' + error.message);
-                }}
+
+              {!isResetMode && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center ml-1">
+                    <label htmlFor="password" className="block text-sm font-medium text-[#3d4a42]">
+                      Senha
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsResetMode(true)}
+                      className="text-sm font-semibold text-[#e31818] hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full px-4 py-3.5 bg-[#e9e8e9] rounded-xl border-none focus:ring-2 focus:ring-[#e31818]/20 transition-all text-[#1b1c1d] placeholder:text-[#6d7a72]/60 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-[#e31818] transition-colors"
+                    >
+                      {showPassword ? <MaterialIcon icon="visibility_off" size={20} /> : <MaterialIcon icon="visibility" size={20} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-12 bg-[#e31818] text-white font-bold rounded-xl shadow-lg shadow-[#e31818]/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                Entrar com Google
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : 'Entrar'}
+              </button>
+
+              {isResetMode && (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsResetMode(false)}
+                    className="text-sm font-semibold text-[#e31818] hover:underline"
+                  >
+                    Voltar ao login
+                  </button>
+                </div>
+              )}
+
+              {!isResetMode && (
+                <>
+                  <div className="relative flex items-center py-4">
+                    <div className="flex-grow border-t border-[#bccac0]/30" />
+                    <span className="flex-shrink mx-4 text-sm text-[#6d7a72] font-medium">ou</span>
+                    <div className="flex-grow border-t border-[#bccac0]/30" />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="w-full h-12 bg-white border border-[#bccac0]/50 text-[#1b1c1d] font-semibold rounded-xl flex items-center justify-center gap-3 hover:bg-[#efedee] transition-colors"
+                    onClick={async () => {
+                      const { error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: { redirectTo: window.location.origin }
+                      });
+                      if (error) toast.error('Erro ao conectar com Google: ' + error.message);
+                    }}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Entrar com Google
+                  </button>
+                </>
+              )}
+            </form>
+
+            <div className="mt-12 text-center">
+              <p className="text-sm text-[#3d4a42]">
+                Não possui acesso?{' '}
+                <span className="text-[#e31818] font-bold hover:underline cursor-pointer">Solicite ao administrador</span>
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer Meta */}
+      <footer className="fixed bottom-6 left-0 right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
+        <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
+          Digital Atélier &copy; 2024 Maxi Massas Franchise System
+        </p>
+      </footer>
     </div>
   );
 }

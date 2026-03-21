@@ -15,8 +15,8 @@ export const BLOCKS = [
     id: 2,
     title: "Treinamento",
     color: "#5C6BC0",
-    bgColor: "bg-indigo-50",
-    borderColor: "border-indigo-200",
+    bgColor: "bg-[#775a19]/5",
+    borderColor: "border-[#775a19]/20",
     items: [
       { key: "8-1", label: "Vídeos do Drive assistidos: Configuração do WhatsApp Business", role: "franchisee" },
       { key: "8-2", label: "Vídeos do Drive assistidos: Meta Business Suite", role: "franchisee" },
@@ -29,8 +29,8 @@ export const BLOCKS = [
     id: 3,
     title: "Equipamentos e Espaço",
     color: "#0288D1",
-    bgColor: "bg-blue-50",
-    borderColor: "border-blue-200",
+    bgColor: "bg-[#291715]/5",
+    borderColor: "border-[#291715]/15",
     items: [
       { key: "2-1", label: "Freezer funcionando e na temperatura adequada (-18°C ou menos)", role: "franchisee" },
       { key: "2-2", label: "Espaço dedicado para armazenamento organizado", role: "franchisee" },
@@ -42,8 +42,8 @@ export const BLOCKS = [
     id: 4,
     title: "WhatsApp Business",
     color: "#43A047",
-    bgColor: "bg-green-50",
-    borderColor: "border-green-200",
+    bgColor: "bg-[#b91c1c]/5",
+    borderColor: "border-[#b91c1c]/20",
     items: [
       { key: "3-1", label: "Número exclusivo de celular obtido", role: "franchisee" },
       { key: "3-2", label: "WhatsApp Business instalado e configurado", role: "franchisee" },
@@ -102,8 +102,8 @@ export const BLOCKS = [
     id: 8,
     title: "Financeiro",
     color: "#2E7D32",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
+    bgColor: "bg-[#b91c1c]/5",
+    borderColor: "border-[#b91c1c]/20",
     items: [
       { key: "7-1", label: "Formas de pagamento definidas (PIX, transferência, cartão)", role: "franchisee" },
       { key: "7-2", label: "Chave PIX configurada e testada", role: "franchisee" },
@@ -125,7 +125,7 @@ export const GATE_BLOCK = {
 
 export const ROLE_TAGS = {
   franchisee: { label: "FRANQUEADO", className: "bg-orange-100 text-orange-700 border-orange-300" },
-  franchisor: { label: "FRANQUEADOR", className: "bg-blue-100 text-blue-700 border-blue-300" },
+  franchisor: { label: "FRANQUEADOR", className: "bg-[#b91c1c]/10 text-[#b91c1c] border-[#b91c1c]/30" },
   both: { label: "AMBOS", className: "bg-purple-100 text-purple-700 border-purple-300" },
   auto: { label: "AUTOMÁTICO", className: "bg-slate-100 text-slate-600 border-slate-300" },
 };

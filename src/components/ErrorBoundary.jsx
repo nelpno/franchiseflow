@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component {
           <Card className="max-w-md w-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-red-600">
-                <AlertCircle className="w-6 h-6" />
+                <MaterialIcon icon="error" size={24} />
                 Erro na Aplicação
               </CardTitle>
             </CardHeader>
@@ -56,7 +56,7 @@ class ErrorBoundary extends React.Component {
               </div>
 
               <Button onClick={this.handleReset} className="w-full">
-                <RefreshCw className="w-4 h-4 mr-2" />
+                <MaterialIcon icon="refresh" size={16} className="mr-2" />
                 Recarregar Página
               </Button>
             </CardContent>

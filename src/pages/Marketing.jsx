@@ -25,29 +25,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Megaphone,
-  Upload,
-  Download,
-  Trash2,
-  Image as ImageIcon,
-  Smartphone,
-  BookOpen,
-  Printer,
-  FileText,
-  Loader2,
-  FolderOpen,
-  X,
-  Plus,
-} from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
 const CATEGORIES = [
-  { value: "posts", label: "Posts", icon: ImageIcon, color: "bg-blue-100 text-blue-700" },
-  { value: "stories", label: "Stories", icon: Smartphone, color: "bg-purple-100 text-purple-700" },
-  { value: "catalogo", label: "Catálogo", icon: BookOpen, color: "bg-amber-100 text-amber-700" },
-  { value: "materiais_impressos", label: "Materiais Impressos", icon: Printer, color: "bg-rose-100 text-rose-700" },
-  { value: "outros", label: "Outros", icon: FileText, color: "bg-gray-100 text-gray-700" },
+  { value: "posts", label: "Posts", icon: "image", color: "bg-blue-100 text-blue-700" },
+  { value: "stories", label: "Stories", icon: "smartphone", color: "bg-purple-100 text-purple-700" },
+  { value: "catalogo", label: "Catálogo", icon: "menu_book", color: "bg-amber-100 text-amber-700" },
+  { value: "materiais_impressos", label: "Materiais Impressos", icon: "print", color: "bg-rose-100 text-rose-700" },
+  { value: "outros", label: "Outros", icon: "description", color: "bg-gray-100 text-gray-700" },
 ];
 
 function getCategoryInfo(value) {
@@ -178,7 +164,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <MaterialIcon icon="upload" size={20} />
             Enviar Material
           </DialogTitle>
           <DialogDescription>
@@ -191,8 +177,8 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
               dragOver
-                ? "border-emerald-500 bg-emerald-50"
-                : "border-gray-300 hover:border-emerald-400 hover:bg-gray-50"
+                ? "border-[#b91c1c] bg-red-50"
+                : "border-gray-300 hover:border-[#b91c1c]/40 hover:bg-gray-50"
             }`}
             onDragOver={(e) => {
               e.preventDefault();
@@ -202,9 +188,9 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+            <MaterialIcon icon="upload" size={32} className="mx-auto text-gray-400 mb-2" />
             <p className="text-sm text-gray-600">
-              Arraste arquivos aqui ou <span className="text-emerald-600 font-medium">clique para selecionar</span>
+              Arraste arquivos aqui ou <span className="text-[#b91c1c] font-medium">clique para selecionar</span>
             </p>
             <p className="text-xs text-gray-400 mt-1">
               Imagens, PDFs e outros formatos
@@ -239,7 +225,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
                       onClick={() => removeFile(i)}
                       className="text-gray-400 hover:text-red-500 shrink-0"
                     >
-                      <X className="h-4 w-4" />
+                      <MaterialIcon icon="close" size={16} />
                     </button>
                   </div>
                 ))}
@@ -324,15 +310,15 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
             <Button type="button" variant="outline" onClick={handleClose} disabled={uploading}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={uploading} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" disabled={uploading} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl">
               {uploading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <MaterialIcon icon="progress_activity" size={16} className="mr-2 animate-spin" />
                   Enviando...
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4 mr-2" />
+                  <MaterialIcon icon="upload" size={16} className="mr-2" />
                   Enviar
                 </>
               )}
@@ -348,7 +334,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
 function FileCard({ file, isAdmin, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const catInfo = getCategoryInfo(file.category);
-  const CatIcon = catInfo.icon;
+  const catIconName = catInfo.icon;
   const publicUrl = getFilePublicUrl(file.file_path);
   const isImage = isImageFile(file.file_path);
 
@@ -374,7 +360,7 @@ function FileCard({ file, isAdmin, onDelete }) {
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-md transition-shadow">
+    <Card className="group overflow-hidden hover:shadow-md transition-shadow bg-white rounded-2xl shadow-sm border border-[#291715]/5">
       {/* Preview area */}
       <div className="relative h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
         {isImage && publicUrl ? (
@@ -385,7 +371,7 @@ function FileCard({ file, isAdmin, onDelete }) {
             loading="lazy"
           />
         ) : (
-          <CatIcon className="h-16 w-16 text-gray-300" />
+          <MaterialIcon icon={catIconName} size={64} className="text-gray-300" />
         )}
         <Badge className={`absolute top-2 left-2 text-xs ${catInfo.color}`}>
           {catInfo.label}
@@ -410,7 +396,7 @@ function FileCard({ file, isAdmin, onDelete }) {
             className="flex-1 text-xs"
             onClick={handleDownload}
           >
-            <Download className="h-3.5 w-3.5 mr-1" />
+            <MaterialIcon icon="download" size={14} className="mr-1" />
             Baixar
           </Button>
           {isAdmin && (
@@ -422,9 +408,9 @@ function FileCard({ file, isAdmin, onDelete }) {
               disabled={deleting}
             >
               {deleting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
               ) : (
-                <Trash2 className="h-3.5 w-3.5" />
+                <MaterialIcon icon="delete" size={14} />
               )}
             </Button>
           )}
@@ -509,15 +495,15 @@ export default function Marketing() {
   const sortedMonths = Object.keys(groupedByMonth).sort((a, b) => b.localeCompare(a));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-[#fbf9fa] min-h-screen">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
-            <Megaphone className="h-6 w-6 text-white" />
+          <div className="p-2 bg-gradient-to-br from-[#b91c1c] to-[#991b1b] rounded-lg">
+            <MaterialIcon icon="campaign" size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Marketing</h1>
+            <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Marketing</h1>
             <p className="text-sm text-gray-500">
               {isAdmin
                 ? "Gerencie materiais de marketing das franquias"
@@ -529,16 +515,16 @@ export default function Marketing() {
         {isAdmin && (
           <Button
             onClick={() => setShowUpload(true)}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <MaterialIcon icon="add" size={16} className="mr-2" />
             Novo Material
           </Button>
         )}
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 min-w-[150px]">
@@ -601,11 +587,11 @@ export default function Marketing() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+          <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
         </div>
       ) : filteredFiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <FolderOpen className="h-16 w-16 mb-4" />
+          <MaterialIcon icon="folder_open" size={64} className="mb-4" />
           <p className="text-lg font-medium">Nenhum material disponível</p>
           <p className="text-sm">
             {filterMonth !== "all" || filterCategory !== "all"

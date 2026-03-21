@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { subDays } from "date-fns";
 
 const LEVEL_ORDER = { red: 0, yellow: 1 };
@@ -22,7 +21,13 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         const days = lastSaleDay
           ? Math.floor((new Date() - new Date(lastSaleDay.date)) / 86400000)
           : "?";
-        result.push({ level: "red", message: `${fName} — sem vendas há ${days} dias` });
+        result.push({
+          level: "red",
+          franchise: fName,
+          description: `Franquia sem vendas registradas há ${days} dias`,
+          action: "Ver Detalhes",
+          icon: "warning",
+        });
       }
 
       const inventory = inventoryByFranchise?.[franchise.id] || [];
@@ -30,53 +35,103 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
       const lowStock = inventory.filter((i) => (i.quantity || 0) > 0 && (i.quantity || 0) < 5);
 
       if (zeroStock.length > 0) {
-        result.push({ level: "red", message: `${fName} — ${zeroStock.length} item(ns) zerado(s) no estoque` });
+        result.push({
+          level: "red",
+          franchise: fName,
+          description: `${zeroStock.length} item(ns) zerado(s) no estoque`,
+          action: "Repor",
+          icon: "inventory",
+        });
       }
       if (lowStock.length > 0) {
-        result.push({ level: "yellow", message: `${fName} — ${lowStock.length} item(ns) com estoque baixo` });
+        result.push({
+          level: "yellow",
+          franchise: fName,
+          description: `${lowStock.length} item(ns) atingiram o estoque crítico de segurança`,
+          action: "Repor",
+          icon: "inventory",
+        });
       }
 
       if (!checklistByFranchise?.[franchise.id]) {
-        result.push({ level: "yellow", message: `${fName} — checklist não feito hoje` });
+        result.push({
+          level: "yellow",
+          franchise: fName,
+          description: "Checklist de abertura não foi realizado hoje",
+          action: "Notificar",
+          icon: "checklist",
+        });
       }
     }
 
     return result.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
   }, [franchises, summaries, inventoryByFranchise, checklistByFranchise]);
 
+  const getIcon = (alert) => {
+    const iconClass = alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]";
+    switch (alert.icon) {
+      case "inventory":
+        return <MaterialIcon icon="inventory" size={20} className={iconClass} />;
+      case "checklist":
+        return <MaterialIcon icon="fact_check" size={20} className={iconClass} />;
+      default:
+        return <MaterialIcon icon="warning" size={20} className={iconClass} />;
+    }
+  };
+
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <AlertTriangle className={`h-4 w-4 ${alerts.length > 0 ? "text-amber-500" : "text-emerald-500"}`} />
-          <span className="text-sm font-medium text-gray-700">
-            {alerts.length > 0 ? `Atenção (${alerts.length})` : "Tudo em dia"}
+    <section className="bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5">
+      <div className="flex items-center gap-2 mb-6">
+        <h4 className="text-[#291715] font-bold tracking-tight font-plus-jakarta">
+          ATENÇÃO CRÍTICA
+        </h4>
+        {alerts.length > 0 && (
+          <span className="bg-[#a80012] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            ({alerts.length})
+          </span>
+        )}
+      </div>
+
+      {alerts.length === 0 ? (
+        <div className="flex items-center gap-3 p-4 bg-[#f0fdf4] border-l-4 border-[#22c55e] rounded-r-xl">
+          <MaterialIcon icon="check_circle" filled size={20} className="text-[#16a34a]" />
+          <span className="text-sm font-medium text-[#15803d]">
+            Todas as franquias operando normalmente
           </span>
         </div>
-
-        {alerts.length === 0 ? (
-          <div className="flex items-center gap-2 text-emerald-600">
-            <CheckCircle2 className="h-4 w-4" />
-            <span className="text-sm">Todas as franquias operando normalmente</span>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {alerts.map((alert, i) => (
-              <div
-                key={i}
-                className={`flex items-center gap-2 text-sm rounded-md px-3 py-2 ${
-                  alert.level === "red" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+      ) : (
+        <div className="space-y-4">
+          {alerts.map((alert, i) => (
+            <div
+              key={i}
+              className={`flex items-center justify-between p-4 rounded-r-xl border-l-4 ${
+                alert.level === "red"
+                  ? "bg-[#a80012]/5 border-[#a80012]"
+                  : "bg-[#775a19]/5 border-[#775a19]"
+              }`}
+            >
+              <div className="flex items-center gap-4">
+                <div className={alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]"}>
+                  {getIcon(alert)}
+                </div>
+                <div>
+                  <h5 className="font-bold text-[#291715] font-plus-jakarta">
+                    {alert.franchise}
+                  </h5>
+                  <p className="text-sm text-[#291715]/70">{alert.description}</p>
+                </div>
+              </div>
+              <button
+                className={`text-xs font-bold uppercase tracking-wider hover:underline font-plus-jakarta ${
+                  alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]"
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full shrink-0 ${
-                  alert.level === "red" ? "bg-red-500" : "bg-amber-500"
-                }`} />
-                {alert.message}
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                {alert.action}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

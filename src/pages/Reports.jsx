@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, CalendarDays, TrendingUp, Loader2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 
 import SalesRevenueChart from "../components/reports/SalesRevenueChart";
@@ -109,24 +109,27 @@ function ReportsContent() {
   // Filtrar franquias baseado nas permissões do usuário
   const availableFranchises = currentUser?.role === 'admin' 
     ? franchises 
-    : franchises.filter(f => currentUser?.managed_franchise_ids?.includes(f.evolution_instance_id));
+    : franchises.filter(f =>
+        currentUser?.managed_franchise_ids?.includes(f.id) ||
+        currentUser?.managed_franchise_ids?.includes(f.evolution_instance_id)
+      );
 
   return (
-    <div className="p-4 md:p-8 bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-purple-600" />
+          <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
+            <MaterialIcon icon="bar_chart" size={32} className="text-[#b91c1c]" />
             Relatórios Avançados
           </h1>
-          <p className="text-slate-600 mt-1">Análise detalhada do desempenho das suas franquias</p>
+          <p className="text-[#4a3d3d] mt-1">Análise detalhada do desempenho das suas franquias</p>
         </div>
 
         {/* Filtros */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="w-5 h-5" />
+              <MaterialIcon icon="calendar_month" size={20} />
               Filtros do Relatório
             </CardTitle>
           </CardHeader>
@@ -204,7 +207,7 @@ function ReportsContent() {
             <div className="flex justify-between items-center">
               <div className="flex gap-2">
                 <Button disabled={isLoading}>
-                  {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <TrendingUp className="w-4 h-4 mr-2" />}
+                  {isLoading ? <MaterialIcon icon="progress_activity" size={16} className="mr-2 animate-spin" /> : <MaterialIcon icon="trending_up" size={16} className="mr-2" />}
                   {isLoading ? 'Carregando...' : 'Atualizado'}
                 </Button>
                 <ExportButton 

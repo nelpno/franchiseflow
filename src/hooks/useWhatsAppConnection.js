@@ -1,0 +1,125 @@
+import { useState, useCallback, useEffect } from "react";
+import { connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
+import { toast } from "sonner";
+
+export default function useWhatsAppConnection({ currentUser, updateConfigurationStatus }) {
+  const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [selectedConfigForWhatsApp, setSelectedConfigForWhatsApp] = useState(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [checkingStatusFor, setCheckingStatusFor] = useState(null);
+  const [modalData, setModalData] = useState(null);
+
+  useEffect(() => {
+    setShowWhatsAppModal(!!modalData);
+  }, [modalData]);
+
+  const handleConnectWhatsApp = useCallback(async (config) => {
+    if (!config || !config.franchise_evolution_instance_id) {
+      toast.error('Configuração inválida. Por favor, recarregue a página e tente novamente.');
+      return;
+    }
+    if (!currentUser) {
+      toast.error('Usuário não identificado. Por favor, faça login novamente.');
+      return;
+    }
+    setIsConnectingWhatsApp(true);
+    setSelectedConfigForWhatsApp(config);
+    setModalData(null);
+    try {
+      const response = await connectWhatsappRobot({ instanceName: config.franchise_evolution_instance_id });
+      const data = response.data || response;
+      if (data.status === 'connected' || data.connected === true) {
+        updateConfigurationStatus(config.id, {
+          whatsapp_status: 'connected',
+          whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
+          whatsapp_qr_code: null
+        });
+        toast.success('Este WhatsApp já está conectado!');
+      } else if (data.qrCode || data.qr_code || data.qrcode) {
+        const qrCodeValue = data.qrCode || data.qr_code || data.qrcode;
+        if (qrCodeValue && typeof qrCodeValue === 'string' && qrCodeValue.trim().length > 0) {
+          updateConfigurationStatus(config.id, {
+            whatsapp_status: 'pending_qr',
+            whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
+            whatsapp_qr_code: qrCodeValue
+          });
+          setModalData({
+            qrCode: qrCodeValue,
+            status: 'pending_qr',
+            instanceId: data.instanceId || data.instance_id || config.whatsapp_instance_id || ''
+          });
+        } else {
+          throw new Error('QR Code recebido é inválido ou vazio');
+        }
+      } else {
+        throw new Error('Resposta inesperada do sistema de WhatsApp. Tente novamente.');
+      }
+    } catch (error) {
+      console.error("Erro detalhado ao conectar WhatsApp:", error);
+      toast.error(error.response?.status === 403
+        ? "Você não tem permissão para conectar o WhatsApp desta franquia."
+        : "Falha ao conectar. Tente novamente."
+      );
+      setModalData(null);
+    } finally {
+      setIsConnectingWhatsApp(false);
+    }
+  }, [currentUser, updateConfigurationStatus]);
+
+  const handleCheckWhatsAppStatus = useCallback(async () => {
+    if (!selectedConfigForWhatsApp) return;
+    setIsCheckingStatus(true);
+    try {
+      const { data } = await checkWhatsappStatus({ instanceName: selectedConfigForWhatsApp.franchise_evolution_instance_id });
+      let newStatus = 'disconnected';
+      if (data.status === 'open' || data.connected === true) newStatus = 'connected';
+      else if (data.status === 'connecting' || data.status === 'pending') newStatus = 'pending_qr';
+      if (modalData) setModalData({ ...modalData, status: newStatus });
+      updateConfigurationStatus(selectedConfigForWhatsApp.id, { whatsapp_status: newStatus });
+    } catch (error) {
+      console.error("Erro ao verificar status:", error);
+      toast.error(error.response?.status === 403 || error.response?.status === 401
+        ? "Você não tem permissão para verificar o status do WhatsApp desta franquia."
+        : "Erro ao verificar status do WhatsApp."
+      );
+    }
+    setIsCheckingStatus(false);
+  }, [selectedConfigForWhatsApp, modalData, updateConfigurationStatus]);
+
+  const handleCloseModalAndCheckStatus = useCallback(() => {
+    setModalData(null);
+    if (selectedConfigForWhatsApp) setTimeout(() => handleCheckWhatsAppStatus(), 500);
+  }, [selectedConfigForWhatsApp, handleCheckWhatsAppStatus]);
+
+  const handleCheckStatusFromBadge = useCallback(async (config) => {
+    if (checkingStatusFor === config.id) return;
+    setCheckingStatusFor(config.id);
+    try {
+      const { data } = await checkWhatsappStatus({ instanceName: config.franchise_evolution_instance_id });
+      let newStatus = 'disconnected';
+      if (data.status === 'open' || data.connected === true) newStatus = 'connected';
+      else if (data.status === 'connecting' || data.status === 'pending') newStatus = 'pending_qr';
+      updateConfigurationStatus(config.id, { whatsapp_status: newStatus });
+    } catch (error) {
+      console.error("Erro ao verificar status do badge:", error);
+      toast.error(error.response?.status === 403 || error.response?.status === 401
+        ? "Você não tem permissão para verificar o status do WhatsApp desta franquia."
+        : "Erro ao verificar status do WhatsApp."
+      );
+    }
+    setCheckingStatusFor(null);
+  }, [checkingStatusFor, updateConfigurationStatus]);
+
+  return {
+    isConnectingWhatsApp,
+    showWhatsAppModal,
+    isCheckingStatus,
+    checkingStatusFor,
+    modalData,
+    handleConnectWhatsApp,
+    handleCheckWhatsAppStatus,
+    handleCloseModalAndCheckStatus,
+    handleCheckStatusFromBadge,
+  };
+}

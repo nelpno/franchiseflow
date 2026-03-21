@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Meu Vendedor - Maxi Massas</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-low": "#f5f3f4",
+                        "secondary-container": "#6063ee",
+                        "surface-container-highest": "#e3e2e3",
+                        "on-primary-fixed": "#3d0000",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "on-surface-variant": "#3d4a42",
+                        "surface-container-high": "#e9e8e9",
+                        "secondary": "#4648d4",
+                        "primary-container": "#991b1b",
+                        "tertiary": "#6b38d4",
+                        "on-tertiary-container": "#fffbff",
+                        "inverse-surface": "#303032",
+                        "on-primary-container": "#fff1f1",
+                        "surface-container": "#efedee",
+                        "tertiary-fixed": "#e9ddff",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff",
+                        "on-secondary-container": "#fffbff",
+                        "surface-tint": "#b91c1c",
+                        "outline": "#6d7a72",
+                        "on-surface": "#1b1c1d",
+                        "secondary-fixed-dim": "#c0c1ff",
+                        "on-secondary-fixed": "#07006c",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#2f2ebe",
+                        "primary": "#b91c1c",
+                        "surface-bright": "#fbf9fa",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#ffb4ab",
+                        "primary-fixed": "#ffdad6",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "background": "#fbf9fa",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-background": "#1b1c1d",
+                        "surface": "#fbf9fa",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#930006",
+                        "secondary-fixed": "#e1e0ff",
+                        "on-tertiary-fixed": "#23005c",
+                        "outline-variant": "#bccac0",
+                        "inverse-on-surface": "#f2f0f1",
+                        "surface-variant": "#e3e2e3",
+                        "surface-dim": "#dbd9db",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#8455ef",
+                        "brand-gold": "#d4af37"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fbf9fa;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+        .primary-gradient {
+            background: linear-gradient(145deg, #b91c1c 0%, #991b1b 100%);
+        }
+    </style>
+</head>
+<body class="text-on-surface antialiased">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-screen w-64 fixed left-0 top-0 border-r-0 bg-[#f5f3f4] dark:bg-slate-900 flex flex-col p-4 z-50">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold tracking-tighter text-[#1b1c1d] dark:text-slate-100">Maxi Massas</h1>
+<p class="text-xs text-on-surface-variant">Digital Atélier</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="storefront">storefront</span>
+<span class="text-sm font-medium">Franchises</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-sm font-medium">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-sm font-medium">Orders</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-primary font-semibold bg-white rounded-xl shadow-sm" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant/10 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="text-sm font-medium">Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#3d4a42] hover:bg-white/50 transition-all rounded-xl" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-sm font-medium">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 min-h-screen pb-24">
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-40 bg-[#fbf9fa]/80 backdrop-blur-md flex justify-between items-center px-8 h-20">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64" placeholder="Search settings..." type="text"/>
+</div>
+<div class="flex items-center gap-6">
+<button class="relative text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<div class="flex items-center gap-3 pl-6 border-l border-outline-variant/20">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="User profile picture professional male" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIkRIFQqnGpWmW-04Ax_CYwjQ0VQFopBjAbJrMLmI-rCJxbx5WSZWYj2gicxcu7iOErdTep3wj43QKxVB4P_ATp6HV6oFxB1xwGtp4YVUdFEEFv9n8_gHFQxLdtMkmFD9q9fo7WOyS_ablOrMZjsltqsX3iLyEV2M6homkqfsHajWGcZ05_Pex0-yqdybF1FZRUJ_CmXmW8NoMUgyfmQOhHSuxQu6Yjtfzcrv9VlMsWlGjBsaYlryMONsxXdt3qEnKY9wN-IP666E"/>
+<span class="text-sm font-medium">Maxi Massas Admin</span>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="mt-20 px-8 pt-12 max-w-4xl mx-auto">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="text-3xl font-bold tracking-tight text-on-surface">Meu Vendedor</h2>
+<p class="text-on-surface-variant mt-1">Configure o assistente de vendas automático da sua unidade</p>
+</div>
+<div class="flex items-center gap-2 px-3 py-1.5 bg-primary-fixed/30 rounded-full border border-primary/10">
+<span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+<span class="text-xs font-semibold text-primary">Conectado</span>
+</div>
+</div>
+<!-- WhatsApp Connection Card -->
+<section class="mb-12 bg-surface-container-low rounded-2xl p-6 flex items-center justify-between border border-outline-variant/5">
+<div class="flex items-center gap-6">
+<div class="relative group">
+<div class="w-24 h-24 bg-white rounded-xl flex items-center justify-center border border-outline-variant/20 shadow-sm overflow-hidden p-2">
+<img class="w-full h-full object-contain grayscale opacity-20" data-alt="WhatsApp QR Code for connection" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCn0LtJ4cmkimhe-H_Wj4LXShrdr8fZCus8lstaLJ0G4_ndyOsXU2OB0cK6PLmckl0tkkbjWWHXB8sxLjOxqta89iG_erdm3fONtzRtwv-mqu3_B3rWZ3YW_I5esLbvZ7YQWSTYAzAlgoTWQT0cKKqOirhno2for17NxkzEEDZenesvZRxn8Lb_7Dt9A8kaDhugD0FcISiQ0KzR9B53fiKly1_-gAOjmbEU2KAdZwSRuNWKZuUV_T80_4IFo8uRPNMDEMHuR7RD1Ko"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="check_circle" data-weight="fill">check_circle</span>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-on-surface">Instância: Matriz Itaim</h3>
+<p class="text-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="smartphone">smartphone</span>
+                            +55 11 98765-4321
+                        </p>
+<div class="mt-2 text-xs font-medium text-primary">Ativo desde as 08:42 hoje</div>
+</div>
+</div>
+<button class="px-5 py-2.5 rounded-xl border border-primary text-primary text-sm font-semibold hover:bg-primary/5 transition-colors">
+                    Reconectar
+                </button>
+</section>
+<!-- Tabs Navigation -->
+<nav class="flex gap-8 mb-10 border-b border-outline-variant/10">
+<button class="pb-4 text-sm font-bold text-primary border-b-2 border-primary">Dados da Unidade</button>
+<button class="pb-4 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">Cardápio e Preços</button>
+<button class="pb-4 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">Entrega</button>
+</nav>
+<!-- Form Content -->
+<div class="space-y-12">
+<!-- Informações Básicas -->
+<section>
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="info" data-weight="fill">info</span>
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/80">Informações Básicas</h4>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Nome da unidade</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm" type="text" value="Maxi Massas - Itaim Bibi"/>
+</div>
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Endereço completo</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm" type="text" value="Rua Joaquim Floriano, 450 - São Paulo, SP"/>
+</div>
+<div class="col-span-1">
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Telefone</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm" type="text" value="(11) 98765-4321"/>
+</div>
+</div>
+</section>
+<!-- Horários -->
+<section>
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="schedule" data-weight="fill">schedule</span>
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/80">Horários</h4>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="col-span-1">
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Horário de funcionamento</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm" type="text" value="09:00 - 19:00"/>
+</div>
+<div class="col-span-2">
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Dias de funcionamento</label>
+<div class="flex flex-wrap gap-2">
+<span class="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold cursor-pointer">Seg</span>
+<span class="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold cursor-pointer">Ter</span>
+<span class="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold cursor-pointer">Qua</span>
+<span class="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold cursor-pointer">Qui</span>
+<span class="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold cursor-pointer">Sex</span>
+<span class="px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-bold cursor-pointer hover:bg-surface-container-highest">Sáb</span>
+<span class="px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-xs font-bold cursor-pointer hover:bg-surface-container-highest">Dom</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Pagamento e Entrega -->
+<section>
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="payments" data-weight="fill">payments</span>
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/80">Pagamento e Entrega</h4>
+</div>
+<div class="grid grid-cols-3 gap-6">
+<div class="col-span-3">
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Formas de pagamento</label>
+<div class="flex flex-wrap gap-2">
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-primary/20 rounded-xl text-xs font-medium text-primary shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="qr_code_2">qr_code_2</span> PIX
+                                </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-primary/20 rounded-xl text-xs font-medium text-primary shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="credit_card">credit_card</span> Cartão (Maquininha)
+                                </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-high rounded-xl text-xs font-medium text-on-surface-variant opacity-60">
+<span class="material-symbols-outlined text-sm" data-icon="payments">payments</span> Dinheiro
+                                </button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Raio entrega (km)</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm font-mono" type="number" value="7"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Pedido mínimo (R$)</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm font-mono" type="text" value="45,00"/>
+</div>
+<div>
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Preparo médio (min)</label>
+<input class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm font-mono" type="number" value="25"/>
+</div>
+</div>
+</section>
+<!-- Personalidade do Vendedor -->
+<section class="bg-surface-container-lowest/50 p-8 rounded-3xl border border-primary/5">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="psychology" data-weight="fill">psychology</span>
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant/80">Personalidade do Vendedor</h4>
+</div>
+<div class="space-y-6">
+<div>
+<label class="block text-xs font-semibold text-on-surface-variant mb-3">Tom de voz</label>
+<div class="flex gap-4">
+<label class="flex-1 cursor-pointer">
+<input class="hidden peer" name="tone" type="radio"/>
+<div class="p-4 rounded-xl border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary-fixed/20 transition-all text-center">
+<div class="text-sm font-bold text-on-surface">Formal</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Sério e executivo</div>
+</div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input checked="" class="hidden peer" name="tone" type="radio"/>
+<div class="p-4 rounded-xl border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary-fixed/20 transition-all text-center">
+<div class="text-sm font-bold text-on-surface">Amigável</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Caloroso e prestativo</div>
+</div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="hidden peer" name="tone" type="radio"/>
+<div class="p-4 rounded-xl border-2 border-outline-variant peer-checked:border-primary peer-checked:bg-primary-fixed/20 transition-all text-center">
+<div class="text-sm font-bold text-on-surface">Descontraído</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Jovial e direto</div>
+</div>
+</label>
+</div>
+</div>
+<div>
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Mensagem de boas-vindas</label>
+<textarea class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm resize-none" rows="3">Olá! Bem-vindo à Maxi Massas Itaim. Sou o seu assistente virtual. Já conhece nossas massas artesanais congeladas ou gostaria de ver o cardápio de hoje?</textarea>
+</div>
+<div>
+<label class="block text-xs font-semibold text-on-surface-variant mb-2">Promoções ativas</label>
+<textarea class="w-full bg-surface-container-high border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 text-sm resize-none" placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." rows="2"></textarea>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Sticky Bottom Actions -->
+<footer class="fixed bottom-0 right-0 w-[calc(100%-16rem)] bg-white/80 backdrop-blur-md border-t border-outline-variant/10 px-12 py-6 flex justify-between items-center z-40">
+<div class="text-xs text-on-surface-variant italic">
+                Última alteração salva há 14 minutos.
+            </div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-6 py-3 rounded-xl border border-primary text-primary font-bold text-sm hover:bg-primary/5 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome" data-weight="fill">auto_awesome</span>
+                    Otimizar com IA
+                </button>
+<button class="primary-gradient text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+                    Salvar alterações
+                </button>
+</div>
+</footer>
+</main>
+</body></html>

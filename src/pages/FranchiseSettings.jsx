@@ -1,32 +1,35 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FranchiseConfiguration, Franchise, User } from "@/entities/all";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, SlidersHorizontal, Info, Trash2, Sparkles, Loader2, Smartphone, Wifi, WifiOff, Building2, CreditCard, Truck, Megaphone, MessageCircle, CheckCircle2 } from "lucide-react";
-import { optimizeConfig, connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { optimizeConfig } from "@/api/functions";
 import { toast } from "sonner";
+import { PAYMENT_METHODS, DELIVERY_METHODS, BOT_PERSONALITIES, PIX_KEY_TYPES, WEEKDAYS } from "@/lib/franchiseUtils";
 
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
+import WizardStepper from "@/components/vendedor/WizardStepper";
+import WizardStep from "@/components/vendedor/WizardStep";
+import DeliveryFeeEditor from "@/components/vendedor/DeliveryFeeEditor";
+import ReviewSummary from "@/components/vendedor/ReviewSummary";
+import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
+import CatalogUpload from "@/components/vendedor/CatalogUpload";
+import { ToggleCard, RadioCards, PaymentChipsMulti, DayChipsToggle } from "@/components/vendedor/WizardFields";
+import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
 
 const initialFormData = {
   franchise_evolution_instance_id: '',
-  franchise_name: '', // Added this field for AI purposes
-  accepted_payment_methods: '', // Alterado para string
+  franchise_name: '',
+  accepted_payment_methods: '',
   opening_hours: '',
   working_days: '',
+  operating_hours: [],
   price_table_url: '',
   agent_name: '',
   promotions_combo: '',
   shipping_rules_costs: '',
   unit_address: '',
-  address_reference: '', // Novo campo
+  address_reference: '',
   pix_key_data: '',
   personal_phone_for_summary: '',
   payment_link: '',
@@ -34,32 +37,55 @@ const initialFormData = {
   max_delivery_radius_km: null,
   min_order_value: null,
   avg_prep_time_minutes: null,
-  welcome_message: ''
+  welcome_message: '',
+  // New wizard fields (may not exist in DB yet)
+  has_delivery: true,
+  has_pickup: false,
+  delivery_method: '',
+  payment_delivery: [],
+  payment_pickup: [],
+  delivery_fee_rules: [{ max_km: '', fee: '' }],
+  pix_key_type: '',
+  pix_holder_name: '',
+  pix_bank: '',
+  city: '',
+  neighborhood: '',
+  order_cutoff_time: '',
+  catalog_image_url: '',
+  bot_personality: '',
 };
+
+const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
+const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
 
 function FranchiseSettingsContent() {
   const [configurations, setConfigurations] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false); // State for AI optimization
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [isDirty, setIsDirty] = useState(false);
-  const [displayConfigurations, setDisplayConfigurations] = useState([]); // Nova state para a lista a ser exibida
+  const [displayConfigurations, setDisplayConfigurations] = useState([]);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedConfigId, setSelectedConfigId] = useState(null);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
 
-  const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  const [selectedConfigForWhatsApp, setSelectedConfigForWhatsApp] = useState(null);
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const [checkingStatusFor, setCheckingStatusFor] = useState(null); // Novo estado para indicar qual franquia está sendo verificada
+  const updateConfigurationStatus = useCallback((configId, updates) => {
+    setConfigurations((prev) => prev.map((config) =>
+      config.id === configId ? { ...config, ...updates } : config
+    ));
+  }, []);
 
-  // Estado específico para controle seguro do modal
-  const [modalData, setModalData] = useState(null); // null quando fechado, objeto quando aberto
+  const {
+    isConnectingWhatsApp, showWhatsAppModal, isCheckingStatus,
+    checkingStatusFor, modalData,
+    handleConnectWhatsApp, handleCheckWhatsAppStatus,
+    handleCloseModalAndCheckStatus, handleCheckStatusFromBadge,
+  } = useWhatsAppConnection({ currentUser, updateConfigurationStatus });
 
-  // Usar useCallback para estabilizar funções e evitar re-renders desnecessários
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -78,168 +104,127 @@ function FranchiseSettingsContent() {
     setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Novo useEffect para calcular a lista de exibição apenas quando os dados mudarem
   useEffect(() => {
     if (!isLoading && currentUser && franchises.length > 0 && configurations.length > 0) {
-      // Filtra as franquias que o usuário pode ver
       const availableFranchises = currentUser.role === 'admin'
         ? franchises
-        : franchises.filter((f) => currentUser.managed_franchise_ids?.includes(f.evolution_instance_id));
-      
-      const availableFranchiseIds = availableFranchises.map(f => f.evolution_instance_id);
+        : franchises.filter((f) =>
+            currentUser.managed_franchise_ids?.includes(f.id) ||
+            currentUser.managed_franchise_ids?.includes(f.evolution_instance_id)
+          );
 
-      // Filtra as configurações que correspondem às franquias disponíveis
+      const availableFranchiseIds = availableFranchises.map(f => f.evolution_instance_id);
       const filteredConfigs = configurations.filter(config =>
         availableFranchiseIds.includes(config.franchise_evolution_instance_id)
       );
-      
-      // Mapeia os dados para incluir o objeto da franquia
+
       const configsToDisplay = filteredConfigs.map(config => {
-        // Find the corresponding franchise object. This should always find one due to the filtering above.
         const franchise = availableFranchises.find(f => f.evolution_instance_id === config.franchise_evolution_instance_id);
-        return { ...config, franchise }; // Adiciona o objeto da franquia à configuração
+        return { ...config, franchise };
       });
 
       setDisplayConfigurations(configsToDisplay);
+
+      if (!selectedConfigId && configsToDisplay.length > 0) {
+        const first = configsToDisplay[0];
+        setSelectedConfigId(first.id);
+        loadConfigIntoForm(first);
+      }
     } else if (!isLoading && currentUser) {
-        // No matching configs found — show empty state
-        setDisplayConfigurations([]);
+      setDisplayConfigurations([]);
     }
   }, [isLoading, currentUser, franchises, configurations]);
 
-  // Sincroniza o modal com os dados
-  useEffect(() => {
-    if (modalData) {
-      setShowWhatsAppModal(true);
-    } else {
-      setShowWhatsAppModal(false);
-    }
-  }, [modalData]);
-
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = ''; // Standard for most browsers
-      }
+      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  // Função auxiliar para atualizar uma configuração específica no estado 'configurations'
-  // e, por extensão, acionar o useEffect para atualizar 'displayConfigurations'
-  const updateConfigurationStatus = useCallback((configId, updates) => {
-    setConfigurations((prev) => prev.map((config) =>
-      config.id === configId ?
-        { ...config, ...updates } :
-        config
-    ));
-  }, []);
-
-  // Helper function to get franchise by instance ID (used for New Config form and general lookup)
-  const getFranchiseByInstanceId = (instanceId) => {
-    return franchises.find((f) => f.evolution_instance_id === instanceId);
-  };
-
-  const handleNewConfig = () => {
-    setEditingConfig(null);
-    setFormData(initialFormData);
-    setShowForm(true);
-    setIsDirty(false);
-  };
-
-  const handleEditConfig = (config) => {
+  const loadConfigIntoForm = (config) => {
     setEditingConfig(config);
-
-    // Converte dados antigos (array) para string para manter a compatibilidade
-    const paymentMethods = config.accepted_payment_methods;
-    const paymentMethodsStr = Array.isArray(paymentMethods) ? paymentMethods.join(', ') : paymentMethods || '';
-
     setFormData({
-      ...initialFormData, // Start with all initial fields
-      ...config, // Overlay with existing config data
-      accepted_payment_methods: paymentMethodsStr, // Garante que seja uma string
-      address_reference: config.address_reference || '', // Carrega o novo campo
-      social_media_links: {
-        instagram: config.social_media_links?.instagram || ''
-      },
-      // Ensure franchise_name is explicitly set, defaulting to empty string if not present in config
+      ...initialFormData,
+      ...config,
+      accepted_payment_methods: Array.isArray(config.accepted_payment_methods)
+        ? config.accepted_payment_methods.join(', ')
+        : config.accepted_payment_methods || '',
+      address_reference: config.address_reference || '',
+      social_media_links: { instagram: config.social_media_links?.instagram || '' },
       franchise_name: config.franchise_name || '',
       working_days: config.working_days || '',
       max_delivery_radius_km: config.max_delivery_radius_km ?? null,
       min_order_value: config.min_order_value ?? null,
       avg_prep_time_minutes: config.avg_prep_time_minutes ?? null,
-      welcome_message: config.welcome_message || ''
+      welcome_message: config.welcome_message || '',
+      // New fields with safe defaults
+      has_delivery: config.has_delivery ?? true,
+      has_pickup: config.has_pickup ?? false,
+      delivery_method: config.delivery_method || '',
+      payment_delivery: config.payment_delivery || [],
+      payment_pickup: config.payment_pickup || [],
+      delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
+      pix_key_type: config.pix_key_type || '',
+      order_cutoff_time: config.order_cutoff_time || '',
+      bot_personality: config.bot_personality || '',
+      operating_hours: config.operating_hours || [],
+      pix_holder_name: config.pix_holder_name || '',
+      pix_bank: config.pix_bank || '',
+      city: config.city || '',
+      neighborhood: config.neighborhood || '',
+      catalog_image_url: config.catalog_image_url || '',
     });
-    setShowForm(true);
     setIsDirty(false);
   };
 
-  const handleCancel = () => {
-    setShowForm(false);
-    setIsDirty(false);
-  };
+  const [pendingConfigId, setPendingConfigId] = useState(null);
 
-  const handleDelete = async () => {
-    if (!editingConfig) return;
-    if (window.confirm("Tem certeza que deseja excluir esta configuração?")) {
-      setIsSubmitting(true);
-      try {
-        await FranchiseConfiguration.delete(editingConfig.id);
-
-        // Remove a configuração do estado local
-        setConfigurations((prev) => prev.filter((config) => config.id !== editingConfig.id));
-
-        setShowForm(false);
-        setIsDirty(false);
-      } catch (error) {
-        console.error("Erro ao excluir:", error);
-        toast.error("Falha ao excluir configuração.");
-      }
-      setIsSubmitting(false);
+  const handleSelectConfig = (configId) => {
+    if (isDirty) {
+      setPendingConfigId(configId);
+      return;
     }
+    applyConfigSelection(configId);
+  };
+
+  const applyConfigSelection = (configId) => {
+    const config = displayConfigurations.find(c => c.id === configId);
+    if (config) {
+      setSelectedConfigId(configId);
+      loadConfigIntoForm(config);
+      setCurrentStep(1);
+    }
+    setPendingConfigId(null);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setIsSubmitting(true);
 
-    // Garantir que todos os campos sejam strings e não arrays
     const finalData = {
       ...formData,
-      // Garante que accepted_payment_methods seja sempre uma string
       accepted_payment_methods: typeof formData.accepted_payment_methods === 'string' ?
         formData.accepted_payment_methods :
         Array.isArray(formData.accepted_payment_methods) ?
-          formData.accepted_payment_methods.join(', ') :
-          '',
-      // Garante que address_reference seja sempre uma string
+          formData.accepted_payment_methods.join(', ') : '',
       address_reference: formData.address_reference || ''
     };
 
     try {
       if (editingConfig) {
         await FranchiseConfiguration.update(editingConfig.id, finalData);
-
-        // Atualiza apenas a configuração editada no estado local
         updateConfigurationStatus(editingConfig.id, finalData);
       } else {
         const newConfig = await FranchiseConfiguration.create(finalData);
-
-        // Adiciona a nova configuração ao estado local
         setConfigurations((prev) => [...prev, newConfig]);
       }
-      setShowForm(false);
       setIsDirty(false);
+      setLastSavedAt(new Date());
+      toast.success("Configurações salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar:", error);
       toast.error("Falha ao salvar configuração.");
@@ -252,35 +237,19 @@ function FranchiseSettingsContent() {
     setIsDirty(true);
   };
 
-  const handleSocialMediaChange = (platform, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      social_media_links: {
-        ...prev.social_media_links,
-        [platform]: value
-      }
-    }));
-    setIsDirty(true);
-  };
-
   const handleOptimize = async () => {
     setIsOptimizing(true);
     try {
-      // Envia os dados do formulário atual para a função de backend
       const { data: optimizedData } = await optimizeConfig(formData);
-
-      // Atualiza o formulário com os dados otimizados, mantendo os que não foram alterados
       setFormData((prevData) => ({
         ...prevData,
         ...optimizedData,
-        // Garante que objetos aninhados sejam mesclados corretamente
         social_media_links: {
           ...prevData.social_media_links,
           ...(optimizedData.social_media_links || {})
         }
       }));
-
-      setIsDirty(true); // Marca o formulário como alterado
+      setIsDirty(true);
       toast.success("Textos otimizados com IA! Revise as sugestões e salve as alterações.");
     } catch (error) {
       console.error("Erro ao otimizar com IA:", error);
@@ -289,694 +258,615 @@ function FranchiseSettingsContent() {
     setIsOptimizing(false);
   };
 
-  const handleConnectWhatsApp = useCallback(async (config) => {
-    if (!config || !config.franchise_evolution_instance_id) {
-      toast.error('Configuração inválida. Por favor, recarregue a página e tente novamente.');
-      return;
-    }
-
-    if (!currentUser) {
-      toast.error('Usuário não identificado. Por favor, faça login novamente.');
-      return;
-    }
-
-    setIsConnectingWhatsApp(true);
-    setSelectedConfigForWhatsApp(config);
-    setModalData(null);
-
-    try {
-      console.log('Tentando conectar WhatsApp para:', config.franchise_evolution_instance_id);
-
-      const response = await connectWhatsappRobot({
-        instanceName: config.franchise_evolution_instance_id
-      });
-
-      const data = response.data || response;
-      console.log('Resposta do connectWhatsappRobot:', data);
-
-      if (data.status === 'connected' || data.connected === true) {
-        updateConfigurationStatus(config.id, {
-          whatsapp_status: 'connected',
-          whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
-          whatsapp_qr_code: null
-        });
-        toast.success('Este WhatsApp já está conectado!');
-        
-      } else if (data.qrCode || data.qr_code || data.qrcode) {
-        const qrCodeValue = data.qrCode || data.qr_code || data.qrcode;
-        if (qrCodeValue && typeof qrCodeValue === 'string' && qrCodeValue.trim().length > 0) {
-            updateConfigurationStatus(config.id, {
-              whatsapp_status: 'pending_qr',
-              whatsapp_instance_id: data.instanceId || data.instance_id || config.whatsapp_instance_id || '',
-              whatsapp_qr_code: qrCodeValue
-            });
-
-            setModalData({
-                qrCode: qrCodeValue,
-                status: 'pending_qr',
-                instanceId: data.instanceId || data.instance_id || config.whatsapp_instance_id || ''
-            });
-        } else {
-            throw new Error('QR Code recebido é inválido ou vazio');
-        }
-      } else {
-        throw new Error('Resposta inesperada do sistema de WhatsApp. Tente novamente.');
-      }
-
-    } catch (error) {
-      console.error("Erro detalhado ao conectar WhatsApp:", error);
-
-      if (error.response) {
-        console.error("Response status:", error.response.status);
-        console.error("Response data:", error.response.data);
-      }
-
-      toast.error(error.response?.status === 403 ?
-        "Você não tem permissão para conectar o WhatsApp desta franquia. Entre em contato com o administrador." :
-        "Falha ao conectar. Tente novamente."
-      );
-      setModalData(null);
-
-    } finally {
-        setIsConnectingWhatsApp(false);
-    }
-  }, [currentUser, updateConfigurationStatus]);
-
-  const handleCheckWhatsAppStatus = async () => {
-    if (!selectedConfigForWhatsApp) return;
-
-    setIsCheckingStatus(true);
-    try {
-      console.log('Verificando status do WhatsApp para:', selectedConfigForWhatsApp.franchise_evolution_instance_id);
-
-      const { data } = await checkWhatsappStatus({
-        instanceName: selectedConfigForWhatsApp.franchise_evolution_instance_id
-      });
-
-      console.log('Resposta do status check:', data);
-
-      // Determina o novo status baseado na resposta
-      let newStatus = 'disconnected';
-      if (data.status === 'open' || data.connected === true) {
-        newStatus = 'connected';
-      } else if (data.status === 'connecting' || data.status === 'pending') {
-        newStatus = 'pending_qr';
-      }
-
-      // Atualizar modal data se necessário
-      if (modalData) {
-        setModalData({ ...modalData, status: newStatus });
-      }
-
-      // Atualiza o status local imediatamente na lista principal
-      updateConfigurationStatus(selectedConfigForWhatsApp.id, {
-        whatsapp_status: newStatus
-      });
-
-    } catch (error) {
-      console.error("Erro ao verificar status:", error);
-
-      // Verificar se é problema de permissões
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        toast.error("Você não tem permissão para verificar o status do WhatsApp desta franquia.");
-      } else {
-        toast.error("Erro ao verificar status do WhatsApp.");
-      }
-    }
-    setIsCheckingStatus(false);
-  };
-
-  const handleCloseModalAndCheckStatus = () => {
-    setModalData(null);
-    
-    if (selectedConfigForWhatsApp) {
-      setTimeout(() => {
-        handleCheckWhatsAppStatus();
-      }, 500);
-    }
-  };
-
-  const handleCheckStatusFromBadge = async (config) => {
-    if (checkingStatusFor === config.id) return; // Evita múltiplos cliques simultâneos
-
-    setCheckingStatusFor(config.id);
-    try {
-      console.log('Verificando status do badge para:', config.franchise_evolution_instance_id);
-
-      const { data } = await checkWhatsappStatus({
-        instanceName: config.franchise_evolution_instance_id
-      });
-
-      console.log('Resposta do status badge check:', data);
-
-      // Determina o novo status baseado na resposta
-      let newStatus = 'disconnected';
-      if (data.status === 'open' || data.connected === true) {
-        newStatus = 'connected';
-      } else if (data.status === 'connecting' || data.status === 'pending') {
-        newStatus = 'pending_qr';
-      }
-
-      // Atualiza esta configuração específica
-      updateConfigurationStatus(config.id, {
-        whatsapp_status: newStatus
-      });
-
-    } catch (error) {
-      console.error("Erro ao verificar status do badge:", error);
-
-      // Verificar se é problema de permissões
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        toast.error("Você não tem permissão para verificar o status do WhatsApp desta franquia.");
-      } else {
-        toast.error("Erro ao verificar status do WhatsApp.");
-      }
-    }
-    setCheckingStatusFor(null);
-  };
-
-  const getWhatsAppStatusBadge = (config) => {
-    const isChecking = checkingStatusFor === config.id;
-    const status = config.whatsapp_status || 'disconnected';
-
-    const getBadgeContent = () => {
-      if (isChecking) {
-        return (
-          <>
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-            Verificando...
-          </>
-        );
-      }
-
-      switch (status) {
-        case 'connected':
-          return (
-            <>
-              <Wifi className="w-3 h-3 mr-1" />
-              Conectado
-            </>
-          );
-        case 'pending_qr':
-          return (
-            <>
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              Conectando
-            </>
-          );
-        case 'error':
-          return (
-            <>
-              <WifiOff className="w-3 h-3 mr-1" />
-              Erro
-            </>
-          );
-        default:
-          return (
-            <>
-              <WifiOff className="w-3 h-3 mr-1" />
-              Desconectado
-            </>
-          );
-      }
-    };
-
-    const getBadgeColor = () => {
-      if (isChecking) return 'bg-blue-100 text-blue-800 cursor-wait';
-
-      switch (status) {
-        case 'connected':
-          return 'bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer';
-        case 'pending_qr':
-          return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 cursor-pointer';
-        case 'error':
-          return 'bg-red-100 text-red-800 hover:bg-red-200 cursor-pointer';
-        default:
-          return 'bg-gray-100 text-gray-800 hover:bg-gray-200 cursor-pointer';
-      }
-    };
-
-    return (
-      <Badge
-        className={`transition-colors duration-200 ${getBadgeColor()}`}
-        onClick={() => !isChecking && handleCheckStatusFromBadge(config)}
-        title={isChecking ? 'Verificando status...' : 'Clique para verificar o status atual'}
-      >
-        {getBadgeContent()}
-      </Badge>
-    );
-  };
-
   const availableFranchisesForUser = useMemo(() => {
     if (!currentUser) return [];
     return currentUser.role === 'admin' ?
       franchises :
-      franchises.filter((f) => currentUser.managed_franchise_ids?.includes(f.evolution_instance_id));
+      franchises.filter((f) =>
+        currentUser.managed_franchise_ids?.includes(f.id) ||
+        currentUser.managed_franchise_ids?.includes(f.evolution_instance_id)
+      );
   }, [currentUser, franchises]);
 
   const configuredInstanceIds = configurations.map((c) => c.franchise_evolution_instance_id);
   const franchisesWithoutConfig = availableFranchisesForUser.filter((f) => !configuredInstanceIds.includes(f.evolution_instance_id));
 
-  return (
-    <div className="p-4 md:p-8 bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <SlidersHorizontal className="w-8 h-8 text-indigo-600" />
-              Meu Vendedor
-            </h1>
-            <p className="text-slate-600 mt-1">Configure o atendente automático que vende pelo WhatsApp da sua unidade.</p>
-          </div>
-          {(franchisesWithoutConfig.length > 0 || currentUser?.role === 'admin') &&
-            <Button onClick={handleNewConfig} className="bg-indigo-600 hover:bg-indigo-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Configuração
-            </Button>
-          }
+  const currentConfig = displayConfigurations.find(c => c.id === selectedConfigId);
+  const currentFranchise = currentConfig?.franchise;
+  const whatsappStatus = currentConfig?.whatsapp_status || 'disconnected';
+  const isConnected = whatsappStatus === 'connected';
+
+  const getLastSavedText = () => {
+    if (!lastSavedAt) return null;
+    const diffMs = Date.now() - lastSavedAt.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "Salvo agora.";
+    return `Salvo há ${diffMin} min.`;
+  };
+
+  // Determine which steps to skip
+  const hasDelivery = formData.has_delivery ?? true;
+  const hasPickup = formData.has_pickup ?? false;
+  const skippedSteps = [
+    ...(!hasDelivery ? [4] : []),
+  ];
+
+  // Determine completed steps (basic validation)
+  const completedSteps = useMemo(() => {
+    const done = [];
+    if (formData.franchise_name && formData.unit_address) done.push(1);
+    if ((formData.operating_hours?.length > 0) || (formData.working_days && formData.opening_hours)) done.push(2);
+    // Step 3: Operação e Pagamentos — complete if operation mode set + relevant payments configured
+    const deliveryPaymentOk = !hasDelivery || (formData.payment_delivery?.length > 0);
+    const pickupPaymentOk = !hasPickup || (formData.payment_pickup?.length > 0);
+    if (formData.has_delivery !== undefined && deliveryPaymentOk && pickupPaymentOk) done.push(3);
+    if (!hasDelivery || formData.max_delivery_radius_km) done.push(4);
+    if (formData.agent_name) done.push(5);
+    return done;
+  }, [formData, hasDelivery, hasPickup]);
+
+  const goToStep = (step) => {
+    if (skippedSteps.includes(step)) return;
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const nextStep = () => {
+    let next = currentStep + 1;
+    while (next <= 6 && skippedSteps.includes(next)) next++;
+    if (next <= 6) goToStep(next);
+  };
+
+  const prevStep = () => {
+    let prev = currentStep - 1;
+    while (prev >= 1 && skippedSteps.includes(prev)) prev--;
+    if (prev >= 1) goToStep(prev);
+  };
+
+  // Disabled payment methods for third-party delivery
+  const thirdPartyDisabledPayments = formData.delivery_method === 'third_party'
+    ? ['card_machine', 'cash']
+    : [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center gap-3 text-[#3d4a42]">
+          <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-[#b91c1c]" />
+          <span className="text-sm font-medium">Carregando configurações...</span>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading ?
-            Array.from({ length: 3 }).map((_, i) =>
-              <Card key={i} className="animate-pulse">
-                <CardHeader><div className="h-6 bg-slate-200 rounded w-3/4"></div></CardHeader>
-                <CardContent><div className="space-y-2"><div className="h-4 bg-slate-200 rounded"></div><div className="h-4 bg-slate-200 rounded w-5/6"></div></div></CardContent>
-              </Card>
-            ) :
-            displayConfigurations.length > 0 ?
-              displayConfigurations.map((config) => {
-                // O objeto da franquia agora está diretamente em config.franchise
-                const franchise = config.franchise;
-
-                return (
-                  <Card key={config.id} className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="flex justify-between items-start">
-                        <div>
-                          <span>{config.franchise_name || franchise.city}</span>
-                          <div className="mt-2">
-                            {getWhatsAppStatusBadge(config)}
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEditConfig(config)}>
-                            <Edit className="w-3 h-3 mr-2" />
-                            Editar
-                          </Button>
-                          {config.whatsapp_status !== 'connected' &&
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleConnectWhatsApp(config)}
-                              disabled={isConnectingWhatsApp && selectedConfigForWhatsApp?.id === config.id}
-                              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100">
-                              {isConnectingWhatsApp && selectedConfigForWhatsApp?.id === config.id ?
-                                <Loader2 className="w-3 h-3 mr-2 animate-spin" /> :
-                                <Smartphone className="w-3 h-3 mr-2" />
-                              }
-                              Conectar Robô
-                            </Button>
-                          }
-                        </div>
-                      </CardTitle>
-                      <p className="text-sm text-slate-500">{franchise.owner_name}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="text-sm"><strong className="text-slate-600">Endereço:</strong> {config.unit_address || 'N/A'}</div>
-                      {config.address_reference &&
-                        <div className="text-sm"><strong className="text-slate-600">Referência:</strong> {config.address_reference}</div>
-                      }
-                      <div className="text-sm"><strong className="text-slate-600">Horários:</strong> {config.opening_hours || 'N/A'}</div>
-                      <div className="text-sm"><strong className="text-slate-600">Atendente:</strong> {config.agent_name || 'N/A'}</div>
-
-                      {/* Exibição como texto */}
-                      <div className="text-sm">
-                        <strong className="text-slate-600">Pagamentos:</strong>
-                        <p className="text-slate-700 whitespace-pre-wrap pt-1">{config.accepted_payment_methods || 'N/A'}</p>
-                      </div>
-
-                      {config.pix_key_data &&
-                        <div className="text-sm"><strong className="text-slate-600">PIX:</strong> {config.pix_key_data}</div>
-                      }
-                    </CardContent>
-                  </Card>
-                );
-              }) :
-
-              <div className="col-span-full text-center py-16">
-                <Info className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">Nenhuma configuração encontrada</h3>
-                <p className="text-slate-600">Comece adicionando a primeira configuração de franquia.</p>
-              </div>
-          }
-        </div>
-
-        {/* Modal do WhatsApp */}
-        {showWhatsAppModal && modalData && (
-          <WhatsAppConnectionModal
-            isOpen={showWhatsAppModal}
-            onClose={handleCloseModalAndCheckStatus} // Usa a nova função aqui
-            qrCode={modalData.qrCode}
-            status={modalData.status}
-            onCheckStatus={handleCheckWhatsAppStatus}
-            isCheckingStatus={isCheckingStatus} />
-        )}
-
-
-        {showForm &&
-          <Dialog open={true} onOpenChange={handleCancel}>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <div className="flex justify-between items-center">
-                  <DialogTitle>{editingConfig ? 'Editar' : 'Nova'} Configuração</DialogTitle>
-                  {editingConfig &&
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleOptimize}
-                      disabled={isOptimizing || isSubmitting}
-                      className="bg-purple-100  text-purple-700 border-purple-200 hover:bg-purple-200 shadow-sm">
-                      {isOptimizing ?
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-                        <Sparkles className="w-4 h-4 mr-2" />
-                      }
-                      Otimizar com IA
-                    </Button>
-                  }
-                </div>
-                <DialogDescription>
-                  Preencha os dados de configuração da franquia. Você pode usar a IA para melhorar os textos.
-                </DialogDescription>
-              </DialogHeader>
-              <form id="main-form" onSubmit={handleSubmit} className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-                {!editingConfig ?
-                  <div>
-                    <Label htmlFor="franchise-select">Franquia *</Label>
-                    <Select onValueChange={(value) => handleInputChange('franchise_evolution_instance_id', value)} required>
-                      <SelectTrigger><SelectValue placeholder="Selecione uma franquia..." /></SelectTrigger>
-                      <SelectContent>
-                        {franchisesWithoutConfig.map((f) =>
-                          <SelectItem key={f.id} value={f.evolution_instance_id}>{f.city}</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div> :
-
-                  <p><strong>Franquia:</strong> {getFranchiseByInstanceId(formData.franchise_evolution_instance_id)?.city}</p>
-                }
-
-                {/* Progress indicator */}
-                {(() => {
-                  const tabsComplete = [
-                    // Tab 1 - Dados da Unidade
-                    !!(formData.franchise_name && formData.unit_address && formData.opening_hours),
-                    // Tab 2 - Pagamentos
-                    !!(formData.accepted_payment_methods && formData.pix_key_data),
-                    // Tab 3 - Delivery
-                    !!formData.shipping_rules_costs,
-                    // Tab 4 - Marketing
-                    !!(formData.agent_name || formData.promotions_combo || formData.price_table_url || formData.social_media_links?.instagram),
-                    // Tab 5 - WhatsApp
-                    !!formData.personal_phone_for_summary
-                  ];
-                  const completedCount = tabsComplete.filter(Boolean).length;
-                  return (
-                    <div className="flex items-center gap-2 px-1 py-2 bg-slate-50 rounded-lg">
-                      <CheckCircle2 className={`w-4 h-4 ${completedCount === 5 ? 'text-green-600' : 'text-slate-400'}`} />
-                      <span className="text-sm text-slate-600">
-                        <strong>{completedCount}</strong> de <strong>5</strong> seções completas
-                      </span>
-                      <div className="flex gap-1 ml-auto">
-                        {tabsComplete.map((complete, i) => (
-                          <div key={i} className={`w-2 h-2 rounded-full ${complete ? 'bg-green-500' : 'bg-slate-300'}`} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <Tabs defaultValue="unidade" className="w-full">
-                  <TabsList className="w-full h-auto flex overflow-x-auto justify-start gap-1 bg-slate-100 p-1 rounded-lg">
-                    <TabsTrigger value="unidade" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
-                      <Building2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Dados da Unidade</span>
-                      <span className="sm:hidden">Unidade</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="pagamentos" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
-                      <CreditCard className="w-3.5 h-3.5" />
-                      <span>Pagamentos</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="delivery" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
-                      <Truck className="w-3.5 h-3.5" />
-                      <span>Entrega</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="marketing" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
-                      <Megaphone className="w-3.5 h-3.5" />
-                      <span>Marketing</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="whatsapp" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  {/* Tab 1 - Dados da Unidade */}
-                  <TabsContent value="unidade" className="grid gap-4 mt-4">
-                    <div>
-                      <Label htmlFor="franchise_name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Nome da Unidade</Label>
-                      <Input
-                        id="franchise_name"
-                        value={formData.franchise_name}
-                        onChange={(e) => handleInputChange('franchise_name', e.target.value)}
-                        placeholder="Ex: Cordeirópolis e Iracemápolis" />
-                    </div>
-                    <div>
-                      <Label htmlFor="unit_address" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Endereço da Unidade (Rua, nº, Bairro, Cidade)</Label>
-                      <Input
-                        id="unit_address"
-                        value={formData.unit_address}
-                        onChange={(e) => handleInputChange('unit_address', e.target.value)}
-                        placeholder="Rua, número, bairro, cidade, CEP..."
-                        className="w-full" />
-                    </div>
-                    <div>
-                      <Label htmlFor="address_reference">Ponto de Referência</Label>
-                      <textarea
-                        id="address_reference"
-                        value={formData.address_reference}
-                        onChange={(e) => handleInputChange('address_reference', e.target.value)}
-                        placeholder="Ex: Próximo à praça, casa com portão azul..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-                    </div>
-                    <div>
-                      <Label htmlFor="opening_hours" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horário de Funcionamento</Label>
-                      <textarea
-                        id="opening_hours"
-                        value={formData.opening_hours}
-                        onChange={(e) => handleInputChange('opening_hours', e.target.value)}
-                        placeholder="Ex: Seg-Sex: 08h-18h, Sáb: 09h-13h&#10;Não funcionamos nos feriados&#10;Entregas até 20h"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-                    </div>
-                    <div>
-                      <Label htmlFor="working_days">Dias de Funcionamento</Label>
-                      <Input
-                        id="working_days"
-                        value={formData.working_days}
-                        onChange={(e) => handleInputChange('working_days', e.target.value)}
-                        placeholder="Ex: Segunda a Sábado" />
-                    </div>
-                  </TabsContent>
-
-                  {/* Tab 2 - Pagamentos */}
-                  <TabsContent value="pagamentos" className="grid gap-4 mt-4">
-                    <div>
-                      <Label htmlFor="accepted_payment_methods" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Formas de Pagamento</Label>
-                      <textarea
-                        id="accepted_payment_methods"
-                        value={formData.accepted_payment_methods}
-                        onChange={(e) => handleInputChange('accepted_payment_methods', e.target.value)}
-                        placeholder="Ex: Entregas: Pix, Link de Cartão | Retirada: Pix, Dinheiro"
-                        className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-                    </div>
-                    <div>
-                      <Label htmlFor="pix_key_data">Dados Chave PIX</Label>
-                      <Input
-                        id="pix_key_data"
-                        value={formData.pix_key_data}
-                        onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
-                        placeholder="Chave PIX ou informações de pagamento" />
-                    </div>
-                    <div>
-                      <Label htmlFor="payment_link">Link de Pagamento</Label>
-                      <Input
-                        id="payment_link"
-                        type="url"
-                        value={formData.payment_link}
-                        onChange={(e) => handleInputChange('payment_link', e.target.value)}
-                        placeholder="https://..." />
-                    </div>
-                  </TabsContent>
-
-                  {/* Tab 3 - Delivery */}
-                  <TabsContent value="delivery" className="grid gap-4 mt-4">
-                    <div>
-                      <Label htmlFor="shipping_rules_costs">Taxas de Entrega</Label>
-                      <textarea
-                        id="shipping_rules_costs"
-                        value={formData.shipping_rules_costs}
-                        onChange={(e) => handleInputChange('shipping_rules_costs', e.target.value)}
-                        placeholder="Descreva as regras de entrega e valores de frete..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[100px] resize-y" />
-                    </div>
-                    <div>
-                      <Label htmlFor="max_delivery_radius_km">Raio Máximo de Entrega</Label>
-                      <div className="relative">
-                        <Input
-                          id="max_delivery_radius_km"
-                          type="number"
-                          value={formData.max_delivery_radius_km ?? ''}
-                          onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
-                          placeholder="Ex: 10"
-                          className="pr-10" />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">km</span>
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="min_order_value">Pedido Mínimo para Entrega</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
-                        <Input
-                          id="min_order_value"
-                          type="number"
-                          value={formData.min_order_value ?? ''}
-                          onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
-                          placeholder="Ex: 30.00"
-                          className="pl-10" />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="avg_prep_time_minutes">Tempo Médio de Preparo</Label>
-                      <div className="relative">
-                        <Input
-                          id="avg_prep_time_minutes"
-                          type="number"
-                          value={formData.avg_prep_time_minutes ?? ''}
-                          onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
-                          placeholder="Ex: 30"
-                          className="pr-20" />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">minutos</span>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  {/* Tab 4 - Marketing */}
-                  <TabsContent value="marketing" className="grid gap-4 mt-4">
-                    <div>
-                      <Label htmlFor="agent_name">Nome do Atendente Virtual</Label>
-                      <Input
-                        id="agent_name"
-                        value={formData.agent_name}
-                        onChange={(e) => handleInputChange('agent_name', e.target.value)}
-                        placeholder="Ex: Ana — o nome que o robô vai usar" />
-                    </div>
-                    <div>
-                      <Label htmlFor="promotions_combo">Promoções/Combo</Label>
-                      <textarea
-                        id="promotions_combo"
-                        value={formData.promotions_combo}
-                        onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
-                        placeholder="Descreva as promoções e combos disponíveis..."
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-                    </div>
-                    <div>
-                      <Label htmlFor="price_table_url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Link da Planilha de Produtos</Label>
-                      <Input
-                        id="price_table_url"
-                        type="url"
-                        value={formData.price_table_url}
-                        onChange={(e) => handleInputChange('price_table_url', e.target.value)}
-                        placeholder="Cole aqui o link da sua planilha Google Sheets" />
-                    </div>
-                    <div>
-                      <Label htmlFor="social_instagram">Instagram</Label>
-                      <Input
-                        id="social_instagram"
-                        value={formData.social_media_links.instagram}
-                        onChange={(e) => handleSocialMediaChange('instagram', e.target.value)}
-                        placeholder="URL do perfil no Instagram" />
-                    </div>
-                  </TabsContent>
-
-                  {/* Tab 5 - WhatsApp */}
-                  <TabsContent value="whatsapp" className="grid gap-4 mt-4">
-                    {editingConfig && (
-                      <div className="flex flex-col gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="w-5 h-5 text-green-700" />
-                            <span className="font-medium text-green-800">Conexão WhatsApp</span>
-                          </div>
-                          {getWhatsAppStatusBadge(editingConfig)}
-                        </div>
-                        {editingConfig.whatsapp_status !== 'connected' && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => handleConnectWhatsApp(editingConfig)}
-                            disabled={isConnectingWhatsApp && selectedConfigForWhatsApp?.id === editingConfig.id}
-                            className="bg-green-100 text-green-700 border-green-300 hover:bg-green-200 w-full sm:w-auto">
-                            {isConnectingWhatsApp && selectedConfigForWhatsApp?.id === editingConfig.id ?
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :
-                              <Smartphone className="w-4 h-4 mr-2" />
-                            }
-                            Conectar Robô WhatsApp
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                    <div>
-                      <Label htmlFor="personal_phone_for_summary">Seu WhatsApp Pessoal</Label>
-                      <Input
-                        id="personal_phone_for_summary"
-                        value={formData.personal_phone_for_summary}
-                        onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
-                        placeholder="Ex: (19) 99999-9999" />
-                    </div>
-                    <div>
-                      <Label htmlFor="welcome_message">Mensagem de Boas-Vindas</Label>
-                      <textarea
-                        id="welcome_message"
-                        value={formData.welcome_message}
-                        onChange={(e) => handleInputChange('welcome_message', e.target.value)}
-                        placeholder="Ex: Olá! Bem-vindo à Maxi Massas! Como posso ajudar?"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </form>
-              <DialogFooter className="flex justify-between w-full">
-                {editingConfig && currentUser?.role === 'admin' &&
-                  <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
-                    <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                  </Button>
-                }
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" onClick={handleCancel}>Cancelar</Button>
-                  <Button type="submit" form="main-form" disabled={isSubmitting}>
-                    {isSubmitting ? 'Salvando...' : 'Salvar'}
-                  </Button>
-                </div>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        }
       </div>
+    );
+  }
+
+  if (displayConfigurations.length === 0 && !isLoading) {
+    return (
+      <div className="px-4 md:px-8 pt-12">
+        <div className="max-w-4xl mx-auto text-center py-24">
+          <MaterialIcon icon="info" filled size={64} className="text-[#bccac0] mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-[#1b1c1d] mb-2">Nenhuma configuração encontrada</h3>
+          <p className="text-[#3d4a42]/60 mb-6">Comece adicionando a primeira configuração de franquia.</p>
+          {franchisesWithoutConfig.length > 0 && (
+            <div className="max-w-xs mx-auto space-y-3">
+              <Select onValueChange={(value) => {
+                setFormData(prev => ({ ...prev, franchise_evolution_instance_id: value }));
+              }}>
+                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                  <SelectValue placeholder="Selecione uma franquia..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {franchisesWithoutConfig.map((f) =>
+                    <SelectItem key={f.id} value={f.evolution_instance_id}>{f.city}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <button
+                onClick={async () => {
+                  if (!formData.franchise_evolution_instance_id) {
+                    toast.error("Selecione uma franquia primeiro.");
+                    return;
+                  }
+                  setIsSubmitting(true);
+                  try {
+                    const newConfig = await FranchiseConfiguration.create(formData);
+                    setConfigurations((prev) => [...prev, newConfig]);
+                    toast.success("Configuração criada! Preencha os dados.");
+                  } catch (error) {
+                    toast.error("Falha ao criar configuração.");
+                  }
+                  setIsSubmitting(false);
+                }}
+                disabled={isSubmitting}
+                className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl font-bold py-3 px-6 text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
+                Criar Configuração
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pb-28">
+      <div className="px-4 md:px-8 pt-8 max-w-3xl mx-auto space-y-6">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-[#1b1c1d]">Meu Vendedor</h2>
+            <p className="text-sm text-[#3d4a42]/60 mt-0.5">Configure o assistente de vendas da sua unidade</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {displayConfigurations.length > 1 && (
+              <Select value={selectedConfigId} onValueChange={handleSelectConfig}>
+                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl text-sm w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {displayConfigurations.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.franchise_name || c.franchise?.city || 'Franquia'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <button
+              onClick={() => currentConfig && handleCheckStatusFromBadge(currentConfig)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${
+                isConnected
+                  ? 'bg-[#ffdad6]/30 border-[#b91c1c]/10'
+                  : 'bg-red-50 border-red-200'
+              }`}
+              title="Clique para verificar o status atual"
+            >
+              {checkingStatusFor === currentConfig?.id ? (
+                <MaterialIcon icon="progress_activity" size={8} className="animate-spin text-[#b91c1c]" />
+              ) : (
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#b91c1c] animate-pulse' : 'bg-red-500'}`} />
+              )}
+              <span className={`text-xs font-semibold ${isConnected ? 'text-[#b91c1c]' : 'text-red-600'}`}>
+                {checkingStatusFor === currentConfig?.id ? 'Verificando...' : isConnected ? 'Conectado' : 'Desconectado'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* WhatsApp Connection Card */}
+        <section className="bg-white rounded-2xl shadow-sm border border-[#bccac0]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <div className="w-20 h-20 bg-[#e9e8e9]/50 rounded-xl flex items-center justify-center overflow-hidden">
+                <MaterialIcon icon="qr_code_2" size={52} className={isConnected ? 'text-[#bccac0]/20' : 'text-[#bccac0]/40'} />
+                {isConnected && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <MaterialIcon icon="check_circle" filled size={28} className="text-[#b91c1c]" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-[#1b1c1d]">
+                {currentConfig?.franchise_name || currentFranchise?.city || 'N/A'}
+              </h3>
+              <p className="text-xs text-[#3d4a42]/60 flex items-center gap-1 mt-0.5">
+                <MaterialIcon icon="smartphone" size={12} />
+                {formData.personal_phone_for_summary || 'Telefone não configurado'}
+              </p>
+              <div className={`mt-1.5 text-xs font-semibold ${isConnected ? 'text-[#b91c1c]' : 'text-red-500'}`}>
+                {isConnected ? 'WhatsApp ativo' : 'WhatsApp desconectado'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => currentConfig && handleConnectWhatsApp(currentConfig)}
+            disabled={isConnectingWhatsApp}
+            className="px-5 py-2.5 rounded-xl border border-[#b91c1c] text-[#b91c1c] text-sm font-bold hover:bg-[#b91c1c]/5 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+          >
+            {isConnectingWhatsApp ? (
+              <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+            ) : (
+              <MaterialIcon icon="smartphone" size={16} />
+            )}
+            {isConnected ? 'Reconectar' : 'Conectar'}
+          </button>
+        </section>
+
+        {/* Wizard Stepper */}
+        <div className="bg-white rounded-2xl shadow-sm border border-[#bccac0]/5 p-4 md:p-6">
+          <WizardStepper
+            currentStep={currentStep}
+            completedSteps={completedSteps}
+            skippedSteps={skippedSteps}
+            onStepClick={goToStep}
+          />
+        </div>
+
+        {/* Step Content */}
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+
+          {/* Step 1: Sua Unidade */}
+          {currentStep === 1 && (
+            <WizardStep icon="storefront" title="Sua Unidade" subtitle="Dados básicos da sua franquia">
+              <div>
+                <label className={labelClass}>Como os clientes conhecem sua unidade?</label>
+                <input className={inputClass} type="text" value={formData.franchise_name}
+                  onChange={(e) => handleInputChange('franchise_name', e.target.value)}
+                  placeholder="Ex: Maxi Massas - Itaim Bibi" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Cidade</label>
+                  <input className={inputClass} type="text" value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="Ex: São João da Boa Vista" />
+                </div>
+                <div>
+                  <label className={labelClass}>Bairro</label>
+                  <input className={inputClass} type="text" value={formData.neighborhood}
+                    onChange={(e) => handleInputChange('neighborhood', e.target.value)}
+                    placeholder="Ex: Centro" />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Endereço completo com número e CEP</label>
+                <input className={inputClass} type="text" value={formData.unit_address}
+                  onChange={(e) => handleInputChange('unit_address', e.target.value)}
+                  placeholder="Rua, número, bairro, cidade - CEP" />
+              </div>
+              <div>
+                <label className={labelClass}>Ponto de referência para clientes e motoboys</label>
+                <textarea className={`${inputClass} resize-none`} rows={2} value={formData.address_reference}
+                  onChange={(e) => handleInputChange('address_reference', e.target.value)}
+                  placeholder="Ex: Próximo à praça, casa com portão azul..." />
+              </div>
+              <div>
+                <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diário)</label>
+                <input className={inputClass} type="text" value={formData.personal_phone_for_summary}
+                  onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
+                  placeholder="(11) 98765-4321" />
+              </div>
+            </WizardStep>
+          )}
+
+          {/* Step 2: Horários */}
+          {currentStep === 2 && (
+            <WizardStep icon="schedule" title="Horários" subtitle="Quando sua unidade funciona">
+              <div>
+                <label className={labelClass}>Faixas de horário</label>
+                <p className="text-xs text-[#3d4a42]/60 mb-3">
+                  Defina horários diferentes para cada grupo de dias (ex: Seg-Sex um horário, Sáb outro)
+                </p>
+                <OperatingHoursEditor
+                  value={formData.operating_hours || []}
+                  onChange={(val) => {
+                    handleInputChange('operating_hours', val);
+                    // Sync with legacy fields for backward compatibility
+                    const summary = val.map(r => {
+                      const days = r.days.join(',');
+                      return `${days}: ${r.open}-${r.close}`;
+                    }).join(' | ');
+                    handleInputChange('opening_hours', summary);
+                    handleInputChange('working_days', val.flatMap(r => r.days).join(','));
+                  }}
+                />
+              </div>
+            </WizardStep>
+          )}
+
+          {/* Step 3: Operação e Pagamentos */}
+          {currentStep === 3 && (
+            <WizardStep icon="settings" title="Operação e Pagamentos" subtitle="Entrega, retirada e formas de pagamento">
+              {/* Delivery toggle + options */}
+              <ToggleCard
+                icon="delivery_dining"
+                label="Sua unidade faz ENTREGA?"
+                description="Clientes recebem os pedidos em casa"
+                checked={formData.has_delivery ?? true}
+                onChange={(val) => handleInputChange('has_delivery', val)}
+              />
+              {(formData.has_delivery ?? true) && (
+                <>
+                  <div>
+                    <label className={labelClass}>Método de entrega</label>
+                    <RadioCards
+                      options={DELIVERY_METHODS}
+                      value={formData.delivery_method}
+                      onChange={(val) => handleInputChange('delivery_method', val)}
+                    />
+                    {formData.delivery_method === 'third_party' && (
+                      <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                        <MaterialIcon icon="info" size={14} />
+                        Se usa Uber/Flash, o motoboy NÃO leva máquina de cartão
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Pagamento aceito na ENTREGA</label>
+                    <PaymentChipsMulti
+                      options={PAYMENT_METHODS}
+                      value={formData.payment_delivery || []}
+                      onChange={(val) => handleInputChange('payment_delivery', val)}
+                      disabledValues={thirdPartyDisabledPayments}
+                      disabledTooltip="Motoboy terceirizado não leva máquina"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Pickup toggle + options */}
+              <ToggleCard
+                icon="store"
+                label="Aceita RETIRADA no local?"
+                description="Clientes buscam o pedido na sua unidade"
+                checked={formData.has_pickup ?? false}
+                onChange={(val) => handleInputChange('has_pickup', val)}
+              />
+              {(formData.has_pickup ?? false) && (
+                <div>
+                  <label className={labelClass}>Pagamento aceito na RETIRADA</label>
+                  <PaymentChipsMulti
+                    options={PAYMENT_METHODS}
+                    value={formData.payment_pickup || []}
+                    onChange={(val) => handleInputChange('payment_pickup', val)}
+                  />
+                </div>
+              )}
+
+              {/* Shared payment data */}
+              <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
+                <h4 className="text-xs font-bold text-[#3d4a42] mb-3 flex items-center gap-1.5">
+                  <MaterialIcon icon="payments" size={14} />
+                  Dados de Pagamento
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Tipo da chave PIX</label>
+                    <select
+                      className={inputClass}
+                      value={formData.pix_key_type}
+                      onChange={(e) => handleInputChange('pix_key_type', e.target.value)}
+                    >
+                      <option value="">Selecione...</option>
+                      {PIX_KEY_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Sua chave PIX</label>
+                    <input className={inputClass} type="text" value={formData.pix_key_data}
+                      onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
+                      placeholder="Chave PIX" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className={labelClass}>Nome do titular</label>
+                    <input className={inputClass} type="text" value={formData.pix_holder_name}
+                      onChange={(e) => handleInputChange('pix_holder_name', e.target.value)}
+                      placeholder="Ex: Nelson Pulitano" />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Banco</label>
+                    <input className={inputClass} type="text" value={formData.pix_bank}
+                      onChange={(e) => handleInputChange('pix_bank', e.target.value)}
+                      placeholder="Ex: Itaú, Nubank..." />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className={labelClass}>Link de pagamento (se usar)</label>
+                  <input className={inputClass} type="url" value={formData.payment_link}
+                    onChange={(e) => handleInputChange('payment_link', e.target.value)}
+                    placeholder="https://..." />
+                </div>
+              </div>
+            </WizardStep>
+          )}
+
+          {/* Step 4: Entrega (skipped if has_delivery=false) */}
+          {currentStep === 4 && (
+            <WizardStep icon="delivery_dining" title="Entrega" subtitle="Regras e valores de entrega">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Raio máximo de entrega (km)</label>
+                  <input className={`${inputClass} font-mono`} type="number"
+                    value={formData.max_delivery_radius_km ?? ''}
+                    onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
+                    placeholder="7" />
+                </div>
+                <div>
+                  <label className={labelClass}>Pedido mínimo para entrega (R$)</label>
+                  <input className={`${inputClass} font-mono`} type="number"
+                    value={formData.min_order_value ?? ''}
+                    onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
+                    placeholder="45" />
+                </div>
+                <div>
+                  <label className={labelClass}>Tempo médio de preparo (minutos)</label>
+                  <input className={`${inputClass} font-mono`} type="number"
+                    value={formData.avg_prep_time_minutes ?? ''}
+                    onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
+                    placeholder="25" />
+                </div>
+                <div>
+                  <label className={labelClass}>Horário limite para pedidos</label>
+                  <input className={inputClass} type="text" value={formData.order_cutoff_time}
+                    onChange={(e) => handleInputChange('order_cutoff_time', e.target.value)}
+                    placeholder="Ex: Pedidos até 17h" />
+                </div>
+              </div>
+              <div>
+                <label className={labelClass}>Taxas de entrega por faixa de distância</label>
+                <DeliveryFeeEditor
+                  value={formData.delivery_fee_rules}
+                  onChange={(val) => handleInputChange('delivery_fee_rules', val)}
+                />
+              </div>
+            </WizardStep>
+          )}
+
+          {/* Step 5: Seu Vendedor */}
+          {currentStep === 5 && (
+            <WizardStep icon="smart_toy" title="Seu Vendedor" subtitle="Personalidade e mensagens do assistente virtual">
+              <div>
+                <label className={labelClass}>Nome do assistente virtual (ex: Maria, Atendente Maxi)</label>
+                <input className={inputClass} type="text" value={formData.agent_name}
+                  onChange={(e) => handleInputChange('agent_name', e.target.value)}
+                  placeholder="Ex: Ana" />
+              </div>
+              <div>
+                <label className={labelClass}>Personalidade do bot</label>
+                <RadioCards
+                  options={BOT_PERSONALITIES}
+                  value={formData.bot_personality}
+                  onChange={(val) => handleInputChange('bot_personality', val)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
+                <textarea className={`${inputClass} resize-none`} rows={3} value={formData.promotions_combo}
+                  onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
+                  placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
+              </div>
+              <div>
+                <label className={labelClass}>Catálogo / Cardápio (imagem que o bot envia ao cliente)</label>
+                <CatalogUpload
+                  value={formData.catalog_image_url}
+                  onChange={(url) => handleInputChange('catalog_image_url', url)}
+                  franchiseId={editingConfig?.franchise_evolution_instance_id || 'default'}
+                />
+              </div>
+              {editingConfig && (
+                <button
+                  type="button"
+                  onClick={handleOptimize}
+                  disabled={isOptimizing || isSubmitting}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#b91c1c] text-[#b91c1c] font-bold text-sm hover:bg-[#b91c1c]/5 transition-all disabled:opacity-50"
+                >
+                  {isOptimizing ? <MaterialIcon icon="progress_activity" size={16} className="animate-spin" /> : <MaterialIcon icon="auto_awesome" filled size={16} />}
+                  Otimizar com IA
+                </button>
+              )}
+            </WizardStep>
+          )}
+
+          {/* Step 6: Revisão */}
+          {currentStep === 6 && (
+            <WizardStep icon="checklist" title="Revisão" subtitle="Confira todos os dados antes de salvar">
+              <ReviewSummary formData={formData} onGoToStep={goToStep} />
+            </WizardStep>
+          )}
+        </form>
+      </div>
+
+      {/* WhatsApp Modal */}
+      {showWhatsAppModal && modalData && (
+        <WhatsAppConnectionModal
+          isOpen={showWhatsAppModal}
+          onClose={handleCloseModalAndCheckStatus}
+          qrCode={modalData.qrCode}
+          status={modalData.status}
+          onCheckStatus={handleCheckWhatsAppStatus}
+          isCheckingStatus={isCheckingStatus}
+        />
+      )}
+
+      {/* Fixed Bottom Navigation */}
+      <footer className="fixed bottom-0 right-0 left-0 md:left-64 bg-white/90 backdrop-blur-md border-t border-[#bccac0]/10 px-4 md:px-8 py-4 z-40">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          {/* Left: Voltar */}
+          <div className="w-28">
+            {currentStep > 1 && (
+              <button
+                type="button"
+                onClick={prevStep}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-[#b91c1c] text-[#b91c1c] font-bold text-sm hover:bg-[#b91c1c]/5 transition-all"
+              >
+                <MaterialIcon icon="arrow_back" size={16} />
+                Voltar
+              </button>
+            )}
+          </div>
+
+          {/* Center: step dots (mobile) + save status */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex gap-1.5 md:hidden">
+              {[1, 2, 3, 4, 5, 6].map((s) => (
+                <div
+                  key={s}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    skippedSteps.includes(s)
+                      ? 'bg-[#e9e8e9]/50'
+                      : s === currentStep
+                      ? 'bg-[#b91c1c]'
+                      : completedSteps.includes(s)
+                      ? 'bg-[#b91c1c]/30'
+                      : 'bg-[#e9e8e9]'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-[10px] text-[#3d4a42]/50 italic">
+              {getLastSavedText() || (isDirty ? "Alterações não salvas" : "")}
+            </span>
+          </div>
+
+          {/* Right: Próximo / Salvar */}
+          <div className="w-28 flex justify-end">
+            {currentStep < 6 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all"
+              >
+                Próximo
+                <MaterialIcon icon="arrow_forward" size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting || !isDirty}
+                className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all disabled:opacity-50"
+              >
+                {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
+                Salvar
+              </button>
+            )}
+          </div>
+        </div>
+      </footer>
+      {/* Discard changes dialog (replaces window.confirm) */}
+      {pendingConfigId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-bold text-[#1b1c1d] mb-2">Alterações não salvas</h3>
+            <p className="text-sm text-[#3d4a42] mb-6">Você tem alterações não salvas. Deseja descartá-las?</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPendingConfigId(null)}
+                className="px-4 py-2 rounded-xl border border-[#bccac0] text-[#3d4a42] text-sm font-medium hover:bg-[#f5f3f4]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { setIsDirty(false); applyConfigSelection(pendingConfigId); }}
+                className="px-4 py-2 rounded-xl bg-[#b91c1c] text-white text-sm font-bold hover:bg-[#991b1b]"
+              >
+                Descartar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// Exportar com Error Boundary
 export default function FranchiseSettings() {
   return (
     <ErrorBoundary>

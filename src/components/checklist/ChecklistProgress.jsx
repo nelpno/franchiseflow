@@ -8,10 +8,10 @@ export default function ChecklistProgress({ completed, total }) {
       ? "from-red-500 to-red-600"
       : pct <= 66
       ? "from-yellow-400 to-yellow-500"
-      : "from-green-500 to-green-600";
+      : "from-[#b91c1c] to-[#991b1b]";
 
   const textColor =
-    pct <= 33 ? "text-red-600" : pct <= 66 ? "text-yellow-600" : "text-green-600";
+    pct <= 33 ? "text-red-600" : pct <= 66 ? "text-yellow-600" : "text-[#b91c1c]";
 
   return (
     <div className="w-full">

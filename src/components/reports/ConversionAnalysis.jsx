@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, eachDayOfInterval } from "date-fns";
-import { TrendingUp, Loader2 } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function ConversionAnalysis({ summaries, isLoading, startDate, endDate }) {
   const getConversionData = () => {
@@ -39,7 +39,7 @@ export default function ConversionAnalysis({ summaries, isLoading, startDate, en
     <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-          <TrendingUp className="w-6 h-6 text-blue-600" />
+          <MaterialIcon icon="trending_up" size={24} className="text-blue-600" />
           Análise de Conversão
         </CardTitle>
         <div className="text-sm text-slate-600">
@@ -105,7 +105,7 @@ export default function ConversionAnalysis({ summaries, isLoading, startDate, en
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-slate-400" />
             </div>
           )}
         </div>

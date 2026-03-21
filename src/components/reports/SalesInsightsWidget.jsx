@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, TrendingDown, Activity, Loader2, RefreshCcw } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { generateSalesReportsAI } from "@/api/functions";
 import { motion } from "framer-motion";
 
@@ -29,7 +29,7 @@ export default function SalesInsightsWidget() {
     return (
       <Card className="mb-8 border-blue-100 bg-blue-50/50">
         <CardContent className="p-6 flex items-center justify-center gap-3 text-blue-600">
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <MaterialIcon icon="progress_activity" size={20} className="animate-spin" />
           <span className="font-medium">Gerando inteligência de vendas...</span>
         </CardContent>
       </Card>
@@ -44,7 +44,7 @@ export default function SalesInsightsWidget() {
       <Card className="border-red-100 shadow-sm hover:shadow-md transition-shadow">
         <CardHeader className="bg-red-50/50 border-b border-red-100 pb-3">
           <CardTitle className="flex items-center gap-2 text-lg text-red-700">
-            <TrendingDown className="w-5 h-5" />
+            <MaterialIcon icon="trending_down" size={20} />
             Análise de Vendas Perdidas
           </CardTitle>
         </CardHeader>
@@ -60,7 +60,7 @@ export default function SalesInsightsWidget() {
               >
                 <p className="text-sm font-medium text-slate-800 mb-2">{trend.trend}</p>
                 <div className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded">
-                  <Lightbulb className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <MaterialIcon icon="lightbulb" size={12} className="text-amber-500 mt-0.5 flex-shrink-0" />
                   <span>{trend.countermeasure}</span>
                 </div>
               </motion.div>
@@ -75,11 +75,11 @@ export default function SalesInsightsWidget() {
       <Card className="border-blue-100 shadow-sm hover:shadow-md transition-shadow">
         <CardHeader className="bg-blue-50/50 border-b border-blue-100 pb-3 flex flex-row justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-lg text-blue-700">
-            <Activity className="w-5 h-5" />
+            <MaterialIcon icon="monitoring" size={20} />
             Performance Semanal
           </CardTitle>
           <Button variant="ghost" size="icon" onClick={loadInsights} className="h-8 w-8">
-            <RefreshCcw className="w-3 h-3 text-blue-400" />
+            <MaterialIcon icon="sync" size={12} className="text-blue-400" />
           </Button>
         </CardHeader>
         <CardContent className="pt-4 space-y-3">

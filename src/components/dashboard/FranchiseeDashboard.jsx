@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { format, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Target, DollarSign } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { createPageUrl } from "@/utils";
 import StatsCard from "./StatsCard";
 import FranchiseeGreeting from "./FranchiseeGreeting";
@@ -109,58 +109,53 @@ export default function FranchiseeDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-[#fbf9fa] min-h-screen">
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
         </div>
-        <Skeleton className="h-20" />
-        <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
+        <Skeleton className="h-32 rounded-xl" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-40 rounded-xl" />
+          <Skeleton className="h-40 rounded-xl" />
         </div>
-        <Skeleton className="h-20" />
+        <Skeleton className="h-48 rounded-xl" />
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="pt-4 pb-32 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa] min-h-screen">
       <FranchiseeGreeting
         userName={user?.full_name}
         franchiseName={franchise ? `Unidade ${franchise.city}` : null}
       />
 
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <section className="grid grid-cols-2 gap-4 mb-6">
         <StatsCard
           title="Vendas Hoje"
           value={todaySalesCount}
           previousValue={yesterdaySalesCount}
-          icon={Target}
           trend={todaySalesCount > yesterdaySalesCount ? 'up' : todaySalesCount < yesterdaySalesCount ? 'down' : null}
-          color="emerald"
         />
         <StatsCard
           title="Faturamento"
-          value={`R$ ${todayRevenue.toFixed(2)}`}
+          value={`R$ ${Math.round(todayRevenue).toLocaleString("pt-BR")}`}
           previousValue={yesterdayRevenue}
-          icon={DollarSign}
           trend={todayRevenue > yesterdayRevenue ? 'up' : todayRevenue < yesterdayRevenue ? 'down' : null}
-          color="green"
-          isValue
         />
-      </div>
+      </section>
 
       <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
-
-      <MiniRevenueChart summaries={summaries} franchiseId={franchiseId} />
 
       <QuickAccessCards
         lowStockCount={lowStockCount}
         checklistDone={checklistProgress.done}
         checklistTotal={checklistProgress.total}
       />
+
+      <MiniRevenueChart summaries={summaries} franchiseId={franchiseId} />
 
       <RankingStreak
         ranking={ranking}
@@ -169,13 +164,16 @@ export default function FranchiseeDashboard() {
         dailyGoal={dailyGoal}
       />
 
-      <Button
-        onClick={() => navigate(createPageUrl("Sales"))}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base font-medium"
-      >
-        <Plus className="h-5 w-5 mr-2" />
-        Registrar Venda
-      </Button>
+      {/* Fixed bottom CTA */}
+      <div className="fixed bottom-20 md:bottom-10 left-0 right-0 px-6 max-w-lg mx-auto md:max-w-none md:flex md:justify-end z-50">
+        <Button
+          onClick={() => navigate(createPageUrl("Sales"))}
+          className="w-full md:w-auto md:min-w-[240px] h-14 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-[0_10px_30px_-10px_rgba(185,28,28,0.4)] flex items-center justify-center gap-3 active:scale-95 transition-transform text-base"
+        >
+          <MaterialIcon icon="point_of_sale" size={20} />
+          REGISTRAR VENDA
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,80 +1,59 @@
-import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import React, { useMemo } from 'react';
 import { format, subDays } from "date-fns";
-import { DollarSign } from "lucide-react";
+
+const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export default function DailyRevenueChart({ summaries, isLoading, days = 7 }) {
-  const getRevenueData = () => {
+  const chartData = useMemo(() => {
     const data = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      
       const daySummaries = summaries.filter(s => s.date === dateStr);
       const totalRevenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
-      
       data.push({
-        date: format(date, 'dd/MM'),
-        faturamento: totalRevenue
+        dayLabel: DAY_LABELS[date.getDay()],
+        revenue: totalRevenue,
+        isLast: i === 0,
       });
     }
     return data;
-  };
+  }, [summaries, days]);
 
-  const chartData = getRevenueData();
+  const totalRevenue = chartData.reduce((sum, d) => sum + d.revenue, 0);
+  const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-0">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-          <DollarSign className="w-5 h-5 text-teal-500" />
-          Faturamento dos Últimos {days} Dias
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          {!isLoading ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis 
-                  dataKey="date" 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <YAxis 
-                  stroke="#64748b"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `R$${value.toLocaleString('pt-BR')}`}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                  }}
-                  formatter={(value) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, 'Faturamento']}
-                />
-                <Bar 
-                  dataKey="faturamento" 
-                  fill="#14b8a6" 
-                  name="Faturamento"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="animate-pulse text-slate-500">Carregando faturamento...</div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#291715]/5">
+      <div className="flex justify-between items-center mb-6">
+        <h4 className="font-bold text-[#291715] font-plus-jakarta">
+          Faturamento {days} dias
+        </h4>
+        <span className="text-xs font-black text-[#a80012] uppercase tracking-tight">
+          R$ {totalRevenue.toLocaleString("pt-BR")} TOTAL
+        </span>
+      </div>
+      <div className="h-48 flex items-end justify-between gap-3 px-2">
+        {chartData.map((d, i) => {
+          const heightPct = maxRevenue > 0 ? Math.max((d.revenue / maxRevenue) * 100, 4) : 4;
+          return (
+            <div
+              key={i}
+              className={`flex-1 rounded-t-lg ${
+                d.isLast
+                  ? "bg-gradient-to-t from-[#a80012]/40 to-[#a80012] shadow-[0_0_15px_rgba(168,0,18,0.2)]"
+                  : "bg-gradient-to-t from-[#a80012]/20 to-[#a80012]/40"
+              }`}
+              style={{ height: `${heightPct}%` }}
+            />
+          );
+        })}
+      </div>
+      <div className="flex justify-between mt-4 text-[10px] font-bold text-[#291715]/40 uppercase tracking-widest font-plus-jakarta">
+        {chartData.map((d, i) => (
+          <span key={i}>{d.dayLabel}</span>
+        ))}
+      </div>
+    </div>
   );
 }

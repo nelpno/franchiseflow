@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { TrendingUp } from "lucide-react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function FranchiseComparisonChart({ summaries, franchises, isLoading }) {
   if (isLoading) {
@@ -9,7 +9,7 @@ export default function FranchiseComparisonChart({ summaries, franchises, isLoad
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
+            <MaterialIcon icon="trending_up" size={20} />
             Comparação entre Franquias
           </CardTitle>
         </CardHeader>
@@ -44,7 +44,7 @@ export default function FranchiseComparisonChart({ summaries, franchises, isLoad
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
+          <MaterialIcon icon="trending_up" size={20} />
           Comparação entre Franquias
         </CardTitle>
       </CardHeader>
