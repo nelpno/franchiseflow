@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { MarketingFile, Franchise } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-
-const MarketingFile = base44.entities.MarketingFile;
-const Franchise = base44.entities.Franchise;
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";

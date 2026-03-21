@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { CatalogProduct } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-
-const CatalogProduct = base44.entities.CatalogProduct;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
