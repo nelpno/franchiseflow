@@ -54,6 +54,7 @@ import FranchiseSettings from './pages/FranchiseSettings';
 import Franchises from './pages/Franchises';
 import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
+import MinhaLoja from './pages/MinhaLoja';
 import MyChecklist from './pages/MyChecklist';
 import MyContacts from './pages/MyContacts';
 import Onboarding from './pages/Onboarding';
@@ -70,6 +71,7 @@ export const PAGES = {
     "Franchises": Franchises,
     "Inventory": Inventory,
     "Marketing": Marketing,
+    "MinhaLoja": MinhaLoja,
     "MyChecklist": MyChecklist,
     "MyContacts": MyContacts,
     "Onboarding": Onboarding,
