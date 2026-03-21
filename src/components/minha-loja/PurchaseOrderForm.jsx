@@ -42,6 +42,31 @@ export default function PurchaseOrderForm({
     );
   }, [inventoryItems]);
 
+  // Group products by type (first word of product_name)
+  const productGroups = useMemo(() => {
+    const groups = [];
+    const groupMap = {};
+    const ORDER = ["Canelone", "Conchiglione", "Massa", "Nhoque", "Fatiado", "Rondelli", "Sofioli", "Molho"];
+
+    standardProducts.forEach((item) => {
+      const firstWord = item.product_name.split(" ")[0];
+      if (!groupMap[firstWord]) {
+        groupMap[firstWord] = { label: firstWord, items: [] };
+        groups.push(groupMap[firstWord]);
+      }
+      groupMap[firstWord].items.push(item);
+    });
+
+    // Sort groups by the ORDER array, unknown types go to the end
+    groups.sort((a, b) => {
+      const ai = ORDER.indexOf(a.label);
+      const bi = ORDER.indexOf(b.label);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+
+    return groups;
+  }, [standardProducts]);
+
   // Weekly turnover per item (last 28 days / 4)
   const weeklyTurnover = useMemo(() => {
     const cutoff = subDays(new Date(), 28).toISOString();
@@ -206,62 +231,73 @@ export default function PurchaseOrderForm({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {standardProducts.map((item) => {
-                    const suggestion = getSuggestion(item);
-                    const hasSug = suggestion !== null && suggestion > 0;
-                    const lineTotal = getLineTotal(item);
-                    const qty = quantities[item.id] || 0;
-
-                    return (
-                      <TableRow
-                        key={item.id}
-                        className={
-                          hasSug
-                            ? "border-l-2 border-l-[#d4af37] hover:bg-[#d4af37]/5"
-                            : "hover:bg-[#f5f3f4]"
-                        }
-                      >
-                        <TableCell className="font-medium text-[#1b1c1d]">
-                          {item.product_name}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-[#4a3d3d]">
-                          {formatBRL(item.cost_price)}
-                        </TableCell>
-                        <TableCell className="text-center text-sm text-[#4a3d3d]">
-                          {item.quantity ?? 0}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {suggestion !== null ? (
-                            <Badge
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                hasSug
-                                  ? "bg-[#d4af37]/10 text-[#775a19]"
-                                  : "bg-[#e9e8e9] text-[#534343]"
-                              }`}
-                            >
-                              {suggestion}
-                            </Badge>
-                          ) : (
-                            <span className="text-sm text-[#cac0c0]">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={qty || ""}
-                            onChange={(e) => setQty(item.id, e.target.value)}
-                            placeholder="0"
-                            className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right text-sm font-medium text-[#1b1c1d]">
-                          {qty > 0 ? formatBRL(lineTotal) : "—"}
+                  {productGroups.map((group) => (
+                    <React.Fragment key={group.label}>
+                      <TableRow className="bg-[#fbf9fa] border-t border-[#291715]/10">
+                        <TableCell colSpan={6} className="py-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta">
+                            {group.label}
+                          </span>
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
+                      {group.items.map((item) => {
+                        const suggestion = getSuggestion(item);
+                        const hasSug = suggestion !== null && suggestion > 0;
+                        const lineTotal = getLineTotal(item);
+                        const qty = quantities[item.id] || 0;
+
+                        return (
+                          <TableRow
+                            key={item.id}
+                            className={
+                              hasSug
+                                ? "border-l-2 border-l-[#d4af37] hover:bg-[#d4af37]/5"
+                                : "hover:bg-[#f5f3f4]"
+                            }
+                          >
+                            <TableCell className="font-medium text-[#1b1c1d]">
+                              {item.product_name}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-[#4a3d3d]">
+                              {formatBRL(item.cost_price)}
+                            </TableCell>
+                            <TableCell className="text-center text-sm text-[#4a3d3d]">
+                              {item.quantity ?? 0}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {suggestion !== null ? (
+                                <Badge
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    hasSug
+                                      ? "bg-[#d4af37]/10 text-[#775a19]"
+                                      : "bg-[#e9e8e9] text-[#534343]"
+                                  }`}
+                                >
+                                  {suggestion}
+                                </Badge>
+                              ) : (
+                                <span className="text-sm text-[#cac0c0]">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={qty || ""}
+                                onChange={(e) => setQty(item.id, e.target.value)}
+                                placeholder="0"
+                                className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-medium text-[#1b1c1d]">
+                              {qty > 0 ? formatBRL(lineTotal) : "—"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -269,24 +305,29 @@ export default function PurchaseOrderForm({
         </Card>
       </div>
 
-      {/* Mobile: card layout */}
-      <div className="md:hidden space-y-3">
-        {standardProducts.map((item) => {
-          const suggestion = getSuggestion(item);
-          const hasSug = suggestion !== null && suggestion > 0;
-          const lineTotal = getLineTotal(item);
-          const qty = quantities[item.id] || 0;
+      {/* Mobile: card layout grouped */}
+      <div className="md:hidden space-y-4">
+        {productGroups.map((group) => (
+          <div key={group.label} className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta px-1">
+              {group.label}
+            </h3>
+            {group.items.map((item) => {
+              const suggestion = getSuggestion(item);
+              const hasSug = suggestion !== null && suggestion > 0;
+              const lineTotal = getLineTotal(item);
+              const qty = quantities[item.id] || 0;
 
-          return (
-            <Card
-              key={item.id}
-              className={`rounded-2xl shadow-sm border ${
-                hasSug
-                  ? "border-[#d4af37]/40 bg-[#d4af37]/5"
-                  : "border-[#291715]/5 bg-white"
-              }`}
-            >
-              <CardContent className="p-4 space-y-3">
+              return (
+                <Card
+                  key={item.id}
+                  className={`rounded-2xl shadow-sm border ${
+                    hasSug
+                      ? "border-[#d4af37]/40 bg-[#d4af37]/5"
+                      : "border-[#291715]/5 bg-white"
+                  }`}
+                >
+                  <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-[#1b1c1d] truncate">
@@ -335,8 +376,10 @@ export default function PurchaseOrderForm({
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {/* Notes */}
