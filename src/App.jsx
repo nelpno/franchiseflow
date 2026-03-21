@@ -13,7 +13,7 @@ const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
 const ADMIN_ONLY_PAGES = new Set([
-  'Reports', 'Acompanhamento', 'Franchises', 'UserManagement'
+  'Reports', 'Acompanhamento', 'Franchises'
 ]);
 
 function AdminRoute({ children }) {

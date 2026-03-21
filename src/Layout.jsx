@@ -91,13 +91,6 @@ const navigationItems = [
     adminOnly: true,
     adminSection: "Administração",
   },
-  {
-    title: "Usuários",
-    url: createPageUrl("UserManagement"),
-    materialIcon: "manage_accounts",
-    adminOnly: true,
-    adminSection: "Administração",
-  },
 ];
 
 // Mobile bottom nav items for franchisee

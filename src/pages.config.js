@@ -58,7 +58,6 @@ import MyChecklist from './pages/MyChecklist';
 import Onboarding from './pages/Onboarding';
 import Reports from './pages/Reports';
 import Sales from './pages/Sales';
-import UserManagement from './pages/UserManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -74,7 +73,6 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "Reports": Reports,
     "Sales": Sales,
-    "UserManagement": UserManagement,
 }
 
 export const pagesConfig = {
