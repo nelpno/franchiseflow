@@ -39,6 +39,7 @@ export default function FranchiseeDashboard() {
       const myFranchise = franchises.find((f) => f.id === franchiseId || f.evolution_instance_id === franchiseId);
       setFranchise(myFranchise);
 
+      const evoId = myFranchise?.evolution_instance_id;
       const [
         todaySalesData,
         yesterdaySalesData,
@@ -49,10 +50,8 @@ export default function FranchiseeDashboard() {
         Sale.filter({ sale_date: today, franchise_id: franchiseId }),
         Sale.filter({ sale_date: yesterday, franchise_id: franchiseId }),
         DailySummary.list("-date", 30),
-        InventoryItem.filter({ franchise_id: franchiseId }),
-        myFranchise?.evolution_instance_id
-          ? DailyChecklist.filter({ franchise_id: myFranchise.evolution_instance_id, date: today })
-          : Promise.resolve([]),
+        evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),
+        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),
       ]);
 
       setTodaySales(todaySalesData);
