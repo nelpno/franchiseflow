@@ -8,10 +8,11 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { toast } from "sonner";
 
-function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar produto..." }) {
+function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar produto...", inputId }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const inputRef = useRef(null);
 
   const selectedProduct = products.find((p) => p.id === selectedId);
 
@@ -38,6 +39,8 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
         onClick={() => setOpen(true)}
       >
         <Input
+          ref={inputRef}
+          id={inputId}
           value={open ? query : selectedProduct?.product_name || ""}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -46,6 +49,20 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
           onFocus={() => {
             setOpen(true);
             setQuery("");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Tab" && open && filtered.length > 0) {
+              e.preventDefault();
+              onSelect(filtered[0].id);
+              setQuery("");
+              setOpen(false);
+              // Focus next sibling input (quantity)
+              const parent = ref.current?.closest("[data-sale-item]");
+              if (parent) {
+                const qtyInput = parent.querySelector("[data-qty-input]");
+                if (qtyInput) setTimeout(() => qtyInput.focus(), 0);
+              }
+            }
           }}
           placeholder={placeholder}
           className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -62,6 +79,12 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
                 onSelect(p.id);
                 setQuery("");
                 setOpen(false);
+                // Focus quantity input
+                const parent = ref.current?.closest("[data-sale-item]");
+                if (parent) {
+                  const qtyInput = parent.querySelector("[data-qty-input]");
+                  if (qtyInput) setTimeout(() => qtyInput.focus(), 0);
+                }
               }}
               className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fbf9fa] transition-colors flex justify-between items-center ${
                 p.id === selectedId ? "bg-[#b91c1c]/5 text-[#b91c1c]" : "text-[#1b1c1d]"
@@ -478,6 +501,7 @@ export default function SaleForm({
         {items.map((item, index) => (
           <div
             key={index}
+            data-sale-item
             className="flex flex-col md:flex-row gap-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5"
           >
             {/* Product search */}
@@ -493,6 +517,7 @@ export default function SaleForm({
             {/* Quantity */}
             <div className="w-full md:w-24">
               <Input
+                data-qty-input
                 type="number"
                 min={1}
                 value={item.quantity}
