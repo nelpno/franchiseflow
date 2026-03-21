@@ -85,9 +85,11 @@ export default function Franchises() {
 
   // --- Franchise CRUD ---
 
+  const isStaff = currentUser?.role === "admin" || currentUser?.role === "manager";
+
   const handleCreateFranchise = async (franchiseData, franchiseeEmail) => {
-    if (currentUser?.role !== "admin") {
-      toast.error("Apenas administradores podem criar novas franquias.");
+    if (!isStaff) {
+      toast.error("Apenas a equipe pode criar novas franquias.");
       return;
     }
     setIsSubmitting(true);
@@ -361,7 +363,7 @@ export default function Franchises() {
             <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d]">Franqueados</h1>
             <p className="text-[#4a3d3d] mt-1">Gerencie franquias, equipe e permissoes</p>
           </div>
-          {currentUser?.role === "admin" && (
+          {(currentUser?.role === "admin" || currentUser?.role === "manager") && (
             <Button
               onClick={() => setShowForm(true)}
               className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
@@ -373,7 +375,7 @@ export default function Franchises() {
         </div>
 
         {/* Equipe Section (Collapsible) */}
-        {currentUser?.role === "admin" && !isLoading && (
+        {isStaff && !isLoading && (
           <Collapsible open={equipeOpen} onOpenChange={setEquipeOpen} className="mb-8">
             <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
               <CollapsibleTrigger asChild>
@@ -542,7 +544,7 @@ export default function Franchises() {
                     </div>
 
                     {/* Action buttons */}
-                    {currentUser?.role === "admin" && (
+                    {isStaff && (
                       <div className="pt-3 border-t border-[#291715]/5 flex flex-wrap gap-2">
                         <Button
                           variant="outline"
@@ -595,7 +597,7 @@ export default function Franchises() {
               <MaterialIcon icon="store" size={48} className="text-[#b91c1c]/40" />
             </div>
             <h3 className="text-xl font-semibold text-[#1b1c1d] mb-2">Nenhuma franquia cadastrada</h3>
-            {currentUser?.role === "admin" ? (
+            {isStaff ? (
               <>
                 <p className="text-[#534343] mb-6">Comece adicionando sua primeira franquia ao sistema</p>
                 <Button
@@ -615,7 +617,7 @@ export default function Franchises() {
         {/* ===== DIALOGS & SHEETS ===== */}
 
         {/* New Franchise Form Modal */}
-        {showForm && currentUser?.role === "admin" && (
+        {showForm && isStaff && (
           <FranchiseForm
             onSubmit={handleCreateFranchise}
             onCancel={() => setShowForm(false)}
