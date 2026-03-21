@@ -29,20 +29,6 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoading, isAuthenticated } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
   return (
     <Routes>
       <Route path="/" element={
@@ -74,14 +60,25 @@ const AuthenticatedApp = () => {
 };
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Show spinner while checking auth — prevents flash of login page
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
       <Route path="/login" element={
         isAuthenticated ? <Navigate to="/" replace /> : <Login />
       } />
-      <Route path="/*" element={<AuthenticatedApp />} />
+      <Route path="/*" element={
+        isAuthenticated ? <AuthenticatedApp /> : <Navigate to="/login" replace />
+      } />
     </Routes>
   );
 }
