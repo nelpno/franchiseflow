@@ -20,13 +20,13 @@ const DAILY_ITEMS = {
     { key: "m7", label: "Verificar temperatura do freezer e anotar" },
   ],
   midday: [
-    { key: "md1", label: "Enviar follow-up para TODOS os leads \"Em Negociação\"" },
-    { key: "md2", label: "Selecionar 5-10 contatos \"Remarketing\" e enviar mensagem personalizada" },
-    { key: "md3", label: "Selecionar 3-5 contatos \"Não Fechou\" (30+ dias) e tentar novamente" },
+    { key: "md1", label: "Responder clientes que estão interessados mas ainda não compraram" },
+    { key: "md2", label: "Enviar mensagens para clientes antigos (5-10 contatos)" },
+    { key: "md3", label: "Tentar contato com clientes que não compraram (3-5 contatos, 30+ dias)" },
     { key: "md4", label: "Responder TODOS os comentários e DMs no Instagram" },
-    { key: "md5", label: "Verificar agendamento das postagens do dia (Instagram e WhatsApp)" },
-    { key: "md6", label: "Atualizar etiquetas conforme evolução das conversas" },
-    { key: "md7", label: "Enviar mensagem para 2-3 \"Clientes Recorrentes\" (relacionamento)" },
+    { key: "md5", label: "Conferir posts agendados do dia (Instagram e WhatsApp)" },
+    { key: "md6", label: "Organizar conversas do WhatsApp (mover etiquetas)" },
+    { key: "md7", label: "Enviar mensagem carinhosa para 2-3 clientes fiéis" },
   ],
   afternoon: [
     { key: "t1", label: "Fechar todos os pedidos em aberto (cobrar pagamento, confirmar dados)" },
@@ -40,7 +40,7 @@ const DAILY_ITEMS = {
   night: [
     { key: "n1", label: "Registrar TODAS as vendas do dia no Dashboard" },
     { key: "n2", label: "Atualizar controle de estoque" },
-    { key: "n3", label: "Mover contatos entre etiquetas" },
+    { key: "n3", label: "Organizar contatos do WhatsApp nas etiquetas certas" },
     { key: "n4", label: "Responder últimas mensagens pendentes" },
     { key: "n5", label: "Verificar se precisa fazer pedido de reposição" },
     { key: "n6", label: "Planejar ações específicas para amanhã" },
@@ -49,27 +49,27 @@ const DAILY_ITEMS = {
 
 const WEEKLY_ITEMS = [
   { key: "s1", label: "Analisar quais produtos mais venderam na semana" },
-  { key: "s2", label: "Revisar lista \"Não Fechou\" — tentar reconversão" },
-  { key: "s3", label: "Criar lista de transmissão para promoção semanal" },
+  { key: "s2", label: "Tentar vender novamente para quem não comprou" },
+  { key: "s3", label: "Montar grupo de clientes para enviar promoção da semana" },
   { key: "s4", label: "Revisar catálogo do WhatsApp (fotos, preços, disponibilidade)" },
   { key: "s5", label: "Pedir feedback a 3 clientes recorrentes" },
   { key: "s6", label: "Fazer pedido de reposição à fábrica se necessário" },
-  { key: "s7", label: "Analisar métricas do Instagram e Facebook" },
-  { key: "s8", label: "Revisar desempenho do tráfego pago" },
+  { key: "s7", label: "Ver como estão indo as redes sociais (curtidas, seguidores, alcance)" },
+  { key: "s8", label: "Verificar resultado dos anúncios pagos" },
 ];
 
 const MONTHLY_ITEMS = [
   { key: "me1", label: "Reunião de acompanhamento com Celso (CS)" },
   { key: "me2", label: "Analisar relatório mensal de vendas" },
-  { key: "me3", label: "Calcular margem de lucro real por produto" },
-  { key: "me4", label: "Revisar e limpar base de contatos (60+ dias sem resposta)" },
+  { key: "me3", label: "Ver quanto está lucrando em cada produto" },
+  { key: "me4", label: "Apagar contatos que não respondem há mais de 60 dias" },
   { key: "me5", label: "Definir meta de vendas do próximo mês" },
-  { key: "me6", label: "Avaliar parcerias locais, eventos, B2B" },
+  { key: "me6", label: "Pensar em parcerias com comércios e eventos da região" },
   { key: "me7", label: "Solicitar novos conteúdos ao franqueador" },
   { key: "me8", label: "Auto-avaliação: estou seguindo o checklist? O que melhorar?" },
 ];
 
-const TOTAL_DAILY = 27;
+const TOTAL_DAILY = DAILY_ITEMS.morning.length + DAILY_ITEMS.midday.length + DAILY_ITEMS.afternoon.length + DAILY_ITEMS.night.length;
 
 const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
@@ -192,8 +192,15 @@ export default function MyChecklist() {
     }, 600);
   };
 
+  const [confirmingReset, setConfirmingReset] = useState(false);
+
   const handleResetDay = async () => {
-    if (!window.confirm("Tem certeza que deseja limpar todos os itens marcados hoje?")) return;
+    if (!confirmingReset) {
+      setConfirmingReset(true);
+      setTimeout(() => setConfirmingReset(false), 3000);
+      return;
+    }
+    setConfirmingReset(false);
     const emptyItems = {};
     setItems(emptyItems);
     await saveChecklist(emptyItems);
@@ -263,9 +270,9 @@ export default function MyChecklist() {
               )}
               <p className="text-slate-400 text-sm mt-0.5">{todayFormattedCapitalized}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleResetDay} className="text-red-600 border-red-200 hover:bg-red-50">
+            <Button variant="outline" size="sm" onClick={handleResetDay} className={`border-red-200 hover:bg-red-50 ${confirmingReset ? "text-white bg-red-600 hover:bg-red-700" : "text-red-600"}`}>
               <RefreshCw className="w-4 h-4 mr-2" />
-              Iniciar novo dia
+              {confirmingReset ? "Confirmar limpeza?" : "Limpar marcações de hoje"}
             </Button>
           </div>
           <div className="mt-5">
