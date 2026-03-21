@@ -4,16 +4,87 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { toast } from "sonner";
+
+function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar produto..." }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selectedProduct = products.find((p) => p.id === selectedId);
+
+  const filtered = useMemo(() => {
+    if (!query) return products;
+    const q = query.toLowerCase();
+    return products.filter(
+      (p) => p.product_name.toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q)
+    );
+  }, [products, query]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div
+        className="flex items-center bg-white border border-input rounded-md cursor-text"
+        onClick={() => setOpen(true)}
+      >
+        <Input
+          value={open ? query : selectedProduct?.product_name || ""}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setOpen(true);
+            setQuery("");
+          }}
+          placeholder={placeholder}
+          className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+        />
+        <MaterialIcon icon="search" size={18} className="text-[#534343]/50 mr-2 shrink-0" />
+      </div>
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => {
+                onSelect(p.id);
+                setQuery("");
+                setOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fbf9fa] transition-colors flex justify-between items-center ${
+                p.id === selectedId ? "bg-[#b91c1c]/5 text-[#b91c1c]" : "text-[#1b1c1d]"
+              }`}
+            >
+              <span>{p.product_name}</span>
+              {p.sale_price > 0 && (
+                <span className="text-xs text-[#534343]/60 font-mono-numbers">
+                  R$ {(p.sale_price || 0).toFixed(2)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+      {open && filtered.length === 0 && query && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#534343]/60">
+          Nenhum produto encontrado
+        </div>
+      )}
+    </div>
+  );
+}
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -409,23 +480,14 @@ export default function SaleForm({
             key={index}
             className="flex flex-col md:flex-row gap-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5"
           >
-            {/* Product select */}
+            {/* Product search */}
             <div className="flex-1 min-w-0">
-              <Select
-                value={item.inventory_item_id}
-                onValueChange={(v) => handleItemChange(index, "inventory_item_id", v)}
-              >
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Selecionar produto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableProducts(item.inventory_item_id).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.product_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ProductSearch
+                products={availableProducts(item.inventory_item_id)}
+                selectedId={item.inventory_item_id}
+                onSelect={(v) => handleItemChange(index, "inventory_item_id", v)}
+                placeholder="Buscar produto..."
+              />
             </div>
 
             {/* Quantity */}
