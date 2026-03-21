@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { User, Franchise, Sale, Expense, InventoryItem, SaleItem } from "@/entities/all";
+import { User, Franchise, Sale, Expense, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { getAvailableFranchises, getPrimaryFranchise } from "@/lib/franchiseUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -8,6 +8,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { startOfMonth, startOfDay, endOfDay, format } from "date-fns";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
+import TabLancar from "@/components/minha-loja/TabLancar";
 
 const TAB_MAP = {
   lancar: "lancar",
@@ -26,6 +27,7 @@ export default function MinhaLoja() {
   const [expenses, setExpenses] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [saleItems, setSaleItems] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,17 +45,19 @@ export default function MinhaLoja() {
       setFranchises(franchisesData);
 
       // Load all data in parallel
-      const [salesData, expensesData, inventoryData, saleItemsData] = await Promise.all([
+      const [salesData, expensesData, inventoryData, saleItemsData, contactsData] = await Promise.all([
         Sale.list("-created_at"),
         Expense.list("-created_at"),
         InventoryItem.list("-updated_at"),
         SaleItem.list(),
+        Contact.list(),
       ]);
 
       setSales(salesData);
       setExpenses(expensesData);
       setInventoryItems(inventoryData);
       setSaleItems(saleItemsData);
+      setContacts(contactsData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados da loja.");
@@ -72,6 +76,23 @@ export default function MinhaLoja() {
       setInventoryItems(data);
     } catch (error) {
       console.error("Erro ao recarregar estoque:", error);
+    }
+  };
+
+  const handleRefreshSales = async () => {
+    try {
+      const [salesData, saleItemsData, contactsData, inventoryData] = await Promise.all([
+        Sale.list("-created_at"),
+        SaleItem.list(),
+        Contact.list(),
+        InventoryItem.list("-updated_at"),
+      ]);
+      setSales(salesData);
+      setSaleItems(saleItemsData);
+      setContacts(contactsData);
+      setInventoryItems(inventoryData);
+    } catch (error) {
+      console.error("Erro ao recarregar vendas:", error);
     }
   };
 
@@ -99,6 +120,11 @@ export default function MinhaLoja() {
     if (!franchiseId) return [];
     return inventoryItems.filter((i) => i.franchise_id === franchiseId);
   }, [inventoryItems, franchiseId]);
+
+  const franchiseContacts = useMemo(() => {
+    if (!franchiseId) return [];
+    return contacts.filter((c) => c.franchise_id === franchiseId);
+  }, [contacts, franchiseId]);
 
   // --- Summary stats ---
 
@@ -302,15 +328,14 @@ export default function MinhaLoja() {
           </TabsList>
 
           <TabsContent value="lancar" className="mt-4">
-            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-              <MaterialIcon icon="add_circle" size={64} className="text-[#cac0c0] mb-4" />
-              <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
-                Lancar Vendas e Despesas
-              </h3>
-              <p className="text-sm text-[#534343] max-w-sm">
-                Em breve voce podera lancar vendas e despesas rapidamente por aqui.
-              </p>
-            </div>
+            <TabLancar
+              franchiseId={franchiseId}
+              currentUser={currentUser}
+              sales={franchiseSales}
+              contacts={franchiseContacts}
+              inventoryItems={franchiseInventory}
+              onRefresh={handleRefreshSales}
+            />
           </TabsContent>
 
           <TabsContent value="resultado" className="mt-4">
