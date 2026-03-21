@@ -17,7 +17,7 @@ import {
   SidebarTrigger } from
 "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { DailyUniqueContact, Sale, User, OnboardingChecklist } from "@/entities/all";
+import { DailyUniqueContact, Sale, OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, startOfDay } from "date-fns";
 
@@ -110,37 +110,29 @@ const navigationItems = [
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, user: currentUser } = useAuth();
   const [todaySales, setTodaySales] = useState(0);
   const [todayContacts, setTodayContacts] = useState(0);
-  const [currentUser, setCurrentUser] = useState(null);
   const [onboardingApproved, setOnboardingApproved] = useState(false);
 
   useEffect(() => {
-    loadCurrentUser();
-  }, []);
-
-  const loadCurrentUser = async () => {
-    try {
-      const user = await User.me();
-      setCurrentUser(user);
-      if (user.role === 'admin') {
-        loadQuickStats();
-      }
-      // Check onboarding status for non-admin users
-      if (user.role !== 'admin' && user.managed_franchise_ids?.length > 0) {
-        const obs = await OnboardingChecklist.filter({
-          franchise_id: user.managed_franchise_ids[0]
-        });
-        // Hide menu if no onboarding exists OR if it's already approved
+    if (!currentUser) return;
+    if (currentUser.role === 'admin') {
+      loadQuickStats();
+    }
+    // Check onboarding status for non-admin users
+    if (currentUser.role !== 'admin' && currentUser.managed_franchise_ids?.length > 0) {
+      OnboardingChecklist.filter({
+        franchise_id: currentUser.managed_franchise_ids[0]
+      }).then((obs) => {
         if (obs.length === 0 || obs[0].status === 'approved') {
           setOnboardingApproved(true);
         }
-      }
-    } catch (error) {
-      console.error("Erro ao carregar usuário:", error);
+      }).catch((error) => {
+        console.error("Erro ao carregar onboarding:", error);
+      });
     }
-  };
+  }, [currentUser]);
 
   const loadQuickStats = async () => {
     try {

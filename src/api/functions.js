@@ -1,5 +1,3 @@
-import { base44 } from './base44Client';
-
 const N8N_WEBHOOK_BASE = 'https://webhook.dynamicagents.tech/webhook';
 
 // WhatsApp - chamadas diretas ao n8n
@@ -34,42 +32,12 @@ export async function optimizeConfig(configData) {
   return response.json();
 }
 
-// Análise de Lead via LLM do Base44
+// Análise de Lead - funcionalidade em migração (antigo Base44 LLM)
 export async function analyzeLead(leadData) {
-  const result = await base44.integrations.Core.InvokeLLM({
-    prompt: `Analise este lead de vendas e forneça: score de potencial (0-100), sentimento (positive/neutral/negative), análise do perfil e sugestão de ação.
-    
-Dados do lead:
-- Nome: ${leadData.name || 'Não informado'}
-- Telefone: ${leadData.phone}
-- Valor da venda: R$ ${leadData.value}
-- Origem: ${leadData.source}
-- Franquia: ${leadData.franchise_id}`,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        score: { type: "number" },
-        sentiment: { type: "string", enum: ["positive", "neutral", "negative"] },
-        analysis: { type: "string" },
-        suggestion: { type: "string" }
-      }
-    }
-  });
-  return result;
+  throw new Error('Análise de leads temporariamente indisponível. Funcionalidade em migração.');
 }
 
-// Relatórios de vendas via LLM
+// Relatórios de vendas via IA - funcionalidade em migração (antigo Base44 LLM)
 export async function generateSalesReportsAI(reportData) {
-  const result = await base44.integrations.Core.InvokeLLM({
-    prompt: `Gere um relatório resumido de vendas com insights e recomendações baseado nos dados: ${JSON.stringify(reportData)}`,
-    response_json_schema: {
-      type: "object",
-      properties: {
-        summary: { type: "string" },
-        insights: { type: "array", items: { type: "string" } },
-        recommendations: { type: "array", items: { type: "string" } }
-      }
-    }
-  });
-  return result;
+  throw new Error('Relatórios IA temporariamente indisponíveis. Funcionalidade em migração.');
 }
