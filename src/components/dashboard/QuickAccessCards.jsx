@@ -17,7 +17,7 @@ export default function QuickAccessCards({ lowStockCount, checklistDone, checkli
       {/* Estoque Card */}
       <div
         className="bg-white p-5 rounded-xl shadow-sm border border-[#cac0c0]/10 flex flex-col justify-between cursor-pointer group"
-        onClick={() => navigate(createPageUrl("Inventory"))}
+        onClick={() => navigate("/MinhaLoja?tab=estoque")}
       >
         <div>
           <div className="flex justify-between items-start mb-3">
