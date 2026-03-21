@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { MarketingFile, Franchise } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-
-const MarketingFile = base44.entities.MarketingFile;
-const Franchise = base44.entities.Franchise;
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,7 +61,7 @@ function isImageFile(filePath) {
 }
 
 function getFilePublicUrl(filePath) {
-  // filePath is now a full URL from Base44 UploadFile
+  // filePath is a full URL from Supabase Storage
   return filePath || null;
 }
 
@@ -140,8 +138,11 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
     try {
       for (const file of files) {
         const ext = file.name.split(".").pop();
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        const storagePath = file_url;
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from('marketing-files').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('marketing-files').getPublicUrl(fileName);
+        const storagePath = urlData.publicUrl;
 
         const fileTitle = files.length > 1 ? `${title} (${file.name})` : title;
         await MarketingFile.create({

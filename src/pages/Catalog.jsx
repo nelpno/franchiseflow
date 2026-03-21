@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { CatalogProduct } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-
-const CatalogProduct = base44.entities.CatalogProduct;
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,8 +65,12 @@ function formatPrice(value) {
 
 // ── Image Upload Helper ──────────────────────────────────────────────
 async function uploadImage(file) {
-  const { file_url } = await base44.integrations.Core.UploadFile({ file });
-  return file_url;
+  const ext = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const { error: uploadError } = await supabase.storage.from('catalog-images').upload(fileName, file);
+  if (uploadError) throw uploadError;
+  const { data: urlData } = supabase.storage.from('catalog-images').getPublicUrl(fileName);
+  return urlData.publicUrl;
 }
 
 // ── Product Form Dialog ──────────────────────────────────────────────

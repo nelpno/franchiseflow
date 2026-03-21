@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sale, Franchise, User } from "@/entities/all";
-import { base44 } from "@/api/base44Client";
-
-const SalesGoal = base44.entities.SalesGoal;
+import { Sale, Franchise, User, SalesGoal } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
