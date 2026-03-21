@@ -73,7 +73,7 @@ VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 - Config optimization: `{N8N_WEBHOOK_BASE}/adc276df-8162-46ca-bec6-5aedb9cb2b14`
 
 ## UX por Role
-- **Franqueado**: menu com 6 itens (Minha Loja, Vendas, Estoque, Marketing, Checklist, Minha Unidade)
+- **Franqueado**: menu com 6 itens (Minha Loja, Vendas, Estoque, Marketing, Checklist, Meu Vendedor)
 - **Admin**: menu completo (12 itens, incluindo Relatórios, Acompanhamento, Franqueados, Usuários)
 - Terminologia simplificada: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio")
 - Dashboard franqueado: motivacional (meta diária, ranking, streak, acesso rápido)
@@ -99,6 +99,9 @@ VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 13. Base44 foi COMPLETAMENTE removido — NÃO existe mais `base44Client.js`, `@base44/sdk`, nem `lib/entities.js`
 14. DailyChecklist usa `franchise_id` = `evolution_instance_id` da franquia, NÃO o UUID
 15. Entity de estoque é `InventoryItem` (NÃO `Inventory`)
+16. `inventory_items.franchise_id` e `daily_checklists.franchise_id` armazenam `evolution_instance_id` (text), NÃO UUID — usar `franchise.evolution_instance_id` ao filtrar essas tabelas
+17. NUNCA usar `window.confirm()` — usar Dialog do shadcn/ui ou estado de confirmação
+18. Ao criar franquia de teste via SQL, chamar trigger manualmente ou popular estoque/config separadamente
 
 ## Scripts
 ```bash
@@ -107,6 +110,13 @@ npm run build     # Build produção
 npm run lint      # ESLint
 npm run typecheck # TypeScript check
 ```
+
+## Roadmap
+- Sprint 1: Cleanup técnico + terminologia ✅
+- Sprint 2: Dashboard por role (admin vs franqueado) ✅
+- Sprint 3: UX improvements (3 ondas — bugs, labels, features) ✅
+- **FASE 4**: Design com Stitch + deploy Docker (PRÓXIMO)
+- **FASE 5**: Refactor arquitetural (padronizar FKs UUID) + migrar dados Base44 + conectar vendedor genérico n8n
 
 ## Supabase Management API
 - Project ref: `sulgicnqqopyhulglakd`
