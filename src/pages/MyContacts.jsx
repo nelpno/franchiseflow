@@ -22,6 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import ActionPanel from "@/components/my-contacts/ActionPanel";
+import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -83,30 +85,6 @@ const FILTER_TABS = [
   { key: "remarketing", label: "Remarketing", status: "remarketing" },
 ];
 
-function formatPhone(phone) {
-  if (!phone) return "";
-  const digits = phone.replace(/\D/g, "");
-  // Handle Brazilian numbers: 55 + DD + 9XXXX-XXXX
-  let local = digits;
-  if (local.startsWith("55") && local.length >= 12) {
-    local = local.slice(2);
-  }
-  if (local.length === 11) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
-  }
-  if (local.length === 10) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
-  }
-  return phone;
-}
-
-function getWhatsAppLink(phone) {
-  if (!phone) return "#";
-  const digits = phone.replace(/\D/g, "");
-  const number = digits.startsWith("55") ? digits : `55${digits}`;
-  return `https://wa.me/${number}`;
-}
-
 function timeAgo(dateStr) {
   if (!dateStr) return "";
   try {
@@ -136,6 +114,7 @@ export default function MyContacts() {
   const [editingContact, setEditingContact] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [actionsExpanded, setActionsExpanded] = useState(true);
 
   useEffect(() => {
     loadContacts();
@@ -273,6 +252,27 @@ export default function MyContacts() {
           </div>
         </div>
       </div>
+
+      {/* Smart Actions Panel */}
+      {contacts.length > 0 && (
+        <div className="space-y-2">
+          <button
+            onClick={() => setActionsExpanded(!actionsExpanded)}
+            className="flex items-center gap-2 text-sm font-bold font-plus-jakarta text-[#1b1c1d] hover:text-[#b91c1c] transition-colors"
+          >
+            <MaterialIcon icon="bolt" size={18} className="text-[#d4af37]" />
+            Ações Sugeridas
+            <MaterialIcon
+              icon={actionsExpanded ? "expand_less" : "expand_more"}
+              size={18}
+              className="text-[#534343]"
+            />
+          </button>
+          {actionsExpanded && (
+            <ActionPanel contacts={contacts} onContactUpdate={loadContacts} />
+          )}
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">

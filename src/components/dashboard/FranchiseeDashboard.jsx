@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, Franchise, DailyChecklist, InventoryItem, getFranchiseRanking } from "@/entities/all";
+import { Sale, DailySummary, Franchise, DailyChecklist, InventoryItem, Contact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import DailyGoalProgress from "./DailyGoalProgress";
 import QuickAccessCards from "./QuickAccessCards";
 import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
+import SmartActions from "./SmartActions";
 
 export default function FranchiseeDashboard() {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ export default function FranchiseeDashboard() {
   const [ranking, setRanking] = useState(null);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [checklistProgress, setChecklistProgress] = useState({ done: 0, total: 0 });
+  const [contacts, setContacts] = useState([]);
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
@@ -46,18 +48,21 @@ export default function FranchiseeDashboard() {
         summariesData,
         inventoryData,
         checklistData,
+        contactsData,
       ] = await Promise.all([
         Sale.filter({ sale_date: today, franchise_id: franchiseId }),
         Sale.filter({ sale_date: yesterday, franchise_id: franchiseId }),
         DailySummary.list("-date", 30),
         evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),
         evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),
+        evoId ? Contact.filter({ franchise_id: evoId }) : Promise.resolve([]),
       ]);
 
       setTodaySales(todaySalesData);
       setYesterdaySales(yesterdaySalesData);
       setSummaries(summariesData);
 
+      setContacts(contactsData);
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
 
       if (checklistData.length > 0) {
@@ -163,6 +168,8 @@ export default function FranchiseeDashboard() {
         franchiseId={franchiseId}
         dailyGoal={dailyGoal}
       />
+
+      <SmartActions contacts={contacts} franchiseId={franchiseId} />
 
       {/* Fixed bottom CTA */}
       <div className="fixed bottom-20 md:bottom-10 left-0 right-0 px-6 max-w-lg mx-auto md:max-w-none md:flex md:justify-end z-50">
