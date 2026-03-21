@@ -210,7 +210,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
                 {contact.last_purchase_at && (
                   <span className="flex items-center gap-1">
                     <MaterialIcon icon="shopping_bag" size={12} />
-                    Comprou h&aacute; {timeAgo(contact.last_purchase_at)}
+                    Comprou há {timeAgo(contact.last_purchase_at)}
                   </span>
                 )}
                 {(contact.total_spent || 0) > 0 && (
@@ -222,7 +222,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
                 {contact.last_contact_at && (
                   <span className="flex items-center gap-1">
                     <MaterialIcon icon="schedule" size={12} />
-                    Contato h&aacute; {timeAgo(contact.last_contact_at)}
+                    Contato há {timeAgo(contact.last_contact_at)}
                   </span>
                 )}
               </div>

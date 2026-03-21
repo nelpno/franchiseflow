@@ -133,23 +133,49 @@ export default function MinhaLoja() {
   const todaySales = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     return franchiseSales.filter((s) => {
-      const saleDate = s.created_at?.substring(0, 10);
+      const saleDate = s.sale_date || s.created_at?.substring(0, 10);
       return saleDate === todayStr;
     });
   }, [franchiseSales]);
 
   const todaySalesCount = todaySales.length;
   const todaySalesValue = todaySales.reduce(
-    (sum, s) => sum + (parseFloat(s.total_amount) || 0),
+    (sum, s) => sum + (parseFloat(s.value) || 0),
     0
   );
 
-  const monthSalesValue = useMemo(() => {
+  const monthSales = useMemo(() => {
     const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    return franchiseSales
-      .filter((s) => (s.created_at?.substring(0, 10) || "") >= monthStart)
-      .reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0);
+    return franchiseSales.filter(
+      (s) => (s.sale_date || s.created_at?.substring(0, 10) || "") >= monthStart
+    );
   }, [franchiseSales]);
+
+  const monthSalesValue = monthSales.reduce(
+    (sum, s) => sum + (parseFloat(s.value) || 0),
+    0
+  );
+
+  const monthCardFees = monthSales.reduce(
+    (sum, s) => sum + (parseFloat(s.card_fee_amount) || 0),
+    0
+  );
+
+  const monthDeliveryFees = monthSales.reduce(
+    (sum, s) => sum + (parseFloat(s.delivery_fee) || 0),
+    0
+  );
+
+  // COGS: custo dos produtos vendidos no mês (via sale_items)
+  const monthSaleIds = new Set(monthSales.map((s) => s.id));
+  const monthCOGS = useMemo(() => {
+    return saleItems
+      .filter((si) => monthSaleIds.has(si.sale_id))
+      .reduce(
+        (sum, si) => sum + (parseFloat(si.cost_price) || 0) * (parseFloat(si.quantity) || 1),
+        0
+      );
+  }, [saleItems, monthSaleIds]);
 
   const monthExpensesValue = useMemo(() => {
     const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
@@ -157,12 +183,12 @@ export default function MinhaLoja() {
       .filter(
         (e) =>
           e.franchise_id === franchiseId &&
-          (e.created_at?.substring(0, 10) || "") >= monthStart
+          (e.expense_date || e.created_at?.substring(0, 10) || "") >= monthStart
       )
       .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   }, [expenses, franchiseId]);
 
-  const estimatedProfit = monthSalesValue - monthExpensesValue;
+  const estimatedProfit = monthSalesValue - monthCOGS - monthCardFees - monthDeliveryFees - monthExpensesValue;
 
   const lowStockCount = franchiseInventory.filter(
     (i) => i.min_stock > 0 && i.quantity < i.min_stock
