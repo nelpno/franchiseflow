@@ -32,6 +32,12 @@ const navigationItems = [
     adminSection: "Principal",
   },
   {
+    title: "Meus Clientes",
+    url: createPageUrl("MyContacts"),
+    materialIcon: "group",
+    adminSection: "Principal",
+  },
+  {
     title: "Vendas",
     url: createPageUrl("Sales"),
     materialIcon: "shopping_cart",

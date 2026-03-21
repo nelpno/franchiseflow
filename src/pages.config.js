@@ -55,6 +55,7 @@ import Franchises from './pages/Franchises';
 import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
 import MyChecklist from './pages/MyChecklist';
+import MyContacts from './pages/MyContacts';
 import Onboarding from './pages/Onboarding';
 import Reports from './pages/Reports';
 import Sales from './pages/Sales';
@@ -70,6 +71,7 @@ export const PAGES = {
     "Inventory": Inventory,
     "Marketing": Marketing,
     "MyChecklist": MyChecklist,
+    "MyContacts": MyContacts,
     "Onboarding": Onboarding,
     "Reports": Reports,
     "Sales": Sales,
