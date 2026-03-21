@@ -159,6 +159,7 @@ async function main() {
           telefone,
           nome: row.nome ? String(row.nome).trim() : null,
           status: deriveStatus(row.pedido),
+          created_at: row.created_at || new Date().toISOString(),
         });
       }
 

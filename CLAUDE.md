@@ -188,7 +188,9 @@ npm run typecheck # TypeScript check
 - SQL scripts ficam em `supabase/*.sql`
 
 ## Docs de Referência
-- `docs/superpowers/specs/2026-03-21-fase5-refactoring-spec.md` — Spec completa FASE 5
+- `docs/superpowers/specs/2026-03-21-fase5-unificacao-design.md` — Spec FASE 5 (unificação + contacts + vendedor)
+- `docs/superpowers/plans/2026-03-21-fase5-etapa1-database.md` — Plano implementação Etapa 1
+- `docs/vendedor-generico-migracao-n8n.md` — Plano migração 7 nós do vendedor genérico
 - `docs/vendedor-generico-workflow.json` — Workflow n8n vendedor (91 nodes)
 - `docs/criar-usuario-zuckzapgo-workflow.json` — Workflow conexão WhatsApp (21 nodes)
 - `docs/stitch-html/` — 5 HTMLs originais do Google Stitch (referência visual)

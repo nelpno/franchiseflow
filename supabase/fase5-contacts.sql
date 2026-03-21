@@ -81,14 +81,15 @@ DECLARE
   invite RECORD;
   current_ids TEXT[];
 BEGIN
+  -- Inicializar FORA do loop para acumular IDs de múltiplos convites
+  current_ids := COALESCE(NEW.managed_franchise_ids, '{}');
+
   FOR invite IN
     SELECT fi.id as invite_id, fi.franchise_id as evo_id, f.id as franchise_uuid
     FROM franchise_invites fi
     JOIN franchises f ON f.evolution_instance_id = fi.franchise_id
     WHERE fi.email = NEW.email AND fi.status = 'pending'
   LOOP
-    current_ids := COALESCE(NEW.managed_franchise_ids, '{}');
-
     IF NOT (invite.franchise_uuid::TEXT = ANY(current_ids)) THEN
       current_ids := array_append(current_ids, invite.franchise_uuid::TEXT);
     END IF;
@@ -96,13 +97,16 @@ BEGIN
       current_ids := array_append(current_ids, invite.evo_id);
     END IF;
 
+    UPDATE franchise_invites SET status = 'accepted' WHERE id = invite.invite_id;
+  END LOOP;
+
+  -- Único UPDATE ao final com todos os IDs acumulados
+  IF array_length(current_ids, 1) > COALESCE(array_length(NEW.managed_franchise_ids, 1), 0) THEN
     UPDATE profiles SET
       managed_franchise_ids = current_ids,
       role = COALESCE(NULLIF(role, ''), 'franchisee')
     WHERE id = NEW.id;
-
-    UPDATE franchise_invites SET status = 'accepted' WHERE id = invite.invite_id;
-  END LOOP;
+  END IF;
 
   RETURN NEW;
 END;
@@ -113,3 +117,9 @@ CREATE TRIGGER auto_link_franchise
   AFTER INSERT ON profiles
   FOR EACH ROW
   EXECUTE FUNCTION auto_link_franchise_on_signup();
+
+-- 7. TRIGGER: auto-atualizar updated_at (consistente com outras tabelas)
+CREATE TRIGGER set_updated_at
+  BEFORE UPDATE ON contacts
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at();
