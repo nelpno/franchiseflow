@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, DailyChecklist } from "@/entities/all";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, DailyChecklist, PurchaseOrder } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [yesterdayContacts, setYesterdayContacts] = useState([]);
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
   const [checklistByFranchise, setChecklistByFranchise] = useState({});
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
@@ -34,6 +35,7 @@ export default function AdminDashboard() {
         yesterdayContactData,
         todaySaleData,
         yesterdaySaleData,
+        purchaseOrderData,
       ] = await Promise.all([
         Franchise.list("city"),
         DailySummary.list("-date", 365),
@@ -41,6 +43,7 @@ export default function AdminDashboard() {
         DailyUniqueContact.filter({ date: yesterday }),
         Sale.filter({ sale_date: today }),
         Sale.filter({ sale_date: yesterday }),
+        PurchaseOrder.list("-ordered_at"),
       ]);
 
       setFranchises(franchiseData);
@@ -49,6 +52,7 @@ export default function AdminDashboard() {
       setYesterdayContacts(yesterdayContactData);
       setTodaySales(todaySaleData);
       setYesterdaySales(yesterdaySaleData);
+      setPurchaseOrders(purchaseOrderData);
 
       const inventoryMap = {};
       const checklistMap = {};
@@ -296,6 +300,7 @@ export default function AdminDashboard() {
         summaries={summaries}
         inventoryByFranchise={inventoryByFranchise}
         checklistByFranchise={checklistByFranchise}
+        purchaseOrders={purchaseOrders}
       />
 
       <FranchiseRanking

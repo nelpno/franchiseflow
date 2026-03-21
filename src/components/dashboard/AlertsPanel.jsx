@@ -1,10 +1,12 @@
 import React, { useMemo } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { subDays } from "date-fns";
+import { subDays, differenceInDays } from "date-fns";
+import { createPageUrl } from "@/utils";
+import { useNavigate } from "react-router-dom";
 
 const LEVEL_ORDER = { red: 0, yellow: 1 };
 
-export default function AlertsPanel({ franchises, summaries, inventoryByFranchise, checklistByFranchise }) {
+export default function AlertsPanel({ franchises, summaries, inventoryByFranchise, checklistByFranchise, purchaseOrders }) {
   const alerts = useMemo(() => {
     const result = [];
     const twoDaysAgo = subDays(new Date(), 2);
@@ -62,10 +64,39 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
           icon: "checklist",
         });
       }
+
+      // Purchase order alert: no order in 30+ days
+      if (purchaseOrders && purchaseOrders.length > 0) {
+        const franchiseOrders = purchaseOrders.filter(
+          (po) =>
+            (po.franchise_id === franchise.id || po.franchise_id === franchise.evolution_instance_id) &&
+            (po.status === "entregue" || po.status === "confirmado")
+        );
+        const latestOrder = franchiseOrders.sort(
+          (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
+        )[0];
+
+        const now = new Date();
+        if (!latestOrder || differenceInDays(now, new Date(latestOrder.ordered_at)) >= 30) {
+          const days = latestOrder
+            ? differenceInDays(now, new Date(latestOrder.ordered_at))
+            : "30+";
+          result.push({
+            level: "yellow",
+            franchise: fName,
+            description: `${fName} não faz pedido há ${days} dias`,
+            action: "Ver pedidos",
+            actionUrl: createPageUrl("PurchaseOrders"),
+            icon: "local_shipping",
+          });
+        }
+      }
     }
 
     return result.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
-  }, [franchises, summaries, inventoryByFranchise, checklistByFranchise]);
+  }, [franchises, summaries, inventoryByFranchise, checklistByFranchise, purchaseOrders]);
+
+  const navigate = useNavigate();
 
   const getIcon = (alert) => {
     const iconClass = alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]";
@@ -74,6 +105,8 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         return <MaterialIcon icon="inventory" size={20} className={iconClass} />;
       case "checklist":
         return <MaterialIcon icon="fact_check" size={20} className={iconClass} />;
+      case "local_shipping":
+        return <MaterialIcon icon="local_shipping" size={20} className={iconClass} />;
       default:
         return <MaterialIcon icon="warning" size={20} className={iconClass} />;
     }
@@ -122,6 +155,7 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
                 </div>
               </div>
               <button
+                onClick={alert.actionUrl ? () => navigate(alert.actionUrl) : undefined}
                 className={`text-xs font-bold uppercase tracking-wider hover:underline font-plus-jakarta ${
                   alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]"
                 }`}

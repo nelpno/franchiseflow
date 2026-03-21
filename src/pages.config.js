@@ -58,6 +58,7 @@ import MinhaLoja from './pages/MinhaLoja';
 import MyChecklist from './pages/MyChecklist';
 import MyContacts from './pages/MyContacts';
 import Onboarding from './pages/Onboarding';
+import PurchaseOrders from './pages/PurchaseOrders';
 import Reports from './pages/Reports';
 import Sales from './pages/Sales';
 import __Layout from './Layout.jsx';
@@ -75,6 +76,7 @@ export const PAGES = {
     "MyChecklist": MyChecklist,
     "MyContacts": MyContacts,
     "Onboarding": Onboarding,
+    "PurchaseOrders": PurchaseOrders,
     "Reports": Reports,
     "Sales": Sales,
 }

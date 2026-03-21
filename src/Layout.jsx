@@ -87,6 +87,13 @@ const navigationItems = [
     adminSection: "Gestão",
   },
   {
+    title: "Pedidos",
+    url: createPageUrl("PurchaseOrders"),
+    materialIcon: "local_shipping",
+    adminOnly: true,
+    adminSection: "Gestão",
+  },
+  {
     title: "Franqueados",
     url: createPageUrl("Franchises"),
     materialIcon: "group",
