@@ -46,6 +46,18 @@ Fluxo de convite: admin cria franquia + email → convite automático → franqu
 - UI e triggers cuidam dos campos de inteligência (status, purchase_count, etc.)
 - Entity: `Contact` em `src/entities/all.js`
 
+### Minha Loja (hub central franqueado) — FASE 5
+- Página `MinhaLoja.jsx` com 3 abas: Lançar (vendas), Resultado (P&L), Estoque
+- Tabela `sale_items`: itens de cada venda (FK sale_id + inventory_item_id), triggers `stock_decrement`/`stock_revert`
+- Tabela `expenses`: despesas avulsas do franqueado (sacolas, aluguel, etc.)
+- `sales` novos campos: `payment_method`, `card_fee_percent`, `card_fee_amount`, `delivery_method`, `delivery_fee`, `net_value`
+- `inventory_items` novos campos: `cost_price` (admin define padrão), `sale_price` (franqueado define)
+- Entities: `SaleItem`, `Expense` em `src/entities/all.js`
+- Edição de venda = deletar sale_items antigos + reinserir novos (triggers cuidam do estoque)
+- Deep-linking: `?tab=lancar|resultado|estoque` + `&action=nova-venda` auto-abre formulário
+- Ações Inteligentes: `src/lib/smartActions.js` gera ações a partir de dados de contacts (responder, reativar, converter, fidelizar, remarketing)
+- WhatsApp utils compartilhados: `src/lib/whatsappUtils.js` (formatPhone, getWhatsAppLink)
+
 ### Auto-vinculação User↔Franchise (FASE 5)
 - Trigger `auto_link_franchise` em profiles: quando user cria conta, checa franchise_invites pendentes
 - Se invite existe: auto-adiciona franchise UUID + evolution_instance_id em managed_franchise_ids
@@ -165,6 +177,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 26. Bot n8n grava apenas: franchise_id, telefone, nome, last_contact_at — NÃO gravar status, purchase_count etc (triggers cuidam)
 27. Trigger `auto_link_franchise` vincula user a franchise automaticamente via invite — suporta múltiplos emails por franquia
 28. Catálogo foi removido (FASE 4) — NÃO existe mais Catalog.jsx nem CatalogProduct entity
+29. `DELIVERY_METHODS` em franchiseUtils é config do vendedor genérico (own_fleet/third_party/both) — NÃO usar para entrega de venda individual (que é 'retirada'/'delivery')
+30. Ao remover página do menu, verificar TODOS os links internos (botões, QuickAccess, FAB, navigate calls) — usar `grep createPageUrl("OldPage")` e `grep "/OldPage"`
+31. Sales.jsx e Inventory.jsx são redirects para MinhaLoja — NÃO adicionar código nessas páginas
+32. `sale_items` RLS usa subquery via sales (não tem franchise_id direto) — pattern: `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
+33. `sales.source` tem CHECK constraint expandida — inclui 'manual' e 'bot' além dos originais
 
 ## Scripts
 ```bash
@@ -200,3 +217,5 @@ npm run typecheck # TypeScript check
 - `docs/analise-ux-completa.md` — Análise UX por persona
 - `docs/analise-vinculacao-vendedor.md` — Campos do vendedor genérico
 - `docs/superpowers/specs/2026-03-20-dashboard-por-role-design.md` — Spec dashboard por role
+- `docs/superpowers/specs/2026-03-21-minha-loja-design.md` — Spec Minha Loja (hub franqueado, 4 personas, abordagem híbrida)
+- `docs/superpowers/plans/2026-03-21-minha-loja-implementation.md` — Plano implementação Minha Loja (12 tasks, 6 chunks)
