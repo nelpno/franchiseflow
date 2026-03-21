@@ -194,6 +194,21 @@ export default function Franchises() {
     }
   };
 
+  const handleUnlinkUser = async (user, franchise) => {
+    try {
+      const currentIds = user.managed_franchise_ids || [];
+      const newIds = currentIds.filter(
+        (id) => id !== franchise.id && id !== franchise.evolution_instance_id
+      );
+      await User.update(user.id, { managed_franchise_ids: newIds });
+      toast.success(`${user.full_name || user.email} desvinculado de ${franchise.city}`);
+      loadData();
+    } catch (error) {
+      console.error("Erro ao desvincular:", error);
+      toast.error("Erro ao desvincular usuário.");
+    }
+  };
+
   const handleDeleteFranchiseQuick = async (e, franchise) => {
     e.stopPropagation();
     try {
@@ -528,15 +543,29 @@ export default function Franchises() {
                       {linked.length > 0 ? (
                         <div className="space-y-2">
                           {linked.map((u) => (
-                            <div key={u.id} className="flex items-center gap-2">
-                              <MaterialIcon icon="account_circle" size={14} className="text-[#534343]" />
-                              <span className="text-xs text-[#534343] truncate">{u.email}</span>
-                              {getRoleBadge(u.role)}
+                            <div key={u.id} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <MaterialIcon icon="account_circle" size={14} className="text-[#534343]" />
+                                <span className="text-xs text-[#534343] truncate">{u.email}</span>
+                                {getRoleBadge(u.role)}
+                              </div>
+                              {currentUser?.role === "admin" && u.role === "franchisee" && (
+                                <button
+                                  className="text-[#cac0c0] hover:text-[#b91c1c] transition-colors ml-2 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUnlinkUser(u, franchise);
+                                  }}
+                                  title="Desvincular"
+                                >
+                                  <MaterialIcon icon="link_off" size={14} />
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-amber-600">
+                        <div className="flex items-center gap-2 text-[#d4af37]">
                           <MaterialIcon icon="warning" size={14} />
                           <span className="text-xs font-medium">Sem usuario vinculado</span>
                         </div>
@@ -546,18 +575,6 @@ export default function Franchises() {
                     {/* Action buttons */}
                     {isStaff && (
                       <div className="pt-3 border-t border-[#291715]/5 flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-8 rounded-lg border-[#291715]/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openPermissionsDialog(franchise);
-                          }}
-                        >
-                          <MaterialIcon icon="settings" size={14} className="mr-1" />
-                          Permissoes
-                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
