@@ -65,8 +65,9 @@ export default function TabLancar({
   contacts,
   inventoryItems,
   onRefresh,
+  autoOpenForm = false,
 }) {
-  const [showFormDialog, setShowFormDialog] = useState(false);
+  const [showFormDialog, setShowFormDialog] = useState(autoOpenForm);
   const [editingSale, setEditingSale] = useState(null);
   const [expandedSaleId, setExpandedSaleId] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});

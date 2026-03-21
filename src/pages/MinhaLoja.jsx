@@ -21,6 +21,7 @@ export default function MinhaLoja() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const activeTab = TAB_MAP[tabParam] || "lancar";
+  const actionParam = searchParams.get("action");
 
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
@@ -336,6 +337,7 @@ export default function MinhaLoja() {
               contacts={franchiseContacts}
               inventoryItems={franchiseInventory}
               onRefresh={handleRefreshSales}
+              autoOpenForm={actionParam === "nova-venda"}
             />
           </TabsContent>
 

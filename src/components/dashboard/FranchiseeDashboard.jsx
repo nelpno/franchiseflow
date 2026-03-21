@@ -174,7 +174,7 @@ export default function FranchiseeDashboard() {
       {/* Fixed bottom CTA */}
       <div className="fixed bottom-20 md:bottom-10 left-0 right-0 px-6 max-w-lg mx-auto md:max-w-none md:flex md:justify-end z-50">
         <Button
-          onClick={() => navigate("/MinhaLoja?tab=lancar")}
+          onClick={() => navigate("/MinhaLoja?tab=lancar&action=nova-venda")}
           className="w-full md:w-auto md:min-w-[240px] h-14 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-[0_10px_30px_-10px_rgba(185,28,28,0.4)] flex items-center justify-center gap-3 active:scale-95 transition-transform text-base"
         >
           <MaterialIcon icon="point_of_sale" size={20} />

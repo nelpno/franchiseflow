@@ -99,7 +99,7 @@ const navigationItems = [
 const mobileBottomNav = [
   { label: "Início", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
   { label: "Minha Loja", materialIcon: "storefront", url: createPageUrl("MinhaLoja") },
-  { label: "Vender", materialIcon: "add", url: "/MinhaLoja?tab=lancar", isFab: true },
+  { label: "Vender", materialIcon: "add", url: "/MinhaLoja?tab=lancar&action=nova-venda", isFab: true },
   { label: "Clientes", materialIcon: "people", url: createPageUrl("MyContacts") },
   { label: "Vendedor", materialIcon: "smart_toy", url: createPageUrl("FranchiseSettings") },
 ];
