@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -8,36 +8,89 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const isAuth = await base44.auth.isAuthenticated();
-      if (isAuth) {
-        const me = await base44.auth.me();
-        setUser(me);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('[Auth] Error:', error);
-      setIsAuthenticated(false);
+  const loadUserProfile = useCallback(async (authUser) => {
+    if (!authUser) {
       setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (error) throw error;
+
+      setUser({
+        id: authUser.id,
+        email: authUser.email,
+        full_name: profile?.full_name || authUser.email,
+        role: profile?.role || 'franchisee',
+        managed_franchise_ids: profile?.managed_franchise_ids || [],
+      });
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error('[Auth] Error loading profile:', error);
+      // Fallback: use auth user data without profile
+      setUser({
+        id: authUser.id,
+        email: authUser.email,
+        full_name: authUser.email,
+        role: 'franchisee',
+        managed_franchise_ids: [],
+      });
+      setIsAuthenticated(true);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const logout = () => {
-    base44.auth.logout();
+  useEffect(() => {
+    // Check existing session
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await loadUserProfile(session.user);
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('[Auth] Init error:', error);
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await loadUserProfile(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [loadUserProfile]);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAuthenticated(false);
+    window.location.href = '/login';
   };
 
   const navigateToLogin = () => {
-    base44.auth.redirectToLogin();
+    window.location.href = '/login';
   };
 
   return (
