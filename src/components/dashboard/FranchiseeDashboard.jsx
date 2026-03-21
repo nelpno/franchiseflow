@@ -35,7 +35,7 @@ export default function FranchiseeDashboard() {
     setIsLoading(true);
     try {
       const franchises = await Franchise.list();
-      const myFranchise = franchises.find((f) => f.id === franchiseId);
+      const myFranchise = franchises.find((f) => f.id === franchiseId || f.evolution_instance_id === franchiseId);
       setFranchise(myFranchise);
 
       const [
@@ -61,10 +61,11 @@ export default function FranchiseeDashboard() {
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < 5).length);
 
       if (checklistData.length > 0) {
-        const tasks = checklistData[0].tasks || [];
+        const items = checklistData[0].items || {};
+        const values = Object.values(items);
         setChecklistProgress({
-          done: tasks.filter((t) => t.completed).length,
-          total: tasks.length,
+          done: values.filter(Boolean).length,
+          total: values.length,
         });
       }
 
