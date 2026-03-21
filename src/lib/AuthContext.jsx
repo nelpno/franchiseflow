@@ -67,6 +67,11 @@ export const AuthProvider = ({ children }) => {
 
     initAuth();
 
+    // Safety timeout — if auth check takes too long, stop loading
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -79,7 +84,10 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [loadUserProfile]);
 
   const logout = async () => {
