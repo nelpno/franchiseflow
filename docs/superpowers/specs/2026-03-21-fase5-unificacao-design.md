@@ -35,8 +35,6 @@ CREATE TABLE contacts (
   nome TEXT,
   status TEXT DEFAULT 'novo_lead',
     -- novo_lead, em_negociacao, cliente, recorrente, remarketing, perdido
-  source TEXT DEFAULT 'whatsapp',
-    -- whatsapp, instagram, indicacao, presencial
   endereco TEXT,
   bairro TEXT,
   notas TEXT,
