@@ -261,6 +261,8 @@ export default function SaleForm({
   // Contact
   const [contactSearch, setContactSearch] = useState("");
   const [contactId, setContactId] = useState(null);
+  const [newContactName, setNewContactName] = useState("");
+  const [isNewContact, setIsNewContact] = useState(false);
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("pix");
@@ -361,6 +363,23 @@ export default function SaleForm({
   const handleContactSelect = (contact) => {
     setContactId(contact.id);
     setContactSearch(contact.nome || formatPhone(contact.telefone));
+    setIsNewContact(false);
+    setNewContactName("");
+  };
+
+  // Detect new contact when typing a phone number with no match
+  const handleContactSearchChange = (val) => {
+    setContactSearch(val);
+    if (contactId) {
+      setContactId(null); // user is typing again, clear selection
+    }
+    const digits = val.replace(/\D/g, "");
+    const hasEnoughDigits = digits.length >= 8;
+    const hasMatch = contacts.some((c) => {
+      const cPhone = normalizePhone(c.telefone || "");
+      return cPhone.includes(normalizePhone(val)) || (c.nome || "").toLowerCase().includes(val.toLowerCase());
+    });
+    setIsNewContact(hasEnoughDigits && !hasMatch);
   };
 
   // Resolve or create contact
@@ -375,13 +394,13 @@ export default function SaleForm({
     );
     if (existing) return existing.id;
 
-    // Create new contact from phone/name
+    // Create new contact from phone + name
     try {
       const isPhone = /\d{8,}/.test(contactSearch.replace(/\D/g, ""));
       const newContact = await Contact.create({
         franchise_id: franchiseId,
         telefone: isPhone ? normalized : "",
-        nome: isPhone ? "" : contactSearch,
+        nome: newContactName.trim() || (isPhone ? "" : contactSearch),
         status: "cliente",
       });
       return newContact.id;
@@ -484,14 +503,25 @@ export default function SaleForm({
         <ContactAutocomplete
           id="contact"
           value={contactSearch}
-          onChange={(v) => {
-            setContactSearch(v);
-            if (contactId) setContactId(null);
-          }}
+          onChange={handleContactSearchChange}
           onSelect={handleContactSelect}
           contacts={contacts}
           className="bg-[#e9e8e9]/50"
         />
+        {isNewContact && (
+          <div className="flex items-center gap-2 p-3 bg-[#fffbeb] rounded-xl border border-[#d4af37]/30">
+            <MaterialIcon icon="person_add" size={18} className="text-[#d4af37] shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#92400e] mb-1">Novo contato — adicione o nome:</p>
+              <Input
+                value={newContactName}
+                onChange={(e) => setNewContactName(e.target.value)}
+                placeholder="Nome do cliente"
+                className="bg-white h-9"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Products */}

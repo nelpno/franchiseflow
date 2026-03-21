@@ -416,6 +416,51 @@ export default function TabLancar({
                         </div>
                       )}
 
+                      {/* Profit margin */}
+                      {saleItemsList.length > 0 && (() => {
+                        const custoTotal = saleItemsList.reduce(
+                          (sum, si) => sum + (parseFloat(si.cost_price) || 0) * (si.quantity || 1),
+                          0
+                        );
+                        const saleValue = parseFloat(sale.value) || 0;
+                        const netVal = parseFloat(sale.net_value ?? sale.value) || 0;
+                        const lucro = netVal - custoTotal;
+                        const margem = saleValue > 0 ? (lucro / saleValue) * 100 : 0;
+                        const isPositive = lucro >= 0;
+
+                        return custoTotal > 0 ? (
+                          <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-[#534343]">Custo dos produtos</span>
+                              <span className="font-mono-numbers text-[#534343]">
+                                {formatCurrency(custoTotal)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-[#534343]">Lucro da venda</span>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`font-bold font-mono-numbers ${
+                                    isPositive ? "text-[#16a34a]" : "text-[#b91c1c]"
+                                  }`}
+                                >
+                                  {formatCurrency(lucro)}
+                                </span>
+                                <Badge
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                    isPositive
+                                      ? "bg-[#16a34a]/10 text-[#16a34a]"
+                                      : "bg-[#b91c1c]/10 text-[#b91c1c]"
+                                  }`}
+                                >
+                                  {isPositive ? "\u2191" : "\u2193"} {Math.abs(margem).toFixed(0)}%
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
                       {/* Actions */}
                       <div className="flex gap-2 pt-1">
                         <Button

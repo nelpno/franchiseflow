@@ -9,13 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -66,15 +59,6 @@ const STATUS_CONFIG = {
     text: "text-[#534343]",
   },
 };
-
-const STATUS_OPTIONS = [
-  { value: "novo_lead", label: "Novo Lead" },
-  { value: "em_negociacao", label: "Em Negociação" },
-  { value: "cliente", label: "Cliente" },
-  { value: "recorrente", label: "Recorrente" },
-  { value: "remarketing", label: "Remarketing" },
-  { value: "perdido", label: "Perdido" },
-];
 
 const FILTER_TABS = [
   { key: "todos", label: "Todos", status: null },
@@ -169,11 +153,9 @@ export default function MyContacts() {
     setEditForm({
       nome: contact.nome || contact.customer_name || "",
       telefone: contact.telefone || contact.contact_phone || "",
-      status: contact.status || "novo_lead",
-      bairro: contact.bairro || "",
       endereco: contact.endereco || "",
+      bairro: contact.bairro || "",
       notas: contact.notas || "",
-      tags: contact.tags || "",
     });
   };
 
@@ -183,11 +165,9 @@ export default function MyContacts() {
       setIsSaving(true);
       await Contact.update(editingContact.id, {
         nome: editForm.nome,
-        status: editForm.status,
-        bairro: editForm.bairro,
         endereco: editForm.endereco,
+        bairro: editForm.bairro,
         notas: editForm.notas,
-        tags: editForm.tags,
       });
       toast.success("Contato atualizado");
       setEditingContact(null);
@@ -475,24 +455,16 @@ export default function MyContacts() {
               />
             </div>
 
-            {/* Status */}
+            {/* Endereco */}
             <div className="space-y-1.5">
-              <Label className="text-[#1b1c1d]">Status</Label>
-              <Select
-                value={editForm.status || "novo_lead"}
-                onValueChange={(val) => setEditForm({ ...editForm, status: val })}
-              >
-                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="edit-endereco" className="text-[#1b1c1d]">Endereço</Label>
+              <Input
+                id="edit-endereco"
+                value={editForm.endereco || ""}
+                onChange={(e) => setEditForm({ ...editForm, endereco: e.target.value })}
+                placeholder="Rua das Flores, 123"
+                className="bg-[#e9e8e9] border-none rounded-xl"
+              />
             </div>
 
             {/* Bairro */}
@@ -502,17 +474,7 @@ export default function MyContacts() {
                 id="edit-bairro"
                 value={editForm.bairro || ""}
                 onChange={(e) => setEditForm({ ...editForm, bairro: e.target.value })}
-                className="bg-[#e9e8e9] border-none rounded-xl"
-              />
-            </div>
-
-            {/* Endereco */}
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-endereco" className="text-[#1b1c1d]">Endereço</Label>
-              <Input
-                id="edit-endereco"
-                value={editForm.endereco || ""}
-                onChange={(e) => setEditForm({ ...editForm, endereco: e.target.value })}
+                placeholder="Ex: Centro"
                 className="bg-[#e9e8e9] border-none rounded-xl"
               />
             </div>
@@ -526,18 +488,6 @@ export default function MyContacts() {
                 onChange={(e) => setEditForm({ ...editForm, notas: e.target.value })}
                 rows={3}
                 className="bg-[#e9e8e9] border-none rounded-xl resize-none"
-              />
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-tags" className="text-[#1b1c1d]">Tags</Label>
-              <Input
-                id="edit-tags"
-                value={editForm.tags || ""}
-                onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
-                placeholder="Ex: vip, empresa, indicação"
-                className="bg-[#e9e8e9] border-none rounded-xl"
               />
             </div>
 
