@@ -77,7 +77,7 @@ const navigationItems = [
   },
   {
     title: "Configurações",
-    franchiseeLabel: "Minha Unidade",
+    franchiseeLabel: "Meu Vendedor",
     url: createPageUrl("FranchiseSettings"),
     icon: SlidersHorizontal,
   },

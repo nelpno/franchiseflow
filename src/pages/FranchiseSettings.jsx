@@ -20,6 +20,7 @@ const initialFormData = {
   franchise_name: '', // Added this field for AI purposes
   accepted_payment_methods: '', // Alterado para string
   opening_hours: '',
+  working_days: '',
   price_table_url: '',
   agent_name: '',
   promotions_combo: '',
@@ -29,7 +30,11 @@ const initialFormData = {
   pix_key_data: '',
   personal_phone_for_summary: '',
   payment_link: '',
-  social_media_links: { instagram: '' }
+  social_media_links: { instagram: '' },
+  max_delivery_radius_km: null,
+  min_order_value: null,
+  avg_prep_time_minutes: null,
+  welcome_message: ''
 };
 
 function FranchiseSettingsContent() {
@@ -168,21 +173,20 @@ function FranchiseSettingsContent() {
         instagram: config.social_media_links?.instagram || ''
       },
       // Ensure franchise_name is explicitly set, defaulting to empty string if not present in config
-      franchise_name: config.franchise_name || ''
+      franchise_name: config.franchise_name || '',
+      working_days: config.working_days || '',
+      max_delivery_radius_km: config.max_delivery_radius_km ?? null,
+      min_order_value: config.min_order_value ?? null,
+      avg_prep_time_minutes: config.avg_prep_time_minutes ?? null,
+      welcome_message: config.welcome_message || ''
     });
     setShowForm(true);
     setIsDirty(false);
   };
 
   const handleCancel = () => {
-    if (isDirty) {
-      if (window.confirm("Você tem alterações não salvas. Tem certeza que deseja descartá-las?")) {
-        setShowForm(false);
-        setIsDirty(false);
-      }
-    } else {
-      setShowForm(false);
-    }
+    setShowForm(false);
+    setIsDirty(false);
   };
 
   const handleDelete = async () => {
@@ -540,9 +544,9 @@ function FranchiseSettingsContent() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
               <SlidersHorizontal className="w-8 h-8 text-indigo-600" />
-              Configurações IA
+              Meu Vendedor
             </h1>
-            <p className="text-slate-600 mt-1">Gerencie as variáveis da Inteligência Artificial para cada franquia.</p>
+            <p className="text-slate-600 mt-1">Configure o atendente automático que vende pelo WhatsApp da sua unidade.</p>
           </div>
           {(franchisesWithoutConfig.length > 0 || currentUser?.role === 'admin') &&
             <Button onClick={handleNewConfig} className="bg-indigo-600 hover:bg-indigo-700">
@@ -725,7 +729,7 @@ function FranchiseSettingsContent() {
                     </TabsTrigger>
                     <TabsTrigger value="delivery" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
                       <Truck className="w-3.5 h-3.5" />
-                      <span>Delivery</span>
+                      <span>Entrega</span>
                     </TabsTrigger>
                     <TabsTrigger value="marketing" className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 min-w-fit">
                       <Megaphone className="w-3.5 h-3.5" />
@@ -740,7 +744,7 @@ function FranchiseSettingsContent() {
                   {/* Tab 1 - Dados da Unidade */}
                   <TabsContent value="unidade" className="grid gap-4 mt-4">
                     <div>
-                      <Label htmlFor="franchise_name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Cidade/bairro da Franquia (para IA)</Label>
+                      <Label htmlFor="franchise_name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Nome da Unidade</Label>
                       <Input
                         id="franchise_name"
                         value={formData.franchise_name}
@@ -757,7 +761,7 @@ function FranchiseSettingsContent() {
                         className="w-full" />
                     </div>
                     <div>
-                      <Label htmlFor="address_reference">Ponto de Referência e Detalhes da Região</Label>
+                      <Label htmlFor="address_reference">Ponto de Referência</Label>
                       <textarea
                         id="address_reference"
                         value={formData.address_reference}
@@ -766,7 +770,7 @@ function FranchiseSettingsContent() {
                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
                     </div>
                     <div>
-                      <Label htmlFor="opening_hours" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horários e Regras de Funcionamento</Label>
+                      <Label htmlFor="opening_hours" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Horário de Funcionamento</Label>
                       <textarea
                         id="opening_hours"
                         value={formData.opening_hours}
@@ -774,12 +778,20 @@ function FranchiseSettingsContent() {
                         placeholder="Ex: Seg-Sex: 08h-18h, Sáb: 09h-13h&#10;Não funcionamos nos feriados&#10;Entregas até 20h"
                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
                     </div>
+                    <div>
+                      <Label htmlFor="working_days">Dias de Funcionamento</Label>
+                      <Input
+                        id="working_days"
+                        value={formData.working_days}
+                        onChange={(e) => handleInputChange('working_days', e.target.value)}
+                        placeholder="Ex: Segunda a Sábado" />
+                    </div>
                   </TabsContent>
 
                   {/* Tab 2 - Pagamentos */}
                   <TabsContent value="pagamentos" className="grid gap-4 mt-4">
                     <div>
-                      <Label htmlFor="accepted_payment_methods" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Métodos e Regras de Pagamento</Label>
+                      <Label htmlFor="accepted_payment_methods" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Formas de Pagamento</Label>
                       <textarea
                         id="accepted_payment_methods"
                         value={formData.accepted_payment_methods}
@@ -809,7 +821,7 @@ function FranchiseSettingsContent() {
                   {/* Tab 3 - Delivery */}
                   <TabsContent value="delivery" className="grid gap-4 mt-4">
                     <div>
-                      <Label htmlFor="shipping_rules_costs">Regras de Frete e Valores Cobrados</Label>
+                      <Label htmlFor="shipping_rules_costs">Taxas de Entrega</Label>
                       <textarea
                         id="shipping_rules_costs"
                         value={formData.shipping_rules_costs}
@@ -817,17 +829,56 @@ function FranchiseSettingsContent() {
                         placeholder="Descreva as regras de entrega e valores de frete..."
                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[100px] resize-y" />
                     </div>
+                    <div>
+                      <Label htmlFor="max_delivery_radius_km">Raio Máximo de Entrega</Label>
+                      <div className="relative">
+                        <Input
+                          id="max_delivery_radius_km"
+                          type="number"
+                          value={formData.max_delivery_radius_km ?? ''}
+                          onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="Ex: 10"
+                          className="pr-10" />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">km</span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="min_order_value">Pedido Mínimo para Entrega</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">R$</span>
+                        <Input
+                          id="min_order_value"
+                          type="number"
+                          value={formData.min_order_value ?? ''}
+                          onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="Ex: 30.00"
+                          className="pl-10" />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="avg_prep_time_minutes">Tempo Médio de Preparo</Label>
+                      <div className="relative">
+                        <Input
+                          id="avg_prep_time_minutes"
+                          type="number"
+                          value={formData.avg_prep_time_minutes ?? ''}
+                          onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
+                          placeholder="Ex: 30"
+                          className="pr-20" />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">minutos</span>
+                      </div>
+                    </div>
                   </TabsContent>
 
                   {/* Tab 4 - Marketing */}
                   <TabsContent value="marketing" className="grid gap-4 mt-4">
                     <div>
-                      <Label htmlFor="agent_name">Nome do Agente IA</Label>
+                      <Label htmlFor="agent_name">Nome do Atendente Virtual</Label>
                       <Input
                         id="agent_name"
                         value={formData.agent_name}
                         onChange={(e) => handleInputChange('agent_name', e.target.value)}
-                        placeholder="Ex: Maria Silva" />
+                        placeholder="Ex: Ana — o nome que o robô vai usar" />
                     </div>
                     <div>
                       <Label htmlFor="promotions_combo">Promoções/Combo</Label>
@@ -839,13 +890,13 @@ function FranchiseSettingsContent() {
                         className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
                     </div>
                     <div>
-                      <Label htmlFor="price_table_url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">URL da Tabela de Estoque</Label>
+                      <Label htmlFor="price_table_url" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Link da Planilha de Produtos</Label>
                       <Input
                         id="price_table_url"
                         type="url"
                         value={formData.price_table_url}
                         onChange={(e) => handleInputChange('price_table_url', e.target.value)}
-                        placeholder="https://..." />
+                        placeholder="Cole aqui o link da sua planilha Google Sheets" />
                     </div>
                     <div>
                       <Label htmlFor="social_instagram">Instagram</Label>
@@ -885,18 +936,27 @@ function FranchiseSettingsContent() {
                       </div>
                     )}
                     <div>
-                      <Label htmlFor="personal_phone_for_summary">Telefone Pessoal para Resumo</Label>
+                      <Label htmlFor="personal_phone_for_summary">Seu WhatsApp Pessoal</Label>
                       <Input
                         id="personal_phone_for_summary"
                         value={formData.personal_phone_for_summary}
                         onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
-                        placeholder="Ex: 5511999999999" />
+                        placeholder="Ex: (19) 99999-9999" />
+                    </div>
+                    <div>
+                      <Label htmlFor="welcome_message">Mensagem de Boas-Vindas</Label>
+                      <textarea
+                        id="welcome_message"
+                        value={formData.welcome_message}
+                        onChange={(e) => handleInputChange('welcome_message', e.target.value)}
+                        placeholder="Ex: Olá! Bem-vindo à Maxi Massas! Como posso ajudar?"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm min-h-[80px] resize-y" />
                     </div>
                   </TabsContent>
                 </Tabs>
               </form>
               <DialogFooter className="flex justify-between w-full">
-                {editingConfig &&
+                {editingConfig && currentUser?.role === 'admin' &&
                   <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
                     <Trash2 className="w-4 h-4 mr-2" /> Excluir
                   </Button>
