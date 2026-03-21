@@ -1,14 +1,14 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Package, CheckSquare, AlertTriangle } from "lucide-react";
+import { Package, CheckSquare, AlertTriangle, Megaphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
-export default function QuickAccessCards({ lowStockCount, checklistDone, checklistTotal }) {
+export default function QuickAccessCards({ lowStockCount, checklistDone, checklistTotal, marketingCount }) {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-2 gap-3 mb-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
       <Card
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => navigate(createPageUrl("Inventory"))}
@@ -43,6 +43,19 @@ export default function QuickAccessCards({ lowStockCount, checklistDone, checkli
           <span className="text-sm font-medium text-gray-900">
             {checklistDone}/{checklistTotal} feito
           </span>
+        </CardContent>
+      </Card>
+
+      <Card
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => navigate(createPageUrl("Marketing"))}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Megaphone className="h-5 w-5 text-rose-600" />
+            <span className="text-sm font-medium text-gray-700">Marketing</span>
+          </div>
+          <span className="text-sm text-gray-600 font-medium">Ver materiais</span>
         </CardContent>
       </Card>
     </div>

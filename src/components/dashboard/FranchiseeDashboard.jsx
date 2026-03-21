@@ -11,6 +11,7 @@ import StatsCard from "./StatsCard";
 import FranchiseeGreeting from "./FranchiseeGreeting";
 import DailyGoalProgress from "./DailyGoalProgress";
 import QuickAccessCards from "./QuickAccessCards";
+import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
 
 export default function FranchiseeDashboard() {
@@ -58,7 +59,7 @@ export default function FranchiseeDashboard() {
       setYesterdaySales(yesterdaySalesData);
       setSummaries(summariesData);
 
-      setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < 5).length);
+      setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
 
       if (checklistData.length > 0) {
         const items = checklistData[0].items || {};
@@ -153,6 +154,8 @@ export default function FranchiseeDashboard() {
       </div>
 
       <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
+
+      <MiniRevenueChart summaries={summaries} franchiseId={franchiseId} />
 
       <QuickAccessCards
         lowStockCount={lowStockCount}
