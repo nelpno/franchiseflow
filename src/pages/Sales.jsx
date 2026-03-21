@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sale, Franchise, User, SalesGoal } from "@/entities/all";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Sale, Franchise, User, SalesGoal, Contact, InventoryItem } from "@/entities/all";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,121 @@ import ErrorBoundary from "../components/ErrorBoundary";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+
+// Normalize phone to E.164-ish format (55 + DDD + number)
+function normalizePhone(phone) {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('55') && digits.length >= 12) return digits;
+  if (digits.length >= 10) return '55' + digits;
+  return digits;
+}
+
+// Format phone for display
+function formatPhone(phone) {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  // Remove country code for display
+  const local = digits.startsWith('55') ? digits.slice(2) : digits;
+  if (local.length === 11) {
+    return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  }
+  if (local.length === 10) {
+    return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  }
+  return phone;
+}
+
+// Contact autocomplete dropdown component
+function ContactAutocomplete({ value, onChange, onSelect, contacts, placeholder = "(11) 99999-9999", className = "", id }) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleChange = (e) => {
+    const inputVal = e.target.value;
+    onChange(inputVal);
+
+    if (inputVal.length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const normalized = normalizePhone(inputVal);
+    const lowerInput = inputVal.toLowerCase();
+
+    const matches = contacts.filter(c => {
+      const cPhone = normalizePhone(c.telefone || '');
+      const cName = (c.nome || '').toLowerCase();
+      return cPhone.includes(normalized) || cName.includes(lowerInput) ||
+        (c.telefone || '').includes(inputVal);
+    }).slice(0, 6);
+
+    setSearchResults(matches);
+    setShowDropdown(matches.length > 0);
+  };
+
+  const handleSelect = (contact) => {
+    setShowDropdown(false);
+    setSearchResults([]);
+    onSelect(contact);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <Input
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        onFocus={() => {
+          if (searchResults.length > 0) setShowDropdown(true);
+        }}
+        className={className}
+        autoComplete="off"
+      />
+      {showDropdown && searchResults.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-[#291715]/10 max-h-60 overflow-y-auto">
+          {searchResults.map((contact) => {
+            const purchaseCount = contact.total_purchases || 0;
+            return (
+              <button
+                key={contact.id}
+                type="button"
+                onClick={() => handleSelect(contact)}
+                className="w-full text-left px-4 py-3 hover:bg-[#f5f3f4] transition-colors first:rounded-t-xl last:rounded-b-xl flex items-center justify-between gap-2"
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-[#1b1c1d] truncate block">
+                    {contact.nome || 'Sem nome'}
+                  </span>
+                  <span className="text-sm text-[#534343]">
+                    {formatPhone(contact.telefone)}
+                  </span>
+                </div>
+                {purchaseCount > 0 && (
+                  <Badge className="bg-[#d4af37]/15 text-[#775a19] rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0">
+                    {purchaseCount} {purchaseCount === 1 ? 'compra' : 'compras'}
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Inline editable cell component
 function InlineEdit({ value, onSave, type = "text", formatDisplay }) {
@@ -86,6 +201,15 @@ function SalesContent() {
   const [filterFranchise, setFilterFranchise] = useState('all');
   const [filterDate, setFilterDate] = useState('');
 
+  // Contacts autocomplete
+  const [contacts, setContacts] = useState([]);
+  const [quickContactId, setQuickContactId] = useState(null);
+  const [formContactId, setFormContactId] = useState(null);
+
+  // Inventory items for product selection (full sale form)
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [saleItems, setSaleItems] = useState([]);
+
   // Performance stats
   const [monthStats, setMonthStats] = useState({ count: 0, revenue: 0, average: 0 });
   const [salesGoal, setSalesGoal] = useState(null);
@@ -130,13 +254,17 @@ function SalesContent() {
 
   const loadData = async () => {
     try {
-      const [currentUserData, franchisesData] = await Promise.all([
+      const [currentUserData, franchisesData, contactsData, inventoryData] = await Promise.all([
         User.me(),
-        Franchise.list()
+        Franchise.list(),
+        Contact.list('nome', 1000).catch(() => []),
+        InventoryItem.list('product_name', 500).catch(() => [])
       ]);
 
       setCurrentUser(currentUserData);
       setFranchises(franchisesData);
+      setContacts(contactsData);
+      setInventoryItems(inventoryData);
 
       // O RLS já filtra vendas e franquias por permissão do usuário
       const salesData = await Sale.list('-sale_date', 500);
@@ -174,6 +302,8 @@ function SalesContent() {
       sale_date: format(new Date(), 'yyyy-MM-dd'),
       source: 'whatsapp'
     });
+    setFormContactId(null);
+    setSaleItems([]);
   };
 
   const handleNewSale = () => {
@@ -191,8 +321,40 @@ function SalesContent() {
       sale_date: sale.sale_date?.substring(0, 10) || '',
       source: sale.source
     });
+    setFormContactId(sale.contact_id || null);
+    setSaleItems([]);
     setEditingSale(sale);
     setShowForm(true);
+  };
+
+  // Resolve or create a contact, returns contact_id or null
+  const resolveContactId = async (contactId, phone, customerName, franchiseId) => {
+    if (contactId) return contactId;
+    if (!phone || phone.trim().length < 3) return null;
+
+    const selectedFranchise = availableFranchises.find(f => f.evolution_instance_id === franchiseId);
+    if (!selectedFranchise) return null;
+
+    try {
+      const normalized = normalizePhone(phone);
+      // Check if contact already exists with this phone
+      const existing = contacts.find(c => normalizePhone(c.telefone || '') === normalized);
+      if (existing) return existing.id;
+
+      // Create new contact
+      const newContact = await Contact.create({
+        franchise_id: selectedFranchise.evolution_instance_id,
+        telefone: normalized,
+        nome: customerName || '',
+        status: 'cliente'
+      });
+      // Refresh contacts list
+      setContacts(prev => [...prev, newContact]);
+      return newContact.id;
+    } catch (err) {
+      console.warn("Erro ao criar contato:", err);
+      return null;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -200,9 +362,14 @@ function SalesContent() {
     setIsSubmitting(true);
 
     try {
+      const contactId = await resolveContactId(
+        formContactId, formData.contact_phone, formData.customer_name, formData.franchise_id
+      );
+
       const saleData = {
         ...formData,
-        value: parseFloat(formData.value)
+        value: parseFloat(formData.value),
+        ...(contactId ? { contact_id: contactId } : {})
       };
 
       if (editingSale) {
@@ -236,18 +403,24 @@ function SalesContent() {
         ? availableFranchises[0].evolution_instance_id
         : availableFranchises[0]?.evolution_instance_id || '';
 
+      const contactId = await resolveContactId(
+        quickContactId, quickForm.contact_phone, quickForm.customer_name, defaultFranchiseId
+      );
+
       await Sale.create({
         franchise_id: defaultFranchiseId,
         customer_name: quickForm.customer_name,
         value: parseFloat(quickForm.value),
         contact_phone: quickForm.contact_phone || '',
         sale_date: format(new Date(), 'yyyy-MM-dd'),
-        source: 'whatsapp'
+        source: 'whatsapp',
+        ...(contactId ? { contact_id: contactId } : {})
       });
 
       toast.success("Venda registrada com sucesso!");
       setShowQuickSale(false);
       setQuickForm({ value: '', customer_name: '', contact_phone: '' });
+      setQuickContactId(null);
       loadData();
     } catch (error) {
       console.error("Erro ao registrar venda rápida:", error);
@@ -349,6 +522,57 @@ function SalesContent() {
         currentUser?.managed_franchise_ids?.includes(f.id) ||
         currentUser?.managed_franchise_ids?.includes(f.evolution_instance_id)
       );
+
+  // Build a contacts map for quick lookup on sale cards
+  const contactsMap = useMemo(() => {
+    const map = {};
+    contacts.forEach(c => { map[c.id] = c; });
+    return map;
+  }, [contacts]);
+
+  // Inventory items filtered by selected franchise in full form
+  const franchiseInventory = useMemo(() => {
+    if (!formData.franchise_id) return inventoryItems;
+    return inventoryItems.filter(item => item.franchise_id === formData.franchise_id);
+  }, [inventoryItems, formData.franchise_id]);
+
+  // Sale items helpers
+  const handleAddSaleItem = () => {
+    setSaleItems(prev => [...prev, { inventory_item_id: '', product_name: '', quantity: 1, unit_price: 0 }]);
+  };
+
+  const handleRemoveSaleItem = (index) => {
+    setSaleItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaleItemChange = (index, field, value) => {
+    setSaleItems(prev => prev.map((item, i) => {
+      if (i !== index) return item;
+      const updated = { ...item, [field]: value };
+
+      // When selecting a product, auto-fill name and price
+      if (field === 'inventory_item_id') {
+        const invItem = inventoryItems.find(inv => inv.id === value);
+        if (invItem) {
+          updated.product_name = invItem.product_name;
+          updated.unit_price = invItem.unit_price || 0;
+        }
+      }
+      return updated;
+    }));
+  };
+
+  // Calculate total from sale items
+  const saleItemsTotal = useMemo(() => {
+    return saleItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+  }, [saleItems]);
+
+  // Sync sale items total to form value when items change
+  useEffect(() => {
+    if (saleItems.length > 0 && saleItemsTotal > 0) {
+      setFormData(prev => ({ ...prev, value: saleItemsTotal.toFixed(2) }));
+    }
+  }, [saleItemsTotal, saleItems.length]);
 
   const goalTarget = salesGoal?.target_value || 0;
   const goalProgress = goalTarget > 0 ? Math.min((monthStats.revenue / goalTarget) * 100, 100) : 0;
@@ -508,58 +732,81 @@ function SalesContent() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filteredSales.map((sale) => (
-              <Card key={sale.id} className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-md transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-lg font-semibold text-[#1b1c1d]">
-                          <InlineEdit
-                            value={sale.customer_name || 'Cliente não informado'}
-                            onSave={(val) => handleInlineUpdate(sale.id, 'customer_name', val)}
-                          />
-                        </h3>
-                        <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[10px] font-bold">
-                          <InlineEdit
-                            value={sale.value || 0}
-                            type="number"
-                            onSave={(val) => handleInlineUpdate(sale.id, 'value', val)}
-                            formatDisplay={(v) => `R$ ${(v || 0).toFixed(2)}`}
-                          />
-                        </Badge>
-                        {getSourceBadge(sale.source)}
+            {filteredSales.map((sale) => {
+              const linkedContact = sale.contact_id ? contactsMap[sale.contact_id] : null;
+              const purchaseCount = linkedContact?.total_purchases || 0;
+              const whatsappPhone = sale.contact_phone ? normalizePhone(sale.contact_phone) : null;
+
+              return (
+                <Card key={sale.id} className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-md transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <h3 className="text-lg font-semibold text-[#1b1c1d]">
+                            <InlineEdit
+                              value={sale.customer_name || 'Cliente não informado'}
+                              onSave={(val) => handleInlineUpdate(sale.id, 'customer_name', val)}
+                            />
+                          </h3>
+                          <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[10px] font-bold">
+                            <InlineEdit
+                              value={sale.value || 0}
+                              type="number"
+                              onSave={(val) => handleInlineUpdate(sale.id, 'value', val)}
+                              formatDisplay={(v) => `R$ ${(v || 0).toFixed(2)}`}
+                            />
+                          </Badge>
+                          {getSourceBadge(sale.source)}
+                          {linkedContact && purchaseCount > 0 && (
+                            <Badge className="bg-[#d4af37]/15 text-[#775a19] rounded-full px-2 py-0.5 text-[10px] font-bold">
+                              {purchaseCount}a compra
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#4a3d3d]">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-[#1b1c1d]">Telefone:</span>
+                            <span>{sale.contact_phone ? formatPhone(sale.contact_phone) : '-'}</span>
+                            {whatsappPhone && whatsappPhone.length >= 10 && (
+                              <a
+                                href={`https://wa.me/${whatsappPhone}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#25D366] hover:text-[#128C7E] transition-colors"
+                                title="Abrir WhatsApp"
+                              >
+                                <MaterialIcon icon="chat" size={16} />
+                              </a>
+                            )}
+                          </div>
+                          <div>
+                            <span className="font-medium text-[#1b1c1d]">Franquia:</span> {getFranchiseName(sale.franchise_id)}
+                          </div>
+                          <div>
+                            <span className="font-medium text-[#1b1c1d]">Data:</span> {formatDateSafe(sale.sale_date)}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#4a3d3d]">
-                        <div>
-                          <span className="font-medium text-[#1b1c1d]">Telefone:</span> {sale.contact_phone}
-                        </div>
-                        <div>
-                          <span className="font-medium text-[#1b1c1d]">Franquia:</span> {getFranchiseName(sale.franchise_id)}
-                        </div>
-                        <div>
-                          <span className="font-medium text-[#1b1c1d]">Data:</span> {formatDateSafe(sale.sale_date)}
-                        </div>
+                      <div className="flex gap-2 ml-4">
+                        <LeadAnalysisModal sale={sale} />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditSale(sale)}
+                          className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
+                        >
+                          <MaterialIcon icon="edit" size={16} className="mr-2" />
+                          Editar
+                        </Button>
                       </div>
                     </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <LeadAnalysisModal sale={sale} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditSale(sale)}
-                        className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
-                      >
-                        <MaterialIcon icon="edit" size={16} className="mr-2" />
-                        Editar
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {filteredSales.length === 0 && !isLoading && (
               <div className="text-center py-16">
@@ -605,6 +852,36 @@ function SalesContent() {
               </div>
 
               <div>
+                <Label htmlFor="quick_phone" className="text-base text-[#1b1c1d]">
+                  Telefone / Contato <span className="text-[#4a3d3d]/60 text-sm">(digite para buscar)</span>
+                </Label>
+                <ContactAutocomplete
+                  id="quick_phone"
+                  value={quickForm.contact_phone}
+                  onChange={(val) => {
+                    setQuickForm({ ...quickForm, contact_phone: val });
+                    setQuickContactId(null);
+                  }}
+                  onSelect={(contact) => {
+                    setQuickForm({
+                      ...quickForm,
+                      contact_phone: contact.telefone || '',
+                      customer_name: contact.nome || quickForm.customer_name
+                    });
+                    setQuickContactId(contact.id);
+                  }}
+                  contacts={contacts}
+                  className="h-12 mt-1 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
+                />
+                {quickContactId && (
+                  <p className="text-xs text-[#775a19] mt-1 flex items-center gap-1">
+                    <MaterialIcon icon="person" size={14} />
+                    Contato vinculado
+                  </p>
+                )}
+              </div>
+
+              <div>
                 <Label htmlFor="quick_customer" className="text-base text-[#1b1c1d]">Nome do Cliente *</Label>
                 <Input
                   id="quick_customer"
@@ -613,17 +890,6 @@ function SalesContent() {
                   onChange={(e) => setQuickForm({ ...quickForm, customer_name: e.target.value })}
                   className="h-12 mt-1 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                   required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="quick_phone" className="text-base text-[#1b1c1d]">Telefone <span className="text-[#4a3d3d]/60 text-sm">(opcional)</span></Label>
-                <Input
-                  id="quick_phone"
-                  placeholder="(11) 99999-9999"
-                  value={quickForm.contact_phone}
-                  onChange={(e) => setQuickForm({ ...quickForm, contact_phone: e.target.value })}
-                  className="h-12 mt-1 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                 />
               </div>
 
@@ -641,7 +907,7 @@ function SalesContent() {
         {/* Modal do Formulário Completo */}
         {showForm && (
           <Dialog open={showForm} onOpenChange={() => setShowForm(false)}>
-            <DialogContent className="max-w-2xl rounded-2xl">
+            <DialogContent className="max-w-2xl rounded-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-between font-plus-jakarta text-[#1b1c1d]">
                   <span>{editingSale ? 'Editar Venda' : 'Nova Venda'}</span>
@@ -670,16 +936,33 @@ function SalesContent() {
                   </div>
 
                   <div>
-                    <Label htmlFor="value" className="text-[#1b1c1d]">Valor da Venda *</Label>
-                    <Input
-                      id="value"
-                      type="number"
-                      step="0.01"
-                      value={formData.value}
-                      onChange={(e) => setFormData({...formData, value: e.target.value})}
-                      required
+                    <Label htmlFor="contact_phone" className="text-[#1b1c1d]">
+                      Telefone / Contato <span className="text-[#4a3d3d]/60 text-sm">(digite para buscar)</span>
+                    </Label>
+                    <ContactAutocomplete
+                      id="contact_phone"
+                      value={formData.contact_phone}
+                      onChange={(val) => {
+                        setFormData({...formData, contact_phone: val});
+                        setFormContactId(null);
+                      }}
+                      onSelect={(contact) => {
+                        setFormData({
+                          ...formData,
+                          contact_phone: contact.telefone || '',
+                          customer_name: contact.nome || formData.customer_name
+                        });
+                        setFormContactId(contact.id);
+                      }}
+                      contacts={contacts}
                       className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                     />
+                    {formContactId && (
+                      <p className="text-xs text-[#775a19] mt-1 flex items-center gap-1">
+                        <MaterialIcon icon="person" size={14} />
+                        Contato vinculado
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -688,16 +971,6 @@ function SalesContent() {
                       id="customer_name"
                       value={formData.customer_name}
                       onChange={(e) => setFormData({...formData, customer_name: e.target.value})}
-                      className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="contact_phone" className="text-[#1b1c1d]">Telefone</Label>
-                    <Input
-                      id="contact_phone"
-                      value={formData.contact_phone}
-                      onChange={(e) => setFormData({...formData, contact_phone: e.target.value})}
                       className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                     />
                   </div>
@@ -732,7 +1005,124 @@ function SalesContent() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div>
+                    <Label htmlFor="value" className="text-[#1b1c1d]">
+                      Valor da Venda * {saleItems.length > 0 && <span className="text-[#4a3d3d]/60 text-sm">(calculado dos produtos)</span>}
+                    </Label>
+                    <Input
+                      id="value"
+                      type="number"
+                      step="0.01"
+                      value={formData.value}
+                      onChange={(e) => setFormData({...formData, value: e.target.value})}
+                      required
+                      readOnly={saleItems.length > 0}
+                      className={`bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 ${saleItems.length > 0 ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    />
+                  </div>
                 </div>
+
+                {/* Produtos da Venda */}
+                {!editingSale && (
+                  <div className="border-t border-[#291715]/10 pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-[#1b1c1d] text-base font-semibold flex items-center gap-2">
+                        <MaterialIcon icon="inventory_2" size={18} className="text-[#b91c1c]" />
+                        Produtos
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddSaleItem}
+                        className="border-[#b91c1c] text-[#b91c1c] rounded-xl hover:bg-[#b91c1c]/5"
+                      >
+                        <MaterialIcon icon="add" size={16} className="mr-1" />
+                        Adicionar Produto
+                      </Button>
+                    </div>
+
+                    {saleItems.length === 0 ? (
+                      <p className="text-sm text-[#4a3d3d]/60 text-center py-3">
+                        Nenhum produto adicionado. Use o valor total acima ou adicione produtos.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {saleItems.map((item, index) => (
+                          <div key={index} className="bg-[#f5f3f4] rounded-xl p-3">
+                            <div className="grid grid-cols-12 gap-2 items-end">
+                              <div className="col-span-5">
+                                <Label className="text-xs text-[#534343]">Produto</Label>
+                                <Select
+                                  value={item.inventory_item_id || undefined}
+                                  onValueChange={(val) => handleSaleItemChange(index, 'inventory_item_id', val)}
+                                >
+                                  <SelectTrigger className="bg-white border-none rounded-lg text-sm h-9">
+                                    <SelectValue placeholder="Selecione..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {franchiseInventory.map(inv => (
+                                      <SelectItem key={inv.id} value={inv.id}>
+                                        {inv.product_name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="col-span-2">
+                                <Label className="text-xs text-[#534343]">Qtd</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={item.quantity}
+                                  onChange={(e) => handleSaleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                                  className="bg-white border-none rounded-lg text-sm h-9"
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <Label className="text-xs text-[#534343]">Preço Un.</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={item.unit_price}
+                                  onChange={(e) => handleSaleItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                                  className="bg-white border-none rounded-lg text-sm h-9"
+                                />
+                              </div>
+                              <div className="col-span-2 text-right">
+                                <Label className="text-xs text-[#534343]">Subtotal</Label>
+                                <p className="text-sm font-semibold text-[#1b1c1d] h-9 flex items-center justify-end">
+                                  {formatCurrency(item.quantity * item.unit_price)}
+                                </p>
+                              </div>
+                              <div className="col-span-1 flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveSaleItem(index)}
+                                  className="h-9 w-9 p-0 text-[#b91c1c] hover:bg-[#b91c1c]/10 rounded-lg"
+                                >
+                                  <MaterialIcon icon="close" size={16} />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+
+                        <div className="flex justify-end pt-2 pr-12">
+                          <div className="text-right">
+                            <span className="text-sm font-bold text-[#534343] uppercase tracking-wider">Total: </span>
+                            <span className="text-lg font-bold text-[#b91c1c]">{formatCurrency(saleItemsTotal)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-4">
                   <div>
