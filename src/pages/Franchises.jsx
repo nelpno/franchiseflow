@@ -30,6 +30,9 @@ export default function Franchises() {
   const [editingStaffRole, setEditingStaffRole] = useState(null); // { userId, currentRole }
   const [staffNewRole, setStaffNewRole] = useState("");
   const [deletingStaff, setDeletingStaff] = useState(null);
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [addStaffEmail, setAddStaffEmail] = useState("");
+  const [addStaffRole, setAddStaffRole] = useState("manager");
 
   // Permissions dialog
   const [editingPermissions, setEditingPermissions] = useState(null); // franchise object
@@ -164,6 +167,40 @@ export default function Franchises() {
     } catch (error) {
       console.error("Erro ao excluir usuario:", error);
       toast.error("Erro ao excluir usuario.");
+    }
+  };
+
+  const handleAddStaff = async () => {
+    if (!addStaffEmail) return;
+    try {
+      // Procurar usuário existente pelo email
+      const existingUser = users.find((u) => u.email === addStaffEmail);
+      if (existingUser) {
+        await User.update(existingUser.id, { role: addStaffRole });
+        toast.success(`${existingUser.full_name || addStaffEmail} agora é ${addStaffRole === "admin" ? "Admin" : "Gerente"}`);
+      } else {
+        toast.error("Usuário não encontrado. Ele precisa criar conta primeiro.");
+        return;
+      }
+      setShowAddStaff(false);
+      setAddStaffEmail("");
+      setAddStaffRole("manager");
+      loadData();
+    } catch (error) {
+      console.error("Erro ao adicionar membro:", error);
+      toast.error("Erro ao adicionar membro à equipe.");
+    }
+  };
+
+  const handleDeleteFranchiseQuick = async (e, franchise) => {
+    e.stopPropagation();
+    try {
+      await Franchise.delete(franchise.id);
+      toast.success(`Franquia ${franchise.city} excluída.`);
+      loadData();
+    } catch (error) {
+      console.error("Erro ao excluir franquia:", error);
+      toast.error("Erro ao excluir franquia.");
     }
   };
 
@@ -364,6 +401,16 @@ export default function Franchises() {
               <CollapsibleContent>
                 <div className="px-6 pb-5 border-t border-[#291715]/5">
                   <div className="mt-4 space-y-3">
+                    <div className="flex justify-end mb-2">
+                      <Button
+                        size="sm"
+                        className="bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl text-xs h-8"
+                        onClick={() => setShowAddStaff(true)}
+                      >
+                        <MaterialIcon icon="person_add" size={14} className="mr-1" />
+                        Adicionar Membro
+                      </Button>
+                    </div>
                     {staffUsers.length === 0 ? (
                       <p className="text-sm text-[#534343] py-4 text-center">Nenhum membro na equipe</p>
                     ) : (
@@ -521,6 +568,14 @@ export default function Franchises() {
                         >
                           <MaterialIcon icon="mail" size={14} className="mr-1" />
                           Convidar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs h-8 rounded-lg text-[#b91c1c] hover:bg-[#b91c1c]/10"
+                          onClick={(e) => handleDeleteFranchiseQuick(e, franchise)}
+                        >
+                          <MaterialIcon icon="delete" size={14} />
                         </Button>
                       </div>
                     )}
@@ -803,6 +858,56 @@ export default function Franchises() {
                 >
                   <MaterialIcon icon="send" size={16} className="mr-2" />
                   {isSendingInvite ? "Enviando..." : "Enviar Convite"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Staff Dialog */}
+        <Dialog open={showAddStaff} onOpenChange={setShowAddStaff}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
+                <MaterialIcon icon="person_add" size={20} className="text-[#d4af37]" />
+                Adicionar Membro à Equipe
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div>
+                <Label className="text-[#1b1c1d]">Email do usuário</Label>
+                <Input
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={addStaffEmail}
+                  onChange={(e) => setAddStaffEmail(e.target.value)}
+                  className="mt-1 bg-[#e9e8e9] border-none rounded-xl"
+                />
+                <p className="text-xs text-[#534343] mt-1">O usuário precisa ter conta criada no sistema</p>
+              </div>
+              <div>
+                <Label className="text-[#1b1c1d]">Cargo</Label>
+                <Select value={addStaffRole} onValueChange={setAddStaffRole}>
+                  <SelectTrigger className="mt-1 bg-[#e9e8e9] border-none rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Gerente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setShowAddStaff(false)} className="rounded-xl">
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleAddStaff}
+                  disabled={!addStaffEmail}
+                  className="bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl"
+                >
+                  <MaterialIcon icon="person_add" size={16} className="mr-2" />
+                  Adicionar
                 </Button>
               </div>
             </div>
