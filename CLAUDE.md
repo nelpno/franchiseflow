@@ -36,6 +36,22 @@ Fluxo de convite: admin cria franquia + email → convite automático → franqu
 - Constantes: `PAYMENT_METHODS`, `DELIVERY_METHODS`, `BOT_PERSONALITIES`, `PIX_KEY_TYPES`, `WEEKDAYS`
 - SEMPRE usar essas funções em vez de filtrar manualmente por managed_franchise_ids
 
+### Contatos/Leads (contacts) — FASE 5
+- Tabela `contacts` unificada substitui 45+ tabelas do projeto clientes_franquias (Supabase kypcxjlinqdonfljefxu)
+- `franchise_id` = evolution_instance_id da franquia
+- `status` pipeline: novo_lead → em_negociacao → cliente → recorrente → remarketing → perdido
+- `purchase_count`, `total_spent`, `last_purchase_at` atualizados por trigger `on_sale_created`
+- `sales.contact_id` FK opcional vincula venda a contato
+- Bot n8n faz INSERT (franchise_id, telefone, nome) e UPDATE (last_contact_at) — campos simples
+- UI e triggers cuidam dos campos de inteligência (status, purchase_count, etc.)
+- Entity: `Contact` em `src/entities/all.js`
+
+### Auto-vinculação User↔Franchise (FASE 5)
+- Trigger `auto_link_franchise` em profiles: quando user cria conta, checa franchise_invites pendentes
+- Se invite existe: auto-adiciona franchise UUID + evolution_instance_id em managed_franchise_ids
+- Suporta múltiplos convites por franquia (dono + cônjuge, por exemplo)
+- Elimina passo manual de vincular em UserManagement
+
 ### Integração Vendedor Genérico (n8n)
 - Workflow ID: PALRV1RqD3opHMzk (teste.dynamicagents.tech)
 - Lê configurações da tabela `franchise_configurations` (dadosunidade — AINDA via Base44, migrar para Supabase)
@@ -143,6 +159,10 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 22. AdminDashboard tem header fixo próprio (AdminHeader) — Layout top bar é ESCONDIDA quando admin está no Dashboard
 23. "Meu Vendedor" é wizard de 6 passos — componentes em `src/components/vendedor/`
 24. Upload de catálogo vai para Supabase Storage bucket `catalog-images` (público)
+25. Entity de contatos é `Contact` (tabela `contacts`) — usar `franchise_id` = `evolution_instance_id`
+26. Bot n8n grava apenas: franchise_id, telefone, nome, last_contact_at — NÃO gravar status, purchase_count etc (triggers cuidam)
+27. Trigger `auto_link_franchise` vincula user a franchise automaticamente via invite — suporta múltiplos emails por franquia
+28. Catálogo foi removido (FASE 4) — NÃO existe mais Catalog.jsx nem CatalogProduct entity
 
 ## Scripts
 ```bash
@@ -157,7 +177,10 @@ npm run typecheck # TypeScript check
 - Sprint 2: Dashboard por role (admin vs franqueado) ✅
 - Sprint 3: UX improvements (3 ondas — bugs, labels, features) ✅
 - FASE 4: Design Stitch + Material Symbols + padronização Atelier ✅
-- **FASE 5**: Unificar Franqueados+Usuários, migrar dadosunidade Base44→Supabase, ajustar prompt n8n, deploy Docker (PRÓXIMO)
+- **FASE 5 Etapa 1**: Tabela contacts + auto-vinculação + triggers ✅
+- **FASE 5 Etapa 2**: Adaptar vendedor genérico n8n (7 nós + dadosunidade Base44→Supabase) (PRÓXIMO)
+- **FASE 5 Etapa 3**: UI "Meus Clientes" + Sales vinculada a contatos + Franqueados unificado
+- **FASE 5 Etapa 4**: Limpeza (remover Base44, pausar clientes_franquias, deploy Docker)
 
 ## Supabase Management API
 - Project ref: `sulgicnqqopyhulglakd`

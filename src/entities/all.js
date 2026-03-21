@@ -81,6 +81,7 @@ export const Message = createEntity('messages');
 
 // Novas entidades (FASE 3)
 export const InventoryItem = createEntity('inventory_items');
+export const Contact = createEntity('contacts');
 
 export const FranchiseInvite = createEntity('franchise_invites');
 export const SalesGoal = createEntity('sales_goals');
