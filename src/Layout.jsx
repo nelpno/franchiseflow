@@ -25,28 +25,24 @@ import { format } from "date-fns";
 const navigationItems = [
   {
     title: "Dashboard",
-    franchiseeLabel: "Minha Loja",
+    franchiseeLabel: "Início",
     adminLabel: "Painel Geral",
     url: createPageUrl("Dashboard"),
-    materialIcon: "dashboard",
+    materialIcon: "wb_sunny",
+    adminSection: "Principal",
+  },
+  {
+    title: "Minha Loja",
+    url: createPageUrl("MinhaLoja"),
+    materialIcon: "storefront",
+    franchiseeOnly: true,
     adminSection: "Principal",
   },
   {
     title: "Meus Clientes",
     url: createPageUrl("MyContacts"),
-    materialIcon: "group",
-    adminSection: "Principal",
-  },
-  {
-    title: "Vendas",
-    url: createPageUrl("Sales"),
-    materialIcon: "shopping_cart",
-    adminSection: "Principal",
-  },
-  {
-    title: "Estoque",
-    url: createPageUrl("Inventory"),
-    materialIcon: "inventory_2",
+    materialIcon: "people",
+    franchiseeOnly: true,
     adminSection: "Principal",
   },
   {
@@ -56,10 +52,10 @@ const navigationItems = [
     adminSection: "Principal",
   },
   {
-    title: "Meu Checklist",
-    franchiseeLabel: "Checklist",
-    url: createPageUrl("MyChecklist"),
-    materialIcon: "fact_check",
+    title: "Meu Vendedor",
+    url: createPageUrl("FranchiseSettings"),
+    materialIcon: "smart_toy",
+    franchiseeOnly: true,
     adminSection: "Principal",
   },
   {
@@ -71,9 +67,9 @@ const navigationItems = [
   },
   {
     title: "Configurações",
-    franchiseeLabel: "Meu Vendedor",
     url: createPageUrl("FranchiseSettings"),
     materialIcon: "support_agent",
+    adminOnly: true,
     adminSection: "Gestão",
   },
   {
@@ -101,11 +97,11 @@ const navigationItems = [
 
 // Mobile bottom nav items for franchisee
 const mobileBottomNav = [
-  { label: "Início", materialIcon: "dashboard", url: createPageUrl("Dashboard") },
-  { label: "Estoque", materialIcon: "inventory_2", url: createPageUrl("Inventory") },
-  { label: "add", materialIcon: "add", url: createPageUrl("Sales"), isFab: true },
-  { label: "Vendas", materialIcon: "shopping_cart", url: createPageUrl("Sales") },
-  { label: "Perfil", materialIcon: "account_circle", url: createPageUrl("FranchiseSettings") },
+  { label: "Início", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
+  { label: "Minha Loja", materialIcon: "storefront", url: createPageUrl("MinhaLoja") },
+  { label: "Vender", materialIcon: "add", url: "/MinhaLoja?tab=lancar", isFab: true },
+  { label: "Clientes", materialIcon: "people", url: createPageUrl("MyContacts") },
+  { label: "Vendedor", materialIcon: "smart_toy", url: createPageUrl("FranchiseSettings") },
 ];
 
 export default function Layout({ children, currentPageName }) {
@@ -159,6 +155,7 @@ export default function Layout({ children, currentPageName }) {
   const filteredNavigationItems = navigationItems
     .filter((item) => {
       if (item.adminOnly) return isAdmin;
+      if (item.franchiseeOnly) return !isAdmin;
       if (item.showOnboarding) {
         return isAdmin || !onboardingApproved;
       }
