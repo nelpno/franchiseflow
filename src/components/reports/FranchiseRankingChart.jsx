@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 
-const RANK_COLORS = ['#d4af37', '#9a8c8c', '#cd7f32', '#a80012', '#b91c1c', '#534343', '#7a6b6b', '#291715'];
+const RANK_COLORS = ['#d4af37', '#9a8c8c', '#cd7f32', '#a80012', '#b91c1c', '#4a3d3d', '#7a6b6b', '#291715'];
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
@@ -11,8 +11,8 @@ const CustomTooltip = ({ active, payload }) => {
   return (
     <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-[#1b1c1d] mb-1">{d.name}</p>
-      <p className="text-[#534343]">Faturamento: <span className="font-semibold text-[#1b1c1d]">{formatBRL(d.revenue)}</span></p>
-      <p className="text-[#534343]">Vendas: <span className="font-semibold text-[#1b1c1d]">{d.salesCount}</span></p>
+      <p className="text-[#4a3d3d]">Faturamento: <span className="font-semibold text-[#1b1c1d]">{formatBRL(d.revenue)}</span></p>
+      <p className="text-[#4a3d3d]">Vendas: <span className="font-semibold text-[#1b1c1d]">{d.salesCount}</span></p>
     </div>
   );
 };

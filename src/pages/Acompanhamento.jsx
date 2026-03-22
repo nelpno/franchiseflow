@@ -217,7 +217,7 @@ export default function Acompanhamento() {
     return (
       <div className="p-8 text-center">
         <h1 className="text-2xl font-bold text-red-600">Acesso Negado</h1>
-        <p className="text-[#534343] mt-2">Apenas administradores podem acessar esta página.</p>
+        <p className="text-[#4a3d3d] mt-2">Apenas administradores podem acessar esta página.</p>
         <Button className="mt-4" onClick={() => navigate(createPageUrl("Dashboard"))}>
           Ir para o Dashboard
         </Button>
@@ -236,7 +236,7 @@ export default function Acompanhamento() {
               <MaterialIcon icon="trending_up" size={28} className="text-[#b91c1c] shrink-0" />
               Acompanhamento
             </h1>
-            <p className="text-[#534343] text-sm mt-1">
+            <p className="text-[#4a3d3d] text-sm mt-1">
               Monitoramento de checklists · Atualizado às {format(lastRefresh, "HH:mm")}
             </p>
           </div>
@@ -252,10 +252,10 @@ export default function Acompanhamento() {
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-1">
                 <MaterialIcon icon="trending_up" size={20} className={adherenciaTextColor} />
-                <span className="text-sm font-medium text-[#534343]">Aderência Geral</span>
+                <span className="text-sm font-medium text-[#4a3d3d]">Aderência Geral</span>
               </div>
               <div className={`text-2xl sm:text-4xl font-bold ${adherenciaTextColor}`}>{avgAdherencia}%</div>
-              <div className="text-xs text-[#534343] mt-1">Média últimos 7 dias</div>
+              <div className="text-xs text-[#4a3d3d] mt-1">Média últimos 7 dias</div>
             </CardContent>
           </Card>
 
@@ -263,10 +263,10 @@ export default function Acompanhamento() {
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-1">
                 <MaterialIcon icon="check_circle" size={20} className="text-[#16a34a]" />
-                <span className="text-sm font-medium text-[#534343]">Franqueados Verdes</span>
+                <span className="text-sm font-medium text-[#4a3d3d]">Franqueados Verdes</span>
               </div>
               <div className="text-2xl sm:text-4xl font-bold text-[#15803d]">{greenCount}</div>
-              <div className="text-xs text-[#534343] mt-1">5+ dias completos/semana</div>
+              <div className="text-xs text-[#4a3d3d] mt-1">5+ dias completos/semana</div>
             </CardContent>
           </Card>
 
@@ -274,21 +274,21 @@ export default function Acompanhamento() {
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-1">
                 <MaterialIcon icon="warning" size={20} className="text-red-600" />
-                <span className="text-sm font-medium text-[#534343]">Em Alerta</span>
+                <span className="text-sm font-medium text-[#4a3d3d]">Em Alerta</span>
               </div>
               <div className="text-2xl sm:text-4xl font-bold text-red-700">{alertCount}</div>
-              <div className="text-xs text-[#534343] mt-1">Amarelos + Vermelhos</div>
+              <div className="text-xs text-[#4a3d3d] mt-1">Amarelos + Vermelhos</div>
             </CardContent>
           </Card>
 
-          <Card className="bg-[#f5f3f4] border-[#291715]/5 border">
+          <Card className="bg-[#fbf9fa] border-[#291715]/5 border">
             <CardContent className="p-5">
               <div className="flex items-center gap-3 mb-1">
                 <MaterialIcon icon="group" size={20} className="text-[#b91c1c]" />
-                <span className="text-sm font-medium text-[#534343]">Total Ativos</span>
+                <span className="text-sm font-medium text-[#4a3d3d]">Total Ativos</span>
               </div>
               <div className="text-2xl sm:text-4xl font-bold text-[#b91c1c]">{totalActive}</div>
-              <div className="text-xs text-[#534343] mt-1">Franquias ativas</div>
+              <div className="text-xs text-[#4a3d3d] mt-1">Franquias ativas</div>
             </CardContent>
           </Card>
         </div>
@@ -308,7 +308,7 @@ export default function Acompanhamento() {
                     <div className="w-3 h-3 rounded-full bg-[#b91c1c] animate-pulse shrink-0" />
                     <div>
                       <span className="font-semibold text-[#1b1c1d]">{franchise.owner_name}</span>
-                      <span className="text-[#534343] text-sm ml-2">· {franchise.city}</span>
+                      <span className="text-[#4a3d3d] text-sm ml-2">· {franchise.city}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-6 sm:ml-0">
@@ -367,14 +367,14 @@ export default function Acompanhamento() {
         <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden">
           <div className="overflow-x-auto">
             {isLoading ? (
-              <div className="p-12 text-center text-[#534343]">
+              <div className="p-12 text-center text-[#4a3d3d]">
                 <MaterialIcon icon="refresh" size={32} className="animate-spin mx-auto mb-3 text-[#b91c1c]" />
                 Carregando dados...
               </div>
             ) : (
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#f5f3f4] text-left text-xs font-semibold text-[#534343] uppercase tracking-wider">
+                  <tr className="bg-[#fbf9fa] text-left text-xs font-semibold text-[#4a3d3d] uppercase tracking-wider">
                     <th className="px-4 py-3 w-10">Status</th>
                     <th className="px-4 py-3">Franqueado</th>
                     <th className="px-4 py-3">Cidade</th>
@@ -388,14 +388,14 @@ export default function Acompanhamento() {
                   {filtered.map((item, idx) => (
                     <tr
                       key={item.franchise.id}
-                      className={`border-t border-[#f5f3f4] cursor-pointer hover:bg-[#f5f3f4] transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#fbf9fa]/50"}`}
+                      className={`border-t border-[#fbf9fa] cursor-pointer hover:bg-[#fbf9fa] transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#fbf9fa]/50"}`}
                       onClick={() => setSelectedFranchise(item)}
                     >
                       <td className="px-4 py-3">
                         <SemaforoCircle color={item.semaforo} />
                       </td>
                       <td className="px-4 py-3 font-semibold text-[#1b1c1d]">{item.franchise.owner_name}</td>
-                      <td className="px-4 py-3 text-[#534343]">{item.franchise.city}</td>
+                      <td className="px-4 py-3 text-[#4a3d3d]">{item.franchise.city}</td>
                       <td className="px-4 py-3 text-center">
                         <TodayStatus checklists={item.checklists7days} />
                       </td>
@@ -407,15 +407,15 @@ export default function Acompanhamento() {
                               style={{ width: `${item.adherencia}%` }}
                             />
                           </div>
-                          <span className="text-sm font-semibold text-[#291715] w-10 text-right">{item.adherencia}%</span>
+                          <span className="text-sm font-semibold text-[#1b1c1d] w-10 text-right">{item.adherencia}%</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`font-bold ${item.streak >= 7 ? "text-[#16a34a]" : item.streak >= 3 ? "text-[#d4af37]" : "text-[#534343]"}`}>
+                        <span className={`font-bold ${item.streak >= 7 ? "text-[#16a34a]" : item.streak >= 3 ? "text-[#d4af37]" : "text-[#4a3d3d]"}`}>
                           {item.streak > 0 ? `${item.streak}d` : "-"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-[#534343] text-sm">
+                      <td className="px-4 py-3 text-[#4a3d3d] text-sm">
                         {item.lastActivity
                           ? format(parseISO(item.lastActivity), "dd/MM/yyyy", { locale: ptBR })
                           : <span className="text-red-400">Sem registro</span>}
@@ -457,11 +457,11 @@ export default function Acompanhamento() {
                   <span className="text-2xl w-8 text-center">{medals[idx]}</span>
                   <div className="flex-1">
                     <div className="font-semibold text-[#1b1c1d]">{item.franchise.owner_name}</div>
-                    <div className="text-sm text-[#534343]">{item.franchise.city}</div>
+                    <div className="text-sm text-[#4a3d3d]">{item.franchise.city}</div>
                   </div>
                   <div className="text-right">
                     <div className={`font-bold text-lg ${item.adherencia >= 70 ? "text-[#16a34a]" : "text-[#d4af37]"}`}>{item.adherencia}%</div>
-                    <div className="text-xs text-[#534343]">{item.streak} dias seguidos</div>
+                    <div className="text-xs text-[#4a3d3d]">{item.streak} dias seguidos</div>
                   </div>
                 </div>
               ))}

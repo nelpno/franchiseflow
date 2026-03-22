@@ -136,7 +136,7 @@ export default function TabReposicao({
                     <span className="text-sm font-medium text-[#1b1c1d] truncate block">
                       {item.name}
                     </span>
-                    <span className="text-xs text-[#534343]">
+                    <span className="text-xs text-[#4a3d3d]">
                       Estoque: {item.stock} · Giro: {item.weeklyTurnover.toFixed(1)}/sem
                     </span>
                   </div>
@@ -144,7 +144,7 @@ export default function TabReposicao({
                     <span className="text-sm font-bold text-[#b91c1c] font-mono-numbers">
                       +{item.suggestion}
                     </span>
-                    <span className="text-xs text-[#534343] block">un</span>
+                    <span className="text-xs text-[#4a3d3d] block">un</span>
                   </div>
                 </div>
               ))}
@@ -170,7 +170,7 @@ export default function TabReposicao({
           <h2 className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
             Reposição de Estoque
           </h2>
-          <p className="text-sm text-[#534343]">
+          <p className="text-sm text-[#4a3d3d]">
             Faça pedidos para a fábrica Maxi Massas
           </p>
         </div>

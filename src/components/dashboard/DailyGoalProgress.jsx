@@ -19,7 +19,7 @@ export default function DailyGoalProgress({ todayRevenue, dailyGoal }) {
             {percentage}% concluída
           </span>
         </div>
-        <div className="w-full bg-[#f5f3f4] h-3 rounded-full mb-4 overflow-hidden">
+        <div className="w-full bg-[#fbf9fa] h-3 rounded-full mb-4 overflow-hidden">
           <div
             className="h-full bg-[#b91c1c] rounded-full transition-all duration-500"
             style={{ width: `${percentage}%` }}

@@ -143,14 +143,14 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-[#291715]/5">
-        <CardHeader className="flex flex-row items-center justify-between bg-[#f5f3f4] border-b border-[#291715]/5">
+        <CardHeader className="flex flex-row items-center justify-between bg-[#fbf9fa] border-b border-[#291715]/5">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[#b91c1c] text-white rounded-lg">
               <MaterialIcon icon="apartment" size={20} />
             </div>
             <div>
               <CardTitle className="text-xl font-plus-jakarta text-[#1b1c1d]">Nova Franquia</CardTitle>
-              <p className="text-sm text-[#534343] mt-1">
+              <p className="text-sm text-[#4a3d3d] mt-1">
                 Preencha os dados. O sistema configura tudo automaticamente.
               </p>
             </div>
@@ -164,7 +164,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Dados da Unidade */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-[#534343] uppercase tracking-wider">Dados da Unidade</h3>
+              <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Dados da Unidade</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-semibold text-[#4a3d3d]">
@@ -202,7 +202,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                         <button
                           key={`${city.name}-${city.uf}-${i}`}
                           type="button"
-                          className={`w-full text-left px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl ${i === highlightedIndex ? 'bg-[#b91c1c]/10 text-[#b91c1c]' : 'hover:bg-[#f5f3f4]'}`}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl ${i === highlightedIndex ? 'bg-[#b91c1c]/10 text-[#b91c1c]' : 'hover:bg-[#fbf9fa]'}`}
                           onClick={() => handleCitySelect(city)}
                           onMouseEnter={() => setHighlightedIndex(i)}
                         >
@@ -218,7 +218,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
 
             {/* Dados do Franqueado */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-[#534343] uppercase tracking-wider">Dados do Franqueado</h3>
+              <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Dados do Franqueado</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="owner_name" className="text-sm font-semibold text-[#4a3d3d]">
@@ -267,7 +267,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
             </div>
 
             {/* O que acontece automaticamente */}
-            <div className="bg-[#f5f3f4] border border-[#291715]/5 rounded-xl p-4">
+            <div className="bg-[#fbf9fa] border border-[#291715]/5 rounded-xl p-4">
               <h4 className="text-sm font-semibold text-[#b91c1c] mb-2">O que acontece ao criar:</h4>
               <ul className="text-sm text-[#4a3d3d] space-y-1">
                 <li>✓ Configurações da unidade criadas automaticamente</li>

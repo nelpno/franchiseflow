@@ -148,7 +148,7 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
 
       {/* Preview of what the bot will say */}
       {ranges.length > 0 && (
-        <div className="bg-[#f5f3f4] rounded-xl p-3 mt-2">
+        <div className="bg-[#fbf9fa] rounded-xl p-3 mt-2">
           <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">
             O vendedor vai dizer:
           </p>

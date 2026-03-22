@@ -52,7 +52,7 @@ export default function SmartActions({ contacts, franchiseId }) {
             <MaterialIcon icon="check_circle" size={28} className="text-[#16a34a]" />
           </div>
           <p className="text-sm font-medium text-[#1b1c1d]">Tudo em dia!</p>
-          <p className="text-xs text-[#534343] mt-1">
+          <p className="text-xs text-[#4a3d3d] mt-1">
             Nenhuma ação pendente.
           </p>
         </div>
@@ -125,7 +125,7 @@ export default function SmartActions({ contacts, franchiseId }) {
                 <button
                   onClick={() => handleDone(action)}
                   disabled={isLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-white/60 text-[#534343] hover:bg-white/80 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-white/60 text-[#4a3d3d] hover:bg-white/80 transition-colors disabled:opacity-50"
                 >
                   <MaterialIcon icon="check" size={16} />
                   {isLoading ? "..." : "Feito"}

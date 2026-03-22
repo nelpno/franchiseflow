@@ -167,7 +167,7 @@ function ReportsContent() {
               </div>
               Relatórios
             </h1>
-            <p className="text-[#534343] mt-1 text-sm md:text-base">
+            <p className="text-[#4a3d3d] mt-1 text-sm md:text-base">
               Visão executiva do desempenho das franquias
             </p>
           </div>
@@ -195,7 +195,7 @@ function ReportsContent() {
                 onClick={() => setPeriodPreset(p.key)}
                 className={periodPreset === p.key
                   ? 'bg-[#a80012] hover:bg-[#8a000f] text-white'
-                  : 'border-[#291715]/10 text-[#534343] hover:bg-[#a80012]/5 hover:text-[#a80012] hover:border-[#a80012]/20'
+                  : 'border-[#291715]/10 text-[#4a3d3d] hover:bg-[#a80012]/5 hover:text-[#a80012] hover:border-[#a80012]/20'
                 }
               >
                 {p.label}

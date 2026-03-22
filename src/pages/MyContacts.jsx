@@ -56,7 +56,7 @@ const STATUS_CONFIG = {
     label: "Perdido",
     badgeLabel: "Perdido",
     bg: "bg-[#e9e8e9]",
-    text: "text-[#534343]",
+    text: "text-[#4a3d3d]",
   },
 };
 
@@ -70,7 +70,7 @@ const FILTER_TABS = [
 ];
 
 const SOURCE_CONFIG = {
-  manual: { label: "Manual", bg: "bg-[#e9e8e9]", text: "text-[#534343]" },
+  manual: { label: "Manual", bg: "bg-[#e9e8e9]", text: "text-[#4a3d3d]" },
   bot: { label: "Bot", bg: "bg-[#16a34a]/10", text: "text-[#16a34a]" },
   whatsapp: { label: "WhatsApp", bg: "bg-[#075e54]/10", text: "text-[#075e54]" },
 };
@@ -289,7 +289,7 @@ export default function MyContacts() {
             <h1 className="text-xl md:text-2xl font-bold font-plus-jakarta text-[#1b1c1d]">
               Meus Clientes
             </h1>
-            <p className="text-sm text-[#534343]">
+            <p className="text-sm text-[#4a3d3d]">
               {contacts.length} {contacts.length === 1 ? "contato" : "contatos"}
             </p>
           </div>
@@ -308,7 +308,7 @@ export default function MyContacts() {
             <MaterialIcon
               icon={actionsExpanded ? "expand_less" : "expand_more"}
               size={18}
-              className="text-[#534343]"
+              className="text-[#4a3d3d]"
             />
           </button>
           {actionsExpanded && (
@@ -329,7 +329,7 @@ export default function MyContacts() {
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
                 isActive
                   ? "bg-[#b91c1c] text-white shadow-sm"
-                  : "bg-white text-[#534343] border border-[#291715]/10 hover:bg-[#fbf9fa]"
+                  : "bg-white text-[#4a3d3d] border border-[#291715]/10 hover:bg-[#fbf9fa]"
               }`}
             >
               {tab.label}
@@ -337,7 +337,7 @@ export default function MyContacts() {
                 className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
                   isActive
                     ? "bg-white/20 text-white"
-                    : "bg-[#e9e8e9] text-[#534343]"
+                    : "bg-[#e9e8e9] text-[#4a3d3d]"
                 }`}
               >
                 {count}
@@ -392,12 +392,12 @@ export default function MyContacts() {
       {filteredContacts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <div className="w-16 h-16 rounded-full bg-[#e9e8e9] flex items-center justify-center mb-4">
-            <MaterialIcon icon="group" size={32} className="text-[#534343]" />
+            <MaterialIcon icon="group" size={32} className="text-[#4a3d3d]" />
           </div>
           <h3 className="text-lg font-semibold text-[#1b1c1d] mb-1">
             Nenhum contato encontrado
           </h3>
-          <p className="text-sm text-[#534343] max-w-sm">
+          <p className="text-sm text-[#4a3d3d] max-w-sm">
             {searchTerm || activeFilter !== "todos"
               ? "Tente ajustar seus filtros ou busca."
               : "Os contatos das suas vendas e conversas aparecerão aqui."}
@@ -423,7 +423,7 @@ export default function MyContacts() {
                     <h3 className="font-semibold text-[#1b1c1d] truncate text-base">
                       {name}
                     </h3>
-                    <p className="text-sm text-[#534343] font-mono-numbers">
+                    <p className="text-sm text-[#4a3d3d] font-mono-numbers">
                       {formatPhone(phone)}
                     </p>
                   </div>
@@ -446,7 +446,7 @@ export default function MyContacts() {
                 </div>
 
                 {/* Purchase info or lead info */}
-                <div className="text-sm text-[#534343]">
+                <div className="text-sm text-[#4a3d3d]">
                   {hasPurchases ? (
                     <div className="flex items-center gap-1.5">
                       <MaterialIcon icon="shopping_bag" size={16} className="text-[#16a34a] shrink-0" />
@@ -461,7 +461,7 @@ export default function MyContacts() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      <MaterialIcon icon="schedule" size={16} className="text-[#534343] shrink-0" />
+                      <MaterialIcon icon="schedule" size={16} className="text-[#4a3d3d] shrink-0" />
                       <span>
                         Novo lead
                         {contact.created_at
@@ -474,7 +474,7 @@ export default function MyContacts() {
 
                 {/* Bairro */}
                 {contact.bairro && (
-                  <div className="flex items-center gap-1.5 text-sm text-[#534343]">
+                  <div className="flex items-center gap-1.5 text-sm text-[#4a3d3d]">
                     <MaterialIcon icon="location_on" size={16} className="shrink-0" />
                     <span className="truncate">{contact.bairro}</span>
                   </div>
@@ -482,7 +482,7 @@ export default function MyContacts() {
 
                 {/* Notes preview */}
                 {contact.notas && (
-                  <p className="text-xs text-[#534343]/70 line-clamp-2 italic">
+                  <p className="text-xs text-[#4a3d3d]/70 line-clamp-2 italic">
                     {contact.notas.length > 80
                       ? contact.notas.slice(0, 80) + "..."
                       : contact.notas}
@@ -529,7 +529,7 @@ export default function MyContacts() {
                   </button>
                   <button
                     onClick={() => openEdit(contact)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#e9e8e9] text-[#534343] hover:bg-[#e9e8e9]/80 transition-colors ml-auto"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#e9e8e9] text-[#4a3d3d] hover:bg-[#e9e8e9]/80 transition-colors ml-auto"
                   >
                     <MaterialIcon icon="edit" size={16} />
                     Editar
@@ -582,7 +582,7 @@ export default function MyContacts() {
                 id="edit-telefone"
                 value={formatPhone(editForm.telefone)}
                 readOnly
-                className="bg-[#e9e8e9]/50 border-none rounded-xl text-[#534343] cursor-not-allowed"
+                className="bg-[#e9e8e9]/50 border-none rounded-xl text-[#4a3d3d] cursor-not-allowed"
               />
             </div>
 

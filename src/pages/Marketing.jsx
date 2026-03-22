@@ -765,7 +765,7 @@ function FileCard({ file, isAdmin, onDelete }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-[#534343] hover:bg-gray-100 px-2 text-xs"
+                className="text-[#4a3d3d] hover:bg-gray-100 px-2 text-xs"
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
               >

@@ -98,7 +98,7 @@ export default function NotificationBell({ size = 20 }) {
 
           <div className="overflow-y-auto max-h-80">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-[#534343]/60">
+              <div className="flex flex-col items-center justify-center py-8 text-[#4a3d3d]/60">
                 <MaterialIcon icon="notifications_none" size={32} />
                 <p className="text-sm mt-2">Nenhuma notificação</p>
               </div>
@@ -107,17 +107,17 @@ export default function NotificationBell({ size = 20 }) {
                 <button
                   key={n.id}
                   onClick={() => handleClick(n)}
-                  className={`w-full text-left px-4 py-3 flex gap-3 items-start hover:bg-[#f5f3f4] transition-colors border-b border-[#291715]/5 last:border-b-0 ${!n.read ? 'bg-[#fdf3f2]' : ''}`}
+                  className={`w-full text-left px-4 py-3 flex gap-3 items-start hover:bg-[#fbf9fa] transition-colors border-b border-[#291715]/5 last:border-b-0 ${!n.read ? 'bg-[#fdf3f2]' : ''}`}
                 >
                   <div className={`p-1.5 rounded-lg shrink-0 ${TYPE_STYLES[n.type] || TYPE_STYLES.info}`}>
                     <MaterialIcon icon={n.icon || 'notifications'} size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${!n.read ? 'font-semibold text-[#1b1c1d]' : 'text-[#534343]'}`}>
+                    <p className={`text-sm ${!n.read ? 'font-semibold text-[#1b1c1d]' : 'text-[#4a3d3d]'}`}>
                       {n.title}
                     </p>
-                    <p className="text-xs text-[#534343]/70 mt-0.5 truncate">{n.message}</p>
-                    <p className="text-[10px] text-[#534343]/50 mt-1">
+                    <p className="text-xs text-[#4a3d3d]/70 mt-0.5 truncate">{n.message}</p>
+                    <p className="text-[10px] text-[#4a3d3d]/50 mt-1">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                     </p>
                   </div>

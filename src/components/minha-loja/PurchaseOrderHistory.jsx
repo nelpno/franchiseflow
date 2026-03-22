@@ -96,7 +96,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
         <h4 className="text-sm font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
           Nenhum pedido realizado ainda.
         </h4>
-        <p className="text-xs text-[#534343]">
+        <p className="text-xs text-[#4a3d3d]">
           Faca seu primeiro pedido clicando em "Fazer Pedido" acima.
         </p>
       </div>
@@ -125,7 +125,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
               <button
                 type="button"
                 onClick={() => toggleExpand(order.id)}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-[#f5f3f4] transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-[#fbf9fa] transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -145,7 +145,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                     </span>
 
                     {order.estimated_delivery && (
-                      <span className="text-xs text-[#534343] flex items-center gap-1">
+                      <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
                         <MaterialIcon icon="calendar_today" size={12} />
                         Previsao:{" "}
                         {format(new Date(order.estimated_delivery), "dd/MM/yyyy", {
@@ -155,7 +155,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                     )}
 
                     {order.freight_cost != null && parseFloat(order.freight_cost) > 0 && (
-                      <span className="text-xs text-[#534343] flex items-center gap-1">
+                      <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
                         <MaterialIcon icon="local_shipping" size={12} />
                         Frete: {formatBRL(order.freight_cost)}
                       </span>
@@ -166,7 +166,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                 <MaterialIcon
                   icon={isExpanded ? "expand_less" : "expand_more"}
                   size={20}
-                  className="text-[#534343] ml-2 flex-shrink-0"
+                  className="text-[#4a3d3d] ml-2 flex-shrink-0"
                 />
               </button>
 
@@ -182,7 +182,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                       />
                     </div>
                   ) : items.length === 0 ? (
-                    <p className="text-xs text-[#534343] py-3">Nenhum item encontrado.</p>
+                    <p className="text-xs text-[#4a3d3d] py-3">Nenhum item encontrado.</p>
                   ) : (
                     <div className="space-y-2 pt-3">
                       {items.map((item) => (
@@ -194,7 +194,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                             <span className="text-[#1b1c1d]">{item.product_name}</span>
                           </div>
                           <div className="flex items-center gap-4 ml-2">
-                            <span className="text-[#534343]">
+                            <span className="text-[#4a3d3d]">
                               {item.quantity} x {formatBRL(item.unit_price)}
                             </span>
                             <span className="font-medium text-[#1b1c1d] min-w-[80px] text-right">
@@ -209,7 +209,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
 
                       {order.notes && (
                         <div className="pt-2 mt-2 border-t border-[#cac0c0]/20">
-                          <p className="text-xs text-[#534343]">
+                          <p className="text-xs text-[#4a3d3d]">
                             <span className="font-medium">Obs:</span> {order.notes}
                           </p>
                         </div>

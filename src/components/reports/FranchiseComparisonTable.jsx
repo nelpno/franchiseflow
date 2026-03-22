@@ -141,10 +141,10 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                           {formatBRL(row.revenue)}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#534343]">
+                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
                         {formatBRL(row.avgTicket)}
                       </td>
-                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#534343]">
+                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
                         {row.contactsCount}
                       </td>
                     </tr>

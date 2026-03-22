@@ -60,7 +60,7 @@ export default function FilterBar({
         {hasFilters && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="sm:hidden flex items-center gap-1 px-3 py-2 bg-white border border-[#291715]/10 rounded-xl text-sm text-[#534343] hover:bg-[#fbf9fa] shrink-0"
+            className="sm:hidden flex items-center gap-1 px-3 py-2 bg-white border border-[#291715]/10 rounded-xl text-sm text-[#4a3d3d] hover:bg-[#fbf9fa] shrink-0"
           >
             <MaterialIcon icon="tune" size={18} />
             Filtros

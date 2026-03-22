@@ -157,12 +157,12 @@ export default function OnboardingWelcome() {
       <header className="flex items-center justify-between px-4 md:px-8 py-4 pt-6">
         <img src={logoImg} alt="Maxi Massas" className="h-12 w-auto object-contain" />
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#534343]/60 font-medium">
+          <span className="text-xs text-[#4a3d3d]/60 font-medium">
             {currentStep + 1} de {STEPS.length}
           </span>
           <button
             onClick={handleSkip}
-            className="text-sm text-[#534343]/80 hover:text-[#b91c1c] transition-colors underline"
+            className="text-sm text-[#4a3d3d]/80 hover:text-[#b91c1c] transition-colors underline"
           >
             Pular por agora
           </button>
@@ -208,7 +208,7 @@ export default function OnboardingWelcome() {
           </h1>
 
           {/* Description */}
-          <p className="text-sm md:text-base text-[#534343] text-center leading-relaxed mb-6">
+          <p className="text-sm md:text-base text-[#4a3d3d] text-center leading-relaxed mb-6">
             {step.description}
           </p>
 
@@ -227,7 +227,7 @@ export default function OnboardingWelcome() {
                     <MaterialIcon icon={feature.icon} size={20} style={{ color: step.color }} />
                   </div>
                   <h4 className="text-sm font-bold text-[#1b1c1d] mb-1">{feature.label}</h4>
-                  <p className="text-xs text-[#534343]/80 leading-snug">{feature.desc}</p>
+                  <p className="text-xs text-[#4a3d3d]/80 leading-snug">{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -236,7 +236,7 @@ export default function OnboardingWelcome() {
           {/* Detail text */}
           {step.detail && (
             <div className="bg-white rounded-xl border border-[#291715]/5 p-4 mb-6 shadow-sm">
-              <p className="text-sm text-[#534343]/90 leading-relaxed text-center">
+              <p className="text-sm text-[#4a3d3d]/90 leading-relaxed text-center">
                 {step.detail}
               </p>
             </div>

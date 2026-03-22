@@ -386,7 +386,7 @@ export default function PurchaseOrders() {
             <h1 className="text-xl font-bold text-[#1b1c1d] font-plus-jakarta">
               Pedidos de Compra
             </h1>
-            <p className="text-sm text-[#534343]">
+            <p className="text-sm text-[#4a3d3d]">
               Gerencie os pedidos de todas as franquias
             </p>
           </div>
@@ -437,7 +437,7 @@ export default function PurchaseOrders() {
           <h4 className="text-sm font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
             Nenhum pedido recebido.
           </h4>
-          <p className="text-xs text-[#534343]">
+          <p className="text-xs text-[#4a3d3d]">
             Os pedidos das franquias aparecerão aqui.
           </p>
         </div>
@@ -451,22 +451,22 @@ export default function PurchaseOrders() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-[#cac0c0]/30">
-                        <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                        <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Franquia
                         </TableHead>
-                        <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                        <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Data Pedido
                         </TableHead>
-                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Total
                         </TableHead>
-                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Frete
                         </TableHead>
-                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Status
                         </TableHead>
-                        <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                        <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Ações
                         </TableHead>
                       </TableRow>
@@ -480,7 +480,7 @@ export default function PurchaseOrders() {
                             className={
                               overdue
                                 ? "bg-red-50 border-l-4 border-l-red-500 hover:bg-red-100/60"
-                                : "hover:bg-[#f5f3f4]"
+                                : "hover:bg-[#fbf9fa]"
                             }
                           >
                             <TableCell className="font-medium text-[#1b1c1d]">
@@ -542,7 +542,7 @@ export default function PurchaseOrders() {
                       <h4 className="font-medium text-[#1b1c1d] truncate font-plus-jakarta">
                         {getFranchiseName(order.franchise_id)}
                       </h4>
-                      <p className="text-xs text-[#534343]">
+                      <p className="text-xs text-[#4a3d3d]">
                         {order.ordered_at
                           ? format(new Date(order.ordered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
                           : "\u2014"}
@@ -557,7 +557,7 @@ export default function PurchaseOrders() {
                         {formatBRL(order.total_amount)}
                       </span>
                       {order.freight_cost != null && parseFloat(order.freight_cost) > 0 && (
-                        <span className="text-xs text-[#534343] flex items-center gap-1">
+                        <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
                           <MaterialIcon icon="local_shipping" size={12} />
                           {formatBRL(order.freight_cost)}
                         </span>
@@ -598,7 +598,7 @@ export default function PurchaseOrders() {
                 <span className="font-medium text-[#1b1c1d]">
                   {getFranchiseName(selectedOrder.franchise_id)}
                 </span>
-                <span className="text-[#534343]">
+                <span className="text-[#4a3d3d]">
                   {selectedOrder.ordered_at
                     ? format(new Date(selectedOrder.ordered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
                     : "\u2014"}
@@ -613,7 +613,7 @@ export default function PurchaseOrders() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                     Itens do Pedido
                   </h4>
                   <div className="space-y-2">
@@ -629,7 +629,7 @@ export default function PurchaseOrders() {
                         >
                           <div className="flex-1 min-w-0">
                             <span className="text-sm text-[#1b1c1d]">{item.product_name}</span>
-                            <p className="text-xs text-[#534343]">
+                            <p className="text-xs text-[#4a3d3d]">
                               {formatBRL(item.unit_price)} / un
                             </p>
                           </div>
@@ -650,7 +650,7 @@ export default function PurchaseOrders() {
                                 className="w-16 text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
                               />
                             ) : (
-                              <span className="text-sm text-[#534343] w-16 text-center">
+                              <span className="text-sm text-[#4a3d3d] w-16 text-center">
                                 {qty}
                               </span>
                             )}
@@ -677,7 +677,7 @@ export default function PurchaseOrders() {
               {selectedOrder.status !== "entregue" && selectedOrder.status !== "cancelado" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Frete (R$)
                     </Label>
                     <Input
@@ -691,7 +691,7 @@ export default function PurchaseOrders() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Previsão de Entrega
                     </Label>
                     <Input
@@ -706,8 +706,8 @@ export default function PurchaseOrders() {
 
               {/* Notes */}
               {selectedOrder.notes && (
-                <div className="p-3 bg-[#f5f3f4] rounded-xl">
-                  <p className="text-xs text-[#534343]">
+                <div className="p-3 bg-[#fbf9fa] rounded-xl">
+                  <p className="text-xs text-[#4a3d3d]">
                     <span className="font-medium">Obs:</span> {selectedOrder.notes}
                   </p>
                 </div>
@@ -736,7 +736,7 @@ export default function PurchaseOrders() {
                       size="sm"
                       onClick={handleSaveEdits}
                       disabled={saving}
-                      className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4] gap-1"
+                      className="border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa] gap-1"
                     >
                       <MaterialIcon icon="save" size={16} />
                       Salvar
@@ -799,7 +799,7 @@ export default function PurchaseOrders() {
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-[#534343]">
+          <p className="text-sm text-[#4a3d3d]">
             {confirmAction?.type === "entregue"
               ? "Ao confirmar a entrega, o estoque da franquia será atualizado automaticamente. Essa ação não pode ser desfeita."
               : "Tem certeza que deseja cancelar este pedido? Essa ação não pode ser desfeita."}
@@ -811,7 +811,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={() => setConfirmAction(null)}
               disabled={saving}
-              className="border-[#cac0c0] text-[#534343] rounded-xl"
+              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
             >
               Voltar
             </Button>
@@ -849,13 +849,13 @@ export default function PurchaseOrders() {
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-[#534343]">
+          <p className="text-sm text-[#4a3d3d]">
             O produto será adicionado ao estoque de todas as franquias existentes.
           </p>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+              <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                 Nome do Produto *
               </Label>
               <Input
@@ -867,7 +867,7 @@ export default function PurchaseOrders() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+              <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                 Categoria *
               </Label>
               <Select
@@ -888,7 +888,7 @@ export default function PurchaseOrders() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+              <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                 Unidade
               </Label>
               <Select
@@ -910,7 +910,7 @@ export default function PurchaseOrders() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                   Custo Unitário (R$)
                 </Label>
                 <Input
@@ -924,7 +924,7 @@ export default function PurchaseOrders() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                   Estoque Mínimo
                 </Label>
                 <Input
@@ -945,7 +945,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={() => setNewProductOpen(false)}
               disabled={savingProduct}
-              className="border-[#cac0c0] text-[#534343] rounded-xl"
+              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
             >
               Cancelar
             </Button>

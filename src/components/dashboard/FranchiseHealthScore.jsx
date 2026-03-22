@@ -253,7 +253,7 @@ export default function FranchiseHealthScore({
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5">
       <div className="flex items-center justify-between mb-6">
-        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#291715]/60 font-plus-jakarta">
+        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1b1c1d]/60 font-plus-jakarta">
           Health Score por Unidade
         </h4>
         <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${avgColor.bg} ${avgColor.text} ${avgColor.border} border`}>
@@ -281,7 +281,7 @@ export default function FranchiseHealthScore({
 
               {/* Franchise info */}
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-[#291715] font-plus-jakarta truncate">
+                <p className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta truncate">
                   {franchise.city || franchise.owner_name || "Franquia"}
                 </p>
                 {/* Mini breakdown bar */}
@@ -312,7 +312,7 @@ export default function FranchiseHealthScore({
                     title={`Contatos: ${breakdown.contacts}/15`}
                   />
                 </div>
-                <div className="flex gap-3 mt-1.5 text-xs text-[#291715]/70 font-medium">
+                <div className="flex gap-3 mt-1.5 text-xs text-[#1b1c1d]/70 font-medium">
                   <span>Vendas {breakdown.sales}/{30}</span>
                   <span>Estoque {breakdown.inventory}/{20}</span>
                   <span>Pedidos {breakdown.orders}/{20}</span>
@@ -326,7 +326,7 @@ export default function FranchiseHealthScore({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#291715]/5 text-xs text-[#291715]/70 font-medium">
+      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#291715]/5 text-xs text-[#1b1c1d]/70 font-medium">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
           <span>80-100 Saudavel</span>
@@ -363,7 +363,7 @@ export default function FranchiseHealthScore({
                 <p className="text-lg">
                   {selectedScore?.franchise?.city || selectedScore?.franchise?.owner_name || "Franquia"}
                 </p>
-                <p className="text-sm font-normal text-[#534343]">
+                <p className="text-sm font-normal text-[#4a3d3d]">
                   Detalhes do Health Score
                 </p>
               </div>
@@ -381,7 +381,7 @@ export default function FranchiseHealthScore({
                   <div key={cat.key} className="p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <MaterialIcon icon={cat.icon} size={18} className="text-[#534343]" />
+                        <MaterialIcon icon={cat.icon} size={18} className="text-[#4a3d3d]" />
                         <span className="text-sm font-semibold text-[#1b1c1d]">{cat.label}</span>
                       </div>
                       <span className="text-sm font-bold font-mono-numbers text-[#1b1c1d]">
@@ -396,7 +396,7 @@ export default function FranchiseHealthScore({
                       />
                     </div>
                     {/* Reason */}
-                    <p className="text-xs text-[#534343]">{reason}</p>
+                    <p className="text-xs text-[#4a3d3d]">{reason}</p>
                   </div>
                 );
               })}

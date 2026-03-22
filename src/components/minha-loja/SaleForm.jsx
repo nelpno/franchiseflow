@@ -122,7 +122,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
           placeholder={placeholder}
           className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
-        <MaterialIcon icon="search" size={18} className="text-[#534343]/50 mr-2 shrink-0" />
+        <MaterialIcon icon="search" size={18} className="text-[#4a3d3d]/50 mr-2 shrink-0" />
       </div>
       {open && filtered.length > 0 && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
@@ -152,7 +152,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
                 )}
               </span>
               {p.sale_price > 0 && (
-                <span className="text-xs text-[#534343]/60 font-mono-numbers">
+                <span className="text-xs text-[#4a3d3d]/60 font-mono-numbers">
                   R$ {(p.sale_price || 0).toFixed(2).replace('.', ',')}
                 </span>
               )}
@@ -161,7 +161,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
         </div>
       )}
       {open && filtered.length === 0 && query && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#534343]/60">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#4a3d3d]/60">
           Nenhum produto encontrado
         </div>
       )}
@@ -284,13 +284,13 @@ function ContactAutocomplete({
                 key={contact.id}
                 type="button"
                 onClick={() => handleSelect(contact)}
-                className="w-full text-left px-4 py-3 hover:bg-[#f5f3f4] transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
+                className="w-full text-left px-4 py-3 hover:bg-[#fbf9fa] transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
               >
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-[#1b1c1d] truncate block">
                     {contact.nome || "Sem nome"}
                   </span>
-                  <span className="text-sm text-[#534343]">
+                  <span className="text-sm text-[#4a3d3d]">
                     {formatPhone(contact.telefone)}
                   </span>
                 </div>
@@ -740,7 +740,7 @@ export default function SaleForm({
     return (
       <div className="flex items-center justify-center py-8">
         <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-2 text-sm text-[#534343]">Carregando...</span>
+        <span className="ml-2 text-sm text-[#4a3d3d]">Carregando...</span>
       </div>
     );
   }
@@ -890,14 +890,14 @@ export default function SaleForm({
 
             {/* Line total */}
             <div className="flex items-center justify-between md:w-28">
-              <span className="text-sm font-medium text-[#534343] font-mono-numbers md:text-right md:w-full">
+              <span className="text-sm font-medium text-[#4a3d3d] font-mono-numbers md:text-right md:w-full">
                 {formatCurrency(item.quantity * item.unit_price)}
               </span>
               {items.length > 1 && (
                 <button
                   type="button"
                   onClick={() => handleRemoveItem(index)}
-                  className="ml-2 p-1 rounded-lg hover:bg-[#b91c1c]/10 text-[#534343] hover:text-[#b91c1c] transition-colors"
+                  className="ml-2 p-1 rounded-lg hover:bg-[#b91c1c]/10 text-[#4a3d3d] hover:text-[#b91c1c] transition-colors"
                 >
                   <MaterialIcon icon="close" size={18} />
                 </button>
@@ -939,7 +939,7 @@ export default function SaleForm({
               className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
                 paymentMethod === pm.value
                   ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
-                  : "border-[#291715]/10 bg-white text-[#534343] hover:bg-[#f5f3f4]"
+                  : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
               }`}
             >
               <MaterialIcon icon={pm.icon} size={18} />
@@ -950,7 +950,7 @@ export default function SaleForm({
 
         {paymentMethod === "card_machine" && (
           <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
-            <Label className="text-sm text-[#534343] whitespace-nowrap">Taxa do cartao (%)</Label>
+            <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa do cartao (%)</Label>
             <Input
               type="number"
               min={0}
@@ -960,7 +960,7 @@ export default function SaleForm({
               onChange={(e) => setCardFeePercent(parseFloat(e.target.value) || 0)}
               className="w-24 bg-white text-right font-mono-numbers"
             />
-            <span className="text-sm text-[#534343] font-mono-numbers">
+            <span className="text-sm text-[#4a3d3d] font-mono-numbers">
               = {formatCurrency(cardFeeAmount)}
             </span>
           </div>
@@ -977,7 +977,7 @@ export default function SaleForm({
             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
               deliveryMethod === "retirada"
                 ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
-                : "border-[#291715]/10 bg-white text-[#534343] hover:bg-[#f5f3f4]"
+                : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
             }`}
           >
             <MaterialIcon icon="store" size={18} />
@@ -989,7 +989,7 @@ export default function SaleForm({
             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
               deliveryMethod === "delivery"
                 ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
-                : "border-[#291715]/10 bg-white text-[#534343] hover:bg-[#f5f3f4]"
+                : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
             }`}
           >
             <MaterialIcon icon="delivery_dining" size={18} />
@@ -999,7 +999,7 @@ export default function SaleForm({
 
         {deliveryMethod === "delivery" && (
           <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
-            <Label className="text-sm text-[#534343] whitespace-nowrap">Frete (R$)</Label>
+            <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Frete (R$)</Label>
             <Input
               type="number"
               min={0}
@@ -1016,7 +1016,7 @@ export default function SaleForm({
       {/* Summary */}
       <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-[#534343]">Subtotal</span>
+          <span className="text-[#4a3d3d]">Subtotal</span>
           <span className="font-medium text-[#1b1c1d] font-mono-numbers">
             {formatCurrency(subtotal)}
           </span>
@@ -1024,7 +1024,7 @@ export default function SaleForm({
 
         {paymentMethod === "card_machine" && cardFeeAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#534343]">Taxa cartao ({cardFeePercent}%)</span>
+            <span className="text-[#4a3d3d]">Taxa cartao ({cardFeePercent}%)</span>
             <span className="font-medium text-[#b91c1c] font-mono-numbers">
               - {formatCurrency(cardFeeAmount)}
             </span>
@@ -1033,7 +1033,7 @@ export default function SaleForm({
 
         {deliveryMethod === "delivery" && effectiveDeliveryFee > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#534343]">Frete (receita)</span>
+            <span className="text-[#4a3d3d]">Frete (receita)</span>
             <span className="font-medium text-[#16a34a] font-mono-numbers">
               + {formatCurrency(effectiveDeliveryFee)}
             </span>

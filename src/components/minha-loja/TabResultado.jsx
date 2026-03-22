@@ -278,7 +278,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
     return (
       <div className="flex items-center justify-center py-16">
         <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-3 text-[#534343]">Carregando...</span>
+        <span className="ml-3 text-[#4a3d3d]">Carregando...</span>
       </div>
     );
   }
@@ -293,7 +293,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
           onClick={handlePrevMonth}
           className="rounded-xl hover:bg-[#b91c1c]/5"
         >
-          <MaterialIcon icon="chevron_left" size={24} className="text-[#534343]" />
+          <MaterialIcon icon="chevron_left" size={24} className="text-[#4a3d3d]" />
         </Button>
         <span className="text-lg font-semibold text-[#1b1c1d] font-plus-jakarta capitalize min-w-[180px] text-center">
           {monthLabel}
@@ -305,7 +305,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
           disabled={isCurrentMonth}
           className="rounded-xl hover:bg-[#b91c1c]/5"
         >
-          <MaterialIcon icon="chevron_right" size={24} className={isCurrentMonth ? "text-[#cac0c0]" : "text-[#534343]"} />
+          <MaterialIcon icon="chevron_right" size={24} className={isCurrentMonth ? "text-[#cac0c0]" : "text-[#4a3d3d]"} />
         </Button>
       </div>
 
@@ -316,7 +316,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
           <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
             Sem dados para este mês
           </h3>
-          <p className="text-sm text-[#534343] max-w-sm">
+          <p className="text-sm text-[#4a3d3d] max-w-sm">
             Lance vendas para ver seu resultado.
           </p>
         </div>
@@ -326,46 +326,43 @@ export default function TabResultado({ franchiseId, currentUser }) {
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
               <CardContent className="p-5 md:p-6 space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta mb-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta mb-4">
                   Resultado do Mês
                 </h3>
 
-                {/* Faturamento */}
+                {/* Faturamento — dado primário, on-surface semibold */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#534343]">Faturamento bruto</span>
-                  <span className="text-sm font-semibold text-[#16a34a] font-mono-numbers">
+                  <span className="text-sm text-[#1d1b1b] font-medium">Faturamento bruto</span>
+                  <span className="text-sm font-semibold text-[#1d1b1b] font-mono-numbers">
                     {formatBRL(faturamento)}
                   </span>
                 </div>
 
-                {/* Custo produtos */}
+                {/* Deduções — on-surface-variant, peso normal */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#534343]">(-) Custo dos produtos</span>
-                  <span className="text-sm text-[#534343] font-mono-numbers">
+                  <span className="text-sm text-[#4a3d3d]">(-) Custo dos produtos</span>
+                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
                     {formatBRL(custoProdutos)}
                   </span>
                 </div>
 
-                {/* Taxas cartao */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#534343]">(-) Taxas cartão</span>
-                  <span className="text-sm text-[#534343] font-mono-numbers">
+                  <span className="text-sm text-[#4a3d3d]">(-) Taxas cartão</span>
+                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
                     {formatBRL(taxasCartao)}
                   </span>
                 </div>
 
-                {/* Frete */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#534343]">(-) Frete pago</span>
-                  <span className="text-sm text-[#534343] font-mono-numbers">
+                  <span className="text-sm text-[#4a3d3d]">(-) Frete pago</span>
+                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
                     {formatBRL(fretePago)}
                   </span>
                 </div>
 
-                {/* Outras despesas */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#534343]">(-) Outras despesas</span>
-                  <span className="text-sm text-[#534343] font-mono-numbers">
+                  <span className="text-sm text-[#4a3d3d]">(-) Outras despesas</span>
+                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
                     {formatBRL(outrasDespesas)}
                   </span>
                 </div>
@@ -373,12 +370,19 @@ export default function TabResultado({ franchiseId, currentUser }) {
                 {/* Separator */}
                 <div className="border-t border-[#291715]/10 my-1" />
 
-                {/* Lucro */}
+                {/* Lucro — única linha com cor semântica */}
                 <div className="flex justify-between items-center">
-                  <span className="text-base font-bold text-[#1b1c1d]">= LUCRO ESTIMADO</span>
+                  <div className="flex items-center gap-1.5">
+                    <MaterialIcon
+                      icon={lucro >= 0 ? "trending_up" : "trending_down"}
+                      size={18}
+                      className={lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}
+                    />
+                    <span className="text-base font-bold text-[#1d1b1b]">LUCRO ESTIMADO</span>
+                  </div>
                   <span
                     className={`text-lg font-bold font-mono-numbers ${
-                      lucro >= 0 ? "text-[#16a34a]" : "text-[#b91c1c]"
+                      lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"
                     }`}
                   >
                     {formatBRL(lucro)}
@@ -391,13 +395,13 @@ export default function TabResultado({ franchiseId, currentUser }) {
                     <MaterialIcon
                       icon={monthDiffPercent >= 0 ? "trending_up" : "trending_down"}
                       size={18}
-                      className={monthDiffPercent >= 0 ? "text-[#16a34a]" : "text-[#b91c1c]"}
+                      className={monthDiffPercent >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}
                     />
-                    <span className="text-xs text-[#534343]">
+                    <span className="text-xs text-[#4a3d3d]">
                       vs. mês anterior:{" "}
                       <span
                         className={`font-semibold ${
-                          monthDiffPercent >= 0 ? "text-[#16a34a]" : "text-[#b91c1c]"
+                          monthDiffPercent >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"
                         }`}
                       >
                         {monthDiffPercent >= 0 ? "+" : ""}
@@ -414,7 +418,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
             <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
               <CardContent className="p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                     Despesas do Mês
                   </h3>
                   <Button
@@ -431,7 +435,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                 </div>
 
                 {monthExpenses.length === 0 ? (
-                  <p className="text-sm text-[#534343] text-center py-6">
+                  <p className="text-sm text-[#4a3d3d] text-center py-6">
                     Nenhuma despesa neste mês.
                   </p>
                 ) : (
@@ -448,7 +452,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                           <p className="text-sm font-medium text-[#1b1c1d] truncate">
                             {exp.description}
                           </p>
-                          <p className="text-xs text-[#534343]">
+                          <p className="text-xs text-[#4a3d3d]">
                             {exp.expense_date
                               ? format(parseISO(exp.expense_date), "dd/MM/yyyy")
                               : "—"}
@@ -460,13 +464,13 @@ export default function TabResultado({ franchiseId, currentUser }) {
                         <div className="flex gap-1 shrink-0">
                           <button
                             onClick={() => handleEditExpense(exp)}
-                            className="p-1.5 rounded-lg hover:bg-[#d4af37]/10 text-[#534343] hover:text-[#775a19] transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-[#d4af37]/10 text-[#4a3d3d] hover:text-[#775a19] transition-colors"
                           >
                             <MaterialIcon icon="edit" size={16} />
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(exp.id)}
-                            className="p-1.5 rounded-lg hover:bg-[#b91c1c]/10 text-[#534343] hover:text-[#b91c1c] transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-[#b91c1c]/10 text-[#4a3d3d] hover:text-[#b91c1c] transition-colors"
                           >
                             <MaterialIcon icon="delete" size={16} />
                           </button>
@@ -485,7 +489,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
             {topProducts.length > 0 && (
               <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
                 <CardContent className="p-5 md:p-6">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta mb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta mb-4">
                     Mais Vendidos
                   </h3>
                   <div className="space-y-3">
@@ -496,7 +500,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-[#1b1c1d] truncate">{p.name}</p>
-                          <p className="text-xs text-[#534343]">
+                          <p className="text-xs text-[#4a3d3d]">
                             {p.quantity} un &middot; {formatBRL(p.revenue)}
                           </p>
                         </div>
@@ -511,10 +515,10 @@ export default function TabResultado({ franchiseId, currentUser }) {
             {staleProducts.length > 0 && (
               <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
                 <CardContent className="p-5 md:p-6">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta mb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta mb-4">
                     Parados no freezer
                   </h3>
-                  <p className="text-xs text-[#534343] mb-3">
+                  <p className="text-xs text-[#4a3d3d] mb-3">
                     Sem vendas nos últimos 28 dias
                   </p>
                   <div className="space-y-2">
@@ -526,13 +530,13 @@ export default function TabResultado({ franchiseId, currentUser }) {
                         <span className="text-sm text-[#1b1c1d] truncate">
                           {item.product_name}
                         </span>
-                        <span className="text-xs text-[#534343] font-mono-numbers shrink-0 ml-2">
+                        <span className="text-xs text-[#4a3d3d] font-mono-numbers shrink-0 ml-2">
                           {item.quantity} {item.unit || "un"}
                         </span>
                       </div>
                     ))}
                     {staleProducts.length > 8 && (
-                      <p className="text-xs text-[#534343] text-center">
+                      <p className="text-xs text-[#4a3d3d] text-center">
                         +{staleProducts.length - 8} outros
                       </p>
                     )}
@@ -559,10 +563,10 @@ export default function TabResultado({ franchiseId, currentUser }) {
           <CardContent className="p-5 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                   Exportar Vendas
                 </h3>
-                <p className="text-xs text-[#534343]/60 mt-1">
+                <p className="text-xs text-[#4a3d3d]/60 mt-1">
                   {monthSales.length} venda{monthSales.length !== 1 ? "s" : ""} em{" "}
                   {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
                 </p>
@@ -586,13 +590,13 @@ export default function TabResultado({ franchiseId, currentUser }) {
               onClick={() => setShowAuditLogs(!showAuditLogs)}
               className="flex items-center justify-between w-full"
             >
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                 Histórico de Ações
               </h3>
               <MaterialIcon
                 icon={showAuditLogs ? "expand_less" : "expand_more"}
                 size={20}
-                className="text-[#534343]"
+                className="text-[#4a3d3d]"
               />
             </button>
 
@@ -600,7 +604,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
               <div className="mt-4 space-y-3">
                 {auditUserNames.length > 1 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#534343] whitespace-nowrap">Filtrar por:</span>
+                    <span className="text-xs text-[#4a3d3d] whitespace-nowrap">Filtrar por:</span>
                     <select
                       value={auditUserFilter}
                       onChange={(e) => setAuditUserFilter(e.target.value)}
@@ -638,19 +642,19 @@ export default function TabResultado({ franchiseId, currentUser }) {
                         {actionLabels[log.action] || log.action}{" "}
                         {entityLabels[log.entity_type] || log.entity_type}
                         {log.details?.value && (
-                          <span className="text-[#534343]">
+                          <span className="text-[#4a3d3d]">
                             {" "}
                             ({formatBRL(log.details.value)})
                           </span>
                         )}
                         {log.details?.description && (
-                          <span className="text-[#534343]">
+                          <span className="text-[#4a3d3d]">
                             {" "}
                             — {log.details.description}
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-[#534343]/60 mt-0.5">
+                      <p className="text-xs text-[#4a3d3d]/60 mt-0.5">
                         {log.created_at
                           ? format(parseISO(log.created_at), "dd/MM/yyyy HH:mm", {
                               locale: ptBR,
@@ -691,7 +695,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Excluir despesa?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#534343]">
+          <p className="text-sm text-[#4a3d3d]">
             Esta ação não pode ser desfeita.
           </p>
           <div className="flex gap-3 mt-4">

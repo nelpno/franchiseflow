@@ -31,7 +31,7 @@ export default function DailyRevenueChart({ summaries, isLoading, days = 7, toda
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#291715]/5">
       <div className="flex justify-between items-center mb-6">
-        <h4 className="font-bold text-[#291715] font-plus-jakarta">
+        <h4 className="font-bold text-[#1b1c1d] font-plus-jakarta">
           Faturamento {days} dias
         </h4>
         <span className="text-xs font-black text-[#a80012] uppercase tracking-tight">
@@ -54,7 +54,7 @@ export default function DailyRevenueChart({ summaries, isLoading, days = 7, toda
           );
         })}
       </div>
-      <div className="flex justify-between mt-4 text-xs font-bold text-[#291715]/60 uppercase tracking-widest font-plus-jakarta">
+      <div className="flex justify-between mt-4 text-xs font-bold text-[#1b1c1d]/60 uppercase tracking-widest font-plus-jakarta">
         {chartData.map((d, i) => (
           <span key={i}>{d.dayLabel}</span>
         ))}

@@ -17,7 +17,7 @@ const CustomTooltip = ({ active, payload }) => {
   return (
     <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-[#1b1c1d]">{name}</p>
-      <p className="text-[#534343]">
+      <p className="text-[#4a3d3d]">
         {formatBRL(value)} ({(percent * 100).toFixed(1)}%)
       </p>
     </div>
@@ -96,7 +96,7 @@ export default function PaymentMethodChart({ sales, isLoading }) {
                       className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: entry.color }}
                     />
-                    <span className="text-[#534343] truncate">{entry.name}</span>
+                    <span className="text-[#4a3d3d] truncate">{entry.name}</span>
                     <span className="font-semibold text-[#1b1c1d] ml-auto font-mono-numbers text-xs">
                       {(entry.percent * 100).toFixed(0)}%
                     </span>

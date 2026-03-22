@@ -62,7 +62,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
       doc.text("Maxi Massas", 14, 18);
 
       doc.setFontSize(12);
-      doc.setTextColor(83, 67, 67); // #534343
+      doc.setTextColor(83, 67, 67); // #4a3d3d
       doc.text(title || filename, 14, 26);
 
       doc.setFontSize(9);
@@ -105,7 +105,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
         variant="outline"
         size="sm"
         onClick={handleExcel}
-        className="gap-1.5 text-[#534343] hover:text-[#16a34a] hover:border-[#16a34a]/30 rounded-xl text-xs"
+        className="gap-1.5 text-[#4a3d3d] hover:text-[#16a34a] hover:border-[#16a34a]/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="download" size={16} />
         Excel
@@ -114,7 +114,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
         variant="outline"
         size="sm"
         onClick={handlePdf}
-        className="gap-1.5 text-[#534343] hover:text-[#b91c1c] hover:border-[#b91c1c]/30 rounded-xl text-xs"
+        className="gap-1.5 text-[#4a3d3d] hover:text-[#b91c1c] hover:border-[#b91c1c]/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="picture_as_pdf" size={16} />
         PDF

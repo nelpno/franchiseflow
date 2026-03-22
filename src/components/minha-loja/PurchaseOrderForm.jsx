@@ -189,7 +189,7 @@ export default function PurchaseOrderForm({
     <div className="space-y-4">
       {/* Header with suggestion button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-sm text-[#534343]">
+        <p className="text-sm text-[#4a3d3d]">
           Selecione as quantidades dos produtos que deseja encomendar.
         </p>
         {hasSuggestions && (
@@ -213,22 +213,22 @@ export default function PurchaseOrderForm({
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-[#cac0c0]/30">
-                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Produto
                     </TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Custo
                     </TableHead>
-                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Estoque
                     </TableHead>
-                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Sugestao
                     </TableHead>
-                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta w-[100px]">
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta w-[100px]">
                       QTD
                     </TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                       Total
                     </TableHead>
                   </TableRow>
@@ -255,7 +255,7 @@ export default function PurchaseOrderForm({
                             className={
                               hasSug
                                 ? "border-l-2 border-l-[#d4af37] hover:bg-[#d4af37]/5"
-                                : "hover:bg-[#f5f3f4]"
+                                : "hover:bg-[#fbf9fa]"
                             }
                           >
                             <TableCell className="font-medium text-[#1b1c1d]">
@@ -273,7 +273,7 @@ export default function PurchaseOrderForm({
                                   className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                                     hasSug
                                       ? "bg-[#d4af37]/10 text-[#775a19]"
-                                      : "bg-[#e9e8e9] text-[#534343]"
+                                      : "bg-[#e9e8e9] text-[#4a3d3d]"
                                   }`}
                                 >
                                   {suggestion}
@@ -336,7 +336,7 @@ export default function PurchaseOrderForm({
                     <h4 className="font-medium text-[#1b1c1d] truncate">
                       {item.product_name}
                     </h4>
-                    <p className="text-xs text-[#534343]">
+                    <p className="text-xs text-[#4a3d3d]">
                       Custo: {formatBRL(item.cost_price)} · Estoque: {item.quantity ?? 0}
                     </p>
                   </div>
@@ -345,7 +345,7 @@ export default function PurchaseOrderForm({
                       className={`rounded-full px-2 py-0.5 text-[10px] font-bold ml-2 ${
                         hasSug
                           ? "bg-[#d4af37]/10 text-[#775a19]"
-                          : "bg-[#e9e8e9] text-[#534343]"
+                          : "bg-[#e9e8e9] text-[#4a3d3d]"
                       }`}
                     >
                       Sug: {suggestion}
@@ -355,7 +355,7 @@ export default function PurchaseOrderForm({
 
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
-                    <Label className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
+                    <Label className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                       Quantidade
                     </Label>
                     <Input
@@ -369,7 +369,7 @@ export default function PurchaseOrderForm({
                     />
                   </div>
                   <div className="text-right">
-                    <Label className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
+                    <Label className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                       Total
                     </Label>
                     <p className="font-medium text-[#1b1c1d] text-sm mt-1">
@@ -400,7 +400,7 @@ export default function PurchaseOrderForm({
       {/* Grand total + actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[#cac0c0]/30">
         <div>
-          <span className="text-sm text-[#534343]">Total do pedido</span>
+          <span className="text-sm text-[#4a3d3d]">Total do pedido</span>
           <p className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">
             {formatBRL(grandTotal)}
           </p>
@@ -411,7 +411,7 @@ export default function PurchaseOrderForm({
             variant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="border-[#cac0c0] text-[#534343] rounded-xl hover:bg-[#f5f3f4]"
+            className="border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa]"
           >
             Cancelar
           </Button>

@@ -216,7 +216,7 @@ export default function AdminDashboard() {
       materialIcon: "chat_bubble",
       trend: trendFor(stats.contacts, stats.prevContacts),
       iconBg: "bg-[#291715]/5",
-      iconColor: "text-[#291715]/70",
+      iconColor: "text-[#1b1c1d]/70",
       trendColor: null, // dynamic: red for down, primary for up
       sparkKey: "contacts",
       sparkColor: "#291715",
@@ -290,10 +290,10 @@ export default function AdminDashboard() {
 
               {/* Label + Value */}
               <div>
-                <p className="text-[#291715]/60 text-sm font-bold font-plus-jakarta tracking-tight">
+                <p className="text-[#1b1c1d]/60 text-sm font-bold font-plus-jakarta tracking-tight">
                   {card.title}
                 </p>
-                <h3 className="text-3xl font-extrabold tracking-tight font-mono-numbers text-[#291715]">
+                <h3 className="text-3xl font-extrabold tracking-tight font-mono-numbers text-[#1b1c1d]">
                   {card.value}
                 </h3>
               </div>

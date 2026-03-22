@@ -39,7 +39,7 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="text-xs font-bold text-[#534343] whitespace-nowrap">
+        <span className="text-xs font-bold text-[#4a3d3d] whitespace-nowrap">
           {completedCount}/{activeSteps.length} etapas
         </span>
       </div>

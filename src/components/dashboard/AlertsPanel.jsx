@@ -122,7 +122,7 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
   return (
     <section className="bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5">
       <div className="flex items-center gap-2 mb-6">
-        <h4 className="text-[#291715] font-bold tracking-tight font-plus-jakarta">
+        <h4 className="text-[#1b1c1d] font-bold tracking-tight font-plus-jakarta">
           ATENÇÃO CRÍTICA
         </h4>
         {alerts.length > 0 && (
@@ -155,10 +155,10 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
                   {getIcon(alert)}
                 </div>
                 <div>
-                  <h5 className="font-bold text-[#291715] font-plus-jakarta">
+                  <h5 className="font-bold text-[#1b1c1d] font-plus-jakarta">
                     {alert.franchise}
                   </h5>
-                  <p className="text-sm text-[#291715]/70">{alert.description}</p>
+                  <p className="text-sm text-[#1b1c1d]/70">{alert.description}</p>
                 </div>
               </div>
               <button

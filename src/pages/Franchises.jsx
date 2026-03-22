@@ -399,7 +399,7 @@ export default function Franchises() {
                       <h2 className="text-base font-bold font-plus-jakarta text-[#1b1c1d]">
                         Equipe
                       </h2>
-                      <p className="text-xs text-[#534343]">
+                      <p className="text-xs text-[#4a3d3d]">
                         {staffUsers.length} {staffUsers.length === 1 ? "membro" : "membros"} (admins e gerentes)
                       </p>
                     </div>
@@ -407,7 +407,7 @@ export default function Franchises() {
                   <MaterialIcon
                     icon={equipeOpen ? "expand_less" : "expand_more"}
                     size={20}
-                    className="text-[#534343]"
+                    className="text-[#4a3d3d]"
                   />
                 </button>
               </CollapsibleTrigger>
@@ -425,7 +425,7 @@ export default function Franchises() {
                       </Button>
                     </div>
                     {staffUsers.length === 0 ? (
-                      <p className="text-sm text-[#534343] py-4 text-center">Nenhum membro na equipe</p>
+                      <p className="text-sm text-[#4a3d3d] py-4 text-center">Nenhum membro na equipe</p>
                     ) : (
                       staffUsers.map((staff) => (
                         <div
@@ -443,7 +443,7 @@ export default function Franchises() {
                                 </p>
                                 {getRoleBadge(staff.role)}
                               </div>
-                              <p className="text-xs text-[#534343] truncate">{staff.email}</p>
+                              <p className="text-xs text-[#4a3d3d] truncate">{staff.email}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 ml-3 shrink-0">
@@ -452,7 +452,7 @@ export default function Franchises() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 text-[#534343] hover:text-[#1b1c1d] hover:bg-white"
+                                  className="h-8 w-8 p-0 text-[#4a3d3d] hover:text-[#1b1c1d] hover:bg-white"
                                   onClick={() => {
                                     setEditingStaffRole({ userId: staff.id, currentRole: staff.role });
                                     setStaffNewRole(staff.role);
@@ -521,15 +521,15 @@ export default function Franchises() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="person" size={16} />
                       <span className="text-sm">{franchise.owner_name}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="phone" size={16} />
                       <span className="text-sm">{franchise.phone_number}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="chat_bubble" size={16} />
                       <span className="text-sm">Contatos Hoje: {franchise.daily_unique_contacts}</span>
                     </div>
@@ -541,8 +541,8 @@ export default function Franchises() {
                           {linked.map((u) => (
                             <div key={u.id} className="flex items-center justify-between">
                               <div className="flex items-center gap-2 min-w-0">
-                                <MaterialIcon icon="account_circle" size={14} className="text-[#534343]" />
-                                <span className="text-xs text-[#534343] truncate">{u.email}</span>
+                                <MaterialIcon icon="account_circle" size={14} className="text-[#4a3d3d]" />
+                                <span className="text-xs text-[#4a3d3d] truncate">{u.email}</span>
                                 {getRoleBadge(u.role)}
                               </div>
                               {currentUser?.role === "admin" && u.role === "franchisee" && (
@@ -612,7 +612,7 @@ export default function Franchises() {
             <h3 className="text-xl font-semibold text-[#1b1c1d] mb-2">Nenhuma franquia cadastrada</h3>
             {isStaff ? (
               <>
-                <p className="text-[#534343] mb-6">Comece adicionando sua primeira franquia ao sistema</p>
+                <p className="text-[#4a3d3d] mb-6">Comece adicionando sua primeira franquia ao sistema</p>
                 <Button
                   onClick={() => setShowForm(true)}
                   className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
@@ -622,7 +622,7 @@ export default function Franchises() {
                 </Button>
               </>
             ) : (
-              <p className="text-[#534343] mb-6">Contate um administrador para adicionar novas franquias.</p>
+              <p className="text-[#4a3d3d] mb-6">Contate um administrador para adicionar novas franquias.</p>
             )}
           </div>
         )}
@@ -706,7 +706,7 @@ export default function Franchises() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#534343]">
+              <p className="text-sm text-[#4a3d3d]">
                 Tem certeza que deseja excluir o usuário{" "}
                 <strong>{deletingStaff?.full_name}</strong>? Esta ação não pode ser desfeita.
               </p>
@@ -740,7 +740,7 @@ export default function Franchises() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#534343]">
+              <p className="text-sm text-[#4a3d3d]">
                 Tem certeza que deseja excluir a franquia de{" "}
                 <strong>{deletingFranchise?.city}</strong>? Esta ação não pode ser desfeita.
               </p>
@@ -774,7 +774,7 @@ export default function Franchises() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#534343] mb-4">
+              <p className="text-sm text-[#4a3d3d] mb-4">
                 Selecione quais usuários podem gerenciar esta franquia:
               </p>
               <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -798,12 +798,12 @@ export default function Franchises() {
                           <p className="font-semibold text-[#1b1c1d]">{user.full_name || "Sem nome"}</p>
                           {getRoleBadge(user.role)}
                         </div>
-                        <p className="text-[#534343] text-xs">{user.email}</p>
+                        <p className="text-[#4a3d3d] text-xs">{user.email}</p>
                       </label>
                     </div>
                   ))}
                 {users.filter((u) => u.role !== "admin").length === 0 && (
-                  <p className="text-sm text-[#534343] text-center py-4">
+                  <p className="text-sm text-[#4a3d3d] text-center py-4">
                     Nenhum usuário disponível (exceto admins)
                   </p>
                 )}
@@ -900,7 +900,7 @@ export default function Franchises() {
                   onChange={(e) => setAddStaffEmail(e.target.value)}
                   className="mt-1 bg-[#e9e8e9] border-none rounded-xl"
                 />
-                <p className="text-xs text-[#534343] mt-1">O usuário precisa ter conta criada no sistema</p>
+                <p className="text-xs text-[#4a3d3d] mt-1">O usuário precisa ter conta criada no sistema</p>
               </div>
               <div>
                 <Label className="text-[#1b1c1d]">Cargo</Label>
@@ -944,7 +944,7 @@ export default function Franchises() {
                 <MaterialIcon icon="store" size={22} className="text-[#b91c1c]" />
                 {selectedFranchise?.city}
               </SheetTitle>
-              <SheetDescription className="text-[#534343]">
+              <SheetDescription className="text-[#4a3d3d]">
                 Detalhes da franquia e usuários vinculados
               </SheetDescription>
             </SheetHeader>
@@ -957,7 +957,7 @@ export default function Franchises() {
                     {getStatusText(selectedFranchise.status)}
                   </Badge>
                   {selectedFranchise.evolution_instance_id && (
-                    <span className="text-[10px] font-mono text-[#534343] bg-[#fbf9fa] px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-[#4a3d3d] bg-[#fbf9fa] px-2 py-0.5 rounded">
                       {selectedFranchise.evolution_instance_id}
                     </span>
                   )}
@@ -965,30 +965,30 @@ export default function Franchises() {
 
                 {/* Dados */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-[#534343] uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-[#4a3d3d] uppercase tracking-wider">
                     Dados da Franquia
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="person" size={16} />
                       <span className="text-sm">{selectedFranchise.owner_name}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="location_on" size={16} />
                       <span className="text-sm">{selectedFranchise.city}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="phone" size={16} />
                       <span className="text-sm">{selectedFranchise.phone_number}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#534343]">
+                    <div className="flex items-center gap-3 text-[#4a3d3d]">
                       <MaterialIcon icon="chat_bubble" size={16} />
                       <span className="text-sm">
                         Contatos Hoje: {selectedFranchise.daily_unique_contacts}
                       </span>
                     </div>
                     {selectedFranchise.name && (
-                      <div className="flex items-center gap-3 text-[#534343]">
+                      <div className="flex items-center gap-3 text-[#4a3d3d]">
                         <MaterialIcon icon="apartment" size={16} />
                         <span className="text-sm">{selectedFranchise.name}</span>
                       </div>
@@ -998,7 +998,7 @@ export default function Franchises() {
 
                 {/* Linked Users */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-[#534343] uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-[#4a3d3d] uppercase tracking-wider">
                     Usuários Vinculados
                   </h3>
                   {(() => {
@@ -1019,7 +1019,7 @@ export default function Franchises() {
                             className="flex items-center gap-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5"
                           >
                             <div className="w-8 h-8 rounded-full bg-[#f2e7e7] flex items-center justify-center shrink-0">
-                              <MaterialIcon icon="account_circle" size={16} className="text-[#534343]" />
+                              <MaterialIcon icon="account_circle" size={16} className="text-[#4a3d3d]" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
@@ -1028,7 +1028,7 @@ export default function Franchises() {
                                 </p>
                                 {getRoleBadge(u.role)}
                               </div>
-                              <p className="text-xs text-[#534343] truncate">{u.email}</p>
+                              <p className="text-xs text-[#4a3d3d] truncate">{u.email}</p>
                             </div>
                           </div>
                         ))}

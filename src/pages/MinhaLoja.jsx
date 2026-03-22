@@ -211,7 +211,7 @@ export default function MinhaLoja() {
     return (
       <div className="flex items-center justify-center h-64">
         <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-3 text-[#534343]">Carregando...</span>
+        <span className="ml-3 text-[#4a3d3d]">Carregando...</span>
       </div>
     );
   }
@@ -227,7 +227,7 @@ export default function MinhaLoja() {
         <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
           Nenhuma franquia vinculada
         </h3>
-        <p className="text-sm text-[#534343] max-w-sm">
+        <p className="text-sm text-[#4a3d3d] max-w-sm">
           Sua conta ainda não está vinculada a nenhuma franquia. Entre em contato com o administrador.
         </p>
       </div>
@@ -252,7 +252,7 @@ export default function MinhaLoja() {
             <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">
               Minha Loja
             </h1>
-            <p className="text-sm text-[#534343]">
+            <p className="text-sm text-[#4a3d3d]">
               {primaryFranchise.city || primaryFranchise.name}
             </p>
           </div>
@@ -267,13 +267,13 @@ export default function MinhaLoja() {
                 <MaterialIcon icon="point_of_sale" size={20} className="text-[#b91c1c]" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                   Vendas Hoje
                 </p>
                 <p className="text-lg md:text-xl font-bold text-[#1b1c1d] font-mono-numbers">
                   {todaySalesCount}
                 </p>
-                <p className="text-[10px] md:text-xs text-[#534343] font-mono-numbers truncate">
+                <p className="text-[10px] md:text-xs text-[#4a3d3d] font-mono-numbers truncate">
                   {formatBRL(todaySalesValue)}
                 </p>
               </div>
@@ -287,7 +287,7 @@ export default function MinhaLoja() {
                 <MaterialIcon icon="payments" size={20} className="text-[#775a19]" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                   Faturamento
                 </p>
                 <p className="text-lg md:text-xl font-bold text-[#1b1c1d] font-mono-numbers truncate">
@@ -308,7 +308,7 @@ export default function MinhaLoja() {
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                   Lucro Estimado
                 </p>
                 <p className={`text-lg md:text-xl font-bold font-mono-numbers truncate ${estimatedProfit >= 0 ? "text-[#9c4143]" : "text-[#b91c1c]"}`}>
@@ -329,7 +329,7 @@ export default function MinhaLoja() {
                 />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                   Estoque Baixo
                 </p>
                 <p className={`text-lg md:text-xl font-bold font-mono-numbers ${lowStockCount > 0 ? "text-[#b91c1c]" : "text-[#9c4143]"}`}>

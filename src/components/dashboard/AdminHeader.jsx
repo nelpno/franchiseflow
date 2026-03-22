@@ -8,7 +8,7 @@ const PERIODS = [
 export default function AdminHeader({ period, onPeriodChange }) {
   return (
     <header className="flex flex-row md:fixed md:top-0 md:right-0 md:z-50 md:h-20 items-center justify-between px-4 md:px-8 py-3 md:py-0 bg-[#fdf3f2]/80 backdrop-blur-xl shadow-sm shadow-[#291715]/5 rounded-2xl md:rounded-none mb-4 md:mb-0" style={{ width: "auto" }}>
-      <h2 className="hidden md:block text-2xl font-bold tracking-tight text-[#291715] font-plus-jakarta">
+      <h2 className="hidden md:block text-2xl font-bold tracking-tight text-[#1b1c1d] font-plus-jakarta">
         Painel Geral
       </h2>
 
@@ -22,7 +22,7 @@ export default function AdminHeader({ period, onPeriodChange }) {
               className={`px-3 md:px-4 py-2 text-sm font-plus-jakarta transition-all active:scale-95 flex-1 md:flex-none ${
                 period === p.value
                   ? "font-bold text-white bg-[#a80012] rounded-lg shadow-sm"
-                  : "font-medium text-[#291715]/70 hover:text-[#a80012]"
+                  : "font-medium text-[#1b1c1d]/70 hover:text-[#a80012]"
               }`}
             >
               {p.label}

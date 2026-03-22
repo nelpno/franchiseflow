@@ -131,7 +131,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
       <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
         <CardContent className="p-5 md:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
               Evolucao
             </h3>
           </div>
@@ -141,10 +141,10 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
               size={48}
               className="text-[#cac0c0] mb-3"
             />
-            <p className="text-sm text-[#534343]">
+            <p className="text-sm text-[#4a3d3d]">
               Dados insuficientes para graficos
             </p>
-            <p className="text-xs text-[#534343]/60 mt-1">
+            <p className="text-xs text-[#4a3d3d]/60 mt-1">
               Lance vendas em pelo menos 2 meses diferentes
             </p>
           </div>
@@ -157,14 +157,14 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
     <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
       <CardContent className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
             Evolucao
           </h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowCharts(!showCharts)}
-            className="gap-1.5 text-[#534343] hover:text-[#b91c1c] text-xs rounded-xl"
+            className="gap-1.5 text-[#4a3d3d] hover:text-[#b91c1c] text-xs rounded-xl"
           >
             <MaterialIcon
               icon={showCharts ? "visibility_off" : "visibility"}
@@ -178,7 +178,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
           <div className="space-y-6">
             {/* Area Chart — Faturamento mensal */}
             <div>
-              <p className="text-xs font-medium text-[#534343] mb-2">
+              <p className="text-xs font-medium text-[#4a3d3d] mb-2">
                 Faturamento Mensal
               </p>
               <div className="h-48 md:h-56">
@@ -214,13 +214,13 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
                     />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 11, fill: "#534343" }}
+                      tick={{ fontSize: 11, fill: "#4a3d3d" }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
                       tickFormatter={formatBRLCompact}
-                      tick={{ fontSize: 10, fill: "#534343" }}
+                      tick={{ fontSize: 10, fill: "#4a3d3d" }}
                       axisLine={false}
                       tickLine={false}
                       width={55}
@@ -241,7 +241,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
 
             {/* Composed Chart — Receita vs Despesas + Margem */}
             <div>
-              <p className="text-xs font-medium text-[#534343] mb-2">
+              <p className="text-xs font-medium text-[#4a3d3d] mb-2">
                 Receita vs Despesas + Margem
               </p>
               <div className="h-48 md:h-56">
@@ -257,14 +257,14 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
                     />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 11, fill: "#534343" }}
+                      tick={{ fontSize: 11, fill: "#4a3d3d" }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
                       yAxisId="left"
                       tickFormatter={formatBRLCompact}
-                      tick={{ fontSize: 10, fill: "#534343" }}
+                      tick={{ fontSize: 10, fill: "#4a3d3d" }}
                       axisLine={false}
                       tickLine={false}
                       width={55}
@@ -294,7 +294,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
                       yAxisId="left"
                       dataKey="totalExpenses"
                       name="Despesas"
-                      fill="#534343"
+                      fill="#4a3d3d"
                       radius={[4, 4, 0, 0]}
                       barSize={24}
                       opacity={0.6}

@@ -19,7 +19,7 @@ export default function StatsCard({ title, value, previousValue, icon: Icon, tre
     const isUp = trend === 'up';
     return (
       <span className={`text-xs font-bold flex items-center gap-0.5 ${
-        isUp ? 'text-[#b91c1c]' : 'text-[#4a3d3d]'
+        isUp ? 'text-[#16a34a]' : 'text-[#dc2626]'
       }`}>
         <MaterialIcon icon={isUp ? "arrow_upward" : "arrow_downward"} size={14} />
         {isUp ? '+' : ''}{Math.abs(percentageChange).toFixed(0)}%

@@ -10,7 +10,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-[#1b1c1d] mb-1">{label}</p>
       {payload.map((entry, i) => (
-        <div key={i} className="flex items-center gap-2 text-[#534343]">
+        <div key={i} className="flex items-center gap-2 text-[#4a3d3d]">
           <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
           <span>{entry.name === 'faturamento' ? 'Faturamento' : 'Vendas'}:</span>
           <span className="font-semibold text-[#1b1c1d]">

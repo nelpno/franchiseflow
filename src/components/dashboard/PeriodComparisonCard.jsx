@@ -58,8 +58,8 @@ function DeltaBadge({ current, previous, isInverted = false }) {
   if (previous === 0 && current === 0) return null;
   const delta = previous === 0 ? 100 : ((current - previous) / previous) * 100;
   const improved = isInverted ? delta < 0 : delta > 0;
-  const color = improved ? "text-[#16a34a]" : "text-[#b91c1c]";
-  const bg = improved ? "bg-[#16a34a]/10" : "bg-[#b91c1c]/10";
+  const color = improved ? "text-[#16a34a]" : "text-[#dc2626]";
+  const bg = improved ? "bg-[#16a34a]/10" : "bg-[#dc2626]/10";
   const icon = delta > 0 ? "trending_up" : delta < 0 ? "trending_down" : "trending_flat";
 
   return (
@@ -193,7 +193,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
         <MaterialIcon
           icon={expanded ? "expand_less" : "expand_more"}
           size={18}
-          className="text-[#534343]"
+          className="text-[#4a3d3d]"
         />
       </button>
 
@@ -208,7 +208,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
                   activePreset === preset.key
                     ? "bg-[#b91c1c] text-white"
-                    : "bg-[#e9e8e9] text-[#534343] hover:bg-[#e9e8e9]/80"
+                    : "bg-[#e9e8e9] text-[#4a3d3d] hover:bg-[#e9e8e9]/80"
                 }`}
               >
                 {preset.label}
@@ -224,7 +224,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
           ) : data ? (
             <>
               {/* Period labels */}
-              <div className="flex items-center justify-between text-xs text-[#534343] px-1">
+              <div className="flex items-center justify-between text-xs text-[#4a3d3d] px-1">
                 <span className="font-medium capitalize">{data.period1Label}</span>
                 <MaterialIcon icon="arrow_forward" size={14} />
                 <span className="font-bold text-[#1b1c1d] capitalize">{data.period2Label}</span>
@@ -237,7 +237,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
                     key={metric.label}
                     className="bg-[#fbf9fa] rounded-xl p-3 space-y-1"
                   >
-                    <div className="flex items-center gap-1.5 text-[#534343]">
+                    <div className="flex items-center gap-1.5 text-[#4a3d3d]">
                       <MaterialIcon icon={metric.icon} size={14} />
                       <span className="text-[11px] font-medium">{metric.label}</span>
                     </div>
@@ -247,7 +247,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
                       </span>
                       <DeltaBadge current={metric.period2} previous={metric.period1} />
                     </div>
-                    <p className="text-xs text-[#534343]/80 font-mono-numbers">
+                    <p className="text-xs text-[#4a3d3d]/80 font-mono-numbers">
                       antes: {metric.format(metric.period1)}
                     </p>
                   </div>
@@ -255,7 +255,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
               </div>
             </>
           ) : (
-            <div className="text-center py-6 text-sm text-[#534343]">
+            <div className="text-center py-6 text-sm text-[#4a3d3d]">
               Selecione um periodo para comparar
             </div>
           )}

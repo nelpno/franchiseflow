@@ -107,7 +107,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
             activeTab === null
               ? "bg-[#1b1c1d] text-white"
-              : "bg-white text-[#534343] border border-[#291715]/10 hover:bg-[#fbf9fa]"
+              : "bg-white text-[#4a3d3d] border border-[#291715]/10 hover:bg-[#fbf9fa]"
           }`}
         >
           Todas
@@ -115,7 +115,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
             className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
               activeTab === null
                 ? "bg-white/20 text-white"
-                : "bg-[#e9e8e9] text-[#534343]"
+                : "bg-[#e9e8e9] text-[#4a3d3d]"
             }`}
           >
             {allActions.length}
@@ -132,7 +132,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors shrink-0 border ${
                 isActive
                   ? "text-white border-transparent"
-                  : "bg-white text-[#534343] border-[#291715]/10 hover:bg-[#fbf9fa]"
+                  : "bg-white text-[#4a3d3d] border-[#291715]/10 hover:bg-[#fbf9fa]"
               }`}
               style={isActive ? { backgroundColor: tab.color } : undefined}
             >
@@ -142,7 +142,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
                 className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
                   isActive
                     ? "bg-white/20 text-white"
-                    : "bg-[#e9e8e9] text-[#534343]"
+                    : "bg-[#e9e8e9] text-[#4a3d3d]"
                 }`}
               >
                 {count}
@@ -184,7 +184,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
                     <p className="text-sm font-semibold text-[#1b1c1d] truncate">
                       {name}
                     </p>
-                    <p className="text-xs text-[#534343] font-mono-numbers">
+                    <p className="text-xs text-[#4a3d3d] font-mono-numbers">
                       {formatPhone(phone)}
                     </p>
                   </div>
@@ -201,12 +201,12 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
               </div>
 
               {/* Message */}
-              <p className="text-xs text-[#534343] leading-relaxed">
+              <p className="text-xs text-[#4a3d3d] leading-relaxed">
                 {action.message}
               </p>
 
               {/* Contact details */}
-              <div className="flex items-center gap-3 text-[11px] text-[#534343]/80">
+              <div className="flex items-center gap-3 text-[11px] text-[#4a3d3d]/80">
                 {contact.last_purchase_at && (
                   <span className="flex items-center gap-1">
                     <MaterialIcon icon="shopping_bag" size={12} />
@@ -269,7 +269,7 @@ export default function ActionPanel({ contacts, onContactUpdate }) {
                       setNoteInputId(contact.id);
                       setNoteText("");
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/60 text-[#534343] hover:bg-white/80 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-white/60 text-[#4a3d3d] hover:bg-white/80 transition-colors"
                   >
                     <MaterialIcon icon="edit_note" size={14} />
                     Anotar

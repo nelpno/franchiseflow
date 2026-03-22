@@ -163,7 +163,7 @@ export default function FranchiseeDashboard() {
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold shrink-0 mt-1 ${
               botActive
                 ? "bg-[#16a34a]/10 text-[#16a34a]"
-                : "bg-[#e9e8e9] text-[#534343]"
+                : "bg-[#e9e8e9] text-[#4a3d3d]"
             }`}>
               <MaterialIcon icon="smart_toy" size={12} />
               {botActive ? "Bot ativo" : "Bot inativo"}

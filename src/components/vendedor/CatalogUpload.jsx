@@ -76,7 +76,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
           <img
             src={value}
             alt="Catálogo"
-            className="w-full max-h-80 object-contain bg-[#f5f3f4]"
+            className="w-full max-h-80 object-contain bg-[#fbf9fa]"
           />
           <div className="absolute top-3 right-3 flex gap-2">
             <button
@@ -95,7 +95,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
               <MaterialIcon icon="delete" size={14} />
             </button>
           </div>
-          <div className="p-3 bg-[#f5f3f4] flex items-center justify-between">
+          <div className="p-3 bg-[#fbf9fa] flex items-center justify-between">
             <span className="text-[10px] text-[#3d4a42]/60 truncate flex-1">{value.split("?")[0]}</span>
             <a
               href={value}
@@ -118,7 +118,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
             dragOver
               ? "border-[#b91c1c] bg-[#b91c1c]/5"
-              : "border-[#bccac0]/30 hover:border-[#b91c1c]/30 hover:bg-[#f5f3f4]"
+              : "border-[#bccac0]/30 hover:border-[#b91c1c]/30 hover:bg-[#fbf9fa]"
           }`}
         >
           {isUploading ? (
@@ -150,7 +150,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       />
 
       {value && (
-        <div className="bg-[#f5f3f4] rounded-xl p-3">
+        <div className="bg-[#fbf9fa] rounded-xl p-3">
           <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">
             O vendedor vai enviar:
           </p>

@@ -32,7 +32,7 @@ const PERIOD_FILTERS = [
 ];
 
 const SOURCE_CONFIG = {
-  manual: { label: "Manual", icon: "edit", className: "bg-[#534343]/10 text-[#534343]" },
+  manual: { label: "Manual", icon: "edit", className: "bg-[#4a3d3d]/10 text-[#4a3d3d]" },
   bot: { label: "Bot", icon: "smart_toy", className: "bg-[#775a19]/10 text-[#775a19]" },
   whatsapp: { label: "WhatsApp", icon: "chat", className: "bg-[#b91c1c]/10 text-[#b91c1c]" },
 };
@@ -234,7 +234,7 @@ export default function TabLancar({
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 period === pf.value
                   ? "bg-[#b91c1c] text-white"
-                  : "text-[#534343] hover:bg-[#f5f3f4]"
+                  : "text-[#4a3d3d] hover:bg-[#fbf9fa]"
               }`}
             >
               {pf.label}
@@ -247,7 +247,7 @@ export default function TabLancar({
           <MaterialIcon
             icon="search"
             size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#534343]/60"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a3d3d]/60"
           />
           <Input
             placeholder="Buscar cliente..."
@@ -260,7 +260,7 @@ export default function TabLancar({
 
       {/* Period summary */}
       {filteredSales.length > 0 && (
-        <div className="flex items-center gap-4 text-sm text-[#534343]">
+        <div className="flex items-center gap-4 text-sm text-[#4a3d3d]">
           <span>
             <strong className="text-[#1b1c1d] font-mono-numbers">{periodStats.count}</strong>{" "}
             {periodStats.count === 1 ? "venda" : "vendas"}
@@ -293,7 +293,7 @@ export default function TabLancar({
           <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
             Nenhuma venda registrada
           </h3>
-          <p className="text-sm text-[#534343] max-w-sm">
+          <p className="text-sm text-[#4a3d3d] max-w-sm">
             Comece lançando sua primeira venda!
           </p>
           <Button
@@ -318,7 +318,7 @@ export default function TabLancar({
                 <CardContent className="p-0">
                   {/* Main row */}
                   <div
-                    className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[#f5f3f4]/50 transition-colors"
+                    className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[#fbf9fa]/50 transition-colors"
                     onClick={() => handleToggleExpand(sale.id)}
                   >
                     {/* Payment icon */}
@@ -326,7 +326,7 @@ export default function TabLancar({
                       <MaterialIcon
                         icon={getPaymentIcon(sale.payment_method)}
                         size={20}
-                        className="text-[#534343]"
+                        className="text-[#4a3d3d]"
                       />
                     </div>
 
@@ -338,7 +338,7 @@ export default function TabLancar({
                         </span>
                         {getSourceBadge(sale.source)}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#534343] mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#4a3d3d] mt-0.5">
                         <span>{formatDateSafe(sale.sale_date || sale.created_at)}{formatTimeSafe(sale.created_at) && ` às ${formatTimeSafe(sale.created_at)}`}</span>
                         <span className="text-[#291715]/20">|</span>
                         <span className="truncate">{getPaymentLabel(sale.payment_method)}</span>
@@ -357,7 +357,7 @@ export default function TabLancar({
                         {formatCurrency(sale.value)}
                       </p>
                       {sale.net_value != null && sale.net_value !== sale.value && (
-                        <p className="text-xs text-[#534343] font-mono-numbers">
+                        <p className="text-xs text-[#4a3d3d] font-mono-numbers">
                           Liq. {formatCurrency(sale.net_value)}
                         </p>
                       )}
@@ -367,7 +367,7 @@ export default function TabLancar({
                     <MaterialIcon
                       icon={isExpanded ? "expand_less" : "expand_more"}
                       size={20}
-                      className="text-[#534343] shrink-0"
+                      className="text-[#4a3d3d] shrink-0"
                     />
                   </div>
 
@@ -377,7 +377,7 @@ export default function TabLancar({
                       {/* Sale items */}
                       {saleItemsList.length > 0 ? (
                         <div className="space-y-1">
-                          <p className="text-xs font-medium text-[#534343] uppercase tracking-wider mb-1">
+                          <p className="text-xs font-medium text-[#4a3d3d] uppercase tracking-wider mb-1">
                             Produtos
                           </p>
                           {saleItemsList.map((si) => (
@@ -387,16 +387,16 @@ export default function TabLancar({
                             >
                               <span className="text-[#1b1c1d]">
                                 {si.product_name}{" "}
-                                <span className="text-[#534343]">x{si.quantity}</span>
+                                <span className="text-[#4a3d3d]">x{si.quantity}</span>
                               </span>
-                              <span className="font-mono-numbers text-[#534343]">
+                              <span className="font-mono-numbers text-[#4a3d3d]">
                                 {formatCurrency(si.quantity * si.unit_price)}
                               </span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-[#534343]">
+                        <p className="text-xs text-[#4a3d3d]">
                           Sem detalhamento de produtos
                         </p>
                       )}
@@ -406,7 +406,7 @@ export default function TabLancar({
                         <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
                           {sale.card_fee_amount > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-[#534343]">
+                              <span className="text-[#4a3d3d]">
                                 Taxa cartão ({sale.card_fee_percent}%)
                               </span>
                               <span className="text-[#b91c1c] font-mono-numbers">
@@ -416,7 +416,7 @@ export default function TabLancar({
                           )}
                           {sale.delivery_fee > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-[#534343]">Frete</span>
+                              <span className="text-[#4a3d3d]">Frete</span>
                               <span className="text-[#b91c1c] font-mono-numbers">
                                 - {formatCurrency(sale.delivery_fee)}
                               </span>
@@ -440,13 +440,13 @@ export default function TabLancar({
                         return custoTotal > 0 ? (
                           <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-[#534343]">Custo dos produtos</span>
-                              <span className="font-mono-numbers text-[#534343]">
+                              <span className="text-[#4a3d3d]">Custo dos produtos</span>
+                              <span className="font-mono-numbers text-[#4a3d3d]">
                                 {formatCurrency(custoTotal)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-[#534343]">Lucro da venda</span>
+                              <span className="text-[#4a3d3d]">Lucro da venda</span>
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`font-bold font-mono-numbers ${
@@ -479,7 +479,7 @@ export default function TabLancar({
                             e.stopPropagation();
                             handleEditSale(sale);
                           }}
-                          className="gap-1.5 text-[#534343]"
+                          className="gap-1.5 text-[#4a3d3d]"
                         >
                           <MaterialIcon icon="edit" size={14} />
                           Editar
@@ -531,7 +531,7 @@ export default function TabLancar({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Excluir venda?</DialogTitle>
-            <DialogDescription className="text-[#534343]">
+            <DialogDescription className="text-[#4a3d3d]">
               Esta ação não pode ser desfeita. A venda de{" "}
               <strong>{formatCurrency(deletingSale?.value)}</strong> será removida
               permanentemente.

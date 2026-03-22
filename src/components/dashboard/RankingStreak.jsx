@@ -22,7 +22,7 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
 
   return (
     <section className="grid grid-cols-2 gap-4 mb-6">
-      <div className="flex items-center gap-3 bg-[#f5f3f4]/50 p-4 rounded-xl">
+      <div className="flex items-center gap-3 bg-[#fbf9fa]/50 p-4 rounded-xl">
         <MaterialIcon icon="military_tech" filled size={20} className="text-[#d4af37] flex-shrink-0" />
         {ranking?.position ? (
           <span className="text-xs font-semibold text-[#1d1b1b]">
@@ -33,7 +33,7 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
         )}
       </div>
 
-      <div className="flex items-center gap-3 bg-[#f5f3f4]/50 p-4 rounded-xl">
+      <div className="flex items-center gap-3 bg-[#fbf9fa]/50 p-4 rounded-xl">
         <MaterialIcon icon="local_fire_department" filled size={20} className={`flex-shrink-0 ${streak > 0 ? "text-[#b91c1c]" : "text-[#cac0c0]"}`} />
         <span className="text-xs font-semibold text-[#1d1b1b]">
           {streak > 0

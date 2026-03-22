@@ -81,12 +81,12 @@ export default function WhatsAppHistory({
       return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="w-14 h-14 rounded-full bg-[#e9e8e9] flex items-center justify-center mb-3">
-            <MaterialIcon icon="link_off" size={28} className="text-[#534343]" />
+            <MaterialIcon icon="link_off" size={28} className="text-[#4a3d3d]" />
           </div>
           <p className="text-sm font-semibold text-[#1b1c1d] mb-1">
             Histórico indisponível
           </p>
-          <p className="text-xs text-[#534343] max-w-xs">
+          <p className="text-xs text-[#4a3d3d] max-w-xs">
             Conecte o WhatsApp no Meu Vendedor para ver o histórico de conversas.
           </p>
         </div>
@@ -96,12 +96,12 @@ export default function WhatsAppHistory({
       return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="w-14 h-14 rounded-full bg-[#e9e8e9] flex items-center justify-center mb-3">
-            <MaterialIcon icon="chat_bubble_outline" size={28} className="text-[#534343]" />
+            <MaterialIcon icon="chat_bubble_outline" size={28} className="text-[#4a3d3d]" />
           </div>
           <p className="text-sm font-semibold text-[#1b1c1d] mb-1">
             Nenhuma mensagem encontrada
           </p>
-          <p className="text-xs text-[#534343]">
+          <p className="text-xs text-[#4a3d3d]">
             Não há mensagens recentes com este contato.
           </p>
         </div>
@@ -116,7 +116,7 @@ export default function WhatsAppHistory({
           <p className="text-sm font-semibold text-[#1b1c1d] mb-1">
             Histórico indisponível
           </p>
-          <p className="text-xs text-[#534343] max-w-xs">
+          <p className="text-xs text-[#4a3d3d] max-w-xs">
             Não foi possível conectar ao servidor de mensagens. Tente novamente mais tarde.
           </p>
         </div>
@@ -133,7 +133,7 @@ export default function WhatsAppHistory({
             <MaterialIcon icon="chat" size={20} className="text-[#16a34a]" />
             Conversa com {contactName || "Contato"}
           </DialogTitle>
-          <p className="text-xs text-[#534343] font-mono-numbers">
+          <p className="text-xs text-[#4a3d3d] font-mono-numbers">
             {formatPhone(contactPhone)}
           </p>
         </DialogHeader>
@@ -145,7 +145,7 @@ export default function WhatsAppHistory({
             size="sm"
             onClick={loadMessages}
             disabled={loading || !instanceName}
-            className="text-[#534343] hover:text-[#b91c1c] rounded-xl gap-1"
+            className="text-[#4a3d3d] hover:text-[#b91c1c] rounded-xl gap-1"
           >
             <MaterialIcon
               icon="refresh"
@@ -161,7 +161,7 @@ export default function WhatsAppHistory({
           {loading && messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-8 h-8 border-2 border-[#b91c1c] border-t-transparent rounded-full animate-spin mb-3" />
-              <p className="text-sm text-[#534343]">Carregando mensagens...</p>
+              <p className="text-sm text-[#4a3d3d]">Carregando mensagens...</p>
             </div>
           ) : error ? (
             renderError()
@@ -191,7 +191,7 @@ export default function WhatsAppHistory({
                       </p>
                       <p
                         className={`text-[10px] mt-1 ${
-                          isFromMe ? "text-white/60" : "text-[#534343]/60"
+                          isFromMe ? "text-white/60" : "text-[#4a3d3d]/60"
                         } text-right`}
                       >
                         {formatMessageTime(msg.messageTimestamp || msg.timestamp || msg.t)}

@@ -2,9 +2,9 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL, formatBRLCompact } from "@/lib/formatters";
 
 function KpiCard({ icon, iconBg, label, value, subtitle, delta, isLoading }) {
-  const deltaColor = delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-red-600' : 'text-[#534343]';
+  const deltaColor = delta > 0 ? 'text-[#16a34a]' : delta < 0 ? 'text-[#dc2626]' : 'text-[#4a3d3d]';
   const deltaIcon = delta > 0 ? 'arrow_upward' : delta < 0 ? 'arrow_downward' : 'remove';
-  const deltaBg = delta > 0 ? 'bg-emerald-50' : delta < 0 ? 'bg-red-50' : 'bg-slate-50';
+  const deltaBg = delta > 0 ? 'bg-[#16a34a]/10' : delta < 0 ? 'bg-[#dc2626]/10' : 'bg-slate-50';
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
@@ -30,7 +30,7 @@ function KpiCard({ icon, iconBg, label, value, subtitle, delta, isLoading }) {
             <div className="text-2xl md:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] tracking-tight">
               {value}
             </div>
-            <div className="text-sm text-[#534343] mt-0.5">{label}</div>
+            <div className="text-sm text-[#4a3d3d] mt-0.5">{label}</div>
           </div>
           {subtitle && (
             <div className="text-xs text-[#7a6b6b]">{subtitle}</div>
@@ -66,7 +66,7 @@ export default function KpiCards({ sales, contacts, previousSales, previousConta
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <KpiCard
         icon="payments"
-        iconBg="bg-emerald-600"
+        iconBg="bg-[#16a34a]"
         label="Faturamento"
         value={formatCurrency(totalRevenue)}
         subtitle={`vs. ${formatCurrency(prevRevenue)} anterior`}

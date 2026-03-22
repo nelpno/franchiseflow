@@ -27,7 +27,7 @@ export default function ChecklistItem({ item, checked, onToggle }) {
   };
 
   return (
-    <div className={`border-b border-slate-100 last:border-b-0 transition-colors duration-150 ${checked ? "bg-red-50" : "bg-white"}`}>
+    <div className={`border-b border-[#e9e8e9] last:border-b-0 transition-colors duration-150 ${checked ? "bg-[#ffdad6]" : "bg-white"}`}>
       {/* Main row */}
       <div className="flex items-start gap-3 px-4 py-3">
         {/* Checkbox - click only marks */}
@@ -49,7 +49,7 @@ export default function ChecklistItem({ item, checked, onToggle }) {
         >
           <span
             className={`text-sm leading-relaxed flex-1 ${
-              checked ? "line-through text-slate-400" : "text-slate-800"
+              checked ? "line-through text-[#4a3d3d]" : "text-[#1b1c1d]"
             }`}
           >
             {item.label}
@@ -58,7 +58,7 @@ export default function ChecklistItem({ item, checked, onToggle }) {
             <MaterialIcon
               icon="chevron_right"
               size={16}
-              className={`flex-shrink-0 mt-0.5 text-slate-400 transition-transform duration-200 ${
+              className={`flex-shrink-0 mt-0.5 text-[#4a3d3d] transition-transform duration-200 ${
                 expanded ? "rotate-90" : ""
               }`}
             />
