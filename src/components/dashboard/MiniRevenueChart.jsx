@@ -2,9 +2,10 @@ import React, { useMemo } from "react";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export default function MiniRevenueChart({ summaries, franchiseId }) {
+export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0 }) {
   const chartData = useMemo(() => {
     const days = [];
+    const todayDate = format(new Date(), "yyyy-MM-dd");
     for (let i = 6; i >= 0; i--) {
       const date = format(subDays(new Date(), i), "yyyy-MM-dd");
       const dayLabel = format(subDays(new Date(), i), "EEE", { locale: ptBR });
@@ -12,11 +13,15 @@ export default function MiniRevenueChart({ summaries, franchiseId }) {
       const daySummaries = summaries.filter(
         (s) => s.date === date && (!franchiseId || s.franchise_id === franchiseId)
       );
-      const revenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+      let revenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+      // Para hoje, usar o maior valor entre daily_summaries (cron) e vendas em tempo real
+      if (date === todayDate && todayRevenue > revenue) {
+        revenue = todayRevenue;
+      }
       days.push({ day: capitalizedLabel, valor: revenue, isToday: i === 0 });
     }
     return days;
-  }, [summaries, franchiseId]);
+  }, [summaries, franchiseId, todayRevenue]);
 
   const hasData = chartData.some((d) => d.valor > 0);
   if (!hasData) return null;

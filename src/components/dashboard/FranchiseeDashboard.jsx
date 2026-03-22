@@ -17,7 +17,7 @@ import SmartActions from "./SmartActions";
 import { generateSmartActions } from "@/lib/smartActions";
 
 export default function FranchiseeDashboard() {
-  const { user } = useAuth();
+  const { user, selectedFranchise: ctxFranchise } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [franchise, setFranchise] = useState(null);
@@ -32,7 +32,7 @@ export default function FranchiseeDashboard() {
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
 
-  const franchiseId = user?.managed_franchise_ids?.[0];
+  const franchiseId = ctxFranchise?.id || user?.managed_franchise_ids?.[0];
 
   const loadData = useCallback(async () => {
     if (!franchiseId) return;
@@ -172,7 +172,7 @@ export default function FranchiseeDashboard() {
         pendingActionsCount={generateSmartActions(contacts, 0).length}
       />
 
-      <MiniRevenueChart summaries={summaries} franchiseId={evoId} />
+      <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} />
 
       <RankingStreak
         ranking={ranking}

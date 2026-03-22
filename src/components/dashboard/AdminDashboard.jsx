@@ -119,20 +119,32 @@ export default function AdminDashboard() {
     return { salesCount, prevSalesCount, revenue, prevRevenue, contacts, prevContacts, conversion, prevConversion };
   }, [period, todaySales, yesterdaySales, todayContacts, yesterdayContacts, summaries]);
 
-  // Generate mini sparkline data from recent summaries
+  // Live today totals for real-time chart data
+  const liveTodayRevenue = useMemo(() =>
+    todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0),
+    [todaySales]
+  );
+  const liveTodayContactsCount = todayContacts.length;
+
+  // Generate mini sparkline data from recent summaries + live today
   const sparklineData = useMemo(() => {
     const last6 = [];
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     for (let i = 5; i >= 0; i--) {
       const dateStr = format(subDays(new Date(), i), "yyyy-MM-dd");
       const daySummaries = summaries.filter((s) => s.date === dateStr);
-      last6.push({
-        sales: daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0),
-        revenue: daySummaries.reduce((s, r) => s + (r.sales_value || 0), 0),
-        contacts: daySummaries.reduce((s, r) => s + (r.unique_contacts || 0), 0),
-      });
+      let sales = daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0);
+      let revenue = daySummaries.reduce((s, r) => s + (r.sales_value || 0), 0);
+      let contacts = daySummaries.reduce((s, r) => s + (r.unique_contacts || 0), 0);
+      if (dateStr === todayStr) {
+        if (todaySales.length > sales) sales = todaySales.length;
+        if (liveTodayRevenue > revenue) revenue = liveTodayRevenue;
+        if (liveTodayContactsCount > contacts) contacts = liveTodayContactsCount;
+      }
+      last6.push({ sales, revenue, contacts });
     }
     return last6;
-  }, [summaries]);
+  }, [summaries, todaySales, liveTodayRevenue, liveTodayContactsCount]);
 
   const chartDays = period === "30d" ? 30 : 7;
 
@@ -311,8 +323,8 @@ export default function AdminDashboard() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <DailyRevenueChart summaries={summaries} isLoading={isLoading} days={chartDays} />
-        <MessagesTrend summaries={summaries} isLoading={isLoading} days={chartDays} />
+        <DailyRevenueChart summaries={summaries} isLoading={isLoading} days={chartDays} todayRevenue={liveTodayRevenue} />
+        <MessagesTrend summaries={summaries} isLoading={isLoading} days={chartDays} todayContacts={liveTodayContactsCount} />
       </div>
     </div>
   );

@@ -3,22 +3,26 @@ import { format, subDays } from "date-fns";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export default function DailyRevenueChart({ summaries, isLoading, days = 7 }) {
+export default function DailyRevenueChart({ summaries, isLoading, days = 7, todayRevenue = 0 }) {
   const chartData = useMemo(() => {
     const data = [];
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const daySummaries = summaries.filter(s => s.date === dateStr);
-      const totalRevenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+      let revenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+      if (dateStr === todayStr && todayRevenue > revenue) {
+        revenue = todayRevenue;
+      }
       data.push({
         dayLabel: DAY_LABELS[date.getDay()],
-        revenue: totalRevenue,
+        revenue,
         isLast: i === 0,
       });
     }
     return data;
-  }, [summaries, days]);
+  }, [summaries, days, todayRevenue]);
 
   const totalRevenue = chartData.reduce((sum, d) => sum + d.revenue, 0);
   const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);

@@ -3,22 +3,26 @@ import { format, subDays } from "date-fns";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export default function MessagesTrend({ summaries, isLoading, days = 7 }) {
+export default function MessagesTrend({ summaries, isLoading, days = 7, todayContacts = 0 }) {
   const chartData = useMemo(() => {
     const data = [];
+    const todayStr = format(new Date(), "yyyy-MM-dd");
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const daySummaries = summaries.filter(s => s.date === dateStr);
-      const totalContacts = daySummaries.reduce((sum, s) => sum + (s.unique_contacts || 0), 0);
+      let contacts = daySummaries.reduce((sum, s) => sum + (s.unique_contacts || 0), 0);
+      if (dateStr === todayStr && todayContacts > contacts) {
+        contacts = todayContacts;
+      }
       data.push({
         dayLabel: DAY_LABELS[date.getDay()],
-        contacts: totalContacts,
+        contacts,
         isLast: i === 0,
       });
     }
     return data;
-  }, [summaries, days]);
+  }, [summaries, days, todayContacts]);
 
   const totalContacts = chartData.reduce((sum, d) => sum + d.contacts, 0);
   const maxContacts = Math.max(...chartData.map(d => d.contacts), 1);
