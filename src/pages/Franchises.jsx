@@ -1007,7 +1007,7 @@ export default function Franchises() {
                       return (
                         <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
                           <MaterialIcon icon="warning" size={16} className="text-amber-600" />
-                          <span className="text-sm text-amber-700">Nenhum usuario vinculado a esta franquia</span>
+                          <span className="text-sm text-amber-700">Nenhum usuário vinculado a esta franquia</span>
                         </div>
                       );
                     }
@@ -1047,7 +1047,7 @@ export default function Franchises() {
                       }}
                     >
                       <MaterialIcon icon="settings" size={16} className="mr-2" />
-                      Editar Permissoes
+                      Editar Permissões
                     </Button>
                     <Button
                       variant="outline"
