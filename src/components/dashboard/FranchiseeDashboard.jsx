@@ -135,7 +135,7 @@ export default function FranchiseeDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-[#fbf9fa] min-h-screen">
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-[#fbf9fa]">
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-2 gap-4">
           <Skeleton className="h-24 rounded-xl" />
@@ -152,7 +152,7 @@ export default function FranchiseeDashboard() {
   }
 
   return (
-    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa] min-h-screen">
+    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa]">
       <div className="mb-4">
         <div className="flex items-start justify-between">
           <FranchiseeGreeting

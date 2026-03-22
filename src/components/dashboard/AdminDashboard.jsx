@@ -165,7 +165,7 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8 space-y-6 bg-[#fdf3f2] min-h-screen">
+      <div className="p-4 md:p-8 space-y-6 bg-[#fdf3f2]">
         <Skeleton className="h-14 w-full rounded-2xl" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Skeleton className="h-40 rounded-2xl" />
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-[#fdf3f2] min-h-screen max-w-[1920px] mx-auto">
+    <div className="pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-[#fdf3f2] max-w-[1920px] mx-auto">
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
