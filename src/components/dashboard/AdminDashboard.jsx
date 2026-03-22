@@ -236,7 +236,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-[#fbf9fa] max-w-[1920px] mx-auto">
+    <div className="md:pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-[#fbf9fa] max-w-[1920px] mx-auto">
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
