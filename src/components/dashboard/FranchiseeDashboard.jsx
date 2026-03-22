@@ -43,6 +43,7 @@ export default function FranchiseeDashboard() {
       setFranchise(myFranchise);
 
       const evoId = myFranchise?.evolution_instance_id;
+      const fId = evoId || franchiseId;
       const [
         todaySalesData,
         yesterdaySalesData,
@@ -51,8 +52,8 @@ export default function FranchiseeDashboard() {
         checklistData,
         contactsData,
       ] = await Promise.all([
-        Sale.filter({ sale_date: today, franchise_id: franchiseId }),
-        Sale.filter({ sale_date: yesterday, franchise_id: franchiseId }),
+        evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }) : Promise.resolve([]),
+        evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }) : Promise.resolve([]),
         DailySummary.list("-date", 30),
         evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),
         evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),
@@ -76,7 +77,7 @@ export default function FranchiseeDashboard() {
       }
 
       try {
-        const rankData = await getFranchiseRanking(today, franchiseId);
+        const rankData = await getFranchiseRanking(today, fId);
         setRanking(rankData);
       } catch {
         setRanking(null);
@@ -102,19 +103,21 @@ export default function FranchiseeDashboard() {
   const todayAvgTicket = todaySalesCount > 0 ? todayRevenue / todaySalesCount : 0;
   const yesterdayAvgTicket = yesterdaySalesCount > 0 ? yesterdayRevenue / yesterdaySalesCount : 0;
 
+  const evoId = franchise?.evolution_instance_id;
+
   const dailyGoal = useMemo(() => {
-    if (!summaries.length || !franchiseId) return null;
+    if (!summaries.length || !evoId) return null;
     const now = new Date();
     const thirtyDaysAgo = subDays(now, 30);
     const recentDays = summaries.filter((s) => {
-      if (s.franchise_id !== franchiseId) return false;
+      if (s.franchise_id !== evoId) return false;
       const d = new Date(s.date);
       return d >= thirtyDaysAgo && d < now;
     });
     if (recentDays.length < 7) return null;
     const totalRevenue = recentDays.reduce((sum, s) => sum + (s.sales_value || 0), 0);
     return Math.round((totalRevenue / recentDays.length) * 1.10);
-  }, [summaries, franchiseId]);
+  }, [summaries, evoId]);
 
   if (isLoading) {
     return (
@@ -169,16 +172,16 @@ export default function FranchiseeDashboard() {
         pendingActionsCount={generateSmartActions(contacts, 0).length}
       />
 
-      <MiniRevenueChart summaries={summaries} franchiseId={franchiseId} />
+      <MiniRevenueChart summaries={summaries} franchiseId={evoId} />
 
       <RankingStreak
         ranking={ranking}
         summaries={summaries}
-        franchiseId={franchiseId}
+        franchiseId={evoId}
         dailyGoal={dailyGoal}
       />
 
-      <SmartActions contacts={contacts} franchiseId={franchiseId} />
+      <SmartActions contacts={contacts} franchiseId={evoId} />
 
       {/* Fixed bottom CTA */}
       <div className="fixed bottom-20 md:bottom-10 left-0 right-0 px-6 max-w-lg mx-auto md:max-w-none md:flex md:justify-end z-50">
