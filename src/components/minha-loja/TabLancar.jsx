@@ -326,18 +326,15 @@ export default function TabLancar({
                         </span>
                         {getSourceBadge(sale.source)}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-[#534343] mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#534343] mt-0.5">
                         <span>{formatDateSafe(sale.sale_date || sale.created_at)}</span>
                         <span className="text-[#291715]/20">|</span>
-                        <span>{getPaymentLabel(sale.payment_method)}</span>
+                        <span className="truncate">{getPaymentLabel(sale.payment_method)}</span>
                         {sale.delivery_method === "delivery" && (
-                          <>
-                            <span className="text-[#291715]/20">|</span>
-                            <span className="flex items-center gap-0.5">
-                              <MaterialIcon icon="local_shipping" size={12} />
-                              Delivery
-                            </span>
-                          </>
+                          <span className="flex items-center gap-0.5 text-[#b91c1c]/70">
+                            <MaterialIcon icon="delivery_dining" size={12} />
+                            Entrega
+                          </span>
                         )}
                       </div>
                     </div>

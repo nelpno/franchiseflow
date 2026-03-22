@@ -255,7 +255,7 @@ export default function MyContacts() {
 
   const navigateToSales = (contact) => {
     const phone = getContactPhone(contact);
-    navigate("/MinhaLoja?tab=lancar" + (phone ? `&phone=${encodeURIComponent(phone)}` : ""));
+    navigate("/MinhaLoja?tab=lancar&action=nova-venda" + (phone ? `&phone=${encodeURIComponent(phone)}` : ""));
   };
 
   // Loading skeleton
