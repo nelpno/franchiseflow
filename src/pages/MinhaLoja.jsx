@@ -342,35 +342,24 @@ export default function MinhaLoja() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="bg-white border border-[#291715]/5 rounded-xl p-1 w-full md:w-auto">
-            <TabsTrigger
-              value="lancar"
-              className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
-            >
-              <MaterialIcon icon="add_circle" size={16} />
-              Lançar
-            </TabsTrigger>
-            <TabsTrigger
-              value="resultado"
-              className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
-            >
-              <MaterialIcon icon="analytics" size={16} />
-              Resultado
-            </TabsTrigger>
-            <TabsTrigger
-              value="estoque"
-              className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
-            >
-              <MaterialIcon icon="inventory_2" size={16} />
-              Estoque
-            </TabsTrigger>
-            <TabsTrigger
-              value="reposicao"
-              className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
-            >
-              <MaterialIcon icon="local_shipping" size={16} />
-              Reposição
-            </TabsTrigger>
+          <TabsList className="bg-white border border-[#291715]/5 rounded-xl p-1 w-full md:w-auto flex">
+            {[
+              { value: "lancar", icon: "add_circle", label: "Lançar" },
+              { value: "resultado", icon: "analytics", label: "Resultado" },
+              { value: "estoque", icon: "inventory_2", label: "Estoque" },
+              { value: "reposicao", icon: "local_shipping", label: "Reposição" },
+            ].map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="gap-1 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-2 md:px-4 flex-1 md:flex-none"
+              >
+                <MaterialIcon icon={tab.icon} size={18} />
+                <span className={`${activeTab === tab.value ? "inline" : "hidden md:inline"} text-xs md:text-sm`}>
+                  {tab.label}
+                </span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value="lancar" className="mt-4">
