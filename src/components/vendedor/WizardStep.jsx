@@ -1,4 +1,3 @@
-import React from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function WizardStep({ icon, title, subtitle, children }) {

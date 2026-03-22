@@ -1,5 +1,3 @@
-import React from "react";
-
 /**
  * Material Symbols Outlined icon component.
  * Uses Google's Material Symbols font (same as Stitch designs).

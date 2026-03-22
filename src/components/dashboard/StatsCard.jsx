@@ -1,4 +1,3 @@
-import React from 'react';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isValue = false }) {

@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function ChecklistProgress({ completed, total }) {
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 

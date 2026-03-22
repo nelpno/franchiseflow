@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function DailyGoalProgress({ todayRevenue, dailyGoal }) {
   if (dailyGoal === null || dailyGoal <= 0) return null;
 

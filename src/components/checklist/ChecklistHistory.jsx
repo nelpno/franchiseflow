@@ -1,4 +1,3 @@
-import React from "react";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 

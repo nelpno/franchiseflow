@@ -1,4 +1,3 @@
-import React from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS, DELIVERY_METHODS, BOT_PERSONALITIES, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
 

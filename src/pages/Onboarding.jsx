@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Franchise, User, OnboardingChecklist } from "@/entities/all";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,7 @@ export default function Onboarding() {
   const [isSaving, setIsSaving] = useState(false);
   const [allChecklists, setAllChecklists] = useState([]);
   const [celebrated, setCelebrated] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const saveTimerRef = useRef(null);
 
   const loadData = useCallback(async () => {
@@ -96,12 +97,16 @@ export default function Onboarding() {
 
   const handleDeleteOnboarding = async () => {
     if (!checklist) return;
-    if (!window.confirm("Tem certeza que deseja excluir este onboarding? Esta ação não pode ser desfeita.")) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
     await OnboardingChecklist.delete(checklist.id);
     setAllChecklists(prev => prev.filter(c => c.id !== checklist.id));
     setChecklist(null);
     setItems({});
     setSelectedFranchise(null);
+    setConfirmingDelete(false);
   };
 
   const handleStartOnboarding = async () => {
@@ -377,7 +382,7 @@ export default function Onboarding() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
                     {isSaving && <span className="text-xs text-[#534343]/60 animate-pulse">Salvando...</span>}
-                    {isAdmin && (
+                    {isAdmin && !confirmingDelete && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -387,6 +392,27 @@ export default function Onboarding() {
                       >
                         <MaterialIcon icon="delete" size={16} />
                       </Button>
+                    )}
+                    {isAdmin && confirmingDelete && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-red-600">Excluir?</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleDeleteOnboarding}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50 text-xs h-7"
+                        >
+                          Sim
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmingDelete(false)}
+                          className="text-[#534343] hover:bg-[#f5f3f4] text-xs h-7"
+                        >
+                          Não
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -17,9 +17,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { DailyUniqueContact, Sale, OnboardingChecklist } from "@/entities/all";
+import { DailyUniqueContact, Sale, Franchise, OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format } from "date-fns";
+import { getAvailableFranchises, getPrimaryFranchise } from "@/lib/franchiseUtils";
 
 // Navigation items with admin section grouping
 const navigationItems = [
@@ -124,10 +125,15 @@ export default function Layout({ children, currentPageName }) {
       loadQuickStats();
     }
     if (currentUser.role !== "admin" && currentUser.managed_franchise_ids?.length > 0) {
-      OnboardingChecklist.filter({
-        franchise_id: currentUser.managed_franchise_ids[0],
-      })
+      Franchise.list()
+        .then((allFranchises) => {
+          const primaryFranchise = getPrimaryFranchise(allFranchises, currentUser);
+          const franchiseId = primaryFranchise?.evolution_instance_id;
+          if (!franchiseId) return;
+          return OnboardingChecklist.filter({ franchise_id: franchiseId });
+        })
         .then((obs) => {
+          if (!obs) return;
           if (obs.length === 0 || obs[0].status === "approved") {
             setOnboardingApproved(true);
           }

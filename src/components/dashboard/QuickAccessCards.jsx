@@ -1,4 +1,3 @@
-import React from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";

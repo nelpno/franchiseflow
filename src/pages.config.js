@@ -52,7 +52,6 @@ import Acompanhamento from './pages/Acompanhamento';
 import Dashboard from './pages/Dashboard';
 import FranchiseSettings from './pages/FranchiseSettings';
 import Franchises from './pages/Franchises';
-import Inventory from './pages/Inventory';
 import Marketing from './pages/Marketing';
 import MinhaLoja from './pages/MinhaLoja';
 import MyChecklist from './pages/MyChecklist';
@@ -60,7 +59,6 @@ import MyContacts from './pages/MyContacts';
 import Onboarding from './pages/Onboarding';
 import PurchaseOrders from './pages/PurchaseOrders';
 import Reports from './pages/Reports';
-import Sales from './pages/Sales';
 import __Layout from './Layout.jsx';
 
 
@@ -70,7 +68,6 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "FranchiseSettings": FranchiseSettings,
     "Franchises": Franchises,
-    "Inventory": Inventory,
     "Marketing": Marketing,
     "MinhaLoja": MinhaLoja,
     "MyChecklist": MyChecklist,
@@ -78,7 +75,6 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "PurchaseOrders": PurchaseOrders,
     "Reports": Reports,
-    "Sales": Sales,
 }
 
 export const pagesConfig = {

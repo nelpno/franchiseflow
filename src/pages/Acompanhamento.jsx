@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Franchise, User, DailyChecklist } from "@/entities/all";
 import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -81,6 +82,7 @@ const TodayStatus = ({ checklists }) => {
 };
 
 export default function Acompanhamento() {
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
   const [franchiseData, setFranchiseData] = useState([]);
@@ -215,7 +217,7 @@ export default function Acompanhamento() {
       <div className="p-8 text-center">
         <h1 className="text-2xl font-bold text-red-600">Acesso Negado</h1>
         <p className="text-[#534343] mt-2">Apenas administradores podem acessar esta página.</p>
-        <Button className="mt-4" onClick={() => window.location.href = createPageUrl("Dashboard")}>
+        <Button className="mt-4" onClick={() => navigate(createPageUrl("Dashboard"))}>
           Ir para o Dashboard
         </Button>
       </div>

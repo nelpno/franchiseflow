@@ -1,4 +1,3 @@
-import React from "react";
 import { useAuth } from "@/lib/AuthContext";
 import FranchiseeDashboard from "@/components/dashboard/FranchiseeDashboard";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
