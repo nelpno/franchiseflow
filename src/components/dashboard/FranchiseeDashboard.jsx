@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking } from "@/entities/all";
+import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, DailyUniqueContact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export default function FranchiseeDashboard() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [checklistProgress, setChecklistProgress] = useState({ done: 0, total: 0 });
   const [contacts, setContacts] = useState([]);
+  const [botActive, setBotActive] = useState(false);
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
@@ -65,6 +66,18 @@ export default function FranchiseeDashboard() {
 
       setContacts(contactsData);
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
+
+      // Check bot activity (DailyUniqueContact in last 3 days)
+      if (evoId) {
+        try {
+          const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
+          const recentContacts = await DailyUniqueContact.filter({ franchise_id: evoId });
+          const hasRecent = recentContacts.some((c) => c.date >= threeDaysAgo);
+          setBotActive(hasRecent);
+        } catch {
+          setBotActive(false);
+        }
+      }
 
       if (checklistData.length > 0) {
         const items = checklistData[0].items || {};
@@ -138,10 +151,22 @@ export default function FranchiseeDashboard() {
 
   return (
     <div className="pt-4 pb-32 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa] min-h-screen">
-      <FranchiseeGreeting
-        userName={user?.full_name}
-        franchiseName={franchise ? `Unidade ${franchise.city}` : null}
-      />
+      <div className="flex items-center justify-between mb-2">
+        <FranchiseeGreeting
+          userName={user?.full_name}
+          franchiseName={franchise ? `Unidade ${franchise.city}` : null}
+        />
+        {franchise?.evolution_instance_id && (
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+            botActive
+              ? "bg-[#16a34a]/10 text-[#16a34a]"
+              : "bg-[#e9e8e9] text-[#534343]"
+          }`}>
+            <MaterialIcon icon="smart_toy" size={14} />
+            {botActive ? "Bot ativo" : "Bot inativo"}
+          </div>
+        )}
+      </div>
 
       <section className="grid grid-cols-3 gap-4 mb-6">
         <StatsCard

@@ -38,7 +38,7 @@ export const ITEM_DETAILS = {
     text: "Configure em WhatsApp Business → Configurações → Ferramentas comerciais → Perfil comercial:\n• Foto de perfil: logo da Maxi Massas\n• Nome da empresa: 'Maxi Massas [Sua Cidade]'\n• Categoria: 'Restaurante'\n• Descrição: 'Massas artesanais congeladas prontas em minutos! 🍝'\n• Endereço: seu endereço (para retirada)\n• Horário de funcionamento: defina seus horários",
   },
   "3-7": {
-    text: "Vá em WhatsApp Business → uma conversa qualquer → toque no nome → Etiqueta → Nova etiqueta. Crie EXATAMENTE estas 8:\n\n🔴 Novo Lead — Lead que acabou de chegar. Responder em até 5 min!\n🟡 Em Negociação — Já respondeu mas não fechou. Follow-up em 24h.\n🔵 Pedido Confirmado — Fechou pedido, aguardando pagamento/entrega.\n🟢 Cliente — Já comprou pelo menos 1 vez.\n🟢 Cliente Recorrente — Comprou 3+ vezes. Tratamento VIP.\n🟣 Remarketing — Inativo há +15 dias. Reativar com oferta.\n⚪ Não Fechou — Não quis comprar agora. Tentar em 30 dias.\n🟠 Indicação — Chegou por indicação. Atendimento prioritário.",
+    text: "Vá em WhatsApp Business → uma conversa qualquer → toque no nome → Etiqueta → Nova etiqueta. Crie EXATAMENTE estas 8:\n\n🔴 Contato Novo — Contato que acabou de chegar. Responder em até 5 min!\n🟡 Interessado — Já respondeu mas não fechou. Follow-up em 24h.\n🔵 Pedido Confirmado — Fechou pedido, aguardando pagamento/entrega.\n🟢 Cliente — Já comprou pelo menos 1 vez.\n🟢 Cliente Fiel — Comprou 3+ vezes. Tratamento VIP.\n🟣 Clientes Sumidos — Inativo há +15 dias. Reativar com oferta.\n⚪ Não Fechou — Não quis comprar agora. Tentar em 30 dias.\n🟠 Indicação — Chegou por indicação. Atendimento prioritário.",
   },
   "3-8": {
     text: "Vá em Configurações → Ferramentas comerciais → Respostas rápidas. Crie pelo menos estas 5:\n\n/ola → Saudação inicial\n/cardapio → Envia o catálogo de produtos\n/entrega → Informa raio, taxa e prazo\n/pix → Envia sua chave PIX\n/obrigado → Pós-venda e pedido de foto",
@@ -126,7 +126,7 @@ export const ITEM_DETAILS = {
     text: "O Checklist de Ações Diárias é a rotina que vai gerar suas vendas. São 4 blocos: Manhã (30min), Meio-Dia (45min), Tarde (45min), Noite (30min) = ~2h30/dia. Leia com atenção a página 'Meu Checklist' no Dashboard.",
   },
   "8-6": {
-    text: "Pratique os 7 scripts de venda antes de atender leads reais:\n1. Primeiro Contato com Lead Novo\n2. Follow-up (24h sem resposta)\n3. Remarketing (cliente inativo 15+ dias)\n4. Pós-Venda\n5. Pedido de Indicação\n6. Objeção de Preço ('está caro')\n7. Promoção Semanal\n\nOs scripts estão no documento 'Checklist de Ações Diárias' (PDF enviado no Kit).",
+    text: "Pratique os 7 scripts de venda antes de atender contatos reais:\n1. Primeiro Contato com Contato Novo\n2. Follow-up (24h sem resposta)\n3. Clientes Sumidos (cliente inativo 15+ dias)\n4. Pós-Venda\n5. Pedido de Indicação\n6. Objeção de Preço ('está caro')\n7. Promoção Semanal\n\nOs scripts estão no documento 'Checklist de Ações Diárias' (PDF enviado no Kit).",
   },
   "8-7": {
     text: "O Celso vai simular ser um cliente: enviar mensagem no seu WhatsApp, você responde, apresenta o cardápio, negocia, fecha o pedido e simula a entrega/retirada. É o teste final antes do lançamento!",

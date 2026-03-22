@@ -12,7 +12,7 @@ import ChecklistHistory from "../components/checklist/ChecklistHistory";
 const DAILY_ITEMS = {
   morning: [
     { key: "m1", label: "Verificar todas as mensagens que chegaram durante a noite" },
-    { key: "m2", label: "Responder TODOS os contatos \"Novo Lead\" (prioridade máxima!)" },
+    { key: "m2", label: "Responder TODOS os contatos novos (prioridade máxima!)" },
     { key: "m3", label: "Conferir se o robô respondeu corretamente durante a noite" },
     { key: "m4", label: "Verificar estoque no freezer — anotar produtos com pouca quantidade" },
     { key: "m5", label: "Conferir pedidos confirmados para entrega/retirada do dia" },
@@ -52,7 +52,7 @@ const WEEKLY_ITEMS = [
   { key: "s2", label: "Tentar vender novamente para quem não comprou" },
   { key: "s3", label: "Montar grupo de clientes para enviar promoção da semana" },
   { key: "s4", label: "Revisar catálogo do WhatsApp (fotos, preços, disponibilidade)" },
-  { key: "s5", label: "Pedir feedback a 3 clientes recorrentes" },
+  { key: "s5", label: "Pedir feedback a 3 clientes fiéis" },
   { key: "s6", label: "Fazer pedido de reposição à fábrica se necessário" },
   { key: "s7", label: "Ver como estão indo as redes sociais (curtidas, seguidores, alcance)" },
   { key: "s8", label: "Verificar resultado dos anúncios pagos" },

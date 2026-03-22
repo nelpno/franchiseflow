@@ -26,13 +26,13 @@ import { ptBR } from "date-fns/locale";
 const STATUS_CONFIG = {
   novo_lead: {
     label: "Responder",
-    badgeLabel: "Novo Lead",
+    badgeLabel: "Contato Novo",
     bg: "bg-[#b91c1c]/10",
     text: "text-[#b91c1c]",
   },
   em_negociacao: {
     label: "Negociando",
-    badgeLabel: "Em Negociação",
+    badgeLabel: "Interessado",
     bg: "bg-[#d4af37]/10",
     text: "text-[#775a19]",
   },
@@ -43,14 +43,14 @@ const STATUS_CONFIG = {
     text: "text-[#16a34a]",
   },
   recorrente: {
-    label: "Recorrentes",
-    badgeLabel: "Recorrente",
+    label: "Fiéis",
+    badgeLabel: "Cliente Fiel",
     bg: "bg-[#6b38d4]/10",
     text: "text-[#6b38d4]",
   },
   remarketing: {
-    label: "Remarketing",
-    badgeLabel: "Remarketing",
+    label: "Clientes Sumidos",
+    badgeLabel: "Clientes Sumidos",
     bg: "bg-[#775a19]/10",
     text: "text-[#775a19]",
   },
@@ -67,8 +67,8 @@ const FILTER_TABS = [
   { key: "novo_lead", label: "Responder", status: "novo_lead" },
   { key: "em_negociacao", label: "Negociando", status: "em_negociacao" },
   { key: "cliente", label: "Clientes", status: "cliente" },
-  { key: "recorrente", label: "Recorrentes", status: "recorrente" },
-  { key: "remarketing", label: "Remarketing", status: "remarketing" },
+  { key: "recorrente", label: "Fiéis", status: "recorrente" },
+  { key: "remarketing", label: "Sumidos", status: "remarketing" },
 ];
 
 const SOURCE_CONFIG = {

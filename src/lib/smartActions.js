@@ -70,7 +70,7 @@ const ACTION_RULES = [
   },
   {
     type: "remarketing",
-    label: "Remarketing",
+    label: "Clientes Sumidos",
     icon: "campaign",
     color: "#7c3aed",
     bgColor: "#f5f3ff",

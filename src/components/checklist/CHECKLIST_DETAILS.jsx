@@ -4,10 +4,10 @@
 export const CHECKLIST_DETAILS = {
   // === MANHÃ ===
   m1: {
-    text: "Abra o WhatsApp Business e veja TODAS as conversas não lidas. Priorize: 🔴 Novo Lead primeiro, depois 🟡 Em Negociação, depois 🔵 Pedido Confirmado. O robô pode ter respondido durante a noite — confira se as respostas estão corretas.",
+    text: "Abra o WhatsApp Business e veja TODAS as conversas não lidas. Priorize: 🔴 Contato Novo primeiro, depois 🟡 Interessado, depois 🔵 Pedido Confirmado. O robô pode ter respondido durante a noite — confira se as respostas estão corretas.",
   },
   m2: {
-    text: "Filtre pela etiqueta 🔴 Novo Lead. Responda TODOS — cada lead não respondido é venda perdida. Use o script abaixo:",
+    text: "Filtre pela etiqueta 🔴 Contato Novo. Responda TODOS — cada lead não respondido é venda perdida. Use o script abaixo:",
     script: `Olá, [nome]! 😊 Tudo bem? Sou [seu nome], da Maxi Massas!
 
 Vi que você se interessou pelas nossas massas artesanais. Que bom ter você aqui! 🍝
@@ -16,7 +16,7 @@ Trabalhamos com massas congeladas e pré-cozidas, prontas em minutos. Canelone, 
 
 Posso te enviar nosso cardápio completo? Qual sabor te chamou mais atenção?`,
     scriptLabel: "Primeiro Contato",
-    note: "Após responder, mude a etiqueta de 🔴 Novo Lead para 🟡 Em Negociação.",
+    note: "Após responder, mude a etiqueta de 🔴 Contato Novo para 🟡 Interessado.",
   },
   m3: {
     text: "Revise as conversas que o robô respondeu durante a noite/madrugada. Verifique se: as respostas fazem sentido, os preços estão corretos, nenhum lead ficou sem resposta. Se o robô errou algo, corrija manualmente e avise o franqueador.",
@@ -42,7 +42,7 @@ Use os templates de conteúdo enviados pelo franqueador.`,
 
   // === MEIO-DIA ===
   md1: {
-    text: "Filtre pela etiqueta 🟡 Em Negociação. Para cada contato que não respondeu há 24h+, envie o script abaixo:",
+    text: "Filtre pela etiqueta 🟡 Interessado. Para cada contato que não respondeu há 24h+, envie o script abaixo:",
     script: `Oi, [nome]! 😊 Passando aqui rapidinho...
 
 Enviei nosso cardápio ontem e queria saber se ficou alguma dúvida!
@@ -54,7 +54,7 @@ Qualquer dúvida, é só me chamar!`,
     note: "Se não responder após 2º follow-up, mude para ⚪ Não Fechou após 7 dias.",
   },
   md2: {
-    text: "Filtre pela etiqueta 🟣 Remarketing (clientes inativos há 15+ dias). Escolha 5-10 e envie mensagem personalizada:",
+    text: "Filtre pela etiqueta 🟣 Clientes Sumidos (clientes inativos há 15+ dias). Escolha 5-10 e envie mensagem personalizada:",
     script: `Oi, [nome]! Quanto tempo! 😊
 
 Estava lembrando de você aqui na Maxi Massas e queria saber: já está na hora de reabastecer o freezer?
@@ -62,8 +62,8 @@ Estava lembrando de você aqui na Maxi Massas e queria saber: já está na hora 
 Temos [produto novo ou promoção da semana] e acho que você vai adorar!
 
 Quer que eu separe um pedido pra você? 🍝`,
-    scriptLabel: "Remarketing",
-    note: "Personalize! Mencione o que o cliente comprou da última vez. Se comprar, mude para 🟢 Cliente ou 🟢 Cliente Recorrente.",
+    scriptLabel: "Clientes Sumidos",
+    note: "Personalize! Mencione o que o cliente comprou da última vez. Se comprar, mude para 🟢 Cliente ou 🟢 Cliente Fiel.",
   },
   md3: {
     text: "Filtre pela etiqueta ⚪ Não Fechou. Escolha contatos que estão lá há 30+ dias. Tente com abordagem diferente — promoção, produto novo, ou simplesmente perguntar se algo mudou.",
@@ -84,16 +84,16 @@ Quer aproveitar? Posso separar o seu! 🍝`,
   },
   md6: {
     text: `Revise suas conversas e atualize as etiquetas:
-• Respondeu mas não fechou → 🟡 Em Negociação
+• Respondeu mas não fechou → 🟡 Interessado
 • Fechou pedido → 🔵 Pedido Confirmado
 • Já recebeu/retirou → 🟢 Cliente
-• Comprou 3+ vezes → 🟢 Cliente Recorrente
-• Inativo 15+ dias → 🟣 Remarketing
+• Comprou 3+ vezes → 🟢 Cliente Fiel
+• Inativo 15+ dias → 🟣 Clientes Sumidos
 • Não quer comprar → ⚪ Não Fechou
 Todo contato DEVE ter etiqueta!`,
   },
   md7: {
-    text: "Filtre pela etiqueta 🟢 Cliente Recorrente. Escolha 2-3 e mande mensagem de relacionamento (NÃO de venda direta):",
+    text: "Filtre pela etiqueta 🟢 Cliente Fiel. Escolha 2-3 e mande mensagem de relacionamento (NÃO de venda direta):",
     script: `Oi, [nome]! 😊 Tudo bem por aí?
 
 Passando pra te contar que chegou [sabor novo / reposição do que você gosta]. Separei um(a) pra você antes de acabar!
@@ -180,7 +180,7 @@ Ter um plano para o dia seguinte agiliza o Bloco Manhã.`,
     text: "Verifique se todos os produtos estão com foto, preço e descrição corretos. Remova produtos sem estoque temporariamente. Adicione novos se houver.",
   },
   s5: {
-    text: "Pergunte a 3 clientes recorrentes: 'O que está gostando? Alguma sugestão? Algum sabor que gostaria que tivéssemos?' Esse feedback é ouro.",
+    text: "Pergunte a 3 clientes fiéis: 'O que está gostando? Alguma sugestão? Algum sabor que gostaria que tivéssemos?' Esse feedback é ouro.",
   },
   s6: {
     text: "Use a Planilha de Pedido oficial. Considere: produtos que acabaram na semana + produtos com estoque baixo + variedade para novos clientes.",

@@ -512,7 +512,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
               <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
                 <CardContent className="p-5 md:p-6">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta mb-4">
-                    Produtos Parados
+                    Parados no freezer
                   </h3>
                   <p className="text-xs text-[#534343] mb-3">
                     Sem vendas nos ultimos 28 dias

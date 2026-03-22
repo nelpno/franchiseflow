@@ -348,7 +348,7 @@ export default function TabEstoque({
       "Estoque Mínimo",
       "Preço Custo",
       "Preço Venda",
-      "Giro Semanal",
+      "Vendas por semana",
       "Última Atualização",
     ];
 
