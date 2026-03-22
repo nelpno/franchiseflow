@@ -96,6 +96,15 @@ Rota `/set-password`: detecta `type=invite` ou `type=recovery` no hash da URL, p
 - `auto_generate_instance_id`: gera evolution_instance_id no formato `franquia{cidade}` sem acentos (usa `unaccent()`)
 - `on_franchise_created`: cria franchise_configuration + popula estoque com 28 produtos do catálogo
 - `aggregate_daily_data`: pg_cron diário às 05:00 UTC (02:00 BRT)
+- `on_purchase_order_status_change`: notifica franqueado quando pedido muda status (confirmado/em rota/entregue)
+- `on_new_purchase_order`: notifica admins quando franqueado faz pedido de reposição
+- `on_inventory_low_stock`: notifica franqueado quando estoque atinge mínimo
+
+### Notificações (tabela `notifications`)
+- Tabela com RLS (user vê só as suas), entity `Notification` em all.js
+- Helpers SQL: `notify_admins(title, msg, type, icon, link)`, `notify_franchise_users(franchise_id, title, msg, type, icon, link)`
+- Componente `NotificationBell` (dropdown, badge não-lidas, polling 30s)
+- Ícones por tipo: info=blue, success=green, warning=amber, alert=red
 
 ## Estrutura de Pastas
 ```
@@ -240,6 +249,12 @@ npm run typecheck # TypeScript check
 - **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker (deploy ✅, config vendedor pendente)
 - **FASE 5 Etapa 5**: Onboarding completo (tela senha ✅, trigger cost_price ✅, SPF/DKIM ✅, UX formulário ✅, auto-link ✅)
 - **Deploy produção**: app.maximassas.tech via Docker Swarm + Traefik SSL ✅
+- **FASE 6**: Notificações (sino funcional + triggers automáticos) ✅
+- **FASE 7 — Roadmap 10/10** (próxima):
+  - 7a: Onboarding obrigatório (tutorial primeiro acesso, melhorar wizard Meu Vendedor) — OBRIGATÓRIO para novos, só existentes podem cancelar
+  - 7b: Dropdown seletor franquia + criar contato inline + health score admin
+  - 7c: Gráficos históricos + log auditoria + exportar PDF/Excel
+  - 7d: Histórico WhatsApp + dashboard comparativo + filtros avançados
 
 ## Deploy (Portainer)
 - **Portainer API**: `https://porto.dynamicagents.tech/api` — header `X-API-Key`
