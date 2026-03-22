@@ -344,20 +344,19 @@ export default function MinhaLoja() {
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="bg-white border border-[#291715]/5 rounded-xl p-1 w-full md:w-auto flex">
             {[
-              { value: "lancar", icon: "add_circle", label: "Lançar" },
-              { value: "resultado", icon: "analytics", label: "Resultado" },
-              { value: "estoque", icon: "inventory_2", label: "Estoque" },
-              { value: "reposicao", icon: "local_shipping", label: "Reposição" },
+              { value: "lancar", icon: "add_circle", label: "Lançar", shortLabel: "Lançar" },
+              { value: "resultado", icon: "analytics", label: "Resultado", shortLabel: "Result." },
+              { value: "estoque", icon: "inventory_2", label: "Estoque", shortLabel: "Estoque" },
+              { value: "reposicao", icon: "local_shipping", label: "Reposição", shortLabel: "Repos." },
             ].map((tab) => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="gap-1 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-2 md:px-4 flex-1 md:flex-none"
+                className="gap-1 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-1.5 md:px-4 flex-1 md:flex-none text-xs md:text-sm"
               >
-                <MaterialIcon icon={tab.icon} size={18} />
-                <span className={`${activeTab === tab.value ? "inline" : "hidden md:inline"} text-xs md:text-sm`}>
-                  {tab.label}
-                </span>
+                <MaterialIcon icon={tab.icon} size={16} />
+                <span className="hidden md:inline">{tab.label}</span>
+                <span className="md:hidden">{tab.shortLabel}</span>
               </TabsTrigger>
             ))}
           </TabsList>
