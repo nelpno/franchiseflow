@@ -69,8 +69,43 @@ function createEntity(tableName) {
   };
 }
 
+// Cascade delete para franquia — limpa todos dados relacionados antes de deletar
+async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
+  const evoId = evolutionInstanceId;
+
+  // Buscar IDs de vendas e pedidos para limpar itens (FK profunda)
+  const { data: sales } = await supabase.from('sales').select('id').eq('franchise_id', franchiseId);
+  const saleIds = (sales || []).map(s => s.id);
+  const { data: orders } = await supabase.from('purchase_orders').select('id').eq('franchise_id', franchiseId);
+  const orderIds = (orders || []).map(o => o.id);
+
+  // Deletar itens filhos primeiro
+  if (saleIds.length > 0) await supabase.from('sale_items').delete().in('sale_id', saleIds);
+  if (orderIds.length > 0) await supabase.from('purchase_order_items').delete().in('purchase_order_id', orderIds);
+
+  // Deletar tabelas que usam franchise UUID
+  await supabase.from('sales').delete().eq('franchise_id', franchiseId);
+  await supabase.from('purchase_orders').delete().eq('franchise_id', franchiseId);
+  await supabase.from('expenses').delete().eq('franchise_id', franchiseId);
+
+  // Deletar tabelas que usam evolution_instance_id
+  await supabase.from('contacts').delete().eq('franchise_id', evoId);
+  await supabase.from('daily_unique_contacts').delete().eq('franchise_id', evoId);
+  await supabase.from('daily_checklists').delete().eq('franchise_id', evoId);
+  await supabase.from('inventory_items').delete().eq('franchise_id', evoId);
+  await supabase.from('franchise_configurations').delete().eq('franchise_evolution_instance_id', evoId);
+  await supabase.from('franchise_invites').delete().eq('franchise_id', evoId);
+
+  // Finalmente deletar a franquia
+  const { error } = await supabase.from('franchises').delete().eq('id', franchiseId);
+  if (error) throw error;
+}
+
 // Entidades com nomes de tabela Supabase
-export const Franchise = createEntity('franchises');
+export const Franchise = {
+  ...createEntity('franchises'),
+  deleteCascade: deleteFranchiseCascade,
+};
 export const Sale = createEntity('sales');
 export const DailyUniqueContact = createEntity('daily_unique_contacts');
 export const DailySummary = createEntity('daily_summaries');

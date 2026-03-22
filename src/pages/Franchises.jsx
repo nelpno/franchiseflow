@@ -129,8 +129,8 @@ export default function Franchises() {
   const handleDeleteFranchise = async () => {
     if (!deletingFranchise) return;
     try {
-      await Franchise.delete(deletingFranchise.id);
-      toast.success(`Franquia ${deletingFranchise.city} excluida.`);
+      await Franchise.deleteCascade(deletingFranchise.id, deletingFranchise.evolution_instance_id);
+      toast.success(`Franquia ${deletingFranchise.city} excluída com sucesso.`);
       setDeletingFranchise(null);
       setSelectedFranchise(null);
       loadData();
@@ -211,16 +211,9 @@ export default function Franchises() {
     }
   };
 
-  const handleDeleteFranchiseQuick = async (e, franchise) => {
+  const handleDeleteFranchiseQuick = (e, franchise) => {
     e.stopPropagation();
-    try {
-      await Franchise.delete(franchise.id);
-      toast.success(`Franquia ${franchise.city} excluída.`);
-      loadData();
-    } catch (error) {
-      console.error("Erro ao excluir franquia:", error);
-      toast.error("Erro ao excluir franquia.");
-    }
+    setDeletingFranchise(franchise);
   };
 
   // --- Permissions ---
