@@ -53,6 +53,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const cityInputRef = useRef(null);
   const suggestionsRef = useRef(null);
 
@@ -85,6 +86,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
 
   const handleCityChange = useCallback((value) => {
     setFormData(prev => ({ ...prev, city: value }));
+    setHighlightedIndex(-1);
     if (value.length >= 2 && municipalities.length > 0) {
       const lower = value.toLowerCase();
       const filtered = municipalities
@@ -97,6 +99,22 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
       setShowCitySuggestions(false);
     }
   }, [municipalities]);
+
+  const handleCityKeyDown = useCallback((e) => {
+    if (!showCitySuggestions || citySuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev + 1) % citySuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev <= 0 ? citySuggestions.length - 1 : prev - 1));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleCitySelect(citySuggestions[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowCitySuggestions(false);
+    }
+  }, [showCitySuggestions, citySuggestions, highlightedIndex, handleCitySelect]);
 
   const handleCitySelect = useCallback((city) => {
     setFormData(prev => {
@@ -174,6 +192,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                     placeholder="Digite para buscar... Ex: Sorocaba"
                     value={formData.city}
                     onChange={(e) => handleCityChange(e.target.value)}
+                    onKeyDown={handleCityKeyDown}
                     onFocus={() => formData.city.length >= 2 && citySuggestions.length > 0 && setShowCitySuggestions(true)}
                     autoComplete="off"
                     required
@@ -184,8 +203,9 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                         <button
                           key={`${city.name}-${city.uf}-${i}`}
                           type="button"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f3f4] transition-colors first:rounded-t-xl last:rounded-b-xl"
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl ${i === highlightedIndex ? 'bg-[#b91c1c]/10 text-[#b91c1c]' : 'hover:bg-[#f5f3f4]'}`}
                           onClick={() => handleCitySelect(city)}
+                          onMouseEnter={() => setHighlightedIndex(i)}
                         >
                           <MaterialIcon icon="location_on" size={14} className="inline mr-1 text-[#b91c1c]" />
                           {city.label}
