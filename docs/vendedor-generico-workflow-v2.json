@@ -1116,10 +1116,6 @@
               "fieldValue": "novo_lead"
             },
             {
-              "fieldId": "source",
-              "fieldValue": "bot"
-            },
-            {
               "fieldId": "last_contact_at",
               "fieldValue": "={{ $now }}"
             }
@@ -2167,27 +2163,18 @@
     },
     {
       "parameters": {
-        "queue": "zuckzapgo.events",
-        "options": {
-          "acknowledge": "executionFinishesSuccessfully",
-          "jsonParseBody": true,
-          "onlyContent": true
-        }
+        "path": "vendedor-v2",
+        "httpMethod": "POST",
+        "options": {}
       },
-      "type": "n8n-nodes-base.rabbitmqTrigger",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
       "position": [
         848,
         3280
       ],
       "id": "00b869fa-adf6-40ba-9572-3879757d9719",
-      "name": "Webhook1",
-      "credentials": {
-        "rabbitmq": {
-          "id": "jXFF2vYatoDW2caz",
-          "name": "zuckzapgo"
-        }
-      }
+      "name": "Webhook1"
     },
     {
       "parameters": {
