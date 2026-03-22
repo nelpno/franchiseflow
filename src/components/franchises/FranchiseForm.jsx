@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,22 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// 7a — Máscara WhatsApp (XX) XXXXX-XXXX
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+// 7c — Auto-sugerir nome "Maxi Massas - Cidade"
+function suggestFranchiseName(city) {
+  if (!city) return '';
+  // Remove " - SP" etc. para usar só o nome da cidade
+  const cityName = city.replace(/\s*-\s*[A-Z]{2}$/, '').trim();
+  return `Maxi Massas - ${cityName}`;
+}
 
 function FieldHelp({ text }) {
   return (
@@ -32,6 +48,68 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
     franchisee_email: ''
   });
 
+  // 7b — Cidade autocomplete via IBGE
+  const [municipalities, setMunicipalities] = useState([]);
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
+  const cityInputRef = useRef(null);
+  const suggestionsRef = useRef(null);
+
+  // Fetch municípios do IBGE (uma vez, cache no state)
+  useEffect(() => {
+    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome')
+      .then(r => r.json())
+      .then(data => {
+        const mapped = data.map(m => ({
+          name: m.nome,
+          uf: m.microrregiao?.mesorregiao?.UF?.sigla || '',
+          label: `${m.nome} - ${m.microrregiao?.mesorregiao?.UF?.sigla || ''}`
+        }));
+        setMunicipalities(mapped);
+      })
+      .catch(() => {}); // falha silenciosa — campo continua como texto livre
+  }, []);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target) &&
+          cityInputRef.current && !cityInputRef.current.contains(e.target)) {
+        setShowCitySuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCityChange = useCallback((value) => {
+    setFormData(prev => ({ ...prev, city: value }));
+    if (value.length >= 2 && municipalities.length > 0) {
+      const lower = value.toLowerCase();
+      const filtered = municipalities
+        .filter(m => m.name.toLowerCase().includes(lower) || m.label.toLowerCase().includes(lower))
+        .slice(0, 8);
+      setCitySuggestions(filtered);
+      setShowCitySuggestions(filtered.length > 0);
+    } else {
+      setCitySuggestions([]);
+      setShowCitySuggestions(false);
+    }
+  }, [municipalities]);
+
+  const handleCitySelect = useCallback((city) => {
+    setFormData(prev => {
+      const updated = { ...prev, city: city.label };
+      // 7c — Auto-sugerir nome se não foi editado manualmente
+      if (!nameManuallyEdited || !prev.name) {
+        updated.name = suggestFranchiseName(city.label);
+      }
+      return updated;
+    });
+    setShowCitySuggestions(false);
+  }, [nameManuallyEdited]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // Não enviamos evolution_instance_id — o trigger do banco gera automaticamente
@@ -41,6 +119,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
   };
 
   const handleInputChange = (field, value) => {
+    if (field === 'name') setNameManuallyEdited(true);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -84,18 +163,36 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="city" className="text-sm font-semibold text-[#4a3d3d]">
                     <MaterialIcon icon="location_on" size={16} className="inline mr-1" />
                     Cidade *
                   </Label>
                   <Input
                     id="city"
-                    placeholder="Ex: Sorocaba - SP"
+                    ref={cityInputRef}
+                    placeholder="Digite para buscar... Ex: Sorocaba"
                     value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    onChange={(e) => handleCityChange(e.target.value)}
+                    onFocus={() => formData.city.length >= 2 && citySuggestions.length > 0 && setShowCitySuggestions(true)}
+                    autoComplete="off"
                     required
                   />
+                  {showCitySuggestions && (
+                    <div ref={suggestionsRef} className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {citySuggestions.map((city, i) => (
+                        <button
+                          key={`${city.name}-${city.uf}-${i}`}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-[#f5f3f4] transition-colors first:rounded-t-xl last:rounded-b-xl"
+                          onClick={() => handleCitySelect(city)}
+                        >
+                          <MaterialIcon icon="location_on" size={14} className="inline mr-1 text-[#b91c1c]" />
+                          {city.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -128,7 +225,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                     id="phone_number"
                     placeholder="(11) 98765-4321"
                     value={formData.phone_number}
-                    onChange={(e) => handleInputChange('phone_number', e.target.value)}
+                    onChange={(e) => handleInputChange('phone_number', formatPhone(e.target.value))}
                     required
                   />
                 </div>

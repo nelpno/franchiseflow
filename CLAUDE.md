@@ -237,6 +237,9 @@ npm run typecheck # TypeScript check
 - **GitHub**: `https://github.com/nelpno/franchiseflow.git` (público)
 - **Fluxo de deploy**: push GitHub → force update service Portainer → container re-clona, builda e serve via nginx
 - **SMTP**: `fabrica@maximassas.com.br` via Google Workspace (smtp.gmail.com:587) — configurado no Supabase Auth
+- **Nginx gotcha**: `$uri` em `try_files` dentro de docker-compose precisa de escaping especial — usar `echo` line-by-line (NÃO printf, NÃO `$$uri`)
+- **Traefik labels obrigatórias**: `traefik.docker.network=nelsonNet` + `traefik.http.routers.*.rule=Host(...)` + `traefik.http.routers.*.tls.certresolver=letsencryptresolver`
+- **Vite build no VPS**: pode travar sem `NODE_OPTIONS=--max-old-space-size=4096` — adicionar no Dockerfile/entrypoint
 
 ## Supabase Management API
 - Project ref: `sulgicnqqopyhulglakd`

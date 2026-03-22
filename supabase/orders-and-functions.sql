@@ -28,10 +28,11 @@ CREATE TRIGGER set_updated_at BEFORE UPDATE ON franchise_orders FOR EACH ROW EXE
 CREATE INDEX idx_orders_franchise ON franchise_orders(franchise_id, created_at DESC);
 
 -- Funcao: auto-popular estoque quando criar franquia
+-- 7d: sale_price = cost_price * 2 (markup 100%)
 CREATE OR REPLACE FUNCTION public.auto_populate_inventory(p_franchise_id TEXT)
 RETURNS void AS $$
-  INSERT INTO inventory_items (franchise_id, product_name, category, quantity, unit, min_stock)
-  SELECT p_franchise_id, name, category, 0, 'un', 3
+  INSERT INTO inventory_items (franchise_id, product_name, category, quantity, unit, min_stock, cost_price, sale_price)
+  SELECT p_franchise_id, name, category, 0, 'un', 3, price, price * 2
   FROM catalog_products
   WHERE active = true;
 $$ LANGUAGE sql;
