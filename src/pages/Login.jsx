@@ -49,7 +49,7 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-screen flex items-center justify-center p-4 md:p-8 pt-8 md:pt-8">
       <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
         {/* Left Side: Hero Area (Hidden on Mobile) */}
         <section className="hidden lg:flex lg:w-3/5 relative bg-gradient-to-br from-[#fff5f5] to-white p-16 flex-col justify-between overflow-hidden">
@@ -224,7 +224,7 @@ export default function Login() {
       {/* Footer Meta */}
       <footer className="fixed bottom-6 left-0 right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
-          Digital Atélier &copy; 2024 Maxi Massas Franchise System
+          &copy; 2026 Maxi Massas — Massas Artesanais Congeladas
         </p>
       </footer>
     </div>

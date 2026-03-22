@@ -144,7 +144,7 @@ export default function OnboardingWelcome() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbf9fa] flex flex-col">
+    <div className="min-h-screen bg-[#fbf9fa] flex flex-col max-h-screen overflow-hidden">
       {/* Progress bar */}
       <div className="fixed top-0 left-0 right-0 z-50 h-1.5 bg-[#e9e8e9]">
         <div
@@ -187,7 +187,7 @@ export default function OnboardingWelcome() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-4 py-6">
+      <div className="flex-1 flex items-start justify-center px-4 py-4 overflow-y-auto">
         <div
           className={`max-w-lg w-full transition-all duration-200 ${
             animating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
