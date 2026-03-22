@@ -29,7 +29,7 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
             {ranking.position}º de {ranking.total_franchises} franquias
           </span>
         ) : (
-          <span className="text-xs font-semibold text-[#4a3d3d]">Sem dados hoje</span>
+          <span className="text-xs font-semibold text-[#4a3d3d]">Ranking aparece após sua primeira venda</span>
         )}
       </div>
 
@@ -38,7 +38,7 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
         <span className="text-xs font-semibold text-[#1d1b1b]">
           {streak > 0
             ? `${streak} ${streak === 1 ? "dia" : "dias"} batendo meta`
-            : "Comece hoje!"}
+            : "Bata a meta e inicie sua sequência!"}
         </span>
       </div>
     </section>
