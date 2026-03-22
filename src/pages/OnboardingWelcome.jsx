@@ -83,9 +83,9 @@ const STEPS = [
     icon: "rocket_launch",
     title: "Pronto para começar!",
     description:
-      "Você já conhece todas as ferramentas. Agora é hora de configurar sua unidade e fazer sua primeira venda!",
+      "Você já conhece todas as ferramentas. Agora vamos preparar tudo para sua primeira venda!",
     detail:
-      "Ao clicar em 'Começar', você será direcionado para o painel da sua franquia. O próximo passo é preencher o Checklist de Iniciação com a ajuda do seu CS.",
+      "Ao clicar em 'Começar', você será direcionado para o Checklist de Iniciação — um passo a passo com tudo que precisa estar pronto antes de ativar as campanhas de tráfego pago. Seu CS vai te acompanhar nesse processo.",
     color: "#b91c1c",
     bgGradient: "from-[#b91c1c]/10 to-[#d4af37]/5",
   },
@@ -136,8 +136,8 @@ export default function OnboardingWelcome() {
     try {
       // Mark onboarding welcome as seen
       localStorage.setItem("onboarding_welcome_seen", "true");
-      toast.success("Bem-vindo à Maxi Massas! Boas vendas!");
-      navigate("/Dashboard", { replace: true });
+      toast.success("Agora vamos preparar tudo para sua primeira venda!");
+      navigate("/Onboarding", { replace: true });
     } catch (error) {
       console.error("Erro ao completar onboarding:", error);
       toast.error("Erro ao salvar. Tente novamente.");

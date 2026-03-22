@@ -78,10 +78,10 @@ export const BLOCKS = [
     borderColor: "border-yellow-200",
     items: [
       { key: "5-1", label: "Tabela de preços de revenda definida em conjunto", role: "both" },
-      { key: "5-2", label: "Primeiro pedido realizado via Planilha de Pedido oficial", role: "franchisee" },
+      { key: "5-2", label: "Primeiro pedido de reposição realizado pelo app (Minha Loja → Reposição)", role: "franchisee" },
       { key: "5-3", label: "Pedido recebido e conferido (quantidades, estado, validade)", role: "franchisee" },
       { key: "5-4", label: "Produtos organizados no freezer por categoria", role: "franchisee" },
-      { key: "5-5", label: "Controle de estoque iniciado na planilha", role: "franchisee" },
+      { key: "5-5", label: "Controle de estoque iniciado no app (Minha Loja → Estoque)", role: "franchisee" },
       { key: "5-6", label: "Conhecimento de todos os 28 produtos (sabores, pesos, diferenciais)", role: "franchisee" },
     ],
   },
