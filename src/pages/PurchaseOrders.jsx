@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { PurchaseOrder, PurchaseOrderItem, Franchise } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,17 @@ const STATUS_CONFIG = {
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado", order: 4 },
 };
 
+const PRODUCT_CATEGORIES = [
+  "Canelone", "Conchiglione", "Massa", "Nhoque",
+  "Rondelli", "Sofioli", "Molho", "Outros",
+];
+
+const PRODUCT_UNITS = [
+  { value: "un", label: "Unidade (un)" },
+  { value: "kg", label: "Quilo (kg)" },
+  { value: "pct", label: "Pacote (pct)" },
+];
+
 const STATUS_FILTER_OPTIONS = [
   { value: "todos", label: "Todos" },
   { value: "pendente", label: "Pendentes" },
@@ -73,6 +85,17 @@ export default function PurchaseOrders() {
   const [editedFreight, setEditedFreight] = useState("");
   const [editedDeliveryDate, setEditedDeliveryDate] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // New default product dialog
+  const [newProductOpen, setNewProductOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "",
+    unit: "un",
+    cost_price: "",
+    min_stock: "5",
+  });
+  const [savingProduct, setSavingProduct] = useState(false);
 
   // Confirm dialogs
   const [confirmAction, setConfirmAction] = useState(null); // { type: "entregue" | "cancelado", orderId }
@@ -284,6 +307,39 @@ export default function PurchaseOrders() {
     }
   };
 
+  // --- New Default Product ---
+
+  const handleCreateDefaultProduct = async () => {
+    const { name, category, unit, cost_price, min_stock } = newProduct;
+
+    if (!name.trim() || !category) {
+      toast.error("Preencha nome e categoria do produto.");
+      return;
+    }
+
+    setSavingProduct(true);
+    try {
+      const { data, error } = await supabase.rpc("add_default_product", {
+        p_name: name.trim(),
+        p_category: category.toLowerCase(),
+        p_unit: unit,
+        p_cost_price: cost_price ? parseFloat(cost_price) : 0,
+        p_min_stock: min_stock ? parseInt(min_stock, 10) : 5,
+      });
+
+      if (error) throw error;
+
+      toast.success(`Produto adicionado a ${data} franquia${data !== 1 ? "s" : ""}.`);
+      setNewProductOpen(false);
+      setNewProduct({ name: "", category: "", unit: "un", cost_price: "", min_stock: "5" });
+    } catch (error) {
+      console.error("Erro ao criar produto padrão:", error);
+      toast.error("Erro ao criar produto padrão.");
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
   // --- Render ---
 
   if (loading) {
@@ -299,18 +355,28 @@ export default function PurchaseOrders() {
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#b91c1c]/10 flex items-center justify-center">
-          <MaterialIcon icon="local_shipping" size={22} className="text-[#b91c1c]" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#b91c1c]/10 flex items-center justify-center">
+            <MaterialIcon icon="local_shipping" size={22} className="text-[#b91c1c]" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-[#1b1c1d] font-plus-jakarta">
+              Pedidos de Compra
+            </h1>
+            <p className="text-sm text-[#534343]">
+              Gerencie os pedidos de todas as franquias
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-[#1b1c1d] font-plus-jakarta">
-            Pedidos de Compra
-          </h1>
-          <p className="text-sm text-[#534343]">
-            Gerencie os pedidos de todas as franquias
-          </p>
-        </div>
+        <Button
+          onClick={() => setNewProductOpen(true)}
+          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-1.5"
+        >
+          <MaterialIcon icon="add_circle" size={18} />
+          <span className="hidden sm:inline">Novo Produto Padrão</span>
+          <span className="sm:hidden">Produto</span>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -730,6 +796,133 @@ export default function PurchaseOrders() {
                 />
               )}
               {confirmAction?.type === "entregue" ? "Confirmar" : "Cancelar Pedido"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Default Product Dialog */}
+      <Dialog open={newProductOpen} onOpenChange={setNewProductOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
+              <MaterialIcon icon="add_circle" size={20} className="text-[#b91c1c]" />
+              Novo Produto Padrão
+            </DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-[#534343]">
+            O produto será adicionado ao estoque de todas as franquias existentes.
+          </p>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                Nome do Produto *
+              </Label>
+              <Input
+                value={newProduct.name}
+                onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Ex: Nhoque Quatro Queijos"
+                className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                Categoria *
+              </Label>
+              <Select
+                value={newProduct.category}
+                onValueChange={(val) => setNewProduct((p) => ({ ...p, category: val }))}
+              >
+                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                Unidade
+              </Label>
+              <Select
+                value={newProduct.unit}
+                onValueChange={(val) => setNewProduct((p) => ({ ...p, unit: val }))}
+              >
+                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_UNITS.map((u) => (
+                    <SelectItem key={u.value} value={u.value}>
+                      {u.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                  Custo Unitário (R$)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newProduct.cost_price}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, cost_price: e.target.value }))}
+                  placeholder="0,00"
+                  className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-bold uppercase tracking-widest text-[#291715]/60 font-plus-jakarta">
+                  Estoque Mínimo
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={newProduct.min_stock}
+                  onChange={(e) => setNewProduct((p) => ({ ...p, min_stock: e.target.value }))}
+                  className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNewProductOpen(false)}
+              disabled={savingProduct}
+              className="border-[#cac0c0] text-[#534343] rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreateDefaultProduct}
+              disabled={savingProduct || !newProduct.name.trim() || !newProduct.category}
+              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-1"
+            >
+              {savingProduct ? (
+                <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+              ) : (
+                <MaterialIcon icon="add_circle" size={16} />
+              )}
+              Adicionar a Todas
             </Button>
           </DialogFooter>
         </DialogContent>

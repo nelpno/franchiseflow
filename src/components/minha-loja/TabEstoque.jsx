@@ -181,6 +181,16 @@ export default function TabEstoque({
       return;
     }
 
+    // Minimum price validation for sale_price
+    if (field === "sale_price" && item.cost_price && item.cost_price > 0) {
+      const minPrice = item.cost_price * 1.8;
+      if (newValue < minPrice) {
+        toast.warning(
+          `Preco minimo recomendado: ${formatBRL(minPrice)} (margem 80%). Preco salvo mesmo assim.`
+        );
+      }
+    }
+
     try {
       await InventoryItem.update(itemId, {
         [field]: newValue,
@@ -259,6 +269,16 @@ export default function TabEstoque({
       // Cost price: admin always edits; franchisee only for items they created
       if (!isAdmin && editingItem && !editingItem.created_by_franchisee) {
         delete payload.cost_price;
+      }
+
+      // Minimum price validation (warning only, not blocking)
+      if (payload.sale_price && payload.cost_price && payload.cost_price > 0) {
+        const minPrice = payload.cost_price * 1.8;
+        if (payload.sale_price < minPrice) {
+          toast.warning(
+            `Preco minimo recomendado: ${formatBRL(minPrice)} (margem 80%). Salvo mesmo assim.`
+          );
+        }
       }
 
       if (editingItem) {
@@ -441,6 +461,41 @@ export default function TabEstoque({
   const canEditCostPrice = (item) => {
     if (isAdmin) return true;
     return !!item.created_by_franchisee;
+  };
+
+  // --- Margin helpers ---
+
+  const getMarginPercent = (item) => {
+    if (!item.cost_price || !item.sale_price || item.cost_price <= 0) return null;
+    return ((item.sale_price - item.cost_price) / item.cost_price) * 100;
+  };
+
+  const getMarginBadge = (item) => {
+    const margin = getMarginPercent(item);
+    if (margin === null) return null;
+
+    let colorClass = "bg-green-100 text-green-700"; // >= 80%
+    if (margin < 50) {
+      colorClass = "bg-red-100 text-red-700";
+    } else if (margin < 80) {
+      colorClass = "bg-[#d4af37]/10 text-[#775a19]";
+    }
+
+    return (
+      <Badge className={`${colorClass} rounded-full px-1.5 py-0 text-[10px] font-bold ml-1`}>
+        {margin.toFixed(0)}%
+      </Badge>
+    );
+  };
+
+  const getRecommendedPrice = (item) => {
+    if (!item.cost_price || item.cost_price <= 0) return null;
+    return item.cost_price * 2;
+  };
+
+  const getMinimumPrice = (item) => {
+    if (!item.cost_price || item.cost_price <= 0) return null;
+    return item.cost_price * 1.8;
   };
 
   // --- Stats ---
@@ -699,11 +754,17 @@ export default function TabEstoque({
                                   onChange={(e) => setEditValue(e.target.value)}
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
+                                  placeholder={getRecommendedPrice(item) ? formatBRL(getRecommendedPrice(item)) : "0,00"}
                                   className="w-24 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
                                 />
                               ) : (
                                 <span className="flex items-center gap-1">
-                                  {item.sale_price ? formatBRL(item.sale_price) : (
+                                  {item.sale_price ? (
+                                    <>
+                                      {formatBRL(item.sale_price)}
+                                      {getMarginBadge(item)}
+                                    </>
+                                  ) : (
                                     <>
                                       <MaterialIcon icon="warning" size={12} className="text-[#b91c1c]" />
                                       Definir
@@ -878,6 +939,7 @@ export default function TabEstoque({
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
+                                    placeholder={getRecommendedPrice(item) ? formatBRL(getRecommendedPrice(item)) : "0,00"}
                                     className="w-24 ml-auto text-right h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
                                   />
                                 ) : (
@@ -893,7 +955,10 @@ export default function TabEstoque({
                                     title="Clique para editar preco de venda"
                                   >
                                     {item.sale_price ? (
-                                      formatBRL(item.sale_price)
+                                      <>
+                                        {formatBRL(item.sale_price)}
+                                        {getMarginBadge(item)}
+                                      </>
                                     ) : (
                                       <>
                                         <MaterialIcon icon="warning" size={14} className="text-[#b91c1c]" />
@@ -1100,9 +1165,25 @@ export default function TabEstoque({
                       sale_price: e.target.value,
                     }))
                   }
-                  placeholder="0,00"
+                  placeholder={formData.cost_price ? formatBRL(parseFloat(formData.cost_price) * 2) : "0,00"}
                   className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
                 />
+                {formData.cost_price && parseFloat(formData.cost_price) > 0 && (
+                  <p className="text-xs text-[#534343]">
+                    Sugerido: {formatBRL(parseFloat(formData.cost_price) * 2)} (100% markup)
+                    {formData.sale_price && parseFloat(formData.sale_price) > 0 && (
+                      <span className={`ml-2 font-bold ${
+                        ((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price) * 100) >= 80
+                          ? "text-green-600"
+                          : ((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price) * 100) >= 50
+                            ? "text-[#775a19]"
+                            : "text-red-600"
+                      }`}>
+                        Margem: {(((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price)) * 100).toFixed(0)}%
+                      </span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
 
