@@ -152,25 +152,27 @@ export default function FranchiseeDashboard() {
   }
 
   return (
-    <div className="pt-4 pb-32 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa] min-h-screen">
-      <div className="flex items-center justify-between mb-2">
-        <FranchiseeGreeting
-          userName={user?.full_name}
-          franchiseName={franchise ? `Unidade ${franchise.city}` : null}
-        />
-        {franchise?.evolution_instance_id && (
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-            botActive
-              ? "bg-[#16a34a]/10 text-[#16a34a]"
-              : "bg-[#e9e8e9] text-[#534343]"
-          }`}>
-            <MaterialIcon icon="smart_toy" size={14} />
-            {botActive ? "Bot ativo" : "Bot inativo"}
-          </div>
-        )}
+    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa] min-h-screen">
+      <div className="mb-4">
+        <div className="flex items-start justify-between">
+          <FranchiseeGreeting
+            userName={user?.full_name}
+            franchiseName={franchise ? `Unidade ${franchise.city}` : null}
+          />
+          {franchise?.evolution_instance_id && (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold shrink-0 mt-1 ${
+              botActive
+                ? "bg-[#16a34a]/10 text-[#16a34a]"
+                : "bg-[#e9e8e9] text-[#534343]"
+            }`}>
+              <MaterialIcon icon="smart_toy" size={12} />
+              {botActive ? "Bot ativo" : "Bot inativo"}
+            </div>
+          )}
+        </div>
       </div>
 
-      <section className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+      <section className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatsCard
           title="Vendas Hoje"
           value={todaySalesCount}
