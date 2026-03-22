@@ -57,7 +57,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
 
   // Audit logs
   const [auditLogs, setAuditLogs] = useState([]);
-  const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const [showAuditLogs, setShowAuditLogs] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!franchiseId) return;

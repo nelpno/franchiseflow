@@ -33,7 +33,7 @@ export default function FranchiseeDashboard() {
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
 
-  const franchiseId = ctxFranchise?.id || user?.managed_franchise_ids?.[0];
+  const franchiseId = ctxFranchise?.id;
 
   const loadData = useCallback(async () => {
     if (!franchiseId) return;

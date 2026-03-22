@@ -75,7 +75,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
   const [activePreset, setActivePreset] = useState("week");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const loadComparison = useCallback(async (presetKey) => {
     if (!franchiseId) return;
@@ -160,6 +160,13 @@ export default function PeriodComparisonCard({ franchiseId }) {
       toast.error("Erro ao carregar comparacao");
     } finally {
       setLoading(false);
+    }
+  }, [franchiseId]);
+
+  // Auto-load on mount when expanded by default
+  React.useEffect(() => {
+    if (expanded && !data && franchiseId) {
+      loadComparison(activePreset);
     }
   }, [franchiseId]);
 

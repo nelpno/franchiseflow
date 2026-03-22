@@ -11,11 +11,11 @@ import { toast } from "sonner";
 const STEPS = [
   {
     icon: "waving_hand",
-    title: "Bem-vindo a Maxi Massas!",
+    title: "Bem-vindo à Maxi Massas!",
     description:
-      "Estamos muito felizes em ter voce como franqueado! Este guia rapido vai te mostrar tudo que voce precisa para comecar a vender.",
+      "Estamos muito felizes em ter você como franqueado! Este guia rápido vai te mostrar tudo que você precisa para começar a vender.",
     detail:
-      "Em poucos minutos voce vai conhecer as ferramentas que vao te ajudar a gerenciar sua franquia de forma simples e eficiente.",
+      "Em poucos minutos você vai conhecer as ferramentas que vão te ajudar a gerenciar sua franquia de forma simples e eficiente.",
     color: "#d4af37",
     bgGradient: "from-[#d4af37]/10 to-[#d4af37]/5",
   },
@@ -23,15 +23,15 @@ const STEPS = [
     icon: "storefront",
     title: "Minha Loja",
     description:
-      "Seu painel central com tudo que voce precisa para o dia a dia da franquia.",
+      "Seu painel central com tudo que você precisa para o dia a dia da franquia.",
     detail: null,
     color: "#b91c1c",
     bgGradient: "from-[#b91c1c]/10 to-[#b91c1c]/5",
     features: [
-      { icon: "point_of_sale", label: "Lancar Vendas", desc: "Registre cada venda com poucos cliques" },
+      { icon: "point_of_sale", label: "Lançar Vendas", desc: "Registre cada venda com poucos cliques" },
       { icon: "analytics", label: "Resultado", desc: "Veja seu lucro, despesas e faturamento" },
       { icon: "inventory_2", label: "Estoque", desc: "Controle seus produtos e quantidades" },
-      { icon: "local_shipping", label: "Reposicao", desc: "Peca produtos direto para a fabrica" },
+      { icon: "local_shipping", label: "Reposição", desc: "Peça produtos direto para a fábrica" },
     ],
   },
   {
@@ -40,13 +40,13 @@ const STEPS = [
     description:
       "Gerencie seus contatos e acompanhe cada cliente no pipeline de vendas.",
     detail:
-      "Do primeiro contato ate a fidelizacao, voce acompanha toda a jornada do cliente. O sistema sugere acoes inteligentes como reativar clientes inativos ou enviar ofertas.",
+      "Do primeiro contato até a fidelização, você acompanha toda a jornada do cliente. O sistema sugere ações inteligentes como reativar clientes inativos ou enviar ofertas.",
     color: "#0288D1",
     bgGradient: "from-[#0288D1]/10 to-[#0288D1]/5",
     features: [
       { icon: "person_add", label: "Novos Leads", desc: "Contatos que chegam pelo WhatsApp" },
-      { icon: "handshake", label: "Pipeline", desc: "Acompanhe cada etapa da negociacao" },
-      { icon: "auto_awesome", label: "Acoes Inteligentes", desc: "Sugestoes automaticas de follow-up" },
+      { icon: "handshake", label: "Pipeline", desc: "Acompanhe cada etapa da negociação" },
+      { icon: "auto_awesome", label: "Ações Inteligentes", desc: "Sugestões automáticas de follow-up" },
     ],
   },
   {
@@ -55,13 +55,13 @@ const STEPS = [
     description:
       "Seu assistente virtual no WhatsApp que atende clientes 24 horas por dia.",
     detail:
-      "Configure o bot com a personalidade da sua unidade. Ele responde duvidas, envia o cardapio, calcula frete e fecha pedidos automaticamente.",
+      "Configure o bot com a personalidade da sua unidade. Ele responde dúvidas, envia o cardápio, calcula frete e fecha pedidos automaticamente.",
     color: "#43A047",
     bgGradient: "from-[#43A047]/10 to-[#43A047]/5",
     features: [
-      { icon: "chat", label: "Atendimento Automatico", desc: "Responde clientes mesmo de madrugada" },
-      { icon: "menu_book", label: "Envia Cardapio", desc: "Mostra produtos e precos automaticamente" },
-      { icon: "delivery_dining", label: "Calcula Entrega", desc: "Informa taxa de entrega por distancia" },
+      { icon: "chat", label: "Atendimento Automático", desc: "Responde clientes mesmo de madrugada" },
+      { icon: "menu_book", label: "Envia Cardápio", desc: "Mostra produtos e preços automaticamente" },
+      { icon: "delivery_dining", label: "Calcula Entrega", desc: "Informa taxa de entrega por distância" },
     ],
   },
   {
@@ -70,22 +70,22 @@ const STEPS = [
     description:
       "Materiais prontos para divulgar sua franquia nas redes sociais e no bairro.",
     detail:
-      "Acesse artes profissionais, textos para posts e estrategias de divulgacao preparadas pela equipe Maxi Massas.",
+      "Acesse artes profissionais, textos para posts e estratégias de divulgação preparadas pela equipe Maxi Massas.",
     color: "#8E24AA",
     bgGradient: "from-[#8E24AA]/10 to-[#8E24AA]/5",
     features: [
       { icon: "brush", label: "Artes Prontas", desc: "Posts para Instagram e Facebook" },
-      { icon: "share", label: "Redes Sociais", desc: "Estrategias de conteudo" },
-      { icon: "local_offer", label: "Promocoes", desc: "Modelos de ofertas que funcionam" },
+      { icon: "share", label: "Redes Sociais", desc: "Estratégias de conteúdo" },
+      { icon: "local_offer", label: "Promoções", desc: "Modelos de ofertas que funcionam" },
     ],
   },
   {
     icon: "rocket_launch",
-    title: "Pronto para comecar!",
+    title: "Pronto para começar!",
     description:
-      "Voce ja conhece todas as ferramentas. Agora e hora de configurar sua unidade e fazer sua primeira venda!",
+      "Você já conhece todas as ferramentas. Agora é hora de configurar sua unidade e fazer sua primeira venda!",
     detail:
-      "Ao clicar em 'Comecar', voce sera direcionado para o painel da sua franquia. O proximo passo e preencher o Checklist de Iniciacao com a ajuda do seu CS.",
+      "Ao clicar em 'Começar', você será direcionado para o painel da sua franquia. O próximo passo é preencher o Checklist de Iniciação com a ajuda do seu CS.",
     color: "#b91c1c",
     bgGradient: "from-[#b91c1c]/10 to-[#d4af37]/5",
   },
@@ -127,7 +127,7 @@ export default function OnboardingWelcome() {
 
   const handleSkip = () => {
     localStorage.setItem("onboarding_skipped", "true");
-    toast.success("Voce pode acessar o onboarding a qualquer momento pelo menu.");
+    toast.success("Você pode acessar o onboarding a qualquer momento pelo menu.");
     navigate("/Dashboard", { replace: true });
   };
 
@@ -136,7 +136,7 @@ export default function OnboardingWelcome() {
     try {
       // Mark onboarding welcome as seen
       localStorage.setItem("onboarding_welcome_seen", "true");
-      toast.success("Bem-vindo a Maxi Massas! Boas vendas!");
+      toast.success("Bem-vindo à Maxi Massas! Boas vendas!");
       navigate("/Dashboard", { replace: true });
     } catch (error) {
       console.error("Erro ao completar onboarding:", error);
@@ -164,7 +164,7 @@ export default function OnboardingWelcome() {
           </span>
           <button
             onClick={handleSkip}
-            className="text-xs text-[#534343]/60 hover:text-[#534343] transition-colors underline"
+            className="text-sm text-[#534343]/80 hover:text-[#b91c1c] transition-colors underline"
           >
             Pular por agora
           </button>
@@ -228,8 +228,8 @@ export default function OnboardingWelcome() {
                   >
                     <MaterialIcon icon={feature.icon} size={20} style={{ color: step.color }} />
                   </div>
-                  <h4 className="text-xs font-bold text-[#1b1c1d] mb-1">{feature.label}</h4>
-                  <p className="text-[10px] text-[#534343]/70 leading-snug">{feature.desc}</p>
+                  <h4 className="text-sm font-bold text-[#1b1c1d] mb-1">{feature.label}</h4>
+                  <p className="text-xs text-[#534343]/80 leading-snug">{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -238,7 +238,7 @@ export default function OnboardingWelcome() {
           {/* Detail text */}
           {step.detail && (
             <div className="bg-white rounded-xl border border-[#291715]/5 p-4 mb-6 shadow-sm">
-              <p className="text-xs text-[#534343]/80 leading-relaxed text-center">
+              <p className="text-sm text-[#534343]/90 leading-relaxed text-center">
                 {step.detail}
               </p>
             </div>
@@ -283,12 +283,12 @@ export default function OnboardingWelcome() {
                 <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
               ) : isLastStep ? (
                 <>
-                  Comecar
+                  Começar
                   <MaterialIcon icon="rocket_launch" size={16} />
                 </>
               ) : (
                 <>
-                  Proximo
+                  Próximo
                   <MaterialIcon icon="arrow_forward" size={16} />
                 </>
               )}
