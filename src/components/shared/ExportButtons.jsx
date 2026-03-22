@@ -49,8 +49,10 @@ export default function ExportButtons({ data, columns, filename, title }) {
 
   const handlePdf = async () => {
     try {
-      const { default: jsPDF } = await import("jspdf");
-      await import("jspdf-autotable");
+      const jspdfModule = await import("jspdf");
+      const jsPDF = jspdfModule.default || jspdfModule.jsPDF;
+      const autoTableModule = await import("jspdf-autotable");
+      if (autoTableModule.default) autoTableModule.default(jsPDF);
 
       const doc = new jsPDF({ orientation: "landscape" });
 

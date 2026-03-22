@@ -240,6 +240,15 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 65. Deploy Portainer: stack NÃO é git-based — usar force update do service (GET spec → increment ForceUpdate → POST update)
 66. Conteúdo centralizado: Layout.jsx tem `max-w-6xl mx-auto` no wrapper de children
 67. OnboardingWelcome (tutorial) ≠ Onboarding (checklist operacional) — tutorial redireciona para checklist ao finalizar
+68. Páginas dentro do Layout NÃO devem ter `min-h-screen` — Layout cuida da altura. Apenas Login, SetPassword e OnboardingWelcome (standalone) usam
+69. Stats cards dashboard franqueado: sempre `grid-cols-3` (NUNCA grid-cols-2) — são 3 cards (Vendas, Faturamento, Valor Médio)
+70. Chart labels mobile: usar abreviações (Seg, Ter, Qua) — labels longos não cabem em 375px
+71. Botão "REGISTRAR VENDA" fixo: `hidden md:flex` — no mobile o FAB "Vender" no bottom nav cuida
+72. Personalidade do bot REMOVIDA da UI do wizard — campo `bot_personality` mantém default no banco para n8n
+73. ReviewSummary.jsx: não mostrar Personalidade nem Boas-vindas — campos removidos do wizard
+74. `Franchise.list()` no Onboarding — NÃO usar `.filter({status:"active"})` que pode excluir franquias válidas
+75. Avatar "J" no header mobile abre dropdown com perfil + logout (`showMobileMenu` state)
+76. Marketing: botão "Copiar legenda" usa navigator.clipboard — description é a legenda do post
 
 ## Scripts
 ```bash
@@ -271,6 +280,15 @@ npm run typecheck # TypeScript check
   - Marketing com Google Drive/YouTube + campanhas ✅
   - Performance: bundle -54%, lazy loading, N+1 eliminado ✅
   - Gaps: draft/retry SaleForm, pedidos atrasados, sugestão reposição, origem leads ✅
+  - Auditoria: segurança, mobile, UX texts, cleanup (924 linhas dead code removidas) ✅
+  - Terminologia simplificada: Lead→Contato Novo, Remarketing→Clientes Sumidos ✅
+- **FASE 8** (próxima):
+  - Swipe touch no tutorial OnboardingWelcome
+  - Busca global por franqueado (admin header)
+  - Calendário de publicação (Marketing)
+  - Docs PDF para franqueados (Guia Rápido, Fluxo com/sem robô, Primeiros Passos)
+  - Convite equipe interna (admin/gerente/marketing com role)
+  - Permissões dono vs funcionário (RLS diferenciado)
 
 ## FASE 7 — Componentes Novos
 - **OnboardingWelcome.jsx**: Tutorial 6 steps (primeiro acesso) → redireciona para `/Onboarding` (checklist operacional)
