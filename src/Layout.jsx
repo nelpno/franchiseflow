@@ -360,9 +360,7 @@ export default function Layout({ children, currentPageName }) {
           {/* Top bar — mobile */}
           <header className="md:hidden sticky top-0 z-40 bg-[#fbf9fa]/80 backdrop-blur-md h-16 flex items-center justify-between px-4 border-b border-[#f8eeee]/50">
             <div className="flex items-center gap-3">
-              {isAdmin && (
-                <SidebarTrigger className="p-2 rounded-xl text-[#534343] hover:bg-white/50 transition-colors" />
-              )}
+              <SidebarTrigger className="p-2 rounded-xl text-[#534343] hover:bg-white/50 transition-colors" />
               <h1 className="text-lg font-semibold text-[#1b1c1d]">
                 {currentPageTitle}
               </h1>
