@@ -6,7 +6,7 @@ Migrado de Base44 para Supabase Cloud. Frontend React hospedado via Docker/Porta
 
 ## Stack
 - **Frontend**: React 18 + Vite 6 + Tailwind CSS 3 + shadcn/ui (Radix) + Material Symbols Outlined
-- **Design System**: Atelier Gastronomique (vermelho #b91c1c, dourado #d4af37, Inter + Plus Jakarta Sans)
+- **Design System**: Atelier Gastronomique via [Stitch](https://stitch.withgoogle.com/projects/8287094972471703476) (vermelho #b91c1c, dourado #d4af37, Inter + Plus Jakarta Sans)
 - **Backend**: Supabase Cloud (Auth + Postgres + RLS + Storage + Edge Functions)
 - **Automação**: n8n (webhook.dynamicagents.tech) para WhatsApp, catálogo, marketing
 - **WhatsApp**: ZuckZapGo (WuzAPI) em zuck.dynamicagents.tech
@@ -259,6 +259,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 79. Avatar header desktop REMOVIDO (redundante com sidebar footer) — manter apenas no mobile (`showMobileMenu`)
 80. Terminologia financeira: NÃO usar "Líquido" (jargao contabil) — franqueado nao entende. Resumo de vendas mostra apenas Total
 81. Badge de margem na venda: `<span>` simples (NÃO `<Badge>` shadcn que parece clicavel) — 3 estados: verde (≥25%), amber (<25%), vermelho (negativo)
+82. FranchiseForm (Nova Franquia): apenas 4 campos (nome, cidade, owner_name, email) — WhatsApp removido (configurado no wizard Meu Vendedor). NÃO usar Tooltip/FieldHelp (não funciona em mobile) — usar texto helper inline
+83. Deploy Portainer: curl bloqueado pelo context-mode hook — usar `mcp ctx_execute` com shell para chamadas HTTP ao Portainer API
+84. useCallback com dependências entre si: definir a função referenciada ANTES da que a usa (ordem importa) — referência circular causa tela branca sem erro no console
 
 ## Scripts
 ```bash

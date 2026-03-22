@@ -525,14 +525,12 @@ export default function Franchises() {
                       <MaterialIcon icon="person" size={16} />
                       <span className="text-sm">{franchise.owner_name}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
-                      <MaterialIcon icon="phone" size={16} />
-                      <span className="text-sm">{franchise.phone_number}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
-                      <MaterialIcon icon="chat_bubble" size={16} />
-                      <span className="text-sm">Contatos Hoje: {franchise.daily_unique_contacts}</span>
-                    </div>
+                    {franchise.phone_number && (
+                      <div className="flex items-center gap-3 text-[#4a3d3d]">
+                        <MaterialIcon icon="phone" size={16} />
+                        <span className="text-sm">{franchise.phone_number}</span>
+                      </div>
+                    )}
 
                     {/* Linked Users */}
                     <div className="pt-3 border-t border-[#291715]/5">
@@ -977,16 +975,12 @@ export default function Franchises() {
                       <MaterialIcon icon="location_on" size={16} />
                       <span className="text-sm">{selectedFranchise.city}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
-                      <MaterialIcon icon="phone" size={16} />
-                      <span className="text-sm">{selectedFranchise.phone_number}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
-                      <MaterialIcon icon="chat_bubble" size={16} />
-                      <span className="text-sm">
-                        Contatos Hoje: {selectedFranchise.daily_unique_contacts}
-                      </span>
-                    </div>
+                    {selectedFranchise.phone_number && (
+                      <div className="flex items-center gap-3 text-[#4a3d3d]">
+                        <MaterialIcon icon="phone" size={16} />
+                        <span className="text-sm">{selectedFranchise.phone_number}</span>
+                      </div>
+                    )}
                     {selectedFranchise.name && (
                       <div className="flex items-center gap-3 text-[#4a3d3d]">
                         <MaterialIcon icon="apartment" size={16} />
