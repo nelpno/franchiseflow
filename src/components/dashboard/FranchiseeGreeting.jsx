@@ -12,18 +12,13 @@ export default function FranchiseeGreeting({ userName, franchiseName }) {
     : "FR";
 
   return (
-    <section className="mb-6 flex justify-between items-end">
-      <div>
-        <h2 className="text-2xl font-bold text-[#1d1b1b]">
-          {getGreeting()}, {firstName}!
-        </h2>
-        {franchiseName && (
-          <p className="text-sm text-[#4a3d3d]">{franchiseName}</p>
-        )}
-      </div>
-      <div className="md:hidden w-10 h-10 rounded-full overflow-hidden bg-[#efedee] flex items-center justify-center">
-        <span className="text-xs font-bold text-[#4a3d3d]">{initials}</span>
-      </div>
+    <section className="mb-6">
+      <h2 className="text-2xl font-bold text-[#1d1b1b]">
+        {getGreeting()}, {firstName}!
+      </h2>
+      {franchiseName && (
+        <p className="text-sm text-[#4a3d3d]">{franchiseName}</p>
+      )}
     </section>
   );
 }
