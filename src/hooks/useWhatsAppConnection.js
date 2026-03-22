@@ -2,6 +2,46 @@ import { useState, useCallback, useEffect } from "react";
 import { connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
 import { toast } from "sonner";
 
+/**
+ * Validates that required vendor wizard fields are filled before allowing WhatsApp connection.
+ * Returns an array of missing field labels (empty = all valid).
+ */
+function validateVendorConfig(config) {
+  const missing = [];
+
+  if (!config.franchise_name?.trim()) {
+    missing.push('Nome da unidade');
+  }
+  if (!config.unit_address?.trim()) {
+    missing.push('Endereço');
+  }
+  if (!config.working_days?.trim()) {
+    missing.push('Dias de funcionamento');
+  }
+  if (!config.opening_hours?.trim()) {
+    missing.push('Horário de funcionamento');
+  }
+
+  // Must have at least one sales channel (delivery or pickup)
+  const hasDelivery = config.has_delivery ?? false;
+  const hasPickup = config.has_pickup ?? false;
+  if (!hasDelivery && !hasPickup) {
+    missing.push('Forma de operação (entrega ou retirada)');
+  }
+
+  // If delivery is enabled, must have payment methods for delivery
+  if (hasDelivery && (!config.payment_delivery || !Array.isArray(config.payment_delivery) || config.payment_delivery.length === 0)) {
+    missing.push('Formas de pagamento (entrega)');
+  }
+
+  // If pickup is enabled, must have payment methods for pickup
+  if (hasPickup && (!config.payment_pickup || !Array.isArray(config.payment_pickup) || config.payment_pickup.length === 0)) {
+    missing.push('Formas de pagamento (retirada)');
+  }
+
+  return missing;
+}
+
 export default function useWhatsAppConnection({ currentUser, updateConfigurationStatus }) {
   const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
@@ -23,6 +63,17 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
       toast.error('Usuário não identificado. Por favor, faça login novamente.');
       return;
     }
+
+    // Validate vendor wizard fields before connecting
+    const missingFields = validateVendorConfig(config);
+    if (missingFields.length > 0) {
+      toast.error(
+        `Preencha os campos obrigatórios no "Meu Vendedor" antes de conectar o WhatsApp:\n\n• ${missingFields.join('\n• ')}`,
+        { duration: 8000 }
+      );
+      return;
+    }
+
     setIsConnectingWhatsApp(true);
     setSelectedConfigForWhatsApp(config);
     setModalData(null);

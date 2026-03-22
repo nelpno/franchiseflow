@@ -26,8 +26,10 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         result.push({
           level: "red",
           franchise: fName,
+          franchiseId: franchise.id,
           description: `Franquia sem vendas registradas há ${days} dias`,
-          action: "Ver Detalhes",
+          action: "Ver franquia",
+          actionUrl: createPageUrl("Franchises"),
           icon: "warning",
         });
       }
@@ -40,8 +42,10 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         result.push({
           level: "red",
           franchise: fName,
+          franchiseId: franchise.id,
           description: `${zeroStock.length} item(ns) zerado(s) no estoque`,
-          action: "Repor",
+          action: "Ver estoque",
+          actionUrl: createPageUrl("PurchaseOrders"),
           icon: "inventory",
         });
       }
@@ -49,8 +53,10 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         result.push({
           level: "yellow",
           franchise: fName,
+          franchiseId: franchise.id,
           description: `${lowStock.length} item(ns) atingiram o estoque crítico de segurança`,
-          action: "Repor",
+          action: "Ver estoque",
+          actionUrl: createPageUrl("PurchaseOrders"),
           icon: "inventory",
         });
       }
@@ -59,37 +65,37 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         result.push({
           level: "yellow",
           franchise: fName,
+          franchiseId: franchise.id,
           description: "Checklist de abertura não foi realizado hoje",
-          action: "Notificar",
+          action: "Ver franquia",
+          actionUrl: createPageUrl("Franchises"),
           icon: "checklist",
         });
       }
 
       // Purchase order alert: no order in 30+ days
-      if (purchaseOrders && purchaseOrders.length > 0) {
-        const franchiseOrders = purchaseOrders.filter(
-          (po) =>
-            (po.franchise_id === franchise.id || po.franchise_id === franchise.evolution_instance_id) &&
-            (po.status === "entregue" || po.status === "confirmado")
-        );
-        const latestOrder = franchiseOrders.sort(
-          (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
-        )[0];
+      const franchiseOrders = (purchaseOrders || []).filter(
+        (po) =>
+          po.franchise_id === franchise.id || po.franchise_id === franchise.evolution_instance_id
+      );
+      const latestOrder = franchiseOrders.sort(
+        (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
+      )[0];
 
-        const now = new Date();
-        if (!latestOrder || differenceInDays(now, new Date(latestOrder.ordered_at)) >= 30) {
-          const days = latestOrder
-            ? differenceInDays(now, new Date(latestOrder.ordered_at))
-            : "30+";
-          result.push({
-            level: "yellow",
-            franchise: fName,
-            description: `${fName} não faz pedido há ${days} dias`,
-            action: "Ver pedidos",
-            actionUrl: createPageUrl("PurchaseOrders"),
-            icon: "local_shipping",
-          });
-        }
+      const now = new Date();
+      if (!latestOrder || differenceInDays(now, new Date(latestOrder.ordered_at)) >= 30) {
+        const days = latestOrder
+          ? differenceInDays(now, new Date(latestOrder.ordered_at))
+          : "30+";
+        result.push({
+          level: "yellow",
+          franchise: fName,
+          franchiseId: franchise.id,
+          description: `Sem pedido de reposição há ${days} dias`,
+          action: "Ver pedidos",
+          actionUrl: createPageUrl("PurchaseOrders"),
+          icon: "local_shipping",
+        });
       }
     }
 

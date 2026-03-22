@@ -14,6 +14,7 @@ import QuickAccessCards from "./QuickAccessCards";
 import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
 import SmartActions from "./SmartActions";
+import { generateSmartActions } from "@/lib/smartActions";
 
 export default function FranchiseeDashboard() {
   const { user } = useAuth();
@@ -98,6 +99,9 @@ export default function FranchiseeDashboard() {
   const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
   const yesterdayRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
 
+  const todayAvgTicket = todaySalesCount > 0 ? todayRevenue / todaySalesCount : 0;
+  const yesterdayAvgTicket = yesterdaySalesCount > 0 ? yesterdayRevenue / yesterdaySalesCount : 0;
+
   const dailyGoal = useMemo(() => {
     if (!summaries.length || !franchiseId) return null;
     const now = new Date();
@@ -137,7 +141,7 @@ export default function FranchiseeDashboard() {
         franchiseName={franchise ? `Unidade ${franchise.city}` : null}
       />
 
-      <section className="grid grid-cols-2 gap-4 mb-6">
+      <section className="grid grid-cols-3 gap-4 mb-6">
         <StatsCard
           title="Vendas Hoje"
           value={todaySalesCount}
@@ -150,14 +154,19 @@ export default function FranchiseeDashboard() {
           previousValue={yesterdayRevenue}
           trend={todayRevenue > yesterdayRevenue ? 'up' : todayRevenue < yesterdayRevenue ? 'down' : null}
         />
+        <StatsCard
+          title="Valor Médio"
+          value={`R$ ${Math.round(todayAvgTicket).toLocaleString("pt-BR")}`}
+          previousValue={yesterdayAvgTicket}
+          trend={todayAvgTicket > yesterdayAvgTicket ? 'up' : todayAvgTicket < yesterdayAvgTicket ? 'down' : null}
+        />
       </section>
 
       <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
 
       <QuickAccessCards
         lowStockCount={lowStockCount}
-        checklistDone={checklistProgress.done}
-        checklistTotal={checklistProgress.total}
+        pendingActionsCount={generateSmartActions(contacts, 0).length}
       />
 
       <MiniRevenueChart summaries={summaries} franchiseId={franchiseId} />

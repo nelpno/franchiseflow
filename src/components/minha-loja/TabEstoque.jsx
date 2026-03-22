@@ -167,6 +167,7 @@ export default function TabEstoque({
     const { itemId, field } = editingCell;
     const item = items.find((i) => i.id === itemId);
     const isIntField = field === "quantity" || field === "min_stock";
+    const isFloatField = field === "sale_price" || field === "cost_price";
     const newValue = isIntField ? parseInt(editValue, 10) : parseFloat(editValue);
 
     if (isNaN(newValue) || newValue < 0) {
@@ -193,7 +194,8 @@ export default function TabEstoque({
             : i
         )
       );
-      toast.success("Estoque atualizado.");
+      const toastMsg = field === "sale_price" ? "Preco de venda atualizado." : "Estoque atualizado.";
+      toast.success(toastMsg);
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Erro ao atualizar:", error);
@@ -447,6 +449,10 @@ export default function TabEstoque({
     (i) => i.min_stock > 0 && i.quantity < i.min_stock
   ).length;
 
+  const missingPriceCount = items.filter(
+    (i) => i.sale_price === null || i.sale_price === undefined || i.sale_price === 0
+  ).length;
+
   const totalProducts = filteredItems.length;
 
   // --- Render ---
@@ -517,6 +523,17 @@ export default function TabEstoque({
           </SelectContent>
         </Select>
       </div>
+
+      {/* Missing sale_price banner */}
+      {missingPriceCount > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-xl">
+          <MaterialIcon icon="warning" size={20} className="text-[#775a19] shrink-0" />
+          <p className="text-sm text-[#775a19] flex-1">
+            <strong>{missingPriceCount} de {items.length}</strong> produtos sem preco de venda definido.
+            {" "}Clique no valor para editar.
+          </p>
+        </div>
+      )}
 
       {/* Content */}
       {filteredItems.length === 0 ? (
@@ -663,7 +680,38 @@ export default function TabEstoque({
                             <span className="text-[10px] uppercase tracking-widest text-[#534343]/70 font-plus-jakarta">
                               Venda
                             </span>
-                            <p className="text-[#534343]">{formatBRL(item.sale_price)}</p>
+                            <p
+                              className={`cursor-pointer hover:text-[#775a19] ${
+                                !item.sale_price ? "text-[#b91c1c] font-medium" : "text-[#534343]"
+                              }`}
+                              onClick={() =>
+                                handleCellClick(item.id, "sale_price", item.sale_price)
+                              }
+                            >
+                              {editingCell?.itemId === item.id &&
+                              editingCell?.field === "sale_price" ? (
+                                <Input
+                                  ref={editInputRef}
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onBlur={handleCellBlur}
+                                  onKeyDown={handleCellKeyDown}
+                                  className="w-24 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
+                                />
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  {item.sale_price ? formatBRL(item.sale_price) : (
+                                    <>
+                                      <MaterialIcon icon="warning" size={12} className="text-[#b91c1c]" />
+                                      Definir
+                                    </>
+                                  )}
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </div>
 
@@ -817,9 +865,43 @@ export default function TabEstoque({
                                 {formatBRL(item.cost_price)}
                               </TableCell>
 
-                              {/* Sale price */}
-                              <TableCell className="text-right text-sm text-[#4a3d3d]">
-                                {formatBRL(item.sale_price)}
+                              {/* Sale price - inline edit */}
+                              <TableCell className="text-right">
+                                {editingCell?.itemId === item.id &&
+                                editingCell?.field === "sale_price" ? (
+                                  <Input
+                                    ref={editInputRef}
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onBlur={handleCellBlur}
+                                    onKeyDown={handleCellKeyDown}
+                                    className="w-24 ml-auto text-right h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                  />
+                                ) : (
+                                  <span
+                                    className={`cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-flex items-center gap-1 ${
+                                      !item.sale_price
+                                        ? "text-[#b91c1c] font-medium"
+                                        : "text-[#4a3d3d]"
+                                    }`}
+                                    onClick={() =>
+                                      handleCellClick(item.id, "sale_price", item.sale_price)
+                                    }
+                                    title="Clique para editar preco de venda"
+                                  >
+                                    {item.sale_price ? (
+                                      formatBRL(item.sale_price)
+                                    ) : (
+                                      <>
+                                        <MaterialIcon icon="warning" size={14} className="text-[#b91c1c]" />
+                                        Definir
+                                      </>
+                                    )}
+                                  </span>
+                                )}
                               </TableCell>
 
                               <TableCell>{getStockBadge(item)}</TableCell>
