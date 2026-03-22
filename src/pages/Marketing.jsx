@@ -704,7 +704,20 @@ function FileCard({ file, isAdmin, onDelete }) {
       <CardContent className="p-4 space-y-2">
         <h3 className="font-medium text-sm leading-tight line-clamp-2">{file.title}</h3>
         {file.description && (
-          <p className="text-xs text-gray-500 line-clamp-2">{file.description}</p>
+          <div className="space-y-1">
+            <p className="text-xs text-gray-500 line-clamp-3">{file.description}</p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(file.description);
+                toast.success("Legenda copiada!");
+              }}
+              className="flex items-center gap-1 text-[10px] font-medium text-[#b91c1c] hover:text-[#991b1b] transition-colors"
+            >
+              <MaterialIcon icon="content_copy" size={12} />
+              Copiar legenda
+            </button>
+          </div>
         )}
         <p className="text-xs text-gray-400">
           {file.created_at

@@ -123,6 +123,7 @@ export default function Layout({ children, currentPageName }) {
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [needsOnboardingWelcome, setNeedsOnboardingWelcome] = useState(false);
   const [availableFranchises, setAvailableFranchises] = useState([]);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -419,8 +420,31 @@ export default function Layout({ children, currentPageName }) {
                 <NotificationBell size={20} />
               </div>
               {currentUser && (
-                <div className="w-8 h-8 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#534343] font-bold text-xs overflow-hidden">
-                  {currentUser.full_name?.charAt(0).toUpperCase()}
+                <div className="relative group">
+                  <button
+                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                    className="w-9 h-9 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#534343] font-bold text-xs overflow-hidden"
+                  >
+                    {currentUser.full_name?.charAt(0).toUpperCase()}
+                  </button>
+                  {showMobileMenu && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowMobileMenu(false)} />
+                      <div className="absolute right-0 top-11 z-50 bg-white rounded-xl shadow-lg border border-[#291715]/10 w-56 py-2 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-[#291715]/5">
+                          <p className="font-semibold text-sm text-[#1b1c1d] truncate">{currentUser.full_name || "Usuário"}</p>
+                          <p className="text-xs text-[#534343] truncate">{currentUser.email}</p>
+                        </div>
+                        <button
+                          onClick={() => { setShowMobileMenu(false); handleLogout(); }}
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#b91c1c] hover:bg-[#b91c1c]/5 transition-colors"
+                        >
+                          <MaterialIcon icon="logout" size={18} />
+                          Sair da conta
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
