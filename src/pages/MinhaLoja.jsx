@@ -10,11 +10,13 @@ import { startOfMonth, startOfDay, endOfDay, format } from "date-fns";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
 import TabLancar from "@/components/minha-loja/TabLancar";
 import TabResultado from "@/components/minha-loja/TabResultado";
+import TabReposicao from "@/components/minha-loja/TabReposicao";
 
 const TAB_MAP = {
   lancar: "lancar",
   resultado: "resultado",
   estoque: "estoque",
+  reposicao: "reposicao",
 };
 
 export default function MinhaLoja() {
@@ -353,6 +355,13 @@ export default function MinhaLoja() {
               <MaterialIcon icon="inventory_2" size={16} />
               Estoque
             </TabsTrigger>
+            <TabsTrigger
+              value="reposicao"
+              className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
+            >
+              <MaterialIcon icon="local_shipping" size={16} />
+              Reposicao
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="lancar" className="mt-4">
@@ -382,6 +391,14 @@ export default function MinhaLoja() {
               saleItems={saleItems}
               franchises={franchises}
               onRefresh={handleRefreshInventory}
+            />
+          </TabsContent>
+
+          <TabsContent value="reposicao" className="mt-4">
+            <TabReposicao
+              franchiseId={franchiseId}
+              inventoryItems={franchiseInventory}
+              saleItems={saleItems}
             />
           </TabsContent>
         </Tabs>

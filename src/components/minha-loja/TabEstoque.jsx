@@ -30,8 +30,6 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import PurchaseOrderForm from "./PurchaseOrderForm";
-import PurchaseOrderHistory from "./PurchaseOrderHistory";
 
 const UNIT_OPTIONS = [
   { value: "un", label: "Unidade" },
@@ -76,8 +74,6 @@ export default function TabEstoque({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-  const [showOrderDialog, setShowOrderDialog] = useState(false);
-  const [orderRefreshKey, setOrderRefreshKey] = useState(0);
   const editInputRef = useRef(null);
 
   const isAdmin = currentUser?.role === "admin";
@@ -479,15 +475,6 @@ export default function TabEstoque({
           >
             <MaterialIcon icon="upload" size={16} />
             CSV
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setShowOrderDialog(true)}
-            className="gap-2 border-[#d4af37] text-[#775a19] rounded-xl hover:bg-[#d4af37]/10"
-            size="sm"
-          >
-            <MaterialIcon icon="local_shipping" size={16} />
-            Fazer Pedido
           </Button>
           <Button
             onClick={handleOpenAddDialog}
@@ -1115,30 +1102,6 @@ export default function TabEstoque({
         </DialogContent>
       </Dialog>
 
-      {/* Purchase Order dialog */}
-      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d]">
-              <MaterialIcon icon="local_shipping" size={20} className="text-[#d4af37]" />
-              Novo Pedido de Compra
-            </DialogTitle>
-          </DialogHeader>
-          <PurchaseOrderForm
-            franchiseId={franchiseId}
-            inventoryItems={items}
-            saleItems={saleItems}
-            onSave={() => {
-              setShowOrderDialog(false);
-              setOrderRefreshKey((k) => k + 1);
-            }}
-            onCancel={() => setShowOrderDialog(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Purchase Order History */}
-      <PurchaseOrderHistory franchiseId={franchiseId} refreshKey={orderRefreshKey} />
     </div>
   );
 }
