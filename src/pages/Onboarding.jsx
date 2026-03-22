@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
 import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARDING_BLOCKS";
 import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
 import GateBlock from "@/components/onboarding/GateBlock";
@@ -47,25 +48,32 @@ export default function Onboarding() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const user = await User.me();
-    setCurrentUser(user);
+    try {
+      const user = await User.me();
+      setCurrentUser(user);
 
-    const allFranchises = await Franchise.filter({ status: "active" });
+      // Buscar todas as franquias (sem filtro de status para garantir que encontra)
+      const allFranchises = await Franchise.list();
 
-    if (user.role === "admin") {
-      setFranchises(allFranchises);
-      // Load all onboarding records for admin summary
-      const allOb = await OnboardingChecklist.list();
-      setAllChecklists(allOb);
-    } else {
-      const ids = user.managed_franchise_ids || [];
-      const myFranchises = allFranchises.filter(f => ids.includes(f.evolution_instance_id));
-      setFranchises(myFranchises);
+      if (user.role === "admin") {
+        setFranchises(allFranchises);
+        const allOb = await OnboardingChecklist.list();
+        setAllChecklists(allOb);
+      } else {
+        const ids = user.managed_franchise_ids || [];
+        const myFranchises = allFranchises.filter(f =>
+          ids.includes(f.evolution_instance_id) || ids.includes(f.id)
+        );
+        setFranchises(myFranchises);
 
-      if (myFranchises.length > 0) {
-        setSelectedFranchise(myFranchises[0]);
-        await loadFranchiseChecklist(myFranchises[0], user);
+        if (myFranchises.length > 0) {
+          setSelectedFranchise(myFranchises[0]);
+          await loadFranchiseChecklist(myFranchises[0], user);
+        }
       }
+    } catch (error) {
+      console.error("Erro ao carregar onboarding:", error);
+      toast.error("Erro ao carregar dados. Tente recarregar a página.");
     }
     setIsLoading(false);
   }, []);
