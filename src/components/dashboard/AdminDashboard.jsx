@@ -6,6 +6,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import AdminHeader from "./AdminHeader";
 import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
+import FranchiseHealthScore from "./FranchiseHealthScore";
 import DailyRevenueChart from "./DailyRevenueChart";
 import MessagesTrend from "./MessagesTrend";
 
@@ -319,6 +320,15 @@ export default function AdminDashboard() {
         franchises={franchises}
         summaries={summaries}
         isLoading={isLoading}
+      />
+
+      <FranchiseHealthScore
+        franchises={franchises}
+        todaySales={todaySales}
+        inventoryByFranchise={inventoryByFranchise}
+        checklistByFranchise={checklistByFranchise}
+        purchaseOrders={purchaseOrders}
+        todayContacts={todayContacts}
       />
 
       {/* Charts */}

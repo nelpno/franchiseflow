@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import FilterBar from "@/components/shared/FilterBar";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -70,6 +71,7 @@ export default function TabEstoque({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterStockLevel, setFilterStockLevel] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const editInputRef = useRef(null);
 
@@ -121,7 +123,16 @@ export default function TabEstoque({
     const matchesCategory =
       filterCategory === "all" || item.category === filterCategory;
 
-    return matchesSearch && matchesCategory;
+    let matchesStockLevel = true;
+    if (filterStockLevel === "low") {
+      matchesStockLevel = (item.quantity || 0) > 0 && (item.quantity || 0) < (item.min_stock || 5);
+    } else if (filterStockLevel === "out") {
+      matchesStockLevel = (item.quantity || 0) === 0;
+    } else if (filterStockLevel === "ok") {
+      matchesStockLevel = (item.quantity || 0) >= (item.min_stock || 5);
+    }
+
+    return matchesSearch && matchesCategory && matchesStockLevel;
   });
 
   // --- Grouping by product type (first word of product_name) ---
@@ -546,35 +557,35 @@ export default function TabEstoque({
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <MaterialIcon
-            icon="search"
-            size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a3d3d]/50"
-          />
-          <Input
-            placeholder="Buscar por produto ou categoria..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
-          />
-        </div>
-
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-full sm:w-[180px] bg-[#e9e8e9] border-none rounded-xl">
-            <SelectValue placeholder="Todas as categorias" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
-            {CATEGORY_OPTIONS.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Buscar por produto ou categoria..."
+        filters={[
+          {
+            key: "category",
+            label: "Categoria",
+            value: filterCategory,
+            onChange: setFilterCategory,
+            options: [
+              { value: "all", label: "Todas as categorias" },
+              ...CATEGORY_OPTIONS.map((cat) => ({ value: cat, label: cat })),
+            ],
+          },
+          {
+            key: "stockLevel",
+            label: "Nivel de estoque",
+            value: filterStockLevel,
+            onChange: setFilterStockLevel,
+            options: [
+              { value: "all", label: "Todos os niveis" },
+              { value: "ok", label: "Estoque normal" },
+              { value: "low", label: "Estoque baixo" },
+              { value: "out", label: "Sem estoque" },
+            ],
+          },
+        ]}
+      />
 
       {/* Missing sale_price banner */}
       {missingPriceCount > 0 && (

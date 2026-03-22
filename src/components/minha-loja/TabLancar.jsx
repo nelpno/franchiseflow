@@ -510,6 +510,7 @@ export default function TabLancar({
             franchiseId={franchiseId}
             contacts={contacts}
             inventoryItems={inventoryItems}
+            currentUser={currentUser}
             onSave={handleFormSave}
             onCancel={() => setShowFormDialog(false)}
           />

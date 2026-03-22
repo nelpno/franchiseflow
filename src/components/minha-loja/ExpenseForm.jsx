@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Expense } from "@/entities/all";
+import { Expense, AuditLog } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,12 +46,34 @@ export default function ExpenseForm({ expense, franchiseId, currentUser, onSave,
         created_by: currentUser?.id || null,
       };
 
+      let entityId;
       if (isEditing) {
         await Expense.update(expense.id, data);
+        entityId = expense.id;
         toast.success("Despesa atualizada!");
       } else {
-        await Expense.create(data);
+        const created = await Expense.create(data);
+        entityId = created.id;
         toast.success("Despesa registrada!");
+      }
+
+      // Audit log
+      try {
+        await AuditLog.create({
+          user_id: currentUser?.id || null,
+          user_name: currentUser?.full_name || currentUser?.email || "Desconhecido",
+          franchise_id: franchiseId,
+          action: isEditing ? "update" : "create",
+          entity_type: "expense",
+          entity_id: entityId,
+          details: {
+            description: description.trim(),
+            amount: parsedAmount,
+            expense_date: expenseDate,
+          },
+        });
+      } catch (auditErr) {
+        console.warn("Audit log failed:", auditErr);
       }
 
       onSave();

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { User, Franchise, Sale, Expense, InventoryItem, SaleItem, Contact } from "@/entities/all";
+import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, getPrimaryFranchise } from "@/lib/franchiseUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -21,6 +22,7 @@ const TAB_MAP = {
 
 export default function MinhaLoja() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { selectedFranchise } = useAuth();
   const tabParam = searchParams.get("tab");
   const activeTab = TAB_MAP[tabParam] || "lancar";
   const actionParam = searchParams.get("action");
@@ -107,9 +109,16 @@ export default function MinhaLoja() {
     [franchises, currentUser]
   );
 
+  // Use selectedFranchise from AuthContext; fallback to getPrimaryFranchise
   const primaryFranchise = useMemo(
-    () => getPrimaryFranchise(franchises, currentUser),
-    [franchises, currentUser]
+    () => {
+      if (selectedFranchise) {
+        const found = franchises.find((f) => f.id === selectedFranchise.id);
+        if (found) return found;
+      }
+      return getPrimaryFranchise(franchises, currentUser);
+    },
+    [franchises, currentUser, selectedFranchise]
   );
 
   const franchiseId = primaryFranchise?.evolution_instance_id;

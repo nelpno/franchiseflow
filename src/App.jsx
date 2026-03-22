@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import Login from './pages/Login';
 import SetPassword from './pages/SetPassword';
+import OnboardingWelcome from './pages/OnboardingWelcome';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -79,6 +80,11 @@ function AppRoutes() {
       } />
       <Route path="/set-password" element={
         isAuthenticated ? <SetPassword /> : <Navigate to="/login" replace />
+      } />
+      <Route path="/OnboardingWelcome" element={
+        !isAuthenticated ? <Navigate to="/login" replace /> :
+        needsPasswordSetup ? <Navigate to="/set-password" replace /> :
+        <OnboardingWelcome />
       } />
       <Route path="/*" element={
         !isAuthenticated ? <Navigate to="/login" replace /> :

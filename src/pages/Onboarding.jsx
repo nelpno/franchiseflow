@@ -217,40 +217,40 @@ export default function Onboarding() {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
-            <MaterialIcon icon="rocket_launch" size={32} className="text-[#d4af37]" />
+          <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-2 sm:gap-3">
+            <MaterialIcon icon="rocket_launch" size={28} className="text-[#d4af37] shrink-0" />
             Checklist de Iniciação
           </h1>
-          <p className="text-[#534343] mt-1">Tudo que precisa estar pronto antes da sua primeira venda</p>
+          <p className="text-sm sm:text-base text-[#534343] mt-1">Tudo que precisa estar pronto antes da sua primeira venda</p>
         </div>
 
         {/* Admin summary */}
         {isAdmin && (
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
             <Card className="bg-[#d4af37]/10 border-[#d4af37]/30 border">
-              <CardContent className="p-4 flex items-center gap-3">
-                <MaterialIcon icon="schedule" size={24} className="text-[#d4af37]" />
+              <CardContent className="p-2 sm:p-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-3 text-center sm:text-left">
+                <MaterialIcon icon="schedule" size={20} className="text-[#d4af37] hidden sm:block" />
                 <div>
-                  <div className="text-2xl font-bold text-[#775a19]">{inProgressCount}</div>
-                  <div className="text-xs text-[#534343]">Em andamento</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#775a19]">{inProgressCount}</div>
+                  <div className="text-[10px] sm:text-xs text-[#534343] leading-tight">Em andamento</div>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#d4af37]/10 border-[#d4af37]/30 border">
-              <CardContent className="p-4 flex items-center gap-3">
-                <MaterialIcon icon="error" size={24} className="text-[#d4af37]" />
+              <CardContent className="p-2 sm:p-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-3 text-center sm:text-left">
+                <MaterialIcon icon="error" size={20} className="text-[#d4af37] hidden sm:block" />
                 <div>
-                  <div className="text-2xl font-bold text-[#775a19]">{pendingCount}</div>
-                  <div className="text-xs text-[#534343]">Aguardando aprovação</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#775a19]">{pendingCount}</div>
+                  <div className="text-[10px] sm:text-xs text-[#534343] leading-tight">Aguardando{"\n"}aprovação</div>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-[#b91c1c]/5 border-[#b91c1c]/20 border">
-              <CardContent className="p-4 flex items-center gap-3">
-                <MaterialIcon icon="check_circle" size={24} className="text-[#b91c1c]" />
+              <CardContent className="p-2 sm:p-4 flex flex-col sm:flex-row items-center gap-1 sm:gap-3 text-center sm:text-left">
+                <MaterialIcon icon="check_circle" size={20} className="text-[#b91c1c] hidden sm:block" />
                 <div>
-                  <div className="text-2xl font-bold text-[#b91c1c]">{approvedCount}</div>
-                  <div className="text-xs text-[#534343]">Aprovados</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#b91c1c]">{approvedCount}</div>
+                  <div className="text-[10px] sm:text-xs text-[#534343] leading-tight">Aprovados</div>
                 </div>
               </CardContent>
             </Card>

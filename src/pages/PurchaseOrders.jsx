@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import FilterBar from "@/components/shared/FilterBar";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -74,6 +75,7 @@ export default function PurchaseOrders() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("todos");
   const [franchiseFilter, setFranchiseFilter] = useState("todos");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Dialog state
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -146,6 +148,15 @@ export default function PurchaseOrders() {
       result = result.filter((o) => o.franchise_id === franchiseFilter);
     }
 
+    // Search by franchise name
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter((o) => {
+        const franchiseName = getFranchiseName(o.franchise_id).toLowerCase();
+        return franchiseName.includes(term);
+      });
+    }
+
     // Sort: pendente first, then by ordered_at desc
     result.sort((a, b) => {
       const statusA = STATUS_CONFIG[a.status]?.order ?? 99;
@@ -155,7 +166,7 @@ export default function PurchaseOrders() {
     });
 
     return result;
-  }, [orders, statusFilter, franchiseFilter]);
+  }, [orders, statusFilter, franchiseFilter, searchTerm]);
 
   // Unique franchises present in orders for filter
   const orderFranchiseIds = useMemo(() => {
@@ -377,34 +388,33 @@ export default function PurchaseOrders() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px] bg-white border-[#cac0c0]/30 rounded-xl">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_FILTER_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={franchiseFilter} onValueChange={setFranchiseFilter}>
-          <SelectTrigger className="w-full sm:w-[220px] bg-white border-[#cac0c0]/30 rounded-xl">
-            <SelectValue placeholder="Franquia" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todas as Franquias</SelectItem>
-            {orderFranchiseIds.map((fid) => (
-              <SelectItem key={fid} value={fid}>
-                {getFranchiseName(fid)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Buscar por franquia..."
+        filters={[
+          {
+            key: "status",
+            label: "Status",
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: STATUS_FILTER_OPTIONS,
+          },
+          {
+            key: "franchise",
+            label: "Franquia",
+            value: franchiseFilter,
+            onChange: setFranchiseFilter,
+            options: [
+              { value: "todos", label: "Todas as Franquias" },
+              ...orderFranchiseIds.map((fid) => ({
+                value: fid,
+                label: getFranchiseName(fid),
+              })),
+            ],
+          },
+        ]}
+      />
 
       {/* Empty state */}
       {filteredOrders.length === 0 ? (

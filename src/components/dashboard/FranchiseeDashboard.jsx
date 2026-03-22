@@ -14,6 +14,7 @@ import QuickAccessCards from "./QuickAccessCards";
 import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
 import SmartActions from "./SmartActions";
+import PeriodComparisonCard from "./PeriodComparisonCard";
 import { generateSmartActions } from "@/lib/smartActions";
 
 export default function FranchiseeDashboard() {
@@ -180,6 +181,8 @@ export default function FranchiseeDashboard() {
         franchiseId={evoId}
         dailyGoal={dailyGoal}
       />
+
+      <PeriodComparisonCard franchiseId={evoId} />
 
       <SmartActions contacts={contacts} franchiseId={evoId} />
 

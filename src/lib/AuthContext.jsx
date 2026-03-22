@@ -7,9 +7,20 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFranchise, setSelectedFranchiseState] = useState(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(
     () => localStorage.getItem('needs_password_setup') === 'true'
   );
+
+  // Persist selected franchise to localStorage
+  const setSelectedFranchise = useCallback((franchise) => {
+    setSelectedFranchiseState(franchise);
+    if (franchise) {
+      localStorage.setItem('selected_franchise_id', franchise.id);
+    } else {
+      localStorage.removeItem('selected_franchise_id');
+    }
+  }, []);
 
   const clearPasswordSetup = useCallback(() => {
     setNeedsPasswordSetup(false);
@@ -137,6 +148,8 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings: null,
       needsPasswordSetup,
       clearPasswordSetup,
+      selectedFranchise,
+      setSelectedFranchise,
       logout,
       navigateToLogin,
       checkAppState: () => {}

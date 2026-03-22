@@ -43,6 +43,32 @@ export async function inviteFranchisee(email) {
   return response.json();
 }
 
+// WhatsApp History — busca mensagens do ZuckZapGo
+const ZUCKZAPGO_URL = import.meta.env.VITE_ZUCKZAPGO_URL || '';
+
+export async function getWhatsAppMessages(instanceName, phone, limit = 20) {
+  if (!ZUCKZAPGO_URL || !instanceName || !phone) return [];
+  try {
+    // Normalize phone: remove non-digits
+    const cleanPhone = phone.replace(/\D/g, '');
+    // ZuckZapGo API endpoint for fetching messages
+    const url = `${ZUCKZAPGO_URL}/api/${instanceName}/messages/${cleanPhone}?limit=${limit}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    // Return array of messages (handle different response shapes)
+    return Array.isArray(data) ? data : (data.messages || data.data || []);
+  } catch (error) {
+    console.error('WhatsApp messages fetch error:', error);
+    return [];
+  }
+}
+
 // Análise de Lead - funcionalidade em migração (antigo Base44 LLM)
 export async function analyzeLead(leadData) {
   throw new Error('Análise de leads temporariamente indisponível. Funcionalidade em migração.');

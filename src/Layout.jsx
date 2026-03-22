@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Navigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -22,6 +22,7 @@ import { DailyUniqueContact, Sale, Franchise, OnboardingChecklist } from "@/enti
 import { useAuth } from "@/lib/AuthContext";
 import { format } from "date-fns";
 import { getAvailableFranchises, getPrimaryFranchise } from "@/lib/franchiseUtils";
+import FranchiseSelector from "@/components/shared/FranchiseSelector";
 
 // Navigation items with admin section grouping
 const navigationItems = [
@@ -115,33 +116,68 @@ const mobileBottomNav = [
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
-  const { logout, user: currentUser } = useAuth();
+  const { logout, user: currentUser, selectedFranchise, setSelectedFranchise } = useAuth();
   const [todaySales, setTodaySales] = useState(0);
   const [todayContacts, setTodayContacts] = useState(0);
   const [onboardingApproved, setOnboardingApproved] = useState(false);
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
+  const [needsOnboardingWelcome, setNeedsOnboardingWelcome] = useState(false);
+  const [availableFranchises, setAvailableFranchises] = useState([]);
 
   useEffect(() => {
     if (!currentUser) return;
     if (currentUser.role === "admin") {
       loadQuickStats();
+      setOnboardingLoaded(true);
+      return;
     }
-    if (currentUser.role !== "admin" && currentUser.managed_franchise_ids?.length > 0) {
+    if (currentUser.managed_franchise_ids?.length > 0) {
       Franchise.list()
         .then((allFranchises) => {
+          const userFranchises = getAvailableFranchises(allFranchises, currentUser);
+          setAvailableFranchises(userFranchises);
+
+          // Initialize selectedFranchise if not set or invalid
+          if (!selectedFranchise || !userFranchises.find((f) => f.id === selectedFranchise.id)) {
+            const savedId = localStorage.getItem("selected_franchise_id");
+            const savedFranchise = savedId ? userFranchises.find((f) => f.id === savedId) : null;
+            setSelectedFranchise(savedFranchise || userFranchises[0] || null);
+          }
+
           const primaryFranchise = getPrimaryFranchise(allFranchises, currentUser);
           const franchiseId = primaryFranchise?.evolution_instance_id;
-          if (!franchiseId) return;
+          if (!franchiseId) {
+            setOnboardingLoaded(true);
+            return;
+          }
           return OnboardingChecklist.filter({ franchise_id: franchiseId });
         })
         .then((obs) => {
           if (!obs) return;
+          const skipped = localStorage.getItem("onboarding_skipped") === "true";
+          const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
+
           if (obs.length === 0 || obs[0].status === "approved") {
             setOnboardingApproved(true);
           }
+
+          // If onboarding not approved AND welcome not yet seen AND not skipped => show welcome
+          if (obs.length > 0 && obs[0].status !== "approved" && !welcomeSeen && !skipped) {
+            setNeedsOnboardingWelcome(true);
+          }
+          // If no checklist exists and welcome not seen and not skipped => show welcome
+          if (obs.length === 0 && !welcomeSeen && !skipped) {
+            setNeedsOnboardingWelcome(true);
+          }
+
+          setOnboardingLoaded(true);
         })
         .catch((error) => {
           console.error("Erro ao carregar onboarding:", error);
+          setOnboardingLoaded(true);
         });
+    } else {
+      setOnboardingLoaded(true);
     }
   }, [currentUser]);
 
@@ -214,6 +250,12 @@ export default function Layout({ children, currentPageName }) {
       </SidebarMenuItem>
     );
   };
+
+  // Route guard: redirect franchisees who need onboarding welcome
+  const isOnboardingPage = location.pathname === "/Onboarding" || location.pathname === "/OnboardingWelcome";
+  if (!isAdmin && onboardingLoaded && needsOnboardingWelcome && !isOnboardingPage) {
+    return <Navigate to="/OnboardingWelcome" replace />;
+  }
 
   return (
     <SidebarProvider>
@@ -347,6 +389,9 @@ export default function Layout({ children, currentPageName }) {
                 </h1>
               </div>
               <div className="flex items-center gap-3">
+                {!isAdmin && availableFranchises.length > 0 && (
+                  <FranchiseSelector franchises={availableFranchises} />
+                )}
                 <NotificationBell size={20} />
                 {currentUser && (
                   <div className="w-10 h-10 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#534343] font-bold text-sm ml-2 overflow-hidden">
@@ -361,9 +406,13 @@ export default function Layout({ children, currentPageName }) {
           <header className="md:hidden sticky top-0 z-40 bg-[#fbf9fa]/80 backdrop-blur-md h-16 flex items-center justify-between px-4 border-b border-[#f8eeee]/50">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="p-2 rounded-xl text-[#534343] hover:bg-white/50 transition-colors" />
-              <h1 className="text-lg font-semibold text-[#1b1c1d]">
-                {currentPageTitle}
-              </h1>
+              {!isAdmin && availableFranchises.length > 1 ? (
+                <FranchiseSelector franchises={availableFranchises} />
+              ) : (
+                <h1 className="text-lg font-semibold text-[#1b1c1d]">
+                  {currentPageTitle}
+                </h1>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell size={20} />

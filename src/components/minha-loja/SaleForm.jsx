@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Sale, SaleItem, Contact } from "@/entities/all";
+import { Sale, SaleItem, Contact, AuditLog } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,6 +148,7 @@ function ContactAutocomplete({
   value,
   onChange,
   onSelect,
+  onCreateNew,
   contacts,
   placeholder = "Buscar por nome ou telefone...",
   className = "",
@@ -155,6 +156,7 @@ function ContactAutocomplete({
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [hasQuery, setHasQuery] = useState(false);
   const wrapperRef = useRef(null);
 
   useEffect(() => {
@@ -174,9 +176,11 @@ function ContactAutocomplete({
     if (inputVal.length < 2) {
       setSearchResults([]);
       setShowDropdown(false);
+      setHasQuery(false);
       return;
     }
 
+    setHasQuery(true);
     const normalized = normalizePhone(inputVal);
     const lowerInput = inputVal.toLowerCase();
 
@@ -193,12 +197,13 @@ function ContactAutocomplete({
       .slice(0, 6);
 
     setSearchResults(matches);
-    setShowDropdown(matches.length > 0);
+    setShowDropdown(true);
   };
 
   const handleSelect = (contact) => {
     setShowDropdown(false);
     setSearchResults([]);
+    setHasQuery(false);
     onSelect(contact);
   };
 
@@ -210,12 +215,12 @@ function ContactAutocomplete({
         value={value}
         onChange={handleChange}
         onFocus={() => {
-          if (searchResults.length > 0) setShowDropdown(true);
+          if (searchResults.length > 0 || hasQuery) setShowDropdown(true);
         }}
         className={className}
         autoComplete="off"
       />
-      {showDropdown && searchResults.length > 0 && (
+      {showDropdown && (searchResults.length > 0 || hasQuery) && (
         <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-[#291715]/10 max-h-60 overflow-y-auto">
           {searchResults.map((contact) => {
             const purchaseCount = contact.total_purchases || 0;
@@ -224,7 +229,7 @@ function ContactAutocomplete({
                 key={contact.id}
                 type="button"
                 onClick={() => handleSelect(contact)}
-                className="w-full text-left px-4 py-3 hover:bg-[#f5f3f4] transition-colors first:rounded-t-xl last:rounded-b-xl flex items-center justify-between gap-2"
+                className="w-full text-left px-4 py-3 hover:bg-[#f5f3f4] transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
               >
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-[#1b1c1d] truncate block">
@@ -242,6 +247,20 @@ function ContactAutocomplete({
               </button>
             );
           })}
+          {hasQuery && onCreateNew && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowDropdown(false);
+                setHasQuery(false);
+                onCreateNew();
+              }}
+              className="w-full text-left px-4 py-3 hover:bg-[#fffbeb] transition-colors last:rounded-b-xl flex items-center gap-2 border-t border-[#291715]/5 text-[#b91c1c]"
+            >
+              <MaterialIcon icon="person_add" size={18} />
+              <span className="font-medium text-sm">Novo contato</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -256,6 +275,7 @@ export default function SaleForm({
   franchiseId,
   contacts,
   inventoryItems,
+  currentUser,
   onSave,
   onCancel,
 }) {
@@ -268,6 +288,10 @@ export default function SaleForm({
   const [contactId, setContactId] = useState(null);
   const [newContactName, setNewContactName] = useState("");
   const [isNewContact, setIsNewContact] = useState(false);
+  const [showInlineCreate, setShowInlineCreate] = useState(false);
+  const [inlineContactName, setInlineContactName] = useState("");
+  const [inlineContactPhone, setInlineContactPhone] = useState("");
+  const [isCreatingContact, setIsCreatingContact] = useState(false);
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("pix");
@@ -387,6 +411,53 @@ export default function SaleForm({
     setIsNewContact(hasEnoughDigits && !hasMatch);
   };
 
+  // Open inline create dialog
+  const handleOpenInlineCreate = () => {
+    setShowInlineCreate(true);
+    // Pre-fill phone if user typed digits
+    const digits = contactSearch.replace(/\D/g, "");
+    if (digits.length >= 8) {
+      setInlineContactPhone(contactSearch);
+      setInlineContactName("");
+    } else {
+      setInlineContactName(contactSearch);
+      setInlineContactPhone("");
+    }
+  };
+
+  // Create contact inline and select it
+  const handleInlineContactCreate = async () => {
+    if (!inlineContactName.trim() && !inlineContactPhone.trim()) {
+      toast.error("Preencha pelo menos nome ou telefone.");
+      return;
+    }
+    setIsCreatingContact(true);
+    try {
+      const phone = inlineContactPhone.trim()
+        ? normalizePhone(inlineContactPhone.trim())
+        : "";
+      const newContact = await Contact.create({
+        franchise_id: franchiseId,
+        telefone: phone,
+        nome: inlineContactName.trim(),
+        status: "cliente",
+      });
+      setContactId(newContact.id);
+      setContactSearch(inlineContactName.trim() || formatPhone(phone));
+      setIsNewContact(false);
+      setNewContactName("");
+      setShowInlineCreate(false);
+      setInlineContactName("");
+      setInlineContactPhone("");
+      toast.success("Contato criado!");
+    } catch (err) {
+      console.error("Erro ao criar contato:", err);
+      toast.error("Erro ao criar contato.");
+    } finally {
+      setIsCreatingContact(false);
+    }
+  };
+
   // Resolve or create contact
   const resolveContactId = async () => {
     if (contactId) return contactId;
@@ -471,6 +542,26 @@ export default function SaleForm({
           )
       );
 
+      // Audit log
+      try {
+        await AuditLog.create({
+          user_id: currentUser?.id || null,
+          user_name: currentUser?.full_name || currentUser?.email || "Desconhecido",
+          franchise_id: franchiseId,
+          action: isEditing ? "update" : "create",
+          entity_type: "sale",
+          entity_id: saleId,
+          details: {
+            value: subtotal,
+            net_value: netValue,
+            payment_method: paymentMethod,
+            items_count: items.filter((it) => it.inventory_item_id).length,
+          },
+        });
+      } catch (auditErr) {
+        console.warn("Audit log failed:", auditErr);
+      }
+
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
       onSave();
     } catch (error) {
@@ -510,10 +601,11 @@ export default function SaleForm({
           value={contactSearch}
           onChange={handleContactSearchChange}
           onSelect={handleContactSelect}
+          onCreateNew={handleOpenInlineCreate}
           contacts={contacts}
           className="bg-[#e9e8e9]/50"
         />
-        {isNewContact && (
+        {isNewContact && !showInlineCreate && (
           <div className="flex items-center gap-2 p-3 bg-[#fffbeb] rounded-xl border border-[#d4af37]/30">
             <MaterialIcon icon="person_add" size={18} className="text-[#d4af37] shrink-0" />
             <div className="flex-1">
@@ -524,6 +616,60 @@ export default function SaleForm({
                 placeholder="Nome do cliente"
                 className="bg-white h-9"
               />
+            </div>
+          </div>
+        )}
+        {showInlineCreate && (
+          <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#b91c1c]/20 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <MaterialIcon icon="person_add" size={18} className="text-[#b91c1c]" />
+              <span className="text-sm font-medium text-[#1b1c1d]">Novo contato</span>
+            </div>
+            <div className="space-y-2">
+              <Input
+                value={inlineContactName}
+                onChange={(e) => setInlineContactName(e.target.value)}
+                placeholder="Nome do cliente"
+                className="bg-white h-9"
+                autoFocus
+              />
+              <Input
+                value={inlineContactPhone}
+                onChange={(e) => setInlineContactPhone(e.target.value)}
+                placeholder="Telefone (opcional)"
+                className="bg-white h-9"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowInlineCreate(false);
+                  setInlineContactName("");
+                  setInlineContactPhone("");
+                }}
+                disabled={isCreatingContact}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleInlineContactCreate}
+                disabled={isCreatingContact}
+                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+              >
+                {isCreatingContact ? (
+                  <>
+                    <MaterialIcon icon="progress_activity" size={14} className="animate-spin mr-1" />
+                    Criando...
+                  </>
+                ) : (
+                  "Criar e selecionar"
+                )}
+              </Button>
             </div>
           </div>
         )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Sale, SaleItem, Expense, InventoryItem } from "@/entities/all";
+import { Sale, SaleItem, Expense, InventoryItem, AuditLog } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import ExpenseForm from "@/components/minha-loja/ExpenseForm";
+import ResultadoCharts from "@/components/minha-loja/ResultadoCharts";
+import ExportButtons from "@/components/shared/ExportButtons";
 import { toast } from "sonner";
 import {
   format,
@@ -53,20 +55,26 @@ export default function TabResultado({ franchiseId, currentUser }) {
   const [editingExpense, setEditingExpense] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
+  // Audit logs
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+
   const loadData = useCallback(async () => {
     if (!franchiseId) return;
     setLoading(true);
     try {
-      const [salesData, saleItemsData, expensesData, inventoryData] = await Promise.all([
+      const [salesData, saleItemsData, expensesData, inventoryData, auditData] = await Promise.all([
         Sale.filter({ franchise_id: franchiseId }),
         SaleItem.list(),
         Expense.filter({ franchise_id: franchiseId }),
         InventoryItem.filter({ franchise_id: franchiseId }),
+        AuditLog.filter({ franchise_id: franchiseId }, "-created_at", 20),
       ]);
       setSales(salesData);
       setSaleItems(saleItemsData);
       setExpenses(expensesData);
       setInventoryItems(inventoryData);
+      setAuditLogs(auditData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados do resultado.");
@@ -215,6 +223,37 @@ export default function TabResultado({ franchiseId, currentUser }) {
       console.error("Erro ao excluir despesa:", error);
       toast.error("Erro ao excluir despesa.");
     }
+  };
+
+  // --- Export columns ---
+  const exportColumns = useMemo(() => [
+    { key: "sale_date", header: "Data", format: (v) => v ? format(parseISO(v.substring(0, 10)), "dd/MM/yyyy") : "—" },
+    { key: "value", header: "Valor (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
+    { key: "payment_method", header: "Pagamento" },
+    { key: "delivery_method", header: "Entrega" },
+    { key: "net_value", header: "Valor Liquido (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
+  ], []);
+
+  const exportData = useMemo(() =>
+    monthSales.map((s) => ({
+      sale_date: s.sale_date || s.created_at,
+      value: s.value,
+      payment_method: s.payment_method || "—",
+      delivery_method: s.delivery_method || "—",
+      net_value: s.net_value || s.value,
+    })),
+    [monthSales]
+  );
+
+  // --- Audit log helpers ---
+  const actionLabels = {
+    create: "Criou",
+    update: "Editou",
+    delete: "Excluiu",
+  };
+  const entityLabels = {
+    sale: "venda",
+    expense: "despesa",
   };
 
   // --- Empty state check ---
@@ -488,6 +527,112 @@ export default function TabResultado({ franchiseId, currentUser }) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Charts section */}
+      {sales.length > 0 && (
+        <ResultadoCharts
+          sales={sales}
+          expenses={expenses}
+          saleItems={saleItems}
+        />
+      )}
+
+      {/* Export buttons */}
+      {monthSales.length > 0 && (
+        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+          <CardContent className="p-5 md:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                  Exportar Vendas
+                </h3>
+                <p className="text-xs text-[#534343]/60 mt-1">
+                  {monthSales.length} venda{monthSales.length !== 1 ? "s" : ""} em{" "}
+                  {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
+                </p>
+              </div>
+              <ExportButtons
+                data={exportData}
+                columns={exportColumns}
+                filename={`vendas-${format(selectedMonth, "yyyy-MM")}`}
+                title={`Vendas — ${format(selectedMonth, "MMMM yyyy", { locale: ptBR })}`}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Audit log section */}
+      {auditLogs.length > 0 && (
+        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+          <CardContent className="p-5 md:p-6">
+            <button
+              onClick={() => setShowAuditLogs(!showAuditLogs)}
+              className="flex items-center justify-between w-full"
+            >
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
+                Historico de Acoes
+              </h3>
+              <MaterialIcon
+                icon={showAuditLogs ? "expand_less" : "expand_more"}
+                size={20}
+                className="text-[#534343]"
+              />
+            </button>
+
+            {showAuditLogs && (
+              <div className="mt-4 space-y-2">
+                {auditLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5"
+                  >
+                    <div className="p-1.5 bg-[#b91c1c]/10 rounded-lg shrink-0 mt-0.5">
+                      <MaterialIcon
+                        icon={
+                          log.action === "create"
+                            ? "add_circle"
+                            : log.action === "update"
+                            ? "edit"
+                            : "delete"
+                        }
+                        size={14}
+                        className="text-[#b91c1c]"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-[#1b1c1d]">
+                        <span className="font-medium">{log.user_name || "Usuario"}</span>{" "}
+                        {actionLabels[log.action] || log.action}{" "}
+                        {entityLabels[log.entity_type] || log.entity_type}
+                        {log.details?.value && (
+                          <span className="text-[#534343]">
+                            {" "}
+                            ({formatBRL(log.details.value)})
+                          </span>
+                        )}
+                        {log.details?.description && (
+                          <span className="text-[#534343]">
+                            {" "}
+                            — {log.details.description}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-[#534343]/60 mt-0.5">
+                        {log.created_at
+                          ? format(parseISO(log.created_at), "dd/MM/yyyy HH:mm", {
+                              locale: ptBR,
+                            })
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Expense form dialog */}

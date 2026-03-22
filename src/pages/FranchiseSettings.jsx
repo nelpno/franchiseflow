@@ -58,6 +58,19 @@ const initialFormData = {
 const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
 const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
 
+function FieldHint({ text }) {
+  return (
+    <p className="text-[11px] text-[#534343]/50 mt-1.5 flex items-start gap-1">
+      <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
+      <span>{text}</span>
+    </p>
+  );
+}
+
+function RequiredDot() {
+  return <span className="text-[#b91c1c] ml-0.5">*</span>;
+}
+
 function FranchiseSettingsContent() {
   const [configurations, setConfigurations] = useState([]);
   const [franchises, setFranchises] = useState([]);
@@ -490,19 +503,20 @@ function FranchiseSettingsContent() {
 
           {/* Step 1: Sua Unidade */}
           {currentStep === 1 && (
-            <WizardStep icon="storefront" title="Sua Unidade" subtitle="Dados básicos da sua franquia">
+            <WizardStep icon="storefront" title="Sua Unidade" subtitle="Dados basicos da sua franquia — o bot usa essas informacoes para atender clientes">
               <div>
-                <label className={labelClass}>Como os clientes conhecem sua unidade?</label>
+                <label className={labelClass}>Como os clientes conhecem sua unidade?<RequiredDot /></label>
                 <input className={inputClass} type="text" value={formData.franchise_name}
                   onChange={(e) => handleInputChange('franchise_name', e.target.value)}
                   placeholder="Ex: Maxi Massas - Itaim Bibi" />
+                <FieldHint text="Esse nome aparece nas mensagens do bot para o cliente." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Cidade</label>
                   <input className={inputClass} type="text" value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Ex: São João da Boa Vista" />
+                    placeholder="Ex: Sao Joao da Boa Vista" />
                 </div>
                 <div>
                   <label className={labelClass}>Bairro</label>
@@ -512,22 +526,25 @@ function FranchiseSettingsContent() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Endereço completo com número e CEP</label>
+                <label className={labelClass}>Endereco completo com numero e CEP<RequiredDot /></label>
                 <input className={inputClass} type="text" value={formData.unit_address}
                   onChange={(e) => handleInputChange('unit_address', e.target.value)}
-                  placeholder="Rua, número, bairro, cidade - CEP" />
+                  placeholder="Rua, numero, bairro, cidade - CEP" />
+                <FieldHint text="O bot envia esse endereco quando o cliente pede para retirar o pedido." />
               </div>
               <div>
-                <label className={labelClass}>Ponto de referência para clientes e motoboys</label>
+                <label className={labelClass}>Ponto de referencia para clientes e motoboys</label>
                 <textarea className={`${inputClass} resize-none`} rows={2} value={formData.address_reference}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
-                  placeholder="Ex: Próximo à praça, casa com portão azul..." />
+                  placeholder="Ex: Proximo a praca, casa com portao azul..." />
+                <FieldHint text="Ajuda o motoboy a encontrar sua unidade mais rapido." />
               </div>
               <div>
-                <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diário)</label>
+                <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diario)</label>
                 <input className={inputClass} type="text" value={formData.personal_phone_for_summary}
                   onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
                   placeholder="(11) 98765-4321" />
+                <FieldHint text="Voce recebe um resumo diario de vendas e atendimentos nesse numero." />
               </div>
             </WizardStep>
           )}
@@ -669,34 +686,38 @@ function FranchiseSettingsContent() {
 
           {/* Step 4: Entrega (skipped if has_delivery=false) */}
           {currentStep === 4 && (
-            <WizardStep icon="delivery_dining" title="Entrega" subtitle="Regras e valores de entrega">
+            <WizardStep icon="delivery_dining" title="Entrega" subtitle="Configure raio, taxas e regras — o bot usa isso para calcular frete automaticamente">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className={labelClass}>Raio máximo de entrega (km)</label>
+                  <label className={labelClass}>Raio maximo de entrega (km)</label>
                   <input className={`${inputClass} font-mono`} type="number"
                     value={formData.max_delivery_radius_km ?? ''}
                     onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
                     placeholder="7" />
+                  <FieldHint text="O bot recusa pedidos fora desse raio automaticamente." />
                 </div>
                 <div>
-                  <label className={labelClass}>Pedido mínimo para entrega (R$)</label>
+                  <label className={labelClass}>Pedido minimo para entrega (R$)</label>
                   <input className={`${inputClass} font-mono`} type="number"
                     value={formData.min_order_value ?? ''}
                     onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
                     placeholder="45" />
+                  <FieldHint text="Abaixo desse valor, o bot sugere retirada no local." />
                 </div>
                 <div>
-                  <label className={labelClass}>Tempo médio de preparo (minutos)</label>
+                  <label className={labelClass}>Tempo medio de preparo (minutos)</label>
                   <input className={`${inputClass} font-mono`} type="number"
                     value={formData.avg_prep_time_minutes ?? ''}
                     onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
                     placeholder="25" />
+                  <FieldHint text="O bot informa ao cliente o tempo estimado de entrega." />
                 </div>
                 <div>
-                  <label className={labelClass}>Horário limite para pedidos</label>
+                  <label className={labelClass}>Horario limite para pedidos</label>
                   <input className={inputClass} type="text" value={formData.order_cutoff_time}
                     onChange={(e) => handleInputChange('order_cutoff_time', e.target.value)}
-                    placeholder="Ex: Pedidos até 17h" />
+                    placeholder="Ex: Pedidos ate 17h" />
+                  <FieldHint text="Depois desse horario, o bot avisa que so entrega no dia seguinte." />
                 </div>
               </div>
               <div>
@@ -711,12 +732,13 @@ function FranchiseSettingsContent() {
 
           {/* Step 5: Seu Vendedor */}
           {currentStep === 5 && (
-            <WizardStep icon="smart_toy" title="Seu Vendedor" subtitle="Personalidade e mensagens do assistente virtual">
+            <WizardStep icon="smart_toy" title="Seu Vendedor" subtitle="Configure a personalidade e as mensagens do seu assistente virtual de vendas">
               <div>
-                <label className={labelClass}>Nome do assistente virtual (ex: Maria, Atendente Maxi)</label>
+                <label className={labelClass}>Nome do assistente virtual<RequiredDot /></label>
                 <input className={inputClass} type="text" value={formData.agent_name}
                   onChange={(e) => handleInputChange('agent_name', e.target.value)}
                   placeholder="Ex: Ana" />
+                <FieldHint text="O bot se apresenta com esse nome ao atender clientes no WhatsApp." />
               </div>
               <div>
                 <label className={labelClass}>Personalidade do bot</label>
@@ -725,15 +747,17 @@ function FranchiseSettingsContent() {
                   value={formData.bot_personality}
                   onChange={(val) => handleInputChange('bot_personality', val)}
                 />
+                <FieldHint text="Define o tom das respostas: formal para publico corporativo, casual para bairro, etc." />
               </div>
               <div>
-                <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
+                <label className={labelClass}>Promocoes ativas (o bot oferece automaticamente)</label>
                 <textarea className={`${inputClass} resize-none`} rows={3} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
+                <FieldHint text="O bot menciona essas promocoes quando o cliente pergunta sobre ofertas." />
               </div>
               <div>
-                <label className={labelClass}>Catálogo / Cardápio (imagem que o bot envia ao cliente)</label>
+                <label className={labelClass}>Catalogo / Cardapio (imagem que o bot envia ao cliente)</label>
                 <CatalogUpload
                   value={formData.catalog_image_url}
                   onChange={(url) => handleInputChange('catalog_image_url', url)}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Contact, Franchise } from "@/entities/all";
+import { Contact, Franchise, FranchiseConfiguration } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import ActionPanel from "@/components/my-contacts/ActionPanel";
+import WhatsAppHistory from "@/components/my-contacts/WhatsAppHistory";
+import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -99,9 +101,14 @@ export default function MyContacts() {
   const [editForm, setEditForm] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(true);
+  const [sortBy, setSortBy] = useState("recent");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [historyContact, setHistoryContact] = useState(null);
+  const [instanceName, setInstanceName] = useState(null);
 
   useEffect(() => {
     loadContacts();
+    loadInstanceName();
   }, []);
 
   const loadContacts = async () => {
@@ -114,6 +121,22 @@ export default function MyContacts() {
       toast.error("Erro ao carregar contatos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadInstanceName = async () => {
+    try {
+      const franchiseId = currentUser?.managed_franchise_ids?.[0];
+      if (!franchiseId) return;
+      const franchises = await Franchise.list();
+      const myFranchise = franchises.find(
+        (f) => f.id === franchiseId || f.evolution_instance_id === franchiseId
+      );
+      if (myFranchise?.evolution_instance_id) {
+        setInstanceName(myFranchise.evolution_instance_id);
+      }
+    } catch {
+      // Silently fail — WhatsApp history just won't be available
     }
   };
 
@@ -145,8 +168,38 @@ export default function MyContacts() {
       );
     }
 
+    // Filter by last contact date
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const daysMap = { "7d": 7, "30d": 30, "90d": 90 };
+      const days = daysMap[dateFilter];
+      if (days) {
+        const cutoff = new Date(now.getTime() - days * 86400000).toISOString();
+        result = result.filter(
+          (c) => c.last_contact_at && c.last_contact_at >= cutoff
+        );
+      }
+    }
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return (a.nome || a.customer_name || "").localeCompare(
+            b.nome || b.customer_name || ""
+          );
+        case "purchases":
+          return (b.purchase_count || 0) - (a.purchase_count || 0);
+        case "spent":
+          return (b.total_spent || 0) - (a.total_spent || 0);
+        case "recent":
+        default:
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+    });
+
     return result;
-  }, [contacts, activeFilter, searchTerm]);
+  }, [contacts, activeFilter, searchTerm, dateFilter, sortBy]);
 
   const openEdit = (contact) => {
     setEditingContact(contact);
@@ -284,20 +337,34 @@ export default function MyContacts() {
         })}
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <MaterialIcon
-          icon="search"
-          size={20}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#534343]"
-        />
-        <Input
-          placeholder="Buscar por nome ou telefone..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-[#e9e8e9] border-none rounded-xl h-11"
-        />
-      </div>
+      {/* Search + Filters */}
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Buscar por nome ou telefone..."
+        filters={[
+          {
+            key: "dateFilter",
+            label: "Ultimo contato",
+            value: dateFilter,
+            onChange: setDateFilter,
+            options: [
+              { value: "all", label: "Qualquer data" },
+              { value: "7d", label: "Ultimos 7 dias" },
+              { value: "30d", label: "Ultimos 30 dias" },
+              { value: "90d", label: "Ultimos 90 dias" },
+            ],
+          },
+        ]}
+        sortOptions={[
+          { value: "recent", label: "Mais recentes" },
+          { value: "name", label: "Nome A-Z" },
+          { value: "purchases", label: "Mais compras" },
+          { value: "spent", label: "Maior gasto" },
+        ]}
+        sortValue={sortBy}
+        onSortChange={setSortBy}
+      />
 
       {/* Contact Cards Grid */}
       {filteredContacts.length === 0 ? (
@@ -392,15 +459,24 @@ export default function MyContacts() {
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 pt-1 border-t border-[#291715]/5">
                   {phone ? (
-                    <a
-                      href={getWhatsAppLink(phone)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
-                    >
-                      <MaterialIcon icon="chat" size={16} />
-                      WhatsApp
-                    </a>
+                    <>
+                      <a
+                        href={getWhatsAppLink(phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                      >
+                        <MaterialIcon icon="chat" size={16} />
+                        WhatsApp
+                      </a>
+                      <button
+                        onClick={() => setHistoryContact(contact)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 transition-colors"
+                        title="Ver historico de mensagens"
+                      >
+                        <MaterialIcon icon="history" size={16} />
+                      </button>
+                    </>
                   ) : (
                     <span
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#e9e8e9]/60 text-[#534343]/40 cursor-not-allowed"
@@ -430,6 +506,17 @@ export default function MyContacts() {
           })}
         </div>
       )}
+
+      {/* WhatsApp History Modal */}
+      <WhatsAppHistory
+        open={!!historyContact}
+        onOpenChange={(open) => {
+          if (!open) setHistoryContact(null);
+        }}
+        contactName={historyContact ? getContactName(historyContact) : ""}
+        contactPhone={historyContact ? getContactPhone(historyContact) : ""}
+        instanceName={instanceName}
+      />
 
       {/* Edit Dialog */}
       <Dialog
