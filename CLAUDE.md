@@ -73,10 +73,12 @@ Fluxo de convite: admin cria franquia + email → convite automático → franqu
 - Elimina passo manual de vincular em UserManagement
 
 ### Integração Vendedor Genérico (n8n)
-- Workflow ID: PALRV1RqD3opHMzk (teste.dynamicagents.tech)
-- Lê configurações da tabela `franchise_configurations` (dadosunidade — AINDA via Base44, migrar para Supabase)
-- Campos DEVEM manter compatibilidade com o vendedor
-- JSON salvo em `docs/vendedor-generico-workflow.json` (91 nodes)
+- Workflow v1 (produção): PALRV1RqD3opHMzk — RabbitMQ trigger, Base44 (legado)
+- Workflow v2 (Supabase): w7loLOXUmRR3AzuO — Webhook HTTP, tabela contacts, view vw_dadosunidade
+- View `vw_dadosunidade`: mapeia franchise_configurations com nomes em inglês (backward compat)
+- RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
+- Tabela `daily_unique_contacts`: rastreia contatos únicos/dia (substitui Base44)
+- JSON: `docs/vendedor-generico-workflow.json` (v1), `docs/vendedor-generico-workflow-v2.json` (v2)
 
 ### Integração WhatsApp (ZuckZapGo)
 - Server: `https://zuck.dynamicagents.tech`
@@ -187,12 +189,18 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 28. Catálogo foi removido (FASE 4) — NÃO existe mais Catalog.jsx nem CatalogProduct entity
 29. `DELIVERY_METHODS` em franchiseUtils é config do vendedor genérico (own_fleet/third_party/both) — NÃO usar para entrega de venda individual (que é 'retirada'/'delivery')
 30. Ao remover página do menu, verificar TODOS os links internos (botões, QuickAccess, FAB, navigate calls) — usar `grep createPageUrl("OldPage")` e `grep "/OldPage"`
-31. Sales.jsx e Inventory.jsx são redirects para MinhaLoja — NÃO adicionar código nessas páginas
+31. Sales.jsx e Inventory.jsx foram DELETADOS (eram redirects) — NÃO recriar
 32. `sale_items` RLS usa subquery via sales (não tem franchise_id direto) — pattern: `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
 33. `sales.source` tem CHECK constraint expandida — inclui 'manual' e 'bot' além dos originais
 34. Produtos agrupados por tipo (primeira palavra do nome): Canelone, Conchiglione, Massa, Nhoque, Rondelli, Sofioli, Molho, Outros — manter ordem fixa nos formulários e estoque
 35. Sacolas/embalagens são DESPESAS (aba Resultado), NÃO itens de estoque — simplificar pro franqueado
 36. `sale_items.cost_price` é snapshot do momento da venda — se popular cost_price depois, atualizar retroativamente com UPDATE JOIN
+37. `franchise_configurations` usa FK `franchise_evolution_instance_id` (text), NÃO `franchise_id`
+38. Tabela `contacts` NÃO tem coluna `source` — não usar em INSERTs
+39. NUNCA usar `managed_franchise_ids[0]` direto para filtrar dados — resolver `evolution_instance_id` via franchise lookup (bug corrigido em FranchiseeDashboard + Layout)
+40. `sale_price` padrão = `cost_price * 2` (100% markup) — margem mínima recomendada 80% (cost_price * 1.8)
+41. Admin pode adicionar produto padrão via RPC `add_default_product()` — popula em todas franquias
+42. Validação WhatsApp: `useWhatsAppConnection.js` bloqueia conexão se campos obrigatórios do wizard não preenchidos
 
 ## Scripts
 ```bash
@@ -210,7 +218,7 @@ npm run typecheck # TypeScript check
 - **FASE 5 Etapa 1**: Tabela contacts + auto-vinculação + triggers ✅
 - **FASE 5 Etapa 3a**: Franqueados unificado (absorveu Usuários) + Meus Clientes (pipeline) + Vendas com auto-complete ✅
 - **FASE 5 Etapa 3b**: Minha Loja hub (4 abas: Lançar/Resultado/Estoque/Reposição) + Ações Inteligentes + Pedido de Compra + menu 5 itens ✅
-- **FASE 5 Etapa 2**: Adaptar vendedor genérico n8n (7 nós + dadosunidade Base44→Supabase) (PRÓXIMO)
+- **FASE 5 Etapa 2**: Vendedor genérico migrado (10 nós Supabase, view, RPCs, prompt otimizado) ✅
 - **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker
 
 ## Supabase Management API
@@ -231,3 +239,4 @@ npm run typecheck # TypeScript check
 - `docs/superpowers/specs/2026-03-21-minha-loja-design.md` — Spec Minha Loja (hub franqueado, 4 personas, abordagem híbrida)
 - `docs/superpowers/plans/2026-03-21-minha-loja-implementation.md` — Plano implementação Minha Loja (12 tasks, 6 chunks)
 - `docs/superpowers/specs/2026-03-21-pedido-compra-design.md` — Spec Pedido de Compra (franqueado → admin → estoque)
+- `docs/superpowers/plans/2026-03-21-fase5-etapa2-vendedor-n8n.md` — Plano migração vendedor (7→10 nós)
