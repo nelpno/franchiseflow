@@ -100,6 +100,18 @@ export async function getFranchiseRanking(date, franchiseId) {
   return data;
 }
 
+export async function addDefaultProduct({ name, category, unit, costPrice, minStock }) {
+  const { data, error } = await supabase.rpc('add_default_product', {
+    p_name: name,
+    p_category: category,
+    p_unit: unit || 'un',
+    p_cost_price: costPrice || 0,
+    p_min_stock: minStock || 5,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // User é especial - tem método .me() além dos métodos padrão
 export const User = {
   ...createEntity('profiles'),

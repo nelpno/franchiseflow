@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { PurchaseOrder, PurchaseOrderItem, Franchise } from "@/entities/all";
-import { supabase } from "@/api/supabaseClient";
+import { PurchaseOrder, PurchaseOrderItem, Franchise, addDefaultProduct } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -319,17 +318,15 @@ export default function PurchaseOrders() {
 
     setSavingProduct(true);
     try {
-      const { data, error } = await supabase.rpc("add_default_product", {
-        p_name: name.trim(),
-        p_category: category.toLowerCase(),
-        p_unit: unit,
-        p_cost_price: cost_price ? parseFloat(cost_price) : 0,
-        p_min_stock: min_stock ? parseInt(min_stock, 10) : 5,
+      const count = await addDefaultProduct({
+        name: name.trim(),
+        category: category.toLowerCase(),
+        unit,
+        costPrice: cost_price ? parseFloat(cost_price) : null,
+        minStock: min_stock ? parseInt(min_stock, 10) : 5,
       });
 
-      if (error) throw error;
-
-      toast.success(`Produto adicionado a ${data} franquia${data !== 1 ? "s" : ""}.`);
+      toast.success(`Produto adicionado a ${count} franquia${count !== 1 ? "s" : ""}.`);
       setNewProductOpen(false);
       setNewProduct({ name: "", category: "", unit: "un", cost_price: "", min_stock: "5" });
     } catch (error) {

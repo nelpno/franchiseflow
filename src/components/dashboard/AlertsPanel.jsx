@@ -14,8 +14,9 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
     for (const franchise of franchises) {
       const fName = franchise.city || franchise.owner_name || "Franquia";
 
+      const evoId = franchise.evolution_instance_id;
       const franchiseSummaries = summaries
-        .filter((s) => s.franchise_id === franchise.id)
+        .filter((s) => s.franchise_id === evoId || s.franchise_id === franchise.id)
         .sort((a, b) => new Date(b.date) - new Date(a.date));
 
       const lastSaleDay = franchiseSummaries.find((s) => (s.sales_count || 0) > 0);
@@ -34,7 +35,7 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         });
       }
 
-      const inventory = inventoryByFranchise?.[franchise.id] || [];
+      const inventory = inventoryByFranchise?.[franchise.id] || inventoryByFranchise?.[evoId] || [];
       const zeroStock = inventory.filter((i) => (i.quantity || 0) === 0);
       const lowStock = inventory.filter((i) => (i.quantity || 0) > 0 && (i.quantity || 0) < 5);
 
