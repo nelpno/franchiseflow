@@ -65,10 +65,10 @@ export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue 
       </div>
       <div className="flex justify-between items-center pt-4 border-t border-[#cac0c0]/10">
         <span className="text-xs text-[#4a3d3d] font-medium">
-          Média: R$ {average.toLocaleString("pt-BR")},00
+          Média: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(average)}
         </span>
         <span className="text-xs text-[#4a3d3d] font-medium font-mono-numbers">
-          Total: R$ {total.toLocaleString("pt-BR")},00
+          Total: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)}
         </span>
       </div>
     </section>
