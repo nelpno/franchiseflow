@@ -7,6 +7,15 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(
+    () => localStorage.getItem('needs_password_setup') === 'true'
+  );
+
+  const clearPasswordSetup = useCallback(() => {
+    setNeedsPasswordSetup(false);
+    localStorage.removeItem('needs_password_setup');
+    localStorage.removeItem('password_setup_type');
+  }, []);
 
   const loadUserProfile = useCallback(async (authUser) => {
     if (!authUser) {
@@ -65,6 +74,18 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
+    // Detect invite/recovery tokens in URL hash before Supabase consumes them
+    const hash = window.location.hash;
+    if (hash.includes('type=invite')) {
+      setNeedsPasswordSetup(true);
+      localStorage.setItem('needs_password_setup', 'true');
+      localStorage.setItem('password_setup_type', 'invite');
+    } else if (hash.includes('type=recovery')) {
+      setNeedsPasswordSetup(true);
+      localStorage.setItem('needs_password_setup', 'true');
+      localStorage.setItem('password_setup_type', 'recovery');
+    }
+
     initAuth();
 
     // Safety timeout — if auth check takes too long, stop loading
@@ -75,7 +96,12 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (event === 'PASSWORD_RECOVERY' && session?.user) {
+          setNeedsPasswordSetup(true);
+          localStorage.setItem('needs_password_setup', 'true');
+          localStorage.setItem('password_setup_type', 'recovery');
+          await loadUserProfile(session.user);
+        } else if (event === 'SIGNED_IN' && session?.user) {
           await loadUserProfile(session.user);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -109,6 +135,8 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings: false,
       authError: null,
       appPublicSettings: null,
+      needsPasswordSetup,
+      clearPasswordSetup,
       logout,
       navigateToLogin,
       checkAppState: () => {}

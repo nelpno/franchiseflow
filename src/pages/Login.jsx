@@ -39,7 +39,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/login'
+        redirectTo: window.location.origin + '/set-password'
       });
       if (error) throw error;
       toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');

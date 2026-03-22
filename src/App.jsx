@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import Login from './pages/Login';
+import SetPassword from './pages/SetPassword';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -60,7 +61,7 @@ const AuthenticatedApp = () => {
 };
 
 function AppRoutes() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, needsPasswordSetup } = useAuth();
 
   // Show spinner while checking auth — prevents flash of login page
   if (isLoading) {
@@ -76,8 +77,13 @@ function AppRoutes() {
       <Route path="/login" element={
         isAuthenticated ? <Navigate to="/" replace /> : <Login />
       } />
+      <Route path="/set-password" element={
+        isAuthenticated ? <SetPassword /> : <Navigate to="/login" replace />
+      } />
       <Route path="/*" element={
-        isAuthenticated ? <AuthenticatedApp /> : <Navigate to="/login" replace />
+        !isAuthenticated ? <Navigate to="/login" replace /> :
+        needsPasswordSetup ? <Navigate to="/set-password" replace /> :
+        <AuthenticatedApp />
       } />
     </Routes>
   );
