@@ -118,6 +118,7 @@ export const Message = createEntity('messages');
 export const InventoryItem = createEntity('inventory_items');
 export const Contact = createEntity('contacts');
 
+export const Notification = createEntity('notifications');
 export const FranchiseInvite = createEntity('franchise_invites');
 export const MarketingFile = createEntity('marketing_files');
 export const SaleItem = createEntity('sale_items');

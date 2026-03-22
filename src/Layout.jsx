@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import NotificationBell from "@/components/ui/NotificationBell";
 import logoImg from "@/assets/logo-maxi-massas.png";
 import {
   Sidebar,
@@ -346,9 +347,7 @@ export default function Layout({ children, currentPageName }) {
                 </h1>
               </div>
               <div className="flex items-center gap-3">
-                <button className="p-2 text-[#4a3d3d] hover:text-[#9c4143] transition-colors rounded-lg hover:bg-white/50">
-                  <MaterialIcon icon="notifications" size={20} />
-                </button>
+                <NotificationBell size={20} />
                 {currentUser && (
                   <div className="w-10 h-10 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#534343] font-bold text-sm ml-2 overflow-hidden">
                     {currentUser.full_name?.charAt(0).toUpperCase()}
@@ -367,9 +366,7 @@ export default function Layout({ children, currentPageName }) {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2 text-[#534343] hover:text-[#9c4143] transition-colors">
-                <MaterialIcon icon="notifications" size={20} />
-              </button>
+              <NotificationBell size={20} />
               {currentUser && (
                 <div className="w-8 h-8 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#534343] font-bold text-xs overflow-hidden">
                   {currentUser.full_name?.charAt(0).toUpperCase()}

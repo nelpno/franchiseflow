@@ -25,6 +25,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 AuthContext usa getSession() + onAuthStateChange(). Timeout de 5s como safety net.
 Logout via supabase.auth.signOut() — React Router redireciona automaticamente (sem window.location).
 Fluxo de convite: admin cria franquia + email → convite automático → franqueado vinculado.
+Rota `/set-password`: detecta `type=invite` ou `type=recovery` no hash da URL, persiste flag em localStorage. AuthContext expõe `needsPasswordSetup` + `clearPasswordSetup`. Login `resetPasswordForEmail` redireciona para `/set-password`.
 
 ### Row Level Security
 - Admin vê tudo
@@ -91,7 +92,7 @@ Fluxo de convite: admin cria franquia + email → convite automático → franqu
 - JSON salvo em `docs/criar-usuario-zuckzapgo-workflow.json`
 
 ### Triggers Automáticos (banco)
-- `on_auth_user_created`: cria profile automaticamente ao criar user
+- `on_auth_user_created`: cria profile + auto-vincula franchise (checa franchise_invites pendentes, popula managed_franchise_ids, marca invite como accepted)
 - `auto_generate_instance_id`: gera evolution_instance_id no formato `franquia{cidade}` sem acentos (usa `unaccent()`)
 - `on_franchise_created`: cria franchise_configuration + popula estoque com 28 produtos do catálogo
 - `aggregate_daily_data`: pg_cron diário às 05:00 UTC (02:00 BRT)
@@ -210,8 +211,14 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 45. Deploy é Docker Swarm (NÃO compose standalone) — rede `nelsonNet`, Traefik certresolver = `letsencryptresolver`
 46. Redeploy: push pro GitHub + force update do service via Portainer API (ForceUpdate increment)
 47. Invite de franqueado usa webhook n8n (`franchise-invite`) com service role — NÃO usar supabase.auth.admin no frontend (anon key não tem permissão)
-48. Trigger `on_franchise_created` popula 28 produtos MAS sem cost_price — PENDENTE atualizar trigger para incluir preços + sale_price = cost_price * 2
-49. Supabase invite link redireciona para app sem tela de definir senha — PENDENTE implementar rota /set-password
+48. Trigger `on_franchise_created` popula 28 produtos com cost_price da planilha + sale_price = cost_price * 2 (via `auto_populate_inventory`)
+49. Rota `/set-password` implementada — detecta invite/recovery tokens, força definição de senha antes de acessar dashboard
+50. Auto-link franchise: lógica DEVE estar dentro de `handle_new_user()` (trigger em auth.users), NÃO como trigger separado em profiles — contexto Supabase Auth não executa triggers BEFORE INSERT em profiles corretamente
+51. `catalog_products.price` é preço de CUSTO (franqueado paga à fábrica) — referência: `PLANILHA PEDIDO 082025.xlsx` na raiz — sale_price = cost * 2
+52. Delete franquia requer cascade: usar `Franchise.deleteCascade(id, evoId)` — limpa sale_items, sales, purchase_orders, contacts, inventory, config, invites ANTES de deletar
+53. Categorias de estoque: apenas Massas, Molhos, Outros — Recheios/Embalagens/Insumos NÃO são estoque (embalagens são despesas na aba Resultado)
+54. Vite build no Windows produz output silencioso — verificar sucesso com `ls dist/index.html`
+55. `handle_new_user` puxa `owner_name` da franquia para `full_name` do profile — fallback: user_metadata, depois email
 
 ## Scripts
 ```bash
@@ -231,7 +238,7 @@ npm run typecheck # TypeScript check
 - **FASE 5 Etapa 3b**: Minha Loja hub (4 abas: Lançar/Resultado/Estoque/Reposição) + Ações Inteligentes + Pedido de Compra + menu 5 itens ✅
 - **FASE 5 Etapa 2**: Vendedor genérico migrado (10 nós Supabase, view, RPCs, prompt otimizado) ✅
 - **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker (deploy ✅, config vendedor pendente)
-- **FASE 5 Etapa 5**: Onboarding completo (tela senha, trigger cost_price, SPF/DKIM, UX formulário franquia)
+- **FASE 5 Etapa 5**: Onboarding completo (tela senha ✅, trigger cost_price ✅, SPF/DKIM ✅, UX formulário ✅, auto-link ✅)
 - **Deploy produção**: app.maximassas.tech via Docker Swarm + Traefik SSL ✅
 
 ## Deploy (Portainer)
