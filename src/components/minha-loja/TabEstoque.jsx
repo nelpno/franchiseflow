@@ -40,9 +40,6 @@ const UNIT_OPTIONS = [
 const CATEGORY_OPTIONS = [
   "Massas",
   "Molhos",
-  "Recheios",
-  "Embalagens",
-  "Insumos",
   "Outros",
 ];
 
