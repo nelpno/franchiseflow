@@ -47,16 +47,24 @@ Fluxo de convite: admin cria franquia + email → convite automático → franqu
 - Entity: `Contact` em `src/entities/all.js`
 
 ### Minha Loja (hub central franqueado) — FASE 5
-- Página `MinhaLoja.jsx` com 3 abas: Lançar (vendas), Resultado (P&L), Estoque
+- Página `MinhaLoja.jsx` com 4 abas: Lançar (vendas), Resultado (P&L), Estoque, Reposição (pedidos fábrica)
 - Tabela `sale_items`: itens de cada venda (FK sale_id + inventory_item_id), triggers `stock_decrement`/`stock_revert`
 - Tabela `expenses`: despesas avulsas do franqueado (sacolas, aluguel, etc.)
 - `sales` novos campos: `payment_method`, `card_fee_percent`, `card_fee_amount`, `delivery_method`, `delivery_fee`, `net_value`
 - `inventory_items` novos campos: `cost_price` (admin define padrão), `sale_price` (franqueado define)
 - Entities: `SaleItem`, `Expense` em `src/entities/all.js`
 - Edição de venda = deletar sale_items antigos + reinserir novos (triggers cuidam do estoque)
-- Deep-linking: `?tab=lancar|resultado|estoque` + `&action=nova-venda` auto-abre formulário
+- Deep-linking: `?tab=lancar|resultado|estoque|reposicao` + `&action=nova-venda` auto-abre formulário
 - Ações Inteligentes: `src/lib/smartActions.js` gera ações a partir de dados de contacts (responder, reativar, converter, fidelizar, remarketing)
 - WhatsApp utils compartilhados: `src/lib/whatsappUtils.js` (formatPhone, getWhatsAppLink)
+
+### Pedido de Compra / Reposição — FASE 5
+- Tabela `purchase_orders` + `purchase_order_items` com trigger auto-incremento de estoque ao marcar "entregue"
+- Franqueado: aba "Reposição" em Minha Loja (lista 28 produtos agrupados por tipo, sugestão de compra via giro)
+- Admin: página "Pedidos" (`PurchaseOrders.jsx`) com gestão de status (pendente→confirmado→em_rota→entregue)
+- Admin define frete e previsão de entrega; franqueado vê status + previsão
+- Entities: `PurchaseOrder`, `PurchaseOrderItem` em `src/entities/all.js`
+- Alerta admin: franqueado sem pedido há 30+ dias
 
 ### Auto-vinculação User↔Franchise (FASE 5)
 - Trigger `auto_link_franchise` em profiles: quando user cria conta, checa franchise_invites pendentes
@@ -140,8 +148,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 - Config optimization: `{N8N_WEBHOOK_BASE}/adc276df-8162-46ca-bec6-5aedb9cb2b14`
 
 ## UX por Role
-- **Franqueado**: menu com 5 itens (Início, Minha Loja, Meus Clientes, Marketing, Meu Vendedor)
-- **Admin**: menu com itens admin (Relatórios, Acompanhamento, Franqueados)
+- **Franqueado**: menu com 5 itens (Início, Minha Loja [4 abas], Meus Clientes, Marketing, Meu Vendedor)
+- **Admin**: menu com itens admin (Relatórios, Acompanhamento, Pedidos, Franqueados)
 - Terminologia simplificada: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio")
 - Dashboard franqueado: motivacional (meta diária, ranking, streak, acesso rápido)
 - Dashboard admin: monitoramento (alertas semáforo, ranking franquias, filtro de período) — AdminHeader fixo no topo (substitui Layout top bar)
@@ -182,6 +190,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 31. Sales.jsx e Inventory.jsx são redirects para MinhaLoja — NÃO adicionar código nessas páginas
 32. `sale_items` RLS usa subquery via sales (não tem franchise_id direto) — pattern: `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
 33. `sales.source` tem CHECK constraint expandida — inclui 'manual' e 'bot' além dos originais
+34. Produtos agrupados por tipo (primeira palavra do nome): Canelone, Conchiglione, Massa, Nhoque, Rondelli, Sofioli, Molho, Outros — manter ordem fixa nos formulários e estoque
+35. Sacolas/embalagens são DESPESAS (aba Resultado), NÃO itens de estoque — simplificar pro franqueado
+36. `sale_items.cost_price` é snapshot do momento da venda — se popular cost_price depois, atualizar retroativamente com UPDATE JOIN
 
 ## Scripts
 ```bash
@@ -198,7 +209,7 @@ npm run typecheck # TypeScript check
 - FASE 4: Design Stitch + Material Symbols + padronização Atelier ✅
 - **FASE 5 Etapa 1**: Tabela contacts + auto-vinculação + triggers ✅
 - **FASE 5 Etapa 3a**: Franqueados unificado (absorveu Usuários) + Meus Clientes (pipeline) + Vendas com auto-complete ✅
-- **FASE 5 Etapa 3b**: Minha Loja hub (3 abas: Lançar/Resultado/Estoque) + Ações Inteligentes + menu 5 itens ✅
+- **FASE 5 Etapa 3b**: Minha Loja hub (4 abas: Lançar/Resultado/Estoque/Reposição) + Ações Inteligentes + Pedido de Compra + menu 5 itens ✅
 - **FASE 5 Etapa 2**: Adaptar vendedor genérico n8n (7 nós + dadosunidade Base44→Supabase) (PRÓXIMO)
 - **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker
 
@@ -219,3 +230,4 @@ npm run typecheck # TypeScript check
 - `docs/superpowers/specs/2026-03-20-dashboard-por-role-design.md` — Spec dashboard por role
 - `docs/superpowers/specs/2026-03-21-minha-loja-design.md` — Spec Minha Loja (hub franqueado, 4 personas, abordagem híbrida)
 - `docs/superpowers/plans/2026-03-21-minha-loja-implementation.md` — Plano implementação Minha Loja (12 tasks, 6 chunks)
+- `docs/superpowers/specs/2026-03-21-pedido-compra-design.md` — Spec Pedido de Compra (franqueado → admin → estoque)
