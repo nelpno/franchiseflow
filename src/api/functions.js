@@ -32,6 +32,17 @@ export async function optimizeConfig(configData) {
   return response.json();
 }
 
+// Convite de franqueado — envia email via Supabase Auth (n8n com service role)
+export async function inviteFranchisee(email) {
+  const response = await fetch(`${N8N_WEBHOOK_BASE}/franchise-invite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!response.ok) throw new Error('Erro ao enviar convite: ' + response.status);
+  return response.json();
+}
+
 // Análise de Lead - funcionalidade em migração (antigo Base44 LLM)
 export async function analyzeLead(leadData) {
   throw new Error('Análise de leads temporariamente indisponível. Funcionalidade em migração.');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Franchise, DailyUniqueContact, User, FranchiseInvite } from "@/entities/all";
 import { findFranchise } from "@/lib/franchiseUtils";
+import { inviteFranchisee } from "@/api/functions";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,7 @@ export default function Franchises() {
             email: franchiseeEmail,
             status: "pending",
           });
+          await inviteFranchisee(franchiseeEmail);
           toast.success(`Franquia criada! Convite enviado para ${franchiseeEmail}`);
         } catch (inviteError) {
           console.error("Erro ao criar convite:", inviteError);
@@ -302,6 +304,7 @@ export default function Franchises() {
         email: inviteEmail,
         status: "pending",
       });
+      await inviteFranchisee(inviteEmail);
       toast.success(`Convite enviado para ${inviteEmail}`);
       setInvitingFranchise(null);
       setInviteEmail("");

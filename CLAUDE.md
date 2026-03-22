@@ -10,7 +10,9 @@ Migrado de Base44 para Supabase Cloud. Frontend React hospedado via Docker/Porta
 - **Backend**: Supabase Cloud (Auth + Postgres + RLS + Storage + Edge Functions)
 - **Automação**: n8n (webhook.dynamicagents.tech) para WhatsApp, catálogo, marketing
 - **WhatsApp**: ZuckZapGo (WuzAPI) em zuck.dynamicagents.tech
-- **Deploy**: Docker (Nginx Alpine) via Portainer
+- **Deploy**: Docker Swarm (Nginx Alpine) via Portainer — domínio `app.maximassas.tech`
+- **Infra**: Hostinger VPS (82.29.60.220), Traefik reverse proxy + Let's Encrypt SSL, rede `nelsonNet`
+- **Email**: SMTP via `fabrica@maximassas.com.br` (Google Workspace) — templates PT-BR com logo
 
 ## Arquitetura
 
@@ -137,7 +139,8 @@ SUPABASE_MANAGEMENT_TOKEN=          # sbp_ token para Management API (SQL direto
 VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 N8N_API_URL=                        # URL do n8n (teste.dynamicagents.tech)
 N8N_API_KEY=                        # API key do n8n
-N8N_VENDEDOR_WORKFLOW_ID=PALRV1RqD3opHMzk
+N8N_VENDEDOR_WORKFLOW_ID=PALRV1RqD3opHMzk  # v1 (Base44, produção)
+N8N_VENDEDOR_V2_WORKFLOW_ID=w7loLOXUmRR3AzuO  # v2 (Supabase, teste)
 N8N_WHATSAPP_WEBHOOK=a9c45ef7-36f7-4a64-ad9e-edadb69a31af
 
 # ZuckZapGo (WhatsApp)
@@ -201,6 +204,10 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 40. `sale_price` padrão = `cost_price * 2` (100% markup) — margem mínima recomendada 80% (cost_price * 1.8)
 41. Admin pode adicionar produto padrão via RPC `add_default_product()` — popula em todas franquias
 42. Validação WhatsApp: `useWhatsAppConnection.js` bloqueia conexão se campos obrigatórios do wizard não preenchidos
+43. Login com Google REMOVIDO — apenas email/senha via Supabase Auth
+44. `franchise_invites.franchise_id` FK aponta para `franchises.evolution_instance_id` (NÃO UUID) — usar evoId ao criar invites
+45. Deploy é Docker Swarm (NÃO compose standalone) — rede `nelsonNet`, Traefik certresolver = `letsencryptresolver`
+46. Redeploy: push pro GitHub + force update do service via Portainer API (ForceUpdate increment)
 
 ## Scripts
 ```bash
@@ -220,6 +227,16 @@ npm run typecheck # TypeScript check
 - **FASE 5 Etapa 3b**: Minha Loja hub (4 abas: Lançar/Resultado/Estoque/Reposição) + Ações Inteligentes + Pedido de Compra + menu 5 itens ✅
 - **FASE 5 Etapa 2**: Vendedor genérico migrado (10 nós Supabase, view, RPCs, prompt otimizado) ✅
 - **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker
+- **Deploy produção**: app.maximassas.tech via Docker Swarm + Traefik SSL ✅
+
+## Deploy (Portainer)
+- **Portainer API**: `https://porto.dynamicagents.tech/api` — header `X-API-Key`
+- **Stack**: `franchiseflow` (ID 39, Type=Swarm)
+- **Rede**: `nelsonNet` (overlay, compartilhada com Traefik)
+- **Domínio**: `app.maximassas.tech` → A record → `82.29.60.220` (DNS only, sem proxy Cloudflare)
+- **GitHub**: `https://github.com/nelpno/franchiseflow.git` (público)
+- **Fluxo de deploy**: push GitHub → force update service Portainer → container re-clona, builda e serve via nginx
+- **SMTP**: `fabrica@maximassas.com.br` via Google Workspace (smtp.gmail.com:587) — configurado no Supabase Auth
 
 ## Supabase Management API
 - Project ref: `sulgicnqqopyhulglakd`
