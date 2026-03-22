@@ -1,5 +1,5 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { PAYMENT_METHODS, DELIVERY_METHODS, BOT_PERSONALITIES, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
+import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
 
 function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
   const hasWarning = fields.some((f) => f.warning);
@@ -41,10 +41,6 @@ function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
 export default function ReviewSummary({ formData, onGoToStep }) {
   const deliveryMethodLabel = DELIVERY_METHODS.find(
     (m) => m.value === formData.delivery_method
-  )?.label;
-
-  const personalityLabel = BOT_PERSONALITIES.find(
-    (p) => p.value === formData.bot_personality
   )?.label;
 
   const pixTypeLabel = PIX_KEY_TYPES.find(
@@ -125,7 +121,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
           fields={[
             { label: "Raio máximo", value: formData.max_delivery_radius_km ? `${formData.max_delivery_radius_km} km` : "" },
             { label: "Pedido mínimo", value: formData.min_order_value ? `R$ ${formData.min_order_value}` : "" },
-            { label: "Tempo preparo", value: formData.avg_prep_time_minutes ? `${formData.avg_prep_time_minutes} min` : "" },
+            { label: "Tempo entrega", value: formData.avg_prep_time_minutes ? `${formData.avg_prep_time_minutes} min` : "" },
             { label: "Horário limite", value: formData.order_cutoff_time },
             { label: "Taxas de entrega", value: feeRulesText() },
           ]}
@@ -139,9 +135,8 @@ export default function ReviewSummary({ formData, onGoToStep }) {
         onGoToStep={onGoToStep}
         fields={[
           { label: "Nome", value: formData.agent_name, warning: !formData.agent_name },
-          { label: "Personalidade", value: personalityLabel },
-          { label: "Boas-vindas", value: formData.welcome_message ? formData.welcome_message.substring(0, 80) + (formData.welcome_message.length > 80 ? "..." : "") : "" },
           { label: "Promoções", value: formData.promotions_combo ? "Configurado" : "", warning: !formData.promotions_combo },
+          { label: "Catálogo", value: formData.catalog_image_url ? "Enviado" : "", warning: !formData.catalog_image_url },
         ]}
       />
     </div>

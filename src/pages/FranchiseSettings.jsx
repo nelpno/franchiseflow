@@ -721,15 +721,6 @@ function FranchiseSettingsContent() {
                 <FieldHint text="O bot se apresenta com esse nome ao atender clientes no WhatsApp." />
               </div>
               <div>
-                <label className={labelClass}>Personalidade do bot</label>
-                <RadioCards
-                  options={BOT_PERSONALITIES}
-                  value={formData.bot_personality}
-                  onChange={(val) => handleInputChange('bot_personality', val)}
-                />
-                <FieldHint text="Define o tom das respostas: formal para público corporativo, casual para bairro, etc." />
-              </div>
-              <div>
                 <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
                 <textarea className={`${inputClass} resize-none`} rows={3} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
