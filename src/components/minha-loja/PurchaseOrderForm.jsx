@@ -29,6 +29,7 @@ export default function PurchaseOrderForm({
   franchiseId,
   inventoryItems,
   saleItems,
+  initialQuantities,
   onSave,
   onCancel,
 }) {
@@ -100,7 +101,9 @@ export default function PurchaseOrderForm({
   const [quantities, setQuantities] = useState(() => {
     const init = {};
     standardProducts.forEach((item) => {
-      init[item.id] = 0;
+      init[item.id] = initialQuantities && initialQuantities[item.id]
+        ? initialQuantities[item.id]
+        : 0;
     });
     return init;
   });

@@ -58,6 +58,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
   // Audit logs
   const [auditLogs, setAuditLogs] = useState([]);
   const [showAuditLogs, setShowAuditLogs] = useState(true);
+  const [auditUserFilter, setAuditUserFilter] = useState("todos");
 
   const loadData = useCallback(async () => {
     if (!franchiseId) return;
@@ -244,6 +245,20 @@ export default function TabResultado({ franchiseId, currentUser }) {
     })),
     [monthSales]
   );
+
+  // --- Audit log filtering ---
+  const auditUserNames = useMemo(() => {
+    const names = new Set();
+    auditLogs.forEach((log) => {
+      if (log.user_name) names.add(log.user_name);
+    });
+    return Array.from(names).sort();
+  }, [auditLogs]);
+
+  const filteredAuditLogs = useMemo(() => {
+    if (auditUserFilter === "todos") return auditLogs;
+    return auditLogs.filter((log) => log.user_name === auditUserFilter);
+  }, [auditLogs, auditUserFilter]);
 
   // --- Audit log helpers ---
   const actionLabels = {
@@ -582,8 +597,24 @@ export default function TabResultado({ franchiseId, currentUser }) {
             </button>
 
             {showAuditLogs && (
-              <div className="mt-4 space-y-2">
-                {auditLogs.map((log) => (
+              <div className="mt-4 space-y-3">
+                {auditUserNames.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#534343] whitespace-nowrap">Filtrar por:</span>
+                    <select
+                      value={auditUserFilter}
+                      onChange={(e) => setAuditUserFilter(e.target.value)}
+                      className="text-xs h-8 px-2 py-1 rounded-xl bg-[#e9e8e9] border-none text-[#1b1c1d] focus:ring-2 focus:ring-[#b91c1c]/20 focus:outline-none"
+                    >
+                      <option value="todos">Todos</option>
+                      {auditUserNames.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="space-y-2">
+                {filteredAuditLogs.map((log) => (
                   <div
                     key={log.id}
                     className="flex items-start gap-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5"
@@ -629,6 +660,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                     </div>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </CardContent>

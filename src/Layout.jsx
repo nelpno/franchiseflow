@@ -405,7 +405,7 @@ export default function Layout({ children, currentPageName }) {
           {/* Top bar — mobile */}
           <header className="md:hidden sticky top-0 z-40 bg-[#fbf9fa]/80 backdrop-blur-md h-16 flex items-center justify-between px-4 border-b border-[#f8eeee]/50">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="p-2 rounded-xl text-[#534343] hover:bg-white/50 transition-colors" />
+              <SidebarTrigger className="p-2 rounded-xl text-[#534343] hover:bg-white/50 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" />
               {!isAdmin && availableFranchises.length > 1 ? (
                 <FranchiseSelector franchises={availableFranchises} />
               ) : (
@@ -415,7 +415,9 @@ export default function Layout({ children, currentPageName }) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <NotificationBell size={20} />
+              <div className="min-h-[40px] min-w-[40px] flex items-center justify-center">
+                <NotificationBell size={20} />
+              </div>
               {currentUser && (
                 <div className="w-8 h-8 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#534343] font-bold text-xs overflow-hidden">
                   {currentUser.full_name?.charAt(0).toUpperCase()}
@@ -428,7 +430,9 @@ export default function Layout({ children, currentPageName }) {
           <div className={`flex-1 overflow-auto ${
             isAdmin && location.pathname === createPageUrl("Dashboard") ? "" : "md:pt-20"
           } ${!isAdmin ? "pb-24 md:pb-0" : ""}`}>
-            {children}
+            <div className="max-w-6xl mx-auto w-full">
+              {children}
+            </div>
           </div>
         </main>
 

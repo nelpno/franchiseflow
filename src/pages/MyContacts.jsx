@@ -71,6 +71,12 @@ const FILTER_TABS = [
   { key: "remarketing", label: "Remarketing", status: "remarketing" },
 ];
 
+const SOURCE_CONFIG = {
+  manual: { label: "Manual", bg: "bg-[#e9e8e9]", text: "text-[#534343]" },
+  bot: { label: "Bot", bg: "bg-[#16a34a]/10", text: "text-[#16a34a]" },
+  whatsapp: { label: "WhatsApp", bg: "bg-[#075e54]/10", text: "text-[#075e54]" },
+};
+
 function timeAgo(dateStr) {
   if (!dateStr) return "";
   try {
@@ -105,6 +111,7 @@ export default function MyContacts() {
   const [dateFilter, setDateFilter] = useState("all");
   const [historyContact, setHistoryContact] = useState(null);
   const [instanceName, setInstanceName] = useState(null);
+  const [sourceFilter, setSourceFilter] = useState("all");
 
   useEffect(() => {
     loadContacts();
@@ -168,6 +175,11 @@ export default function MyContacts() {
       );
     }
 
+    // Filter by source
+    if (sourceFilter !== "all") {
+      result = result.filter((c) => (c.source || "manual") === sourceFilter);
+    }
+
     // Filter by last contact date
     if (dateFilter !== "all") {
       const now = new Date();
@@ -199,7 +211,7 @@ export default function MyContacts() {
     });
 
     return result;
-  }, [contacts, activeFilter, searchTerm, dateFilter, sortBy]);
+  }, [contacts, activeFilter, searchTerm, dateFilter, sourceFilter, sortBy]);
 
   const openEdit = (contact) => {
     setEditingContact(contact);
@@ -344,15 +356,27 @@ export default function MyContacts() {
         searchPlaceholder="Buscar por nome ou telefone..."
         filters={[
           {
+            key: "sourceFilter",
+            label: "Origem",
+            value: sourceFilter,
+            onChange: setSourceFilter,
+            options: [
+              { value: "all", label: "Todas origens" },
+              { value: "manual", label: "Manual" },
+              { value: "bot", label: "Bot" },
+              { value: "whatsapp", label: "WhatsApp" },
+            ],
+          },
+          {
             key: "dateFilter",
-            label: "Ultimo contato",
+            label: "Último contato",
             value: dateFilter,
             onChange: setDateFilter,
             options: [
               { value: "all", label: "Qualquer data" },
-              { value: "7d", label: "Ultimos 7 dias" },
-              { value: "30d", label: "Ultimos 30 dias" },
-              { value: "90d", label: "Ultimos 90 dias" },
+              { value: "7d", label: "Últimos 7 dias" },
+              { value: "30d", label: "Últimos 30 dias" },
+              { value: "90d", label: "Últimos 90 dias" },
             ],
           },
         ]}
@@ -405,11 +429,22 @@ export default function MyContacts() {
                       {formatPhone(phone)}
                     </p>
                   </div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 ${config.bg} ${config.text}`}
-                  >
-                    {config.badgeLabel}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {(() => {
+                      const src = contact.source || "manual";
+                      const srcCfg = SOURCE_CONFIG[src] || SOURCE_CONFIG.manual;
+                      return (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold ${srcCfg.bg} ${srcCfg.text}`}>
+                          {srcCfg.label}
+                        </span>
+                      );
+                    })()}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${config.bg} ${config.text}`}
+                    >
+                      {config.badgeLabel}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Purchase info or lead info */}

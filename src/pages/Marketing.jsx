@@ -609,6 +609,22 @@ function FileCard({ file, isAdmin, onDelete }) {
   const handleDelete = async () => {
     setDeleting(true);
     try {
+      // Delete file from Storage if it's a Supabase-hosted file
+      if (file.file_path && file.file_path.includes("supabase")) {
+        try {
+          const url = new URL(file.file_path);
+          const pathParts = url.pathname.split("/storage/v1/object/public/");
+          if (pathParts.length > 1) {
+            const fullPath = decodeURIComponent(pathParts[1]);
+            const bucketEnd = fullPath.indexOf("/");
+            const bucket = fullPath.substring(0, bucketEnd);
+            const filePath = fullPath.substring(bucketEnd + 1);
+            await supabase.storage.from(bucket).remove([filePath]);
+          }
+        } catch (storageErr) {
+          console.error("Storage delete error (non-blocking):", storageErr);
+        }
+      }
       await MarketingFile.delete(file.id);
       toast.success("Material excluído.");
       onDelete();

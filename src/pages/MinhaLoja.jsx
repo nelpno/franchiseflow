@@ -223,7 +223,7 @@ export default function MinhaLoja() {
   if (!primaryFranchise) {
     return (
       <div className="flex flex-col items-center justify-center h-64 px-4 text-center">
-        <MaterialIcon icon="store" size={64} className="text-[#cac0c0] mb-4" />
+        <MaterialIcon icon="storefront" size={48} className="text-[#cac0c0] mb-4" />
         <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
           Nenhuma franquia vinculada
         </h3>
@@ -280,7 +280,7 @@ export default function MinhaLoja() {
             </CardContent>
           </Card>
 
-          {/* Faturamento do Mes */}
+          {/* Faturamento do Mês */}
           <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-4 md:p-6">
             <CardContent className="p-0 flex items-center gap-3">
               <div className="p-2 bg-[#775a19]/10 rounded-xl shrink-0">
@@ -348,7 +348,7 @@ export default function MinhaLoja() {
               className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
             >
               <MaterialIcon icon="add_circle" size={16} />
-              Lancar
+              Lançar
             </TabsTrigger>
             <TabsTrigger
               value="resultado"

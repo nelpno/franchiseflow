@@ -8,6 +8,61 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { toast } from "sonner";
 
+// ---------------------------------------------------------------------------
+// Draft helpers (localStorage)
+// ---------------------------------------------------------------------------
+const DRAFT_KEY_PREFIX = "sale_draft_";
+
+function getDraftKey(franchiseId) {
+  return `${DRAFT_KEY_PREFIX}${franchiseId}`;
+}
+
+function saveDraft(franchiseId, data) {
+  try {
+    localStorage.setItem(getDraftKey(franchiseId), JSON.stringify({ ...data, _ts: Date.now() }));
+  } catch {
+    // quota exceeded or private browsing — silently ignore
+  }
+}
+
+function loadDraft(franchiseId) {
+  try {
+    const raw = localStorage.getItem(getDraftKey(franchiseId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft(franchiseId) {
+  try {
+    localStorage.removeItem(getDraftKey(franchiseId));
+  } catch {
+    // ignore
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Retry helper with exponential backoff
+// ---------------------------------------------------------------------------
+async function withRetry(fn, { maxRetries = 2, baseDelay = 2000 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt); // 2s, 4s
+        toast.error(`Falha ao salvar. Tentando novamente em ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar produto...", inputId }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -306,6 +361,11 @@ export default function SaleForm({
     { inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 },
   ]);
 
+  // Track whether draft was already restored (avoid re-triggering)
+  const draftRestoredRef = useRef(false);
+  // Debounce timer ref for auto-save
+  const draftTimerRef = useRef(null);
+
   // Pre-fill when editing
   useEffect(() => {
     if (!sale) return;
@@ -342,6 +402,72 @@ export default function SaleForm({
       .finally(() => setLoadingItems(false));
   }, [sale, contacts]);
 
+  // ---- Draft: restore on mount (new sale only) ----
+  useEffect(() => {
+    if (isEditing || draftRestoredRef.current || !franchiseId) return;
+    draftRestoredRef.current = true;
+
+    const draft = loadDraft(franchiseId);
+    if (!draft) return;
+
+    // Restore fields
+    if (draft.items?.length) setItems(draft.items);
+    if (draft.contactId) {
+      setContactId(draft.contactId);
+      const c = contacts.find((ct) => ct.id === draft.contactId);
+      if (c) setContactSearch(c.nome || formatPhone(c.telefone));
+    }
+    if (draft.contactSearch) setContactSearch(draft.contactSearch);
+    if (draft.paymentMethod) setPaymentMethod(draft.paymentMethod);
+    if (draft.cardFeePercent != null) setCardFeePercent(draft.cardFeePercent);
+    if (draft.deliveryMethod) setDeliveryMethod(draft.deliveryMethod);
+    if (draft.deliveryFee != null) setDeliveryFee(draft.deliveryFee);
+
+    toast.info("Rascunho recuperado", {
+      action: {
+        label: "Descartar",
+        onClick: () => {
+          clearDraft(franchiseId);
+          setItems([{ inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 }]);
+          setContactId(null);
+          setContactSearch("");
+          setPaymentMethod("pix");
+          setCardFeePercent(3.5);
+          setDeliveryMethod("retirada");
+          setDeliveryFee(0);
+          toast.success("Rascunho descartado");
+        },
+      },
+      duration: 6000,
+    });
+  }, [isEditing, franchiseId, contacts]);
+
+  // ---- Draft: auto-save with 1s debounce (new sale only) ----
+  const draftData = useMemo(
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee]
+  );
+
+  useEffect(() => {
+    if (isEditing || !franchiseId) return;
+
+    // Skip saving if form is completely empty (default state)
+    const hasContent =
+      items.some((it) => it.inventory_item_id) ||
+      contactId ||
+      (contactSearch && contactSearch.trim().length > 0);
+    if (!hasContent) return;
+
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      saveDraft(franchiseId, draftData);
+    }, 1000);
+
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    };
+  }, [draftData, isEditing, franchiseId]);
+
   // Calculations
   const subtotal = useMemo(
     () => items.reduce((sum, it) => sum + it.quantity * it.unit_price, 0),
@@ -355,7 +481,7 @@ export default function SaleForm({
 
   const effectiveDeliveryFee = deliveryMethod === "delivery" ? deliveryFee : 0;
 
-  const netValue = subtotal - cardFeeAmount - effectiveDeliveryFee;
+  const netValue = subtotal - cardFeeAmount + effectiveDeliveryFee;
 
   // Item handlers
   const handleAddItem = () => {
@@ -441,6 +567,7 @@ export default function SaleForm({
         telefone: phone,
         nome: inlineContactName.trim(),
         status: "cliente",
+        source: "manual",
       });
       setContactId(newContact.id);
       setContactSearch(inlineContactName.trim() || formatPhone(phone));
@@ -478,6 +605,7 @@ export default function SaleForm({
         telefone: isPhone ? normalized : "",
         nome: newContactName.trim() || (isPhone ? "" : contactSearch),
         status: "cliente",
+        source: "manual",
       });
       return newContact.id;
     } catch (err) {
@@ -486,7 +614,7 @@ export default function SaleForm({
     }
   };
 
-  // Submit
+  // Submit with retry
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -496,9 +624,19 @@ export default function SaleForm({
     }
 
     setIsSubmitting(true);
-    try {
-      const resolvedContactId = await resolveContactId();
 
+    // Resolve contact before retry loop (avoid creating duplicates)
+    let resolvedContactId;
+    try {
+      resolvedContactId = await resolveContactId();
+    } catch (err) {
+      console.error("Erro ao resolver contato:", err);
+      toast.error("Erro ao processar contato. Tente novamente.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const submitSale = async () => {
       const saleData = {
         franchise_id: franchiseId,
         value: subtotal,
@@ -542,7 +680,7 @@ export default function SaleForm({
           )
       );
 
-      // Audit log
+      // Audit log (non-critical — no retry needed)
       try {
         await AuditLog.create({
           user_id: currentUser?.id || null,
@@ -562,11 +700,29 @@ export default function SaleForm({
         console.warn("Audit log failed:", auditErr);
       }
 
+      return saleId;
+    };
+
+    try {
+      await withRetry(submitSale);
+
+      // Success — clear draft and notify
+      clearDraft(franchiseId);
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
       onSave();
     } catch (error) {
-      console.error("Erro ao salvar venda:", error);
-      toast.error("Erro ao salvar venda. Tente novamente.");
+      console.error("Erro ao salvar venda após retentativas:", error);
+      // Ensure draft is saved so user doesn't lose data
+      if (!isEditing) {
+        saveDraft(franchiseId, draftData);
+      }
+      toast.error("Não foi possível salvar. Seu rascunho foi mantido.", {
+        action: {
+          label: "Tentar novamente",
+          onClick: () => handleSubmit({ preventDefault: () => {} }),
+        },
+        duration: 8000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -836,7 +992,7 @@ export default function SaleForm({
                 : "border-[#291715]/10 bg-white text-[#534343] hover:bg-[#f5f3f4]"
             }`}
           >
-            <MaterialIcon icon="local_shipping" size={18} />
+            <MaterialIcon icon="delivery_dining" size={18} />
             Delivery
           </button>
         </div>
@@ -877,9 +1033,9 @@ export default function SaleForm({
 
         {deliveryMethod === "delivery" && effectiveDeliveryFee > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#534343]">Frete</span>
-            <span className="font-medium text-[#b91c1c] font-mono-numbers">
-              - {formatCurrency(effectiveDeliveryFee)}
+            <span className="text-[#534343]">Frete (receita)</span>
+            <span className="font-medium text-[#16a34a] font-mono-numbers">
+              + {formatCurrency(effectiveDeliveryFee)}
             </span>
           </div>
         )}

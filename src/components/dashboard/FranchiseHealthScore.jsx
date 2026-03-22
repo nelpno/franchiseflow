@@ -1,6 +1,15 @@
-import React, { useMemo } from "react";
-import { format, subDays } from "date-fns";
+import React, { useMemo, useState } from "react";
+import { format, subDays, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 /**
  * Calculates and displays a health score (0-100) for each franchise.
@@ -97,6 +106,74 @@ function calculateHealthScore({
     contactsScore = 15;
   }
 
+  // --- Detail reasons ---
+  let salesReason = "Sem vendas registradas";
+  if (franchiseSales.length > 0) {
+    const mostRecentDate = franchiseSales.reduce((latest, s) => {
+      const d = s.sale_date || s.created_at?.substring(0, 10) || "";
+      return d > latest ? d : latest;
+    }, "");
+    if (mostRecentDate) {
+      try {
+        const dist = formatDistanceToNow(new Date(mostRecentDate + "T12:00:00"), { locale: ptBR, addSuffix: false });
+        salesReason = mostRecentDate >= todayStr
+          ? "Vendeu hoje"
+          : `Ultima venda: ha ${dist}`;
+      } catch {
+        salesReason = `Ultima venda: ${mostRecentDate}`;
+      }
+    }
+  }
+
+  let inventoryReason = "Sem itens de estoque";
+  if (items.length > 0) {
+    const itemsWithMinStock = items.filter((i) => (i.min_stock || 0) > 0);
+    const lowStock = itemsWithMinStock.filter((i) => (i.quantity || 0) < (i.min_stock || 0));
+    if (lowStock.length > 0) {
+      inventoryReason = `${lowStock.length} de ${itemsWithMinStock.length} produtos com estoque baixo`;
+    } else if (itemsWithMinStock.length > 0) {
+      inventoryReason = "Todos os produtos acima do minimo";
+    } else {
+      const hasStock = items.filter((i) => (i.quantity || 0) > 0).length;
+      inventoryReason = `${hasStock} de ${items.length} produtos com estoque`;
+    }
+  }
+
+  let ordersReason = "Nenhum pedido de reposicao";
+  if (franchiseOrders.length > 0) {
+    const mostRecentOrder = franchiseOrders.reduce((latest, po) => {
+      const d = po.ordered_at?.substring(0, 10) || "";
+      return d > latest ? d : latest;
+    }, "");
+    if (mostRecentOrder) {
+      try {
+        const dist = formatDistanceToNow(new Date(mostRecentOrder + "T12:00:00"), { locale: ptBR, addSuffix: false });
+        ordersReason = `Ultimo pedido: ha ${dist}`;
+      } catch {
+        ordersReason = `Ultimo pedido: ${mostRecentOrder}`;
+      }
+    }
+  }
+
+  let checklistReason = "Checklist de hoje: nao preenchido";
+  if (checklistData) {
+    const chkItems = checklistData.items || {};
+    const values = Object.values(chkItems);
+    if (values.length > 0) {
+      const done = values.filter(Boolean).length;
+      if (done === values.length) {
+        checklistReason = "Checklist de hoje: completo";
+      } else {
+        checklistReason = `Checklist de hoje: ${done}/${values.length} itens`;
+      }
+    }
+  }
+
+  let contactsReason = "Sem contatos recebidos hoje";
+  if (franchiseContacts.length > 0) {
+    contactsReason = `${franchiseContacts.length} contato${franchiseContacts.length > 1 ? "s" : ""} recebido${franchiseContacts.length > 1 ? "s" : ""} hoje`;
+  }
+
   const total = salesScore + inventoryScore + ordersScore + checklistScore + contactsScore;
 
   return {
@@ -107,6 +184,13 @@ function calculateHealthScore({
       orders: ordersScore,
       checklist: checklistScore,
       contacts: contactsScore,
+    },
+    reasons: {
+      sales: salesReason,
+      inventory: inventoryReason,
+      orders: ordersReason,
+      checklist: checklistReason,
+      contacts: contactsReason,
     },
   };
 }
@@ -123,6 +207,14 @@ function getScoreLabel(score) {
   return "Critico";
 }
 
+const CATEGORY_CONFIG = [
+  { key: "sales", label: "Vendas", max: 30, icon: "point_of_sale", color: "bg-[#a80012]" },
+  { key: "inventory", label: "Estoque", max: 20, icon: "inventory_2", color: "bg-[#775a19]" },
+  { key: "orders", label: "Pedidos", max: 20, icon: "local_shipping", color: "bg-[#291715]/60" },
+  { key: "checklist", label: "Checklist", max: 15, icon: "checklist", color: "bg-[#0f766e]" },
+  { key: "contacts", label: "WhatsApp", max: 15, icon: "chat", color: "bg-[#2563eb]" },
+];
+
 export default function FranchiseHealthScore({
   franchises,
   todaySales,
@@ -131,6 +223,9 @@ export default function FranchiseHealthScore({
   purchaseOrders,
   todayContacts,
 }) {
+  const navigate = useNavigate();
+  const [selectedScore, setSelectedScore] = useState(null);
+
   const scores = useMemo(() => {
     return franchises
       .map((f) => {
@@ -168,14 +263,15 @@ export default function FranchiseHealthScore({
       </div>
 
       <div className="space-y-3">
-        {scores.map(({ franchise, total, breakdown }) => {
+        {scores.map(({ franchise, total, breakdown, reasons }) => {
           const color = getScoreColor(total);
           const label = getScoreLabel(total);
 
           return (
             <div
               key={franchise.id}
-              className={`flex items-center gap-4 p-3 rounded-xl border ${color.border} ${color.bg}/30`}
+              onClick={() => setSelectedScore({ franchise, total, breakdown, reasons })}
+              className={`flex items-center gap-4 p-3 rounded-xl border ${color.border} ${color.bg}/30 cursor-pointer hover:shadow-md transition-shadow`}
             >
               {/* Score badge */}
               <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 ${color.bg} ${color.text}`}>
@@ -244,6 +340,83 @@ export default function FranchiseHealthScore({
           <span>0-49 Critico</span>
         </div>
       </div>
+
+      {/* Drill-down Dialog */}
+      <Dialog
+        open={!!selectedScore}
+        onOpenChange={(open) => {
+          if (!open) setSelectedScore(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-plus-jakarta flex items-center gap-3">
+              <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 ${selectedScore ? getScoreColor(selectedScore.total).bg : ""} ${selectedScore ? getScoreColor(selectedScore.total).text : ""}`}>
+                <span className="text-2xl font-bold font-mono-numbers leading-none">
+                  {selectedScore?.total || 0}
+                </span>
+                <span className="text-[8px] font-bold uppercase leading-none mt-0.5">
+                  {selectedScore ? getScoreLabel(selectedScore.total) : ""}
+                </span>
+              </div>
+              <div>
+                <p className="text-lg">
+                  {selectedScore?.franchise?.city || selectedScore?.franchise?.owner_name || "Franquia"}
+                </p>
+                <p className="text-sm font-normal text-[#534343]">
+                  Detalhes do Health Score
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedScore && (
+            <div className="space-y-3 pt-2">
+              {CATEGORY_CONFIG.map((cat) => {
+                const score = selectedScore.breakdown[cat.key] || 0;
+                const pct = Math.round((score / cat.max) * 100);
+                const reason = selectedScore.reasons?.[cat.key] || "";
+
+                return (
+                  <div key={cat.key} className="p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MaterialIcon icon={cat.icon} size={18} className="text-[#534343]" />
+                        <span className="text-sm font-semibold text-[#1b1c1d]">{cat.label}</span>
+                      </div>
+                      <span className="text-sm font-bold font-mono-numbers text-[#1b1c1d]">
+                        {score}/{cat.max}
+                      </span>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-2 bg-[#e9e8e9] rounded-full overflow-hidden mb-2">
+                      <div
+                        className={`h-full rounded-full transition-all ${cat.color}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    {/* Reason */}
+                    <p className="text-xs text-[#534343]">{reason}</p>
+                  </div>
+                );
+              })}
+
+              <div className="pt-2">
+                <Button
+                  onClick={() => {
+                    setSelectedScore(null);
+                    navigate("/Franchises");
+                  }}
+                  className="w-full bg-[#a80012] hover:bg-[#8b0010] text-white font-bold rounded-xl"
+                >
+                  <MaterialIcon icon="monitoring" size={18} className="mr-2" />
+                  Ver Acompanhamento
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

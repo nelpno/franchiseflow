@@ -166,11 +166,11 @@ export default function Franchises() {
     try {
       await User.delete(deletingStaff.id);
       setUsers((prev) => prev.filter((u) => u.id !== deletingStaff.id));
-      toast.success("Usuario removido.");
+      toast.success("Usuário removido.");
       setDeletingStaff(null);
     } catch (error) {
-      console.error("Erro ao excluir usuario:", error);
-      toast.error("Erro ao excluir usuario.");
+      console.error("Erro ao excluir usuário:", error);
+      toast.error("Erro ao excluir usuário.");
     }
   };
 
@@ -276,12 +276,12 @@ export default function Franchises() {
         }
       }
 
-      toast.success("Permissoes atualizadas!");
+      toast.success("Permissões atualizadas!");
       setEditingPermissions(null);
       loadData();
     } catch (error) {
-      console.error("Erro ao salvar permissoes:", error);
-      toast.error("Erro ao salvar permissoes.");
+      console.error("Erro ao salvar permissões:", error);
+      toast.error("Erro ao salvar permissões.");
     }
     setIsSavingPermissions(false);
   };
@@ -372,7 +372,7 @@ export default function Franchises() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d]">Franqueados</h1>
-            <p className="text-[#4a3d3d] mt-1">Gerencie franquias, equipe e permissoes</p>
+            <p className="text-[#4a3d3d] mt-1">Gerencie franquias, equipe e permissões</p>
           </div>
           {(currentUser?.role === "admin" || currentUser?.role === "manager") && (
             <Button
@@ -563,7 +563,7 @@ export default function Franchises() {
                       ) : (
                         <div className="flex items-center gap-2 text-[#d4af37]">
                           <MaterialIcon icon="warning" size={14} />
-                          <span className="text-xs font-medium">Sem usuario vinculado</span>
+                          <span className="text-xs font-medium">Sem usuário vinculado</span>
                         </div>
                       )}
                     </div>
@@ -702,7 +702,7 @@ export default function Franchises() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-red-600">
                 <MaterialIcon icon="warning" size={20} />
-                Confirmar Exclusao
+                Confirmar Exclusão
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
@@ -770,12 +770,12 @@ export default function Franchises() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
                 <MaterialIcon icon="settings" size={20} />
-                Permissoes - {editingPermissions?.city}
+                Permissões - {editingPermissions?.city}
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
               <p className="text-sm text-[#534343] mb-4">
-                Selecione quais usuarios podem gerenciar esta franquia:
+                Selecione quais usuários podem gerenciar esta franquia:
               </p>
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {users
@@ -804,7 +804,7 @@ export default function Franchises() {
                   ))}
                 {users.filter((u) => u.role !== "admin").length === 0 && (
                   <p className="text-sm text-[#534343] text-center py-4">
-                    Nenhum usuario disponivel (exceto admins)
+                    Nenhum usuário disponível (exceto admins)
                   </p>
                 )}
               </div>
@@ -823,7 +823,7 @@ export default function Franchises() {
                 className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
               >
                 <MaterialIcon icon="save" size={16} className="mr-2" />
-                {isSavingPermissions ? "Salvando..." : "Salvar Permissoes"}
+                {isSavingPermissions ? "Salvando..." : "Salvar Permissões"}
               </Button>
             </div>
           </DialogContent>
@@ -945,7 +945,7 @@ export default function Franchises() {
                 {selectedFranchise?.city}
               </SheetTitle>
               <SheetDescription className="text-[#534343]">
-                Detalhes da franquia e usuarios vinculados
+                Detalhes da franquia e usuários vinculados
               </SheetDescription>
             </SheetHeader>
 
@@ -999,7 +999,7 @@ export default function Franchises() {
                 {/* Linked Users */}
                 <div className="space-y-3">
                   <h3 className="text-sm font-bold text-[#534343] uppercase tracking-wider">
-                    Usuarios Vinculados
+                    Usuários Vinculados
                   </h3>
                   {(() => {
                     const linked = getLinkedUsers(selectedFranchise);

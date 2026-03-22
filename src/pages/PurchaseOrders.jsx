@@ -30,7 +30,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import FilterBar from "@/components/shared/FilterBar";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const formatBRL = (value) => {
@@ -174,13 +174,27 @@ export default function PurchaseOrders() {
     return Array.from(ids);
   }, [orders]);
 
-  const getStatusBadge = (status) => {
+  const isOverdue = (order) => {
+    if (order.status !== "pendente" && order.status !== "confirmado") return false;
+    if (!order.ordered_at) return false;
+    return differenceInDays(new Date(), parseISO(order.ordered_at.substring(0, 10))) > 7;
+  };
+
+  const getStatusBadge = (status, overdue) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
     return (
-      <Badge className={`${config.color} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
-        <MaterialIcon icon={config.icon} size={12} />
-        {config.label}
-      </Badge>
+      <div className="flex items-center gap-1.5 flex-wrap justify-center">
+        <Badge className={`${config.color} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
+          <MaterialIcon icon={config.icon} size={12} />
+          {config.label}
+        </Badge>
+        {overdue && (
+          <Badge className="bg-red-100 text-red-700 rounded-full px-2 py-0.5 text-[10px] font-bold gap-1">
+            <MaterialIcon icon="warning" size={12} />
+            ATRASADO
+          </Badge>
+        )}
+      </div>
     );
   };
 
@@ -458,40 +472,50 @@ export default function PurchaseOrders() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredOrders.map((order) => (
-                        <TableRow key={order.id} className="hover:bg-[#f5f3f4]">
-                          <TableCell className="font-medium text-[#1b1c1d]">
-                            {getFranchiseName(order.franchise_id)}
-                          </TableCell>
-                          <TableCell className="text-sm text-[#4a3d3d]">
-                            {order.ordered_at
-                              ? format(new Date(order.ordered_at), "dd/MM/yyyy", { locale: ptBR })
-                              : "\u2014"}
-                          </TableCell>
-                          <TableCell className="text-center text-sm font-medium text-[#1b1c1d]">
-                            {formatBRL(order.total_amount)}
-                          </TableCell>
-                          <TableCell className="text-center text-sm text-[#4a3d3d]">
-                            {order.freight_cost != null && parseFloat(order.freight_cost) > 0
-                              ? formatBRL(order.freight_cost)
-                              : "\u2014"}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getStatusBadge(order.status)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openOrderDetail(order)}
-                              className="text-[#b91c1c] hover:text-[#991b1b] hover:bg-[#b91c1c]/5 rounded-xl gap-1"
-                            >
-                              <MaterialIcon icon="visibility" size={16} />
-                              Ver
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {filteredOrders.map((order) => {
+                        const overdue = isOverdue(order);
+                        return (
+                          <TableRow
+                            key={order.id}
+                            className={
+                              overdue
+                                ? "bg-red-50 border-l-4 border-l-red-500 hover:bg-red-100/60"
+                                : "hover:bg-[#f5f3f4]"
+                            }
+                          >
+                            <TableCell className="font-medium text-[#1b1c1d]">
+                              {getFranchiseName(order.franchise_id)}
+                            </TableCell>
+                            <TableCell className="text-sm text-[#4a3d3d]">
+                              {order.ordered_at
+                                ? format(new Date(order.ordered_at), "dd/MM/yyyy", { locale: ptBR })
+                                : "\u2014"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm font-medium text-[#1b1c1d]">
+                              {formatBRL(order.total_amount)}
+                            </TableCell>
+                            <TableCell className="text-center text-sm text-[#4a3d3d]">
+                              {order.freight_cost != null && parseFloat(order.freight_cost) > 0
+                                ? formatBRL(order.freight_cost)
+                                : "\u2014"}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {getStatusBadge(order.status, overdue)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openOrderDetail(order)}
+                                className="text-[#b91c1c] hover:text-[#991b1b] hover:bg-[#b91c1c]/5 rounded-xl gap-1"
+                              >
+                                <MaterialIcon icon="visibility" size={16} />
+                                Ver
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -501,10 +525,16 @@ export default function PurchaseOrders() {
 
           {/* Mobile cards */}
           <div className="md:hidden space-y-3">
-            {filteredOrders.map((order) => (
+            {filteredOrders.map((order) => {
+              const overdue = isOverdue(order);
+              return (
               <Card
                 key={order.id}
-                className="rounded-2xl shadow-sm border border-[#291715]/5 bg-white"
+                className={`rounded-2xl shadow-sm border bg-white ${
+                  overdue
+                    ? "border-red-300 border-l-4 border-l-red-500 bg-red-50"
+                    : "border-[#291715]/5"
+                }`}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
@@ -518,7 +548,7 @@ export default function PurchaseOrders() {
                           : "\u2014"}
                       </p>
                     </div>
-                    {getStatusBadge(order.status)}
+                    {getStatusBadge(order.status, overdue)}
                   </div>
 
                   <div className="flex items-center justify-between mt-3">
@@ -545,7 +575,8 @@ export default function PurchaseOrders() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -572,7 +603,7 @@ export default function PurchaseOrders() {
                     ? format(new Date(selectedOrder.ordered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
                     : "\u2014"}
                 </span>
-                {getStatusBadge(selectedOrder.status)}
+                {getStatusBadge(selectedOrder.status, isOverdue(selectedOrder))}
               </div>
 
               {/* Items */}

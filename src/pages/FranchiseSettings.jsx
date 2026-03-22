@@ -652,12 +652,14 @@ function FranchiseSettingsContent() {
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
                     </select>
+                    <FieldHint text="Tipo da sua chave PIX para receber pagamentos." />
                   </div>
                   <div>
                     <label className={labelClass}>Sua chave PIX</label>
                     <input className={inputClass} type="text" value={formData.pix_key_data}
                       onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
                       placeholder="Chave PIX" />
+                    <FieldHint text="Sua chave PIX (CPF, email, telefone ou aleatória)." />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">

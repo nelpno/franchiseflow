@@ -20,7 +20,7 @@ export default function AdminHeader({ period, onPeriodChange }) {
             <button
               key={p.value}
               onClick={() => onPeriodChange(p.value)}
-              className={`px-3 md:px-4 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 flex-1 md:flex-none ${
+              className={`px-3 md:px-4 py-2 text-sm font-plus-jakarta transition-all active:scale-95 flex-1 md:flex-none ${
                 period === p.value
                   ? "font-bold text-white bg-[#a80012] rounded-lg shadow-sm"
                   : "font-medium text-[#291715]/70 hover:text-[#a80012]"
