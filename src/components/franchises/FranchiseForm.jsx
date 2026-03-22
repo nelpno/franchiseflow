@@ -27,7 +27,7 @@ function FieldHelp({ text }) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <MaterialIcon icon="help" size={16} className="text-slate-400 cursor-help inline ml-1" />
+          <MaterialIcon icon="help" size={16} className="text-[#4a3d3d] cursor-help inline ml-1" />
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
           <p className="text-sm">{text}</p>
@@ -99,6 +99,17 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
     }
   }, [municipalities]);
 
+  const handleCitySelect = useCallback((city) => {
+    setFormData(prev => {
+      const updated = { ...prev, city: city.label };
+      if (!nameManuallyEdited || !prev.name) {
+        updated.name = suggestFranchiseName(city.label);
+      }
+      return updated;
+    });
+    setShowCitySuggestions(false);
+  }, [nameManuallyEdited]);
+
   const handleCityKeyDown = useCallback((e) => {
     if (!showCitySuggestions || citySuggestions.length === 0) return;
     if (e.key === 'ArrowDown') {
@@ -114,18 +125,6 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
       setShowCitySuggestions(false);
     }
   }, [showCitySuggestions, citySuggestions, highlightedIndex, handleCitySelect]);
-
-  const handleCitySelect = useCallback((city) => {
-    setFormData(prev => {
-      const updated = { ...prev, city: city.label };
-      // 7c — Auto-sugerir nome se não foi editado manualmente
-      if (!nameManuallyEdited || !prev.name) {
-        updated.name = suggestFranchiseName(city.label);
-      }
-      return updated;
-    });
-    setShowCitySuggestions(false);
-  }, [nameManuallyEdited]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

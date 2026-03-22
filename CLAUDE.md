@@ -132,7 +132,12 @@ src/
 - Componentes UI: sempre usar shadcn/ui (src/components/ui/)
 - Ícones: Material Symbols Outlined via `<MaterialIcon icon="name" />` — NÃO usar Lucide React
 - Fontes: Inter (body), Plus Jakarta Sans (headings) — classes `.font-plus-jakarta`, `.font-mono-numbers`
-- Paleta: primary `#b91c1c`, admin `#a80012`, gold `#d4af37`, surface `#fbf9fa`, input-bg `#e9e8e9`
+- Paleta (tokens Stitch):
+  - Texto primario (on-background): `#1b1c1d` | Texto em cards (on-surface): `#1d1b1b`
+  - Texto secundario (on-surface-variant): `#4a3d3d` | Texto terciario (outline): `#7a6d6d`
+  - Primary (marca): `#b91c1c` | Admin: `#a80012` | Gold: `#d4af37` | Gold text: `#775a19`
+  - Financeiro positivo: `#16a34a` | Financeiro negativo: `#dc2626` (NUNCA usar #b91c1c para prejuizo)
+  - Surface: `#fbf9fa` | Input-bg: `#e9e8e9` | Error-container: `#ffdad6`
 - Formulários: react-hook-form + zod
 - Datas: date-fns (NÃO moment.js)
 - Notificações: sonner (toast)
@@ -247,8 +252,13 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 72. Personalidade do bot REMOVIDA da UI do wizard — campo `bot_personality` mantém default no banco para n8n
 73. ReviewSummary.jsx: não mostrar Personalidade nem Boas-vindas — campos removidos do wizard
 74. `Franchise.list()` no Onboarding — NÃO usar `.filter({status:"active"})` que pode excluir franquias válidas
-75. Avatar "J" no header mobile abre dropdown com perfil + logout (`showMobileMenu` state)
+75. Avatar no header: apenas MOBILE (desktop removido — sidebar footer tem nome+logout). `showMobileMenu` state abre dropdown com perfil + logout
 76. Marketing: botão "Copiar legenda" usa navigator.clipboard — description é a legenda do post
+77. Cores financeiras: positivo/lucro = `#16a34a`, negativo/prejuizo = `#dc2626` — NUNCA usar brand red `#b91c1c` para dados financeiros negativos (confunde marca com alarme)
+78. Categoria estoque auto-detectada: `getCategoryFromName()` em TabEstoque.jsx — prefixos Canelone/Conchiglione/Massa/Nhoque/Rondelli/Sofioli→Massas, Molho→Molhos, resto→Outros
+79. Avatar header desktop REMOVIDO (redundante com sidebar footer) — manter apenas no mobile (`showMobileMenu`)
+80. Terminologia financeira: NÃO usar "Líquido" (jargao contabil) — franqueado nao entende. Resumo de vendas mostra apenas Total
+81. Badge de margem na venda: `<span>` simples (NÃO `<Badge>` shadcn que parece clicavel) — 3 estados: verde (≥25%), amber (<25%), vermelho (negativo)
 
 ## Scripts
 ```bash
