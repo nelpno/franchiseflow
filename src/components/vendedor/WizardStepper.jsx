@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const STEPS = [
@@ -16,6 +16,18 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
   const activeSteps = STEPS.filter(s => !skippedSteps.includes(s.num));
   const completedCount = completedSteps.filter(s => !skippedSteps.includes(s)).length;
   const progressPct = activeSteps.length > 0 ? Math.round((completedCount / activeSteps.length) * 100) : 0;
+  const scrollRef = useRef(null);
+  const stepRefs = useRef({});
+
+  // Auto-scroll to center active step
+  useEffect(() => {
+    const container = scrollRef.current;
+    const activeEl = stepRefs.current[currentStep];
+    if (container && activeEl) {
+      const scrollLeft = activeEl.offsetLeft - container.offsetWidth / 2 + activeEl.offsetWidth / 2;
+      container.scrollTo({ left: Math.max(0, scrollLeft), behavior: "smooth" });
+    }
+  }, [currentStep]);
 
   return (
     <div className="w-full space-y-3">
@@ -32,9 +44,9 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
         </span>
       </div>
 
-      {/* Step indicators */}
-      <div className="overflow-x-auto pb-2">
-        <div className="flex items-center justify-between min-w-[600px] md:min-w-0">
+      {/* Step indicators — auto-scroll to active */}
+      <div ref={scrollRef} className="overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+        <div className="flex items-center gap-1 w-max md:w-full md:justify-between px-2">
           {STEPS.map((step, idx) => {
             const isActive = currentStep === step.num;
             const isCompleted = completedSteps.includes(step.num);
@@ -44,15 +56,16 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
             return (
               <React.Fragment key={step.num}>
                 <button
+                  ref={(el) => { stepRefs.current[step.num] = el; }}
                   type="button"
                   onClick={() => onStepClick?.(step.num)}
-                  className="flex flex-col items-center gap-1.5 group cursor-pointer"
+                  className="flex flex-col items-center gap-1 group cursor-pointer shrink-0"
                   title={step.label}
                 >
                   <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                       isActive
-                        ? "bg-[#b91c1c] text-white shadow-md shadow-[#b91c1c]/30 ring-2 ring-[#b91c1c]/20 ring-offset-2"
+                        ? "bg-[#b91c1c] text-white shadow-md shadow-[#b91c1c]/30 ring-2 ring-[#b91c1c]/20 ring-offset-2 scale-110"
                         : isCompleted
                         ? "bg-[#b91c1c]/15 text-[#b91c1c]"
                         : isSkipped
@@ -69,7 +82,7 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                     )}
                   </div>
                   <span
-                    className={`hidden md:block text-[10px] font-medium leading-tight text-center max-w-[70px] ${
+                    className={`text-[11px] font-medium leading-tight text-center w-16 ${
                       isActive
                         ? "text-[#b91c1c] font-bold"
                         : isCompleted
@@ -84,7 +97,7 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                 </button>
                 {!isLast && (
                   <div
-                    className={`flex-1 h-[2px] mx-1 mt-[-16px] md:mt-[-12px] transition-colors ${
+                    className={`w-6 md:flex-1 h-[2px] shrink-0 transition-colors ${
                       isCompleted ? "bg-[#b91c1c]/30" : "bg-[#e9e8e9]"
                     }`}
                   />

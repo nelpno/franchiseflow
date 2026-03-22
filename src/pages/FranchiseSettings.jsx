@@ -533,11 +533,11 @@ function FranchiseSettingsContent() {
                 <FieldHint text="O bot envia esse endereço quando o cliente pede para retirar o pedido." />
               </div>
               <div>
-                <label className={labelClass}>Ponto de referência para clientes e motoboys</label>
+                <label className={labelClass}>Ponto de referência para clientes</label>
                 <textarea className={`${inputClass} resize-none`} rows={2} value={formData.address_reference}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
                   placeholder="Ex: Próximo à praça, casa com portão azul..." />
-                <FieldHint text="Ajuda o motoboy a encontrar sua unidade mais rápido." />
+                <FieldHint text="O bot informa essa referência quando o cliente pergunta onde fica sua unidade." />
               </div>
               <div>
                 <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diário)</label>
