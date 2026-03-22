@@ -210,7 +210,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 35. Sacolas/embalagens são DESPESAS (aba Resultado), NÃO itens de estoque — simplificar pro franqueado
 36. `sale_items.cost_price` é snapshot do momento da venda — se popular cost_price depois, atualizar retroativamente com UPDATE JOIN
 37. `franchise_configurations` usa FK `franchise_evolution_instance_id` (text), NÃO `franchise_id`
-38. Tabela `contacts` NÃO tem coluna `source` — não usar em INSERTs
+38. Tabela `contacts` tem colunas `source` (default 'manual', valores: manual/bot/whatsapp) e `campaign_name` (TEXT) — bot n8n deve setar source='bot' ao inserir
 39. NUNCA usar `managed_franchise_ids[0]` direto para filtrar dados — resolver `evolution_instance_id` via franchise lookup (bug corrigido em FranchiseeDashboard + Layout)
 40. `sale_price` padrão = `cost_price * 2` (100% markup) — margem mínima recomendada 80% (cost_price * 1.8)
 41. Admin pode adicionar produto padrão via RPC `add_default_product()` — popula em todas franquias
@@ -233,6 +233,13 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 58. Botão WhatsApp em contatos: desabilitar com "Sem telefone" quando `telefone` vazio — NÃO esconder (usuário precisa saber que existe)
 59. StatsCard usa breakpoints responsivos (text-lg/sm:text-2xl, p-3/sm:p-5) — grid-cols-3 fixo no mobile
 60. Onboarding é OBRIGATÓRIO para franqueados novos — NÃO adicionar botão "Pular". Só franqueados existentes (migração) podem cancelar
+61. Agentes/subagents escrevem strings sem acentuação — SEMPRE revisar textos gerados por agentes
+62. Fonte mínima em UI: `text-xs` (12px) — NUNCA usar `text-[10px]` exceto em badges decorativos
+63. Opacity mínima em textos: `opacity-70` — NUNCA usar `opacity-40/50/60` em texto legível
+64. Touch target mínimo mobile: `min-h-[40px] min-w-[40px]` em botões interativos
+65. Deploy Portainer: stack NÃO é git-based — usar force update do service (GET spec → increment ForceUpdate → POST update)
+66. Conteúdo centralizado: Layout.jsx tem `max-w-6xl mx-auto` no wrapper de children
+67. OnboardingWelcome (tutorial) ≠ Onboarding (checklist operacional) — tutorial redireciona para checklist ao finalizar
 
 ## Scripts
 ```bash
@@ -255,11 +262,36 @@ npm run typecheck # TypeScript check
 - **FASE 5 Etapa 5**: Onboarding completo (tela senha ✅, trigger cost_price ✅, SPF/DKIM ✅, UX formulário ✅, auto-link ✅)
 - **Deploy produção**: app.maximassas.tech via Docker Swarm + Traefik SSL ✅
 - **FASE 6**: Notificações (sino funcional + triggers automáticos) ✅
-- **FASE 7 — Roadmap 10/10** (próxima):
-  - 7a: Onboarding obrigatório (tutorial primeiro acesso, melhorar wizard Meu Vendedor) — OBRIGATÓRIO para novos, só existentes podem cancelar
-  - 7b: Dropdown seletor franquia + criar contato inline + health score admin
-  - 7c: Gráficos históricos + log auditoria + exportar PDF/Excel
-  - 7d: Histórico WhatsApp + dashboard comparativo + filtros avançados
+- **FASE 7 — Roadmap 10/10** ✅:
+  - 7a: Onboarding obrigatório (tutorial + checklist + wizard melhorado) ✅
+  - 7b: Seletor franquia + contato inline + health score com drill-down ✅
+  - 7c: Gráficos recharts + audit log + export PDF/Excel ✅
+  - 7d: WhatsApp history + comparativo períodos + filtros avançados ✅
+  - Reports redesenhados (KPIs, PieChart, ranking, tabela sortable) ✅
+  - Marketing com Google Drive/YouTube + campanhas ✅
+  - Performance: bundle -54%, lazy loading, N+1 eliminado ✅
+  - Gaps: draft/retry SaleForm, pedidos atrasados, sugestão reposição, origem leads ✅
+
+## FASE 7 — Componentes Novos
+- **OnboardingWelcome.jsx**: Tutorial 6 steps (primeiro acesso) → redireciona para `/Onboarding` (checklist operacional)
+- **FranchiseSelector.jsx**: Dropdown troca franquia (multi-franchise), persiste localStorage, state em AuthContext (`selectedFranchise`)
+- **FranchiseHealthScore.jsx**: Score 0-100 (vendas 30, estoque 20, pedidos 20, checklist 15, whatsapp 15) com drill-down dialog
+- **ResultadoCharts.jsx**: AreaChart faturamento + ComposedChart receita vs despesas (recharts)
+- **ExportButtons.jsx**: Export Excel (xlsx) e PDF (jspdf+autotable), reutilizável via props
+- **FilterBar.jsx**: Filtros genéricos reutilizáveis (busca, selects, ordenação, mobile colapsável)
+- **WhatsAppHistory.jsx**: Modal chat com ZuckZapGo API, fallback gracioso
+- **PeriodComparisonCard.jsx**: Comparativo semana/mês com delta %, aberto por padrão
+- **AuditLog entity**: Tabela `audit_logs` registra quem fez cada venda/despesa, filtro por pessoa
+- **Marketing**: Suporta links Google Drive/YouTube, campo `campaign`, badge NOVO, compartilhar WhatsApp
+
+## Performance
+- Páginas pesadas usam `React.lazy()` + `<Suspense>` (configurado em `pages.config.js`)
+- Vite `manualChunks`: recharts, jspdf/xlsx/file-saver, vendor (react/react-dom)
+- AdminDashboard: buscar InventoryItem.list() + DailyChecklist.filter({date}) e agrupar no frontend (NÃO fazer N+1 por franquia)
+- FranchiseeDashboard: usar `ctxFranchise` do AuthContext (NÃO buscar Franchise.list())
+- Polling: FranchiseeDashboard 120s, AdminDashboard 180s, NotificationBell 30s
+- MinhaLoja: Sale.list() limitado a 500, Expense.list() limitado a 200
+- SaleForm: auto-save draft em localStorage (debounce 1s) + retry com backoff exponencial
 
 ## Deploy (Portainer)
 - **Portainer API**: `https://porto.dynamicagents.tech/api` — header `X-API-Key`
