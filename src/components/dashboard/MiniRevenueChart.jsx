@@ -41,7 +41,7 @@ export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue 
           const barHeight = Math.max((heightPercent / 100) * 100, 4);
           return (
             <div key={index} className="flex flex-col items-center flex-1 h-full justify-end gap-1">
-              <span className="text-[10px] text-[#4a3d3d] font-mono-numbers">
+              <span className="text-xs text-[#4a3d3d] font-mono-numbers">
                 {entry.valor > 0 ? `R$${Math.round(entry.valor)}` : ""}
               </span>
               <div

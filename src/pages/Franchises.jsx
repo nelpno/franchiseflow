@@ -111,7 +111,7 @@ export default function Franchises() {
           toast.success(`Franquia criada! Convite enviado para ${franchiseeEmail}`);
         } catch (inviteError) {
           console.error("Erro ao criar convite:", inviteError);
-          toast.success("Franquia criada! (convite nao pode ser enviado)");
+          toast.success("Franquia criada! (convite não pode ser enviado)");
         }
       } else {
         toast.success("Franquia criada com sucesso!");
@@ -136,7 +136,7 @@ export default function Franchises() {
       loadData();
     } catch (error) {
       console.error("Erro ao excluir franquia:", error);
-      toast.error("Erro ao excluir franquia. Verifique se voce tem permissao.");
+      toast.error("Erro ao excluir franquia. Verifique se você tem permissão.");
     }
   };
 
@@ -707,8 +707,8 @@ export default function Franchises() {
             </DialogHeader>
             <div className="py-4">
               <p className="text-sm text-[#534343]">
-                Tem certeza que deseja excluir o usuario{" "}
-                <strong>{deletingStaff?.full_name}</strong>? Esta acao nao pode ser desfeita.
+                Tem certeza que deseja excluir o usuário{" "}
+                <strong>{deletingStaff?.full_name}</strong>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="outline" onClick={() => setDeletingStaff(null)} className="rounded-xl">
@@ -742,7 +742,7 @@ export default function Franchises() {
             <div className="py-4">
               <p className="text-sm text-[#534343]">
                 Tem certeza que deseja excluir a franquia de{" "}
-                <strong>{deletingFranchise?.city}</strong>? Esta acao nao pode ser desfeita.
+                <strong>{deletingFranchise?.city}</strong>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="outline" onClick={() => setDeletingFranchise(null)} className="rounded-xl">

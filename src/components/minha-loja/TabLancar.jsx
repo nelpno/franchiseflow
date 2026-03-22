@@ -27,7 +27,7 @@ const formatCurrency = (value) =>
 const PERIOD_FILTERS = [
   { value: "today", label: "Hoje" },
   { value: "week", label: "Esta semana" },
-  { value: "month", label: "Este mes" },
+  { value: "month", label: "Este mês" },
   { value: "all", label: "Todas" },
 ];
 
@@ -523,8 +523,8 @@ export default function TabLancar({
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Excluir venda?</DialogTitle>
             <DialogDescription className="text-[#534343]">
-              Esta acao nao pode ser desfeita. A venda de{" "}
-              <strong>{formatCurrency(deletingSale?.value)}</strong> sera removida
+              Esta ação não pode ser desfeita. A venda de{" "}
+              <strong>{formatCurrency(deletingSale?.value)}</strong> será removida
               permanentemente.
             </DialogDescription>
           </DialogHeader>

@@ -228,7 +228,7 @@ export default function MinhaLoja() {
           Nenhuma franquia vinculada
         </h3>
         <p className="text-sm text-[#534343] max-w-sm">
-          Sua conta ainda nao esta vinculada a nenhuma franquia. Entre em contato com o administrador.
+          Sua conta ainda não está vinculada a nenhuma franquia. Entre em contato com o administrador.
         </p>
       </div>
     );
@@ -369,7 +369,7 @@ export default function MinhaLoja() {
               className="gap-1.5 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-4"
             >
               <MaterialIcon icon="local_shipping" size={16} />
-              Reposicao
+              Reposição
             </TabsTrigger>
           </TabsList>
 

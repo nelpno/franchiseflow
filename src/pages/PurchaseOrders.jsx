@@ -251,7 +251,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar alteracoes.");
+      toast.error("Erro ao salvar alterações.");
     } finally {
       setSaving(false);
     }

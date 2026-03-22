@@ -28,7 +28,7 @@ const PRESETS = [
   },
   {
     key: "month",
-    label: "Este mes vs anterior",
+    label: "Este mês vs anterior",
     getPeriods: () => {
       const now = new Date();
       const prevMonth = subMonths(now, 1);
@@ -64,7 +64,7 @@ function DeltaBadge({ current, previous, isInverted = false }) {
   const icon = delta > 0 ? "trending_up" : delta < 0 ? "trending_down" : "trending_flat";
 
   return (
-    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-[10px] font-bold ${color} ${bg}`}>
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg text-xs font-bold ${color} ${bg}`}>
       <MaterialIcon icon={icon} size={12} />
       {Math.abs(delta).toFixed(0)}%
     </span>
@@ -140,7 +140,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
             format: formatBRL,
           },
           {
-            label: "Valor Medio",
+            label: "Valor Médio",
             icon: "avg_pace",
             period1: avg1,
             period2: avg2,
@@ -156,8 +156,8 @@ export default function PeriodComparisonCard({ franchiseId }) {
         ],
       });
     } catch (err) {
-      console.error("Erro ao comparar periodos:", err);
-      toast.error("Erro ao carregar comparacao");
+      console.error("Erro ao comparar períodos:", err);
+      toast.error("Erro ao carregar comparação");
     } finally {
       setLoading(false);
     }
@@ -190,7 +190,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
         className="flex items-center gap-2 text-sm font-bold font-plus-jakarta text-[#1b1c1d] hover:text-[#b91c1c] transition-colors mb-3"
       >
         <MaterialIcon icon="compare_arrows" size={18} className="text-[#d4af37]" />
-        Comparar Periodos
+        Comparar Períodos
         <MaterialIcon
           icon={expanded ? "expand_less" : "expand_more"}
           size={18}
@@ -248,7 +248,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
                       </span>
                       <DeltaBadge current={metric.period2} previous={metric.period1} />
                     </div>
-                    <p className="text-[10px] text-[#534343]/60 font-mono-numbers">
+                    <p className="text-xs text-[#534343]/80 font-mono-numbers">
                       antes: {metric.format(metric.period1)}
                     </p>
                   </div>

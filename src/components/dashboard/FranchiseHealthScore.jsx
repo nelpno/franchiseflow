@@ -216,7 +216,7 @@ export default function FranchiseHealthScore({
                     title={`Contatos: ${breakdown.contacts}/15`}
                   />
                 </div>
-                <div className="flex gap-3 mt-1.5 text-[10px] text-[#291715]/50 font-medium">
+                <div className="flex gap-3 mt-1.5 text-xs text-[#291715]/70 font-medium">
                   <span>Vendas {breakdown.sales}/{30}</span>
                   <span>Estoque {breakdown.inventory}/{20}</span>
                   <span>Pedidos {breakdown.orders}/{20}</span>
@@ -230,7 +230,7 @@ export default function FranchiseHealthScore({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#291715]/5 text-[10px] text-[#291715]/50 font-medium">
+      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#291715]/5 text-xs text-[#291715]/70 font-medium">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
           <span>80-100 Saudavel</span>

@@ -384,11 +384,11 @@ export default function PurchaseOrderForm({
 
       {/* Notes */}
       <div className="space-y-2">
-        <Label className="text-[#1b1c1d]">Comentario</Label>
+        <Label className="text-[#1b1c1d]">Comentário</Label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Observacoes sobre o pedido..."
+          placeholder="Observações sobre o pedido..."
           rows={3}
           className="w-full rounded-xl bg-[#e9e8e9] border-none px-4 py-3 text-sm focus:ring-2 focus:ring-[#b91c1c]/20 focus:outline-none resize-none"
         />

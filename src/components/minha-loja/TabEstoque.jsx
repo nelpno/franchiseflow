@@ -1130,7 +1130,7 @@ export default function TabEstoque({
                 className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
               />
               <p className="text-xs text-[#534343]">
-                Voce sera alertado quando a quantidade ficar abaixo deste valor.
+                Você será alertado quando a quantidade ficar abaixo deste valor.
               </p>
             </div>
 

@@ -84,10 +84,10 @@ export default function WhatsAppHistory({
             <MaterialIcon icon="link_off" size={28} className="text-[#534343]" />
           </div>
           <p className="text-sm font-semibold text-[#1b1c1d] mb-1">
-            Historico indisponivel
+            Histórico indisponível
           </p>
           <p className="text-xs text-[#534343] max-w-xs">
-            Conecte o WhatsApp no Meu Vendedor para ver o historico de conversas.
+            Conecte o WhatsApp no Meu Vendedor para ver o histórico de conversas.
           </p>
         </div>
       );
@@ -102,7 +102,7 @@ export default function WhatsAppHistory({
             Nenhuma mensagem encontrada
           </p>
           <p className="text-xs text-[#534343]">
-            Nao ha mensagens recentes com este contato.
+            Não há mensagens recentes com este contato.
           </p>
         </div>
       );
@@ -114,10 +114,10 @@ export default function WhatsAppHistory({
             <MaterialIcon icon="cloud_off" size={28} className="text-[#d97706]" />
           </div>
           <p className="text-sm font-semibold text-[#1b1c1d] mb-1">
-            Historico indisponivel
+            Histórico indisponível
           </p>
           <p className="text-xs text-[#534343] max-w-xs">
-            Nao foi possivel conectar ao servidor de mensagens. Tente novamente mais tarde.
+            Não foi possível conectar ao servidor de mensagens. Tente novamente mais tarde.
           </p>
         </div>
       );

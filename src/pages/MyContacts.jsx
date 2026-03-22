@@ -472,7 +472,7 @@ export default function MyContacts() {
                       <button
                         onClick={() => setHistoryContact(contact)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 transition-colors"
-                        title="Ver historico de mensagens"
+                        title="Ver histórico de mensagens"
                       >
                         <MaterialIcon icon="history" size={16} />
                       </button>

@@ -299,7 +299,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <MaterialIcon icon="analytics" size={64} className="text-[#cac0c0] mb-4" />
           <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
-            Sem dados para este mes
+            Sem dados para este mês
           </h3>
           <p className="text-sm text-[#534343] max-w-sm">
             Lance vendas para ver seu resultado.
@@ -379,7 +379,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                       className={monthDiffPercent >= 0 ? "text-[#16a34a]" : "text-[#b91c1c]"}
                     />
                     <span className="text-xs text-[#534343]">
-                      vs. mes anterior:{" "}
+                      vs. mês anterior:{" "}
                       <span
                         className={`font-semibold ${
                           monthDiffPercent >= 0 ? "text-[#16a34a]" : "text-[#b91c1c]"
@@ -417,7 +417,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
 
                 {monthExpenses.length === 0 ? (
                   <p className="text-sm text-[#534343] text-center py-6">
-                    Nenhuma despesa neste mes.
+                    Nenhuma despesa neste mês.
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -572,7 +572,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
               className="flex items-center justify-between w-full"
             >
               <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
-                Historico de Acoes
+                Histórico de Ações
               </h3>
               <MaterialIcon
                 icon={showAuditLogs ? "expand_less" : "expand_more"}
@@ -660,7 +660,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
             <DialogTitle className="font-plus-jakarta">Excluir despesa?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-[#534343]">
-            Esta acao nao pode ser desfeita.
+            Esta ação não pode ser desfeita.
           </p>
           <div className="flex gap-3 mt-4">
             <Button

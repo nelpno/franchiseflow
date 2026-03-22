@@ -107,7 +107,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta flex items-center gap-2">
         <MaterialIcon icon="history" size={18} className="text-[#b91c1c]" />
-        Historico de Pedidos
+        Histórico de Pedidos
       </h3>
 
       {orders.map((order) => {

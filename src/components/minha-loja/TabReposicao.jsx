@@ -24,10 +24,10 @@ export default function TabReposicao({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
-            Reposicao de Estoque
+            Reposição de Estoque
           </h2>
           <p className="text-sm text-[#534343]">
-            Faca pedidos para a fabrica Maxi Massas
+            Faça pedidos para a fábrica Maxi Massas
           </p>
         </div>
 

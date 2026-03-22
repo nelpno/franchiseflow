@@ -47,11 +47,11 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
             const pct = maxRevenue > 0 ? Math.max((f.revenue / maxRevenue) * 100, 2) : 2;
             const isFirst = i === 0;
             // Opacity decreases for lower ranks
-            const opacityClass = isFirst ? "" : i === 1 ? "opacity-80" : i === 2 ? "opacity-70" : "opacity-40";
+            const opacityClass = isFirst ? "" : i === 1 ? "opacity-80" : i === 2 ? "opacity-70" : "opacity-60";
 
             return (
               <div key={f.id} className="flex items-center gap-4">
-                <span className="w-6 text-sm font-bold text-[#291715]/40">
+                <span className="w-6 text-sm font-bold text-[#291715]/60">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="flex-1">
@@ -117,7 +117,7 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
                 <span className="text-2xl font-bold font-mono-numbers text-[#291715]">
                   {goalPercent}%
                 </span>
-                <span className="text-[10px] uppercase font-bold text-[#291715]/50 font-plus-jakarta">
+                <span className="text-xs uppercase font-bold text-[#291715]/70 font-plus-jakarta">
                   Atingido
                 </span>
               </div>

@@ -10,7 +10,7 @@ export default function DailyGoalProgress({ todayRevenue, dailyGoal }) {
     <section className="mb-6">
       <div className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-[#b91c1c]">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#4a3d3d]">
+          <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#4a3d3d]">
             Meta do Dia
           </span>
           <span className="text-xs font-semibold text-[#b91c1c]">
@@ -28,7 +28,7 @@ export default function DailyGoalProgress({ todayRevenue, dailyGoal }) {
             <span className="font-bold text-[#1d1b1b]">
               R$ {revenue.toLocaleString("pt-BR")}
             </span>{" "}
-            <span className="text-xs opacity-60">
+            <span className="text-xs opacity-80">
               de R$ {dailyGoal.toLocaleString("pt-BR")}
             </span>
           </div>

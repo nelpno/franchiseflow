@@ -53,7 +53,7 @@ export default function DailyRevenueChart({ summaries, isLoading, days = 7, toda
           );
         })}
       </div>
-      <div className="flex justify-between mt-4 text-[10px] font-bold text-[#291715]/40 uppercase tracking-widest font-plus-jakarta">
+      <div className="flex justify-between mt-4 text-xs font-bold text-[#291715]/60 uppercase tracking-widest font-plus-jakarta">
         {chartData.map((d, i) => (
           <span key={i}>{d.dayLabel}</span>
         ))}

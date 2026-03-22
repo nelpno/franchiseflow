@@ -503,7 +503,7 @@ function FranchiseSettingsContent() {
 
           {/* Step 1: Sua Unidade */}
           {currentStep === 1 && (
-            <WizardStep icon="storefront" title="Sua Unidade" subtitle="Dados basicos da sua franquia — o bot usa essas informacoes para atender clientes">
+            <WizardStep icon="storefront" title="Sua Unidade" subtitle="Dados básicos da sua franquia — o bot usa essas informações para atender clientes">
               <div>
                 <label className={labelClass}>Como os clientes conhecem sua unidade?<RequiredDot /></label>
                 <input className={inputClass} type="text" value={formData.franchise_name}
@@ -747,17 +747,17 @@ function FranchiseSettingsContent() {
                   value={formData.bot_personality}
                   onChange={(val) => handleInputChange('bot_personality', val)}
                 />
-                <FieldHint text="Define o tom das respostas: formal para publico corporativo, casual para bairro, etc." />
+                <FieldHint text="Define o tom das respostas: formal para público corporativo, casual para bairro, etc." />
               </div>
               <div>
-                <label className={labelClass}>Promocoes ativas (o bot oferece automaticamente)</label>
+                <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
                 <textarea className={`${inputClass} resize-none`} rows={3} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
-                <FieldHint text="O bot menciona essas promocoes quando o cliente pergunta sobre ofertas." />
+                <FieldHint text="O bot menciona essas promoções quando o cliente pergunta sobre ofertas." />
               </div>
               <div>
-                <label className={labelClass}>Catalogo / Cardapio (imagem que o bot envia ao cliente)</label>
+                <label className={labelClass}>Catálogo / Cardápio (imagem que o bot envia ao cliente)</label>
                 <CatalogUpload
                   value={formData.catalog_image_url}
                   onChange={(url) => handleInputChange('catalog_image_url', url)}
