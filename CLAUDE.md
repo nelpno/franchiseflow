@@ -228,6 +228,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 53. Categorias de estoque: apenas Massas, Molhos, Outros — Recheios/Embalagens/Insumos NÃO são estoque (embalagens são despesas na aba Resultado)
 54. Vite build no Windows produz output silencioso — verificar sucesso com `ls dist/index.html`
 55. `handle_new_user` puxa `owner_name` da franquia para `full_name` do profile — fallback: user_metadata, depois email
+56. Deploy Portainer retorna 502 por ~1 min durante rebuild — é normal, aguardar
+57. DialogContent (Radix) DEVE ter DialogTitle — sem ele gera warning de acessibilidade no console
+58. Botão WhatsApp em contatos: desabilitar com "Sem telefone" quando `telefone` vazio — NÃO esconder (usuário precisa saber que existe)
+59. StatsCard usa breakpoints responsivos (text-lg/sm:text-2xl, p-3/sm:p-5) — grid-cols-3 fixo no mobile
+60. Onboarding é OBRIGATÓRIO para franqueados novos — NÃO adicionar botão "Pular". Só franqueados existentes (migração) podem cancelar
 
 ## Scripts
 ```bash
