@@ -526,25 +526,25 @@ function FranchiseSettingsContent() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>Endereco completo com numero e CEP<RequiredDot /></label>
+                <label className={labelClass}>Endereço completo com número e CEP<RequiredDot /></label>
                 <input className={inputClass} type="text" value={formData.unit_address}
                   onChange={(e) => handleInputChange('unit_address', e.target.value)}
-                  placeholder="Rua, numero, bairro, cidade - CEP" />
-                <FieldHint text="O bot envia esse endereco quando o cliente pede para retirar o pedido." />
+                  placeholder="Rua, número, bairro, cidade - CEP" />
+                <FieldHint text="O bot envia esse endereço quando o cliente pede para retirar o pedido." />
               </div>
               <div>
-                <label className={labelClass}>Ponto de referencia para clientes e motoboys</label>
+                <label className={labelClass}>Ponto de referência para clientes e motoboys</label>
                 <textarea className={`${inputClass} resize-none`} rows={2} value={formData.address_reference}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
-                  placeholder="Ex: Proximo a praca, casa com portao azul..." />
-                <FieldHint text="Ajuda o motoboy a encontrar sua unidade mais rapido." />
+                  placeholder="Ex: Próximo à praça, casa com portão azul..." />
+                <FieldHint text="Ajuda o motoboy a encontrar sua unidade mais rápido." />
               </div>
               <div>
-                <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diario)</label>
+                <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diário)</label>
                 <input className={inputClass} type="text" value={formData.personal_phone_for_summary}
                   onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
                   placeholder="(11) 98765-4321" />
-                <FieldHint text="Voce recebe um resumo diario de vendas e atendimentos nesse numero." />
+                <FieldHint text="Você recebe um resumo diário de vendas e atendimentos nesse número." />
               </div>
             </WizardStep>
           )}
@@ -715,11 +715,11 @@ function FranchiseSettingsContent() {
                   <FieldHint text="O bot informa ao cliente o tempo estimado de entrega." />
                 </div>
                 <div>
-                  <label className={labelClass}>Horario limite para pedidos</label>
+                  <label className={labelClass}>Horário limite para pedidos</label>
                   <input className={inputClass} type="text" value={formData.order_cutoff_time}
                     onChange={(e) => handleInputChange('order_cutoff_time', e.target.value)}
-                    placeholder="Ex: Pedidos ate 17h" />
-                  <FieldHint text="Depois desse horario, o bot avisa que so entrega no dia seguinte." />
+                    placeholder="Ex: Pedidos até 17h" />
+                  <FieldHint text="Depois desse horário, o bot avisa que só entrega no dia seguinte." />
                 </div>
               </div>
               <div>

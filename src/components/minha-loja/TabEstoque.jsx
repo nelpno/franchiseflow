@@ -179,7 +179,7 @@ export default function TabEstoque({
     const newValue = isIntField ? parseInt(editValue, 10) : parseFloat(editValue);
 
     if (isNaN(newValue) || newValue < 0) {
-      toast.error("Valor invalido. Insira um numero positivo.");
+      toast.error("Valor inválido. Insira um número positivo.");
       setEditingCell(null);
       return;
     }
@@ -212,7 +212,7 @@ export default function TabEstoque({
             : i
         )
       );
-      const toastMsg = field === "sale_price" ? "Preco de venda atualizado." : "Estoque atualizado.";
+      const toastMsg = field === "sale_price" ? "Preço de venda atualizado." : "Estoque atualizado.";
       toast.success(toastMsg);
       if (onRefresh) onRefresh();
     } catch (error) {
@@ -345,11 +345,11 @@ export default function TabEstoque({
       "Categoria",
       "Quantidade",
       "Unidade",
-      "Estoque Minimo",
-      "Preco Custo",
-      "Preco Venda",
+      "Estoque Mínimo",
+      "Preço Custo",
+      "Preço Venda",
       "Giro Semanal",
-      "Ultima Atualizacao",
+      "Última Atualização",
     ];
 
     const rows = filteredItems.map((item) => {
@@ -960,7 +960,7 @@ export default function TabEstoque({
                                     onClick={() =>
                                       handleCellClick(item.id, "sale_price", item.sale_price)
                                     }
-                                    title="Clique para editar preco de venda"
+                                    title="Clique para editar preço de venda"
                                   >
                                     {item.sale_price ? (
                                       <>

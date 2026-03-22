@@ -91,7 +91,7 @@ export default function TabReposicao({
     try {
       const items = await PurchaseOrderItem.filter({ order_id: lastOrder.id });
       if (items.length === 0) {
-        toast.error("O ultimo pedido nao tem itens.");
+        toast.error("O último pedido não tem itens.");
         return;
       }
       // Build initialQuantities map: inventory_item_id -> quantity
@@ -104,8 +104,8 @@ export default function TabReposicao({
       setInitialQuantities(qtyMap);
       setShowOrderDialog(true);
     } catch (error) {
-      console.error("Erro ao carregar ultimo pedido:", error);
-      toast.error("Erro ao carregar itens do ultimo pedido.");
+      console.error("Erro ao carregar último pedido:", error);
+      toast.error("Erro ao carregar itens do último pedido.");
     }
   };
 
@@ -187,7 +187,7 @@ export default function TabReposicao({
                     className="gap-2 border-[#d4af37] text-[#775a19] font-bold rounded-xl hover:bg-[#d4af37]/10 disabled:opacity-50"
                   >
                     <MaterialIcon icon="replay" size={18} />
-                    Repetir Ultimo
+                    Repetir Último
                   </Button>
                 </span>
               </TooltipTrigger>

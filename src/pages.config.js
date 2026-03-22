@@ -47,19 +47,23 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Acompanhamento from './pages/Acompanhamento';
+import { lazy } from 'react';
 
+// Static imports — lightweight pages loaded eagerly
 import Dashboard from './pages/Dashboard';
-import FranchiseSettings from './pages/FranchiseSettings';
-import Franchises from './pages/Franchises';
-import Marketing from './pages/Marketing';
 import MinhaLoja from './pages/MinhaLoja';
 import MyChecklist from './pages/MyChecklist';
 import MyContacts from './pages/MyContacts';
-import Onboarding from './pages/Onboarding';
-import PurchaseOrders from './pages/PurchaseOrders';
-import Reports from './pages/Reports';
 import __Layout from './Layout.jsx';
+
+// Lazy imports — heavy pages loaded on demand
+const Acompanhamento = lazy(() => import('./pages/Acompanhamento'));
+const FranchiseSettings = lazy(() => import('./pages/FranchiseSettings'));
+const Franchises = lazy(() => import('./pages/Franchises'));
+const Marketing = lazy(() => import('./pages/Marketing'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
+const Reports = lazy(() => import('./pages/Reports'));
 
 
 export const PAGES = {

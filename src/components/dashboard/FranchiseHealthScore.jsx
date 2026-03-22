@@ -132,14 +132,14 @@ function calculateHealthScore({
     if (lowStock.length > 0) {
       inventoryReason = `${lowStock.length} de ${itemsWithMinStock.length} produtos com estoque baixo`;
     } else if (itemsWithMinStock.length > 0) {
-      inventoryReason = "Todos os produtos acima do minimo";
+      inventoryReason = "Todos os produtos acima do mínimo";
     } else {
       const hasStock = items.filter((i) => (i.quantity || 0) > 0).length;
       inventoryReason = `${hasStock} de ${items.length} produtos com estoque`;
     }
   }
 
-  let ordersReason = "Nenhum pedido de reposicao";
+  let ordersReason = "Nenhum pedido de reposição";
   if (franchiseOrders.length > 0) {
     const mostRecentOrder = franchiseOrders.reduce((latest, po) => {
       const d = po.ordered_at?.substring(0, 10) || "";
@@ -155,7 +155,7 @@ function calculateHealthScore({
     }
   }
 
-  let checklistReason = "Checklist de hoje: nao preenchido";
+  let checklistReason = "Checklist de hoje: não preenchido";
   if (checklistData) {
     const chkItems = checklistData.items || {};
     const values = Object.values(chkItems);
@@ -203,7 +203,7 @@ function getScoreColor(score) {
 
 function getScoreLabel(score) {
   if (score >= 80) return "Saudavel";
-  if (score >= 50) return "Atencao";
+  if (score >= 50) return "Atenção";
   return "Critico";
 }
 

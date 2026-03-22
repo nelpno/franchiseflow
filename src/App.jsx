@@ -1,4 +1,5 @@
 import './App.css'
+import { Suspense } from 'react'
 import { Toaster } from "sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -26,38 +27,48 @@ function AdminRoute({ children }) {
   return children;
 }
 
+const PageFallback = () => (
+  <div className="fixed inset-0 flex items-center justify-center">
+    <span className="material-symbols-outlined text-4xl text-[#b91c1c] animate-spin">
+      progress_activity
+    </span>
+  </div>
+);
+
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
   return (
-    <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => {
-        const pageElement = (
-          <LayoutWrapper currentPageName={path}>
-            <Page />
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/" element={
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
           </LayoutWrapper>
-        );
-        return (
-          <Route
-            key={path}
-            path={`/${path}`}
-            element={
-              ADMIN_ONLY_PAGES.has(path)
-                ? <AdminRoute>{pageElement}</AdminRoute>
-                : pageElement
-            }
-          />
-        );
-      })}
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
+        } />
+        {Object.entries(Pages).map(([path, Page]) => {
+          const pageElement = (
+            <LayoutWrapper currentPageName={path}>
+              <Page />
+            </LayoutWrapper>
+          );
+          return (
+            <Route
+              key={path}
+              path={`/${path}`}
+              element={
+                ADMIN_ONLY_PAGES.has(path)
+                  ? <AdminRoute>{pageElement}</AdminRoute>
+                  : pageElement
+              }
+            />
+          );
+        })}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 

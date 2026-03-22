@@ -52,8 +52,8 @@ export default function MinhaLoja() {
 
       // Load all data in parallel
       const [salesData, expensesData, inventoryData, saleItemsData, contactsData] = await Promise.all([
-        Sale.list("-created_at"),
-        Expense.list("-created_at"),
+        Sale.list("-created_at", 500),
+        Expense.list("-created_at", 200),
         InventoryItem.list("-updated_at"),
         SaleItem.list(),
         Contact.list(),
@@ -88,7 +88,7 @@ export default function MinhaLoja() {
   const handleRefreshSales = async () => {
     try {
       const [salesData, saleItemsData, contactsData, inventoryData] = await Promise.all([
-        Sale.list("-created_at"),
+        Sale.list("-created_at", 500),
         SaleItem.list(),
         Contact.list(),
         InventoryItem.list("-updated_at"),

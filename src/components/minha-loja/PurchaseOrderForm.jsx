@@ -125,7 +125,7 @@ export default function PurchaseOrderForm({
       }
     });
     setQuantities(newQtys);
-    toast.success("Quantidades preenchidas com sugestao.");
+    toast.success("Quantidades preenchidas com sugestão.");
   };
 
   // Line total

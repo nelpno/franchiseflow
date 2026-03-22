@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, Franchise, DailyChecklist, InventoryItem, Contact, getFranchiseRanking } from "@/entities/all";
+import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -39,11 +39,9 @@ export default function FranchiseeDashboard() {
     if (!franchiseId) return;
     setIsLoading(true);
     try {
-      const franchises = await Franchise.list();
-      const myFranchise = franchises.find((f) => f.id === franchiseId || f.evolution_instance_id === franchiseId);
-      setFranchise(myFranchise);
+      setFranchise(ctxFranchise);
 
-      const evoId = myFranchise?.evolution_instance_id;
+      const evoId = ctxFranchise?.evolution_instance_id;
       const fId = evoId || franchiseId;
       const [
         todaySalesData,
@@ -92,7 +90,7 @@ export default function FranchiseeDashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
+    const interval = setInterval(loadData, 120000);
     return () => clearInterval(interval);
   }, [loadData]);
 

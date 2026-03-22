@@ -10,5 +10,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'recharts': ['recharts'],
+          'export': ['jspdf', 'jspdf-autotable', 'xlsx', 'file-saver'],
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
+        }
+      }
+    }
   }
 })

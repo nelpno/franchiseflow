@@ -55,22 +55,33 @@ export default function AdminDashboard() {
       setYesterdaySales(yesterdaySaleData);
       setPurchaseOrders(purchaseOrderData);
 
+      // Fetch ALL inventory and checklists in 2 queries (instead of N*2)
+      const [allInventory, allChecklists] = await Promise.all([
+        InventoryItem.list(),
+        DailyChecklist.filter({ date: today }),
+      ]);
+
+      // Group inventory by franchise UUID (using evoId → franchise.id mapping)
+      const evoToId = {};
+      franchiseData.forEach((f) => {
+        if (f.evolution_instance_id) evoToId[f.evolution_instance_id] = f.id;
+      });
+
       const inventoryMap = {};
+      allInventory.forEach((item) => {
+        const fUuid = evoToId[item.franchise_id];
+        if (fUuid) {
+          if (!inventoryMap[fUuid]) inventoryMap[fUuid] = [];
+          inventoryMap[fUuid].push(item);
+        }
+      });
+
       const checklistMap = {};
-      await Promise.all(
-        franchiseData.map(async (f) => {
-          const [inv, cl] = await Promise.all([
-            f.evolution_instance_id
-              ? InventoryItem.filter({ franchise_id: f.evolution_instance_id })
-              : Promise.resolve([]),
-            f.evolution_instance_id
-              ? DailyChecklist.filter({ franchise_id: f.evolution_instance_id, date: today })
-              : Promise.resolve([]),
-          ]);
-          inventoryMap[f.id] = inv;
-          if (cl.length > 0) checklistMap[f.id] = cl[0];
-        })
-      );
+      allChecklists.forEach((cl) => {
+        const fUuid = evoToId[cl.franchise_id];
+        if (fUuid) checklistMap[fUuid] = cl;
+      });
+
       setInventoryByFranchise(inventoryMap);
       setChecklistByFranchise(checklistMap);
     } catch (err) {
@@ -82,7 +93,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
+    const interval = setInterval(loadData, 180000);
     return () => clearInterval(interval);
   }, [loadData]);
 
