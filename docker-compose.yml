@@ -13,6 +13,6 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.franchiseflow.rule=Host(`dashboard.maximass.tech`)"
+      - "traefik.http.routers.franchiseflow.rule=Host(`app.maximassas.tech`)"
       - "traefik.http.routers.franchiseflow.entrypoints=websecure"
       - "traefik.http.routers.franchiseflow.tls.certresolver=letsencrypt"
