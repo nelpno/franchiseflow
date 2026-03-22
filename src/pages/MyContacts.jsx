@@ -391,15 +391,25 @@ export default function MyContacts() {
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 pt-1 border-t border-[#291715]/5">
-                  <a
-                    href={getWhatsAppLink(phone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
-                  >
-                    <MaterialIcon icon="chat" size={16} />
-                    WhatsApp
-                  </a>
+                  {phone ? (
+                    <a
+                      href={getWhatsAppLink(phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                    >
+                      <MaterialIcon icon="chat" size={16} />
+                      WhatsApp
+                    </a>
+                  ) : (
+                    <span
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#e9e8e9]/60 text-[#534343]/40 cursor-not-allowed"
+                      title="Cadastre o telefone para usar WhatsApp"
+                    >
+                      <MaterialIcon icon="chat" size={16} />
+                      Sem telefone
+                    </span>
+                  )}
                   <button
                     onClick={() => navigateToSales(contact)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#d4af37]/10 text-[#775a19] hover:bg-[#d4af37]/20 transition-colors"
