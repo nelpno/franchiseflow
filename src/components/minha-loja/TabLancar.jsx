@@ -58,6 +58,17 @@ function formatDateSafe(dateString) {
   }
 }
 
+function formatTimeSafe(dateString) {
+  if (!dateString) return "";
+  try {
+    const date = parseISO(dateString);
+    if (isNaN(date.getTime())) return "";
+    return format(date, "HH:mm");
+  } catch {
+    return "";
+  }
+}
+
 export default function TabLancar({
   franchiseId,
   currentUser,
@@ -327,7 +338,7 @@ export default function TabLancar({
                         {getSourceBadge(sale.source)}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#534343] mt-0.5">
-                        <span>{formatDateSafe(sale.sale_date || sale.created_at)}</span>
+                        <span>{formatDateSafe(sale.sale_date || sale.created_at)}{formatTimeSafe(sale.created_at) && ` às ${formatTimeSafe(sale.created_at)}`}</span>
                         <span className="text-[#291715]/20">|</span>
                         <span className="truncate">{getPaymentLabel(sale.payment_method)}</span>
                         {sale.delivery_method === "delivery" && (
