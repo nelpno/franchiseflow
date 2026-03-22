@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Franchise, Sale, Contact, DailyUniqueContact, DailySummary, User } from "@/entities/all";
 import ErrorBoundary from "../components/ErrorBoundary";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
 import { format, subDays, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 
 import KpiCards from "../components/reports/KpiCards";
@@ -55,6 +55,7 @@ function ReportsContent() {
         setRawSummaries(summariesData);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
+        toast.error("Erro ao carregar dados dos relatórios.");
       }
       setIsLoading(false);
     };

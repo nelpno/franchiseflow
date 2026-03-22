@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { format } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { formatBRL } from "@/lib/formatters";
 
 export default function FranchiseRanking({ franchises, summaries, isLoading }) {
   const rankedFranchises = useMemo(() => {
@@ -60,7 +61,7 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
                       {f.name}
                     </span>
                     <span className="text-sm font-bold text-[#a80012]">
-                      R$ {f.revenue.toLocaleString("pt-BR")}
+                      {formatBRL(f.revenue)}
                     </span>
                   </div>
                   <div className="h-2 w-full bg-[#291715]/5 rounded-full overflow-hidden">
@@ -126,7 +127,7 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
           <p className="text-xs text-center text-[#291715]/60 font-medium">
             Faltam{" "}
             <span className="text-[#a80012] font-bold">
-              R$ {remaining.toLocaleString("pt-BR")}
+              {formatBRL(remaining)}
             </span>{" "}
             para bater a meta global
           </p>

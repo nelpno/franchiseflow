@@ -217,7 +217,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
   const handleDeleteExpense = async (id) => {
     try {
       await Expense.delete(id);
-      toast.success("Despesa excluida!");
+      toast.success("Despesa excluída!");
       setDeleteConfirmId(null);
       loadData();
     } catch (error) {
@@ -232,7 +232,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
     { key: "value", header: "Valor (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
     { key: "payment_method", header: "Pagamento" },
     { key: "delivery_method", header: "Entrega" },
-    { key: "net_value", header: "Valor Liquido (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
+    { key: "net_value", header: "Valor Líquido (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
   ], []);
 
   const exportData = useMemo(() =>
@@ -327,7 +327,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
             <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
               <CardContent className="p-5 md:p-6 space-y-3">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta mb-4">
-                  Resultado do Mes
+                  Resultado do Mês
                 </h3>
 
                 {/* Faturamento */}
@@ -348,7 +348,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
 
                 {/* Taxas cartao */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#534343]">(-) Taxas cartao</span>
+                  <span className="text-sm text-[#534343]">(-) Taxas cartão</span>
                   <span className="text-sm text-[#534343] font-mono-numbers">
                     {formatBRL(taxasCartao)}
                   </span>
@@ -415,7 +415,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
               <CardContent className="p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold uppercase tracking-widest text-[#534343]/80 font-plus-jakarta">
-                    Despesas do Mes
+                    Despesas do Mês
                   </h3>
                   <Button
                     size="sm"
@@ -515,7 +515,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                     Parados no freezer
                   </h3>
                   <p className="text-xs text-[#534343] mb-3">
-                    Sem vendas nos ultimos 28 dias
+                    Sem vendas nos últimos 28 dias
                   </p>
                   <div className="space-y-2">
                     {staleProducts.slice(0, 8).map((item) => (
@@ -634,7 +634,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-[#1b1c1d]">
-                        <span className="font-medium">{log.user_name || "Usuario"}</span>{" "}
+                        <span className="font-medium">{log.user_name || "Usuário"}</span>{" "}
                         {actionLabels[log.action] || log.action}{" "}
                         {entityLabels[log.entity_type] || log.entity_type}
                         {log.details?.value && (

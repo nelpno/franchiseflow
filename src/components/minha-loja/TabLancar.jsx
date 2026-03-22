@@ -147,6 +147,7 @@ export default function TabLancar({
         setExpandedItems((prev) => ({ ...prev, [saleId]: items }));
       } catch (err) {
         console.error("Erro ao carregar itens:", err);
+        toast.error("Erro ao carregar itens da venda.");
       }
     }
   };
@@ -169,7 +170,7 @@ export default function TabLancar({
     setIsDeleting(true);
     try {
       await Sale.delete(deletingSale.id);
-      toast.success("Venda excluida.");
+      toast.success("Venda excluída.");
       setDeletingSale(null);
       onRefresh();
     } catch (error) {
@@ -275,7 +276,7 @@ export default function TabLancar({
             <>
               <span className="text-[#291715]/20">|</span>
               <span>
-                Liquido{" "}
+                Líquido{" "}
                 <strong className="text-[#1b1c1d] font-mono-numbers">
                   {formatCurrency(periodStats.net)}
                 </strong>
@@ -293,7 +294,7 @@ export default function TabLancar({
             Nenhuma venda registrada
           </h3>
           <p className="text-sm text-[#534343] max-w-sm">
-            Comece lancando sua primeira venda!
+            Comece lançando sua primeira venda!
           </p>
           <Button
             onClick={handleNewSale}
@@ -406,7 +407,7 @@ export default function TabLancar({
                           {sale.card_fee_amount > 0 && (
                             <div className="flex justify-between">
                               <span className="text-[#534343]">
-                                Taxa cartao ({sale.card_fee_percent}%)
+                                Taxa cartão ({sale.card_fee_percent}%)
                               </span>
                               <span className="text-[#b91c1c] font-mono-numbers">
                                 - {formatCurrency(sale.card_fee_amount)}

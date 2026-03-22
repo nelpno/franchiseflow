@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Franchise, User, OnboardingChecklist } from "@/entities/all";
-import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { createPageUrl } from "@/utils";
 import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARDING_BLOCKS";
 import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
 import GateBlock from "@/components/onboarding/GateBlock";

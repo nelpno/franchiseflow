@@ -1,3 +1,5 @@
+import { formatBRL } from "@/lib/formatters";
+
 export default function DailyGoalProgress({ todayRevenue, dailyGoal }) {
   if (dailyGoal === null || dailyGoal <= 0) return null;
 
@@ -26,16 +28,16 @@ export default function DailyGoalProgress({ todayRevenue, dailyGoal }) {
         <div className="flex justify-between items-center text-sm">
           <div className="text-[#4a3d3d]">
             <span className="font-bold text-[#1d1b1b]">
-              R$ {revenue.toLocaleString("pt-BR")}
+              {formatBRL(revenue)}
             </span>{" "}
             <span className="text-xs opacity-80">
-              de R$ {dailyGoal.toLocaleString("pt-BR")}
+              de {formatBRL(dailyGoal)}
             </span>
           </div>
           <div className="font-semibold text-[#b91c1c]">
             {exceeded
-              ? `Meta batida! +R$ ${(revenue - dailyGoal).toLocaleString("pt-BR")}`
-              : `Faltam R$ ${remaining.toLocaleString("pt-BR")}!`}
+              ? `Meta batida! +${formatBRL(revenue - dailyGoal)}`
+              : `Faltam ${formatBRL(remaining)}!`}
           </div>
         </div>
       </div>

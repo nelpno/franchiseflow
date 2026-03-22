@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { formatBRL } from "@/lib/formatters";
 
 const PAYMENT_COLORS = {
   pix: { color: '#10b981', label: 'Pix' },
@@ -17,7 +18,7 @@ const CustomTooltip = ({ active, payload }) => {
     <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm">
       <p className="font-semibold text-[#1b1c1d]">{name}</p>
       <p className="text-[#534343]">
-        R$ {value.toFixed(2).replace('.', ',')} ({(percent * 100).toFixed(1)}%)
+        {formatBRL(value)} ({(percent * 100).toFixed(1)}%)
       </p>
     </div>
   );

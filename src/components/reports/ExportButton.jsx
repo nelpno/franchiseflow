@@ -23,7 +23,7 @@ export default function ExportButton({ summaries, franchises, startDate, endDate
         franchise?.city || 'N/A',
         summary.unique_contacts || 0,
         summary.sales_count || 0,
-        `R$ ${(summary.sales_value || 0).toFixed(2)}`,
+        `"R$ ${(summary.sales_value || 0).toFixed(2).replace('.', ',')}"`,
         summary.conversion_rate ? summary.conversion_rate.toFixed(2) : '0.00'
       ];
     });

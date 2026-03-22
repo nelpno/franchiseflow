@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { InventoryItem, SaleItem } from "@/entities/all";
+import { InventoryItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -194,7 +194,7 @@ export default function TabEstoque({
       const minPrice = item.cost_price * 1.8;
       if (newValue < minPrice) {
         toast.warning(
-          `Preco minimo recomendado: ${formatBRL(minPrice)} (margem 80%). Preco salvo mesmo assim.`
+          `Preço mínimo recomendado: ${formatBRL(minPrice)} (margem 80%). Preço salvo mesmo assim.`
         );
       }
     }

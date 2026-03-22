@@ -245,16 +245,16 @@ export default function MyChecklist() {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
         {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-6">
-          <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <MaterialIcon icon="checklist" size={24} className="text-[#b91c1c]" />
-                <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Checklist Diário de Vendas</h1>
+                <MaterialIcon icon="checklist" size={24} className="text-[#b91c1c] shrink-0" />
+                <h1 className="text-xl sm:text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Checklist Diário</h1>
               </div>
               {availableFranchises.length > 1 ? (
                 <Select value={franchise.evolution_instance_id} onValueChange={handleFranchiseChange}>
-                  <SelectTrigger className="w-64 mt-1 border-slate-200">
+                  <SelectTrigger className="w-full sm:w-64 mt-1 border-slate-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -270,9 +270,9 @@ export default function MyChecklist() {
               )}
               <p className="text-slate-400 text-sm mt-0.5">{todayFormattedCapitalized}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleResetDay} className={`border-red-200 hover:bg-red-50 ${confirmingReset ? "text-white bg-red-600 hover:bg-red-700" : "text-red-600"}`}>
+            <Button variant="outline" size="sm" onClick={handleResetDay} className={`border-red-200 hover:bg-red-50 shrink-0 self-start ${confirmingReset ? "text-white bg-red-600 hover:bg-red-700" : "text-red-600"}`}>
               <MaterialIcon icon="refresh" size={16} className="mr-2" />
-              {confirmingReset ? "Confirmar limpeza?" : "Limpar marcações de hoje"}
+              {confirmingReset ? "Confirmar?" : "Limpar hoje"}
             </Button>
           </div>
           <div className="mt-5">

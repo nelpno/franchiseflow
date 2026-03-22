@@ -4,11 +4,11 @@ import { Franchise, User, DailyChecklist } from "@/entities/all";
 import { format, subDays, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createPageUrl } from "@/utils";
+import { toast } from "sonner";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import FranchiseeDetailModal from "@/components/acompanhamento/FranchiseeDetailModal";
 
@@ -148,6 +148,7 @@ export default function Acompanhamento() {
       setLastRefresh(new Date());
     } catch (error) {
       console.error("Erro ao carregar dados de acompanhamento:", error);
+      toast.error("Erro ao carregar dados de acompanhamento.");
     }
     setIsLoading(false);
   }, []);
@@ -229,17 +230,17 @@ export default function Acompanhamento() {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
-              <MaterialIcon icon="trending_up" size={32} className="text-[#b91c1c]" />
+            <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
+              <MaterialIcon icon="trending_up" size={28} className="text-[#b91c1c] shrink-0" />
               Acompanhamento
             </h1>
             <p className="text-[#534343] text-sm mt-1">
-              Monitoramento de checklists dos franqueados · Atualizado às {format(lastRefresh, "HH:mm")}
+              Monitoramento de checklists · Atualizado às {format(lastRefresh, "HH:mm")}
             </p>
           </div>
-          <Button variant="outline" onClick={loadData} disabled={isLoading} className="gap-2">
+          <Button variant="outline" onClick={loadData} disabled={isLoading} className="gap-2 self-start sm:self-auto shrink-0">
             <MaterialIcon icon="refresh" size={16} className={isLoading ? "animate-spin" : ""} />
             Atualizar
           </Button>
@@ -253,7 +254,7 @@ export default function Acompanhamento() {
                 <MaterialIcon icon="trending_up" size={20} className={adherenciaTextColor} />
                 <span className="text-sm font-medium text-[#534343]">Aderência Geral</span>
               </div>
-              <div className={`text-4xl font-bold ${adherenciaTextColor}`}>{avgAdherencia}%</div>
+              <div className={`text-2xl sm:text-4xl font-bold ${adherenciaTextColor}`}>{avgAdherencia}%</div>
               <div className="text-xs text-[#534343] mt-1">Média últimos 7 dias</div>
             </CardContent>
           </Card>
@@ -264,7 +265,7 @@ export default function Acompanhamento() {
                 <MaterialIcon icon="check_circle" size={20} className="text-[#16a34a]" />
                 <span className="text-sm font-medium text-[#534343]">Franqueados Verdes</span>
               </div>
-              <div className="text-4xl font-bold text-[#15803d]">{greenCount}</div>
+              <div className="text-2xl sm:text-4xl font-bold text-[#15803d]">{greenCount}</div>
               <div className="text-xs text-[#534343] mt-1">5+ dias completos/semana</div>
             </CardContent>
           </Card>
@@ -275,7 +276,7 @@ export default function Acompanhamento() {
                 <MaterialIcon icon="warning" size={20} className="text-red-600" />
                 <span className="text-sm font-medium text-[#534343]">Em Alerta</span>
               </div>
-              <div className="text-4xl font-bold text-red-700">{alertCount}</div>
+              <div className="text-2xl sm:text-4xl font-bold text-red-700">{alertCount}</div>
               <div className="text-xs text-[#534343] mt-1">Amarelos + Vermelhos</div>
             </CardContent>
           </Card>
@@ -286,7 +287,7 @@ export default function Acompanhamento() {
                 <MaterialIcon icon="group" size={20} className="text-[#b91c1c]" />
                 <span className="text-sm font-medium text-[#534343]">Total Ativos</span>
               </div>
-              <div className="text-4xl font-bold text-[#b91c1c]">{totalActive}</div>
+              <div className="text-2xl sm:text-4xl font-bold text-[#b91c1c]">{totalActive}</div>
               <div className="text-xs text-[#534343] mt-1">Franquias ativas</div>
             </CardContent>
           </Card>
@@ -302,19 +303,19 @@ export default function Acompanhamento() {
             </CardHeader>
             <CardContent className="grid gap-3">
               {alerts.map(({ franchise, daysSince }) => (
-                <div key={franchise.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-red-200">
+                <div key={franchise.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white rounded-lg p-3 border border-red-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-[#b91c1c] animate-pulse" />
+                    <div className="w-3 h-3 rounded-full bg-[#b91c1c] animate-pulse shrink-0" />
                     <div>
                       <span className="font-semibold text-[#1b1c1d]">{franchise.owner_name}</span>
                       <span className="text-[#534343] text-sm ml-2">· {franchise.city}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-red-600 text-sm font-medium">
-                      {daysSince === null ? "Nunca completou" : `Último checklist há ${daysSince} dia${daysSince !== 1 ? "s" : ""}`}
+                  <div className="flex items-center gap-3 ml-6 sm:ml-0">
+                    <span className="text-red-600 text-xs sm:text-sm font-medium">
+                      {daysSince === null ? "Nunca completou" : `Há ${daysSince} dia${daysSince !== 1 ? "s" : ""}`}
                     </span>
-                    <Button size="sm" variant="outline" className="text-xs h-7"
+                    <Button size="sm" variant="outline" className="text-xs h-7 shrink-0"
                       onClick={() => setDismissedAlerts(prev => [...prev, franchise.id])}>
                       <MaterialIcon icon="close" size={12} className="mr-1" /> Contactado
                     </Button>
@@ -437,14 +438,14 @@ export default function Acompanhamento() {
         {/* Ranking */}
         {ranking.length > 0 && (
           <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2">
                 <MaterialIcon icon="emoji_events" size={20} className="text-[#d4af37]" />
                 Ranking da Semana
               </CardTitle>
-              <Button variant="outline" size="sm" onClick={copyRanking} className="gap-2">
+              <Button variant="outline" size="sm" onClick={copyRanking} className="gap-2 self-start sm:self-auto">
                 <MaterialIcon icon="content_copy" size={16} />
-                {rankingCopied ? "Copiado! ✓" : "Copiar para WhatsApp"}
+                {rankingCopied ? "Copiado!" : "Copiar WhatsApp"}
               </Button>
             </CardHeader>
             <CardContent className="grid gap-3">

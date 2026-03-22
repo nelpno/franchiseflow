@@ -42,7 +42,7 @@ export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue 
           return (
             <div key={index} className="flex flex-col items-center flex-1 h-full justify-end gap-1">
               <span className="text-xs text-[#4a3d3d] font-mono-numbers">
-                {entry.valor > 0 ? `R$${Math.round(entry.valor)}` : ""}
+                {entry.valor > 0 ? `R$ ${Math.round(entry.valor)}` : ""}
               </span>
               <div
                 className={`w-full max-w-[32px] rounded-t-lg transition-all duration-300 ${

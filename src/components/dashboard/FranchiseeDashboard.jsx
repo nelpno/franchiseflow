@@ -6,7 +6,8 @@ import { format, subDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { createPageUrl } from "@/utils";
+import { toast } from "sonner";
+import { formatBRLInteger } from "@/lib/formatters";
 import StatsCard from "./StatsCard";
 import FranchiseeGreeting from "./FranchiseeGreeting";
 import DailyGoalProgress from "./DailyGoalProgress";
@@ -95,7 +96,8 @@ export default function FranchiseeDashboard() {
         setRanking(null);
       }
     } catch (err) {
-      console.error("Error loading franchisee dashboard:", err);
+      console.error("Erro ao carregar dashboard:", err);
+      toast.error("Erro ao carregar dados do dashboard.");
     } finally {
       setIsLoading(false);
     }
@@ -168,7 +170,7 @@ export default function FranchiseeDashboard() {
         )}
       </div>
 
-      <section className="grid grid-cols-3 gap-4 mb-6">
+      <section className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <StatsCard
           title="Vendas Hoje"
           value={todaySalesCount}
@@ -177,13 +179,13 @@ export default function FranchiseeDashboard() {
         />
         <StatsCard
           title="Faturamento"
-          value={`R$ ${Math.round(todayRevenue).toLocaleString("pt-BR")}`}
+          value={formatBRLInteger(todayRevenue)}
           previousValue={yesterdayRevenue}
           trend={todayRevenue > yesterdayRevenue ? 'up' : todayRevenue < yesterdayRevenue ? 'down' : null}
         />
         <StatsCard
           title="Valor Médio"
-          value={`R$ ${Math.round(todayAvgTicket).toLocaleString("pt-BR")}`}
+          value={formatBRLInteger(todayAvgTicket)}
           previousValue={yesterdayAvgTicket}
           trend={todayAvgTicket > yesterdayAvgTicket ? 'up' : todayAvgTicket < yesterdayAvgTicket ? 'down' : null}
         />

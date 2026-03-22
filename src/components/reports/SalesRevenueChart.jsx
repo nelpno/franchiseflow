@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format, eachDayOfInterval } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { formatBRL } from "@/lib/formatters";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -14,7 +15,7 @@ const CustomTooltip = ({ active, payload, label }) => {
           <span>{entry.name === 'faturamento' ? 'Faturamento' : 'Vendas'}:</span>
           <span className="font-semibold text-[#1b1c1d]">
             {entry.name === 'faturamento'
-              ? `R$ ${entry.value.toFixed(2).replace('.', ',')}`
+              ? formatBRL(entry.value)
               : entry.value}
           </span>
         </div>

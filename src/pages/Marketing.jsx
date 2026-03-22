@@ -294,7 +294,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
       onClose();
       onUploaded();
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("Erro ao enviar:", err);
       toast.error("Erro ao enviar: " + (err.message || "Erro desconhecido"));
     } finally {
       setUploading(false);
@@ -473,7 +473,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Categoria *</Label>
               <Select value={category} onValueChange={setCategory}>
@@ -582,6 +582,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
 // ─── File Card ───────────────────────────────────────────────────────
 function FileCard({ file, isAdmin, onDelete }) {
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const catInfo = getCategoryInfo(file.category);
   const publicUrl = getFilePublicUrl(file.file_path);
 
@@ -622,14 +623,14 @@ function FileCard({ file, isAdmin, onDelete }) {
             await supabase.storage.from(bucket).remove([filePath]);
           }
         } catch (storageErr) {
-          console.error("Storage delete error (non-blocking):", storageErr);
+          console.error("Erro ao excluir arquivo do storage:", storageErr);
         }
       }
       await MarketingFile.delete(file.id);
       toast.success("Material excluído.");
       onDelete();
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("Erro ao excluir:", err);
       toast.error("Erro ao excluir material.");
     } finally {
       setDeleting(false);
@@ -748,20 +749,42 @@ function FileCard({ file, isAdmin, onDelete }) {
           >
             <MaterialIcon icon="share" size={14} />
           </Button>
-          {isAdmin && (
+          {isAdmin && !confirmDelete && (
             <Button
               size="sm"
               variant="ghost"
               className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
-              onClick={handleDelete}
+              onClick={() => setConfirmDelete(true)}
               disabled={deleting}
             >
-              {deleting ? (
-                <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
-              ) : (
-                <MaterialIcon icon="delete" size={14} />
-              )}
+              <MaterialIcon icon="delete" size={14} />
             </Button>
+          )}
+          {isAdmin && confirmDelete && (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-[#534343] hover:bg-gray-100 px-2 text-xs"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 text-xs font-bold"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
+                ) : (
+                  "Excluir"
+                )}
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
@@ -799,7 +822,7 @@ export default function Marketing() {
       setFiles(allFiles);
       setFranchises(allFranchises);
     } catch (err) {
-      console.error("Error loading marketing data:", err);
+      console.error("Erro ao carregar materiais de marketing:", err);
       toast.error("Erro ao carregar materiais de marketing.");
     } finally {
       setLoading(false);

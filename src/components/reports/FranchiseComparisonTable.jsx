@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { formatBRL } from "@/lib/formatters";
 
 const SORT_KEYS = [
   { key: 'city', label: 'Franquia' },
@@ -137,11 +138,11 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <span className={`font-mono-numbers font-bold ${isBest ? 'text-emerald-700' : isWorst ? 'text-red-600' : 'text-[#1b1c1d]'}`}>
-                          R$ {row.revenue.toFixed(2).replace('.', ',')}
+                          {formatBRL(row.revenue)}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#534343]">
-                        R$ {row.avgTicket.toFixed(2).replace('.', ',')}
+                        {formatBRL(row.avgTicket)}
                       </td>
                       <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#534343]">
                         {row.contactsCount}

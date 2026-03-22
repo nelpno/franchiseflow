@@ -123,7 +123,7 @@ export default function TabReposicao({
             <div className="flex items-center gap-2 mb-3">
               <MaterialIcon icon="lightbulb" size={20} className="text-[#d4af37]" />
               <h3 className="text-sm font-bold uppercase tracking-widest text-[#775a19] font-plus-jakarta">
-                Sugestao de Reposicao
+                Sugestão de Reposição
               </h3>
             </div>
             <div className="space-y-2">
@@ -168,10 +168,10 @@ export default function TabReposicao({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
-            Reposicao de Estoque
+            Reposição de Estoque
           </h2>
           <p className="text-sm text-[#534343]">
-            Faca pedidos para a fabrica Maxi Massas
+            Faça pedidos para a fábrica Maxi Massas
           </p>
         </div>
 
@@ -187,7 +187,7 @@ export default function TabReposicao({
                     className="gap-2 border-[#d4af37] text-[#775a19] font-bold rounded-xl hover:bg-[#d4af37]/10 disabled:opacity-50"
                   >
                     <MaterialIcon icon="replay" size={18} />
-                    Repetir Último
+                    Repetir último
                   </Button>
                 </span>
               </TooltipTrigger>

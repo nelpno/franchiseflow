@@ -3,7 +3,7 @@ import { FranchiseConfiguration, Franchise, User } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { PAYMENT_METHODS, DELIVERY_METHODS, BOT_PERSONALITIES, PIX_KEY_TYPES, WEEKDAYS } from "@/lib/franchiseUtils";
+import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
 
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -13,7 +13,7 @@ import DeliveryFeeEditor from "@/components/vendedor/DeliveryFeeEditor";
 import ReviewSummary from "@/components/vendedor/ReviewSummary";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
-import { ToggleCard, RadioCards, PaymentChipsMulti, DayChipsToggle } from "@/components/vendedor/WizardFields";
+import { ToggleCard, RadioCards, PaymentChipsMulti } from "@/components/vendedor/WizardFields";
 import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
 
 const initialFormData = {
@@ -489,7 +489,7 @@ function FranchiseSettingsContent() {
                   placeholder="Ex: Maxi Massas - Itaim Bibi" />
                 <FieldHint text="Esse nome aparece nas mensagens do bot para o cliente." />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Cidade</label>
                   <input className={inputClass} type="text" value={formData.city}
@@ -640,7 +640,7 @@ function FranchiseSettingsContent() {
                     <FieldHint text="Sua chave PIX (CPF, email, telefone ou aleatória)." />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <div>
                     <label className={labelClass}>Nome do titular</label>
                     <input className={inputClass} type="text" value={formData.pix_holder_name}

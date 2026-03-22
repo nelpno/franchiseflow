@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Franchise, OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { getPrimaryFranchise } from "@/lib/franchiseUtils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from "@/components/ui/button";
 import logoImg from "@/assets/logo-maxi-massas.png";

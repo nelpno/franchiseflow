@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { format, subDays } from "date-fns";
+import { formatBRL } from "@/lib/formatters";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -34,7 +35,7 @@ export default function DailyRevenueChart({ summaries, isLoading, days = 7, toda
           Faturamento {days} dias
         </h4>
         <span className="text-xs font-black text-[#a80012] uppercase tracking-tight">
-          R$ {totalRevenue.toLocaleString("pt-BR")} TOTAL
+          {formatBRL(totalRevenue)} TOTAL
         </span>
       </div>
       <div className="h-48 flex items-end justify-between gap-3 px-2">

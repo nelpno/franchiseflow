@@ -1,4 +1,5 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { formatBRL, formatBRLCompact } from "@/lib/formatters";
 
 function KpiCard({ icon, iconBg, label, value, subtitle, delta, isLoading }) {
   const deltaColor = delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-red-600' : 'text-[#534343]';
@@ -57,10 +58,8 @@ export default function KpiCards({ sales, contacts, previousSales, previousConta
   };
 
   const formatCurrency = (v) => {
-    if (v >= 1000) {
-      return `R$ ${(v / 1000).toFixed(1).replace('.', ',')}k`;
-    }
-    return `R$ ${v.toFixed(2).replace('.', ',')}`;
+    if (v >= 1000) return formatBRLCompact(v);
+    return formatBRL(v);
   };
 
   return (
@@ -87,8 +86,8 @@ export default function KpiCards({ sales, contacts, previousSales, previousConta
         icon="avg_pace"
         iconBg="bg-[#a80012]"
         label="Ticket Médio"
-        value={`R$ ${avgTicket.toFixed(2).replace('.', ',')}`}
-        subtitle={prevAvgTicket > 0 ? `vs. R$ ${prevAvgTicket.toFixed(2).replace('.', ',')} anterior` : null}
+        value={formatBRL(avgTicket)}
+        subtitle={prevAvgTicket > 0 ? `vs. ${formatBRL(prevAvgTicket)} anterior` : null}
         delta={calcDelta(avgTicket, prevAvgTicket)}
         isLoading={isLoading}
       />

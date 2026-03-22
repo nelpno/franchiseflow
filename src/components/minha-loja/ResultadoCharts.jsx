@@ -2,9 +2,7 @@ import React, { useState, useMemo } from "react";
 import {
   AreaChart,
   Area,
-  BarChart,
   Bar,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -19,16 +17,7 @@ import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { format, subMonths, parseISO, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const formatBRL = (value) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    value || 0
-  );
-
-const shortBRL = (value) => {
-  if (value >= 1000) return `R$${(value / 1000).toFixed(1)}k`;
-  return `R$${value.toFixed(0)}`;
-};
+import { formatBRL, formatBRLCompact } from "@/lib/formatters";
 
 function isInMonth(dateStr, monthDate) {
   if (!dateStr) return false;
@@ -230,7 +219,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
                       tickLine={false}
                     />
                     <YAxis
-                      tickFormatter={shortBRL}
+                      tickFormatter={formatBRLCompact}
                       tick={{ fontSize: 10, fill: "#534343" }}
                       axisLine={false}
                       tickLine={false}
@@ -274,7 +263,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
                     />
                     <YAxis
                       yAxisId="left"
-                      tickFormatter={shortBRL}
+                      tickFormatter={formatBRLCompact}
                       tick={{ fontSize: 10, fill: "#534343" }}
                       axisLine={false}
                       tickLine={false}

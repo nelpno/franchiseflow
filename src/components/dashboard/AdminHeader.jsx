@@ -1,4 +1,3 @@
-import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const PERIODS = [
   { value: "today", label: "Hoje" },

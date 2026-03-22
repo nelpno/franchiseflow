@@ -153,7 +153,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
               </span>
               {p.sale_price > 0 && (
                 <span className="text-xs text-[#534343]/60 font-mono-numbers">
-                  R$ {(p.sale_price || 0).toFixed(2)}
+                  R$ {(p.sale_price || 0).toFixed(2).replace('.', ',')}
                 </span>
               )}
             </button>

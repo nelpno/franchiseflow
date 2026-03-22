@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Franchise, DailyUniqueContact, User, FranchiseInvite } from "@/entities/all";
-import { findFranchise } from "@/lib/franchiseUtils";
 import { inviteFranchisee } from "@/api/functions";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +77,7 @@ export default function Franchises() {
       setCurrentUser(currentUserData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar dados das franquias.");
       setFranchises([]);
       setUsers([]);
     }
@@ -369,15 +369,15 @@ export default function Franchises() {
     <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold font-plus-jakarta text-[#1b1c1d]">Franqueados</h1>
-            <p className="text-[#4a3d3d] mt-1">Gerencie franquias, equipe e permissões</p>
+            <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-[#1b1c1d]">Franqueados</h1>
+            <p className="text-sm sm:text-base text-[#4a3d3d] mt-1">Gerencie franquias, equipe e permissões</p>
           </div>
           {(currentUser?.role === "admin" || currentUser?.role === "manager") && (
             <Button
               onClick={() => setShowForm(true)}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 self-start sm:self-auto"
             >
               <MaterialIcon icon="add" size={16} className="mr-2" />
               Nova Franquia

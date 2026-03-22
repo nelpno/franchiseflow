@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Sale, Contact } from "@/entities/all";
-import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { format, subDays, subWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { format, subWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 

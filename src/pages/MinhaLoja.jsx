@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { startOfMonth, startOfDay, endOfDay, format } from "date-fns";
+import { startOfMonth, format } from "date-fns";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
 import TabLancar from "@/components/minha-loja/TabLancar";
 import TabResultado from "@/components/minha-loja/TabResultado";

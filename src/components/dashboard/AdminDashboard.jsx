@@ -3,6 +3,8 @@ import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, Daily
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
+import { formatBRLInteger } from "@/lib/formatters";
 import AdminHeader from "./AdminHeader";
 import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
@@ -85,7 +87,8 @@ export default function AdminDashboard() {
       setInventoryByFranchise(inventoryMap);
       setChecklistByFranchise(checklistMap);
     } catch (err) {
-      console.error("Error loading admin dashboard:", err);
+      console.error("Erro ao carregar dashboard admin:", err);
+      toast.error("Erro ao carregar dados do dashboard.");
     } finally {
       setIsLoading(false);
     }
@@ -162,9 +165,9 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-6 bg-[#fdf3f2] min-h-screen">
+      <div className="p-4 md:p-8 space-y-6 bg-[#fdf3f2] min-h-screen">
         <Skeleton className="h-14 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
@@ -195,7 +198,7 @@ export default function AdminDashboard() {
     },
     {
       title: "FATURAMENTO",
-      value: `R$ ${stats.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+      value: formatBRLInteger(stats.revenue),
       previousValue: stats.prevRevenue,
       materialIcon: "payments",
       trend: trendFor(stats.revenue, stats.prevRevenue),
@@ -233,7 +236,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="pt-20 p-8 space-y-8 bg-[#fdf3f2] min-h-screen max-w-[1920px] mx-auto">
+    <div className="pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-[#fdf3f2] min-h-screen max-w-[1920px] mx-auto">
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
