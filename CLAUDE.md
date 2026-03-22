@@ -151,6 +151,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 ## Webhooks n8n
 - WhatsApp connect/status: `{N8N_WEBHOOK_BASE}/a9c45ef7-36f7-4a64-ad9e-edadb69a31af`
 - Config optimization: `{N8N_WEBHOOK_BASE}/adc276df-8162-46ca-bec6-5aedb9cb2b14`
+- Franchise invite: `{N8N_WEBHOOK_BASE}/franchise-invite` (workflow nbLDyd1KoFIeeJEF)
 
 ## UX por Role
 - **Franqueado**: menu com 5 itens (Início, Minha Loja [4 abas], Meus Clientes, Marketing, Meu Vendedor)
@@ -208,6 +209,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 44. `franchise_invites.franchise_id` FK aponta para `franchises.evolution_instance_id` (NÃO UUID) — usar evoId ao criar invites
 45. Deploy é Docker Swarm (NÃO compose standalone) — rede `nelsonNet`, Traefik certresolver = `letsencryptresolver`
 46. Redeploy: push pro GitHub + force update do service via Portainer API (ForceUpdate increment)
+47. Invite de franqueado usa webhook n8n (`franchise-invite`) com service role — NÃO usar supabase.auth.admin no frontend (anon key não tem permissão)
+48. Trigger `on_franchise_created` popula 28 produtos MAS sem cost_price — PENDENTE atualizar trigger para incluir preços + sale_price = cost_price * 2
+49. Supabase invite link redireciona para app sem tela de definir senha — PENDENTE implementar rota /set-password
 
 ## Scripts
 ```bash
@@ -226,7 +230,8 @@ npm run typecheck # TypeScript check
 - **FASE 5 Etapa 3a**: Franqueados unificado (absorveu Usuários) + Meus Clientes (pipeline) + Vendas com auto-complete ✅
 - **FASE 5 Etapa 3b**: Minha Loja hub (4 abas: Lançar/Resultado/Estoque/Reposição) + Ações Inteligentes + Pedido de Compra + menu 5 itens ✅
 - **FASE 5 Etapa 2**: Vendedor genérico migrado (10 nós Supabase, view, RPCs, prompt otimizado) ✅
-- **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker
+- **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker (deploy ✅, config vendedor pendente)
+- **FASE 5 Etapa 5**: Onboarding completo (tela senha, trigger cost_price, SPF/DKIM, UX formulário franquia)
 - **Deploy produção**: app.maximassas.tech via Docker Swarm + Traefik SSL ✅
 
 ## Deploy (Portainer)
