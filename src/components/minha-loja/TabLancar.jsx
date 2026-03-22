@@ -272,17 +272,6 @@ export default function TabLancar({
               {formatCurrency(periodStats.total)}
             </strong>
           </span>
-          {periodStats.net !== periodStats.total && (
-            <>
-              <span className="text-[#291715]/20">|</span>
-              <span>
-                Líquido{" "}
-                <strong className="text-[#1b1c1d] font-mono-numbers">
-                  {formatCurrency(periodStats.net)}
-                </strong>
-              </span>
-            </>
-          )}
         </div>
       )}
 
@@ -358,7 +347,7 @@ export default function TabLancar({
                       </p>
                       {sale.net_value != null && sale.net_value !== sale.value && (
                         <p className="text-xs text-[#4a3d3d] font-mono-numbers">
-                          Liq. {formatCurrency(sale.net_value)}
+                          Receb. {formatCurrency(sale.net_value)}
                         </p>
                       )}
                     </div>
@@ -450,20 +439,22 @@ export default function TabLancar({
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`font-bold font-mono-numbers ${
-                                    isPositive ? "text-[#16a34a]" : "text-[#b91c1c]"
+                                    isPositive ? "text-[#16a34a]" : "text-[#dc2626]"
                                   }`}
                                 >
                                   {formatCurrency(lucro)}
                                 </span>
-                                <Badge
-                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                    isPositive
-                                      ? "bg-[#16a34a]/10 text-[#16a34a]"
-                                      : "bg-[#b91c1c]/10 text-[#b91c1c]"
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold inline-flex items-center ${
+                                    !isPositive
+                                      ? "bg-[#dc2626]/10 text-[#dc2626]"
+                                      : margem < 25
+                                      ? "bg-[#f59e0b]/10 text-[#b45309]"
+                                      : "bg-[#16a34a]/10 text-[#16a34a]"
                                   }`}
                                 >
-                                  {isPositive ? "\u2191" : "\u2193"} {Math.abs(margem).toFixed(0)}%
-                                </Badge>
+                                  {!isPositive ? "\u2193" : margem < 25 ? "!" : "\u2191"} {Math.abs(margem).toFixed(0)}%
+                                </span>
                               </div>
                             </div>
                           </div>

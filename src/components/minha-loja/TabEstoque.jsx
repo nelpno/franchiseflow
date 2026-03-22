@@ -44,6 +44,17 @@ const CATEGORY_OPTIONS = [
   "Outros",
 ];
 
+const MASSA_PREFIXES = ["canelone", "conchiglione", "massa", "nhoque", "rondelli", "sofioli"];
+const MOLHO_PREFIXES = ["molho"];
+
+function getCategoryFromName(name) {
+  if (!name) return "";
+  const lower = name.toLowerCase().trim();
+  if (MASSA_PREFIXES.some((p) => lower.startsWith(p))) return "Massas";
+  if (MOLHO_PREFIXES.some((p) => lower.startsWith(p))) return "Molhos";
+  return "Outros";
+}
+
 const EMPTY_FORM = {
   product_name: "",
   category: "",
@@ -115,13 +126,14 @@ export default function TabEstoque({
   // --- Filtering ---
 
   const filteredItems = items.filter((item) => {
+    const itemCategory = item.category || getCategoryFromName(item.product_name);
     const matchesSearch =
       !searchTerm ||
       item.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category?.toLowerCase().includes(searchTerm.toLowerCase());
+      itemCategory?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory =
-      filterCategory === "all" || item.category === filterCategory;
+      filterCategory === "all" || itemCategory === filterCategory;
 
     let matchesStockLevel = true;
     if (filterStockLevel === "low") {
@@ -243,7 +255,7 @@ export default function TabEstoque({
     setEditingItem(item);
     setFormData({
       product_name: item.product_name || "",
-      category: item.category || "",
+      category: item.category || getCategoryFromName(item.product_name),
       quantity: String(item.quantity ?? ""),
       unit: item.unit || "un",
       min_stock: String(item.min_stock ?? ""),
@@ -356,7 +368,7 @@ export default function TabEstoque({
       const giro = giroByItem[item.id] || 0;
       return [
         item.product_name,
-        item.category || "",
+        item.category || getCategoryFromName(item.product_name),
         item.quantity,
         item.unit,
         item.min_stock,
@@ -649,7 +661,7 @@ export default function TabEstoque({
                               {item.product_name}
                             </h4>
                             <p className="text-xs text-[#4a3d3d]">
-                              {item.category || "Sem categoria"} · {getUnitLabel(item.unit)}
+                              {item.category || getCategoryFromName(item.product_name)} · {getUnitLabel(item.unit)}
                             </p>
                           </div>
                           <div className="flex items-center gap-1 ml-2">
@@ -866,7 +878,7 @@ export default function TabEstoque({
                               </TableCell>
 
                               <TableCell className="text-sm text-[#4a3d3d]">
-                                {item.category || "—"}
+                                {item.category || getCategoryFromName(item.product_name)}
                               </TableCell>
 
                               {/* Quantity - inline edit */}

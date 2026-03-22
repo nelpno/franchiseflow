@@ -396,11 +396,6 @@ export default function Layout({ children, currentPageName }) {
                   <FranchiseSelector franchises={availableFranchises} />
                 )}
                 <NotificationBell size={20} />
-                {currentUser && (
-                  <div className="w-10 h-10 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#4a3d3d] font-bold text-sm ml-2 overflow-hidden">
-                    {currentUser.full_name?.charAt(0).toUpperCase()}
-                  </div>
-                )}
               </div>
             </header>
           )}
