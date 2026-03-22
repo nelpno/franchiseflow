@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FranchiseConfiguration, Franchise, User } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { optimizeConfig } from "@/api/functions";
 import { toast } from "sonner";
 import { PAYMENT_METHODS, DELIVERY_METHODS, BOT_PERSONALITIES, PIX_KEY_TYPES, WEEKDAYS } from "@/lib/franchiseUtils";
 
@@ -78,7 +77,6 @@ function FranchiseSettingsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingConfig, setEditingConfig] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [isDirty, setIsDirty] = useState(false);
   const [displayConfigurations, setDisplayConfigurations] = useState([]);
@@ -250,26 +248,6 @@ function FranchiseSettingsContent() {
     setIsDirty(true);
   };
 
-  const handleOptimize = async () => {
-    setIsOptimizing(true);
-    try {
-      const { data: optimizedData } = await optimizeConfig(formData);
-      setFormData((prevData) => ({
-        ...prevData,
-        ...optimizedData,
-        social_media_links: {
-          ...prevData.social_media_links,
-          ...(optimizedData.social_media_links || {})
-        }
-      }));
-      setIsDirty(true);
-      toast.success("Textos otimizados com IA! Revise as sugestões e salve as alterações.");
-    } catch (error) {
-      console.error("Erro ao otimizar com IA:", error);
-      toast.error("Ocorreu um erro ao tentar otimizar os dados. Tente novamente.");
-    }
-    setIsOptimizing(false);
-  };
 
   const availableFranchisesForUser = useMemo(() => {
     if (!currentUser) return [];
@@ -707,12 +685,12 @@ function FranchiseSettingsContent() {
                   <FieldHint text="Abaixo desse valor, o bot sugere retirada no local." />
                 </div>
                 <div>
-                  <label className={labelClass}>Tempo medio de preparo (minutos)</label>
+                  <label className={labelClass}>Tempo médio de entrega (minutos)</label>
                   <input className={`${inputClass} font-mono`} type="number"
                     value={formData.avg_prep_time_minutes ?? ''}
                     onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
-                    placeholder="25" />
-                  <FieldHint text="O bot informa ao cliente o tempo estimado de entrega." />
+                    placeholder="40" />
+                  <FieldHint text="Tempo total desde o pedido fechado até o cliente receber: separar, chamar motoboy e entregar." />
                 </div>
                 <div>
                   <label className={labelClass}>Horário limite para pedidos</label>
@@ -766,17 +744,6 @@ function FranchiseSettingsContent() {
                   franchiseId={editingConfig?.franchise_evolution_instance_id || 'default'}
                 />
               </div>
-              {editingConfig && (
-                <button
-                  type="button"
-                  onClick={handleOptimize}
-                  disabled={isOptimizing || isSubmitting}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#b91c1c] text-[#b91c1c] font-bold text-sm hover:bg-[#b91c1c]/5 transition-all disabled:opacity-50"
-                >
-                  {isOptimizing ? <MaterialIcon icon="progress_activity" size={16} className="animate-spin" /> : <MaterialIcon icon="auto_awesome" filled size={16} />}
-                  Otimizar com IA
-                </button>
-              )}
             </WizardStep>
           )}
 
