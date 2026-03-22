@@ -163,19 +163,20 @@ export default function SetPassword() {
                 </div>
               </div>
 
-              {password && password.length < 6 && (
-                <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
-                  <MaterialIcon icon="info" size={16} />
-                  A senha deve ter pelo menos 6 caracteres
-                </p>
-              )}
-
-              {password && confirmPassword && password !== confirmPassword && (
-                <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
-                  <MaterialIcon icon="warning" size={16} />
-                  As senhas não coincidem
-                </p>
-              )}
+              <div className="h-5">
+                {password && password.length < 6 && (
+                  <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
+                    <MaterialIcon icon="info" size={16} />
+                    A senha deve ter pelo menos 6 caracteres
+                  </p>
+                )}
+                {password && confirmPassword && password !== confirmPassword && password.length >= 6 && (
+                  <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
+                    <MaterialIcon icon="warning" size={16} />
+                    As senhas não coincidem
+                  </p>
+                )}
+              </div>
 
               <button
                 type="submit"
