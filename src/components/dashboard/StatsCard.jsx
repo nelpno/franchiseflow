@@ -28,10 +28,10 @@ export default function StatsCard({ title, value, previousValue, icon: Icon, tre
   };
 
   return (
-    <div className="bg-white p-5 rounded-xl shadow-sm border border-[#cac0c0]/10">
-      <p className="text-xs text-[#4a3d3d] font-medium mb-1">{title}</p>
-      <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-extrabold tracking-tight text-[#1d1b1b]">
+    <div className="bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-[#cac0c0]/10">
+      <p className="text-[10px] sm:text-xs text-[#4a3d3d] font-medium mb-1 truncate">{title}</p>
+      <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+        <span className="text-lg sm:text-2xl font-extrabold tracking-tight text-[#1d1b1b]">
           {value}
         </span>
         {getTrendDisplay()}
