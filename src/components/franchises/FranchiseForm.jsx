@@ -4,16 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-// 7a — Máscara WhatsApp (XX) XXXXX-XXXX
-function formatPhone(value) {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 2) return digits.length ? `(${digits}` : '';
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
-
 // 7c — Auto-sugerir nome "Maxi Massas - Cidade"
 function suggestFranchiseName(city) {
   if (!city) return '';
@@ -22,26 +12,10 @@ function suggestFranchiseName(city) {
   return `Maxi Massas - ${cityName}`;
 }
 
-function FieldHelp({ text }) {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <MaterialIcon icon="help" size={16} className="text-[#4a3d3d] cursor-help inline ml-1" />
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <p className="text-sm">{text}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false }) {
   const [formData, setFormData] = useState({
     name: '',
     owner_name: '',
-    phone_number: '',
     city: '',
     status: 'active',
     franchisee_email: ''
@@ -234,33 +208,20 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone_number" className="text-sm font-semibold text-[#4a3d3d]">
-                    <MaterialIcon icon="phone" size={16} className="inline mr-1" />
-                    WhatsApp *
-                    <FieldHelp text="Número com DDD. Usado para o vendedor automático e contato." />
-                  </Label>
-                  <Input
-                    id="phone_number"
-                    placeholder="(11) 98765-4321"
-                    value={formData.phone_number}
-                    onChange={(e) => handleInputChange('phone_number', formatPhone(e.target.value))}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="franchisee_email" className="text-sm font-semibold text-[#4a3d3d]">
                     <MaterialIcon icon="mail" size={16} className="inline mr-1" />
                     Email do Franqueado
-                    <FieldHelp text="Enviaremos um convite por email para acessar o dashboard. Se deixar vazio, poderá convidar depois." />
                   </Label>
                   <Input
                     id="franchisee_email"
                     type="email"
-                    placeholder="joao@email.com (receberá convite de acesso)"
+                    placeholder="joao@email.com"
                     value={formData.franchisee_email}
                     onChange={(e) => handleInputChange('franchisee_email', e.target.value)}
                   />
+                  <p className="text-xs text-[#4a3d3d]">
+                    Receberá um convite para acessar o dashboard. Pode convidar depois.
+                  </p>
                 </div>
               </div>
             </div>
