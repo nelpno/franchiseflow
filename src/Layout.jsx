@@ -242,9 +242,9 @@ export default function Layout({ children, currentPageName }) {
       (item.url.includes(currentPageName) && currentPageName);
     return (
       <SidebarMenuItem key={item.url + item.title}>
-        <SidebarMenuButton asChild isActive={isActive} className="h-10 px-3 gap-3 rounded-lg transition-colors">
+        <SidebarMenuButton asChild isActive={isActive} className={`h-11 px-3 gap-3 rounded-xl transition-all ${isActive ? "bg-[#b91c1c]/10 text-[#b91c1c] font-semibold shadow-sm" : "hover:bg-[#b91c1c]/5 text-[#534343]"}`}>
           <Link to={item.url} className="flex items-center gap-3">
-            <MaterialIcon icon={item.materialIcon} size={20} className="shrink-0" />
+            <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-[#b91c1c]" : ""} />
             <span className="text-sm">{item.title}</span>
           </Link>
         </SidebarMenuButton>
@@ -305,12 +305,14 @@ export default function Layout({ children, currentPageName }) {
 
       <div className="min-h-screen flex w-full bg-[#fbf9fa]">
         {/* Desktop Sidebar */}
-        <Sidebar className="w-[260px] border-r border-[#f8eeee] bg-white">
-          <SidebarHeader className="px-4 h-32 flex items-center justify-center border-b-0">
-            <img src={logoImg} alt="Maxi Massas" className="h-28 w-auto object-contain" />
+        <Sidebar className="w-[260px] border-r border-[#f8eeee]/50 bg-gradient-to-b from-[#fbf9fa] via-white to-[#fbf9fa]">
+          <SidebarHeader className="px-4 h-28 flex items-center justify-center border-b border-[#b91c1c]/5">
+            <div className="flex items-center gap-2.5">
+              <img src={logoImg} alt="Maxi Massas" className="h-16 w-auto object-contain" />
+            </div>
           </SidebarHeader>
 
-          <SidebarContent className="px-3 overflow-y-auto">
+          <SidebarContent className="px-3 pt-3 overflow-y-auto">
             {isAdmin && groupedItems ? (
               // Admin: sectioned navigation with spacing between sections
               <div className="space-y-6 pb-6">
@@ -453,7 +455,7 @@ export default function Layout({ children, currentPageName }) {
           {/* Page content */}
           <div className={`flex-1 overflow-auto ${
             isAdmin && location.pathname === createPageUrl("Dashboard") ? "" : "md:pt-20"
-          } ${!isAdmin ? "pb-24 md:pb-0" : ""}`}>
+          } ${!isAdmin ? "pb-20 md:pb-0" : ""}`}>
             <div className="max-w-6xl mx-auto w-full">
               {children}
             </div>
@@ -469,9 +471,12 @@ export default function Layout({ children, currentPageName }) {
                   <Link
                     key="fab"
                     to={item.url}
-                    className="w-12 h-12 -mt-10 rounded-full bg-[#9c4143] text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform border-4 border-[#fbf9fa]"
+                    className="flex flex-col items-center -mt-10"
                   >
-                    <MaterialIcon icon="add" size={24} />
+                    <div className="w-12 h-12 rounded-full bg-[#9c4143] text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform border-4 border-[#fbf9fa]">
+                      <MaterialIcon icon="add" size={24} />
+                    </div>
+                    <span className="text-xs font-bold text-[#9c4143] mt-1">{item.label}</span>
                   </Link>
                 );
               }
@@ -487,7 +492,7 @@ export default function Layout({ children, currentPageName }) {
                   }`}
                 >
                   <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} />
-                  <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
+                  <span className={`text-xs ${isActive ? "font-bold" : "font-medium"}`}>
                     {item.label}
                   </span>
                 </Link>
