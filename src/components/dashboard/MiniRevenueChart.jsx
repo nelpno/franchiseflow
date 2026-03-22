@@ -8,8 +8,9 @@ export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue 
     const todayDate = format(new Date(), "yyyy-MM-dd");
     for (let i = 6; i >= 0; i--) {
       const date = format(subDays(new Date(), i), "yyyy-MM-dd");
-      const dayLabel = format(subDays(new Date(), i), "EEE", { locale: ptBR });
-      const capitalizedLabel = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1);
+      const dayFull = format(subDays(new Date(), i), "EEEE", { locale: ptBR });
+      const shortLabels = { "domingo": "Dom", "segunda-feira": "Seg", "terça-feira": "Ter", "quarta-feira": "Qua", "quinta-feira": "Qui", "sexta-feira": "Sex", "sábado": "Sáb" };
+      const capitalizedLabel = shortLabels[dayFull] || dayFull.slice(0, 3);
       const daySummaries = summaries.filter(
         (s) => s.date === date && (!franchiseId || s.franchise_id === franchiseId)
       );
