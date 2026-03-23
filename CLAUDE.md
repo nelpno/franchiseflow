@@ -312,6 +312,12 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 125. Cores emerald (#10b981, #059669, #ecfdf5) são exceção semântica à regra 99 — usadas APENAS para estados de sucesso/completo, NÃO são cores de marca
 126. Celebration timers (auto-expand, glow, faixa) DEVEM ser canceláveis por clique do usuário — `celebrationTimerRef` limpo em `handleManualToggle`. UI nunca trava durante celebração
 127. Deploy Portainer: usar `ctx_execute` (shell) para chamadas HTTP — Bash bloqueado pelo context-mode hook para curl com output grande
+128. ITEM_DETAILS.jsx e textos de onboarding DEVEM referenciar categorias do sistema (Massas, Molhos, Outros), NÃO tipos individuais de produto (Canelone, Rondelli, etc.) — tipos já aparecem nas abas do estoque
+129. Imagens/logos DEVEM usar assets locais (`src/assets/`) — NUNCA URLs externas (Google, CDN) que podem expirar. Login e SetPassword importam `logo-maxi-massas.png`
+130. Inline edit mobile (TabEstoque cards): fundo `bg-[#e9e8e9]/50` + ícone edit 12px + `active:` (não `hover:`) — Input usa `bg-transparent border-none p-0 font-bold` para não causar salto de layout
+131. Onboarding auto-detecção: itens 1-1, 1-2 (contrato/kick-off) sempre auto-marcados. Itens 5-1 (wizard), 6-1 (pedido), 6-3 (estoque) detectados via queries no load. Role `auto` = não clicável pelo franqueado
+132. Labels onboarding SEM jargão: "pipeline" → "organização", "wizard" → "formulário". Preços 2-3 já vêm pré-configurados (cost*2) — franqueado só confere, NÃO "define com CS"
+133. `detectAutoItems()` em Onboarding.jsx roda no load E no create — auto items são mergeados e salvos silenciosamente. Erros de detecção são non-fatal (catch sem rethrow)
 
 ## Scripts
 ```bash
