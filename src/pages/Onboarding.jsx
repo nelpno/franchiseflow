@@ -427,10 +427,10 @@ export default function Onboarding() {
           <Card className="mb-6 text-center border-2 border-dashed border-[#d4af37]/40 bg-[#d4af37]/5">
             <CardContent className="p-8">
               <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-[#d4af37]" />
-              <h3 className="font-bold text-[#1b1c1d] text-lg mb-1">Pronto para começar?</h3>
-              <p className="text-[#4a3d3d] text-sm mb-4">São 8 etapas simples para deixar tudo pronto para sua primeira venda.</p>
+              <h3 className="font-bold text-[#1b1c1d] text-lg mb-1">Vamos preparar tudo!</h3>
+              <p className="text-[#4a3d3d] text-sm mb-4">8 missões rápidas para deixar sua franquia pronta para vender.</p>
               <Button onClick={() => handleStartOnboarding()} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl px-6 py-3 text-base">
-                Começar Onboarding
+                Começar Missões
               </Button>
             </CardContent>
           </Card>
@@ -541,15 +541,35 @@ export default function Onboarding() {
               ))}
             </div>
 
-            {/* Gate Block 9 */}
-            <div ref={el => { blockRefs.current[9] = el; }}>
-              <GateBlock
-                items={{ ...items, "9-1": b18Complete }}
-                onToggle={handleToggle}
-                isAdmin={isAdmin}
-                blocks1to8Complete={b18Complete}
-              />
-            </div>
+            {/* Franchisee: celebration when all 8 missions done */}
+            {!isAdmin && b18Complete && checklist.status !== "approved" && (
+              <Card className="mb-4 bg-gradient-to-br from-emerald-50 to-[#d4af37]/5 border-2 border-emerald-200 rounded-2xl overflow-hidden">
+                <CardContent className="p-6 sm:p-8 text-center">
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h3 className="text-xl font-bold text-emerald-700 font-plus-jakarta mb-2">
+                    Todas as missões completas!
+                  </h3>
+                  <p className="text-emerald-600 text-sm mb-1">
+                    O CS foi notificado e vai validar suas configurações.
+                  </p>
+                  <p className="text-emerald-500 text-xs">
+                    Assim que aprovado, o tráfego pago será ativado em até 48h.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Admin only: Gate Block 9 */}
+            {isAdmin && (
+              <div ref={el => { blockRefs.current[9] = el; }}>
+                <GateBlock
+                  items={{ ...items, "9-1": b18Complete }}
+                  onToggle={handleToggle}
+                  isAdmin={isAdmin}
+                  blocks1to8Complete={b18Complete}
+                />
+              </div>
+            )}
           </>
         )}
 

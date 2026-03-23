@@ -68,24 +68,28 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
       <div key={item.key}>
         <div
           className={`flex items-start gap-3 px-4 py-3 transition-colors ${
-            !locked ? "hover:bg-[#d4af37]/5 cursor-pointer" : ""
-          } ${locked && !checked ? "opacity-70" : ""}`}
-          onClick={() => !locked && onToggle(item.key)}
+            locked && !checked ? "opacity-70" : ""
+          }`}
         >
-          {/* Checkbox - larger for mobile */}
-          <div className="mt-0.5 flex-shrink-0">
+          {/* Checkbox — click target is the checkbox area, not the whole row */}
+          <div
+            className={`mt-0.5 flex-shrink-0 ${!locked ? "cursor-pointer" : ""}`}
+            onClick={() => !locked && onToggle(item.key)}
+          >
             {locked && item.role !== "auto" && !checked ? (
-              <div className="w-6 h-6 rounded-lg border-2 border-[#291715]/15 bg-[#fbf9fa] flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg border-2 border-[#291715]/15 bg-[#fbf9fa] flex items-center justify-center">
                 <MaterialIcon icon="lock" size={12} className="text-[#291715]/30" />
               </div>
             ) : (
               <div
-                className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${
+                  !locked ? "hover:scale-110 active:scale-95" : ""
+                } ${
                   checked
                     ? "border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200"
                     : item.role === "auto"
                     ? "border-[#291715]/15 bg-[#fbf9fa]"
-                    : "border-[#291715]/20 bg-white"
+                    : "border-[#291715]/20 bg-white hover:border-[#d4af37]"
                 }`}
               >
                 {checked && (
