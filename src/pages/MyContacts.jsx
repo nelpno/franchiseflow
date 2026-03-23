@@ -353,8 +353,11 @@ export default function MyContacts() {
   const getContactStatus = (contact) => contact.status || "novo_lead";
 
   const navigateToSales = (contact) => {
+    const params = new URLSearchParams({ action: "nova-venda" });
+    if (contact.id) params.set("contact_id", contact.id);
     const phone = getContactPhone(contact);
-    navigate("/Vendas?action=nova-venda" + (phone ? `&phone=${encodeURIComponent(phone)}` : ""));
+    if (phone) params.set("phone", phone);
+    navigate(`/Vendas?${params.toString()}`);
   };
 
   // Loading skeleton

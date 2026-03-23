@@ -333,6 +333,8 @@ export default function SaleForm({
   currentUser,
   onSave,
   onCancel,
+  initialContactId = null,
+  initialPhone = null,
 }) {
   const isEditing = !!sale;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -441,6 +443,25 @@ export default function SaleForm({
       duration: 6000,
     });
   }, [isEditing, franchiseId, contacts]);
+
+  // ---- Pre-select contact from URL params (e.g., MyContacts "+ Venda") ----
+  useEffect(() => {
+    if (isEditing || !contacts.length) return;
+    if (!initialContactId && !initialPhone) return;
+
+    let match = null;
+    if (initialContactId) {
+      match = contacts.find((c) => c.id === initialContactId);
+    }
+    if (!match && initialPhone) {
+      const normalized = normalizePhone(initialPhone);
+      match = contacts.find((c) => normalizePhone(c.telefone) === normalized);
+    }
+    if (match) {
+      setContactId(match.id);
+      setContactSearch(match.nome || formatPhone(match.telefone));
+    }
+  }, [isEditing, contacts, initialContactId, initialPhone]);
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(

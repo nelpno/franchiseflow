@@ -13,6 +13,7 @@ export default function Vendas() {
   const { selectedFranchise } = useAuth();
   const actionParam = searchParams.get("action");
   const phoneParam = searchParams.get("phone");
+  const contactIdParam = searchParams.get("contact_id");
 
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
@@ -169,6 +170,8 @@ export default function Vendas() {
           inventoryItems={franchiseInventory}
           onRefresh={handleRefreshSales}
           autoOpenForm={actionParam === "nova-venda"}
+          initialContactId={contactIdParam}
+          initialPhone={phoneParam}
         />
       </div>
     </div>

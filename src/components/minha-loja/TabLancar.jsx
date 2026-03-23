@@ -80,6 +80,8 @@ export default function TabLancar({
   inventoryItems,
   onRefresh,
   autoOpenForm = false,
+  initialContactId = null,
+  initialPhone = null,
 }) {
   const [showFormDialog, setShowFormDialog] = useState(autoOpenForm);
   const [editingSale, setEditingSale] = useState(null);
@@ -581,6 +583,8 @@ export default function TabLancar({
             currentUser={currentUser}
             onSave={handleFormSave}
             onCancel={() => setShowFormDialog(false)}
+            initialContactId={!editingSale ? initialContactId : null}
+            initialPhone={!editingSale ? initialPhone : null}
           />
         </DialogContent>
       </Dialog>
