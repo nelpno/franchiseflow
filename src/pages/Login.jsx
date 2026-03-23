@@ -255,7 +255,7 @@ export default function Login() {
       {/* Footer Meta */}
       <footer className="mt-4 md:fixed md:bottom-6 md:left-0 md:right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
-          &copy; 2026 Maxi Massas — Massas Artesanais Congeladas
+          &copy; 2026 Maxi Massas
         </p>
       </footer>
     </div>

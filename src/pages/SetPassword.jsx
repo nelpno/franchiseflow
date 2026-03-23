@@ -214,7 +214,7 @@ export default function SetPassword() {
 
       <footer className="fixed bottom-6 left-0 right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
-          Digital Atelier &copy; 2026 Maxi Massas Franchise System
+          &copy; 2026 Maxi Massas
         </p>
       </footer>
     </div>
