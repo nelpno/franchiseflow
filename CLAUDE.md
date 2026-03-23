@@ -280,6 +280,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 93. Rotas protegidas (AdminRoute) DEVEM checar `isLoading` antes de renderizar children — sem isso, conteúdo admin pisca durante carregamento do perfil
 94. Upload Marketing: validação obrigatória de tipo (image/pdf/mp4) e tamanho (max 20MB) ANTES do upload — seguir pattern de CatalogUpload.jsx
 95. PORTAINER_API_KEY configurada em `.claude/settings.local.json` (env) — disponível automaticamente no shell das sessões
+96. Exceção regra 63: `text-[#4a3d3d]/40` é OK para texto `line-through` (riscado) e ícones decorativos — a regra /70 aplica apenas a texto legível
+97. Loading skeletons DEVEM espelhar o grid do componente real — ex: stats grid-cols-3 = skeleton grid-cols-3 (evita layout shift)
+98. Login.jsx e SetPassword.jsx compartilham template visual — ao alterar um, verificar consistência no outro (copyright, aria-labels, cores)
+99. NUNCA usar cores Tailwind genéricas (text-slate-*, text-amber-*) — sempre tokens do design system (#1b1c1d, #4a3d3d, #775a19, etc.)
+100. Toast misto sucesso/erro é UX ruim — separar em `toast.success()` + `toast.error()` independentes
 
 ## Scripts
 ```bash
