@@ -318,6 +318,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 131. Onboarding auto-detecção: itens 1-1, 1-2 (contrato/kick-off) sempre auto-marcados. Itens 5-1 (wizard), 6-1 (pedido), 6-3 (estoque) detectados via queries no load. Role `auto` = não clicável pelo franqueado
 132. Labels onboarding SEM jargão: "pipeline" → "organização", "wizard" → "formulário". Preços 2-3 já vêm pré-configurados (cost*2) — franqueado só confere, NÃO "define com CS"
 133. `detectAutoItems()` em Onboarding.jsx roda no load E no create — auto items são mergeados e salvos silenciosamente. Erros de detecção são non-fatal (catch sem rethrow)
+134. Wizard "Meu Vendedor" tem 6 steps visuais mas Revisão (step 6) NÃO conta como etapa — contador mostra X/5, não X/6. Revisão é apenas visualização do resultado
 
 ## Scripts
 ```bash
