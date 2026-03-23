@@ -189,7 +189,7 @@ export default function Onboarding() {
       const counts = computeCounts(finalItems);
 
       let status = currentChecklist.status;
-      if (finalItems["9-5"] && user?.role === "admin") {
+      if (finalItems["9-4"] && user?.role === "admin") {
         status = "approved";
       } else if (b18Complete && status === "in_progress") {
         status = "pending_approval";
@@ -200,7 +200,6 @@ export default function Onboarding() {
       const updateData = {
         items: finalItems,
         ...counts,
-        total_items: TOTAL_ITEMS,
         status,
       };
 
