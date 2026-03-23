@@ -70,9 +70,33 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    // Check existing session
+    // Detect invite/recovery tokens in URL hash OR search params (PKCE flow)
+    const hash = window.location.hash;
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashType = hash.match(/type=(invite|recovery)/)?.[1];
+    const searchType = searchParams.get('type');
+    const type = hashType || searchType;
+
+    if (type === 'invite' || type === 'recovery') {
+      setNeedsPasswordSetup(true);
+      localStorage.setItem('needs_password_setup', 'true');
+      localStorage.setItem('password_setup_type', type);
+    }
+
     const initAuth = async () => {
       try {
+        // Handle PKCE code exchange (newer Supabase flow)
+        const code = searchParams.get('code');
+        if (code) {
+          try {
+            await supabase.auth.exchangeCodeForSession(code);
+            // Clean URL params after exchange
+            window.history.replaceState({}, '', window.location.pathname);
+          } catch (e) {
+            console.error('[Auth] Code exchange failed:', e);
+          }
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           await loadUserProfile(session.user);
@@ -84,18 +108,6 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false);
       }
     };
-
-    // Detect invite/recovery tokens in URL hash before Supabase consumes them
-    const hash = window.location.hash;
-    if (hash.includes('type=invite')) {
-      setNeedsPasswordSetup(true);
-      localStorage.setItem('needs_password_setup', 'true');
-      localStorage.setItem('password_setup_type', 'invite');
-    } else if (hash.includes('type=recovery')) {
-      setNeedsPasswordSetup(true);
-      localStorage.setItem('needs_password_setup', 'true');
-      localStorage.setItem('password_setup_type', 'recovery');
-    }
 
     initAuth();
 

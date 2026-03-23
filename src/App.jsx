@@ -91,7 +91,9 @@ function AppRoutes() {
         isAuthenticated ? <Navigate to="/" replace /> : <Login />
       } />
       <Route path="/set-password" element={
-        isAuthenticated ? <SetPassword /> : <Navigate to="/login" replace />
+        isAuthenticated ? <SetPassword /> :
+        needsPasswordSetup ? <PageFallback /> :
+        <Navigate to="/login" replace />
       } />
       <Route path="/OnboardingWelcome" element={
         !isAuthenticated ? <Navigate to="/login" replace /> :

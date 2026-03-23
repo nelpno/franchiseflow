@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Franchise, Sale, Contact, DailyUniqueContact, DailySummary, User } from "@/entities/all";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ function ReportsContent() {
   const [summaries, setSummaries] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const mountedRef = useRef(true);
   const [rawSales, setRawSales] = useState([]);
   const [rawContacts, setRawContacts] = useState([]);
   const [rawDailyContacts, setRawDailyContacts] = useState([]);
@@ -35,33 +37,39 @@ function ReportsContent() {
 
   // Carrega tudo uma vez só
   useEffect(() => {
-    const loadAllData = async () => {
-      setIsLoading(true);
-      try {
-        const [currentUserData, franchisesData, salesData, contactsData, dailyContactsData, summariesData] = await Promise.all([
-          User.me(),
-          Franchise.list(),
-          Sale.list('-sale_date', 500),
-          Contact.list('-created_at', 500),
-          DailyUniqueContact.list('-date', 500),
-          DailySummary.list('-date', 500)
-        ]);
-
-        setCurrentUser(currentUserData);
-        setFranchises(franchisesData);
-        setRawSales(salesData);
-        setRawContacts(contactsData);
-        setRawDailyContacts(dailyContactsData);
-        setRawSummaries(summariesData);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        toast.error("Erro ao carregar dados dos relatórios.");
-      }
-      setIsLoading(false);
-    };
-
+    mountedRef.current = true;
     loadAllData();
+    return () => { mountedRef.current = false; };
   }, []);
+
+  const loadAllData = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const [currentUserData, franchisesData, salesData, contactsData, dailyContactsData, summariesData] = await Promise.all([
+        User.me(),
+        Franchise.list(),
+        Sale.list('-sale_date', 500),
+        Contact.list('-created_at', 500),
+        DailyUniqueContact.list('-date', 500),
+        DailySummary.list('-date', 500)
+      ]);
+
+      if (!mountedRef.current) return;
+      setCurrentUser(currentUserData);
+      setFranchises(franchisesData);
+      setRawSales(salesData);
+      setRawContacts(contactsData);
+      setRawDailyContacts(dailyContactsData);
+      setRawSummaries(summariesData);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      if (!mountedRef.current) return;
+      setLoadError("Não foi possível carregar os dados dos relatórios.");
+      toast.error("Erro ao carregar dados dos relatórios.");
+    }
+    if (mountedRef.current) setIsLoading(false);
+  };
 
   // Atualiza datas quando muda o preset
   useEffect(() => {
@@ -217,47 +225,63 @@ function ReportsContent() {
           </Select>
         </div>
 
+        {/* Erro de carregamento */}
+        {loadError && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <MaterialIcon icon="cloud_off" size={48} className="text-gray-300 mb-4" />
+            <p className="text-[#4a3d3d] font-medium mb-2">{loadError}</p>
+            <Button variant="outline" onClick={loadAllData} className="mt-2">
+              <MaterialIcon icon="refresh" size={16} className="mr-2" />
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
         {/* Seção 1 — KPIs */}
-        <KpiCards
-          sales={sales}
-          contacts={contacts}
-          previousSales={previousPeriodData.sales}
-          previousContacts={previousPeriodData.contacts}
-          isLoading={isLoading}
-        />
+        {!loadError && (
+          <>
+            <KpiCards
+              sales={sales}
+              contacts={contacts}
+              previousSales={previousPeriodData.sales}
+              previousContacts={previousPeriodData.contacts}
+              isLoading={isLoading}
+            />
 
-        {/* Seção 2 — Gráficos principais */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <SalesRevenueChart
-            sales={sales}
-            isLoading={isLoading}
-            startDate={startDate}
-            endDate={endDate}
-          />
-          <PaymentMethodChart
-            sales={sales}
-            isLoading={isLoading}
-          />
-        </div>
+            {/* Seção 2 — Gráficos principais */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <SalesRevenueChart
+                sales={sales}
+                isLoading={isLoading}
+                startDate={startDate}
+                endDate={endDate}
+              />
+              <PaymentMethodChart
+                sales={sales}
+                isLoading={isLoading}
+              />
+            </div>
 
-        {/* Ranking horizontal */}
-        <div className="mb-6">
-          <FranchiseRankingChart
-            sales={sales}
-            franchises={availableFranchises}
-            isLoading={isLoading}
-          />
-        </div>
+            {/* Ranking horizontal */}
+            <div className="mb-6">
+              <FranchiseRankingChart
+                sales={sales}
+                franchises={availableFranchises}
+                isLoading={isLoading}
+              />
+            </div>
 
-        {/* Seção 3 — Tabela comparativa */}
-        <FranchiseComparisonTable
-          sales={sales}
-          contacts={contacts}
-          summaries={summaries}
-          franchises={availableFranchises}
-          isLoading={isLoading}
-          periodLabel={periodLabel}
-        />
+            {/* Seção 3 — Tabela comparativa */}
+            <FranchiseComparisonTable
+              sales={sales}
+              contacts={contacts}
+              summaries={summaries}
+              franchises={availableFranchises}
+              isLoading={isLoading}
+              periodLabel={periodLabel}
+            />
+          </>
+        )}
       </div>
     </div>
   );

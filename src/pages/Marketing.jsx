@@ -813,6 +813,8 @@ export default function Marketing() {
   const [files, setFiles] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const mountedRef = useRef(true);
   const [showUpload, setShowUpload] = useState(false);
 
   // Filters
@@ -827,23 +829,29 @@ export default function Marketing() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [allFiles, allFranchises] = await Promise.all([
         MarketingFile.list("-created_at"),
         isAdmin ? Franchise.list("city") : Promise.resolve([]),
       ]);
+      if (!mountedRef.current) return;
       setFiles(allFiles);
       setFranchises(allFranchises);
     } catch (err) {
       console.error("Erro ao carregar materiais de marketing:", err);
+      if (!mountedRef.current) return;
+      setLoadError("Não foi possível carregar os materiais de marketing.");
       toast.error("Erro ao carregar materiais de marketing.");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [isAdmin]);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
+    return () => { mountedRef.current = false; };
   }, [loadData]);
 
   // Extract unique campaigns from data
@@ -1102,7 +1110,16 @@ export default function Marketing() {
       </Card>
 
       {/* Content */}
-      {loading ? (
+      {loadError ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <MaterialIcon icon="cloud_off" size={48} className="text-gray-300 mb-4" />
+          <p className="text-[#4a3d3d] font-medium mb-2">{loadError}</p>
+          <Button variant="outline" onClick={loadData} className="mt-2">
+            <MaterialIcon icon="refresh" size={16} className="mr-2" />
+            Tentar novamente
+          </Button>
+        </div>
+      ) : loading ? (
         <div className="flex items-center justify-center py-20">
           <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
         </div>

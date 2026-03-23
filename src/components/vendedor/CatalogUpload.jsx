@@ -17,10 +17,9 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
   const handleFile = async (file) => {
     if (!file) return;
 
-    // Validate
-    const validTypes = ["image/jpeg", "image/png", "image/webp"];
-    if (!validTypes.includes(file.type)) {
-      toast.error("Formato inválido. Use JPG, PNG ou WebP.");
+    // Validate — JPG only para compatibilidade com automação n8n
+    if (file.type !== "image/jpeg") {
+      toast.error("Use apenas imagens JPG. Exporte do Canva em JPG.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -30,14 +29,18 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
 
     setIsUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const fileName = `${franchiseId || "default"}/catalogo.${ext}`;
+      const fileName = `${franchiseId || "default"}/catalogo.jpg`;
 
-      // Upload (upsert = overwrite if exists)
-      const { error: uploadError } = await supabase.storage
+      // Upload with 30s timeout to avoid infinite loading
+      const uploadPromise = supabase.storage
         .from("catalog-images")
-        .upload(fileName, file, { upsert: true, contentType: file.type });
+        .upload(fileName, file, { upsert: true, contentType: "image/jpeg" });
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Upload demorou demais. Verifique sua conexão.")), 30000)
+      );
+
+      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
       if (uploadError) throw uploadError;
 
       // Get public URL
@@ -96,7 +99,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
             </button>
           </div>
           <div className="p-3 bg-[#fbf9fa] flex items-center justify-between">
-            <span className="text-[10px] text-[#3d4a42]/60 truncate flex-1">{value.split("?")[0]}</span>
+            <span className="text-[10px] text-[#3d4a42]/70 truncate flex-1">{value.split("?")[0]}</span>
             <a
               href={value}
               target="_blank"
@@ -132,8 +135,8 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
               <p className="text-sm font-medium text-[#3d4a42]">
                 Arraste a imagem do catálogo ou <span className="text-[#b91c1c] font-bold">clique para selecionar</span>
               </p>
-              <p className="text-xs text-[#3d4a42]/50">JPG, PNG ou WebP • Máximo 5MB</p>
-              <p className="text-xs text-[#3d4a42]/50">
+              <p className="text-xs text-[#3d4a42]/70">Apenas JPG • Máximo 5MB</p>
+              <p className="text-xs text-[#3d4a42]/70">
                 Dica: Exporte do Canva em JPG para melhor qualidade
               </p>
             </div>
@@ -144,14 +147,14 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg"
         className="hidden"
         onChange={(e) => handleFile(e.target.files[0])}
       />
 
       {value && (
         <div className="bg-[#fbf9fa] rounded-xl p-3">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/70 mb-1">
             O vendedor vai enviar:
           </p>
           <p className="text-xs text-[#3d4a42] italic">

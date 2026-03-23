@@ -53,7 +53,7 @@ const STEPS = [
     description:
       "Seu assistente virtual no WhatsApp que atende clientes 24 horas por dia.",
     detail:
-      "Configure o bot com a personalidade da sua unidade. Ele responde dúvidas, envia o cardápio, calcula frete e fecha pedidos automaticamente.",
+      "Configure o bot da sua unidade. Ele responde dúvidas, envia o cardápio, calcula frete e fecha pedidos automaticamente.",
     color: "#43A047",
     bgGradient: "from-[#43A047]/10 to-[#43A047]/5",
     features: [
