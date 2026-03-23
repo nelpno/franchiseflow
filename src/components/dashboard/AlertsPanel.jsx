@@ -105,72 +105,103 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
 
   const navigate = useNavigate();
 
-  const getIcon = (alert) => {
-    const iconClass = alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]";
-    switch (alert.icon) {
+  const redAlerts = useMemo(() => alerts.filter((a) => a.level === "red"), [alerts]);
+  const yellowAlerts = useMemo(() => alerts.filter((a) => a.level === "yellow"), [alerts]);
+  const franchisesWithAlerts = useMemo(
+    () => new Set(alerts.map((a) => a.franchiseId)).size,
+    [alerts]
+  );
+  const healthyCount = franchises.length - franchisesWithAlerts;
+
+  const visibleRed = redAlerts.slice(0, 3);
+  const hiddenRedCount = redAlerts.length - visibleRed.length;
+
+  const getIcon = (iconName) => {
+    switch (iconName) {
       case "inventory":
-        return <MaterialIcon icon="inventory" size={20} className={iconClass} />;
-      case "checklist":
-        return <MaterialIcon icon="fact_check" size={20} className={iconClass} />;
+        return <MaterialIcon icon="inventory" size={18} className="text-[#a80012]" />;
       case "local_shipping":
-        return <MaterialIcon icon="local_shipping" size={20} className={iconClass} />;
+        return <MaterialIcon icon="local_shipping" size={18} className="text-[#a80012]" />;
       default:
-        return <MaterialIcon icon="warning" size={20} className={iconClass} />;
+        return <MaterialIcon icon="warning" size={18} className="text-[#a80012]" />;
     }
   };
 
   return (
-    <section className="bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5">
-      <div className="flex items-center gap-2 mb-6">
-        <h4 className="text-[#1b1c1d] font-bold tracking-tight font-plus-jakarta">
-          ATENÇÃO CRÍTICA
+    <section className="bg-white rounded-2xl p-5 shadow-sm border border-[#291715]/5">
+      {/* Zona 1: Header com contadores */}
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-[#1b1c1d] font-bold tracking-tight font-plus-jakarta text-sm">
+          ALERTAS
         </h4>
-        {alerts.length > 0 && (
-          <span className="bg-[#a80012] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-            ({alerts.length})
-          </span>
-        )}
+        <div className="flex items-center gap-4 text-xs font-medium">
+          {redAlerts.length > 0 && (
+            <span className="flex items-center gap-1.5 text-[#a80012]">
+              <span className="w-2 h-2 rounded-full bg-[#a80012]" />
+              {redAlerts.length} {redAlerts.length === 1 ? "critico" : "criticos"}
+            </span>
+          )}
+          {yellowAlerts.length > 0 && (
+            <span className="flex items-center gap-1.5 text-[#775a19]">
+              <span className="w-2 h-2 rounded-full bg-[#775a19]" />
+              {yellowAlerts.length} {yellowAlerts.length === 1 ? "atencao" : "atencao"}
+            </span>
+          )}
+          {healthyCount > 0 && (
+            <span className="flex items-center gap-1.5 text-[#16a34a]">
+              <span className="w-2 h-2 rounded-full bg-[#16a34a]" />
+              {healthyCount} ok
+            </span>
+          )}
+        </div>
       </div>
 
+      {/* Zona 2: Alertas vermelhos ou estado vazio */}
       {alerts.length === 0 ? (
-        <div className="flex items-center gap-3 p-4 bg-[#f0fdf4] border-l-4 border-[#22c55e] rounded-r-xl">
+        <div className="flex items-center gap-3 p-3 bg-[#f0fdf4] border-l-4 border-[#22c55e] rounded-r-xl">
           <MaterialIcon icon="check_circle" filled size={20} className="text-[#16a34a]" />
           <span className="text-sm font-medium text-[#15803d]">
             Todas as franquias operando normalmente
           </span>
         </div>
       ) : (
-        <div className="space-y-4">
-          {alerts.map((alert, i) => (
+        <div className="space-y-2">
+          {visibleRed.map((alert, i) => (
             <div
               key={i}
-              className={`flex items-center justify-between p-4 rounded-r-xl border-l-4 ${
-                alert.level === "red"
-                  ? "bg-[#a80012]/5 border-[#a80012]"
-                  : "bg-[#775a19]/5 border-[#775a19]"
-              }`}
+              className="flex items-center gap-3 p-3 bg-[#a80012]/5 border-l-4 border-[#a80012] rounded-r-xl"
             >
-              <div className="flex items-center gap-4">
-                <div className={alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]"}>
-                  {getIcon(alert)}
-                </div>
-                <div>
-                  <h5 className="font-bold text-[#1b1c1d] font-plus-jakarta">
-                    {alert.franchise}
-                  </h5>
-                  <p className="text-sm text-[#1b1c1d]/70">{alert.description}</p>
-                </div>
+              {getIcon(alert.icon)}
+              <div className="flex-1 min-w-0">
+                <span className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta">
+                  {alert.franchise}
+                </span>
+                <span className="text-[#4a3d3d] text-sm"> — {alert.description}</span>
               </div>
-              <button
-                onClick={alert.actionUrl ? () => navigate(alert.actionUrl) : undefined}
-                className={`text-xs font-bold uppercase tracking-wider hover:underline font-plus-jakarta ${
-                  alert.level === "red" ? "text-[#a80012]" : "text-[#775a19]"
-                }`}
-              >
-                {alert.action}
-              </button>
             </div>
           ))}
+
+          {hiddenRedCount > 0 && (
+            <p className="text-xs text-[#4a3d3d] pl-3">
+              +{hiddenRedCount} {hiddenRedCount === 1 ? "alerta critico" : "alertas criticos"}
+            </p>
+          )}
+
+          {/* Zona 3: Link para Acompanhamento */}
+          <button
+            onClick={() => navigate(createPageUrl("Acompanhamento"))}
+            className="flex items-center gap-2 mt-2 text-sm font-medium text-[#a80012] hover:underline"
+          >
+            <MaterialIcon icon="monitoring" size={18} />
+            <span>
+              Ver detalhes no Acompanhamento
+              {yellowAlerts.length > 0 && (
+                <span className="text-[#775a19] font-normal ml-1">
+                  ({yellowAlerts.length} {yellowAlerts.length === 1 ? "item" : "itens"} de atencao)
+                </span>
+              )}
+            </span>
+          </button>
         </div>
       )}
     </section>
