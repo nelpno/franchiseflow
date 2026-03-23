@@ -165,7 +165,7 @@ export default function Layout({ children, currentPageName }) {
           const skipped = localStorage.getItem("onboarding_skipped") === "true";
           const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
 
-          if (obs.length === 0 || obs[0].status === "approved") {
+          if (obs.length > 0 && obs[0].status === "approved") {
             setOnboardingApproved(true);
           }
 
@@ -185,6 +185,12 @@ export default function Layout({ children, currentPageName }) {
           setOnboardingLoaded(true);
         });
     } else {
+      // Novo franqueado sem franchise vinculada ainda — mostrar onboarding welcome
+      const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
+      const skipped = localStorage.getItem("onboarding_skipped") === "true";
+      if (currentUser.role === "franchisee" && !welcomeSeen && !skipped) {
+        setNeedsOnboardingWelcome(true);
+      }
       setOnboardingLoaded(true);
     }
   }, [currentUser]);

@@ -43,7 +43,7 @@ export default function SetPassword() {
       toast.success(isRecovery ? 'Senha redefinida com sucesso!' : 'Senha criada com sucesso! Bem-vindo!');
       clearPasswordSetup();
       localStorage.removeItem('password_setup_type');
-      navigate('/');
+      navigate(isRecovery ? '/' : '/OnboardingWelcome');
     } catch (error) {
       toast.error('Erro ao definir senha: ' + error.message);
     } finally {
