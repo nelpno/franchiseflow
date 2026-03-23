@@ -17,7 +17,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import ActionPanel from "@/components/my-contacts/ActionPanel";
 
 import FilterBar from "@/components/shared/FilterBar";
-import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
+import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -281,7 +281,7 @@ export default function MyContacts() {
       await Contact.create({
         franchise_id: myFranchise.evolution_instance_id,
         nome: capitalize(newContactForm.nome),
-        telefone: newContactForm.telefone?.trim() || null,
+        telefone: normalizePhone(newContactForm.telefone),
         endereco: capitalize(newContactForm.endereco) || null,
         bairro: capitalize(newContactForm.bairro) || null,
         notas: newContactForm.notas?.trim() || null,
@@ -306,7 +306,7 @@ export default function MyContacts() {
       if (!(await checkSession())) return;
       const updateData = {
         nome: capitalize(editForm.nome),
-        telefone: editForm.telefone?.trim() || null,
+        telefone: normalizePhone(editForm.telefone),
         endereco: capitalize(editForm.endereco) || null,
         bairro: capitalize(editForm.bairro) || null,
         notas: editForm.notas?.trim() || null,
@@ -322,6 +322,27 @@ export default function MyContacts() {
       setIsSaving(false);
     }
   };
+
+  const [deletingContactId, setDeletingContactId] = useState(null);
+
+  const handleDelete = async (contact) => {
+    if (deletingContactId) return;
+    try {
+      setDeletingContactId(contact.id);
+      if (!(await checkSession())) return;
+      await Contact.delete(contact.id);
+      toast.success("Contato excluído");
+      setEditingContact(null);
+      loadContacts();
+    } catch (error) {
+      console.error("Erro ao excluir contato:", error);
+      toast.error(getErrorMessage(error));
+    } finally {
+      setDeletingContactId(null);
+    }
+  };
+
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const getContactName = (contact) =>
     contact.nome || contact.customer_name || "Sem nome";
@@ -780,22 +801,55 @@ export default function MyContacts() {
               />
             </div>
 
-            {/* Save button */}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setEditingContact(null)}
-                className="rounded-xl"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
-              >
-                {isSaving ? "Salvando..." : "Salvar"}
-              </Button>
+            {/* Action buttons */}
+            <div className="flex items-center pt-2">
+              {confirmDelete === editingContact?.id ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#4a3d3d]">Excluir?</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmDelete(null)}
+                    className="rounded-xl text-xs h-8"
+                  >
+                    Não
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => { setConfirmDelete(null); handleDelete(editingContact); }}
+                    disabled={!!deletingContactId}
+                    className="bg-[#dc2626] hover:bg-[#b91c1c] text-white rounded-xl text-xs h-8"
+                  >
+                    {deletingContactId ? "Excluindo..." : "Sim, excluir"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmDelete(editingContact?.id)}
+                  className="text-[#dc2626] hover:text-[#b91c1c] hover:bg-red-50 rounded-xl text-xs h-8 px-2"
+                >
+                  <MaterialIcon icon="delete" className="text-base mr-1" />
+                  Excluir
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => { setEditingContact(null); setConfirmDelete(null); }}
+                  className="rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                >
+                  {isSaving ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
