@@ -104,6 +104,8 @@ export default function MyContacts() {
   const [activeFilter, setActiveFilter] = useState("todos");
   const [editingContact, setEditingContact] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [isCreating, setIsCreating] = useState(false);
+  const [newContactForm, setNewContactForm] = useState({ nome: "", telefone: "" });
   const [isSaving, setIsSaving] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(true);
   const [sortBy, setSortBy] = useState("recent");
@@ -231,6 +233,39 @@ export default function MyContacts() {
     });
   };
 
+  const handleCreate = async () => {
+    if (!newContactForm.nome?.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+    try {
+      setIsSaving(true);
+      const franchises = await Franchise.list();
+      const myFranchise = franchises.find(
+        (f) => f.id === currentUser?.managed_franchise_ids?.[0] || f.evolution_instance_id === currentUser?.managed_franchise_ids?.[0]
+      );
+      if (!myFranchise?.evolution_instance_id) {
+        toast.error("Franquia não encontrada");
+        return;
+      }
+      await Contact.create({
+        franchise_id: myFranchise.evolution_instance_id,
+        nome: newContactForm.nome.trim(),
+        telefone: newContactForm.telefone?.trim() || "",
+        source: "manual",
+      });
+      toast.success("Contato criado");
+      setIsCreating(false);
+      setNewContactForm({ nome: "", telefone: "" });
+      loadContacts();
+    } catch (error) {
+      console.error("Erro ao criar contato:", error);
+      toast.error("Erro ao criar contato");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!editingContact) return;
     try {
@@ -318,7 +353,53 @@ export default function MyContacts() {
             </p>
           </div>
         </div>
+        <Button
+          onClick={() => setIsCreating(true)}
+          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl gap-2"
+        >
+          <MaterialIcon icon="person_add" size={18} />
+          <span className="hidden sm:inline">Novo Cliente</span>
+        </Button>
       </div>
+
+      {/* Create Contact Dialog */}
+      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Novo Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome *</Label>
+              <Input
+                value={newContactForm.nome}
+                onChange={(e) => setNewContactForm({ ...newContactForm, nome: e.target.value })}
+                placeholder="Nome do cliente"
+              />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input
+                value={newContactForm.telefone}
+                onChange={(e) => setNewContactForm({ ...newContactForm, telefone: e.target.value })}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsCreating(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={isSaving || !newContactForm.nome?.trim()}
+                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+              >
+                {isSaving ? "Salvando..." : "Criar Contato"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Smart Actions Panel */}
       {contacts.length > 0 && (

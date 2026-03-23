@@ -8,7 +8,7 @@ import { ITEM_DETAILS } from "./ITEM_DETAILS";
 function ItemDetails({ details }) {
   if (!details) return null;
   return (
-    <div className="mx-5 mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-slate-600 leading-relaxed">
+    <div className="mx-5 mb-3 rounded-lg border border-[#d4af37]/20 bg-[#d4af37]/5 px-4 py-3 text-[13px] text-[#4a3d3d] leading-relaxed">
       <div className="whitespace-pre-wrap">{details.text}</div>
       {details.links?.length > 0 && (
         <div className="mt-2 flex flex-col gap-1">
@@ -19,7 +19,7 @@ function ItemDetails({ details }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-blue-600 underline underline-offset-2 hover:text-blue-800 font-medium"
+              className="inline-flex items-center gap-1 text-[#b91c1c] underline underline-offset-2 hover:text-[#991b1b] font-medium"
             >
               {link.label}
               <MaterialIcon icon="open_in_new" size={12} className="flex-shrink-0" />
@@ -56,19 +56,19 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background: "linear-gradient(135deg, #D32F2F, #C49A2A)" }}>
             9
           </div>
-          <h3 className="font-bold text-slate-800 flex items-center gap-2">
-            <MaterialIcon icon="rocket_launch" size={16} className="text-amber-600" />
+          <h3 className="font-bold text-[#1b1c1d] flex items-center gap-2">
+            <MaterialIcon icon="rocket_launch" size={16} className="text-[#d4af37]" />
             Gate de Liberação
           </h3>
-          <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold">
+          <Badge className="bg-[#d4af37]/10 text-[#775a19] border border-[#d4af37]/30 text-xs font-bold">
             PRÉ-REQUISITO PARA TRÁFEGO PAGO
           </Badge>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-amber-700">
+          <span className="text-xs text-[#775a19]">
             {blocks1to8Complete ? "Blocos 1-8 completos! Aguardando validação do admin." : "Complete os blocos 1-8 primeiro"}
           </span>
-          <span className="text-sm font-semibold text-amber-700">{checkedCount}/{total}</span>
+          <span className="text-sm font-semibold text-[#775a19]">{checkedCount}/{total}</span>
         </div>
         <div className="w-full bg-white/60 rounded-full h-2 mt-2">
           <div
@@ -78,7 +78,7 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
         </div>
       </div>
       <CardContent className="p-0">
-        <div className="divide-y divide-amber-100">
+        <div className="divide-y divide-[#d4af37]/10">
           {gateItems.map((item) => {
             const tag = ROLE_TAGS[item.role];
             const locked = !canMark(item);
@@ -88,14 +88,14 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
 
             return (
               <div key={item.key}>
-                <div className={`flex items-start gap-3 px-5 py-3 ${!locked ? "hover:bg-amber-50" : "opacity-70"} ${item.highlight ? "bg-amber-50/60" : ""}`}>
+                <div className={`flex items-start gap-3 px-5 py-3 ${!locked ? "hover:bg-[#d4af37]/5" : "opacity-70"} ${item.highlight ? "bg-[#d4af37]/5" : ""}`}>
                   {/* Checkbox area */}
                   <div
                     className={`mt-0.5 flex-shrink-0 ${!locked ? "cursor-pointer" : ""}`}
                     onClick={() => !locked && onToggle(item.key)}
                   >
                     {locked ? (
-                      <div className="w-5 h-5 rounded border-2 border-amber-300 bg-amber-50 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded border-2 border-[#d4af37]/30 bg-[#d4af37]/5 flex items-center justify-center">
                         {item.role === "auto" ? (
                           checked ? (
                             <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,13 +103,13 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                             </svg>
                           ) : null
                         ) : (
-                          <MaterialIcon icon="lock" size={12} className="text-amber-400" />
+                          <MaterialIcon icon="lock" size={12} className="text-[#d4af37]/60" />
                         )}
                       </div>
                     ) : (
                       <div
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                          checked ? "border-green-500 bg-green-500" : "border-amber-400 bg-white"
+                          checked ? "border-green-500 bg-green-500" : "border-[#d4af37]/40 bg-white"
                         }`}
                       >
                         {checked && (

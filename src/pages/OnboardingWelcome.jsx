@@ -18,15 +18,15 @@ const STEPS = [
     bgGradient: "from-[#d4af37]/10 to-[#d4af37]/5",
   },
   {
-    icon: "storefront",
-    title: "Minha Loja",
+    icon: "point_of_sale",
+    title: "Vendas e Gestão",
     description:
-      "Seu painel central com tudo que você precisa para o dia a dia da franquia.",
+      "Registre vendas com poucos cliques e acompanhe toda a operação da sua franquia.",
     detail: null,
     color: "#b91c1c",
     bgGradient: "from-[#b91c1c]/10 to-[#b91c1c]/5",
     features: [
-      { icon: "point_of_sale", label: "Lançar Vendas", desc: "Registre cada venda com poucos cliques" },
+      { icon: "point_of_sale", label: "Vendas", desc: "Registre cada venda com poucos cliques" },
       { icon: "analytics", label: "Resultado", desc: "Veja seu lucro, despesas e faturamento" },
       { icon: "inventory_2", label: "Estoque", desc: "Controle seus produtos e quantidades" },
       { icon: "local_shipping", label: "Reposição", desc: "Peça produtos direto para a fábrica" },
@@ -126,7 +126,7 @@ export default function OnboardingWelcome() {
   const handleSkip = () => {
     localStorage.setItem("onboarding_skipped", "true");
     toast.success("Você pode acessar o onboarding a qualquer momento pelo menu.");
-    navigate("/Dashboard", { replace: true });
+    navigate("/Onboarding", { replace: true });
   };
 
   const handleComplete = async () => {

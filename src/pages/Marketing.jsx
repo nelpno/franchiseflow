@@ -260,6 +260,19 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
 
         toast.success("Link adicionado com sucesso!");
       } else {
+        const ALLOWED_TYPES = ['image/jpeg','image/png','image/webp','image/gif','video/mp4','application/pdf'];
+        const MAX_SIZE = 20 * 1024 * 1024;
+        for (const file of files) {
+          if (!ALLOWED_TYPES.includes(file.type)) {
+            toast.error(`Tipo de arquivo não permitido: ${file.name}`);
+            return;
+          }
+          if (file.size > MAX_SIZE) {
+            toast.error(`Arquivo muito grande (máximo 20MB): ${file.name}`);
+            return;
+          }
+        }
+
         for (const file of files) {
           const ext = file.name.split(".").pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;

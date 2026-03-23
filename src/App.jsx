@@ -20,8 +20,9 @@ const ADMIN_ONLY_PAGES = new Set([
 ]);
 
 function AdminRoute({ children }) {
-  const { user } = useAuth();
-  if (user && user.role !== 'admin') {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <PageFallback />;
+  if (!user || user.role !== 'admin') {
     return <Navigate to="/Dashboard" replace />;
   }
   return children;

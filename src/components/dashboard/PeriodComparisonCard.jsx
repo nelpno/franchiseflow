@@ -86,7 +86,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
       const { period1, period2 } = preset.getPeriods();
 
       // Fetch sales for both periods
-      const allSales = await Sale.list("-sale_date");
+      const allSales = await Sale.list("-sale_date", 500);
       const sales1 = allSales.filter(
         (s) =>
           s.franchise_id === franchiseId &&
@@ -167,7 +167,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
     if (expanded && !data && franchiseId) {
       loadComparison(activePreset);
     }
-  }, [franchiseId]);
+  }, [franchiseId, expanded, activePreset, loadComparison]);
 
   const handlePresetChange = (key) => {
     setActivePreset(key);

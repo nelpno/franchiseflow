@@ -32,8 +32,9 @@ export default function FranchiseeDashboard() {
   const [contacts, setContacts] = useState([]);
   const [botActive, setBotActive] = useState(false);
 
-  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
-  const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
+  // Computed inside loadData to stay fresh after midnight
+  const getToday = () => format(new Date(), "yyyy-MM-dd");
+  const getYesterday = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
 
   const franchiseId = ctxFranchise?.id;
 
@@ -43,6 +44,8 @@ export default function FranchiseeDashboard() {
     try {
       setFranchise(ctxFranchise);
 
+      const today = getToday();
+      const yesterday = getYesterday();
       const evoId = ctxFranchise?.evolution_instance_id;
       const fId = evoId || franchiseId;
       const [
@@ -101,7 +104,7 @@ export default function FranchiseeDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [franchiseId, today, yesterday]);
+  }, [franchiseId]);
 
   useEffect(() => {
     loadData();
