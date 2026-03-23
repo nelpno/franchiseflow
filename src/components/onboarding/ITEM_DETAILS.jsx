@@ -30,7 +30,7 @@ export const ITEM_DETAILS = {
     text: "O freezer deve manter -18°C ou menos. Verifique diariamente. Produto descongelado = produto perdido.\n\nDica: não sobrecarregue — deixe espaço para o ar circular. Um termômetro digital custa R$15-25 no Mercado Livre.",
   },
   "3-2": {
-    text: "Organize por categoria: Canelone | Conchiglione | Rondelli | Sofioli | Nhoque | Massas Base | Molhos.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
+    text: "Organize por categoria: Massas | Molhos | Outros.\n\nNo app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
   },
   "3-3": {
     text: "Use sacolas Boca de Palhaço para boa apresentação e segurança dos produtos.\n\n- 30x40 — pacote com cerca de 350 unidades\n- 35x45 — pacote com cerca de 265 unidades\n\nFornecedor: Rodrigo — D'Momentus Uniformes\nWhatsApp: (18) 99610-9903\n\nDica: coloque um panfleto ou cartão de visita na sacola — gera indicações!",

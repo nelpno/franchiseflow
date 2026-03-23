@@ -695,8 +695,8 @@ export default function TabEstoque({
                             <span className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                               Quantidade
                             </span>
-                            <p
-                              className="font-bold text-[#1b1c1d] cursor-pointer hover:text-[#775a19]"
+                            <div
+                              className="font-bold text-[#1b1c1d] cursor-pointer active:text-[#775a19] flex items-center gap-1 bg-[#e9e8e9]/50 rounded-lg px-2 py-1 min-h-[32px]"
                               onClick={() =>
                                 handleCellClick(item.id, "quantity", item.quantity)
                               }
@@ -712,19 +712,22 @@ export default function TabEstoque({
                                   onChange={(e) => setEditValue(e.target.value)}
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
-                                  className="w-20 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
+                                  className="w-full h-6 font-bold bg-transparent border-none rounded-none p-0 focus-visible:ring-0"
                                 />
                               ) : (
-                                <>{item.quantity ?? 0} {item.unit}</>
+                                <>
+                                  <span>{item.quantity ?? 0} {item.unit}</span>
+                                  <MaterialIcon icon="edit" size={12} className="text-[#4a3d3d]/40" />
+                                </>
                               )}
-                            </p>
+                            </div>
                           </div>
                           <div>
                             <span className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                               Min.
                             </span>
-                            <p
-                              className="font-bold text-[#1b1c1d] cursor-pointer hover:text-[#775a19]"
+                            <div
+                              className="font-bold text-[#1b1c1d] cursor-pointer active:text-[#775a19] flex items-center gap-1 bg-[#e9e8e9]/50 rounded-lg px-2 py-1 min-h-[32px]"
                               onClick={() =>
                                 handleCellClick(item.id, "min_stock", item.min_stock)
                               }
@@ -740,12 +743,15 @@ export default function TabEstoque({
                                   onChange={(e) => setEditValue(e.target.value)}
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
-                                  className="w-20 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
+                                  className="w-full h-6 font-bold bg-transparent border-none rounded-none p-0 focus-visible:ring-0"
                                 />
                               ) : (
-                                <>{item.min_stock ?? 0}</>
+                                <>
+                                  <span>{item.min_stock ?? 0}</span>
+                                  <MaterialIcon icon="edit" size={12} className="text-[#4a3d3d]/40" />
+                                </>
                               )}
-                            </p>
+                            </div>
                           </div>
                         </div>
 
@@ -761,8 +767,8 @@ export default function TabEstoque({
                             <span className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                               Venda
                             </span>
-                            <p
-                              className={`cursor-pointer hover:text-[#775a19] ${
+                            <div
+                              className={`cursor-pointer active:text-[#775a19] flex items-center gap-1 bg-[#e9e8e9]/50 rounded-lg px-2 py-1 min-h-[32px] ${
                                 !item.sale_price ? "text-[#b91c1c] font-medium" : "text-[#4a3d3d]"
                               }`}
                               onClick={() =>
@@ -781,24 +787,27 @@ export default function TabEstoque({
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
                                   placeholder={getRecommendedPrice(item) ? formatBRL(getRecommendedPrice(item)) : "0,00"}
-                                  className="w-24 h-7 text-sm bg-[#e9e8e9] border-none rounded-lg"
+                                  className="w-full h-6 bg-transparent border-none rounded-none p-0 focus-visible:ring-0"
                                 />
                               ) : (
-                                <span className="flex items-center gap-1">
-                                  {item.sale_price ? (
-                                    <>
-                                      {formatBRL(item.sale_price)}
-                                      {getMarginBadge(item)}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <MaterialIcon icon="warning" size={12} className="text-[#b91c1c]" />
-                                      Definir
-                                    </>
-                                  )}
-                                </span>
+                                <>
+                                  <span className="flex items-center gap-1">
+                                    {item.sale_price ? (
+                                      <>
+                                        {formatBRL(item.sale_price)}
+                                        {getMarginBadge(item)}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <MaterialIcon icon="warning" size={12} className="text-[#b91c1c]" />
+                                        Definir
+                                      </>
+                                    )}
+                                  </span>
+                                  <MaterialIcon icon="edit" size={12} className="text-[#4a3d3d]/40 ml-auto" />
+</>
                               )}
-                            </p>
+                            </div>
                           </div>
                         </div>
 
