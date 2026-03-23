@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import ProgressRing from "./ProgressRing";
 import { ROLE_TAGS } from "./ONBOARDING_BLOCKS";
 import { ITEM_DETAILS } from "./ITEM_DETAILS";
 
@@ -18,7 +19,7 @@ function ItemDetails({ details }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-[#b91c1c] underline underline-offset-2 hover:text-[#991b1b] font-medium"
+              className="inline-flex items-center gap-1 text-[#b91c1c] underline underline-offset-2 hover:text-[#991b1b] font-medium min-h-[40px]"
             >
               {link.label}
               <MaterialIcon icon="open_in_new" size={12} className="flex-shrink-0" />
@@ -30,8 +31,20 @@ function ItemDetails({ details }) {
   );
 }
 
-export default function OnboardingBlock({ block, items, onToggle, isAdmin, disabled, isExpanded, onToggleExpand, blockRef }) {
+function getSubtitle(checkedCount, total, isNextActive) {
+  if (checkedCount === total) return { text: "Missão completa!", color: "#059669" };
+  if (checkedCount === total - 1) return { text: "Falta 1 item!", color: null }; // null = use block.color
+  if (checkedCount === 0 && isNextActive) return { text: "Pronta para você", color: null };
+  if (checkedCount === 0) return { text: "Toque para começar", color: null };
+  return { text: `${checkedCount} de ${total} itens`, color: "#4a3d3d" };
+}
+
+export default function OnboardingBlock({ block, items, onToggle, isAdmin, disabled, isExpanded, onToggleExpand, blockRef, isNextActive }) {
   const [expandedKeys, setExpandedKeys] = useState({});
+  const [celebrating, setCelebrating] = useState(false);
+  const celebrationTimerRef = useRef(null);
+  const prevCompleteRef = useRef(false);
+
   const blockItems = block.items || [];
   const checkedCount = blockItems.filter(i => items[i.key]).length;
   const total = blockItems.length;
@@ -41,8 +54,32 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
   // Separate franchisee items from franchisor items
   const franchiseeItems = blockItems.filter(i => i.role === "franchisee" || i.role === "both");
   const franchisorItems = blockItems.filter(i => i.role === "franchisor");
-  const franchiseeChecked = franchiseeItems.filter(i => items[i.key]).length;
-  const franchisorChecked = franchisorItems.filter(i => items[i.key]).length;
+
+  // Micro-celebration: detect completion transition
+  useEffect(() => {
+    if (isComplete && !prevCompleteRef.current && checkedCount > 0) {
+      setCelebrating(true);
+      celebrationTimerRef.current = setTimeout(() => setCelebrating(false), 3000);
+    }
+    prevCompleteRef.current = isComplete;
+  }, [isComplete, checkedCount]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+    };
+  }, []);
+
+  const handleToggleExpand = () => {
+    // User interaction cancels celebration timer
+    if (celebrationTimerRef.current) {
+      clearTimeout(celebrationTimerRef.current);
+      celebrationTimerRef.current = null;
+      setCelebrating(false);
+    }
+    onToggleExpand();
+  };
 
   const canMark = (item) => {
     if (isAdmin) return item.role !== "auto";
@@ -50,12 +87,40 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
     return true;
   };
 
-  const toggleExpand = (key, e) => {
+  const toggleItemExpand = (key, e) => {
     e.stopPropagation();
     setExpandedKeys(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const remaining = total - checkedCount;
+  const subtitle = getSubtitle(checkedCount, total, isNextActive);
+  const subtitleColor = subtitle.color || block.color;
+
+  // Progress illusion: next active block with 0 items shows 5%
+  const ringProgress = (isNextActive && checkedCount === 0) ? 5 : progress;
+
+  // Border-left style
+  const borderLeftColor = isComplete ? "#10b981" : block.color;
+  const borderLeftWidth = (isExpanded && !isComplete) ? 5 : 4;
+
+  // Card classes
+  let cardClassName = "overflow-hidden transition-all duration-300 rounded-xl ";
+  if (isComplete) {
+    cardClassName += "bg-[#ecfdf5]/30 border border-emerald-200";
+  } else if (isExpanded) {
+    cardClassName += "shadow-md border border-[#291715]/5";
+  } else {
+    cardClassName += "bg-white border border-[#291715]/5 hover:shadow-sm";
+  }
+
+  // Celebration glow
+  const celebrationStyle = celebrating ? {
+    borderLeft: `${borderLeftWidth}px solid ${borderLeftColor}`,
+    boxShadow: `0 0 20px ${block.color}40`,
+    transform: "scale(1.02)",
+    transition: "transform 300ms ease, box-shadow 300ms ease",
+  } : {
+    borderLeft: `${borderLeftWidth}px solid ${borderLeftColor}`,
+  };
 
   const renderItem = (item) => {
     const tag = ROLE_TAGS[item.role];
@@ -71,7 +136,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
             locked && !checked ? "opacity-70" : ""
           }`}
         >
-          {/* Checkbox — click target is the checkbox area, not the whole row */}
+          {/* Checkbox — click target is the checkbox area only */}
           <div
             className={`mt-0.5 flex-shrink-0 ${!locked ? "cursor-pointer" : ""}`}
             onClick={() => !locked && onToggle(item.key)}
@@ -109,7 +174,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
               </span>
               {details && (
                 <button
-                  onClick={(e) => toggleExpand(item.key, e)}
+                  onClick={(e) => toggleItemExpand(item.key, e)}
                   className={`inline-flex items-center flex-shrink-0 mt-0.5 w-5 h-5 rounded-full transition-all ${
                     isItemExpanded
                       ? "bg-[#d4af37]/20 text-[#775a19]"
@@ -139,94 +204,70 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
 
   return (
     <div ref={blockRef}>
-      <Card className={`overflow-hidden transition-all duration-300 ${
-        isComplete
-          ? "border border-emerald-200 bg-emerald-50/30"
-          : isExpanded
-          ? "border-2 shadow-md"
-          : "border border-[#291715]/8 hover:border-[#291715]/15"
-      }`} style={!isComplete && isExpanded ? { borderColor: block.color + "60" } : {}}>
+      <Card className={cardClassName} style={celebrationStyle}>
 
-        {/* Collapsible Header */}
-        <button
-          onClick={onToggleExpand}
-          className={`w-full px-4 py-4 flex items-center gap-3 transition-colors ${
-            isExpanded && !isComplete ? "" : "hover:bg-[#fbf9fa]"
-          }`}
-          style={isExpanded && !isComplete ? { backgroundColor: block.color + "0D" } : {}}
-        >
-          {/* Block number badge */}
+        {/* Celebration banner */}
+        {celebrating && (
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all ${
-              isComplete ? "bg-emerald-500 text-white" : "text-white"
-            }`}
-            style={!isComplete ? { backgroundColor: block.color } : {}}
+            className="px-4 py-2 text-center text-white text-sm font-bold"
+            style={{
+              backgroundColor: block.color,
+              animation: "fade-in 300ms ease-out",
+            }}
           >
-            {isComplete ? (
-              <MaterialIcon icon="check" size={18} />
-            ) : (
-              block.id
-            )}
+            🎉 Missão completa!
+          </div>
+        )}
+
+        {/* Card Header */}
+        <button
+          onClick={handleToggleExpand}
+          className="w-full p-3 sm:p-4 flex items-center gap-3 transition-colors hover:bg-[#fbf9fa]/50"
+        >
+          {/* Progress Ring */}
+          <div className="sm:hidden">
+            <ProgressRing
+              size={40}
+              progress={ringProgress}
+              color={block.color}
+              isComplete={isComplete}
+              icon={block.icon}
+            />
+          </div>
+          <div className="hidden sm:block">
+            <ProgressRing
+              size={48}
+              progress={ringProgress}
+              color={block.color}
+              isComplete={isComplete}
+              icon={block.icon}
+            />
           </div>
 
-          {/* Title + progress */}
+          {/* Title + Subtitle */}
           <div className="flex-1 min-w-0 text-left">
             <h3 className={`font-bold text-sm ${isComplete ? "text-emerald-700" : "text-[#1b1c1d]"}`}>
               {block.title}
             </h3>
-            {!isExpanded && !isComplete && (
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 bg-[#291715]/5 rounded-full h-1.5 max-w-[120px]">
-                  <div
-                    className="h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%`, backgroundColor: block.color }}
-                  />
-                </div>
-                <span className="text-xs text-[#4a3d3d]/70">{checkedCount}/{total}</span>
-              </div>
-            )}
-            {isComplete && !isExpanded && (
-              <span className="text-xs text-emerald-600 font-medium">Completo!</span>
-            )}
-          </div>
-
-          {/* Expand/collapse icon */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isExpanded && !isComplete && (
-              <span className="text-xs font-semibold hidden sm:block" style={{ color: block.color }}>
-                {checkedCount}/{total}
-              </span>
-            )}
-            <MaterialIcon
-              icon={isExpanded ? "expand_less" : "expand_more"}
-              size={20}
-              className={`transition-transform text-[#4a3d3d]/40`}
-            />
-          </div>
-        </button>
-
-        {/* Progress bar when expanded */}
-        {isExpanded && !isComplete && (
-          <div className="px-4 pb-2">
-            <div className="w-full bg-white/60 rounded-full h-2">
-              <div
-                className="h-2 rounded-full transition-all duration-500"
-                style={{ width: `${progress}%`, backgroundColor: block.color }}
-              />
-            </div>
-            <p className="text-xs mt-1.5 font-medium" style={{ color: block.color }}>
-              {remaining === 0
-                ? "Tudo pronto neste bloco!"
-                : remaining === 1
-                ? "Falta apenas 1 item!"
-                : `Faltam ${remaining} itens para completar`}
+            <p className="text-xs mt-0.5" style={{ color: subtitleColor }}>
+              {subtitle.text}
             </p>
           </div>
-        )}
 
-        {/* Items - only when expanded */}
+          {/* Chevron */}
+          <MaterialIcon
+            icon={isExpanded ? "expand_less" : "expand_more"}
+            size={20}
+            className="text-[#4a3d3d]/40 flex-shrink-0"
+          />
+        </button>
+
+        {/* Expanded Content */}
         {isExpanded && (
-          <CardContent className="p-0 pt-1">
+          <CardContent className="p-0 pt-0">
+            {/* Dashed separator */}
+            <div className="border-t border-dashed border-[#291715]/10 mx-4" />
+
             {/* Franchisee/both items */}
             {franchiseeItems.length > 0 && (
               <div className="divide-y divide-[#291715]/5">
@@ -250,7 +291,23 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
             )}
           </CardContent>
         )}
+
+        {/* Expanded background tint */}
+        {isExpanded && !isComplete && (
+          <style>{`
+            [data-block-id="${block.id}"] {
+              background-color: ${block.color}08;
+            }
+          `}</style>
+        )}
       </Card>
+
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
