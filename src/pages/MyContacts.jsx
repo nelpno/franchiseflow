@@ -595,21 +595,22 @@ export default function MyContacts() {
                 )}
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-2 pt-1 border-t border-[#291715]/5">
+                <div className="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-[#291715]/5">
                   {phone ? (
                     <>
                       <a
                         href={getWhatsAppLink(phone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
                       >
                         <MaterialIcon icon="chat" size={16} />
-                        WhatsApp
+                        <span className="hidden sm:inline">WhatsApp</span>
+                        <span className="sm:hidden">Zap</span>
                       </a>
                       <button
                         onClick={() => setHistoryContact(contact)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 transition-colors"
                         title="Ver histórico de mensagens"
                       >
                         <MaterialIcon icon="history" size={16} />
@@ -618,26 +619,29 @@ export default function MyContacts() {
                   ) : (
                     <button
                       onClick={() => openEdit(contact)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
                       title="Adicionar telefone para usar WhatsApp"
                     >
                       <MaterialIcon icon="phone" size={16} />
-                      + Telefone
+                      <span className="hidden sm:inline">+ Telefone</span>
+                      <span className="sm:hidden">+ Tel</span>
                     </button>
                   )}
                   <button
                     onClick={() => navigateToSales(contact)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#d4af37]/10 text-[#775a19] hover:bg-[#d4af37]/20 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#d4af37]/10 text-[#775a19] hover:bg-[#d4af37]/20 transition-colors"
                   >
                     <MaterialIcon icon="point_of_sale" size={16} />
-                    + Venda
+                    <span className="hidden sm:inline">+ Venda</span>
+                    <span className="sm:hidden">Venda</span>
                   </button>
                   <button
                     onClick={() => openEdit(contact)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#e9e8e9] text-[#4a3d3d] hover:bg-[#e9e8e9]/80 transition-colors ml-auto"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#e9e8e9] text-[#4a3d3d] hover:bg-[#e9e8e9]/80 transition-colors ml-auto"
+                    title="Editar contato"
                   >
                     <MaterialIcon icon="edit" size={16} />
-                    Editar
+                    <span className="hidden sm:inline">Editar</span>
                   </button>
                 </div>
               </div>

@@ -323,7 +323,13 @@ export default function TabEstoque({
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
-      toast.error("Erro ao salvar produto.");
+      if (error?.code === "42501" || error?.message?.includes("policy")) {
+        toast.error("Sem permissão para editar este produto.");
+      } else if (error?.message?.includes("Tempo limite")) {
+        toast.error("Salvamento demorou demais. Tente novamente.");
+      } else {
+        toast.error(`Erro ao salvar produto: ${error?.message || "tente novamente"}`);
+      }
     } finally {
       setIsSubmitting(false);
     }

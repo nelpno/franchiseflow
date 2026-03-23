@@ -190,22 +190,24 @@ function FranchiseSettingsContent() {
       catalog_image_url: config.catalog_image_url || '',
     };
 
-    // Restore draft from localStorage if exists and newer than last save
+    // Restore draft from localStorage if recent, newer than last save
     const draftKey = `wizard_draft_${config.franchise_evolution_instance_id}`;
     try {
       const draftRaw = localStorage.getItem(draftKey);
       if (draftRaw) {
         const draft = JSON.parse(draftRaw);
-        const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : 0;
-        if (draft.savedAt > configUpdatedAt) {
-          // Draft is newer than saved config — restore it
+        const maxDraftAge = 24 * 60 * 60 * 1000; // 24h max
+        const draftAge = Date.now() - (draft.savedAt || 0);
+        // If updated_at missing, treat config as "just now" to avoid stale drafts overriding
+        const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : Date.now();
+
+        if (draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
           setFormData({ ...baseData, ...draft.data });
           setCurrentStep(draft.step || 1);
           setIsDirty(true);
           toast.info("Rascunho restaurado. Suas alterações não salvas foram recuperadas.", { duration: 5000 });
           return;
         } else {
-          // Config is newer — discard stale draft
           localStorage.removeItem(draftKey);
         }
       }

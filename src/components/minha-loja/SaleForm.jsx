@@ -561,11 +561,11 @@ export default function SaleForm({
     try {
       const phone = inlineContactPhone.trim()
         ? normalizePhone(inlineContactPhone.trim())
-        : "";
+        : null;
       const newContact = await Contact.create({
         franchise_id: franchiseId,
         telefone: phone,
-        nome: inlineContactName.trim(),
+        nome: inlineContactName.trim() || null,
         status: "cliente",
         source: "manual",
       });
@@ -579,7 +579,13 @@ export default function SaleForm({
       toast.success("Contato criado!");
     } catch (err) {
       console.error("Erro ao criar contato:", err);
-      toast.error("Erro ao criar contato.");
+      if (err?.code === "23505" || err?.message?.includes("unique") || err?.message?.includes("duplicate")) {
+        toast.error("Esse telefone já está cadastrado nesta franquia.");
+      } else if (err?.code === "42501" || err?.message?.includes("policy")) {
+        toast.error("Sem permissão para criar contato. Verifique sua franquia.");
+      } else {
+        toast.error(`Erro ao criar contato: ${err?.message || "tente novamente"}`);
+      }
     } finally {
       setIsCreatingContact(false);
     }
