@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARDING_BLOCKS";
 import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
 import GateBlock from "@/components/onboarding/GateBlock";
+import ProgressRing from "@/components/onboarding/ProgressRing";
 
 const ALL_BLOCK_KEYS = [
   ...BLOCKS.flatMap(b => b.items.map(i => i.key)),
@@ -67,6 +68,7 @@ export default function Onboarding() {
   const [expandedBlockId, setExpandedBlockId] = useState(null);
   const [completedBlocks, setCompletedBlocks] = useState(new Set());
   const saveTimerRef = useRef(null);
+  const celebrationTimerRef = useRef(null);
   const blockRefs = useRef({});
 
   const loadData = useCallback(async () => {
@@ -176,6 +178,7 @@ export default function Onboarding() {
     loadData();
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
     };
   }, [loadData]);
 
@@ -235,13 +238,14 @@ export default function Onboarding() {
         newCompleted.add(block.id);
         setCompletedBlocks(newCompleted);
 
-        toast.success(BLOCK_CELEBRATION[idx] || "Bloco completo!", {
+        toast.success(BLOCK_CELEBRATION[idx] || "Missão completa!", {
           duration: 3000,
           icon: "🎉",
         });
 
-        // Auto-expand next incomplete block after a short delay
-        setTimeout(() => {
+        // Auto-expand next incomplete block after celebration (3.4s)
+        if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+        celebrationTimerRef.current = setTimeout(() => {
           const nextActiveId = findActiveBlockId(newItems);
           setExpandedBlockId(nextActiveId);
 
@@ -252,7 +256,8 @@ export default function Onboarding() {
               nextRef.scrollIntoView({ behavior: "smooth", block: "start" });
             }
           }, 150);
-        }, 400);
+          celebrationTimerRef.current = null;
+        }, 3400);
       }
     });
 
@@ -269,6 +274,28 @@ export default function Onboarding() {
 
   // Count completed blocks
   const completedBlockCount = BLOCKS.filter(b => b.items.every(i => items[i.key])).length;
+
+  // Next active block (first incomplete)
+  const nextActiveBlockId = useMemo(() => findActiveBlockId(items), [items]);
+
+  // Motivational message
+  const motivationalMessage = useMemo(() => {
+    if (progressPct === 0) return "Vamos começar! Sua primeira missão já está esperando.";
+    if (progressPct <= 25) return "Ótimo começo! Continue assim.";
+    if (progressPct <= 50) return "Quase na metade! Você está voando.";
+    if (progressPct <= 75) return "Mais da metade! A reta final está perto.";
+    if (progressPct < 100) return "Falta pouco! Você está quase lá!";
+    return "Todas as missões completas! 🎉";
+  }, [progressPct]);
+
+  // Manual block toggle — cancels celebration auto-expand timer
+  const handleManualToggle = (blockId) => {
+    if (celebrationTimerRef.current) {
+      clearTimeout(celebrationTimerRef.current);
+      celebrationTimerRef.current = null;
+    }
+    setExpandedBlockId(expandedBlockId === blockId ? null : blockId);
+  };
 
   // Admin summary counts
   const inProgressCount = allChecklists.filter(c => c.status === "in_progress").length;
@@ -487,28 +514,51 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                {/* Overall progress */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex-1 bg-[#291715]/5 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="h-3 rounded-full transition-all duration-700"
-                      style={{
-                        width: `${progressPct}%`,
-                        background: progressPct === 100
-                          ? "#10b981"
-                          : "linear-gradient(90deg, #b91c1c 0%, #d4af37 50%, #10b981 100%)",
-                        backgroundSize: "300% 100%",
-                        backgroundPosition: `${100 - progressPct}% 0`,
-                      }}
+                {/* Overall progress with ProgressRing */}
+                <div className="flex items-center gap-4">
+                  <div className="sm:hidden">
+                    <ProgressRing
+                      size={48}
+                      progress={progressPct}
+                      isComplete={progressPct === 100}
+                      icon="rocket_launch"
+                      color="#d4af37"
                     />
                   </div>
-                  <span className="font-bold text-[#1b1c1d] text-sm whitespace-nowrap">
-                    {progressPct}%
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs text-[#4a3d3d]/70">
-                  <span>{completedBlockCount} de 8 missões completas</span>
-                  <span>{liveCounts.completed_count}/{TOTAL_ITEMS} itens</span>
+                  <div className="hidden sm:block">
+                    <ProgressRing
+                      size={56}
+                      progress={progressPct}
+                      isComplete={progressPct === 100}
+                      icon="rocket_launch"
+                      color="#d4af37"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <div className="flex-1 bg-[#291715]/5 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="h-3 rounded-full transition-all duration-700"
+                          style={{
+                            width: `${progressPct}%`,
+                            background: progressPct === 100
+                              ? "#10b981"
+                              : "linear-gradient(90deg, #b91c1c 0%, #d4af37 50%, #10b981 100%)",
+                            backgroundSize: "300% 100%",
+                            backgroundPosition: `${100 - progressPct}% 0`,
+                          }}
+                        />
+                      </div>
+                      <span className="font-bold text-[#1b1c1d] text-sm whitespace-nowrap">
+                        {progressPct}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-[#4a3d3d]/70">
+                      <span>{completedBlockCount} de 8 missões completas</span>
+                      <span>{liveCounts.completed_count}/{TOTAL_ITEMS} itens</span>
+                    </div>
+                    <p className="text-xs text-[#4a3d3d] mt-1.5 italic">{motivationalMessage}</p>
+                  </div>
                 </div>
 
                 {/* Celebration banner */}
@@ -535,25 +585,27 @@ export default function Onboarding() {
                   isAdmin={isAdmin}
                   disabled={checklist.status === "approved"}
                   isExpanded={expandedBlockId === block.id}
-                  onToggleExpand={() => setExpandedBlockId(expandedBlockId === block.id ? null : block.id)}
+                  onToggleExpand={() => handleManualToggle(block.id)}
+                  isNextActive={block.id === nextActiveBlockId}
                   blockRef={el => { blockRefs.current[block.id] = el; }}
                 />
               ))}
             </div>
 
-            {/* Franchisee: celebration when all 8 missions done */}
+            {/* Franchisee: peak-end celebration when all 8 missions done */}
             {!isAdmin && b18Complete && checklist.status !== "approved" && (
-              <Card className="mb-4 bg-gradient-to-br from-emerald-50 to-[#d4af37]/5 border-2 border-emerald-200 rounded-2xl overflow-hidden">
-                <CardContent className="p-6 sm:p-8 text-center">
-                  <div className="text-5xl mb-3">🎉</div>
+              <Card className="mb-4 overflow-hidden rounded-2xl border-2 border-emerald-200"
+                    style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #fef9e7 100%)" }}>
+                <CardContent className="p-5 sm:p-8 text-center">
+                  <MaterialIcon icon="celebration" size={64} className="mx-auto mb-3 text-[#d4af37] animate-bounce" />
                   <h3 className="text-xl font-bold text-emerald-700 font-plus-jakarta mb-2">
-                    Todas as missões completas!
+                    Parabéns! Você está pronto para vender!
                   </h3>
                   <p className="text-emerald-600 text-sm mb-1">
                     O CS foi notificado e vai validar suas configurações.
                   </p>
                   <p className="text-emerald-500 text-xs">
-                    Assim que aprovado, o tráfego pago será ativado em até 48h.
+                    Tráfego pago ativado em até 48h.
                   </p>
                 </CardContent>
               </Card>
