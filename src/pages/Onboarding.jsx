@@ -43,14 +43,14 @@ function findActiveBlockId(items) {
 }
 
 const BLOCK_CELEBRATION = [
-  "Excelente! Documentação em dia!",
-  "Treinamento completo! Você está ficando craque!",
-  "Equipamentos prontos! Vamos pra ação!",
+  "Primeiros passos feitos! Bora!",
+  "Você já conhece todos os produtos!",
+  "Espaço pronto! Operação tomando forma!",
   "WhatsApp configurado! Agora sim!",
-  "Redes sociais no ar! Show!",
-  "Estoque organizado! Profissional demais!",
-  "Logística redonda! Quase lá!",
-  "Financeiro ok! Falta só a aprovação!",
+  "Vendedor ativado! Seu robô está pronto!",
+  "Primeiro pedido feito! Estoque a caminho!",
+  "Treinamento completo! Você está craque!",
+  "Redes sociais no ar! Quase lá!",
 ];
 
 export default function Onboarding() {
@@ -306,9 +306,9 @@ export default function Onboarding() {
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-2 sm:gap-3">
             <MaterialIcon icon="rocket_launch" size={28} className="text-[#d4af37] shrink-0" />
-            Checklist de Iniciação
+            Suas Missões
           </h1>
-          <p className="text-sm sm:text-base text-[#4a3d3d] mt-1">Tudo que precisa estar pronto antes da sua primeira venda</p>
+          <p className="text-sm sm:text-base text-[#4a3d3d] mt-1">Complete as missões e prepare tudo para sua primeira venda</p>
         </div>
 
         {/* Admin summary */}
@@ -507,7 +507,7 @@ export default function Onboarding() {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-[#4a3d3d]/70">
-                  <span>{completedBlockCount} de 8 etapas completas</span>
+                  <span>{completedBlockCount} de 8 missões completas</span>
                   <span>{liveCounts.completed_count}/{TOTAL_ITEMS} itens</span>
                 </div>
 
