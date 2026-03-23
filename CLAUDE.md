@@ -50,20 +50,24 @@ Rota `/set-password`: detecta `type=invite` ou `type=recovery` no hash da URL, p
 - Entity: `Contact` em `src/entities/all.js`
 
 ### Minha Loja (hub central franqueado) — FASE 5
-- Página `MinhaLoja.jsx` com 4 abas: Lançar (vendas), Resultado (P&L), Estoque, Reposição (pedidos fábrica)
+- **Vendas** (`Vendas.jsx`): página dedicada de registro de vendas (TabLancar standalone, sem tab bar)
+  - Deep-linking: `?action=nova-venda` auto-abre formulário, `&phone=` pré-seleciona contato
+  - FAB mobile "Vender" aponta para `/Vendas?action=nova-venda`
+- **Gestão** (`Gestao.jsx`): página com 3 abas (Resultado, Estoque, Reposição)
+  - URL param: `?tab=resultado|estoque|reposicao` (default: resultado)
+- `MinhaLoja.jsx`: redirect inteligente para backward-compat (gestão tabs → `/Gestao`, resto → `/Vendas`)
 - Tabela `sale_items`: itens de cada venda (FK sale_id + inventory_item_id), triggers `stock_decrement`/`stock_revert`
 - Tabela `expenses`: despesas avulsas do franqueado (sacolas, aluguel, etc.)
 - `sales` novos campos: `payment_method`, `card_fee_percent`, `card_fee_amount`, `delivery_method`, `delivery_fee`, `net_value`
 - `inventory_items` novos campos: `cost_price` (admin define padrão), `sale_price` (franqueado define)
 - Entities: `SaleItem`, `Expense` em `src/entities/all.js`
 - Edição de venda = deletar sale_items antigos + reinserir novos (triggers cuidam do estoque)
-- Deep-linking: `?tab=lancar|resultado|estoque|reposicao` + `&action=nova-venda` auto-abre formulário
 - Ações Inteligentes: `src/lib/smartActions.js` gera ações a partir de dados de contacts (responder, reativar, converter, fidelizar, remarketing)
 - WhatsApp utils compartilhados: `src/lib/whatsappUtils.js` (formatPhone, getWhatsAppLink)
 
 ### Pedido de Compra / Reposição — FASE 5
 - Tabela `purchase_orders` + `purchase_order_items` com trigger auto-incremento de estoque ao marcar "entregue"
-- Franqueado: aba "Reposição" em Minha Loja (lista 28 produtos agrupados por tipo, sugestão de compra via giro)
+- Franqueado: aba "Reposição" em Gestão (lista 28 produtos agrupados por tipo, sugestão de compra via giro)
 - Admin: página "Pedidos" (`PurchaseOrders.jsx`) com gestão de status (pendente→confirmado→em_rota→entregue)
 - Admin define frete e previsão de entrega; franqueado vê status + previsão
 - Entities: `PurchaseOrder`, `PurchaseOrderItem` em `src/entities/all.js`
@@ -122,7 +126,7 @@ src/
 │   └── ui/           # shadcn/ui + MaterialIcon.jsx
 ├── hooks/            # useWhatsAppConnection.js, custom hooks
 ├── lib/              # AuthContext, franchiseUtils.js, smartActions.js, whatsappUtils.js
-├── pages/            # MinhaLoja.jsx (hub), MyContacts.jsx, Franchises.jsx, etc.
+├── pages/            # Vendas.jsx, Gestao.jsx, MinhaLoja.jsx (redirect), MyContacts.jsx, etc.
 └── assets/           # logo-maxi-massas.png, imagens estáticas
 ```
 
@@ -169,7 +173,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 - Franchise invite: `{N8N_WEBHOOK_BASE}/franchise-invite` (workflow nbLDyd1KoFIeeJEF)
 
 ## UX por Role
-- **Franqueado**: menu com 5 itens (Início, Minha Loja [4 abas], Meus Clientes, Marketing, Meu Vendedor)
+- **Franqueado**: sidebar 6 itens (Início, Vendas, Gestão [3 abas], Meus Clientes, Marketing, Meu Vendedor) + bottom nav mobile 5 slots (Início, Gestão, FAB Vender, Clientes, Vendedor)
 - **Admin**: menu com itens admin (Relatórios, Acompanhamento, Pedidos, Franqueados)
 - Terminologia simplificada: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio")
 - Dashboard franqueado: motivacional (meta diária, ranking, streak, acesso rápido)
@@ -248,7 +252,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 68. Páginas dentro do Layout NÃO devem ter `min-h-screen` — Layout cuida da altura. Apenas Login, SetPassword e OnboardingWelcome (standalone) usam
 69. Stats cards dashboard franqueado: sempre `grid-cols-3` (NUNCA grid-cols-2) — são 3 cards (Vendas, Faturamento, Valor Médio)
 70. Chart labels mobile: usar abreviações (Seg, Ter, Qua) — labels longos não cabem em 375px
-71. Botão "REGISTRAR VENDA" fixo: `hidden md:flex` — no mobile o FAB "Vender" no bottom nav cuida
+71. Botão "REGISTRAR VENDA" fixo: `hidden md:flex` — no mobile o FAB "Vender" no bottom nav aponta para `/Vendas?action=nova-venda`
 72. Personalidade do bot REMOVIDA da UI do wizard — campo `bot_personality` mantém default no banco para n8n
 73. ReviewSummary.jsx: não mostrar Personalidade nem Boas-vindas — campos removidos do wizard
 74. `Franchise.list()` no Onboarding — NÃO usar `.filter({status:"active"})` que pode excluir franquias válidas
@@ -266,6 +270,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 83. Deploy Portainer: curl bloqueado pelo context-mode hook — usar `mcp ctx_execute` com shell para chamadas HTTP ao Portainer API
 84. useCallback com dependências entre si: definir a função referenciada ANTES da que a usa (ordem importa) — referência circular causa tela branca sem erro no console
 85. Cards de franquia (Franchises.jsx): telefone so aparece quando preenchido, "Contatos Hoje" removido (admin ve no dashboard). Campos opcionais devem ser condicionais — NÃO mostrar linhas vazias
+86. Navegação franqueado separada em Vendas (ação frequente) e Gestão (consultas periódicas) — "Minha Loja" é redirect backward-compat. Sidebar: Vendas (`point_of_sale`), Gestão (`bar_chart`). Bottom nav: Gestão no slot 2, FAB Vender no centro
+87. MinhaLoja.jsx é APENAS redirect — NÃO adicionar lógica nele. URLs antigas `/MinhaLoja?tab=estoque` redirecionam automaticamente para `/Gestao?tab=estoque`
+88. Queries de leitura (`list`/`filter`/`me`) em `entities/all.js` têm timeout de 15s via `withTimeout()` — NUNCA remover
+89. Páginas com data fetching DEVEM ter: (1) `mountedRef` + cleanup no useEffect, (2) `loadError` state, (3) botão "Tentar novamente" — pattern em MyContacts.jsx como referência
+90. NUNCA usar `useEffect(() => { loadData(); }, [])` sem guard `mountedRef` — causa state updates em componente desmontado durante navegação rápida
 
 ## Scripts
 ```bash
@@ -282,7 +291,7 @@ npm run typecheck # TypeScript check
 - FASE 4: Design Stitch + Material Symbols + padronização Atelier ✅
 - **FASE 5 Etapa 1**: Tabela contacts + auto-vinculação + triggers ✅
 - **FASE 5 Etapa 3a**: Franqueados unificado (absorveu Usuários) + Meus Clientes (pipeline) + Vendas com auto-complete ✅
-- **FASE 5 Etapa 3b**: Minha Loja hub (4 abas: Lançar/Resultado/Estoque/Reposição) + Ações Inteligentes + Pedido de Compra + menu 5 itens ✅
+- **FASE 5 Etapa 3b**: Minha Loja hub → separado em Vendas + Gestão (3 abas) + Ações Inteligentes + Pedido de Compra ✅
 - **FASE 5 Etapa 2**: Vendedor genérico migrado (10 nós Supabase, view, RPCs, prompt otimizado) ✅
 - **FASE 5 Etapa 4**: Flag config vendedor + limpeza + deploy Docker (deploy ✅, config vendedor pendente)
 - **FASE 5 Etapa 5**: Onboarding completo (tela senha ✅, trigger cost_price ✅, SPF/DKIM ✅, UX formulário ✅, auto-link ✅)
@@ -325,7 +334,7 @@ npm run typecheck # TypeScript check
 - AdminDashboard: buscar InventoryItem.list() + DailyChecklist.filter({date}) e agrupar no frontend (NÃO fazer N+1 por franquia)
 - FranchiseeDashboard: usar `ctxFranchise` do AuthContext (NÃO buscar Franchise.list())
 - Polling: FranchiseeDashboard 120s, AdminDashboard 180s, NotificationBell 30s
-- MinhaLoja: Sale.list() limitado a 500, Expense.list() limitado a 200
+- Vendas: Sale.list() limitado a 500. Gestao herda limites das tabs (TabResultado, TabEstoque, TabReposicao)
 - SaleForm: auto-save draft em localStorage (debounce 1s) + retry com backoff exponencial
 
 ## Deploy (Portainer)
