@@ -13,9 +13,11 @@ const STEPS = [
 export { STEPS };
 
 export default function WizardStepper({ currentStep, completedSteps = [], skippedSteps = [], onStepClick }) {
-  const activeSteps = STEPS.filter(s => !skippedSteps.includes(s.num));
-  const completedCount = completedSteps.filter(s => !skippedSteps.includes(s)).length;
-  const progressPct = activeSteps.length > 0 ? Math.round((completedCount / activeSteps.length) * 100) : 0;
+  // Revisão (step 6) não conta como etapa — é apenas visualização
+  const REVIEW_STEP = 6;
+  const countableSteps = STEPS.filter(s => s.num !== REVIEW_STEP && !skippedSteps.includes(s.num));
+  const completedCount = completedSteps.filter(s => s !== REVIEW_STEP && !skippedSteps.includes(s)).length;
+  const progressPct = countableSteps.length > 0 ? Math.round((completedCount / countableSteps.length) * 100) : 0;
   const scrollRef = useRef(null);
   const stepRefs = useRef({});
 
@@ -40,7 +42,7 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
           />
         </div>
         <span className="text-xs font-bold text-[#4a3d3d] whitespace-nowrap">
-          {completedCount}/{activeSteps.length} etapas
+          {completedCount}/{countableSteps.length} etapas
         </span>
       </div>
 
