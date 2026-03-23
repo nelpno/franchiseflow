@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import ProgressRing from "./ProgressRing";
 import { GATE_BLOCK, ROLE_TAGS } from "./ONBOARDING_BLOCKS";
 import { ITEM_DETAILS } from "./ITEM_DETAILS";
 
@@ -49,32 +50,50 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
     setExpandedKeys(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const isGateComplete = checkedCount === total;
+  const gateProgress = Math.round((checkedCount / total) * 100);
+
   return (
-    <Card className="border-2 overflow-hidden" style={{ borderColor: "#C49A2A", background: "linear-gradient(135deg, #fff9f0 0%, #fffdf5 100%)" }}>
-      <div className="px-5 py-4" style={{ background: "linear-gradient(135deg, #D32F2F18 0%, #C49A2A22 100%)" }}>
-        <div className="flex flex-wrap items-center gap-2 mb-2">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background: "linear-gradient(135deg, #D32F2F, #C49A2A)" }}>
-            9
-          </div>
-          <h3 className="font-bold text-[#1b1c1d] flex items-center gap-2">
-            <MaterialIcon icon="rocket_launch" size={16} className="text-[#d4af37]" />
-            Gate de Liberação
-          </h3>
-          <Badge className="bg-[#d4af37]/10 text-[#775a19] border border-[#d4af37]/30 text-xs font-bold">
-            PRÉ-REQUISITO PARA TRÁFEGO PAGO
-          </Badge>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-[#775a19]">
-            {blocks1to8Complete ? "Blocos 1-8 completos! Aguardando validação do admin." : "Complete os blocos 1-8 primeiro"}
-          </span>
-          <span className="text-sm font-semibold text-[#775a19]">{checkedCount}/{total}</span>
-        </div>
-        <div className="w-full bg-white/60 rounded-full h-2 mt-2">
-          <div
-            className="h-2 rounded-full transition-all duration-300"
-            style={{ width: `${Math.round((checkedCount / total) * 100)}%`, background: "linear-gradient(90deg, #D32F2F, #C49A2A)" }}
+    <Card
+      className={`overflow-hidden rounded-xl transition-all duration-300 ${
+        isGateComplete ? "bg-[#ecfdf5]/30 border border-emerald-200" : "border border-[#291715]/5 shadow-md"
+      }`}
+      style={{
+        borderLeft: isGateComplete
+          ? "5px solid #10b981"
+          : "5px solid transparent",
+        borderImage: isGateComplete
+          ? undefined
+          : "linear-gradient(to bottom, #D32F2F, #C49A2A) 1",
+        background: isGateComplete ? undefined : "linear-gradient(135deg, #fff9f0 0%, #fffdf5 100%)",
+      }}
+    >
+      <div className="p-3 sm:p-4" style={!isGateComplete ? { background: "linear-gradient(135deg, #D32F2F08 0%, #C49A2A10 100%)" } : {}}>
+        <div className="flex items-center gap-3">
+          <ProgressRing
+            size={48}
+            progress={gateProgress}
+            isComplete={isGateComplete}
+            icon="verified"
+            color="#C49A2A"
           />
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className={`font-bold text-sm ${isGateComplete ? "text-emerald-700" : "text-[#1b1c1d]"}`}>
+                Gate de Liberação
+              </h3>
+              <Badge className="bg-[#d4af37]/10 text-[#775a19] border border-[#d4af37]/30 text-[10px] font-bold">
+                PRÉ-REQUISITO
+              </Badge>
+            </div>
+            <p className="text-xs mt-0.5" style={{ color: isGateComplete ? "#059669" : "#775a19" }}>
+              {isGateComplete
+                ? "Gate completo!"
+                : blocks1to8Complete
+                ? "Aguardando validação do admin"
+                : "Complete as 8 missões primeiro"}
+            </p>
+          </div>
         </div>
       </div>
       <CardContent className="p-0">
@@ -95,10 +114,10 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                     onClick={() => !locked && onToggle(item.key)}
                   >
                     {locked ? (
-                      <div className="w-5 h-5 rounded border-2 border-[#d4af37]/30 bg-[#d4af37]/5 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg border-2 border-[#d4af37]/30 bg-[#d4af37]/5 flex items-center justify-center">
                         {item.role === "auto" ? (
                           checked ? (
-                            <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                             </svg>
                           ) : null
@@ -108,12 +127,12 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                       </div>
                     ) : (
                       <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                          checked ? "border-green-500 bg-green-500" : "border-[#d4af37]/40 bg-white"
+                        className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+                          checked ? "border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200" : "border-[#d4af37]/40 bg-white hover:border-[#d4af37]"
                         }`}
                       >
                         {checked && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
