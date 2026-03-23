@@ -275,6 +275,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 88. Queries de leitura (`list`/`filter`/`me`) em `entities/all.js` têm timeout de 15s via `withTimeout()` — NUNCA remover
 89. Páginas com data fetching DEVEM ter: (1) `mountedRef` + cleanup no useEffect, (2) `loadError` state, (3) botão "Tentar novamente" — pattern em MyContacts.jsx como referência
 90. NUNCA usar `useEffect(() => { loadData(); }, [])` sem guard `mountedRef` — causa state updates em componente desmontado durante navegação rápida
+91. Deep-links atualizados: `/Vendas?action=nova-venda&phone=X` (vendas), `/Gestao?tab=resultado|estoque|reposicao` (gestão) — NUNCA usar `/MinhaLoja?tab=` em código novo
+92. MyContacts tem botão "Novo Cliente" — cria contato com source='manual', franchise_id=evolution_instance_id. Telefone é opcional
+93. Rotas protegidas (AdminRoute) DEVEM checar `isLoading` antes de renderizar children — sem isso, conteúdo admin pisca durante carregamento do perfil
+94. Upload Marketing: validação obrigatória de tipo (image/pdf/mp4) e tamanho (max 20MB) ANTES do upload — seguir pattern de CatalogUpload.jsx
+95. PORTAINER_API_KEY configurada em `.claude/settings.local.json` (env) — disponível automaticamente no shell das sessões
 
 ## Scripts
 ```bash
