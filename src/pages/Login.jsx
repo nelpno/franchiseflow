@@ -181,6 +181,7 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-[#e31818] transition-colors"
                     >
                       {showPassword ? <MaterialIcon icon="visibility_off" size={20} /> : <MaterialIcon icon="visibility" size={20} />}
@@ -214,7 +215,7 @@ export default function Login() {
             <div className="mt-12 text-center">
               <p className="text-sm text-[#3d4a42]">
                 Não possui acesso?{' '}
-                <span className="text-[#e31818] font-bold hover:underline cursor-pointer">Solicite ao administrador</span>
+                <span className="text-[#e31818] font-bold">Solicite ao administrador</span>
               </p>
             </div>
           </div>

@@ -566,7 +566,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
                   Exportar Vendas
                 </h3>
-                <p className="text-xs text-[#4a3d3d]/60 mt-1">
+                <p className="text-xs text-[#4a3d3d]/70 mt-1">
                   {monthSales.length} venda{monthSales.length !== 1 ? "s" : ""} em{" "}
                   {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
                 </p>
@@ -654,7 +654,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-[#4a3d3d]/60 mt-0.5">
+                      <p className="text-xs text-[#4a3d3d]/70 mt-0.5">
                         {log.created_at
                           ? format(parseISO(log.created_at), "dd/MM/yyyy HH:mm", {
                               locale: ptBR,

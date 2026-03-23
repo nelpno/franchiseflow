@@ -157,7 +157,7 @@ export default function OnboardingWelcome() {
       <header className="flex items-center justify-between px-4 md:px-8 py-4 pt-6">
         <img src={logoImg} alt="Maxi Massas" className="h-12 w-auto object-contain" />
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#4a3d3d]/60 font-medium">
+          <span className="text-xs text-[#4a3d3d]/70 font-medium">
             {currentStep + 1} de {STEPS.length}
           </span>
           <button
@@ -175,6 +175,7 @@ export default function OnboardingWelcome() {
           <button
             key={idx}
             onClick={() => goToStep(idx)}
+            aria-label={`Passo ${idx + 1} de ${STEPS.length}`}
             className={`transition-all duration-300 rounded-full ${
               idx === currentStep
                 ? "w-8 h-2 bg-[#b91c1c]"

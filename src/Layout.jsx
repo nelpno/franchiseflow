@@ -325,7 +325,7 @@ export default function Layout({ children, currentPageName }) {
               <div className="space-y-6 pb-6">
                 {Object.entries(groupedItems).map(([section, items]) => (
                   <SidebarGroup key={section} className="space-y-1">
-                    <SidebarGroupLabel className="px-3 mb-2 text-[10px] font-bold text-[#4a3d3d]/50 tracking-widest uppercase">
+                    <SidebarGroupLabel className="px-3 mb-2 text-[10px] font-bold text-[#4a3d3d]/70 tracking-widest uppercase">
                       {section}
                     </SidebarGroupLabel>
                     <SidebarGroupContent>

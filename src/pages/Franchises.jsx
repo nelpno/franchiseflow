@@ -119,7 +119,8 @@ export default function Franchises() {
           toast.success(`Franquia criada! Convite enviado para ${franchiseeEmail}`);
         } catch (inviteError) {
           console.error("Erro ao criar convite:", inviteError);
-          toast.success("Franquia criada! (convite não pode ser enviado)");
+          toast.success("Franquia criada com sucesso!");
+          toast.error("Não foi possível enviar o convite. Tente reenviar manualmente.");
         }
       } else {
         toast.success("Franquia criada com sucesso!");

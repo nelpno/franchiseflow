@@ -191,7 +191,7 @@ export default function WhatsAppHistory({
                       </p>
                       <p
                         className={`text-[10px] mt-1 ${
-                          isFromMe ? "text-white/60" : "text-[#4a3d3d]/60"
+                          isFromMe ? "text-white/70" : "text-[#4a3d3d]/70"
                         } text-right`}
                       >
                         {formatMessageTime(msg.messageTimestamp || msg.timestamp || msg.t)}

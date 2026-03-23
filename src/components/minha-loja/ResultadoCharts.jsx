@@ -144,7 +144,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
             <p className="text-sm text-[#4a3d3d]">
               Dados insuficientes para graficos
             </p>
-            <p className="text-xs text-[#4a3d3d]/60 mt-1">
+            <p className="text-xs text-[#4a3d3d]/70 mt-1">
               Lance vendas em pelo menos 2 meses diferentes
             </p>
           </div>

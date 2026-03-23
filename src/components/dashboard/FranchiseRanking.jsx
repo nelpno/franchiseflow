@@ -39,7 +39,7 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
       {/* Ranking Table (Left 60%) */}
       <div className="lg:col-span-3 bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5">
-        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1b1c1d]/60 mb-8 font-plus-jakarta">
+        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1b1c1d]/70 mb-8 font-plus-jakarta">
           Ranking de Vendas por Unidade
         </h4>
 
@@ -52,7 +52,7 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
 
             return (
               <div key={f.id} className="flex items-center gap-4">
-                <span className="w-6 text-sm font-bold text-[#1b1c1d]/60">
+                <span className="w-6 text-sm font-bold text-[#1b1c1d]/70">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="flex-1">
@@ -124,7 +124,7 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
               </div>
             </div>
           </div>
-          <p className="text-xs text-center text-[#1b1c1d]/60 font-medium">
+          <p className="text-xs text-center text-[#1b1c1d]/70 font-medium">
             Faltam{" "}
             <span className="text-[#a80012] font-bold">
               {formatBRL(remaining)}

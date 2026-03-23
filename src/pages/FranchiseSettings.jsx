@@ -59,7 +59,7 @@ const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
 
 function FieldHint({ text }) {
   return (
-    <p className="text-[11px] text-[#4a3d3d]/50 mt-1.5 flex items-start gap-1">
+    <p className="text-[11px] text-[#4a3d3d]/70 mt-1.5 flex items-start gap-1">
       <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
       <span>{text}</span>
     </p>

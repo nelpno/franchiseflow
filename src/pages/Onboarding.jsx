@@ -326,7 +326,7 @@ export default function Onboarding() {
           <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-[#291715]/5">
             <CardContent className="p-0">
               {franchises.filter(f => allChecklists.find(c => c.franchise_id === f.evolution_instance_id)).length === 0 ? (
-                <div className="p-8 text-center text-[#4a3d3d]/60">
+                <div className="p-8 text-center text-[#4a3d3d]/70">
                   <MaterialIcon icon="groups" size={40} className="mx-auto mb-2 opacity-40" />
                   <p>Nenhum franqueado iniciou o onboarding ainda.</p>
                 </div>
@@ -346,7 +346,7 @@ export default function Onboarding() {
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold text-[#1b1c1d] text-sm">{f.owner_name}</div>
-                            <div className="text-xs text-[#4a3d3d]/60">{f.city}</div>
+                            <div className="text-xs text-[#4a3d3d]/70">{f.city}</div>
                           </div>
                           <div className="w-24 sm:w-32">
                             <div className="bg-[#291715]/5 rounded-full h-2 overflow-hidden">
@@ -358,7 +358,7 @@ export default function Onboarding() {
                                 }}
                               />
                             </div>
-                            <div className="text-xs text-[#4a3d3d]/60 mt-1 text-right">{pct}%</div>
+                            <div className="text-xs text-[#4a3d3d]/70 mt-1 text-right">{pct}%</div>
                           </div>
                           <StatusBadge status={status} />
                         </button>
@@ -397,8 +397,8 @@ export default function Onboarding() {
                     return (
                       <SelectItem key={f.id} value={f.evolution_instance_id}>
                         <span className="font-medium">{f.owner_name}</span>
-                        <span className="text-[#4a3d3d]/60 ml-2">{f.city}</span>
-                        {ob && <span className="ml-2 text-xs text-[#4a3d3d]/60">{ob.completion_percentage}%</span>}
+                        <span className="text-[#4a3d3d]/70 ml-2">{f.city}</span>
+                        {ob && <span className="ml-2 text-xs text-[#4a3d3d]/70">{ob.completion_percentage}%</span>}
                       </SelectItem>
                     );
                   })}
@@ -451,7 +451,7 @@ export default function Onboarding() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
-                    {isSaving && <span className="text-xs text-[#4a3d3d]/60 animate-pulse">Salvando...</span>}
+                    {isSaving && <span className="text-xs text-[#4a3d3d]/70 animate-pulse">Salvando...</span>}
                     {isAdmin && !confirmingDelete && (
                       <Button
                         variant="ghost"
@@ -492,7 +492,7 @@ export default function Onboarding() {
                     {progressPct}%
                   </span>
                 </div>
-                <div className="flex justify-between text-xs text-[#4a3d3d]/60">
+                <div className="flex justify-between text-xs text-[#4a3d3d]/70">
                   <span>{completedBlockCount} de 8 etapas completas</span>
                   <span>{liveCounts.completed_count}/{TOTAL_ITEMS} itens</span>
                 </div>
@@ -541,7 +541,7 @@ export default function Onboarding() {
 
         {/* Nothing selected yet (admin) */}
         {isAdmin && !selectedFranchise && (
-          <div className="text-center py-12 text-[#4a3d3d]/60">
+          <div className="text-center py-12 text-[#4a3d3d]/70">
             <MaterialIcon icon="task_alt" size={48} className="mx-auto mb-3 opacity-30" />
             <p>Selecione um franqueado acima para ver o onboarding</p>
           </div>

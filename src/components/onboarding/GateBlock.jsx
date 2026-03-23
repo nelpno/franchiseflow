@@ -126,14 +126,14 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                     className="flex-1 min-w-0 flex items-start gap-1 cursor-pointer select-none"
                     onClick={(e) => toggleExpand(item.key, e)}
                   >
-                    <span className={`text-sm font-medium ${item.highlight ? "text-amber-900 font-bold text-base" : checked ? "line-through text-slate-400" : "text-slate-700"}`}>
+                    <span className={`text-sm font-medium ${item.highlight ? "text-[#775a19] font-bold text-base" : checked ? "line-through text-[#4a3d3d]/40" : "text-[#1b1c1d]"}`}>
                       {item.label}
                     </span>
                     {details && (
                       <MaterialIcon
                         icon="chevron_right"
                         size={14}
-                        className={`flex-shrink-0 mt-0.5 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                        className={`flex-shrink-0 mt-0.5 text-[#4a3d3d]/70 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                       />
                     )}
                   </div>

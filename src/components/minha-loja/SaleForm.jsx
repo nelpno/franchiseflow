@@ -152,7 +152,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
                 )}
               </span>
               {p.sale_price > 0 && (
-                <span className="text-xs text-[#4a3d3d]/60 font-mono-numbers">
+                <span className="text-xs text-[#4a3d3d]/70 font-mono-numbers">
                   R$ {(p.sale_price || 0).toFixed(2).replace('.', ',')}
                 </span>
               )}
@@ -161,7 +161,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
         </div>
       )}
       {open && filtered.length === 0 && query && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#4a3d3d]/60">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#4a3d3d]/70">
           Nenhum produto encontrado
         </div>
       )}

@@ -98,7 +98,7 @@ export default function NotificationBell({ size = 20 }) {
 
           <div className="overflow-y-auto max-h-80">
             {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-[#4a3d3d]/60">
+              <div className="flex flex-col items-center justify-center py-8 text-[#4a3d3d]/70">
                 <MaterialIcon icon="notifications_none" size={32} />
                 <p className="text-sm mt-2">Nenhuma notificação</p>
               </div>
@@ -117,7 +117,7 @@ export default function NotificationBell({ size = 20 }) {
                       {n.title}
                     </p>
                     <p className="text-xs text-[#4a3d3d]/70 mt-0.5 truncate">{n.message}</p>
-                    <p className="text-[10px] text-[#4a3d3d]/50 mt-1">
+                    <p className="text-[10px] text-[#4a3d3d]/70 mt-1">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                     </p>
                   </div>

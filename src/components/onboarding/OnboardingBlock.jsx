@@ -69,7 +69,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
         <div
           className={`flex items-start gap-3 px-4 py-3 transition-colors ${
             !locked ? "hover:bg-[#d4af37]/5 cursor-pointer" : ""
-          } ${locked && !checked ? "opacity-60" : ""}`}
+          } ${locked && !checked ? "opacity-70" : ""}`}
           onClick={() => !locked && onToggle(item.key)}
         >
           {/* Checkbox - larger for mobile */}
@@ -178,7 +178,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                     style={{ width: `${progress}%`, backgroundColor: block.color }}
                   />
                 </div>
-                <span className="text-xs text-[#4a3d3d]/60">{checkedCount}/{total}</span>
+                <span className="text-xs text-[#4a3d3d]/70">{checkedCount}/{total}</span>
               </div>
             )}
             {isComplete && !isExpanded && (
@@ -236,7 +236,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                 {!isAdmin && (
                   <div className="px-4 py-2 bg-[#291715]/3 flex items-center gap-2">
                     <MaterialIcon icon="schedule" size={14} className="text-[#4a3d3d]/50" />
-                    <span className="text-xs text-[#4a3d3d]/60 font-medium">Aguardando franqueador</span>
+                    <span className="text-xs text-[#4a3d3d]/70 font-medium">Aguardando franqueador</span>
                   </div>
                 )}
                 <div className="divide-y divide-[#291715]/5">

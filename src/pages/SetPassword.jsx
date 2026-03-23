@@ -140,6 +140,7 @@ export default function SetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-[#e31818] transition-colors"
                   >
                     {showPassword ? <MaterialIcon icon="visibility_off" size={20} /> : <MaterialIcon icon="visibility" size={20} />}
@@ -193,7 +194,7 @@ export default function SetPassword() {
 
       <footer className="fixed bottom-6 left-0 right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
-          Digital Atélier &copy; 2024 Maxi Massas Franchise System
+          Digital Atelier &copy; 2026 Maxi Massas Franchise System
         </p>
       </footer>
     </div>
