@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { Sale, SaleItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
+import SaleReceipt from "./SaleReceipt";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
+import { generateReceiptImage, shareImage } from "@/lib/shareUtils";
 import { toast } from "sonner";
 import { format, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -71,6 +73,7 @@ function formatTimeSafe(dateString) {
 
 export default function TabLancar({
   franchiseId,
+  franchiseName,
   currentUser,
   sales,
   contacts,
@@ -84,6 +87,8 @@ export default function TabLancar({
   const [expandedItems, setExpandedItems] = useState({});
   const [deletingSale, setDeletingSale] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sharingSaleId, setSharingSaleId] = useState(null);
+  const receiptRef = useRef(null);
 
   // Filters
   const [period, setPeriod] = useState("month");
@@ -188,6 +193,48 @@ export default function TabLancar({
     setExpandedItems({});
     onRefresh();
   };
+
+  // Share sale receipt
+  const [shareData, setShareData] = useState(null);
+
+  const handleShareSale = useCallback(async (sale) => {
+    const saleId = sale.id;
+    setSharingSaleId(saleId);
+    try {
+      // Ensure items are loaded
+      let items = expandedItems[saleId];
+      if (!items) {
+        items = await SaleItem.filter({ sale_id: saleId });
+        setExpandedItems((prev) => ({ ...prev, [saleId]: items }));
+      }
+
+      const contact = sale.contact_id ? contactsMap[sale.contact_id] : null;
+
+      // Set share data to render receipt off-screen
+      setShareData({ sale, saleItems: items, contact });
+
+      // Wait for React to render the receipt
+      await new Promise((r) => setTimeout(r, 100));
+
+      if (!receiptRef.current) {
+        toast.error("Erro ao gerar comprovante.");
+        return;
+      }
+
+      const blob = await generateReceiptImage(receiptRef.current);
+      const dateStr = format(new Date(), "ddMMyyyy");
+      const clientName = contact?.nome?.replace(/\s+/g, "-") || "venda";
+      const filename = `comprovante-${clientName}-${dateStr}.png`;
+
+      await shareImage(blob, filename);
+    } catch (err) {
+      console.error("Erro ao compartilhar:", err);
+      toast.error("Erro ao gerar comprovante.");
+    } finally {
+      setSharingSaleId(null);
+      setShareData(null);
+    }
+  }, [expandedItems, contactsMap]);
 
   const getContactName = (sale) => {
     if (sale.contact_id && contactsMap[sale.contact_id]) {
@@ -467,6 +514,28 @@ export default function TabLancar({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
+                            handleShareSale(sale);
+                          }}
+                          disabled={sharingSaleId === sale.id}
+                          className="gap-1.5 text-[#4a3d3d]"
+                        >
+                          {sharingSaleId === sale.id ? (
+                            <>
+                              <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
+                              Gerando...
+                            </>
+                          ) : (
+                            <>
+                              <MaterialIcon icon="share" size={14} />
+                              Compartilhar
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleEditSale(sale);
                           }}
                           className="gap-1.5 text-[#4a3d3d]"
@@ -515,6 +584,19 @@ export default function TabLancar({
           />
         </DialogContent>
       </Dialog>
+
+      {/* Off-screen receipt for image generation */}
+      {shareData && (
+        <div style={{ position: "fixed", left: -9999, top: -9999, zIndex: -1 }}>
+          <SaleReceipt
+            ref={receiptRef}
+            sale={shareData.sale}
+            saleItems={shareData.saleItems}
+            contact={shareData.contact}
+            franchiseName={franchiseName}
+          />
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deletingSale} onOpenChange={() => setDeletingSale(null)}>

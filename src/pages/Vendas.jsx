@@ -162,6 +162,7 @@ export default function Vendas() {
 
         <TabLancar
           franchiseId={franchiseId}
+          franchiseName={primaryFranchise.name}
           currentUser={currentUser}
           sales={franchiseSales}
           contacts={franchiseContacts}
