@@ -348,6 +348,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 153. `purchase_order_items` coluna FK é `order_id` (NÃO `purchase_order_id`) — referencia `purchase_orders(id)` com ON DELETE CASCADE
 154. `getErrorMessage(error)` pattern (detecta JWT expired, RLS, FK, timeout) existe em MyContacts.jsx e PurchaseOrderForm.jsx — ao adicionar em novas páginas, copiar o pattern. TODO: extrair para utility compartilhada
 155. Após deploy Portainer, orientar usuário a fazer hard refresh (Ctrl+Shift+R) — browser pode servir JS cacheado do bundle anterior durante ~1 min de rebuild
+156. `deleteCascade(franchiseId, evoId)`: `sales` usa UUID (`franchiseId`), mas `purchase_orders`, `expenses`, `contacts`, `inventory_items`, `daily_checklists` usam `evoId` — NUNCA misturar
 
 ## Scripts
 ```bash

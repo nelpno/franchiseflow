@@ -93,7 +93,7 @@ async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
   // Buscar IDs de vendas e pedidos para limpar itens (FK profunda)
   const { data: sales } = await supabase.from('sales').select('id').eq('franchise_id', franchiseId);
   const saleIds = (sales || []).map(s => s.id);
-  const { data: orders } = await supabase.from('purchase_orders').select('id').eq('franchise_id', franchiseId);
+  const { data: orders } = await supabase.from('purchase_orders').select('id').eq('franchise_id', evoId);
   const orderIds = (orders || []).map(o => o.id);
 
   // Deletar itens filhos primeiro
@@ -102,8 +102,10 @@ async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
 
   // Deletar tabelas que usam franchise UUID
   await supabase.from('sales').delete().eq('franchise_id', franchiseId);
-  await supabase.from('purchase_orders').delete().eq('franchise_id', franchiseId);
-  await supabase.from('expenses').delete().eq('franchise_id', franchiseId);
+
+  // Deletar tabelas que usam evolution_instance_id
+  await supabase.from('purchase_orders').delete().eq('franchise_id', evoId);
+  await supabase.from('expenses').delete().eq('franchise_id', evoId);
 
   // Deletar tabelas que usam evolution_instance_id
   await supabase.from('contacts').delete().eq('franchise_id', evoId);
