@@ -8,6 +8,8 @@ const PAYMENT_COLORS = {
   dinheiro: { color: '#3b82f6', label: 'Dinheiro' },
   cartao_credito: { color: '#8b5cf6', label: 'Cartão Crédito' },
   cartao_debito: { color: '#d4af37', label: 'Cartão Débito' },
+  card_machine: { color: '#f97316', label: 'Máquina de Cartão' },
+  transferencia: { color: '#0ea5e9', label: 'Transferência' },
   other: { color: '#9a8c8c', label: 'Outros' },
 };
 
