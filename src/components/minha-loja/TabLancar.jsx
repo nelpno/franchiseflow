@@ -208,9 +208,8 @@ export default function TabLancar({
 
   // Summary for the filtered period
   const periodStats = useMemo(() => {
-    const total = filteredSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0), 0);
-    const net = filteredSales.reduce((s, sale) => s + (parseFloat(sale.net_value ?? sale.value) || 0), 0);
-    return { count: filteredSales.length, total, net };
+    const total = filteredSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    return { count: filteredSales.length, total };
   }, [filteredSales]);
 
   return (
@@ -343,11 +342,11 @@ export default function TabLancar({
                     {/* Values */}
                     <div className="text-right shrink-0">
                       <p className="font-bold text-[#1b1c1d] font-mono-numbers">
-                        {formatCurrency(sale.value)}
+                        {formatCurrency((parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0))}
                       </p>
-                      {sale.net_value != null && sale.net_value !== sale.value && (
+                      {sale.delivery_fee > 0 && (
                         <p className="text-xs text-[#4a3d3d] font-mono-numbers">
-                          Receb. {formatCurrency(sale.net_value)}
+                          {formatCurrency(sale.value)} + {formatCurrency(sale.delivery_fee)} frete
                         </p>
                       )}
                     </div>
@@ -393,21 +392,21 @@ export default function TabLancar({
                       {/* Financial breakdown */}
                       {(sale.card_fee_amount > 0 || sale.delivery_fee > 0) && (
                         <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
+                          {sale.delivery_fee > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-[#4a3d3d]">Frete cobrado</span>
+                              <span className="text-[#16a34a] font-mono-numbers">
+                                + {formatCurrency(sale.delivery_fee)}
+                              </span>
+                            </div>
+                          )}
                           {sale.card_fee_amount > 0 && (
                             <div className="flex justify-between">
                               <span className="text-[#4a3d3d]">
                                 Taxa cartão ({sale.card_fee_percent}%)
                               </span>
-                              <span className="text-[#b91c1c] font-mono-numbers">
+                              <span className="text-[#dc2626] font-mono-numbers">
                                 - {formatCurrency(sale.card_fee_amount)}
-                              </span>
-                            </div>
-                          )}
-                          {sale.delivery_fee > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-[#4a3d3d]">Frete</span>
-                              <span className="text-[#b91c1c] font-mono-numbers">
-                                - {formatCurrency(sale.delivery_fee)}
                               </span>
                             </div>
                           )}
@@ -420,10 +419,10 @@ export default function TabLancar({
                           (sum, si) => sum + (parseFloat(si.cost_price) || 0) * (si.quantity || 1),
                           0
                         );
-                        const saleValue = parseFloat(sale.value) || 0;
-                        const netVal = parseFloat(sale.net_value ?? sale.value) || 0;
-                        const lucro = netVal - custoTotal;
-                        const margem = saleValue > 0 ? (lucro / saleValue) * 100 : 0;
+                        const totalRecebido = (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0);
+                        const taxaCartao = parseFloat(sale.card_fee_amount) || 0;
+                        const lucro = totalRecebido - custoTotal - taxaCartao;
+                        const margem = totalRecebido > 0 ? (lucro / totalRecebido) * 100 : 0;
                         const isPositive = lucro >= 0;
 
                         return custoTotal > 0 ? (
