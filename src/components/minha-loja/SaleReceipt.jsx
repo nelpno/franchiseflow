@@ -14,12 +14,20 @@ function getPaymentLabel(method) {
   return pm?.label || method || "—";
 }
 
-function formatDateSafe(dateString) {
-  if (!dateString) return "—";
+function formatReceiptDate(saleDate, createdAt) {
   try {
-    const date = parseISO(dateString);
-    if (isNaN(date.getTime())) return "—";
-    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    // Use sale_date for the date, created_at for the time
+    const datePart = saleDate
+      ? format(parseISO(saleDate), "dd/MM/yyyy", { locale: ptBR })
+      : null;
+    const timePart = createdAt
+      ? format(parseISO(createdAt), "HH:mm")
+      : null;
+
+    if (datePart && timePart && timePart !== "00:00") {
+      return `${datePart} às ${timePart}`;
+    }
+    return datePart || "—";
   } catch {
     return "—";
   }
@@ -115,7 +123,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
               Data
             </div>
             <div style={{ fontSize: 13, color: "#1b1c1d" }}>
-              {formatDateSafe(sale.sale_date || sale.created_at)}
+              {formatReceiptDate(sale.sale_date, sale.created_at)}
             </div>
           </div>
         </div>
@@ -262,7 +270,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             letterSpacing: "0.05em",
           }}
         >
-          Maxi Massas — Massas Artesanais Congeladas
+          Maxi Massas
         </div>
       </div>
     </div>
