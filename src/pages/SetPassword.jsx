@@ -52,7 +52,7 @@ export default function SetPassword() {
   };
 
   return (
-    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
       <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
         {/* Left Side: Hero Area (Hidden on Mobile) */}
         <section className="hidden lg:flex lg:w-3/5 relative bg-gradient-to-br from-[#fff5f5] to-white p-16 flex-col justify-between overflow-hidden">
