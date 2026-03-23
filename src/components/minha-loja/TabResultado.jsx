@@ -121,7 +121,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
 
   // --- P&L calculations ---
   const faturamento = useMemo(
-    () => monthSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0),
+    () => monthSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
     [monthSales]
   );
 
@@ -354,7 +354,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#4a3d3d]">(-) Frete pago</span>
+                  <span className="text-sm text-[#4a3d3d]">(-) Frete</span>
                   <span className="text-sm text-[#4a3d3d] font-mono-numbers">
                     {formatBRL(fretePago)}
                   </span>

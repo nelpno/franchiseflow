@@ -127,6 +127,7 @@ export default function Layout({ children, currentPageName }) {
   const [todaySales, setTodaySales] = useState(0);
   const [todayContacts, setTodayContacts] = useState(0);
   const [onboardingApproved, setOnboardingApproved] = useState(false);
+  const [hasActiveOnboarding, setHasActiveOnboarding] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [needsOnboardingWelcome, setNeedsOnboardingWelcome] = useState(false);
   const [availableFranchises, setAvailableFranchises] = useState([]);
@@ -167,6 +168,9 @@ export default function Layout({ children, currentPageName }) {
 
           if (obs.length > 0 && obs[0].status === "approved") {
             setOnboardingApproved(true);
+          }
+          if (obs.length > 0 && obs[0].status !== "approved") {
+            setHasActiveOnboarding(true);
           }
 
           // If onboarding not approved AND welcome not yet seen AND not skipped => show welcome
@@ -221,7 +225,7 @@ export default function Layout({ children, currentPageName }) {
       if (item.adminOnly) return isAdmin;
       if (item.franchiseeOnly) return !isAdmin;
       if (item.showOnboarding) {
-        return isAdmin || !onboardingApproved;
+        return isAdmin || hasActiveOnboarding;
       }
       return true;
     })
