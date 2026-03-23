@@ -7,6 +7,7 @@ export const BLOCKS = [
     id: 1,
     title: "Primeiros Passos",
     color: "#D32F2F",
+    icon: "handshake",
     items: [
       { key: "1-1", label: "Contrato de franquia assinado", role: "franchisee" },
       { key: "1-2", label: "Reunião de kick-off com o CS realizada", role: "both" },
@@ -17,6 +18,7 @@ export const BLOCKS = [
     id: 2,
     title: "Conheça Seus Produtos",
     color: "#C49A2A",
+    icon: "restaurant",
     items: [
       { key: "2-1", label: "Lista dos 28 produtos estudada (sabores, pesos, diferenciais)", role: "franchisee" },
       { key: "2-2", label: "Pelo menos 3 produtos experimentados pessoalmente", role: "franchisee" },
@@ -27,6 +29,7 @@ export const BLOCKS = [
     id: 3,
     title: "Prepare Seu Espaço",
     color: "#0288D1",
+    icon: "kitchen",
     items: [
       { key: "3-1", label: "Freezer funcionando na temperatura adequada (-18°C ou menos)", role: "franchisee" },
       { key: "3-2", label: "Espaço organizado por categoria no freezer", role: "franchisee" },
@@ -37,6 +40,7 @@ export const BLOCKS = [
     id: 4,
     title: "Configure o WhatsApp",
     color: "#43A047",
+    icon: "chat",
     items: [
       { key: "4-1", label: "Número exclusivo obtido e WhatsApp Business instalado", role: "franchisee" },
       { key: "4-2", label: "Perfil comercial completo (foto, nome, descrição, endereço, horário)", role: "franchisee" },
@@ -48,6 +52,7 @@ export const BLOCKS = [
     id: 5,
     title: "Configure Seu Vendedor",
     color: "#F57C00",
+    icon: "smart_toy",
     items: [
       { key: "5-1", label: "Wizard 'Meu Vendedor' preenchido por completo no app", role: "franchisee" },
     ],
@@ -56,6 +61,7 @@ export const BLOCKS = [
     id: 6,
     title: "Faça Seu Primeiro Pedido",
     color: "#5C6BC0",
+    icon: "shopping_cart",
     items: [
       { key: "6-1", label: "Primeiro pedido de reposição feito pelo app (Gestão → Reposição)", role: "franchisee" },
       { key: "6-2", label: "Pedido recebido e conferido (quantidades, estado, validade)", role: "franchisee" },
@@ -66,6 +72,7 @@ export const BLOCKS = [
     id: 7,
     title: "Treinamento",
     color: "#8E24AA",
+    icon: "school",
     items: [
       { key: "7-1", label: "Vídeos do Drive assistidos (WhatsApp, Meta Business, Robô)", role: "franchisee" },
       { key: "7-2", label: "Checklist de Ações Diárias lido e compreendido", role: "franchisee" },
@@ -77,6 +84,7 @@ export const BLOCKS = [
     id: 8,
     title: "Redes Sociais",
     color: "#E91E63",
+    icon: "share",
     items: [
       { key: "8-1", label: "Facebook e Instagram criados e configurados", role: "franchisor" },
       { key: "8-2", label: "Franqueado sabe acessar e ler métricas no Meta Business Suite", role: "franchisee" },
@@ -88,6 +96,8 @@ export const BLOCKS = [
 export const GATE_BLOCK = {
   id: 9,
   title: "Gate de Liberação",
+  icon: "verified",
+  color: "#C49A2A",
   items: [
     { key: "9-1", label: "Todos os blocos anteriores (1 a 8) concluídos", role: "auto" },
     { key: "9-2", label: "Teste de pedido simulado aprovado (do lead ao envio/retirada)", role: "franchisor" },
