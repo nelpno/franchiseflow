@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
-
-const LOGO_URL = 'https://lh3.googleusercontent.com/aida/ADBb0ugCTVY4RLjpZaVmTunw5aAOVsOWhVE1VFKJ6dJHWLlp0NQfYLn9e4nf9xumxgvXGuTESxzw_4nnRZgPRRibxsHY0CyQlUftQtsLyFxxoLXrjZ9yh6wRWly1I5gyuQoTheiTmM0sVUrURcN8eyeGxJOyzmOT72i8UzXFg-evAPSA6UvoOVQd-kWWxbtTNct5HKj-ohG7BatXZ9fA1b31kExHOSI4eTLHw0EqlGNPzXA_UntQmHThWuSkHImL_zw6eC5ItbV45m5s3Q';
+import logoMaxiMassas from "@/assets/logo-maxi-massas.png";
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -74,7 +73,7 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-screen flex items-center justify-center p-4 md:p-8 pt-8 md:pt-8">
+    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-[100dvh] flex items-center justify-center p-4 md:p-8">
       <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
         {/* Left Side: Hero Area (Hidden on Mobile) */}
         <section className="hidden lg:flex lg:w-3/5 relative bg-gradient-to-br from-[#fff5f5] to-white p-16 flex-col justify-between overflow-hidden">
@@ -99,7 +98,7 @@ export default function Login() {
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-12">
               <img
-                src={LOGO_URL}
+                src={logoMaxiMassas}
                 alt="Maxi Massas Logo"
                 className="h-12 w-auto object-contain"
               />
@@ -143,18 +142,18 @@ export default function Login() {
         </section>
 
         {/* Right Side: Login Form */}
-        <section className="w-full lg:w-2/5 p-8 md:p-16 flex flex-col justify-center">
+        <section className="w-full lg:w-2/5 p-6 md:p-16 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             {/* Mobile Logo */}
-            <div className="lg:hidden flex justify-center mb-8">
+            <div className="lg:hidden flex justify-center mb-6">
               <img
-                src={LOGO_URL}
+                src={logoMaxiMassas}
                 alt="Maxi Massas Logo"
-                className="h-20 w-auto"
+                className="h-16 w-auto"
               />
             </div>
 
-            <div className="mb-10 text-center lg:text-left">
+            <div className="mb-6 md:mb-10 text-center lg:text-left">
               <h2 className="text-3xl font-bold text-[#e31818] tracking-tight mb-2">Maxi Massas</h2>
               <p className="text-[#3d4a42]">
                 {isResetMode ? 'Recuperar senha' : 'Acesse sua franquia'}
@@ -243,7 +242,7 @@ export default function Login() {
 
             </form>
 
-            <div className="mt-12 text-center">
+            <div className="mt-6 md:mt-12 text-center">
               <p className="text-sm text-[#3d4a42]">
                 Não possui acesso?{' '}
                 <span className="text-[#e31818] font-bold">Solicite ao administrador</span>
@@ -254,7 +253,7 @@ export default function Login() {
       </main>
 
       {/* Footer Meta */}
-      <footer className="fixed bottom-6 left-0 right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
+      <footer className="mt-4 md:fixed md:bottom-6 md:left-0 md:right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
           &copy; 2026 Maxi Massas — Massas Artesanais Congeladas
         </p>
