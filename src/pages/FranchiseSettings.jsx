@@ -158,7 +158,8 @@ function FranchiseSettingsContent() {
 
   const loadConfigIntoForm = (config) => {
     setEditingConfig(config);
-    setFormData({
+
+    const baseData = {
       ...initialFormData,
       ...config,
       accepted_payment_methods: Array.isArray(config.accepted_payment_methods)
@@ -172,7 +173,6 @@ function FranchiseSettingsContent() {
       min_order_value: config.min_order_value ?? null,
       avg_prep_time_minutes: config.avg_prep_time_minutes ?? null,
       welcome_message: config.welcome_message || '',
-      // New fields with safe defaults
       has_delivery: config.has_delivery ?? true,
       has_pickup: config.has_pickup ?? false,
       delivery_method: config.delivery_method || '',
@@ -188,7 +188,30 @@ function FranchiseSettingsContent() {
       city: config.city || '',
       neighborhood: config.neighborhood || '',
       catalog_image_url: config.catalog_image_url || '',
-    });
+    };
+
+    // Restore draft from localStorage if exists and newer than last save
+    const draftKey = `wizard_draft_${config.franchise_evolution_instance_id}`;
+    try {
+      const draftRaw = localStorage.getItem(draftKey);
+      if (draftRaw) {
+        const draft = JSON.parse(draftRaw);
+        const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : 0;
+        if (draft.savedAt > configUpdatedAt) {
+          // Draft is newer than saved config — restore it
+          setFormData({ ...baseData, ...draft.data });
+          setCurrentStep(draft.step || 1);
+          setIsDirty(true);
+          toast.info("Rascunho restaurado. Suas alterações não salvas foram recuperadas.", { duration: 5000 });
+          return;
+        } else {
+          // Config is newer — discard stale draft
+          localStorage.removeItem(draftKey);
+        }
+      }
+    } catch { /* corrupted draft — ignore */ }
+
+    setFormData(baseData);
     setIsDirty(false);
   };
 
@@ -216,13 +239,16 @@ function FranchiseSettingsContent() {
     e?.preventDefault();
     setIsSubmitting(true);
 
+    // Strip UI-only / read-only fields before sending to DB
+    const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = formData;
+
     const finalData = {
-      ...formData,
-      accepted_payment_methods: typeof formData.accepted_payment_methods === 'string' ?
-        formData.accepted_payment_methods :
-        Array.isArray(formData.accepted_payment_methods) ?
-          formData.accepted_payment_methods.join(', ') : '',
-      address_reference: formData.address_reference || ''
+      ...dbFields,
+      accepted_payment_methods: typeof dbFields.accepted_payment_methods === 'string' ?
+        dbFields.accepted_payment_methods :
+        Array.isArray(dbFields.accepted_payment_methods) ?
+          dbFields.accepted_payment_methods.join(', ') : '',
+      address_reference: dbFields.address_reference || ''
     };
 
     try {
@@ -235,16 +261,33 @@ function FranchiseSettingsContent() {
       }
       setIsDirty(false);
       setLastSavedAt(new Date());
+      // Clear draft from localStorage after successful save
+      const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || formData.franchise_evolution_instance_id}`;
+      try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error("Falha ao salvar configuração.");
+      const msg = error?.message || "Erro desconhecido";
+      if (msg.includes("column") || msg.includes("schema")) {
+        toast.error("Erro de schema: um campo pode não existir no banco. Contate o suporte.");
+      } else {
+        toast.error(`Falha ao salvar: ${msg}`);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      // Auto-save draft to localStorage per franchise
+      const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ data: updated, step: currentStep, savedAt: Date.now() }));
+      } catch { /* quota exceeded — ignore */ }
+      return updated;
+    });
     setIsDirty(true);
   };
 
@@ -299,6 +342,16 @@ function FranchiseSettingsContent() {
   const goToStep = (step) => {
     if (skippedSteps.includes(step)) return;
     setCurrentStep(step);
+    // Persist current step in draft
+    const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id}`;
+    try {
+      const draftRaw = localStorage.getItem(draftKey);
+      if (draftRaw) {
+        const draft = JSON.parse(draftRaw);
+        draft.step = step;
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      }
+    } catch { /* ignore */ }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

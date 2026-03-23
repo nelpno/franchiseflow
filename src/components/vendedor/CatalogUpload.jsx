@@ -37,11 +37,11 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
         .upload(fileName, file, { upsert: true, contentType: "image/jpeg" });
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Upload demorou demais. Verifique sua conexão.")), 30000)
+        setTimeout(() => reject(new Error("timeout")), 30000)
       );
 
-      const { error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]);
-      if (uploadError) throw uploadError;
+      const result = await Promise.race([uploadPromise, timeoutPromise]);
+      if (result?.error) throw result.error;
 
       // Get public URL
       const { data } = supabase.storage
@@ -54,9 +54,20 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       toast.success("Catálogo atualizado!");
     } catch (error) {
       console.error("Erro no upload:", error);
-      toast.error("Erro ao enviar imagem. Tente novamente.");
+      if (error.message === "timeout") {
+        toast.error("Upload demorou demais. Verifique sua conexão e tente novamente.");
+      } else if (error.statusCode === 404 || error.message?.includes("not found")) {
+        toast.error("Bucket de imagens não encontrado. Contate o suporte.");
+      } else if (error.statusCode === 403 || error.message?.includes("policy")) {
+        toast.error("Sem permissão para enviar imagem. Contate o suporte.");
+      } else {
+        toast.error(`Erro ao enviar imagem: ${error.message || "tente novamente"}`);
+      }
+    } finally {
+      setIsUploading(false);
+      // Reset input so same file can be re-selected
+      if (inputRef.current) inputRef.current.value = "";
     }
-    setIsUploading(false);
   };
 
   const handleDrop = (e) => {

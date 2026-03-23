@@ -50,22 +50,28 @@ function createEntity(tableName) {
     },
 
     async create(data) {
-      const { data: created, error } = await supabase
-        .from(tableName)
-        .insert(data)
-        .select()
-        .single();
+      const { data: created, error } = await withTimeout(
+        supabase
+          .from(tableName)
+          .insert(data)
+          .select()
+          .single(),
+        15000
+      );
       if (error) throw error;
       return created;
     },
 
     async update(id, data) {
-      const { data: updated, error } = await supabase
-        .from(tableName)
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
+      const { data: updated, error } = await withTimeout(
+        supabase
+          .from(tableName)
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single(),
+        15000
+      );
       if (error) throw error;
       return updated;
     },
