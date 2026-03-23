@@ -13,6 +13,7 @@ import ExpenseForm from "@/components/minha-loja/ExpenseForm";
 import ResultadoCharts from "@/components/minha-loja/ResultadoCharts";
 import ExportButtons from "@/components/shared/ExportButtons";
 import { toast } from "sonner";
+import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import {
   format,
   startOfMonth,
@@ -231,8 +232,8 @@ export default function TabResultado({ franchiseId, currentUser }) {
   const exportColumns = useMemo(() => [
     { key: "sale_date", header: "Data", format: (v) => v ? format(parseISO(v.substring(0, 10)), "dd/MM/yyyy") : "—" },
     { key: "value", header: "Valor (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
-    { key: "payment_method", header: "Pagamento" },
-    { key: "delivery_method", header: "Entrega" },
+    { key: "payment_method", header: "Pagamento", format: (v) => PAYMENT_METHODS.find(p => p.value === v)?.label || v || "—" },
+    { key: "delivery_method", header: "Entrega", format: (v) => v === "delivery" ? "Entrega" : v === "retirada" ? "Retirada" : v || "—" },
     { key: "net_value", header: "Valor Líquido (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
   ], []);
 

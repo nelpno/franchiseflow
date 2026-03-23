@@ -4,12 +4,10 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 
 const PAYMENT_COLORS = {
-  pix: { color: '#10b981', label: 'Pix' },
-  dinheiro: { color: '#3b82f6', label: 'Dinheiro' },
-  cartao_credito: { color: '#8b5cf6', label: 'Cartão Crédito' },
-  cartao_debito: { color: '#d4af37', label: 'Cartão Débito' },
+  pix: { color: '#10b981', label: 'PIX' },
+  cash: { color: '#3b82f6', label: 'Dinheiro' },
   card_machine: { color: '#f97316', label: 'Máquina de Cartão' },
-  transferencia: { color: '#0ea5e9', label: 'Transferência' },
+  payment_link: { color: '#6366f1', label: 'Link de Pagamento' },
   other: { color: '#9a8c8c', label: 'Outros' },
 };
 
