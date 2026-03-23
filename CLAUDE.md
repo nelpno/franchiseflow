@@ -289,6 +289,19 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 102. Supabase PKCE flow: `type=invite` pode vir no hash (implicit) OU search params (PKCE) — AuthContext detecta ambos + faz `exchangeCodeForSession()` quando `?code=` presente
 103. CatalogUpload restrito a JPG only (n8n compat) — timeout 30s via `Promise.race()` para evitar loading infinito
 104. PaymentMethodChart: mapa `PAYMENT_COLORS` deve incluir TODOS os values possíveis de `sales.payment_method` (card_machine, pix, dinheiro, etc.) — fallback mostra key bruta do banco
+105. Entity `create()` e `update()` em `all.js` DEVEM usar `withTimeout(15000)` — sem timeout, operações de escrita travam indefinidamente
+106. `setIsSubmitting`/`setIsUploading` SEMPRE em `finally` block — NUNCA após try/catch (se catch re-throws ou componente desmonta, loading trava eternamente)
+107. Antes de `Entity.update()`, fazer destructuring para remover campos read-only/UI-only (`id`, `created_at`, `updated_at`, `franchise`, `whatsapp_status`) — Supabase rejeita colunas inexistentes
+108. Storage bucket policies: `catalog-images` INSERT/UPDATE/DELETE = authenticated (NÃO admin-only), SELECT = público. Verificar RLS do storage ao criar novos buckets
+109. `contacts.telefone` é nullable — unique constraint parcial `WHERE telefone IS NOT NULL AND telefone != ''`. Enviar `null` (NÃO string vazia) quando sem telefone
+110. Draft localStorage: ao comparar `draft.savedAt` com `config.updated_at`, tratar `updated_at` null como `Date.now()` (NÃO como 0) — evita draft antigo sobrescrever dados reais. Max 24h de idade
+111. WhatsAppHistory.jsx REMOVIDO (FASE 8) — franqueados consultam histórico no próprio WhatsApp. NÃO recriar
+112. Onboarding redesenhado como "missões" (27 items) — NÃO voltar para "checklist" com 45+ items. Bloco 5 "Configure Seu Vendedor" é 1 item que cobre todo o wizard
+113. Gate Block (bloco 9) visível APENAS para admin — franqueado vê celebração ao completar 8 missões, sem burocracia
+114. OnboardingBlock checkbox: click no checkbox (não na linha toda) — `onClick` no div do checkbox, não no wrapper da row
+115. Fornecedor uniformes: Rodrigo — D'Momentus Uniformes, WhatsApp (18) 99610-9903
+116. Card conexão WhatsApp (Meu Vendedor): NÃO mostrar telefone — número vem do ZuckZapGo, não do cadastro. Mostrar "Conecte pelo QR Code"
+117. Onboarding keys consistentes: bloco N usa keys N-x (ex: bloco 3 = keys 3-1, 3-2, 3-3). Gate usa 9-x. Key 9-4 é tráfego pago (era 9-5)
 
 ## Scripts
 ```bash
