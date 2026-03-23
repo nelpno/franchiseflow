@@ -285,6 +285,10 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 98. Login.jsx e SetPassword.jsx compartilham template visual — ao alterar um, verificar consistência no outro (copyright, aria-labels, cores)
 99. NUNCA usar cores Tailwind genéricas (text-slate-*, text-amber-*) — sempre tokens do design system (#1b1c1d, #4a3d3d, #775a19, etc.)
 100. Toast misto sucesso/erro é UX ruim — separar em `toast.success()` + `toast.error()` independentes
+101. `onboarding_checklists` tabela real NÃO tem `total_items` nem `started_at` — schema.sql pode estar desatualizado vs banco real. Sempre verificar colunas via SQL antes de INSERT
+102. Supabase PKCE flow: `type=invite` pode vir no hash (implicit) OU search params (PKCE) — AuthContext detecta ambos + faz `exchangeCodeForSession()` quando `?code=` presente
+103. CatalogUpload restrito a JPG only (n8n compat) — timeout 30s via `Promise.race()` para evitar loading infinito
+104. PaymentMethodChart: mapa `PAYMENT_COLORS` deve incluir TODOS os values possíveis de `sales.payment_method` (card_machine, pix, dinheiro, etc.) — fallback mostra key bruta do banco
 
 ## Scripts
 ```bash
