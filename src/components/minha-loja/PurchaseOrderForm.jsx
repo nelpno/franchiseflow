@@ -25,6 +25,23 @@ const formatBRL = (value) => {
   }).format(value);
 };
 
+const getErrorMessage = (error) => {
+  const msg = error?.message || "";
+  if (msg.includes("JWT") || msg.includes("token") || msg.includes("expired") || error?.status === 401) {
+    return "Sessão expirada. Faça login novamente.";
+  }
+  if (msg.includes("row-level security") || error?.code === "42501") {
+    return "Sem permissão para criar pedido. Verifique seu cadastro.";
+  }
+  if (msg.includes("violates foreign key") || error?.code === "23503") {
+    return "Franquia não encontrada. Atualize a página e tente novamente.";
+  }
+  if (msg.includes("Tempo limite")) {
+    return "Servidor demorou para responder. Tente novamente.";
+  }
+  return msg || "Erro desconhecido";
+};
+
 export default function PurchaseOrderForm({
   franchiseId,
   inventoryItems,
@@ -144,6 +161,11 @@ export default function PurchaseOrderForm({
   const handleSubmit = async () => {
     if (!hasAnyQty) return;
 
+    if (!franchiseId) {
+      toast.error("Franquia não identificada. Atualize a página.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Create PurchaseOrder
@@ -175,7 +197,7 @@ export default function PurchaseOrderForm({
       if (onSave) onSave();
     } catch (error) {
       console.error("Erro ao criar pedido:", error);
-      toast.error("Erro ao enviar pedido. Tente novamente.");
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
