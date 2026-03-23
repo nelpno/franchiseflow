@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -11,18 +11,43 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResetMode, setIsResetMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+  const isLockedOut = lockoutSeconds > 0;
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setTimeout(() => {
+      setLockoutSeconds((s) => s - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [lockoutSeconds]);
+
+  const startLockout = useCallback(() => {
+    setLockoutSeconds(60);
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isLockedOut) return;
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      setFailedAttempts(0);
       window.location.href = '/';
     } catch (error) {
-      toast.error(error.message === 'Invalid login credentials'
-        ? 'Email ou senha incorretos'
-        : 'Erro ao fazer login: ' + error.message);
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        startLockout();
+        toast.error('Muitas tentativas. Aguarde 60 segundos.');
+      } else {
+        toast.error(error.message === 'Invalid login credentials'
+          ? 'Email ou senha incorretos'
+          : 'Erro ao fazer login: ' + error.message);
+      }
       setIsLoading(false);
     }
   };
@@ -190,12 +215,18 @@ export default function Login() {
                 </div>
               )}
 
+              {isLockedOut && !isResetMode && (
+                <p className="text-sm text-[#e31818] text-center font-medium">
+                  Muitas tentativas. Aguarde {lockoutSeconds} segundos.
+                </p>
+              )}
+
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || (isLockedOut && !isResetMode)}
                 className="w-full h-12 bg-[#e31818] text-white font-bold rounded-xl shadow-lg shadow-[#e31818]/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : 'Entrar'}
+                {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : isLockedOut ? `Aguarde ${lockoutSeconds}s` : 'Entrar'}
               </button>
 
               {isResetMode && (

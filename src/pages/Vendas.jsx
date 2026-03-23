@@ -45,8 +45,8 @@ export default function Vendas() {
       const [salesData, inventoryData, saleItemsData, contactsData] = await Promise.all([
         Sale.list("-created_at", 500),
         InventoryItem.list("-updated_at"),
-        SaleItem.list(),
-        Contact.list(),
+        SaleItem.list('-created_at', 500),
+        Contact.list('-created_at', 200),
       ]);
       if (!mountedRef.current) return;
       setSales(salesData);
@@ -67,8 +67,8 @@ export default function Vendas() {
     try {
       const [salesData, saleItemsData, contactsData, inventoryData] = await Promise.all([
         Sale.list("-created_at", 500),
-        SaleItem.list(),
-        Contact.list(),
+        SaleItem.list('-created_at', 500),
+        Contact.list('-created_at', 200),
         InventoryItem.list("-updated_at"),
       ]);
       setSales(salesData);

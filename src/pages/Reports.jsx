@@ -49,10 +49,10 @@ function ReportsContent() {
       const [currentUserData, franchisesData, salesData, contactsData, dailyContactsData, summariesData] = await Promise.all([
         User.me(),
         Franchise.list(),
-        Sale.list('-sale_date', 500),
-        Contact.list('-created_at', 500),
-        DailyUniqueContact.list('-date', 500),
-        DailySummary.list('-date', 500)
+        Sale.list('-sale_date', 200),
+        Contact.list('-created_at', 200),
+        DailyUniqueContact.list('-date', 200),
+        DailySummary.list('-date', 200)
       ]);
 
       if (!mountedRef.current) return;

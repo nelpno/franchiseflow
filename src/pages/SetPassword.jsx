@@ -17,11 +17,17 @@ export default function SetPassword() {
 
   const isRecovery = localStorage.getItem('password_setup_type') === 'recovery';
 
+  const hasUppercase = /[A-Z]/.test(password);
+  const hasLowercase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasMinLength = password.length >= 8;
+  const isPasswordValid = hasUppercase && hasLowercase && hasNumber && hasMinLength;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
+    if (!isPasswordValid) {
+      toast.error('A senha deve ter pelo menos 8 caracteres, com maiuscula, minuscula e numero');
       return;
     }
     if (password !== confirmPassword) {
@@ -130,7 +136,7 @@ export default function SetPassword() {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Minimo 8 caracteres"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -165,24 +171,38 @@ export default function SetPassword() {
                 </div>
               </div>
 
-              <div className="h-5">
-                {password && password.length < 6 && (
-                  <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
-                    <MaterialIcon icon="info" size={16} />
-                    A senha deve ter pelo menos 6 caracteres
-                  </p>
+              <div className="min-h-[20px]">
+                {password && !isPasswordValid && (
+                  <div className="text-sm ml-1 space-y-0.5">
+                    <p className={`flex items-center gap-1.5 ${hasMinLength ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                      <MaterialIcon icon={hasMinLength ? 'check_circle' : 'info'} size={14} />
+                      8 caracteres
+                    </p>
+                    <p className={`flex items-center gap-1.5 ${hasUppercase ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                      <MaterialIcon icon={hasUppercase ? 'check_circle' : 'info'} size={14} />
+                      1 letra maiuscula
+                    </p>
+                    <p className={`flex items-center gap-1.5 ${hasLowercase ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                      <MaterialIcon icon={hasLowercase ? 'check_circle' : 'info'} size={14} />
+                      1 letra minuscula
+                    </p>
+                    <p className={`flex items-center gap-1.5 ${hasNumber ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                      <MaterialIcon icon={hasNumber ? 'check_circle' : 'info'} size={14} />
+                      1 numero
+                    </p>
+                  </div>
                 )}
-                {password && confirmPassword && password !== confirmPassword && password.length >= 6 && (
+                {password && isPasswordValid && confirmPassword && password !== confirmPassword && (
                   <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
                     <MaterialIcon icon="warning" size={16} />
-                    As senhas não coincidem
+                    As senhas nao coincidem
                   </p>
                 )}
               </div>
 
               <button
                 type="submit"
-                disabled={isLoading || password.length < 6 || password !== confirmPassword}
+                disabled={isLoading || !isPasswordValid || password !== confirmPassword}
                 className="w-full h-12 bg-[#e31818] text-white font-bold rounded-xl shadow-lg shadow-[#e31818]/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {isLoading ? 'Aguarde...' : isRecovery ? 'Redefinir senha' : 'Criar senha e entrar'}

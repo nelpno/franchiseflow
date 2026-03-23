@@ -126,7 +126,7 @@ export default function MyContacts() {
     try {
       setLoading(true);
       setLoadError(null);
-      const data = await Contact.list("-created_at");
+      const data = await Contact.list("-created_at", 200);
       if (!mountedRef.current) return;
       setContacts(data);
     } catch (error) {

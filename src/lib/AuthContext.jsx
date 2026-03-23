@@ -140,7 +140,11 @@ export const AuthProvider = ({ children }) => {
   }, [loadUserProfile]);
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error('[Auth] Logout error:', e);
+    }
     setUser(null);
     setIsAuthenticated(false);
   };

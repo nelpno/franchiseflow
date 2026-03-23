@@ -174,43 +174,51 @@ export default function Onboarding() {
 
   useEffect(() => {
     loadData();
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [loadData]);
 
   const saveItems = useCallback(async (newItems, currentChecklist, user) => {
     if (!currentChecklist) return;
     setIsSaving(true);
+    try {
+      const b18Complete = blocks1to8Complete(newItems);
+      const finalItems = { ...newItems, "9-1": b18Complete };
 
-    const b18Complete = blocks1to8Complete(newItems);
-    const finalItems = { ...newItems, "9-1": b18Complete };
+      const counts = computeCounts(finalItems);
 
-    const counts = computeCounts(finalItems);
+      let status = currentChecklist.status;
+      if (finalItems["9-5"] && user?.role === "admin") {
+        status = "approved";
+      } else if (b18Complete && status === "in_progress") {
+        status = "pending_approval";
+      } else if (!b18Complete && status === "pending_approval") {
+        status = "in_progress";
+      }
 
-    let status = currentChecklist.status;
-    if (finalItems["9-5"] && user?.role === "admin") {
-      status = "approved";
-    } else if (b18Complete && status === "in_progress") {
-      status = "pending_approval";
-    } else if (!b18Complete && status === "pending_approval") {
-      status = "in_progress";
+      const updateData = {
+        items: finalItems,
+        ...counts,
+        total_items: TOTAL_ITEMS,
+        status,
+      };
+
+      if (status === "approved" && currentChecklist.status !== "approved" && user?.role === "admin") {
+        updateData.approved_at = new Date().toISOString();
+        updateData.approved_by = user.full_name || user.email;
+        setCelebrated(true);
+        setTimeout(() => setCelebrated(false), 5000);
+      }
+
+      const updated = await OnboardingChecklist.update(currentChecklist.id, updateData);
+      setChecklist(updated);
+    } catch (error) {
+      console.error("Erro ao salvar checklist:", error);
+      toast.error("Erro ao salvar. Tente novamente.");
+    } finally {
+      setIsSaving(false);
     }
-
-    const updateData = {
-      items: finalItems,
-      ...counts,
-      total_items: TOTAL_ITEMS,
-      status,
-    };
-
-    if (status === "approved" && currentChecklist.status !== "approved" && user?.role === "admin") {
-      updateData.approved_at = new Date().toISOString();
-      updateData.approved_by = user.full_name || user.email;
-      setCelebrated(true);
-      setTimeout(() => setCelebrated(false), 5000);
-    }
-
-    const updated = await OnboardingChecklist.update(currentChecklist.id, updateData);
-    setChecklist(updated);
-    setIsSaving(false);
   }, []);
 
   const handleToggle = (key) => {
