@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import ActionPanel from "@/components/my-contacts/ActionPanel";
-import WhatsAppHistory from "@/components/my-contacts/WhatsAppHistory";
+
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { toast } from "sonner";
@@ -105,13 +105,11 @@ export default function MyContacts() {
   const [editingContact, setEditingContact] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [isCreating, setIsCreating] = useState(false);
-  const [newContactForm, setNewContactForm] = useState({ nome: "", telefone: "" });
+  const [newContactForm, setNewContactForm] = useState({ nome: "", telefone: "", endereco: "", bairro: "", notas: "" });
   const [isSaving, setIsSaving] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(true);
   const [sortBy, setSortBy] = useState("recent");
   const [dateFilter, setDateFilter] = useState("all");
-  const [historyContact, setHistoryContact] = useState(null);
-  const [instanceName, setInstanceName] = useState(null);
   const [sourceFilter, setSourceFilter] = useState("all");
   const mountedRef = useRef(true);
 
@@ -148,11 +146,8 @@ export default function MyContacts() {
       const myFranchise = franchises.find(
         (f) => f.id === franchiseId || f.evolution_instance_id === franchiseId
       );
-      if (myFranchise?.evolution_instance_id) {
-        setInstanceName(myFranchise.evolution_instance_id);
-      }
     } catch {
-      // Silently fail — WhatsApp history just won't be available
+      // Silently fail
     }
   };
 
@@ -251,12 +246,15 @@ export default function MyContacts() {
       await Contact.create({
         franchise_id: myFranchise.evolution_instance_id,
         nome: newContactForm.nome.trim(),
-        telefone: newContactForm.telefone?.trim() || "",
+        telefone: newContactForm.telefone?.trim() || null,
+        endereco: newContactForm.endereco?.trim() || null,
+        bairro: newContactForm.bairro?.trim() || null,
+        notas: newContactForm.notas?.trim() || null,
         source: "manual",
       });
       toast.success("Contato criado");
       setIsCreating(false);
-      setNewContactForm({ nome: "", telefone: "" });
+      setNewContactForm({ nome: "", telefone: "", endereco: "", bairro: "", notas: "" });
       loadContacts();
     } catch (error) {
       console.error("Erro ao criar contato:", error);
@@ -364,35 +362,65 @@ export default function MyContacts() {
 
       {/* Create Contact Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Novo Cliente</DialogTitle>
+            <DialogTitle className="font-plus-jakarta">Novo Cliente</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Nome *</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[#1b1c1d]">Nome *</Label>
               <Input
                 value={newContactForm.nome}
                 onChange={(e) => setNewContactForm({ ...newContactForm, nome: e.target.value })}
                 placeholder="Nome do cliente"
+                className="bg-[#e9e8e9] border-none rounded-xl"
               />
             </div>
-            <div>
-              <Label>Telefone</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[#1b1c1d]">Telefone</Label>
               <Input
                 value={newContactForm.telefone}
                 onChange={(e) => setNewContactForm({ ...newContactForm, telefone: e.target.value })}
-                placeholder="(11) 99999-9999"
+                placeholder="(14) 99999-9999"
+                className="bg-[#e9e8e9] border-none rounded-xl"
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreating(false)}>
+            <div className="space-y-1.5">
+              <Label className="text-[#1b1c1d]">Endereço</Label>
+              <Input
+                value={newContactForm.endereco}
+                onChange={(e) => setNewContactForm({ ...newContactForm, endereco: e.target.value })}
+                placeholder="Rua das Flores, 123"
+                className="bg-[#e9e8e9] border-none rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[#1b1c1d]">Bairro</Label>
+              <Input
+                value={newContactForm.bairro}
+                onChange={(e) => setNewContactForm({ ...newContactForm, bairro: e.target.value })}
+                placeholder="Ex: Centro"
+                className="bg-[#e9e8e9] border-none rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[#1b1c1d]">Observações</Label>
+              <Textarea
+                value={newContactForm.notas}
+                onChange={(e) => setNewContactForm({ ...newContactForm, notas: e.target.value })}
+                placeholder="Anotações sobre o cliente..."
+                rows={3}
+                className="bg-[#e9e8e9] border-none rounded-xl resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsCreating(false)} className="rounded-xl">
                 Cancelar
               </Button>
               <Button
                 onClick={handleCreate}
                 disabled={isSaving || !newContactForm.nome?.trim()}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl"
               >
                 {isSaving ? "Salvando..." : "Criar Contato"}
               </Button>
@@ -608,13 +636,6 @@ export default function MyContacts() {
                         <span className="hidden sm:inline">WhatsApp</span>
                         <span className="sm:hidden">Zap</span>
                       </a>
-                      <button
-                        onClick={() => setHistoryContact(contact)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#2563eb]/10 text-[#2563eb] hover:bg-[#2563eb]/20 transition-colors"
-                        title="Ver histórico de mensagens"
-                      >
-                        <MaterialIcon icon="history" size={16} />
-                      </button>
                     </>
                   ) : (
                     <button
@@ -649,17 +670,6 @@ export default function MyContacts() {
           })}
         </div>
       )}
-
-      {/* WhatsApp History Modal */}
-      <WhatsAppHistory
-        open={!!historyContact}
-        onOpenChange={(open) => {
-          if (!open) setHistoryContact(null);
-        }}
-        contactName={historyContact ? getContactName(historyContact) : ""}
-        contactPhone={historyContact ? getContactPhone(historyContact) : ""}
-        instanceName={instanceName}
-      />
 
       {/* Edit Dialog */}
       <Dialog
