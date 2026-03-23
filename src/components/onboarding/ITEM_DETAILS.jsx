@@ -4,10 +4,10 @@
 export const ITEM_DETAILS = {
   // === MISSÃO 1: Primeiros Passos ===
   "1-1": {
-    text: "Se seu contrato já foi assinado pelo ClickSign, pode marcar! Se ainda não recebeu, fale com o franqueador.",
+    text: "Marcado automaticamente — seu contrato foi assinado antes do convite.",
   },
   "1-2": {
-    text: "A reunião de kick-off com o Celso (CS) geralmente dura uns 45 min por videochamada. Ele revisa tudo com você, alinha expectativas e tira suas dúvidas. Se já aconteceu, marca aqui!",
+    text: "Marcado automaticamente — a reunião de kick-off já aconteceu com o CS antes de você receber o acesso.",
   },
   "1-3": {
     text: "O Drive contém todos os vídeos de treinamento. Se não conseguir acessar, peça ao franqueador para liberar seu e-mail.",
@@ -22,7 +22,8 @@ export const ITEM_DETAILS = {
     text: "A melhor forma de vender é conhecer o produto de verdade. Escolha pelo menos 3 sabores diferentes, prepare em casa e prove. Você vai ver como é fácil — pronto em minutos!",
   },
   "2-3": {
-    text: "A tabela de preços é definida junto com o CS, considerando seus custos e o mercado da sua região. A margem recomendada é 100% sobre o custo (preço de venda = custo x 2).\n\nVocê consegue ver e ajustar os preços em Gestão → Estoque no app.",
+    text: "Seus preços de revenda já vêm pré-configurados com margem de 100% sobre o custo (preço de venda = custo x 2). Confira e ajuste se necessário em Gestão → Estoque.",
+    links: [{ label: "Abrir Estoque", url: "/Gestao?tab=estoque" }],
   },
 
   // === MISSÃO 3: Prepare Seu Espaço ===
@@ -44,7 +45,7 @@ export const ITEM_DETAILS = {
     text: "No WhatsApp Business → Configurações → Perfil comercial, preencha:\n- Foto: logo da Maxi Massas\n- Nome: Maxi Massas [Sua Cidade]\n- Categoria: Restaurante\n- Descrição: Massas artesanais congeladas prontas em minutos!\n- Endereço e horário de funcionamento",
   },
   "4-3": {
-    text: "Crie 8 etiquetas que espelham o pipeline do app:\n\nContato Novo — Acabou de chegar, responder rápido!\nInteressado — Respondeu mas não fechou. Follow-up em 24h.\nPedido Confirmado — Fechou, aguardando pagamento/entrega.\nCliente — Comprou pelo menos 1 vez.\nCliente Fiel — Comprou 3+ vezes. Tratamento VIP.\nClientes Sumidos — Inativo 15+ dias. Reativar com oferta.\nNão Fechou — Tentar novamente em 30 dias.\nIndicação — Chegou por indicação. Prioridade!",
+    text: "Crie 8 etiquetas no WhatsApp Business para organizar suas conversas:\n\nContato Novo — Acabou de chegar, responder rápido!\nInteressado — Respondeu mas não fechou. Follow-up em 24h.\nPedido Confirmado — Fechou, aguardando pagamento/entrega.\nCliente — Comprou pelo menos 1 vez.\nCliente Fiel — Comprou 3+ vezes. Tratamento VIP.\nClientes Sumidos — Inativo 15+ dias. Reativar com oferta.\nNão Fechou — Tentar novamente em 30 dias.\nIndicação — Chegou por indicação. Prioridade!",
   },
   "4-4": {
     text: "Este item é responsabilidade do franqueador. Será marcado quando seu WhatsApp for adicionado ao grupo oficial.",
@@ -52,20 +53,20 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 5: Configure Seu Vendedor ===
   "5-1": {
-    text: "Essa é a missão mais importante! No menu lateral, clique em 'Meu Vendedor' e preencha o wizard completo (6 passos).\n\nEle configura de uma vez:\n- Dados da sua unidade\n- Horários de funcionamento\n- Formas de pagamento e PIX\n- Raio e taxa de entrega\n- Catálogo de produtos (foto JPG)\n\nQuando terminar, seu robô de vendas estará pronto para atender clientes 24h!",
+    text: "Essa é a missão mais importante! No menu lateral, clique em 'Meu Vendedor' e preencha o formulário completo (6 passos).\n\nEle configura de uma vez:\n- Dados da sua unidade\n- Horários de funcionamento\n- Formas de pagamento e PIX\n- Raio e taxa de entrega\n- Catálogo de produtos (foto JPG)\n\nQuando terminar, seu robô de vendas estará pronto para atender clientes 24h!\n\nEste item marca automaticamente quando o formulário estiver completo.",
     links: [{ label: "Abrir Meu Vendedor", url: "/FranchiseSettings" }],
   },
 
   // === MISSÃO 6: Faça Seu Primeiro Pedido ===
   "6-1": {
-    text: "Hora de abastecer! No app, vá em Gestão → Reposição. O sistema mostra todos os 28 produtos. Seu CS vai orientar sobre as quantidades ideais pro estoque inicial.\n\nÉ simples: escolha os produtos, defina as quantidades e envie o pedido.",
+    text: "Hora de abastecer! No app, vá em Gestão → Reposição. O sistema mostra todos os 28 produtos.\n\nÉ simples: escolha os produtos, defina as quantidades e envie o pedido. Este item marca automaticamente quando seu primeiro pedido for enviado.",
     links: [{ label: "Abrir Reposição", url: "/Gestao?tab=reposicao" }],
   },
   "6-2": {
     text: "Quando o pedido chegar, confira tudo:\n- Quantidades batem?\n- Produtos bem embalados e congelados?\n- Datas de validade ok?\n\nSe algo estiver errado, registre com foto e avise o franqueador.",
   },
   "6-3": {
-    text: "Com o pedido conferido, registre as quantidades em Gestão → Estoque. A partir daqui, cada venda que você registrar vai atualizar o estoque automaticamente!",
+    text: "Com o pedido conferido, registre as quantidades em Gestão → Estoque. A partir daqui, cada venda que você registrar vai atualizar o estoque automaticamente!\n\nEste item marca automaticamente quando algum produto tiver estoque registrado.",
     links: [{ label: "Abrir Estoque", url: "/Gestao?tab=estoque" }],
   },
 

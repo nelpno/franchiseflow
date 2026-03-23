@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Franchise, User, OnboardingChecklist } from "@/entities/all";
+import { Franchise, User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -102,22 +102,63 @@ export default function Onboarding() {
     setIsLoading(false);
   }, []);
 
+  // Auto-detect completed items from system data
+  const detectAutoItems = async (evoId) => {
+    const auto = { "1-1": true, "1-2": true }; // Always done when franchisee has access
+    try {
+      const [configs, orders, inventory] = await Promise.all([
+        FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }),
+        PurchaseOrder.filter({ franchise_id: evoId }),
+        InventoryItem.filter({ franchise_id: evoId }),
+      ]);
+      // 5-1: Wizard complete if config has required fields
+      const cfg = configs[0];
+      if (cfg && cfg.address && cfg.pix_key && cfg.delivery_radius != null) {
+        auto["5-1"] = true;
+      }
+      // 6-1: Has at least one purchase order
+      if (orders.length > 0) {
+        auto["6-1"] = true;
+      }
+      // 6-3: Has any inventory with stock > 0
+      if (inventory.some(i => (i.current_stock || 0) > 0)) {
+        auto["6-3"] = true;
+      }
+    } catch (err) {
+      console.error("Auto-detect error (non-fatal):", err);
+    }
+    return auto;
+  };
+
   const loadFranchiseChecklist = async (franchise) => {
     const existing = await OnboardingChecklist.filter({
       franchise_id: franchise.evolution_instance_id,
     });
 
+    // Detect auto items from system
+    const autoItems = await detectAutoItems(franchise.evolution_instance_id);
+
     if (existing.length > 0) {
       const cl = existing[0];
+      // Merge auto-detected items into saved items
+      const mergedItems = { ...(cl.items || {}), ...autoItems };
       setChecklist(cl);
-      setItems(cl.items || {});
+      setItems(mergedItems);
+
+      // Save auto-detected changes if any new items were found
+      const hasNewAuto = Object.keys(autoItems).some(k => !(cl.items || {})[k] && autoItems[k]);
+      if (hasNewAuto) {
+        const counts = computeCounts({ ...mergedItems, "9-1": blocks1to8Complete(mergedItems) });
+        OnboardingChecklist.update(cl.id, { items: mergedItems, ...counts }).catch(() => {});
+      }
+
       // Set initial expanded block
-      const activeId = findActiveBlockId(cl.items || {});
+      const activeId = findActiveBlockId(mergedItems);
       setExpandedBlockId(activeId);
       // Track already completed blocks
       const done = new Set();
       BLOCKS.forEach(b => {
-        if (b.items.every(i => (cl.items || {})[i.key])) done.add(b.id);
+        if (b.items.every(i => mergedItems[i.key])) done.add(b.id);
       });
       setCompletedBlocks(done);
     } else {
@@ -157,17 +198,30 @@ export default function Onboarding() {
       return;
     }
     try {
+      // Auto-detect items before creating
+      const autoItems = await detectAutoItems(selectedFranchise.evolution_instance_id);
+      const counts = computeCounts(autoItems);
+
       const created = await OnboardingChecklist.create({
         franchise_id: selectedFranchise.evolution_instance_id,
         status: "in_progress",
-        items: {},
-        completed_count: 0,
-        completion_percentage: 0,
+        items: autoItems,
+        ...counts,
       });
       setChecklist(created);
-      setItems({});
-      setExpandedBlockId(1);
-      toast.success("Onboarding iniciado!");
+      setItems(autoItems);
+      const activeId = findActiveBlockId(autoItems);
+      setExpandedBlockId(activeId);
+
+      // Track already completed blocks from auto-detect
+      const done = new Set();
+      BLOCKS.forEach(b => {
+        if (b.items.every(i => autoItems[i.key])) done.add(b.id);
+      });
+      setCompletedBlocks(done);
+
+      const autoCount = Object.values(autoItems).filter(Boolean).length;
+      toast.success(`Missões iniciadas! ${autoCount} itens já marcados automaticamente.`);
     } catch (error) {
       console.error("Erro ao iniciar onboarding:", error);
       toast.error("Erro ao iniciar onboarding. Verifique as permissões.");

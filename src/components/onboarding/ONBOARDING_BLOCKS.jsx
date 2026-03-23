@@ -9,8 +9,8 @@ export const BLOCKS = [
     color: "#D32F2F",
     icon: "handshake",
     items: [
-      { key: "1-1", label: "Contrato de franquia assinado", role: "franchisee" },
-      { key: "1-2", label: "Reunião de kick-off com o CS realizada", role: "both" },
+      { key: "1-1", label: "Contrato de franquia assinado", role: "auto" },
+      { key: "1-2", label: "Reunião de kick-off com o CS realizada", role: "auto" },
       { key: "1-3", label: "Acesso ao Drive de treinamento confirmado", role: "franchisee" },
     ],
   },
@@ -22,7 +22,7 @@ export const BLOCKS = [
     items: [
       { key: "2-1", label: "Lista dos 28 produtos estudada (sabores, pesos, diferenciais)", role: "franchisee" },
       { key: "2-2", label: "Pelo menos 3 produtos experimentados pessoalmente", role: "franchisee" },
-      { key: "2-3", label: "Tabela de preços de revenda definida com o CS", role: "both" },
+      { key: "2-3", label: "Preços de revenda conferidos em Gestão → Estoque (margem recomendada: 100%)", role: "franchisee" },
     ],
   },
   {
@@ -44,7 +44,7 @@ export const BLOCKS = [
     items: [
       { key: "4-1", label: "Número exclusivo obtido e WhatsApp Business instalado", role: "franchisee" },
       { key: "4-2", label: "Perfil comercial completo (foto, nome, descrição, endereço, horário)", role: "franchisee" },
-      { key: "4-3", label: "8 etiquetas do pipeline criadas no WhatsApp Business", role: "franchisee" },
+      { key: "4-3", label: "8 etiquetas de organização criadas no WhatsApp Business", role: "franchisee" },
       { key: "4-4", label: "WhatsApp Business adicionado no grupo da franquia", role: "franchisor" },
     ],
   },
@@ -54,7 +54,7 @@ export const BLOCKS = [
     color: "#F57C00",
     icon: "smart_toy",
     items: [
-      { key: "5-1", label: "Wizard 'Meu Vendedor' preenchido por completo no app", role: "franchisee" },
+      { key: "5-1", label: "Formulário 'Meu Vendedor' preenchido por completo no app", role: "auto" },
     ],
   },
   {
@@ -63,9 +63,9 @@ export const BLOCKS = [
     color: "#5C6BC0",
     icon: "shopping_cart",
     items: [
-      { key: "6-1", label: "Primeiro pedido de reposição feito pelo app (Gestão → Reposição)", role: "franchisee" },
+      { key: "6-1", label: "Primeiro pedido de reposição feito pelo app (Gestão → Reposição)", role: "auto" },
       { key: "6-2", label: "Pedido recebido e conferido (quantidades, estado, validade)", role: "franchisee" },
-      { key: "6-3", label: "Estoque registrado no app (Gestão → Estoque)", role: "franchisee" },
+      { key: "6-3", label: "Estoque registrado no app (Gestão → Estoque)", role: "auto" },
     ],
   },
   {
