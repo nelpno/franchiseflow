@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Contact, Franchise } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,6 +113,29 @@ export default function MyContacts() {
   const [dateFilter, setDateFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const mountedRef = useRef(true);
+
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return false;
+    }
+    return true;
+  };
+
+  const getErrorMessage = (error) => {
+    const msg = error?.message || "";
+    if (msg.includes("JWT") || msg.includes("token") || msg.includes("expired") || error?.status === 401) {
+      return "Sessão expirada. Faça login novamente.";
+    }
+    if (msg.includes("duplicate") || msg.includes("unique") || error?.code === "23505") {
+      return "Contato com este telefone já existe.";
+    }
+    if (msg.includes("Tempo limite")) {
+      return "Servidor demorou para responder. Tente novamente.";
+    }
+    return msg || "Erro desconhecido";
+  };
 
   useEffect(() => {
     mountedRef.current = true;
@@ -235,6 +259,7 @@ export default function MyContacts() {
     }
     try {
       setIsSaving(true);
+      if (!(await checkSession())) return;
       const franchises = await Franchise.list();
       const myFranchise = franchises.find(
         (f) => f.id === currentUser?.managed_franchise_ids?.[0] || f.evolution_instance_id === currentUser?.managed_franchise_ids?.[0]
@@ -258,7 +283,7 @@ export default function MyContacts() {
       loadContacts();
     } catch (error) {
       console.error("Erro ao criar contato:", error);
-      toast.error("Erro ao criar contato");
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
@@ -268,18 +293,20 @@ export default function MyContacts() {
     if (!editingContact) return;
     try {
       setIsSaving(true);
-      await Contact.update(editingContact.id, {
+      if (!(await checkSession())) return;
+      const updateData = {
         nome: editForm.nome,
-        endereco: editForm.endereco,
-        bairro: editForm.bairro,
-        notas: editForm.notas,
-      });
+        endereco: editForm.endereco?.trim() || null,
+        bairro: editForm.bairro?.trim() || null,
+        notas: editForm.notas?.trim() || null,
+      };
+      await Contact.update(editingContact.id, updateData);
       toast.success("Contato atualizado");
       setEditingContact(null);
       loadContacts();
     } catch (error) {
       console.error("Erro ao atualizar contato:", error);
-      toast.error("Erro ao atualizar contato");
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
