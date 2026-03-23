@@ -496,9 +496,8 @@ function FranchiseSettingsContent() {
               <h3 className="text-base font-bold text-[#1b1c1d]">
                 {currentConfig?.franchise_name || currentFranchise?.city || 'N/A'}
               </h3>
-              <p className="text-xs text-[#3d4a42]/60 flex items-center gap-1 mt-0.5">
-                <MaterialIcon icon="smartphone" size={12} />
-                {formData.personal_phone_for_summary || 'Telefone não configurado'}
+              <p className="text-xs text-[#3d4a42]/70 mt-0.5">
+                Conecte pelo QR Code abaixo
               </p>
               <div className={`mt-1.5 text-xs font-semibold ${isConnected ? 'text-[#b91c1c]' : 'text-red-500'}`}>
                 {isConnected ? 'WhatsApp ativo' : 'WhatsApp desconectado'}
