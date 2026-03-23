@@ -114,6 +114,16 @@ export default function MyContacts() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const mountedRef = useRef(true);
 
+  const capitalize = (str) => {
+    if (!str) return str;
+    const lower = ["da", "de", "do", "das", "dos", "e", "a", "o", "em", "na", "no", "nas", "nos"];
+    return str.trim().replace(/\s+/g, " ").split(" ").map((word, i) => {
+      const w = word.toLowerCase();
+      if (i > 0 && lower.includes(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(" ");
+  };
+
   const checkSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -270,10 +280,10 @@ export default function MyContacts() {
       }
       await Contact.create({
         franchise_id: myFranchise.evolution_instance_id,
-        nome: newContactForm.nome.trim(),
+        nome: capitalize(newContactForm.nome),
         telefone: newContactForm.telefone?.trim() || null,
-        endereco: newContactForm.endereco?.trim() || null,
-        bairro: newContactForm.bairro?.trim() || null,
+        endereco: capitalize(newContactForm.endereco) || null,
+        bairro: capitalize(newContactForm.bairro) || null,
         notas: newContactForm.notas?.trim() || null,
         source: "manual",
       });
@@ -295,9 +305,10 @@ export default function MyContacts() {
       setIsSaving(true);
       if (!(await checkSession())) return;
       const updateData = {
-        nome: editForm.nome,
-        endereco: editForm.endereco?.trim() || null,
-        bairro: editForm.bairro?.trim() || null,
+        nome: capitalize(editForm.nome),
+        telefone: editForm.telefone?.trim() || null,
+        endereco: capitalize(editForm.endereco) || null,
+        bairro: capitalize(editForm.bairro) || null,
         notas: editForm.notas?.trim() || null,
       };
       await Contact.update(editingContact.id, updateData);
@@ -449,7 +460,7 @@ export default function MyContacts() {
                 disabled={isSaving || !newContactForm.nome?.trim()}
                 className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl"
               >
-                {isSaving ? "Salvando..." : "Criar Contato"}
+                {isSaving ? "Criando..." : "Criar Contato"}
               </Button>
             </div>
           </div>
@@ -721,14 +732,15 @@ export default function MyContacts() {
               />
             </div>
 
-            {/* Telefone (read-only) */}
+            {/* Telefone */}
             <div className="space-y-1.5">
               <Label htmlFor="edit-telefone" className="text-[#1b1c1d]">Telefone</Label>
               <Input
                 id="edit-telefone"
-                value={formatPhone(editForm.telefone)}
-                readOnly
-                className="bg-[#e9e8e9]/50 border-none rounded-xl text-[#4a3d3d] cursor-not-allowed"
+                value={editForm.telefone || ""}
+                onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
+                placeholder="(11) 99999-9999"
+                className="bg-[#e9e8e9] border-none rounded-xl"
               />
             </div>
 
