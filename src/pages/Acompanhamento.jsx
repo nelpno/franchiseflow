@@ -1,223 +1,169 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Franchise, User, DailyChecklist } from "@/entities/all";
-import { format, subDays, parseISO, differenceInDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Franchise, User, Sale, InventoryItem, PurchaseOrder,
+  OnboardingChecklist, FranchiseConfiguration, DailyChecklist, FranchiseNote
+} from "@/entities/all";
+import { format } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import FranchiseeDetailModal from "@/components/acompanhamento/FranchiseeDetailModal";
-
-const today = () => format(new Date(), "yyyy-MM-dd");
-const daysAgo = (n) => format(subDays(new Date(), n), "yyyy-MM-dd");
-
-function getSemaforo(checklists7days) {
-  if (!checklists7days || checklists7days.length === 0) return "red";
-  const completeDays = checklists7days.filter(c => c.completion_percentage >= 100).length;
-  if (completeDays >= 5) return "green";
-  if (completeDays >= 3) return "yellow";
-  return "red";
-}
-
-function getAdherencia7days(checklists7days) {
-  if (!checklists7days || checklists7days.length === 0) return 0;
-  const completeDays = checklists7days.filter(c => c.completion_percentage >= 100).length;
-  return Math.round((completeDays / 7) * 100);
-}
-
-function getStreak(allChecklists) {
-  let streak = 0;
-  let d = new Date();
-  // if today not complete, start from yesterday
-  const todayStr = format(d, "yyyy-MM-dd");
-  const todayRecord = allChecklists.find(c => c.date === todayStr);
-  if (!todayRecord || todayRecord.completion_percentage < 100) {
-    d = subDays(d, 1);
-  }
-  for (let i = 0; i < 60; i++) {
-    const dateStr = format(d, "yyyy-MM-dd");
-    const record = allChecklists.find(c => c.date === dateStr);
-    if (record && record.completion_percentage >= 100) {
-      streak++;
-      d = subDays(d, 1);
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-function getLastActivity(allChecklists) {
-  const withActivity = allChecklists.filter(c => c.completed_count > 0);
-  if (withActivity.length === 0) return null;
-  const sorted = [...withActivity].sort((a, b) => b.date.localeCompare(a.date));
-  return sorted[0].date;
-}
-
-function getDaysSinceActivity(lastActivityDate) {
-  if (!lastActivityDate) return null;
-  return differenceInDays(new Date(), parseISO(lastActivityDate));
-}
-
-const SEMAFORO_ORDER = { red: 0, yellow: 1, green: 2 };
-
-const SemaforoCircle = ({ color }) => {
-  const styles = {
-    green: "bg-[#16a34a] shadow-[0_0_8px_2px_rgba(22,163,74,0.5)]",
-    yellow: "bg-[#d4af37] shadow-[0_0_8px_2px_rgba(212,175,55,0.5)]",
-    red: "bg-[#b91c1c] shadow-[0_0_8px_2px_rgba(185,28,28,0.5)]",
-  };
-  return <div className={`w-4 h-4 rounded-full ${styles[color]}`} />;
-};
-
-const TodayStatus = ({ checklists }) => {
-  const todayRecord = checklists.find(c => c.date === today());
-  if (!todayRecord || todayRecord.completed_count === 0) return <span className="text-xl">❌</span>;
-  if (todayRecord.completion_percentage >= 100) return <span className="text-xl">✅</span>;
-  return <span className="text-xl">🟡</span>;
-};
+import { calculateFranchiseHealth, STATUS_COLORS, STATUS_LABELS } from "@/lib/healthScore";
+import HealthScoreBar from "@/components/acompanhamento/HealthScoreBar";
+import FranchiseHealthDetail from "@/components/acompanhamento/FranchiseHealthDetail";
 
 export default function Acompanhamento() {
   const navigate = useNavigate();
+  const mountedRef = useRef(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
-  const [franchiseData, setFranchiseData] = useState([]);
+  const [healthScores, setHealthScores] = useState([]);
+  const [allNotes, setAllNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filterSemaforo, setFilterSemaforo] = useState("all");
-  const [filterCidade, setFilterCidade] = useState("all");
-  const [searchName, setSearchName] = useState("");
-  const [dismissedAlerts, setDismissedAlerts] = useState([]);
-  const [selectedFranchise, setSelectedFranchise] = useState(null);
-  const [rankingCopied, setRankingCopied] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
+  // Filters
+  const [searchText, setSearchText] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [sortBy, setSortBy] = useState("score");
+  const [expandedId, setExpandedId] = useState(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   const loadData = useCallback(async () => {
+    if (!mountedRef.current) return;
     setIsLoading(true);
+    setLoadError(null);
     try {
       const user = await User.me();
+      if (!mountedRef.current) return;
       setCurrentUser(user);
 
-      if (user.role !== "admin") {
+      if (user.role !== "admin" && user.role !== "manager") {
         setIsLoading(false);
         return;
       }
 
-      const allFranchises = await Franchise.filter({ status: "active" });
+      const [allFranchises, sales, inventory, orders, onboarding, configs, checklists, notes] =
+        await Promise.all([
+          Franchise.list(),
+          Sale.list("-created_at", 1000),
+          InventoryItem.list("franchise_id", 3000),
+          PurchaseOrder.list("-ordered_at", 500),
+          OnboardingChecklist.list("franchise_id", 200),
+          FranchiseConfiguration.list("franchise_evolution_instance_id", 200),
+          DailyChecklist.list("-date", 500),
+          FranchiseNote.list("-created_at", 500),
+        ]);
+
+      if (!mountedRef.current) return;
+
+      const data = { sales, inventory, orders, onboarding, configs, checklists };
+
+      const scores = allFranchises.map((franchise) => ({
+        franchise,
+        health: calculateFranchiseHealth(franchise, data),
+      }));
+
+      // Default sort: worst score first
+      scores.sort((a, b) => a.health.total - b.health.total);
+
       setFranchises(allFranchises);
-
-      const sevenDaysAgoStr = daysAgo(6);
-      const thirtyDaysAgoStr = daysAgo(29);
-
-      const allChecklistsRaw = await DailyChecklist.list("-date", 500);
-
-      const enriched = allFranchises.map(franchise => {
-        const fid = franchise.evolution_instance_id;
-        const franchiseChecklists = allChecklistsRaw.filter(c => c.franchise_id === fid);
-        const checklists7days = franchiseChecklists.filter(c => c.date >= sevenDaysAgoStr);
-        const checklists30days = franchiseChecklists.filter(c => c.date >= thirtyDaysAgoStr);
-        const semaforo = getSemaforo(checklists7days);
-        const adherencia = getAdherencia7days(checklists7days);
-        const streak = getStreak(franchiseChecklists);
-        const lastActivity = getLastActivity(franchiseChecklists);
-        const daysSince = getDaysSinceActivity(lastActivity);
-
-        return {
-          franchise,
-          semaforo,
-          adherencia,
-          streak,
-          lastActivity,
-          daysSince,
-          checklists7days,
-          checklists30days,
-          allChecklists: franchiseChecklists,
-        };
-      });
-
-      enriched.sort((a, b) => {
-        const colorDiff = SEMAFORO_ORDER[a.semaforo] - SEMAFORO_ORDER[b.semaforo];
-        if (colorDiff !== 0) return colorDiff;
-        return a.adherencia - b.adherencia;
-      });
-
-      setFranchiseData(enriched);
+      setHealthScores(scores);
+      setAllNotes(notes);
       setLastRefresh(new Date());
     } catch (error) {
-      console.error("Erro ao carregar dados de acompanhamento:", error);
-      toast.error("Erro ao carregar dados de acompanhamento.");
+      console.error("Erro ao carregar dados:", error);
+      if (mountedRef.current) {
+        setLoadError(error.message || "Erro ao carregar dados");
+        toast.error(error.message || "Erro ao carregar dados de acompanhamento");
+      }
     }
-    setIsLoading(false);
+    if (mountedRef.current) setIsLoading(false);
   }, []);
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
+    const interval = setInterval(loadData, 120000);
     return () => clearInterval(interval);
   }, [loadData]);
 
-  // Metrics
-  const avgAdherencia = franchiseData.length
-    ? Math.round(franchiseData.reduce((sum, f) => sum + f.adherencia, 0) / franchiseData.length)
-    : 0;
-  const greenCount = franchiseData.filter(f => f.semaforo === "green").length;
-  const alertCount = franchiseData.filter(f => f.semaforo !== "green").length;
-  const totalActive = franchises.length;
+  // Summary metrics
+  const metrics = useMemo(() => {
+    const criticos = healthScores.filter((s) => s.health.status === "critico").length;
+    const atencao = healthScores.filter((s) => s.health.status === "atencao").length;
+    const saudaveis = healthScores.filter((s) => s.health.status === "saudavel").length;
+    const novas = healthScores.filter((s) => s.health.status === "nova").length;
+    const avg = healthScores.length
+      ? Math.round(healthScores.reduce((sum, s) => sum + s.health.total, 0) / healthScores.length)
+      : 0;
+    return { criticos, atencao, saudaveis: saudaveis + novas, avg };
+  }, [healthScores]);
 
-  // Alerts: franchises with 3+ days without activity
-  const alerts = franchiseData.filter(f => {
-    const noActivity = f.daysSince === null || f.daysSince >= 3;
-    return noActivity && !dismissedAlerts.includes(f.franchise.id);
-  });
+  // Filtered + sorted list
+  const filteredList = useMemo(() => {
+    let list = [...healthScores];
 
-  // Filtered table
-  const filtered = franchiseData.filter(f => {
-    if (filterSemaforo !== "all" && f.semaforo !== filterSemaforo) return false;
-    if (filterCidade !== "all" && f.franchise.city !== filterCidade) return false;
-    if (searchName && !f.franchise.owner_name?.toLowerCase().includes(searchName.toLowerCase())) return false;
-    return true;
-  });
+    // Search
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.franchise.owner_name?.toLowerCase().includes(q) ||
+          s.franchise.city?.toLowerCase().includes(q) ||
+          s.franchise.name?.toLowerCase().includes(q)
+      );
+    }
 
-  // Ranking top 5
-  const ranking = [...franchiseData]
-    .sort((a, b) => b.adherencia - a.adherencia || b.streak - a.streak)
-    .slice(0, 5);
+    // Status filter
+    if (filterStatus !== "all") {
+      list = list.filter((s) => s.health.status === filterStatus);
+    }
 
-  const medals = ["🥇", "🥈", "🥉", "4º", "5º"];
+    // Sort
+    if (sortBy === "score") {
+      list.sort((a, b) => a.health.total - b.health.total);
+    } else if (sortBy === "lastSale") {
+      list.sort((a, b) => {
+        const aDays = a.health.dimensions.vendas.daysSince ?? 999;
+        const bDays = b.health.dimensions.vendas.daysSince ?? 999;
+        return bDays - aDays;
+      });
+    } else if (sortBy === "lastOrder") {
+      list.sort((a, b) => {
+        const aDays = a.health.dimensions.reposicao.daysSince ?? 999;
+        const bDays = b.health.dimensions.reposicao.daysSince ?? 999;
+        return bDays - aDays;
+      });
+    } else if (sortBy === "name") {
+      list.sort((a, b) => (a.franchise.owner_name || "").localeCompare(b.franchise.owner_name || ""));
+    }
 
-  const copyRanking = () => {
-    const lines = ranking.map((f, i) => {
-      const medal = medals[i];
-      return `${medal} ${i + 1}º ${f.franchise.owner_name} — ${f.franchise.city} — ${f.streak} dias seguidos!`;
-    }).join("\n");
-    const text = `🏆 RANKING DA SEMANA — Maxi Massas\n\n${lines}\n\nParabéns aos TOP 5! Consistência gera resultado! 💪\n#MaxiMassas #FranqueadoDeExcelência`;
-    navigator.clipboard.writeText(text);
-    setRankingCopied(true);
-    setTimeout(() => setRankingCopied(false), 2000);
-  };
+    return list;
+  }, [healthScores, searchText, filterStatus, sortBy]);
 
-  const cities = [...new Set(franchises.map(f => f.city).filter(Boolean))];
+  function handleToggleExpand(id) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
 
-  const adherenciaCardBg = avgAdherencia >= 70
-    ? "bg-[#16a34a]/5 border-[#16a34a]/20"
-    : avgAdherencia >= 40
-      ? "bg-[#d4af37]/5 border-[#d4af37]/20"
-      : "bg-red-50 border-red-200";
+  function getNotesForFranchise(franchiseId) {
+    return allNotes.filter((n) => n.franchise_id === franchiseId);
+  }
 
-  const adherenciaTextColor = avgAdherencia >= 70
-    ? "text-[#15803d]"
-    : avgAdherencia >= 40
-      ? "text-[#775a19]"
-      : "text-red-700";
-
-  if (currentUser && currentUser.role !== "admin") {
+  // Access control
+  if (currentUser && currentUser.role !== "admin" && currentUser.role !== "manager") {
     return (
       <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-600">Acesso Negado</h1>
-        <p className="text-[#4a3d3d] mt-2">Apenas administradores podem acessar esta página.</p>
+        <h1 className="text-2xl font-bold" style={{ color: "#dc2626" }}>Acesso Negado</h1>
+        <p className="mt-2" style={{ color: "#4a3d3d" }}>Apenas administradores e gerentes podem acessar esta página.</p>
         <Button className="mt-4" onClick={() => navigate(createPageUrl("Dashboard"))}>
           Ir para o Dashboard
         </Button>
@@ -225,258 +171,244 @@ export default function Acompanhamento() {
     );
   }
 
+  // Error state
+  if (loadError && !isLoading) {
+    return (
+      <div className="p-8 text-center">
+        <MaterialIcon icon="error_outline" className="text-4xl mx-auto mb-3" style={{ color: "#dc2626" }} />
+        <h2 className="text-lg font-semibold" style={{ color: "#1b1c1d" }}>Erro ao carregar dados</h2>
+        <p className="mt-1 text-sm" style={{ color: "#4a3d3d" }}>{loadError}</p>
+        <Button className="mt-4" onClick={loadData}>Tentar novamente</Button>
+      </div>
+    );
+  }
+
+  const summaryCards = [
+    { label: "Críticos", icon: "warning", count: metrics.criticos, status: "critico" },
+    { label: "Atenção", icon: "info", count: metrics.atencao, status: "atencao" },
+    { label: "Saudáveis", icon: "check_circle", count: metrics.saudaveis, status: "saudavel" },
+  ];
+
   return (
-    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
-      <div className="max-w-7xl mx-auto">
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
-              <MaterialIcon icon="trending_up" size={28} className="text-[#b91c1c] shrink-0" />
-              Acompanhamento
-            </h1>
-            <p className="text-[#4a3d3d] text-sm mt-1">
-              Monitoramento de checklists · Atualizado às {format(lastRefresh, "HH:mm")}
-            </p>
-          </div>
-          <Button variant="outline" onClick={loadData} disabled={isLoading} className="gap-2 self-start sm:self-auto shrink-0">
-            <MaterialIcon icon="refresh" size={16} className={isLoading ? "animate-spin" : ""} />
-            Atualizar
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta flex items-center gap-3" style={{ color: "#1b1c1d" }}>
+            <MaterialIcon icon="monitoring" size={28} className="shrink-0" style={{ color: "#b91c1c" }} />
+            Acompanhamento
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "#4a3d3d" }}>
+            Saúde das franquias · Atualizado às {format(lastRefresh, "HH:mm")}
+          </p>
         </div>
-
-        {/* Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className={`border ${adherenciaCardBg}`}>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-1">
-                <MaterialIcon icon="trending_up" size={20} className={adherenciaTextColor} />
-                <span className="text-sm font-medium text-[#4a3d3d]">Aderência Geral</span>
-              </div>
-              <div className={`text-2xl sm:text-4xl font-bold ${adherenciaTextColor}`}>{avgAdherencia}%</div>
-              <div className="text-xs text-[#4a3d3d] mt-1">Média últimos 7 dias</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-[#16a34a]/5 border-[#16a34a]/20 border">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-1">
-                <MaterialIcon icon="check_circle" size={20} className="text-[#16a34a]" />
-                <span className="text-sm font-medium text-[#4a3d3d]">Franqueados Verdes</span>
-              </div>
-              <div className="text-2xl sm:text-4xl font-bold text-[#15803d]">{greenCount}</div>
-              <div className="text-xs text-[#4a3d3d] mt-1">5+ dias completos/semana</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-red-50 border-red-200 border">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-1">
-                <MaterialIcon icon="warning" size={20} className="text-red-600" />
-                <span className="text-sm font-medium text-[#4a3d3d]">Em Alerta</span>
-              </div>
-              <div className="text-2xl sm:text-4xl font-bold text-red-700">{alertCount}</div>
-              <div className="text-xs text-[#4a3d3d] mt-1">Amarelos + Vermelhos</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-[#fbf9fa] border-[#291715]/5 border">
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-1">
-                <MaterialIcon icon="group" size={20} className="text-[#b91c1c]" />
-                <span className="text-sm font-medium text-[#4a3d3d]">Total Ativos</span>
-              </div>
-              <div className="text-2xl sm:text-4xl font-bold text-[#b91c1c]">{totalActive}</div>
-              <div className="text-xs text-[#4a3d3d] mt-1">Franquias ativas</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alerts */}
-        {alerts.length > 0 && (
-          <Card className="mb-6 border-red-300 bg-red-50/60">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-red-700 flex items-center gap-2">
-                <MaterialIcon icon="warning" size={20} /> Franqueados sem atividade recente
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              {alerts.map(({ franchise, daysSince }) => (
-                <div key={franchise.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white rounded-lg p-3 border border-red-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-[#b91c1c] animate-pulse shrink-0" />
-                    <div>
-                      <span className="font-semibold text-[#1b1c1d]">{franchise.owner_name}</span>
-                      <span className="text-[#4a3d3d] text-sm ml-2">· {franchise.city}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 ml-6 sm:ml-0">
-                    <span className="text-red-600 text-xs sm:text-sm font-medium">
-                      {daysSince === null ? "Nunca completou" : `Há ${daysSince} dia${daysSince !== 1 ? "s" : ""}`}
-                    </span>
-                    <Button size="sm" variant="outline" className="text-xs h-7 shrink-0"
-                      onClick={() => setDismissedAlerts(prev => [...prev, franchise.id])}>
-                      <MaterialIcon icon="close" size={12} className="mr-1" /> Contactado
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Filters */}
-        <Card className="mb-4 bg-white rounded-2xl shadow-sm border border-[#291715]/5">
-          <CardContent className="p-4 flex flex-wrap gap-3 items-center">
-            <div className="relative flex-1 min-w-[180px]">
-              <MaterialIcon icon="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#857372]" />
-              <Input
-                placeholder="Buscar por nome..."
-                value={searchName}
-                onChange={e => setSearchName(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={filterSemaforo} onValueChange={setFilterSemaforo}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Semáforo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="green">🟢 Verde</SelectItem>
-                <SelectItem value="yellow">🟡 Amarelo</SelectItem>
-                <SelectItem value="red">🔴 Vermelho</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterCidade} onValueChange={setFilterCidade}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Cidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as cidades</SelectItem>
-                {cities.map(city => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        {/* Main Table */}
-        <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden">
-          <div className="overflow-x-auto">
-            {isLoading ? (
-              <div className="p-12 text-center text-[#4a3d3d]">
-                <MaterialIcon icon="refresh" size={32} className="animate-spin mx-auto mb-3 text-[#b91c1c]" />
-                Carregando dados...
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#fbf9fa] text-left text-xs font-semibold text-[#4a3d3d] uppercase tracking-wider">
-                    <th className="px-4 py-3 w-10">Status</th>
-                    <th className="px-4 py-3">Franqueado</th>
-                    <th className="px-4 py-3">Cidade</th>
-                    <th className="px-4 py-3 text-center">Hoje</th>
-                    <th className="px-4 py-3">Aderência 7d</th>
-                    <th className="px-4 py-3 text-center">Streak</th>
-                    <th className="px-4 py-3">Última Atividade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((item, idx) => (
-                    <tr
-                      key={item.franchise.id}
-                      className={`border-t border-[#fbf9fa] cursor-pointer hover:bg-[#fbf9fa] transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-[#fbf9fa]/50"}`}
-                      onClick={() => setSelectedFranchise(item)}
-                    >
-                      <td className="px-4 py-3">
-                        <SemaforoCircle color={item.semaforo} />
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-[#1b1c1d]">{item.franchise.owner_name}</td>
-                      <td className="px-4 py-3 text-[#4a3d3d]">{item.franchise.city}</td>
-                      <td className="px-4 py-3 text-center">
-                        <TodayStatus checklists={item.checklists7days} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-[#e9e8e9] rounded-full h-2 min-w-[60px]">
-                            <div
-                              className={`h-2 rounded-full ${item.adherencia >= 70 ? "bg-[#16a34a]" : item.adherencia >= 40 ? "bg-[#d4af37]" : "bg-[#b91c1c]"}`}
-                              style={{ width: `${item.adherencia}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-semibold text-[#1b1c1d] w-10 text-right">{item.adherencia}%</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`font-bold ${item.streak >= 7 ? "text-[#16a34a]" : item.streak >= 3 ? "text-[#d4af37]" : "text-[#4a3d3d]"}`}>
-                          {item.streak > 0 ? `${item.streak}d` : "-"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-[#4a3d3d] text-sm">
-                        {item.lastActivity
-                          ? format(parseISO(item.lastActivity), "dd/MM/yyyy", { locale: ptBR })
-                          : <span className="text-red-400">Sem registro</span>}
-                      </td>
-                    </tr>
-                  ))}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-[#857372]">
-                        Nenhum franqueado encontrado com os filtros selecionados.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </Card>
-
-        {/* Ranking */}
-        {ranking.length > 0 && (
-          <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
-            <CardHeader className="pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <CardTitle className="flex items-center gap-2">
-                <MaterialIcon icon="emoji_events" size={20} className="text-[#d4af37]" />
-                Ranking da Semana
-              </CardTitle>
-              <Button variant="outline" size="sm" onClick={copyRanking} className="gap-2 self-start sm:self-auto">
-                <MaterialIcon icon="content_copy" size={16} />
-                {rankingCopied ? "Copiado!" : "Copiar WhatsApp"}
-              </Button>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              {ranking.map((item, idx) => (
-                <div
-                  key={item.franchise.id}
-                  className={`flex items-center gap-4 rounded-xl p-4 ${idx < 3 ? "bg-[#d4af37]/5 border border-[#d4af37]/20" : "bg-[#fbf9fa] border border-[#e9e8e9]"}`}
-                >
-                  <span className="text-2xl w-8 text-center">{medals[idx]}</span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-[#1b1c1d]">{item.franchise.owner_name}</div>
-                    <div className="text-sm text-[#4a3d3d]">{item.franchise.city}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`font-bold text-lg ${item.adherencia >= 70 ? "text-[#16a34a]" : "text-[#d4af37]"}`}>{item.adherencia}%</div>
-                    <div className="text-xs text-[#4a3d3d]">{item.streak} dias seguidos</div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        <Button variant="outline" onClick={loadData} disabled={isLoading} className="gap-2 self-start sm:self-auto shrink-0">
+          <MaterialIcon icon="refresh" size={16} className={isLoading ? "animate-spin" : ""} />
+          Atualizar
+        </Button>
       </div>
 
-      {/* Detail Modal */}
-      {selectedFranchise && (
-        <FranchiseeDetailModal
-          data={selectedFranchise}
-          onClose={() => setSelectedFranchise(null)}
-        />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {summaryCards.map(({ label, icon, count, status }) => {
+          const colors = STATUS_COLORS[status];
+          return (
+            <Card
+              key={status}
+              className="border cursor-pointer transition-colors"
+              style={{ backgroundColor: colors.bg, borderColor: colors.border }}
+              onClick={() => setFilterStatus((prev) => (prev === status ? "all" : status))}
+            >
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <MaterialIcon icon={icon} size={20} style={{ color: colors.text }} />
+                  <span className="text-sm font-medium" style={{ color: "#4a3d3d" }}>{label}</span>
+                </div>
+                <div className="text-2xl sm:text-4xl font-bold" style={{ color: colors.text }}>{count}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        <Card className="border" style={{ backgroundColor: "#fbf9fa", borderColor: "#e9e8e9" }}>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <MaterialIcon icon="monitoring" size={20} style={{ color: "#4a3d3d" }} />
+              <span className="text-sm font-medium" style={{ color: "#4a3d3d" }}>Score Médio</span>
+            </div>
+            <div className="text-2xl sm:text-4xl font-bold" style={{ color: "#1b1c1d" }}>{metrics.avg}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="bg-white border" style={{ borderColor: "#e9e8e9" }}>
+        <CardContent className="p-4 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[180px]">
+            <MaterialIcon icon="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#7a6d6d" }} />
+            <Input
+              placeholder="Buscar por nome ou cidade..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="critico">🔴 Críticos</SelectItem>
+              <SelectItem value="atencao">🟡 Atenção</SelectItem>
+              <SelectItem value="saudavel">🟢 Saudáveis</SelectItem>
+              <SelectItem value="nova">🔵 Novas</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Ordenar" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="score">Score (pior primeiro)</SelectItem>
+              <SelectItem value="lastSale">Última venda</SelectItem>
+              <SelectItem value="lastOrder">Último pedido</SelectItem>
+              <SelectItem value="name">Nome A-Z</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {/* Franchise List */}
+      {isLoading ? (
+        <LoadingSkeleton />
+      ) : (
+        <Card className="bg-white border overflow-hidden" style={{ borderColor: "#e9e8e9" }}>
+          {filteredList.length === 0 ? (
+            <div className="p-12 text-center" style={{ color: "#7a6d6d" }}>
+              <MaterialIcon icon="search_off" className="text-4xl mx-auto mb-2" />
+              <p>Nenhum franqueado encontrado com os filtros selecionados.</p>
+            </div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: "#e9e8e9" }}>
+              {filteredList.map(({ franchise, health }) => {
+                const isExpanded = expandedId === franchise.id;
+                const colors = STATUS_COLORS[health.status];
+                const dimensionBars = [
+                  { label: "Vendas", score: health.dimensions.vendas.score },
+                  { label: "Estoque", score: health.dimensions.estoque.score },
+                  { label: "Pedidos", score: health.dimensions.reposicao.score },
+                  { label: "Setup", score: health.dimensions.setup.score },
+                  { label: "Ativid.", score: health.dimensions.atividade.score },
+                ];
+
+                return (
+                  <div key={franchise.id}>
+                    {/* Row */}
+                    <div
+                      className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 cursor-pointer hover:bg-[#fbf9fa] transition-colors"
+                      onClick={() => handleToggleExpand(franchise.id)}
+                    >
+                      {/* Score badge */}
+                      <div
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: colors.bg, border: `1.5px solid ${colors.border}` }}
+                      >
+                        <span className="text-lg sm:text-xl font-bold" style={{ color: colors.text }}>
+                          {health.total}
+                        </span>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold truncate" style={{ color: "#1b1c1d" }}>
+                            {franchise.owner_name || franchise.name}
+                          </span>
+                          <span className="text-sm shrink-0" style={{ color: "#7a6d6d" }}>
+                            · {franchise.city}
+                          </span>
+                          {health.isNew && (
+                            <span
+                              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                              style={{ backgroundColor: STATUS_COLORS.nova.bg, color: STATUS_COLORS.nova.text }}
+                            >
+                              NOVA
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Mini bars - hidden on small mobile */}
+                        <div className="hidden sm:flex items-center gap-3 mt-1.5">
+                          {dimensionBars.map((d) => (
+                            <HealthScoreBar key={d.label} label={d.label} score={d.score} />
+                          ))}
+                        </div>
+
+                        {/* Problem summary */}
+                        {health.problems.length > 0 && (
+                          <div className="flex items-center gap-1.5 mt-1 text-xs" style={{ color: "#4a3d3d" }}>
+                            <MaterialIcon icon="warning" className="text-sm" style={{ color: "#d97706" }} />
+                            <span className="truncate">{health.problems.join(" · ")}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Expand chevron */}
+                      <MaterialIcon
+                        icon={isExpanded ? "expand_less" : "expand_more"}
+                        className="text-xl shrink-0"
+                        style={{ color: "#7a6d6d" }}
+                      />
+                    </div>
+
+                    {/* Drill-down */}
+                    {isExpanded && (
+                      <FranchiseHealthDetail
+                        franchise={franchise}
+                        healthData={health}
+                        notes={getNotesForFranchise(franchise.id)}
+                        currentUserId={currentUser?.id}
+                        currentUserName={currentUser?.full_name}
+                        onNoteAdded={loadData}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
       )}
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* Skeleton cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="border" style={{ borderColor: "#e9e8e9" }}>
+            <CardContent className="p-5">
+              <div className="h-4 w-20 rounded bg-[#e9e8e9] animate-pulse mb-2" />
+              <div className="h-8 w-12 rounded bg-[#e9e8e9] animate-pulse" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {/* Skeleton rows */}
+      <Card className="border" style={{ borderColor: "#e9e8e9" }}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex items-center gap-4 p-4 border-b" style={{ borderColor: "#e9e8e9" }}>
+            <div className="w-14 h-14 rounded-xl bg-[#e9e8e9] animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-40 rounded bg-[#e9e8e9] animate-pulse" />
+              <div className="h-3 w-60 rounded bg-[#e9e8e9] animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </Card>
     </div>
   );
 }

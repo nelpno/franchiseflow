@@ -1,0 +1,228 @@
+import { format, differenceInDays, subDays } from "date-fns";
+
+/**
+ * Calculates franchise health score (0-100) across 5 dimensions.
+ *
+ * Dimensions & weights (normal):
+ *   Vendas 30%, Estoque 25%, Reposição 20%, Setup 15%, Atividade 10%
+ *
+ * New franchise (<30 days): Setup 40%, Vendas 20%, Estoque 15%, Reposição 15%, Atividade 10%
+ */
+
+// --- Individual dimension calculators ---
+
+function calcSalesScore(franchise, salesData) {
+  const franchiseSales = salesData.filter(
+    (s) => s.franchise_id === franchise.id || s.franchise_id === franchise.evolution_instance_id
+  );
+
+  if (franchiseSales.length === 0) return { score: 0, detail: "Nenhuma venda registrada", daysSince: null };
+
+  const mostRecentDate = franchiseSales.reduce((latest, s) => {
+    const d = s.sale_date || s.created_at?.substring(0, 10) || "";
+    return d > latest ? d : latest;
+  }, "");
+
+  const today = format(new Date(), "yyyy-MM-dd");
+  const daysSince = differenceInDays(new Date(today), new Date(mostRecentDate));
+
+  let score;
+  if (daysSince === 0) score = 100;
+  else if (daysSince === 1) score = 80;
+  else if (daysSince === 2) score = 60;
+  else if (daysSince === 3) score = 40;
+  else if (daysSince <= 5) score = 20;
+  else score = 0;
+
+  const detail = daysSince === 0
+    ? "Vendeu hoje"
+    : `Última venda há ${daysSince} dia${daysSince > 1 ? "s" : ""}`;
+
+  return { score, detail, daysSince };
+}
+
+function calcInventoryScore(franchise, inventoryData) {
+  const items = inventoryData.filter(
+    (i) => i.franchise_id === franchise.evolution_instance_id
+  );
+
+  if (items.length === 0) return { score: 100, detail: "Sem itens cadastrados", zeroCount: 0, zeroNames: "" };
+
+  const zeroItems = items.filter((i) => (i.quantity || 0) === 0);
+  const zeroCount = zeroItems.length;
+
+  let score;
+  if (zeroCount === 0) score = 100;
+  else if (zeroCount === 1) score = 80;
+  else if (zeroCount <= 3) score = 60;
+  else if (zeroCount <= 5) score = 40;
+  else if (zeroCount <= 8) score = 20;
+  else score = 0;
+
+  const detail = zeroCount === 0
+    ? "Estoque OK"
+    : `${zeroCount} ite${zeroCount > 1 ? "ns" : "m"} zerado${zeroCount > 1 ? "s" : ""}`;
+
+  const zeroNames = zeroItems.slice(0, 4).map((i) => i.name).join(", ");
+
+  return { score, detail, zeroCount, zeroNames };
+}
+
+function calcOrdersScore(franchise, ordersData) {
+  const orders = ordersData.filter(
+    (po) => po.franchise_id === franchise.id || po.franchise_id === franchise.evolution_instance_id
+  );
+
+  if (orders.length === 0) return { score: 0, detail: "Nunca fez pedido", daysSince: null, lastOrderDate: null };
+
+  const mostRecent = orders.reduce((latest, po) => {
+    const d = po.ordered_at || po.created_at?.substring(0, 10) || "";
+    return d > latest ? d : latest;
+  }, "");
+
+  const daysSince = differenceInDays(new Date(), new Date(mostRecent));
+
+  let score;
+  if (daysSince <= 7) score = 100;
+  else if (daysSince <= 14) score = 80;
+  else if (daysSince <= 21) score = 60;
+  else if (daysSince <= 30) score = 40;
+  else if (daysSince <= 45) score = 20;
+  else score = 0;
+
+  const detail = `Último pedido há ${daysSince} dia${daysSince > 1 ? "s" : ""}`;
+
+  return { score, detail, daysSince, lastOrderDate: mostRecent };
+}
+
+function calcSetupScore(franchise, onboardingData, configData) {
+  const evoId = franchise.evolution_instance_id;
+  const checklist = onboardingData.find((c) => c.franchise_id === evoId);
+  const config = configData.find(
+    (c) => c.franchise_evolution_instance_id === evoId
+  );
+
+  // Onboarding: 0-70 pts
+  let onboardingPct = 0;
+  if (checklist) {
+    const completedCount = checklist.completed_count || 0;
+    const totalItems = 27; // Fixed from ONBOARDING_BLOCKS
+    onboardingPct = Math.min(100, Math.round((completedCount / totalItems) * 100));
+  }
+  const onboardingPts = Math.round((onboardingPct / 100) * 70);
+
+  // WhatsApp: +30 pts if config exists with evolution instance
+  const hasWhatsApp = !!(config && evoId);
+  const whatsappPts = hasWhatsApp ? 30 : 0;
+
+  const score = Math.min(100, onboardingPts + whatsappPts);
+  const detail = `Onboarding ${onboardingPct}%${hasWhatsApp ? " · WhatsApp ✅" : " · WhatsApp ❌"}`;
+
+  return { score, detail, onboardingPct, hasWhatsApp };
+}
+
+function calcActivityScore(franchise, checklistData) {
+  const checklists = checklistData.filter(
+    (c) => c.franchise_id === franchise.evolution_instance_id
+  );
+
+  if (checklists.length === 0) return { score: 0, detail: "Nenhum checklist", daysSince: null };
+
+  const completed = checklists
+    .filter((c) => (c.completion_percentage || 0) >= 80)
+    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  if (completed.length === 0) return { score: 0, detail: "Nunca completou checklist", daysSince: null };
+
+  const daysSince = differenceInDays(new Date(), new Date(completed[0].date));
+
+  let score;
+  if (daysSince === 0) score = 100;
+  else if (daysSince === 1) score = 70;
+  else if (daysSince === 2) score = 40;
+  else if (daysSince <= 4) score = 20;
+  else score = 0;
+
+  const detail = daysSince === 0
+    ? "Checklist feito hoje"
+    : `Último checklist há ${daysSince} dia${daysSince > 1 ? "s" : ""}`;
+
+  return { score, detail, daysSince };
+}
+
+// --- Main score calculator ---
+
+export function calculateFranchiseHealth(franchise, data) {
+  const {
+    sales = [],
+    inventory = [],
+    orders = [],
+    onboarding = [],
+    configs = [],
+    checklists = [],
+  } = data;
+
+  const vendas = calcSalesScore(franchise, sales);
+  const estoque = calcInventoryScore(franchise, inventory);
+  const reposicao = calcOrdersScore(franchise, orders);
+  const setup = calcSetupScore(franchise, onboarding, configs);
+  const atividade = calcActivityScore(franchise, checklists);
+
+  const isNew = franchise.created_at &&
+    differenceInDays(new Date(), new Date(franchise.created_at)) < 30;
+
+  const weights = isNew
+    ? { vendas: 0.20, estoque: 0.15, reposicao: 0.15, setup: 0.40, atividade: 0.10 }
+    : { vendas: 0.30, estoque: 0.25, reposicao: 0.20, setup: 0.15, atividade: 0.10 };
+
+  let total = Math.round(
+    vendas.score * weights.vendas +
+    estoque.score * weights.estoque +
+    reposicao.score * weights.reposicao +
+    setup.score * weights.setup +
+    atividade.score * weights.atividade
+  );
+
+  // Penalty: any dimension at 0 pulls total down
+  const dimensions = [vendas, estoque, reposicao, setup, atividade];
+  const hasZero = dimensions.some((d) => d.score === 0);
+  if (hasZero) total -= 10;
+
+  total = Math.max(0, Math.min(100, total));
+
+  let status;
+  if (isNew) status = "nova";
+  else if (total >= 70) status = "saudavel";
+  else if (total >= 40) status = "atencao";
+  else status = "critico";
+
+  const problems = [];
+  if (vendas.score < 50 && vendas.daysSince !== null) problems.push(vendas.detail);
+  if (estoque.score < 50 && estoque.zeroCount > 0) problems.push(estoque.detail);
+  if (reposicao.score < 50 && reposicao.daysSince !== null) problems.push(reposicao.detail);
+  if (setup.score < 50) problems.push(setup.detail);
+  if (atividade.score < 50 && atividade.daysSince !== null) problems.push(atividade.detail);
+
+  return {
+    total,
+    status,
+    isNew,
+    dimensions: { vendas, estoque, reposicao, setup, atividade },
+    weights,
+    problems,
+  };
+}
+
+export const STATUS_COLORS = {
+  critico: { bg: "#fef2f2", text: "#dc2626", border: "#fecaca" },
+  atencao: { bg: "#fffbeb", text: "#d97706", border: "#fde68a" },
+  saudavel: { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" },
+  nova: { bg: "#eff6ff", text: "#2563eb", border: "#bfdbfe" },
+};
+
+export const STATUS_LABELS = {
+  critico: "Crítico",
+  atencao: "Atenção",
+  saudavel: "Saudável",
+  nova: "Nova",
+};

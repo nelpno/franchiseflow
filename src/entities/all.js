@@ -143,6 +143,7 @@ export const Expense = createEntity('expenses');
 export const PurchaseOrder = createEntity('purchase_orders');
 export const PurchaseOrderItem = createEntity('purchase_order_items');
 export const AuditLog = createEntity('audit_logs');
+export const FranchiseNote = createEntity('franchise_notes');
 
 // RPC helpers
 export async function getFranchiseRanking(date, franchiseId) {
