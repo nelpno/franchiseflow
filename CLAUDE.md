@@ -302,6 +302,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 115. Fornecedor uniformes: Rodrigo — D'Momentus Uniformes, WhatsApp (18) 99610-9903
 116. Card conexão WhatsApp (Meu Vendedor): NÃO mostrar telefone — número vem do ZuckZapGo, não do cadastro. Mostrar "Conecte pelo QR Code"
 117. Onboarding keys consistentes: bloco N usa keys N-x (ex: bloco 3 = keys 3-1, 3-2, 3-3). Gate usa 9-x. Key 9-4 é tráfego pago (era 9-5)
+118. Telefone em contacts DEVE ser normalizado antes de salvar: `normalizePhone()` em `whatsappUtils.js` — strip 55, remove não-dígitos, salva 11 dígitos (DDD+número). RPCs `upsert_bot_contact` e `get_contact_by_phone` já normalizam no banco
+119. `sales.contact_id` FK usa ON DELETE SET NULL — excluir contato preserva vendas (perde vínculo, não perde dado financeiro)
+120. Operações de escrita (create/update/delete) DEVEM mostrar erro real do Supabase no toast — NUNCA mensagem genérica. Usar `getErrorMessage()` que detecta sessão expirada, duplicata e timeout
+121. Nomes, endereços e bairros DEVEM usar `capitalize()` antes de salvar — respeita preposições (da, de, do, das, dos, e, a, o). Função em MyContacts.jsx
+122. Excluir contato: confirmação inline no dialog de edição (NÃO window.confirm). Botão "Excluir" à esquerda, "Cancelar"/"Salvar" à direita
 
 ## Scripts
 ```bash
