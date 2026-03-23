@@ -123,8 +123,14 @@ export default function PurchaseOrders() {
     } catch (error) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar pedidos:", error);
-      setLoadError("Erro ao carregar pedidos. Tente novamente.");
-      toast.error("Erro ao carregar pedidos.");
+      const msg = error?.message || "";
+      const userMsg = msg.includes("JWT") || msg.includes("expired") || error?.status === 401
+        ? "Sessão expirada. Faça login novamente."
+        : msg.includes("Tempo limite")
+        ? "Servidor demorou para responder. Tente novamente."
+        : msg || "Erro desconhecido ao carregar pedidos.";
+      setLoadError(userMsg);
+      toast.error(userMsg);
     } finally {
       if (mountedRef.current) setLoading(false);
     }
