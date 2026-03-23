@@ -169,7 +169,10 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
           {/* Text */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-1.5">
-              <span className={`text-sm leading-snug ${checked ? "line-through text-[#4a3d3d]/40" : "text-[#1b1c1d]"}`}>
+              <span
+                className={`text-sm leading-snug ${checked ? "line-through text-[#4a3d3d]/40" : "text-[#1b1c1d]"} ${details ? "cursor-pointer" : ""}`}
+                onClick={details ? (e) => toggleItemExpand(item.key, e) : undefined}
+              >
                 {item.label}
               </span>
               {details && (
