@@ -307,6 +307,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 120. Operações de escrita (create/update/delete) DEVEM mostrar erro real do Supabase no toast — NUNCA mensagem genérica. Usar `getErrorMessage()` que detecta sessão expirada, duplicata e timeout
 121. Nomes, endereços e bairros DEVEM usar `capitalize()` antes de salvar — respeita preposições (da, de, do, das, dos, e, a, o). Função em MyContacts.jsx
 122. Excluir contato: confirmação inline no dialog de edição (NÃO window.confirm). Botão "Excluir" à esquerda, "Cancelar"/"Salvar" à direita
+123. ProgressRing.jsx (`src/components/onboarding/`) — SVG circular reutilizável. Props: size, progress (0-100), color, isComplete, icon. Clamp automático, fallback icon para número
+124. OnboardingBlock redesenhado: border-left cor da missão, ProgressRing 48/40px com ícone temático, subtítulo contextual ("Falta 1 item!", "Pronta para você", "Missão completa!"). Cada bloco tem field `icon` em ONBOARDING_BLOCKS
+125. Cores emerald (#10b981, #059669, #ecfdf5) são exceção semântica à regra 99 — usadas APENAS para estados de sucesso/completo, NÃO são cores de marca
+126. Celebration timers (auto-expand, glow, faixa) DEVEM ser canceláveis por clique do usuário — `celebrationTimerRef` limpo em `handleManualToggle`. UI nunca trava durante celebração
+127. Deploy Portainer: usar `ctx_execute` (shell) para chamadas HTTP — Bash bloqueado pelo context-mode hook para curl com output grande
 
 ## Scripts
 ```bash
@@ -340,7 +345,8 @@ npm run typecheck # TypeScript check
   - Gaps: draft/retry SaleForm, pedidos atrasados, sugestão reposição, origem leads ✅
   - Auditoria: segurança, mobile, UX texts, cleanup (924 linhas dead code removidas) ✅
   - Terminologia simplificada: Lead→Contato Novo, Remarketing→Clientes Sumidos ✅
-- **FASE 8** (próxima):
+- **FASE 8** (em andamento):
+  - Redesign visual onboarding (ProgressRing, cards missão, micro-celebrações) ✅
   - Swipe touch no tutorial OnboardingWelcome
   - Busca global por franqueado (admin header)
   - Calendário de publicação (Marketing)
@@ -400,3 +406,4 @@ npm run typecheck # TypeScript check
 - `docs/superpowers/plans/2026-03-21-minha-loja-implementation.md` — Plano implementação Minha Loja (12 tasks, 6 chunks)
 - `docs/superpowers/specs/2026-03-21-pedido-compra-design.md` — Spec Pedido de Compra (franqueado → admin → estoque)
 - `docs/superpowers/plans/2026-03-21-fase5-etapa2-vendedor-n8n.md` — Plano migração vendedor (7→10 nós)
+- `docs/superpowers/specs/2026-03-23-onboarding-visual-redesign.md` — Spec redesign visual onboarding (ProgressRing, cards missão, celebrações, neurociência)
