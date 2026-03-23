@@ -51,7 +51,7 @@ import { lazy } from 'react';
 
 // Static imports — lightweight pages loaded eagerly
 import Dashboard from './pages/Dashboard';
-import MinhaLoja from './pages/MinhaLoja';
+import Vendas from './pages/Vendas';
 import MyChecklist from './pages/MyChecklist';
 import MyContacts from './pages/MyContacts';
 import __Layout from './Layout.jsx';
@@ -60,7 +60,9 @@ import __Layout from './Layout.jsx';
 const Acompanhamento = lazy(() => import('./pages/Acompanhamento'));
 const FranchiseSettings = lazy(() => import('./pages/FranchiseSettings'));
 const Franchises = lazy(() => import('./pages/Franchises'));
+const Gestao = lazy(() => import('./pages/Gestao'));
 const Marketing = lazy(() => import('./pages/Marketing'));
+const MinhaLoja = lazy(() => import('./pages/MinhaLoja'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 const Reports = lazy(() => import('./pages/Reports'));
@@ -72,6 +74,7 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "FranchiseSettings": FranchiseSettings,
     "Franchises": Franchises,
+    "Gestao": Gestao,
     "Marketing": Marketing,
     "MinhaLoja": MinhaLoja,
     "MyChecklist": MyChecklist,
@@ -79,6 +82,7 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "PurchaseOrders": PurchaseOrders,
     "Reports": Reports,
+    "Vendas": Vendas,
 }
 
 export const pagesConfig = {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Franchise, DailyUniqueContact, User, FranchiseInvite } from "@/entities/all";
 import { inviteFranchisee } from "@/api/functions";
 import { format } from "date-fns";
@@ -21,6 +21,8 @@ export default function Franchises() {
   const [franchises, setFranchises] = useState([]);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const mountedRef = useRef(true);
   const [showForm, setShowForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -51,11 +53,14 @@ export default function Franchises() {
   const [deletingFranchise, setDeletingFranchise] = useState(null);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
+    return () => { mountedRef.current = false; };
   }, []);
 
   const loadData = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const todayStr = format(new Date(), "yyyy-MM-dd");
       const [franchisesData, dailyContactsToday, usersData, currentUserData] = await Promise.all([
@@ -65,6 +70,7 @@ export default function Franchises() {
         User.me(),
       ]);
 
+      if (!mountedRef.current) return;
       const franchisesWithContacts = franchisesData.map((f) => ({
         ...f,
         daily_unique_contacts: dailyContactsToday.filter(
@@ -76,12 +82,14 @@ export default function Franchises() {
       setUsers(usersData);
       setCurrentUser(currentUserData);
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar dados:", error);
+      setLoadError("Erro ao carregar franquias. Tente novamente.");
       toast.error("Erro ao carregar dados das franquias.");
       setFranchises([]);
       setUsers([]);
     }
-    setIsLoading(false);
+    if (mountedRef.current) setIsLoading(false);
   };
 
   // --- Franchise CRUD ---
@@ -500,6 +508,15 @@ export default function Franchises() {
                 </CardContent>
               </Card>
             ))
+          ) : loadError ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 gap-3">
+              <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
+              <p className="text-[#4a3d3d] text-center">{loadError}</p>
+              <Button variant="outline" onClick={loadData} className="mt-2">
+                <MaterialIcon icon="refresh" className="mr-2 text-lg" />
+                Tentar novamente
+              </Button>
+            </div>
           ) : (
             franchises.map((franchise) => {
               const linked = getLinkedUsers(franchise);

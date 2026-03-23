@@ -81,10 +81,13 @@ export default function MyChecklist() {
   const [items, setItems] = useState({});
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const saveTimerRef = useRef(null);
+  const mountedRef = useRef(true);
 
   const loadData = useCallback(async (selectedFranchise = null) => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const user = await User.me();
       setCurrentUser(user);
@@ -135,13 +138,17 @@ export default function MyChecklist() {
         setItems({});
       }
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar checklist:", error);
+      setLoadError("Erro ao carregar checklist. Tente novamente.");
     }
-    setIsLoading(false);
+    if (mountedRef.current) setIsLoading(false);
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
+    return () => { mountedRef.current = false; };
   }, []);
 
   const handleFranchiseChange = (franchiseId) => {
@@ -223,6 +230,21 @@ export default function MyChecklist() {
         <div className="text-center">
           <MaterialIcon icon="checklist" size={48} className="text-red-500 mx-auto mb-3 animate-pulse" />
           <p className="text-slate-600 font-medium">Carregando checklist...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#fbf9fa] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
+          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <Button variant="outline" onClick={() => loadData()} className="mt-2">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg" />
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );

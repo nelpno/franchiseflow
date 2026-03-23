@@ -7,6 +7,17 @@ function parseOrderBy(orderByStr) {
   return { column, ascending: !desc };
 }
 
+// Timeout para queries de leitura — evita hang infinito quando Supabase trava
+const QUERY_TIMEOUT_MS = 15000;
+
+function withTimeout(promise, ms = QUERY_TIMEOUT_MS) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Tempo limite excedido')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 function createEntity(tableName) {
   return {
     async list(orderBy, limit) {
@@ -14,7 +25,7 @@ function createEntity(tableName) {
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);
-      const { data, error } = await query;
+      const { data, error } = await withTimeout(query);
       if (error) throw error;
       return data || [];
     },
@@ -33,7 +44,7 @@ function createEntity(tableName) {
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);
-      const { data, error } = await query;
+      const { data, error } = await withTimeout(query);
       if (error) throw error;
       return data || [];
     },
@@ -153,14 +164,16 @@ export async function addDefaultProduct({ name, category, unit, costPrice, minSt
 export const User = {
   ...createEntity('profiles'),
   async me() {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw authError || new Error('Not authenticated');
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    if (profileError) throw profileError;
-    return { ...user, ...profile };
+    return withTimeout((async () => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw authError || new Error('Not authenticated');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (profileError) throw profileError;
+      return { ...user, ...profile };
+    })());
   }
 };

@@ -35,9 +35,16 @@ const navigationItems = [
     adminSection: "Principal",
   },
   {
-    title: "Minha Loja",
-    url: createPageUrl("MinhaLoja"),
-    materialIcon: "storefront",
+    title: "Vendas",
+    url: createPageUrl("Vendas"),
+    materialIcon: "point_of_sale",
+    franchiseeOnly: true,
+    adminSection: "Principal",
+  },
+  {
+    title: "Gestão",
+    url: createPageUrl("Gestao"),
+    materialIcon: "bar_chart",
     franchiseeOnly: true,
     adminSection: "Principal",
   },
@@ -108,8 +115,8 @@ const navigationItems = [
 // Mobile bottom nav items for franchisee
 const mobileBottomNav = [
   { label: "Início", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
-  { label: "Minha Loja", materialIcon: "storefront", url: createPageUrl("MinhaLoja") },
-  { label: "Vender", materialIcon: "add", url: "/MinhaLoja?tab=lancar&action=nova-venda", isFab: true },
+  { label: "Gestão", materialIcon: "bar_chart", url: createPageUrl("Gestao") },
+  { label: "Vender", materialIcon: "add", url: "/Vendas?action=nova-venda", isFab: true },
   { label: "Clientes", materialIcon: "people", url: createPageUrl("MyContacts") },
   { label: "Vendedor", materialIcon: "smart_toy", url: createPageUrl("FranchiseSettings") },
 ];

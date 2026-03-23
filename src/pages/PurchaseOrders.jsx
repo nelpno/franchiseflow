@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem, Franchise, addDefaultProduct } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,8 @@ export default function PurchaseOrders() {
   const [orders, setOrders] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const mountedRef = useRef(true);
   const [statusFilter, setStatusFilter] = useState("todos");
   const [franchiseFilter, setFranchiseFilter] = useState("todos");
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,23 +104,29 @@ export default function PurchaseOrders() {
   const [confirmAction, setConfirmAction] = useState(null); // { type: "entregue" | "cancelado", orderId }
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
+    return () => { mountedRef.current = false; };
   }, []);
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [ordersData, franchisesData] = await Promise.all([
         PurchaseOrder.list("-ordered_at"),
         Franchise.list(),
       ]);
+      if (!mountedRef.current) return;
       setOrders(ordersData);
       setFranchises(franchisesData);
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar pedidos:", error);
+      setLoadError("Erro ao carregar pedidos. Tente novamente.");
       toast.error("Erro ao carregar pedidos.");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -369,6 +377,21 @@ export default function PurchaseOrders() {
       <div className="p-6 md:p-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-center py-20">
           <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#cac0c0]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 md:p-8 max-w-7xl mx-auto">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
+          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <Button variant="outline" onClick={loadData} className="mt-2">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg" />
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );

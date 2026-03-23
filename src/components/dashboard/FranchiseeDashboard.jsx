@@ -216,7 +216,7 @@ export default function FranchiseeDashboard() {
       {/* CTA — hidden on mobile (FAB "Vender" in bottom nav handles it) */}
       <div className="hidden md:flex fixed bottom-10 right-10 z-50">
         <Button
-          onClick={() => navigate("/MinhaLoja?tab=lancar&action=nova-venda")}
+          onClick={() => navigate("/Vendas?action=nova-venda")}
           className="h-12 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg flex items-center gap-2 px-6"
         >
           <MaterialIcon icon="point_of_sale" size={18} />

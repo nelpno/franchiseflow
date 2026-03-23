@@ -256,12 +256,16 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 76. Marketing: botão "Copiar legenda" usa navigator.clipboard — description é a legenda do post
 77. Cores financeiras: positivo/lucro = `#16a34a`, negativo/prejuizo = `#dc2626` — NUNCA usar brand red `#b91c1c` para dados financeiros negativos (confunde marca com alarme)
 78. Categoria estoque auto-detectada: `getCategoryFromName()` em TabEstoque.jsx — prefixos Canelone/Conchiglione/Massa/Nhoque/Rondelli/Sofioli→Massas, Molho→Molhos, resto→Outros
+79. AdminHeader usa `md:fixed md:left-[260px]` para alinhar com sidebar (w-[260px]) — ao mudar largura do sidebar, ajustar AdminHeader junto
+80. Onboarding usa accordion progressivo — blocos colapsados, só o ativo expande, auto-scroll ao completar bloco. OnboardingBlock recebe `isExpanded` e `onToggleExpand` como props
+81. Onboarding agrupa itens por role: franchisee/both primeiro, franchisor separado com seção "Aguardando franqueador" — não misturar na mesma lista
 79. Avatar header desktop REMOVIDO (redundante com sidebar footer) — manter apenas no mobile (`showMobileMenu`)
 80. Terminologia financeira: NÃO usar "Líquido" (jargao contabil) — franqueado nao entende. Resumo de vendas mostra apenas Total
 81. Badge de margem na venda: `<span>` simples (NÃO `<Badge>` shadcn que parece clicavel) — 3 estados: verde (≥25%), amber (<25%), vermelho (negativo)
 82. FranchiseForm (Nova Franquia): apenas 4 campos (nome, cidade, owner_name, email) — WhatsApp removido (configurado no wizard Meu Vendedor). NÃO usar Tooltip/FieldHelp (não funciona em mobile) — usar texto helper inline
 83. Deploy Portainer: curl bloqueado pelo context-mode hook — usar `mcp ctx_execute` com shell para chamadas HTTP ao Portainer API
 84. useCallback com dependências entre si: definir a função referenciada ANTES da que a usa (ordem importa) — referência circular causa tela branca sem erro no console
+85. Cards de franquia (Franchises.jsx): telefone so aparece quando preenchido, "Contatos Hoje" removido (admin ve no dashboard). Campos opcionais devem ser condicionais — NÃO mostrar linhas vazias
 
 ## Scripts
 ```bash

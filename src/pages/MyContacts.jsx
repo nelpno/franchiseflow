@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Contact, Franchise } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
@@ -99,6 +99,7 @@ export default function MyContacts() {
   const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("todos");
   const [editingContact, setEditingContact] = useState(null);
@@ -110,22 +111,29 @@ export default function MyContacts() {
   const [historyContact, setHistoryContact] = useState(null);
   const [instanceName, setInstanceName] = useState(null);
   const [sourceFilter, setSourceFilter] = useState("all");
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadContacts();
     loadInstanceName();
+    return () => { mountedRef.current = false; };
   }, []);
 
   const loadContacts = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await Contact.list("-created_at");
+      if (!mountedRef.current) return;
       setContacts(data);
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar contatos:", error);
+      setLoadError("Erro ao carregar contatos. Tente novamente.");
       toast.error("Erro ao carregar contatos");
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -134,6 +142,7 @@ export default function MyContacts() {
       const franchiseId = currentUser?.managed_franchise_ids?.[0];
       if (!franchiseId) return;
       const franchises = await Franchise.list();
+      if (!mountedRef.current) return;
       const myFranchise = franchises.find(
         (f) => f.id === franchiseId || f.evolution_instance_id === franchiseId
       );
@@ -253,7 +262,7 @@ export default function MyContacts() {
 
   const navigateToSales = (contact) => {
     const phone = getContactPhone(contact);
-    navigate("/MinhaLoja?tab=lancar&action=nova-venda" + (phone ? `&phone=${encodeURIComponent(phone)}` : ""));
+    navigate("/Vendas?action=nova-venda" + (phone ? `&phone=${encodeURIComponent(phone)}` : ""));
   };
 
   // Loading skeleton
@@ -272,6 +281,21 @@ export default function MyContacts() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-40 bg-white rounded-2xl border border-[#291715]/5 animate-pulse" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
+          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <Button variant="outline" onClick={() => { loadContacts(); loadInstanceName(); }} className="mt-2">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg" />
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
