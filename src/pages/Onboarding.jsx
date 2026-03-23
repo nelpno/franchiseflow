@@ -150,19 +150,28 @@ export default function Onboarding() {
   };
 
   const handleStartOnboarding = async () => {
-    if (!selectedFranchise) return;
-    const created = await OnboardingChecklist.create({
-      franchise_id: selectedFranchise.evolution_instance_id,
-      status: "in_progress",
-      items: {},
-      completed_count: 0,
-      total_items: TOTAL_ITEMS,
-      completion_percentage: 0,
-      started_at: new Date().toISOString(),
-    });
-    setChecklist(created);
-    setItems({});
-    setExpandedBlockId(1);
+    if (!selectedFranchise) {
+      toast.error("Selecione uma franquia primeiro.");
+      return;
+    }
+    try {
+      const created = await OnboardingChecklist.create({
+        franchise_id: selectedFranchise.evolution_instance_id,
+        status: "in_progress",
+        items: {},
+        completed_count: 0,
+        total_items: TOTAL_ITEMS,
+        completion_percentage: 0,
+        started_at: new Date().toISOString(),
+      });
+      setChecklist(created);
+      setItems({});
+      setExpandedBlockId(1);
+      toast.success("Onboarding iniciado!");
+    } catch (error) {
+      console.error("Erro ao iniciar onboarding:", error);
+      toast.error("Erro ao iniciar onboarding. Verifique as permissões.");
+    }
   };
 
   useEffect(() => {
