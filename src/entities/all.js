@@ -98,7 +98,7 @@ async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
 
   // Deletar itens filhos primeiro
   if (saleIds.length > 0) await supabase.from('sale_items').delete().in('sale_id', saleIds);
-  if (orderIds.length > 0) await supabase.from('purchase_order_items').delete().in('purchase_order_id', orderIds);
+  if (orderIds.length > 0) await supabase.from('purchase_order_items').delete().in('order_id', orderIds);
 
   // Deletar tabelas que usam franchise UUID
   await supabase.from('sales').delete().eq('franchise_id', franchiseId);
@@ -129,8 +129,6 @@ export const DailySummary = createEntity('daily_summaries');
 export const FranchiseConfiguration = createEntity('franchise_configurations');
 export const OnboardingChecklist = createEntity('onboarding_checklists');
 export const DailyChecklist = createEntity('daily_checklists');
-export const Message = createEntity('messages');
-
 // Novas entidades (FASE 3)
 export const InventoryItem = createEntity('inventory_items');
 export const Contact = createEntity('contacts');

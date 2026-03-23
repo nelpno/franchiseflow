@@ -80,9 +80,14 @@ Rota `/set-password`: detecta `type=invite` ou `type=recovery` no hash da URL, p
 - Elimina passo manual de vincular em UserManagement
 
 ### Integração Vendedor Genérico (n8n)
-- Workflow v1 (produção): PALRV1RqD3opHMzk — RabbitMQ trigger, Base44 (legado)
-- Workflow v2 (Supabase): w7loLOXUmRR3AzuO — Webhook HTTP, tabela contacts, view vw_dadosunidade
-- View `vw_dadosunidade`: mapeia franchise_configurations com nomes em inglês (backward compat)
+- Workflow v1 (produção): PALRV1RqD3opHMzk — RabbitMQ trigger, Base44 (legado, NÃO mexer)
+- Workflow v2 (Supabase): w7loLOXUmRR3AzuO — Webhook HTTP, 100% Supabase
+- V2 usa: `vw_dadosunidade` (config), `inventory_items` (estoque), `contacts` (leads), `daily_unique_contacts`
+- V2 nós migrados: `planilha_estoque1` (supabaseTool→inventory_items), GET/CREATE/UPDATE contacts, DailyUniqueContact
+- V2 prompts reescritos para dados estruturados do wizard: `delivery_fee_rules` JSONB, `payment_delivery`/`payment_pickup` TEXT[], `operating_hours` JSONB
+- Credencial Supabase no n8n: `mIVPcJBNcDCx21LR` (franchiseflow_supabase) — DEVE ser service_role
+- View `vw_dadosunidade`: mapeia franchise_configurations com nomes em inglês, JSONB nativo (sem cast ::text)
+- Workflow memória: `xJocFaDvztxeBHvQ` (memoria_lead) — sub-workflow chamado pelo agente
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
 - Tabela `daily_unique_contacts`: rastreia contatos únicos/dia (substitui Base44)
 - JSON: `docs/vendedor-generico-workflow.json` (v1), `docs/vendedor-generico-workflow-v2.json` (v2)
@@ -321,6 +326,28 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 134. Wizard "Meu Vendedor" tem 6 steps visuais mas Revisão (step 6) NÃO conta como etapa — contador mostra X/5, não X/6. Revisão é apenas visualização do resultado
 135. Deploy Portainer: endpoint ID é `1` (name: "primary") — NÃO usar endpoint 2 (não existe). `ctx_execute` com JavaScript (não shell+jq — jq está quebrado no Windows)
 136. Onboarding items com detalhes: texto do label E ícone "?" são ambos clicáveis para expandir/colapsar — cursor pointer no span quando `details` existe
+137. `delivery_fee` é RECEITA do franqueado (cobrado do cliente) — NÃO deduzir no resultado. TabResultado: Vendas + Frete cobrado = Total recebido, depois deduções (custo, taxas, despesas)
+138. Card de venda (TabLancar): valor principal = `value + delivery_fee` (total recebido). Abaixo: "R$X + R$Y frete". Detalhe expandido: frete em verde (+), taxa cartão em vermelho (-)
+139. Linhas financeiras com valor zero ficam ocultas (taxas cartão, frete, outras despesas) — menos poluição visual pro franqueado
+137. Auditorias com subagents paralelos: SEMPRE verificar achados manualmente antes de corrigir — agentes podem reportar falsos positivos (ex: "window.confirm existe" quando já usa confirmação inline)
+138. Funções PL/pgSQL que referenciam `purchase_orders.franchise_id` DEVEM usar `WHERE evolution_instance_id = NEW.franchise_id` (NÃO `WHERE id = NEW.franchise_id`) — franchise_id é evo_id (text), não UUID
+139. CHECK constraints de status em `purchase_orders` usam português (`pendente`, `confirmado`, `em_rota`, `entregue`, `cancelado`) — NUNCA usar inglês em CASE/WHEN de triggers
+140. Ao alterar rotas no frontend (ex: `/MinhaLoja` → `/Gestao`), verificar TAMBÉM funções PL/pgSQL que hardcodam links de notificação — `grep` no código não encontra referências no banco
+141. Tabelas dropadas na auditoria de 23/03: `franchise_orders` (duplicata de purchase_orders), `messages` (WhatsAppHistory removido), `activity_log` (substituído por audit_logs), `catalog_distributions` (nunca usada)
+142. `deduct_inventory()` RPC existe mas NÃO é usada por triggers — estoque é gerenciado por `stock_decrement`/`stock_revert` em `sale_items` e `on_purchase_order_delivered` em `purchase_orders`
+143. `notify_franchise_users(p_franchise_id UUID, ...)` recebe UUID da franquia (NÃO evolution_instance_id) — resolver com `SELECT id FROM franchises WHERE evolution_instance_id = NEW.franchise_id`
+144. Auditoria de banco: 21 tabelas + 1 view (vw_dadosunidade) + 25 funções públicas. pg_cron ativo (aggregate_daily_data às 05:00 UTC). Última auditoria: 23/03/2026
+145. `extractPhone()` no `Code in JavaScript` do workflow strip código país 55 — contatos UI salvam 11 dígitos (DDD+número), bot recebia 13 (55+DDD+número). SEMPRE normalizar antes de GET/INSERT em contacts
+146. `blockedNumbers` no workflow DEVE usar formato sem 55 (11 dígitos) — compatível com `extractPhone()` normalizado
+147. `vw_dadosunidade` campos JSONB (`social_media_links`, `delivery_fee_rules`, `operating_hours`) DEVEM retornar JSONB nativo — cast `::text` quebra acesso a sub-campos (`.instagram` retorna undefined)
+148. `payment_delivery` e `payment_pickup` em `franchise_configurations` são `TEXT[]` (array), NÃO JSONB — COALESCE usa `'{}'::text[]`
+149. `CREATE OR REPLACE VIEW` NÃO permite mudar tipo de coluna — usar `DROP VIEW IF EXISTS` + `CREATE VIEW`
+150. `CREATE_USER1` no workflow V2 DEVE incluir `source: 'bot'` — nó original não tinha o campo
+151. Prompts do agente (GerenteGeral1, Pedido_Checkout1) usam dados estruturados do wizard: `payment_delivery[]`, `delivery_fee_rules[]` (JSONB), `pix_holder_name`, `pix_bank`, `operating_hours[]` — NÃO usar campos texto antigos (`accepted_payment_methods`, `shipping_rules_costs`)
+152. `PAYMENT_COLORS` em PaymentMethodChart.jsx DEVE espelhar exatamente os values de `PAYMENT_METHODS` em franchiseUtils.js — ao adicionar novo método de pagamento, atualizar ambos
+153. `purchase_order_items` coluna FK é `order_id` (NÃO `purchase_order_id`) — referencia `purchase_orders(id)` com ON DELETE CASCADE
+154. `getErrorMessage(error)` pattern (detecta JWT expired, RLS, FK, timeout) existe em MyContacts.jsx e PurchaseOrderForm.jsx — ao adicionar em novas páginas, copiar o pattern. TODO: extrair para utility compartilhada
+155. Após deploy Portainer, orientar usuário a fazer hard refresh (Ctrl+Shift+R) — browser pode servir JS cacheado do bundle anterior durante ~1 min de rebuild
 
 ## Scripts
 ```bash
@@ -356,6 +383,7 @@ npm run typecheck # TypeScript check
   - Terminologia simplificada: Lead→Contato Novo, Remarketing→Clientes Sumidos ✅
 - **FASE 8** (em andamento):
   - Redesign visual onboarding (ProgressRing, cards missão, micro-celebrações) ✅
+  - Auditoria completa do banco de dados (13 fixes, 4 tabelas mortas removidas, triggers corrigidos) ✅
   - Swipe touch no tutorial OnboardingWelcome
   - Busca global por franqueado (admin header)
   - Calendário de publicação (Marketing)
