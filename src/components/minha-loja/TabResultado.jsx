@@ -120,10 +120,17 @@ export default function TabResultado({ franchiseId, currentUser }) {
   }, [expenses, selectedMonth]);
 
   // --- P&L calculations ---
-  const faturamento = useMemo(
-    () => monthSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
+  const vendas = useMemo(
+    () => monthSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0),
     [monthSales]
   );
+
+  const freteCobrado = useMemo(
+    () => monthSales.reduce((sum, s) => sum + (parseFloat(s.delivery_fee) || 0), 0),
+    [monthSales]
+  );
+
+  const totalRecebido = vendas + freteCobrado;
 
   const custoProdutos = useMemo(
     () =>
@@ -140,34 +147,28 @@ export default function TabResultado({ franchiseId, currentUser }) {
     [monthSales]
   );
 
-  const fretePago = useMemo(
-    () =>
-      monthSales.reduce((sum, s) => sum + (parseFloat(s.delivery_fee) || 0), 0),
-    [monthSales]
-  );
-
   const outrasDespesas = useMemo(
     () => monthExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0),
     [monthExpenses]
   );
 
-  const lucro = faturamento - custoProdutos - taxasCartao - fretePago - outrasDespesas;
+  const lucro = totalRecebido - custoProdutos - taxasCartao - outrasDespesas;
 
   // --- Previous month comparison ---
   const prevMonth = subMonths(selectedMonth, 1);
-  const prevMonthFaturamento = useMemo(() => {
+  const prevMonthTotal = useMemo(() => {
     return sales
       .filter((s) => {
         const dateStr = s.sale_date || s.created_at;
         return isInMonth(dateStr, prevMonth);
       })
-      .reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+      .reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
   }, [sales, prevMonth]);
 
   const monthDiffPercent = useMemo(() => {
-    if (prevMonthFaturamento === 0) return null;
-    return ((faturamento - prevMonthFaturamento) / prevMonthFaturamento) * 100;
-  }, [faturamento, prevMonthFaturamento]);
+    if (prevMonthTotal === 0) return null;
+    return ((totalRecebido - prevMonthTotal) / prevMonthTotal) * 100;
+  }, [totalRecebido, prevMonthTotal]);
 
   // --- Top products ---
   const topProducts = useMemo(() => {
@@ -330,15 +331,35 @@ export default function TabResultado({ franchiseId, currentUser }) {
                   Resultado do Mês
                 </h3>
 
-                {/* Faturamento — dado primário, on-surface semibold */}
+                {/* Receitas */}
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#1d1b1b] font-medium">Faturamento bruto</span>
+                  <span className="text-sm text-[#1d1b1b] font-medium">Vendas</span>
                   <span className="text-sm font-semibold text-[#1d1b1b] font-mono-numbers">
-                    {formatBRL(faturamento)}
+                    {formatBRL(vendas)}
                   </span>
                 </div>
 
-                {/* Deduções — on-surface-variant, peso normal */}
+                {freteCobrado > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#1d1b1b] font-medium">Frete cobrado</span>
+                    <span className="text-sm font-semibold text-[#1d1b1b] font-mono-numbers">
+                      {formatBRL(freteCobrado)}
+                    </span>
+                  </div>
+                )}
+
+                {freteCobrado > 0 && (
+                  <div className="flex justify-between items-center pt-1 border-t border-[#291715]/5">
+                    <span className="text-sm text-[#1d1b1b] font-semibold">Total recebido</span>
+                    <span className="text-sm font-bold text-[#1d1b1b] font-mono-numbers">
+                      {formatBRL(totalRecebido)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Deduções */}
+                <div className="border-t border-[#291715]/10 my-1" />
+
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-[#4a3d3d]">(-) Custo dos produtos</span>
                   <span className="text-sm text-[#4a3d3d] font-mono-numbers">
@@ -346,31 +367,26 @@ export default function TabResultado({ franchiseId, currentUser }) {
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#4a3d3d]">(-) Taxas cartão</span>
-                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
-                    {formatBRL(taxasCartao)}
-                  </span>
-                </div>
+                {taxasCartao > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#4a3d3d]">(-) Taxas cartão</span>
+                    <span className="text-sm text-[#4a3d3d] font-mono-numbers">
+                      {formatBRL(taxasCartao)}
+                    </span>
+                  </div>
+                )}
 
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#4a3d3d]">(-) Frete</span>
-                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
-                    {formatBRL(fretePago)}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-[#4a3d3d]">(-) Outras despesas</span>
-                  <span className="text-sm text-[#4a3d3d] font-mono-numbers">
-                    {formatBRL(outrasDespesas)}
-                  </span>
-                </div>
-
-                {/* Separator */}
-                <div className="border-t border-[#291715]/10 my-1" />
+                {outrasDespesas > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#4a3d3d]">(-) Outras despesas</span>
+                    <span className="text-sm text-[#4a3d3d] font-mono-numbers">
+                      {formatBRL(outrasDespesas)}
+                    </span>
+                  </div>
+                )}
 
                 {/* Lucro — única linha com cor semântica */}
+                <div className="border-t border-[#291715]/10 my-1" />
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-1.5">
                     <MaterialIcon
@@ -407,7 +423,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
                         {monthDiffPercent >= 0 ? "+" : ""}
                         {monthDiffPercent.toFixed(1)}%
                       </span>
-                      {" "}({formatBRL(prevMonthFaturamento)})
+                      {" "}({formatBRL(prevMonthTotal)})
                     </span>
                   </div>
                 )}
