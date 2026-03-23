@@ -381,14 +381,14 @@ function FranchiseSettingsContent() {
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-36 md:pb-28">
       <div className="px-4 md:px-8 pt-8 max-w-3xl mx-auto space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-[#1b1c1d]">Meu Vendedor</h2>
-            <p className="text-sm text-[#3d4a42]/60 mt-0.5">Configure o assistente de vendas da sua unidade</p>
+            <p className="text-sm text-[#3d4a42]/70 mt-0.5">Configure o assistente de vendas da sua unidade</p>
           </div>
           <div className="flex items-center gap-3">
             {displayConfigurations.length > 1 && (
@@ -760,7 +760,7 @@ function FranchiseSettingsContent() {
       )}
 
       {/* Fixed Bottom Navigation */}
-      <footer className="fixed bottom-0 right-0 left-0 md:left-64 bg-white/90 backdrop-blur-md border-t border-[#bccac0]/10 px-4 md:px-8 py-4 z-40">
+      <footer className="fixed bottom-16 md:bottom-0 right-0 left-0 md:left-64 bg-white/90 backdrop-blur-md border-t border-[#bccac0]/10 px-4 md:px-8 py-4 z-40">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           {/* Left: Voltar */}
           <div className="w-28">

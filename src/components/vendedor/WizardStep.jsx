@@ -10,7 +10,7 @@ export default function WizardStep({ icon, title, subtitle, children }) {
         <div>
           <h3 className="text-lg font-bold text-[#1b1c1d]">{title}</h3>
           {subtitle && (
-            <p className="text-xs text-[#3d4a42]/60 mt-0.5">{subtitle}</p>
+            <p className="text-xs text-[#3d4a42]/70 mt-0.5">{subtitle}</p>
           )}
         </div>
       </div>
