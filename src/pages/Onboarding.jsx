@@ -160,9 +160,7 @@ export default function Onboarding() {
         status: "in_progress",
         items: {},
         completed_count: 0,
-        total_items: TOTAL_ITEMS,
         completion_percentage: 0,
-        started_at: new Date().toISOString(),
       });
       setChecklist(created);
       setItems({});
