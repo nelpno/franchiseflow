@@ -365,6 +365,12 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 164. `operating_hours` JSONB NÃO existe na tabela `franchise_configurations` — wizard salva em `opening_hours` (TEXT) e `working_days` (TEXT). NÃO referenciar `operating_hours`
 165. Ao recriar `vw_dadosunidade` com DROP+CREATE: CONFERIR que `zuck_instance_name` está presente — nó dadosunidade filtra por esse campo. SQL referência: `supabase/fix-vw-dadosunidade-v2-scale.sql`
 166. EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`) usa Base44 (morto) — NUNCA apontar para ele. Usar V2 (`RnF1Jh6nDUj0IRHI`)
+167. `inventory_items` coluna é `product_name` (NÃO `name`) — Supabase node retorna nomes de coluna reais. Match Items DEVE usar `inv.product_name` e `match.product_name`
+168. EnviaPedidoFechado V2 Match Items usa best-score fuzzy: palavras >2 chars, produto com MAIS matches vence — `>=2` sem ranking causa falsos positivos (700g bate em todos)
+169. Atualizar workflow n8n via API com editor aberto: editor SOBRESCREVE ao executar. Orientar usuário a fechar aba e reabrir ANTES de testar
+170. n8n API PUT `/workflows/{id}` settings aceita apenas campos conhecidos (`executionOrder`, `callerPolicy`) — `availableInMCP`, `binaryMode` causam 400. Não incluir `staticData` também
+171. EnviaPedidoFechado V2 validado em produção (24/03): 8 nós OK, matching correto, sale_items com product_name, WhatsApp enviado
+172. EnviaPedidoFechado V2 "Prepare Sale Data": `valor_total` do `$fromAI()` pode vir 0 — nó calcula `sum(qty * price) + frete` dos itens como fallback. NUNCA confiar apenas no total do agente
 
 ## Scripts
 ```bash
