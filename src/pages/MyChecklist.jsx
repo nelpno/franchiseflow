@@ -226,7 +226,7 @@ export default function MyChecklist() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#fbf9fa] flex items-center justify-center">
+      <div className="bg-[#fbf9fa] flex items-center justify-center h-64">
         <div className="text-center">
           <MaterialIcon icon="checklist" size={48} className="text-red-500 mx-auto mb-3 animate-pulse" />
           <p className="text-slate-600 font-medium">Carregando checklist...</p>
@@ -237,7 +237,7 @@ export default function MyChecklist() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen bg-[#fbf9fa] flex items-center justify-center">
+      <div className="bg-[#fbf9fa] flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
           <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
           <p className="text-[#4a3d3d] text-center">{loadError}</p>
@@ -252,7 +252,7 @@ export default function MyChecklist() {
 
   if (!franchise) {
     return (
-      <div className="min-h-screen bg-[#fbf9fa] flex items-center justify-center p-8">
+      <div className="bg-[#fbf9fa] flex items-center justify-center p-8 h-64">
         <div className="text-center max-w-md">
           <MaterialIcon icon="checklist" size={64} className="text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-700 mb-2">Nenhuma franquia vinculada</h2>
@@ -263,7 +263,7 @@ export default function MyChecklist() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fbf9fa]">
+    <div className="bg-[#fbf9fa]">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
         {/* HEADER */}

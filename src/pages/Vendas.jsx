@@ -11,9 +11,12 @@ import TabLancar from "@/components/minha-loja/TabLancar";
 export default function Vendas() {
   const [searchParams] = useSearchParams();
   const { selectedFranchise } = useAuth();
-  const actionParam = searchParams.get("action");
-  const phoneParam = searchParams.get("phone");
-  const contactIdParam = searchParams.get("contact_id");
+  const rawAction = searchParams.get("action");
+  const actionParam = rawAction === "nova-venda" ? rawAction : null;
+  const rawPhone = searchParams.get("phone");
+  const phoneParam = rawPhone ? rawPhone.replace(/\D/g, "").slice(0, 11) : null;
+  const rawContactId = searchParams.get("contact_id");
+  const contactIdParam = rawContactId && /^[0-9a-f-]{36}$/i.test(rawContactId) ? rawContactId : null;
 
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);

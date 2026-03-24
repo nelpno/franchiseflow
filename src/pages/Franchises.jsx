@@ -389,7 +389,7 @@ export default function Franchises() {
   };
 
   return (
-    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbf9fa]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 sm:mb-8">

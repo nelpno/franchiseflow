@@ -77,10 +77,13 @@ function createEntity(tableName) {
     },
 
     async delete(id) {
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('id', id);
+      const { error } = await withTimeout(
+        supabase
+          .from(tableName)
+          .delete()
+          .eq('id', id),
+        15000
+      );
       if (error) throw error;
     }
   };

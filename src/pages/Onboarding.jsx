@@ -113,7 +113,7 @@ export default function Onboarding() {
       ]);
       // 5-1: Wizard complete if config has required fields
       const cfg = configs[0];
-      if (cfg && cfg.address && cfg.pix_key && cfg.delivery_radius != null) {
+      if (cfg && cfg.unit_address && cfg.pix_key && cfg.delivery_radius != null) {
         auto["5-1"] = true;
       }
       // 6-1: Has at least one purchase order

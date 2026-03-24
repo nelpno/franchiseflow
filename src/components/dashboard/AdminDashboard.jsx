@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, DailyChecklist, PurchaseOrder } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,12 +24,15 @@ export default function AdminDashboard() {
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
   const [checklistByFranchise, setChecklistByFranchise] = useState({});
   const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [loadError, setLoadError] = useState(null);
+  const mountedRef = useRef(true);
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const [
         franchiseData,
@@ -48,6 +51,8 @@ export default function AdminDashboard() {
         Sale.filter({ sale_date: yesterday }),
         PurchaseOrder.list("-ordered_at"),
       ]);
+
+      if (!mountedRef.current) return;
 
       setFranchises(franchiseData);
       setSummaries(summaryData);
@@ -84,20 +89,27 @@ export default function AdminDashboard() {
         if (fUuid) checklistMap[fUuid] = cl;
       });
 
+      if (!mountedRef.current) return;
       setInventoryByFranchise(inventoryMap);
       setChecklistByFranchise(checklistMap);
     } catch (err) {
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard admin:", err);
+      setLoadError("Erro ao carregar dados do dashboard. Tente novamente.");
       toast.error("Erro ao carregar dados do dashboard.");
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, [today, yesterday]);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
     const interval = setInterval(loadData, 180000);
-    return () => clearInterval(interval);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
   }, [loadData]);
 
   const stats = useMemo(() => {
@@ -176,6 +188,21 @@ export default function AdminDashboard() {
         </div>
         <Skeleton className="h-48 rounded-2xl" />
         <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-8 bg-[#fbf9fa]">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
+          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <button onClick={loadData} className="mt-2 px-4 py-2 border border-[#cac0c0] rounded-lg text-sm text-[#4a3d3d] hover:bg-white">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" />
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }

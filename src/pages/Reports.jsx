@@ -164,7 +164,7 @@ function ReportsContent() {
   }[periodPreset] || 'Período personalizado';
 
   return (
-    <div className="p-4 md:p-8 bg-[#fbf9fa] min-h-screen">
+    <div className="p-4 md:p-8 bg-[#fbf9fa]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">

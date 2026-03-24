@@ -29,7 +29,13 @@ function loadDraft(franchiseId) {
   try {
     const raw = localStorage.getItem(getDraftKey(franchiseId));
     if (!raw) return null;
-    return JSON.parse(raw);
+    const draft = JSON.parse(raw);
+    // Discard drafts older than 24 hours
+    if (draft._ts && Date.now() - draft._ts > 86400000) {
+      localStorage.removeItem(getDraftKey(franchiseId));
+      return null;
+    }
+    return draft;
   } catch {
     return null;
   }
