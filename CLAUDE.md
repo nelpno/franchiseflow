@@ -383,9 +383,12 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 181. Onboarding.jsx dispara `window.dispatchEvent(new Event("onboarding-started"))` ao criar checklist — Layout.jsx ouve esse evento para mostrar "Onboarding" no sidebar instantaneamente
 182. OnboardingWelcome tutorial tem 7 steps (Bem-vindo, Vendas, Gestão, Meus Clientes, Meu Vendedor, Marketing, Pronto) — Vendas e Gestão são steps separados
 183. SetPassword.jsx usa `import logoMaxiMassas from "@/assets/logo-maxi-massas.png"` — consistente com Login.jsx (NUNCA URL externa)
-180. `audit_on_sale_delete` trigger: loga em `audit_logs` quem deletou venda (user_id, value, source, contact_id). `revert_contact_on_sale_delete` trigger: reverte `purchase_count` e `total_spent` no contato. SQL: `supabase/audit-sale-delete.sql`
-181. Management API SQL com `$$` (PL/pgSQL): delimitadores são corrompidos na serialização JSON — salvar SQL em arquivo e executar via `ctx_execute` com `fetch` lendo o arquivo
-182. n8n Supabase node pode reportar "success" mesmo quando INSERT não persiste (RLS silencioso) — SEMPRE verificar dados no banco após execução de workflow crítico
+184. `audit_on_sale_delete` trigger: loga em `audit_logs` quem deletou venda (user_id, value, source, contact_id). `revert_contact_on_sale_delete` trigger: reverte `purchase_count` e `total_spent` no contato. SQL: `supabase/audit-sale-delete.sql`
+185. Management API SQL com `$$` (PL/pgSQL): delimitadores são corrompidos na serialização JSON — salvar SQL em arquivo e executar via `ctx_execute` com `fetch` lendo o arquivo
+186. n8n Supabase node pode reportar "success" mesmo quando INSERT não persiste (RLS silencioso) — SEMPRE verificar dados no banco após execução de workflow crítico
+187. Faturamento bruto = `value + delivery_fee` em TODOS os cálculos de revenue (dashboards, gráficos, rankings). TabResultado é exceção: mostra Vendas e Frete como linhas separadas no P&L
+188. `aggregate_daily_data()` usa `SUM(value + COALESCE(delivery_fee, 0))` para sales_value — corrigido em 24/03. Ao adicionar novos campos financeiros em sales, verificar se aggregate precisa incluí-los
+189. EnviaPedidoFechado V2 "Prepare Sale Data": `value` SEMPRE calculado dos itens (qty * price), NUNCA do `valor_total` do agente — agente pode incluir frete no total. `net_value = value` (sem dedução automática, franqueado edita taxa depois)
 
 ## Scripts
 ```bash
