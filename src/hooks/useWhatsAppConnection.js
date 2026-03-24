@@ -125,7 +125,7 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
       const data = await checkWhatsappStatus({ instanceName: selectedConfigForWhatsApp.franchise_evolution_instance_id });
       let newStatus = 'disconnected';
       if (data.status === 'open' || data.connected === true) newStatus = 'connected';
-      else if (data.status === 'connecting' || data.status === 'pending') newStatus = 'pending_qr';
+      else if (data.status === 'connecting' || data.status === 'pending' || data.status === 'pending_qr' || data.qrCode || data.qr_code) newStatus = 'pending_qr';
       if (modalData) setModalData({ ...modalData, status: newStatus });
       updateConfigurationStatus(selectedConfigForWhatsApp.id, { whatsapp_status: newStatus });
     } catch (error) {
@@ -150,7 +150,7 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
       const data = await checkWhatsappStatus({ instanceName: config.franchise_evolution_instance_id });
       let newStatus = 'disconnected';
       if (data.status === 'open' || data.connected === true) newStatus = 'connected';
-      else if (data.status === 'connecting' || data.status === 'pending') newStatus = 'pending_qr';
+      else if (data.status === 'connecting' || data.status === 'pending' || data.status === 'pending_qr' || data.qrCode || data.qr_code) newStatus = 'pending_qr';
       updateConfigurationStatus(config.id, { whatsapp_status: newStatus });
     } catch (error) {
       console.error("Erro ao verificar status do badge:", error);
