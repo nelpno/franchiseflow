@@ -97,7 +97,7 @@ const STEPS = [
     description:
       "Você já conhece todas as ferramentas. Agora vamos preparar tudo para sua primeira venda!",
     detail:
-      "Ao clicar em 'Começar', você será direcionado para o Checklist de Iniciação — um passo a passo com tudo que precisa estar pronto antes de ativar as campanhas de tráfego pago. Seu CS vai te acompanhar nesse processo.",
+      "Ao clicar em 'Começar', você será direcionado para o Checklist de Iniciação — um passo a passo com tudo que precisa estar pronto antes de ativar as campanhas de tráfego pago. Seu consultor de franquias vai te acompanhar nesse processo.",
     color: "#b91c1c",
     bgGradient: "from-[#b91c1c]/10 to-[#d4af37]/5",
   },

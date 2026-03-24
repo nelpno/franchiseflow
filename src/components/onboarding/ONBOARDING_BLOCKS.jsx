@@ -77,8 +77,7 @@ export const BLOCKS = [
     items: [
       { key: "7-1", label: "Vídeos do Drive assistidos (WhatsApp, Meta Business, Robô)", role: "franchisee" },
       { key: "7-2", label: "Checklist de Ações Diárias lido e compreendido", role: "franchisee" },
-      { key: "7-3", label: "Scripts de venda praticados (7 situações)", role: "franchisee" },
-      { key: "7-4", label: "Robô testado com mensagem de outro número", role: "both" },
+      { key: "7-3", label: "Robô testado com mensagem de outro número", role: "both" },
     ],
   },
   {

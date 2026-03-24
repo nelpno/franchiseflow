@@ -391,6 +391,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 189. EnviaPedidoFechado V2 "Prepare Sale Data": `value` SEMPRE calculado dos itens (qty * price), NUNCA do `valor_total` do agente — agente pode incluir frete no total. `net_value = value` (sem dedução automática, franqueado edita taxa depois)
 190. Health Score tem DOIS sistemas separados: `healthScore.js` (AlertsPanel, pesos dinâmicos novo/existente) e `FranchiseHealthScore.jsx` (drill-down UI, cálculo inline). Ao alterar lógica de score, atualizar AMBOS
 191. Daily Checklist (`daily_checklists`) é feature INATIVA — não existe no menu do franqueado. Dimensão "Checklist/Atividade" do Health Score deve ser removida e peso redistribuído (Vendas 35, Estoque 25, Pedidos 20, WhatsApp 20)
+192. `auto_generate_instance_id` trigger suporta múltiplas franquias na mesma cidade — gera sufixo numérico automático (`franquiasaopaulosp`, `franquiasaopaulosp1`, `franquiasaopaulosp2`). NUNCA assumir que evo_id é único por cidade sem sufixo
+193. Toast de erro em operações CRUD DEVE mostrar `error.message` real do Supabase — mensagens genéricas ("Tente novamente") escondem a causa raiz. Pattern: `toast.error(\`Erro: ${error?.message || "Erro desconhecido"}\`)`
+194. Management API token (`sbp_`) pode expirar sem aviso — se retornar "JWT could not be decoded", usar service_role key via PostgREST (`/rest/v1/`) como fallback para queries de diagnóstico
 
 ## Scripts
 ```bash

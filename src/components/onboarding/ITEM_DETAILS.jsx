@@ -28,13 +28,14 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 3: Prepare Seu Espaço ===
   "3-1": {
-    text: "O freezer deve manter -18°C ou menos. Verifique diariamente. Produto descongelado = produto perdido.\n\nDica: não sobrecarregue — deixe espaço para o ar circular. Um termômetro digital custa R$15-25 no Mercado Livre.",
+    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial de 28 produtos. Freezer vertical também funciona, desde que mantenha a temperatura adequada.\n\nTemperatura: -18°C ou menos. Verifique diariamente. Produto descongelado = produto perdido.\n\nDicas importantes:\n• Não sobrecarregue — deixe espaço para o ar circular\n• Use um termômetro digital (R$15-25 no Mercado Livre) para monitorar\n• Posicione o freezer em local ventilado, longe de luz solar direta\n• Organize por categoria (Massas | Molhos | Outros) para facilitar o dia a dia",
   },
   "3-2": {
     text: "Organize por categoria: Massas | Molhos | Outros.\n\nNo app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
   },
   "3-3": {
     text: "Use sacolas Boca de Palhaço para boa apresentação e segurança dos produtos.\n\n- 30x40 — pacote com cerca de 350 unidades\n- 35x45 — pacote com cerca de 265 unidades\n\nFornecedor: Rodrigo — D'Momentus Uniformes\nWhatsApp: (18) 99610-9903\n\nDica: coloque um panfleto ou cartão de visita na sacola — gera indicações!",
+    links: [{ label: "Artes da sacola (Google Drive)", url: "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9?usp=drive_link" }],
   },
 
   // === MISSÃO 4: Configure o WhatsApp ===
@@ -63,11 +64,12 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 6: Faça Seu Primeiro Pedido ===
   "6-1": {
-    text: "Hora de abastecer! No app, vá em Gestão → Reposição. O sistema mostra todos os 28 produtos.\n\nÉ simples: escolha os produtos, defina as quantidades e envie o pedido. Este item marca automaticamente quando seu primeiro pedido for enviado.",
-    links: [{ label: "Abrir Reposição", url: "/Gestao?tab=reposicao" }],
+    text: "Hora de abastecer! Clique no botão abaixo para ir direto à tela de Reposição.\n\nLá você vai ver todos os 28 produtos organizados por tipo. É só:\n1. Escolher os produtos que quer pedir\n2. Definir as quantidades\n3. Clicar em \"Enviar Pedido\"\n\nO franqueador recebe na hora e você acompanha o status por aqui. Este item marca automaticamente quando seu primeiro pedido for enviado.",
+    links: [{ label: "Fazer Meu Primeiro Pedido", url: "/Gestao?tab=reposicao" }],
   },
   "6-2": {
-    text: "Quando o pedido chegar, confira tudo:\n- Quantidades batem?\n- Produtos bem embalados e congelados?\n- Datas de validade ok?\n\nSe algo estiver errado, registre com foto e avise o franqueador.",
+    text: "Quando o pedido chegar, confira tudo:\n- Quantidades batem?\n- Produtos bem embalados e congelados?\n- Datas de validade ok?\n\nSe algo estiver errado, registre com foto e avise o franqueador.\n\nVocê pode acompanhar o status do pedido (pendente, confirmado, em rota, entregue) na tela de Reposição.",
+    links: [{ label: "Acompanhar meu pedido", url: "/Gestao?tab=reposicao" }],
   },
   "6-3": {
     text: "Com o pedido conferido, registre as quantidades em Gestão → Estoque. A partir daqui, cada venda que você registrar vai atualizar o estoque automaticamente!\n\nEste item marca automaticamente quando algum produto tiver estoque registrado.",
@@ -83,9 +85,6 @@ export const ITEM_DETAILS = {
     text: "O Checklist de Ações Diárias é a sua rotina de vendas. São 4 blocos curtos:\n- Manhã (30min)\n- Meio-Dia (45min)\n- Tarde (45min)\n- Noite (30min)\n\nTotal: cerca de 2h30 por dia. É o coração da operação — quem segue, vende!",
   },
   "7-3": {
-    text: "Pratique os 7 scripts antes de atender leads reais:\n\n1. Primeiro Contato (lead novo)\n2. Follow-up (24h sem resposta)\n3. Reativação (cliente sumido 15+ dias)\n4. Pós-Venda (feedback + foto)\n5. Pedido de Indicação\n6. Objeção de Preço\n7. Promoção Semanal\n\nDica: treine com alguém da família ou na frente do espelho!",
-  },
-  "7-4": {
     text: "Envie uma mensagem de outro celular para o número do WhatsApp Business. O robô deve responder automaticamente. Verifique se a saudação, cardápio e informações estão corretos.\n\nSe algo estiver errado, ajuste em Meu Vendedor no app.",
     links: [{ label: "Ajustar no Meu Vendedor", url: "/FranchiseSettings" }],
   },
@@ -96,11 +95,12 @@ export const ITEM_DETAILS = {
   },
   "8-2": {
     text: "Acesse o Meta Business Suite (business.facebook.com) e aprenda a ver:\n- Alcance (quantas pessoas viram seus posts)\n- Engajamento (curtidas, comentários)\n- Resultados dos anúncios (leads, custo por lead)\n\nTem um vídeo sobre isso no Drive!",
-    links: [{ label: "Vídeo no Drive", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
+    links: [{ label: "Vídeos Meta Business Suite", url: "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU?usp=drive_link" }],
   },
   "8-3": {
-    text: "O material de conteúdo está no Drive. O franqueador já preparou as artes do primeiro mês — você só precisa agendar nos horários recomendados.\n\nTambém tem artes prontas na seção Marketing do app!",
+    text: "O material de conteúdo está no Drive. O franqueador já preparou as artes do primeiro mês — você só precisa agendar nos horários recomendados.\n\nAssista o vídeo tutorial do Planner para aprender a programar seus posts!\n\nTambém tem artes prontas na seção Marketing do app!",
     links: [
+      { label: "Vídeo Tutorial do Planner", url: "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU?usp=drive_link" },
       { label: "Acessar Drive", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" },
       { label: "Abrir Marketing no app", url: "/Marketing" },
     ],
