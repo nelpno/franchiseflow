@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Franchise, DailyUniqueContact, User, FranchiseInvite } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee } from "@/api/functions";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +52,8 @@ export default function Franchises() {
 
   // Delete franchise confirmation
   const [deletingFranchise, setDeletingFranchise] = useState(null);
+  const [isDeletingFranchise, setIsDeletingFranchise] = useState(false);
+  const [isDeletingStaff, setIsDeletingStaff] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -137,6 +140,7 @@ export default function Franchises() {
 
   const handleDeleteFranchise = async () => {
     if (!deletingFranchise) return;
+    setIsDeletingFranchise(true);
     try {
       await Franchise.deleteCascade(deletingFranchise.id, deletingFranchise.evolution_instance_id);
       toast.success(`Franquia ${deletingFranchise.city} excluída com sucesso.`);
@@ -145,7 +149,9 @@ export default function Franchises() {
       loadData();
     } catch (error) {
       console.error("Erro ao excluir franquia:", error);
-      toast.error("Erro ao excluir franquia. Verifique se você tem permissão.");
+      toast.error(error?.message || "Erro ao excluir franquia.");
+    } finally {
+      setIsDeletingFranchise(false);
     }
   };
 
@@ -172,14 +178,22 @@ export default function Franchises() {
 
   const handleDeleteStaff = async () => {
     if (!deletingStaff) return;
+    setIsDeletingStaff(true);
     try {
-      await User.delete(deletingStaff.id);
+      // RPC delete_user_complete: limpa notifications, audit_logs + deleta auth.users (cascadeia profile)
+      const { error } = await supabase.rpc('delete_user_complete', { p_user_id: deletingStaff.id });
+      if (error) throw error;
       setUsers((prev) => prev.filter((u) => u.id !== deletingStaff.id));
-      toast.success("Usuário removido.");
+      toast.success("Usuário removido completamente.");
       setDeletingStaff(null);
     } catch (error) {
       console.error("Erro ao excluir usuário:", error);
-      toast.error("Erro ao excluir usuário.");
+      const msg = error?.message || "Erro ao excluir usuário.";
+      if (msg.includes('admin')) toast.error("Apenas admins podem remover usuários.");
+      else if (msg.includes('si mesmo')) toast.error("Você não pode remover a si mesmo.");
+      else toast.error(msg);
+    } finally {
+      setIsDeletingStaff(false);
     }
   };
 
@@ -727,14 +741,15 @@ export default function Franchises() {
                 <strong>{deletingStaff?.full_name}</strong>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={() => setDeletingStaff(null)} className="rounded-xl">
+                <Button variant="outline" onClick={() => setDeletingStaff(null)} disabled={isDeletingStaff} className="rounded-xl">
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleDeleteStaff}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl"
+                  disabled={isDeletingStaff}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl min-w-[100px]"
                 >
-                  Excluir
+                  {isDeletingStaff ? "Excluindo..." : "Excluir"}
                 </Button>
               </div>
             </div>
@@ -761,14 +776,15 @@ export default function Franchises() {
                 <strong>{deletingFranchise?.city}</strong>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={() => setDeletingFranchise(null)} className="rounded-xl">
+                <Button variant="outline" onClick={() => setDeletingFranchise(null)} disabled={isDeletingFranchise} className="rounded-xl">
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleDeleteFranchise}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl"
+                  disabled={isDeletingFranchise}
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl min-w-[100px]"
                 >
-                  Excluir
+                  {isDeletingFranchise ? "Excluindo..." : "Excluir"}
                 </Button>
               </div>
             </div>
