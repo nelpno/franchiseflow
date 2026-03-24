@@ -70,7 +70,7 @@ function createEntity(tableName) {
           .eq('id', id)
           .select()
           .single(),
-        15000
+        30000 // 30s — Supabase Free tier pode ser lento sob carga
       );
       if (error) throw error;
       return updated;
@@ -82,7 +82,7 @@ function createEntity(tableName) {
           .from(tableName)
           .delete()
           .eq('id', id),
-        15000
+        30000 // 30s — consistente com create/update
       );
       if (error) throw error;
     }
