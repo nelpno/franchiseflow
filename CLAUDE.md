@@ -395,6 +395,13 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 193. Toast de erro em operações CRUD DEVE mostrar `error.message` real do Supabase — mensagens genéricas ("Tente novamente") escondem a causa raiz. Pattern: `toast.error(\`Erro: ${error?.message || "Erro desconhecido"}\`)`
 194. Management API token (`sbp_`) pode expirar sem aviso — se retornar "JWT could not be decoded", usar service_role key via PostgREST (`/rest/v1/`) como fallback para queries de diagnóstico
 195. OnboardingBlock `franchiseeItems` filter DEVE incluir `role === "auto"` — sem isso, itens auto são contados no total mas não renderizados (bug: "1 de 3" mas só 1 item visível)
+196. Supabase PKCE invite flow NÃO passa `type=invite` na URL de redirect — detecção de convite usa `user_metadata.password_set` (false/undefined = precisa definir senha). SetPassword marca `password_set: true` via `updateUser({ data: { password_set: true } })`
+197. `password_setup_type` usa `sessionStorage` (NÃO localStorage) — consistente com `needs_password_setup` no AuthContext. SetPassword lê e limpa de `sessionStorage`
+198. `functions.js inviteFranchisee()` envia `redirectTo: origin + '/set-password?type=invite'` — n8n workflow `franchise-invite` deve repassar esse param ao `inviteUserByEmail()` para belt-and-suspenders
+199. Índices de escalabilidade criados em 24/03: `idx_contacts_franchise`, `idx_contacts_phone`, `idx_sale_items_sale`, `idx_purchase_orders_franchise`, `idx_notifications_user_read`, `idx_audit_logs_franchise` — SQL em `supabase/add-missing-indexes.sql`
+200. Credenciais Supabase (Management API token, service_role key) ficam em `memory/reference_supabase_credentials.md` — NÃO depender de env vars da sessão
+201. `Franchise.create()` timeout é 30s (NÃO 15s) — triggers cascata (config + 28 inventory items) podem exceder 15s no Supabase Free, especialmente com criações consecutivas. `inviteFranchisee()` também usa 30s (SMTP lento)
+202. `vw_dadosunidade` usa SECURITY INVOKER (NÃO DEFINER) — n8n acessa via service_role que já bypassa RLS. Ao recriar a view, NUNCA usar SECURITY DEFINER (gera alerta CRITICAL no Supabase Security Advisor)
 
 ## Scripts
 ```bash
