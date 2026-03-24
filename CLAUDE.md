@@ -83,10 +83,15 @@ Rota `/set-password`: detecta `type=invite` ou `type=recovery` no hash da URL, p
 - Workflow v1 (produção): PALRV1RqD3opHMzk — RabbitMQ trigger, Base44 (legado, NÃO mexer)
 - Workflow v2 (Supabase): w7loLOXUmRR3AzuO — Webhook HTTP, 100% Supabase
 - V2 usa: `vw_dadosunidade` (config), `inventory_items` (estoque), `contacts` (leads), `daily_unique_contacts`
-- V2 nós migrados: `planilha_estoque1` (supabaseTool→inventory_items), GET/CREATE/UPDATE contacts, DailyUniqueContact
-- V2 prompts reescritos para dados estruturados do wizard: `delivery_fee_rules` JSONB, `payment_delivery`/`payment_pickup` TEXT[], `operating_hours` JSONB
+- V2 nós migrados: `planilha_estoque1` (supabaseTool→inventory_items, filtro franchise_id=instance.Name), GET/CREATE/UPDATE contacts, DailyUniqueContact
+- V2 prompts reescritos para dados estruturados do wizard: `delivery_fee_rules` JSONB, `payment_delivery`/`payment_pickup` TEXT[]
+- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 8 nós, zero AI, dados estruturados via $fromAI(). V1 (`ORNRLkFLnMcIQ9Ke`) usa Base44 (morto, NÃO usar)
+- EnviaPedidoFechado1 passa dados estruturados: itens_json, pagamento, modalidade, endereco, valor_frete, valor_total (via $fromAI) + inputs fixos (server_url, api, instance, telefones, nomecliente)
 - Credencial Supabase no n8n: `mIVPcJBNcDCx21LR` (franchiseflow_supabase) — DEVE ser service_role
-- View `vw_dadosunidade`: mapeia franchise_configurations com nomes em inglês, JSONB nativo (sem cast ::text)
+- View `vw_dadosunidade`: mapeia franchise_configurations. SQL referência: `supabase/fix-vw-dadosunidade-v2-scale.sql`
+- View campos computed: `accepted_payment_methods` (de payment_delivery+payment_pickup), `shipping_rules_costs` (de delivery_fee_rules), `personal_phone_wa` (55+telefone), `zuck_instance_name` (de whatsapp_instance_id, fallback evo_id)
+- `whatsapp_instance_id` em franchise_configurations pode DIFERIR de `evolution_instance_id` — franquias legadas têm nomes diferentes no ZuckZapGo. Nó dadosunidade filtra por `zuck_instance_name`
+- Telefones WhatsApp: SEMPRE com prefixo 55. Usar `personal_phone_wa` da view. DB armazena 11 dígitos (sem 55)
 - Workflow memória: `xJocFaDvztxeBHvQ` (memoria_lead) — sub-workflow chamado pelo agente
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
 - Tabela `daily_unique_contacts`: rastreia contatos únicos/dia (substitui Base44)
@@ -356,6 +361,10 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 160. `loadData` com guard `if (!dependency) return` DEVE chamar `setIsLoading(false)` antes do return — senão componente fica eternamente em skeleton quando dependência demora a inicializar (race condition com Layout)
 161. Promise chains com `.then((result) => { if (!result) return; })` DEVEM setar flags de conclusão (ex: `setOnboardingLoaded(true)`) no branch falsy também — senão guards que dependem da flag nunca ativam
 162. Filtros "últimos N dias" com `subDays()`: usar `subDays(new Date(), N - 1)` — hoje já conta como dia 1, senão filtra N+1 dias
+163. `sales.franchise_id` FK aponta para `franchises.evolution_instance_id` (TEXT), NÃO para `franchises.id` (UUID) — inserir evo_id, NÃO UUID
+164. `operating_hours` JSONB NÃO existe na tabela `franchise_configurations` — wizard salva em `opening_hours` (TEXT) e `working_days` (TEXT). NÃO referenciar `operating_hours`
+165. Ao recriar `vw_dadosunidade` com DROP+CREATE: CONFERIR que `zuck_instance_name` está presente — nó dadosunidade filtra por esse campo. SQL referência: `supabase/fix-vw-dadosunidade-v2-scale.sql`
+166. EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`) usa Base44 (morto) — NUNCA apontar para ele. Usar V2 (`RnF1Jh6nDUj0IRHI`)
 
 ## Scripts
 ```bash
