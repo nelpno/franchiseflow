@@ -389,6 +389,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 187. Faturamento bruto = `value + delivery_fee` em TODOS os cálculos de revenue (dashboards, gráficos, rankings). TabResultado é exceção: mostra Vendas e Frete como linhas separadas no P&L
 188. `aggregate_daily_data()` usa `SUM(value + COALESCE(delivery_fee, 0))` para sales_value — corrigido em 24/03. Ao adicionar novos campos financeiros em sales, verificar se aggregate precisa incluí-los
 189. EnviaPedidoFechado V2 "Prepare Sale Data": `value` SEMPRE calculado dos itens (qty * price), NUNCA do `valor_total` do agente — agente pode incluir frete no total. `net_value = value` (sem dedução automática, franqueado edita taxa depois)
+190. Health Score tem DOIS sistemas separados: `healthScore.js` (AlertsPanel, pesos dinâmicos novo/existente) e `FranchiseHealthScore.jsx` (drill-down UI, cálculo inline). Ao alterar lógica de score, atualizar AMBOS
+191. Daily Checklist (`daily_checklists`) é feature INATIVA — não existe no menu do franqueado. Dimensão "Checklist/Atividade" do Health Score deve ser removida e peso redistribuído (Vendas 35, Estoque 25, Pedidos 20, WhatsApp 20)
 
 ## Scripts
 ```bash
