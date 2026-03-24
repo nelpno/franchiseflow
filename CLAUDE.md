@@ -299,7 +299,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 102. Supabase PKCE flow: `type=invite` pode vir no hash (implicit) OU search params (PKCE) — AuthContext detecta ambos + faz `exchangeCodeForSession()` quando `?code=` presente
 103. CatalogUpload restrito a JPG only (n8n compat) — timeout 30s via `Promise.race()` para evitar loading infinito
 104. PaymentMethodChart: mapa `PAYMENT_COLORS` deve incluir TODOS os values possíveis de `sales.payment_method` (card_machine, pix, dinheiro, etc.) — fallback mostra key bruta do banco
-105. Entity `create()` e `update()` em `all.js` DEVEM usar `withTimeout(15000)` — sem timeout, operações de escrita travam indefinidamente
+105. Entity `create()`, `update()` e `delete()` em `all.js` DEVEM usar `withTimeout(30000)` — sem timeout, operações de escrita travam indefinidamente
 106. `setIsSubmitting`/`setIsUploading` SEMPRE em `finally` block — NUNCA após try/catch (se catch re-throws ou componente desmonta, loading trava eternamente)
 107. Antes de `Entity.update()`, fazer destructuring para remover campos read-only/UI-only (`id`, `created_at`, `updated_at`, `franchise`, `whatsapp_status`) — Supabase rejeita colunas inexistentes
 108. Storage bucket policies: `catalog-images` INSERT/UPDATE/DELETE = authenticated (NÃO admin-only), SELECT = público. Verificar RLS do storage ao criar novos buckets
@@ -400,8 +400,10 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 198. `functions.js inviteFranchisee()` envia `redirectTo: origin + '/set-password?type=invite'` — n8n workflow `franchise-invite` deve repassar esse param ao `inviteUserByEmail()` para belt-and-suspenders
 199. Índices de escalabilidade criados em 24/03: `idx_contacts_franchise`, `idx_contacts_phone`, `idx_sale_items_sale`, `idx_purchase_orders_franchise`, `idx_notifications_user_read`, `idx_audit_logs_franchise` — SQL em `supabase/add-missing-indexes.sql`
 200. Credenciais Supabase (Management API token, service_role key) ficam em `memory/reference_supabase_credentials.md` — NÃO depender de env vars da sessão
-201. `Franchise.create()` timeout é 30s (NÃO 15s) — triggers cascata (config + 28 inventory items) podem exceder 15s no Supabase Free, especialmente com criações consecutivas. `inviteFranchisee()` também usa 30s (SMTP lento)
+201. Todas operações de escrita (create/update/delete) usam timeout 30s — Supabase pode ser lento sob carga mesmo no plano Pro. `inviteFranchisee()` também usa 30s (SMTP lento)
 202. `vw_dadosunidade` usa SECURITY INVOKER (NÃO DEFINER) — n8n acessa via service_role que já bypassa RLS. Ao recriar a view, NUNCA usar SECURITY DEFINER (gera alerta CRITICAL no Supabase Security Advisor)
+203. Data fetching com múltiplas queries DEVE usar `Promise.allSettled` (NÃO `Promise.all`) — falha em uma query não deve bloquear a página inteira. Pattern: `getValue = (r) => r.status === "fulfilled" ? r.value : []`, log failedQueries com nomes, checar query crítica separadamente
+204. FranchiseeDashboard tem `mountedRef` + `loadError` + retry UI — manter consistente com AdminDashboard. Polling 120s com cleanup no useEffect
 
 ## Scripts
 ```bash
