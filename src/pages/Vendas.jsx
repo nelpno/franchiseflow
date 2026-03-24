@@ -46,22 +46,31 @@ export default function Vendas() {
       setCurrentUser(userData);
       setFranchises(franchisesData);
 
-      const [salesData, inventoryData, saleItemsData, contactsData] = await Promise.all([
+      const [salesResult, inventoryResult, saleItemsResult, contactsResult] = await Promise.allSettled([
         Sale.list("-created_at", 500),
         InventoryItem.list("-updated_at"),
         SaleItem.list('-created_at', 500),
         Contact.list('-created_at', 200),
       ]);
       if (!mountedRef.current) return;
-      setSales(salesData);
-      setInventoryItems(inventoryData);
-      setSaleItems(saleItemsData);
-      setContacts(contactsData);
+
+      setSales(salesResult.status === "fulfilled" ? salesResult.value : []);
+      setInventoryItems(inventoryResult.status === "fulfilled" ? inventoryResult.value : []);
+      setSaleItems(saleItemsResult.status === "fulfilled" ? saleItemsResult.value : []);
+      setContacts(contactsResult.status === "fulfilled" ? contactsResult.value : []);
+
+      const failed = [salesResult, inventoryResult, saleItemsResult, contactsResult]
+        .filter(r => r.status === "rejected");
+      if (failed.length > 0) {
+        console.warn("Algumas queries falharam:", failed.map(f => f.reason?.message));
+        toast.error("Alguns dados não carregaram. Tente recarregar.");
+      }
     } catch (error) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dados:", error);
-      setLoadError("Erro ao carregar dados de vendas. Tente novamente.");
-      toast.error("Erro ao carregar dados de vendas.");
+      const msg = error?.message || "Erro desconhecido";
+      setLoadError(`Erro ao carregar dados de vendas: ${msg}`);
+      toast.error(`Erro ao carregar dados de vendas: ${msg}`);
     } finally {
       if (mountedRef.current) setLoading(false);
     }

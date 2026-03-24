@@ -52,14 +52,7 @@ export default function FranchiseeDashboard() {
       const yesterday = getYesterday();
       const evoId = ctxFranchise?.evolution_instance_id;
       const fId = evoId || franchiseId;
-      const [
-        todaySalesData,
-        yesterdaySalesData,
-        summariesData,
-        inventoryData,
-        checklistData,
-        contactsData,
-      ] = await Promise.all([
+      const results = await Promise.allSettled([
         evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }) : Promise.resolve([]),
         evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }) : Promise.resolve([]),
         DailySummary.list("-date", 30),
@@ -67,6 +60,19 @@ export default function FranchiseeDashboard() {
         evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),
         evoId ? Contact.filter({ franchise_id: evoId }) : Promise.resolve([]),
       ]);
+
+      const val = (i) => results[i].status === "fulfilled" ? results[i].value : [];
+      const todaySalesData = val(0);
+      const yesterdaySalesData = val(1);
+      const summariesData = val(2);
+      const inventoryData = val(3);
+      const checklistData = val(4);
+      const contactsData = val(5);
+
+      const failed = results.filter(r => r.status === "rejected");
+      if (failed.length > 0) {
+        console.warn("Dashboard queries falharam:", failed.map(f => f.reason?.message));
+      }
 
       setTodaySales(todaySalesData);
       setYesterdaySales(yesterdaySalesData);

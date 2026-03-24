@@ -41,22 +41,39 @@ export default function Gestao() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [userData, franchisesData, inventoryData, saleItemsData] = await Promise.all([
+
+      // Dados críticos — sem eles a página não funciona
+      const [userData, franchisesData] = await Promise.all([
         User.me(),
         Franchise.list(),
-        InventoryItem.list("-updated_at"),
-        SaleItem.list(),
       ]);
       if (!mountedRef.current) return;
       setCurrentUser(userData);
       setFranchises(franchisesData);
-      setInventoryItems(inventoryData);
-      setSaleItems(saleItemsData);
+
+      // Dados de tabs — carregam em paralelo, falha não bloqueia a página
+      const [inventoryResult, saleItemsResult] = await Promise.allSettled([
+        InventoryItem.list("-updated_at"),
+        SaleItem.list(),
+      ]);
+      if (!mountedRef.current) return;
+
+      if (inventoryResult.status === "fulfilled") {
+        setInventoryItems(inventoryResult.value);
+      } else {
+        console.warn("Falha ao carregar estoque:", inventoryResult.reason?.message);
+      }
+      if (saleItemsResult.status === "fulfilled") {
+        setSaleItems(saleItemsResult.value);
+      } else {
+        console.warn("Falha ao carregar itens de venda:", saleItemsResult.reason?.message);
+      }
     } catch (error) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dados:", error);
-      setLoadError("Erro ao carregar dados de gestão. Tente novamente.");
-      toast.error("Erro ao carregar dados de gestão.");
+      const msg = error?.message || "Erro desconhecido";
+      setLoadError(`Erro ao carregar dados de gestão: ${msg}`);
+      toast.error(`Erro ao carregar dados de gestão: ${msg}`);
     } finally {
       if (mountedRef.current) setLoading(false);
     }
