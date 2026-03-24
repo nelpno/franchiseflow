@@ -134,9 +134,14 @@ export default function Franchises() {
     } catch (error) {
       console.error("Erro ao criar franquia:", error);
       const msg = error?.message || error?.details || "Erro desconhecido";
-      toast.error(`Erro ao criar franquia: ${msg}`);
+      if (msg.includes("Tempo limite")) {
+        toast.error("Tempo limite excedido ao criar franquia. A franquia pode ter sido criada — atualize a página para verificar.");
+      } else {
+        toast.error(`Erro ao criar franquia: ${msg}`);
+      }
     }
     setIsSubmitting(false);
+    loadData(); // Recarrega lista mesmo em caso de erro (franquia pode ter sido criada server-side)
   };
 
   const handleDeleteFranchise = async () => {

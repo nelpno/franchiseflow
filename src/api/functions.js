@@ -41,12 +41,13 @@ export async function optimizeConfig(configData) {
 }
 
 // Convite de franqueado — envia email via Supabase Auth (n8n com service role)
+// Timeout maior (30s) porque n8n + Supabase Auth + SMTP pode demorar
 export async function inviteFranchisee(email) {
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/franchise-invite`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, redirectTo: window.location.origin + '/set-password?type=invite' })
-  });
+  }, 30000);
   if (!response.ok) throw new Error('Erro ao enviar convite: ' + response.status);
   return response.json();
 }

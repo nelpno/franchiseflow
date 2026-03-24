@@ -56,7 +56,7 @@ function createEntity(tableName) {
           .insert(data)
           .select()
           .single(),
-        15000
+        30000 // 30s — franchises dispara triggers pesados (config + 28 inventory items)
       );
       if (error) throw error;
       return created;
