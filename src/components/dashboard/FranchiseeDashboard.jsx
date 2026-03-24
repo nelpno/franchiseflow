@@ -39,7 +39,10 @@ export default function FranchiseeDashboard() {
   const franchiseId = ctxFranchise?.id;
 
   const loadData = useCallback(async () => {
-    if (!franchiseId) return;
+    if (!franchiseId) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       setFranchise(ctxFranchise);

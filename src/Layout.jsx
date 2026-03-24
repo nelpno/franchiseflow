@@ -162,7 +162,16 @@ export default function Layout({ children, currentPageName }) {
           return OnboardingChecklist.filter({ franchise_id: franchiseId });
         })
         .then((obs) => {
-          if (!obs) return;
+          if (!obs) {
+            // Promise chain returned undefined (no franchiseId) — still mark as loaded
+            const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
+            const skipped = localStorage.getItem("onboarding_skipped") === "true";
+            if (currentUser.role === "franchisee" && !welcomeSeen && !skipped) {
+              setNeedsOnboardingWelcome(true);
+            }
+            setOnboardingLoaded(true);
+            return;
+          }
           const skipped = localStorage.getItem("onboarding_skipped") === "true";
           const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
 
