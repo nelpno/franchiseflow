@@ -116,9 +116,20 @@ function calcSetupScore(franchise, onboardingData, configData) {
   const whatsappPts = hasWhatsApp ? 30 : 0;
 
   const score = Math.min(100, onboardingPts + whatsappPts);
-  const detail = `Onboarding ${onboardingPct}%${hasWhatsApp ? " · WhatsApp ✅" : " · WhatsApp ❌"}`;
 
-  return { score, detail, onboardingPct, hasWhatsApp };
+  // Only show onboarding info if not yet completed
+  const onboardingComplete = onboardingPct >= 100;
+  let detail;
+  if (onboardingComplete) {
+    detail = hasWhatsApp ? "Setup completo ✅" : "WhatsApp ❌";
+  } else if (!checklist) {
+    // No onboarding record at all — don't mention it
+    detail = hasWhatsApp ? "WhatsApp ✅" : "WhatsApp ❌";
+  } else {
+    detail = `Onboarding ${onboardingPct}%${hasWhatsApp ? " · WhatsApp ✅" : " · WhatsApp ❌"}`;
+  }
+
+  return { score, detail, onboardingPct, hasWhatsApp, onboardingComplete };
 }
 
 function calcActivityScore(franchise, checklistData) {
@@ -200,7 +211,7 @@ export function calculateFranchiseHealth(franchise, data) {
   if (vendas.score < 50 && vendas.daysSince !== null) problems.push(vendas.detail);
   if (estoque.score < 50 && estoque.zeroCount > 0) problems.push(estoque.detail);
   if (reposicao.score < 50 && reposicao.daysSince !== null) problems.push(reposicao.detail);
-  if (setup.score < 50) problems.push(setup.detail);
+  if (setup.score < 50 && !setup.onboardingComplete) problems.push(setup.detail);
   if (atividade.score < 50 && atividade.daysSince !== null) problems.push(atividade.detail);
 
   return {
