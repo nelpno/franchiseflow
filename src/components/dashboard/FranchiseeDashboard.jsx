@@ -31,6 +31,7 @@ export default function FranchiseeDashboard() {
   const [checklistProgress, setChecklistProgress] = useState({ done: 0, total: 0 });
   const [contacts, setContacts] = useState([]);
   const [botActive, setBotActive] = useState(false);
+  const [period, setPeriod] = useState("today");
 
   // Computed inside loadData to stay fresh after midnight
   const getToday = () => format(new Date(), "yyyy-MM-dd");
@@ -115,15 +116,41 @@ export default function FranchiseeDashboard() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const todaySalesCount = todaySales.length;
-  const yesterdaySalesCount = yesterdaySales.length;
-  const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
-  const yesterdayRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
-
-  const todayAvgTicket = todaySalesCount > 0 ? todayRevenue / todaySalesCount : 0;
-  const yesterdayAvgTicket = yesterdaySalesCount > 0 ? yesterdayRevenue / yesterdaySalesCount : 0;
-
   const evoId = franchise?.evolution_instance_id;
+
+  // Stats based on selected period
+  const stats = useMemo(() => {
+    if (period === "today") {
+      const salesCount = todaySales.length;
+      const prevSalesCount = yesterdaySales.length;
+      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+      const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
+      const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
+      return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
+    }
+
+    const days = period === "7d" ? 7 : 30;
+    const cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
+    const prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
+
+    const mySummaries = summaries.filter((s) => s.franchise_id === evoId);
+    const currentPeriod = mySummaries.filter((s) => s.date >= cutoff);
+    const prevPeriod = mySummaries.filter((s) => s.date >= prevCutoff && s.date < cutoff);
+
+    const sum = (arr, field) => arr.reduce((s, r) => s + (r[field] || 0), 0);
+
+    const salesCount = sum(currentPeriod, "sales_count");
+    const prevSalesCount = sum(prevPeriod, "sales_count");
+    const revenue = sum(currentPeriod, "sales_value");
+    const prevRevenue = sum(prevPeriod, "sales_value");
+    const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
+    const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
+
+    return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
+  }, [period, todaySales, yesterdaySales, summaries, evoId]);
+
+  const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
 
   const dailyGoal = useMemo(() => {
     if (!summaries.length || !evoId) return null;
@@ -179,24 +206,44 @@ export default function FranchiseeDashboard() {
         </div>
       </div>
 
+      <div className="flex bg-[#291715]/5 p-1 rounded-xl mb-4">
+        {[
+          { value: "today", label: "Hoje" },
+          { value: "7d", label: "7 dias" },
+          { value: "30d", label: "30 dias" },
+        ].map((p) => (
+          <button
+            key={p.value}
+            onClick={() => setPeriod(p.value)}
+            className={`px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 flex-1 rounded-lg ${
+              period === p.value
+                ? "font-bold text-white bg-[#b91c1c] shadow-sm"
+                : "font-medium text-[#1b1c1d]/70"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
       <section className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatsCard
-          title="Vendas Hoje"
-          value={todaySalesCount}
-          previousValue={yesterdaySalesCount}
-          trend={todaySalesCount > yesterdaySalesCount ? 'up' : todaySalesCount < yesterdaySalesCount ? 'down' : null}
+          title={period === "today" ? "Vendas Hoje" : "Vendas"}
+          value={stats.salesCount}
+          previousValue={stats.prevSalesCount}
+          trend={stats.salesCount > stats.prevSalesCount ? 'up' : stats.salesCount < stats.prevSalesCount ? 'down' : null}
         />
         <StatsCard
           title="Faturamento"
-          value={formatBRLInteger(todayRevenue)}
-          previousValue={yesterdayRevenue}
-          trend={todayRevenue > yesterdayRevenue ? 'up' : todayRevenue < yesterdayRevenue ? 'down' : null}
+          value={formatBRLInteger(stats.revenue)}
+          previousValue={stats.prevRevenue}
+          trend={stats.revenue > stats.prevRevenue ? 'up' : stats.revenue < stats.prevRevenue ? 'down' : null}
         />
         <StatsCard
           title="Valor Médio"
-          value={formatBRLInteger(todayAvgTicket)}
-          previousValue={yesterdayAvgTicket}
-          trend={todayAvgTicket > yesterdayAvgTicket ? 'up' : todayAvgTicket < yesterdayAvgTicket ? 'down' : null}
+          value={formatBRLInteger(stats.avgTicket)}
+          previousValue={stats.prevAvgTicket}
+          trend={stats.avgTicket > stats.prevAvgTicket ? 'up' : stats.avgTicket < stats.prevAvgTicket ? 'down' : null}
         />
       </section>
 
