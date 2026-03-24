@@ -28,7 +28,7 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 3: Prepare Seu Espaço ===
   "3-1": {
-    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial. Freezer vertical também funciona!\n\nMantenha sempre em -18°C ou menos. Produto descongelado = produto perdido.\n\nDicas:\n• Deixe espaço entre os produtos para o ar circular\n• Posicione o freezer em local ventilado, longe do sol\n• Use um termômetro digital (R$15-25) para monitorar a temperatura",
+    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial. Freezer vertical também funciona!\n\nMantenha sempre em -18°C ou menos. Produto descongelado = produto perdido.\n\nDicas:\n• Deixe espaço entre os produtos para o ar circular\n• Posicione o freezer em local ventilado, longe do sol\n• Organize por categoria (Massas | Molhos | Outros) para achar tudo rápido",
   },
   "3-2": {
     text: "Organize por categoria: Massas | Molhos | Outros.\n\nNo app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
