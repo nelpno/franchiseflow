@@ -280,7 +280,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 88. Queries de leitura (`list`/`filter`/`me`) em `entities/all.js` têm timeout de 15s via `withTimeout()` — NUNCA remover
 89. Páginas com data fetching DEVEM ter: (1) `mountedRef` + cleanup no useEffect, (2) `loadError` state, (3) botão "Tentar novamente" — pattern em MyContacts.jsx como referência
 90. NUNCA usar `useEffect(() => { loadData(); }, [])` sem guard `mountedRef` — causa state updates em componente desmontado durante navegação rápida
-91. Deep-links atualizados: `/Vendas?action=nova-venda&phone=X` (vendas), `/Gestao?tab=resultado|estoque|reposicao` (gestão) — NUNCA usar `/MinhaLoja?tab=` em código novo
+91. Deep-links atualizados: `/Vendas?action=nova-venda&contact_id=UUID&phone=X` (vendas — contact_id prioritário, phone fallback), `/Gestao?tab=resultado|estoque|reposicao` (gestão) — NUNCA usar `/MinhaLoja?tab=` em código novo
 92. MyContacts tem botão "Novo Cliente" — cria contato com source='manual', franchise_id=evolution_instance_id. Telefone é opcional
 93. Rotas protegidas (AdminRoute) DEVEM checar `isLoading` antes de renderizar children — sem isso, conteúdo admin pisca durante carregamento do perfil
 94. Upload Marketing: validação obrigatória de tipo (image/pdf/mp4) e tamanho (max 20MB) ANTES do upload — seguir pattern de CatalogUpload.jsx
@@ -349,6 +349,10 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 154. `getErrorMessage(error)` pattern (detecta JWT expired, RLS, FK, timeout) existe em MyContacts.jsx e PurchaseOrderForm.jsx — ao adicionar em novas páginas, copiar o pattern. TODO: extrair para utility compartilhada
 155. Após deploy Portainer, orientar usuário a fazer hard refresh (Ctrl+Shift+R) — browser pode servir JS cacheado do bundle anterior durante ~1 min de rebuild
 156. `deleteCascade(franchiseId, evoId)`: `sales` usa UUID (`franchiseId`), mas `purchase_orders`, `expenses`, `contacts`, `inventory_items`, `daily_checklists` usam `evoId` — NUNCA misturar
+157. AlertsPanel (AdminDashboard) mostra APENAS alertas vermelhos (max 3) + contadores inline — alertas amarelos ficam exclusivamente no Acompanhamento. NÃO voltar para lista flat de todos os alertas
+157. `SaleReceipt.jsx` gera comprovante visual (PNG via html2canvas) — `shareUtils.js` tem `generateReceiptImage()` + `shareImage()` (Web Share API mobile, download desktop)
+158. `sale_date` é DATE only (sem horário) — usar `created_at` para timestamp completo. Ao exibir data+hora, combinar ambos campos
+159. Componentes off-screen para html2canvas: `position: fixed; left: -9999px; zIndex: -1` — renderizar condicionalmente só quando necessário (state shareData)
 
 ## Scripts
 ```bash
@@ -385,6 +389,7 @@ npm run typecheck # TypeScript check
 - **FASE 8** (em andamento):
   - Redesign visual onboarding (ProgressRing, cards missão, micro-celebrações) ✅
   - Auditoria completa do banco de dados (13 fixes, 4 tabelas mortas removidas, triggers corrigidos) ✅
+  - Compartilhar comprovante de venda via WhatsApp (imagem PNG com html2canvas + Web Share API) ✅
   - Swipe touch no tutorial OnboardingWelcome
   - Busca global por franqueado (admin header)
   - Calendário de publicação (Marketing)
