@@ -19,16 +19,30 @@ const STEPS = [
   },
   {
     icon: "point_of_sale",
-    title: "Vendas e Gestão",
+    title: "Vendas",
     description:
-      "Registre vendas com poucos cliques e acompanhe toda a operação da sua franquia.",
+      "Registre cada venda com poucos cliques e acompanhe seus resultados em tempo real.",
+    detail:
+      "Na tela de Vendas você lança vendas rapidamente, seleciona produtos do estoque, aplica frete e taxas de cartão. Tudo calculado automaticamente.",
+    color: "#b91c1c",
+    bgGradient: "from-[#b91c1c]/10 to-[#b91c1c]/5",
+    features: [
+      { icon: "add_shopping_cart", label: "Lançamento Rápido", desc: "Selecione produtos e registre em segundos" },
+      { icon: "receipt_long", label: "Comprovante", desc: "Compartilhe o comprovante pelo WhatsApp" },
+      { icon: "person_search", label: "Vincular Cliente", desc: "Associe a venda a um contato cadastrado" },
+    ],
+  },
+  {
+    icon: "bar_chart",
+    title: "Gestão",
+    description:
+      "Acompanhe o resultado financeiro, controle seu estoque e peça reposição direto para a fábrica.",
     detail: null,
     color: "#b91c1c",
     bgGradient: "from-[#b91c1c]/10 to-[#b91c1c]/5",
     features: [
-      { icon: "point_of_sale", label: "Vendas", desc: "Registre cada venda com poucos cliques" },
-      { icon: "analytics", label: "Resultado", desc: "Veja seu lucro, despesas e faturamento" },
-      { icon: "inventory_2", label: "Estoque", desc: "Controle seus produtos e quantidades" },
+      { icon: "analytics", label: "Resultado", desc: "Lucro, despesas e faturamento do período" },
+      { icon: "inventory_2", label: "Estoque", desc: "Controle produtos e quantidades disponíveis" },
       { icon: "local_shipping", label: "Reposição", desc: "Peça produtos direto para a fábrica" },
     ],
   },
@@ -42,8 +56,8 @@ const STEPS = [
     color: "#0288D1",
     bgGradient: "from-[#0288D1]/10 to-[#0288D1]/5",
     features: [
-      { icon: "person_add", label: "Novos Leads", desc: "Contatos que chegam pelo WhatsApp" },
-      { icon: "handshake", label: "Pipeline", desc: "Acompanhe cada etapa da negociação" },
+      { icon: "person_add", label: "Contatos Novos", desc: "Contatos que chegam pelo WhatsApp" },
+      { icon: "handshake", label: "Organização", desc: "Acompanhe cada etapa da negociação" },
       { icon: "auto_awesome", label: "Ações Inteligentes", desc: "Sugestões automáticas de follow-up" },
     ],
   },

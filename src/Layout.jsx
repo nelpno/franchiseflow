@@ -208,6 +208,13 @@ export default function Layout({ children, currentPageName }) {
     }
   }, [currentUser]);
 
+  // Listen for onboarding-started event from Onboarding page
+  useEffect(() => {
+    const handler = () => setHasActiveOnboarding(true);
+    window.addEventListener("onboarding-started", handler);
+    return () => window.removeEventListener("onboarding-started", handler);
+  }, []);
+
   const loadQuickStats = async () => {
     try {
       const today = format(new Date(), "yyyy-MM-dd");

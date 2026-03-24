@@ -123,8 +123,8 @@ export default function FranchiseeDashboard() {
     if (period === "today") {
       const salesCount = todaySales.length;
       const prevSalesCount = yesterdaySales.length;
-      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
-      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
       const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
       return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
@@ -150,7 +150,7 @@ export default function FranchiseeDashboard() {
     return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
   }, [period, todaySales, yesterdaySales, summaries, evoId]);
 
-  const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+  const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
 
   const dailyGoal = useMemo(() => {
     if (!summaries.length || !evoId) return null;

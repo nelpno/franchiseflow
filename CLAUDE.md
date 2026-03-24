@@ -377,6 +377,14 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 176. Tabelas com RLS ativo DEVEM ter DELETE policy para admin — sem ela, `.delete()` retorna sucesso mas deleta 0 rows (silencioso). Verificar ao criar tabela nova
 177. `delete_user_complete(p_user_id UUID)`: RPC SECURITY DEFINER que limpa notifications + audit_logs + auth.users (cascadeia profiles). Requer is_admin(). SQL: `supabase/delete-user-rpc.sql`
 178. `sales_goals` tem FK para `franchises.evolution_instance_id` — incluída no cascade delete. DELETE policy criada em 24/03
+179. Health score `calcSetupScore` (healthScore.js): "Onboarding X%" só aparece para franquias com onboarding em andamento — oculto quando completo (100%) ou sem registro. `problems` array também filtra por `onboardingComplete`
+180. `onboarding_checklists` RLS INSERT permite admin E franqueado (`managed_franchise_ids()`) — corrigido em 24/03, antes era admin-only
+181. Onboarding.jsx dispara `window.dispatchEvent(new Event("onboarding-started"))` ao criar checklist — Layout.jsx ouve esse evento para mostrar "Onboarding" no sidebar instantaneamente
+182. OnboardingWelcome tutorial tem 7 steps (Bem-vindo, Vendas, Gestão, Meus Clientes, Meu Vendedor, Marketing, Pronto) — Vendas e Gestão são steps separados
+183. SetPassword.jsx usa `import logoMaxiMassas from "@/assets/logo-maxi-massas.png"` — consistente com Login.jsx (NUNCA URL externa)
+180. `audit_on_sale_delete` trigger: loga em `audit_logs` quem deletou venda (user_id, value, source, contact_id). `revert_contact_on_sale_delete` trigger: reverte `purchase_count` e `total_spent` no contato. SQL: `supabase/audit-sale-delete.sql`
+181. Management API SQL com `$$` (PL/pgSQL): delimitadores são corrompidos na serialização JSON — salvar SQL em arquivo e executar via `ctx_execute` com `fetch` lendo o arquivo
+182. n8n Supabase node pode reportar "success" mesmo quando INSERT não persiste (RLS silencioso) — SEMPRE verificar dados no banco após execução de workflow crítico
 
 ## Scripts
 ```bash

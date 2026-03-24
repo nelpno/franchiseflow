@@ -75,7 +75,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
       const monthItems = saleItems.filter((si) => monthSaleIds.has(si.sale_id));
 
       const revenue = monthSales.reduce(
-        (sum, s) => sum + (parseFloat(s.value) || 0),
+        (sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0),
         0
       );
 

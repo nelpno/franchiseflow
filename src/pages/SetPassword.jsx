@@ -4,8 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
-
-const LOGO_URL = 'https://lh3.googleusercontent.com/aida/ADBb0ugCTVY4RLjpZaVmTunw5aAOVsOWhVE1VFKJ6dJHWLlp0NQfYLn9e4nf9xumxgvXGuTESxzw_4nnRZgPRRibxsHY0CyQlUftQtsLyFxxoLXrjZ9yh6wRWly1I5gyuQoTheiTmM0sVUrURcN8eyeGxJOyzmOT72i8UzXFg-evAPSA6UvoOVQd-kWWxbtTNct5HKj-ohG7BatXZ9fA1b31kExHOSI4eTLHw0EqlGNPzXA_UntQmHThWuSkHImL_zw6eC5ItbV45m5s3Q';
+import logoMaxiMassas from "@/assets/logo-maxi-massas.png";
 
 export default function SetPassword() {
   const [password, setPassword] = useState('');
@@ -74,7 +73,7 @@ export default function SetPassword() {
 
           <div className="relative z-10">
             <div className="flex items-center gap-4 mb-12">
-              <img src={LOGO_URL} alt="Maxi Massas Logo" className="h-12 w-auto object-contain" />
+              <img src={logoMaxiMassas} alt="Maxi Massas Logo" className="h-12 w-auto object-contain" />
               <span className="text-xl font-extrabold tracking-tighter text-[#1b1c1d]">Maxi Massas</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-[#1b1c1d] tracking-tight leading-[1.15] max-w-md" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -112,7 +111,7 @@ export default function SetPassword() {
           <div className="max-w-md mx-auto w-full">
             {/* Mobile Logo */}
             <div className="lg:hidden flex justify-center mb-8">
-              <img src={LOGO_URL} alt="Maxi Massas Logo" className="h-20 w-auto" />
+              <img src={logoMaxiMassas} alt="Maxi Massas Logo" className="h-20 w-auto" />
             </div>
 
             <div className="mb-10 text-center lg:text-left">

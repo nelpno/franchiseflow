@@ -116,8 +116,8 @@ export default function AdminDashboard() {
     if (period === "today") {
       const salesCount = todaySales.length;
       const prevSalesCount = yesterdaySales.length;
-      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
-      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
+      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const contacts = todayContacts.length;
       const prevContacts = yesterdayContacts.length;
       const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
@@ -149,7 +149,7 @@ export default function AdminDashboard() {
 
   // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>
-    todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0),
+    todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
     [todaySales]
   );
   const liveTodayContactsCount = todayContacts.length;
