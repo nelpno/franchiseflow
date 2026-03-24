@@ -114,8 +114,9 @@ export default function AdminDashboard() {
     }
 
     const days = period === "7d" ? 7 : 30;
-    const cutoff = format(subDays(new Date(), days), "yyyy-MM-dd");
-    const prevCutoff = format(subDays(new Date(), days * 2), "yyyy-MM-dd");
+    // "7 dias" = hoje + 6 anteriores (subDays 6), "30 dias" = hoje + 29 anteriores
+    const cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
+    const prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
 
     const currentPeriod = summaries.filter((s) => s.date >= cutoff);
     const prevPeriod = summaries.filter((s) => s.date >= prevCutoff && s.date < cutoff);

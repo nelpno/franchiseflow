@@ -353,6 +353,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 157. `SaleReceipt.jsx` gera comprovante visual (PNG via html2canvas) — `shareUtils.js` tem `generateReceiptImage()` + `shareImage()` (Web Share API mobile, download desktop)
 158. `sale_date` é DATE only (sem horário) — usar `created_at` para timestamp completo. Ao exibir data+hora, combinar ambos campos
 159. Componentes off-screen para html2canvas: `position: fixed; left: -9999px; zIndex: -1` — renderizar condicionalmente só quando necessário (state shareData)
+160. `loadData` com guard `if (!dependency) return` DEVE chamar `setIsLoading(false)` antes do return — senão componente fica eternamente em skeleton quando dependência demora a inicializar (race condition com Layout)
+161. Promise chains com `.then((result) => { if (!result) return; })` DEVEM setar flags de conclusão (ex: `setOnboardingLoaded(true)`) no branch falsy também — senão guards que dependem da flag nunca ativam
+162. Filtros "últimos N dias" com `subDays()`: usar `subDays(new Date(), N - 1)` — hoje já conta como dia 1, senão filtra N+1 dias
 
 ## Scripts
 ```bash

@@ -122,7 +122,7 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
     if (!selectedConfigForWhatsApp) return;
     setIsCheckingStatus(true);
     try {
-      const { data } = await checkWhatsappStatus({ instanceName: selectedConfigForWhatsApp.franchise_evolution_instance_id });
+      const data = await checkWhatsappStatus({ instanceName: selectedConfigForWhatsApp.franchise_evolution_instance_id });
       let newStatus = 'disconnected';
       if (data.status === 'open' || data.connected === true) newStatus = 'connected';
       else if (data.status === 'connecting' || data.status === 'pending') newStatus = 'pending_qr';
@@ -147,7 +147,7 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
     if (checkingStatusFor === config.id) return;
     setCheckingStatusFor(config.id);
     try {
-      const { data } = await checkWhatsappStatus({ instanceName: config.franchise_evolution_instance_id });
+      const data = await checkWhatsappStatus({ instanceName: config.franchise_evolution_instance_id });
       let newStatus = 'disconnected';
       if (data.status === 'open' || data.connected === true) newStatus = 'connected';
       else if (data.status === 'connecting' || data.status === 'pending') newStatus = 'pending_qr';
