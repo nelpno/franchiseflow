@@ -28,7 +28,7 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 3: Prepare Seu Espaço ===
   "3-1": {
-    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial. Freezer vertical também funciona!\n\nMantenha sempre em -18°C ou menos. Produto descongelado = produto perdido.\n\nDicas:\n• Deixe espaço entre os produtos para o ar circular\n• Posicione o freezer em local ventilado, longe do sol\n• Organize por categoria (Massas | Molhos | Outros) para achar tudo rápido",
+    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial. Freezer vertical também funciona!\n\nMantenha sempre em -18°C ou menos. Produto descongelado = produto perdido.\n\nDicas:\n• Deixe espaço entre os produtos para o ar circular\n• Posicione o freezer em local ventilado, longe do sol\n• Use um termômetro digital (R$15-25) para monitorar a temperatura",
   },
   "3-2": {
     text: "Organize por categoria: Massas | Molhos | Outros.\n\nNo app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
@@ -82,9 +82,6 @@ export const ITEM_DETAILS = {
     links: [{ label: "Acessar Drive", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
   },
   "7-2": {
-    text: "O Checklist de Ações Diárias é a sua rotina de vendas. São 4 blocos curtos:\n- Manhã (30min)\n- Meio-Dia (45min)\n- Tarde (45min)\n- Noite (30min)\n\nTotal: cerca de 2h30 por dia. É o coração da operação — quem segue, vende!",
-  },
-  "7-3": {
     text: "Envie uma mensagem de outro celular para o número do WhatsApp Business. O robô deve responder automaticamente. Verifique se a saudação, cardápio e informações estão corretos.\n\nSe algo estiver errado, ajuste em Meu Vendedor no app.",
     links: [{ label: "Ajustar no Meu Vendedor", url: "/FranchiseSettings" }],
   },
