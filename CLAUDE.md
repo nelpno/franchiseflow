@@ -394,6 +394,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 192. `auto_generate_instance_id` trigger suporta múltiplas franquias na mesma cidade — gera sufixo numérico automático (`franquiasaopaulosp`, `franquiasaopaulosp1`, `franquiasaopaulosp2`). NUNCA assumir que evo_id é único por cidade sem sufixo
 193. Toast de erro em operações CRUD DEVE mostrar `error.message` real do Supabase — mensagens genéricas ("Tente novamente") escondem a causa raiz. Pattern: `toast.error(\`Erro: ${error?.message || "Erro desconhecido"}\`)`
 194. Management API token (`sbp_`) pode expirar sem aviso — se retornar "JWT could not be decoded", usar service_role key via PostgREST (`/rest/v1/`) como fallback para queries de diagnóstico
+195. OnboardingBlock `franchiseeItems` filter DEVE incluir `role === "auto"` — sem isso, itens auto são contados no total mas não renderizados (bug: "1 de 3" mas só 1 item visível)
 
 ## Scripts
 ```bash
