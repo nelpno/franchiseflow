@@ -1,12 +1,12 @@
 import { format, differenceInDays, subDays } from "date-fns";
 
 /**
- * Calculates franchise health score (0-100) across 5 dimensions.
+ * Calculates franchise health score (0-100) across 4 dimensions.
  *
  * Dimensions & weights (normal):
- *   Vendas 30%, Estoque 25%, Reposição 20%, Setup 15%, Atividade 10%
+ *   Vendas 35%, Estoque 25%, Reposição 20%, Setup 20%
  *
- * New franchise (<30 days): Setup 40%, Vendas 20%, Estoque 15%, Reposição 15%, Atividade 10%
+ * New franchise (<30 days): Setup 40%, Vendas 25%, Estoque 15%, Reposição 20%
  */
 
 // --- Individual dimension calculators ---
@@ -132,35 +132,6 @@ function calcSetupScore(franchise, onboardingData, configData) {
   return { score, detail, onboardingPct, hasWhatsApp, onboardingComplete };
 }
 
-function calcActivityScore(franchise, checklistData) {
-  const checklists = checklistData.filter(
-    (c) => c.franchise_id === franchise.evolution_instance_id
-  );
-
-  if (checklists.length === 0) return { score: 0, detail: "Nenhum checklist", daysSince: null };
-
-  const completed = checklists
-    .filter((c) => (c.completion_percentage || 0) >= 80)
-    .sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-
-  if (completed.length === 0) return { score: 0, detail: "Nunca completou checklist", daysSince: null };
-
-  const daysSince = differenceInDays(new Date(), new Date(completed[0].date));
-
-  let score;
-  if (daysSince === 0) score = 100;
-  else if (daysSince === 1) score = 70;
-  else if (daysSince === 2) score = 40;
-  else if (daysSince <= 4) score = 20;
-  else score = 0;
-
-  const detail = daysSince === 0
-    ? "Checklist feito hoje"
-    : `Último checklist há ${daysSince} dia${daysSince > 1 ? "s" : ""}`;
-
-  return { score, detail, daysSince };
-}
-
 // --- Main score calculator ---
 
 export function calculateFranchiseHealth(franchise, data) {
@@ -170,32 +141,29 @@ export function calculateFranchiseHealth(franchise, data) {
     orders = [],
     onboarding = [],
     configs = [],
-    checklists = [],
   } = data;
 
   const vendas = calcSalesScore(franchise, sales);
   const estoque = calcInventoryScore(franchise, inventory);
   const reposicao = calcOrdersScore(franchise, orders);
   const setup = calcSetupScore(franchise, onboarding, configs);
-  const atividade = calcActivityScore(franchise, checklists);
 
   const isNew = franchise.created_at &&
     differenceInDays(new Date(), new Date(franchise.created_at)) < 30;
 
   const weights = isNew
-    ? { vendas: 0.20, estoque: 0.15, reposicao: 0.15, setup: 0.40, atividade: 0.10 }
-    : { vendas: 0.30, estoque: 0.25, reposicao: 0.20, setup: 0.15, atividade: 0.10 };
+    ? { vendas: 0.25, estoque: 0.15, reposicao: 0.20, setup: 0.40 }
+    : { vendas: 0.35, estoque: 0.25, reposicao: 0.20, setup: 0.20 };
 
   let total = Math.round(
     vendas.score * weights.vendas +
     estoque.score * weights.estoque +
     reposicao.score * weights.reposicao +
-    setup.score * weights.setup +
-    atividade.score * weights.atividade
+    setup.score * weights.setup
   );
 
   // Penalty: any dimension at 0 pulls total down
-  const dimensions = [vendas, estoque, reposicao, setup, atividade];
+  const dimensions = [vendas, estoque, reposicao, setup];
   const hasZero = dimensions.some((d) => d.score === 0);
   if (hasZero) total -= 10;
 
@@ -212,13 +180,12 @@ export function calculateFranchiseHealth(franchise, data) {
   if (estoque.score < 50 && estoque.zeroCount > 0) problems.push(estoque.detail);
   if (reposicao.score < 50 && reposicao.daysSince !== null) problems.push(reposicao.detail);
   if (setup.score < 50 && !setup.onboardingComplete) problems.push(setup.detail);
-  if (atividade.score < 50 && atividade.daysSince !== null) problems.push(atividade.detail);
 
   return {
     total,
     status,
     isNew,
-    dimensions: { vendas, estoque, reposicao, setup, atividade },
+    dimensions: { vendas, estoque, reposicao, setup },
     weights,
     problems,
   };

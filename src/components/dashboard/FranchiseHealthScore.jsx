@@ -15,11 +15,10 @@ import { Button } from "@/components/ui/button";
  * Calculates and displays a health score (0-100) for each franchise.
  *
  * Score breakdown:
- * - Sales (30 pts): recent sales activity
- * - Inventory (20 pts): stock above minimums
+ * - Sales (35 pts): recent sales activity
+ * - Inventory (25 pts): stock above minimums
  * - Orders (20 pts): recent purchase orders
- * - Checklist (15 pts): daily checklist completion
- * - WhatsApp (15 pts): recent unique contacts
+ * - WhatsApp (20 pts): recent unique contacts
  */
 
 function calculateHealthScore({
@@ -27,7 +26,6 @@ function calculateHealthScore({
   todaySales,
   inventoryItems,
   purchaseOrders,
-  checklistData,
   todayContacts,
 }) {
   const today = new Date();
@@ -41,33 +39,31 @@ function calculateHealthScore({
 
   const evoId = franchise.evolution_instance_id;
 
-  // --- Sales (30 pts) ---
+  // --- Sales (35 pts) ---
   let salesScore = 0;
   const franchiseSales = todaySales.filter((s) => s.franchise_id === evoId);
   if (franchiseSales.length > 0) {
-    // Has sales today or in the data set — check most recent
     const mostRecentDate = franchiseSales.reduce((latest, s) => {
       const d = s.sale_date || s.created_at?.substring(0, 10) || "";
       return d > latest ? d : latest;
     }, "");
 
-    if (mostRecentDate >= sevenDaysAgo) salesScore = 30;
-    else if (mostRecentDate >= fourteenDaysAgo) salesScore = 20;
-    else if (mostRecentDate >= thirtyDaysAgo) salesScore = 10;
+    if (mostRecentDate >= sevenDaysAgo) salesScore = 35;
+    else if (mostRecentDate >= fourteenDaysAgo) salesScore = 23;
+    else if (mostRecentDate >= thirtyDaysAgo) salesScore = 12;
   }
 
-  // --- Inventory (20 pts) ---
+  // --- Inventory (25 pts) ---
   let inventoryScore = 0;
   const items = inventoryItems || [];
   if (items.length > 0) {
     const itemsWithMinStock = items.filter((i) => (i.min_stock || 0) > 0);
     if (itemsWithMinStock.length > 0) {
       const aboveMin = itemsWithMinStock.filter((i) => (i.quantity || 0) >= (i.min_stock || 0)).length;
-      inventoryScore = Math.round((aboveMin / itemsWithMinStock.length) * 20);
+      inventoryScore = Math.round((aboveMin / itemsWithMinStock.length) * 25);
     } else {
-      // No min_stock configured — give partial credit
       const hasStock = items.filter((i) => (i.quantity || 0) > 0).length;
-      inventoryScore = Math.round((hasStock / items.length) * 15);
+      inventoryScore = Math.round((hasStock / items.length) * 19);
     }
   }
 
@@ -85,25 +81,13 @@ function calculateHealthScore({
     else if (mostRecentOrder >= sixtyDaysAgo) ordersScore = 10;
   }
 
-  // --- Checklist (15 pts) ---
-  let checklistScore = 0;
-  if (checklistData) {
-    const items = checklistData.items || {};
-    const values = Object.values(items);
-    if (values.length > 0) {
-      const done = values.filter(Boolean).length;
-      // Full checklist today = 15, partial = proportional
-      checklistScore = Math.round((done / values.length) * 15);
-    }
-  }
-
-  // --- WhatsApp / Contacts (15 pts) ---
+  // --- WhatsApp / Contacts (20 pts) ---
   let contactsScore = 0;
   const franchiseContacts = todayContacts.filter(
     (c) => c.franchise_id === evoId
   );
   if (franchiseContacts.length > 0) {
-    contactsScore = 15;
+    contactsScore = 20;
   }
 
   // --- Detail reasons ---
@@ -155,26 +139,12 @@ function calculateHealthScore({
     }
   }
 
-  let checklistReason = "Checklist de hoje: não preenchido";
-  if (checklistData) {
-    const chkItems = checklistData.items || {};
-    const values = Object.values(chkItems);
-    if (values.length > 0) {
-      const done = values.filter(Boolean).length;
-      if (done === values.length) {
-        checklistReason = "Checklist de hoje: completo";
-      } else {
-        checklistReason = `Checklist de hoje: ${done}/${values.length} itens`;
-      }
-    }
-  }
-
   let contactsReason = "Sem contatos recebidos hoje";
   if (franchiseContacts.length > 0) {
     contactsReason = `${franchiseContacts.length} contato${franchiseContacts.length > 1 ? "s" : ""} recebido${franchiseContacts.length > 1 ? "s" : ""} hoje`;
   }
 
-  const total = salesScore + inventoryScore + ordersScore + checklistScore + contactsScore;
+  const total = salesScore + inventoryScore + ordersScore + contactsScore;
 
   return {
     total,
@@ -182,14 +152,12 @@ function calculateHealthScore({
       sales: salesScore,
       inventory: inventoryScore,
       orders: ordersScore,
-      checklist: checklistScore,
       contacts: contactsScore,
     },
     reasons: {
       sales: salesReason,
       inventory: inventoryReason,
       orders: ordersReason,
-      checklist: checklistReason,
       contacts: contactsReason,
     },
   };
@@ -208,18 +176,16 @@ function getScoreLabel(score) {
 }
 
 const CATEGORY_CONFIG = [
-  { key: "sales", label: "Vendas", max: 30, icon: "point_of_sale", color: "bg-[#a80012]" },
-  { key: "inventory", label: "Estoque", max: 20, icon: "inventory_2", color: "bg-[#775a19]" },
+  { key: "sales", label: "Vendas", max: 35, icon: "point_of_sale", color: "bg-[#a80012]" },
+  { key: "inventory", label: "Estoque", max: 25, icon: "inventory_2", color: "bg-[#775a19]" },
   { key: "orders", label: "Pedidos", max: 20, icon: "local_shipping", color: "bg-[#291715]/60" },
-  { key: "checklist", label: "Checklist", max: 15, icon: "checklist", color: "bg-[#0f766e]" },
-  { key: "contacts", label: "WhatsApp", max: 15, icon: "chat", color: "bg-[#2563eb]" },
+  { key: "contacts", label: "WhatsApp", max: 20, icon: "chat", color: "bg-[#2563eb]" },
 ];
 
 export default function FranchiseHealthScore({
   franchises,
   todaySales,
   inventoryByFranchise,
-  checklistByFranchise,
   purchaseOrders,
   todayContacts,
 }) {
@@ -234,7 +200,6 @@ export default function FranchiseHealthScore({
           todaySales,
           inventoryItems: inventoryByFranchise[f.id] || [],
           purchaseOrders,
-          checklistData: checklistByFranchise[f.id] || null,
           todayContacts,
         });
         return {
@@ -243,7 +208,7 @@ export default function FranchiseHealthScore({
         };
       })
       .sort((a, b) => a.total - b.total); // worst first for attention
-  }, [franchises, todaySales, inventoryByFranchise, checklistByFranchise, purchaseOrders, todayContacts]);
+  }, [franchises, todaySales, inventoryByFranchise, purchaseOrders, todayContacts]);
 
   if (scores.length === 0) return null;
 
@@ -288,13 +253,13 @@ export default function FranchiseHealthScore({
                 <div className="flex gap-0.5 h-1.5 mt-2 rounded-full overflow-hidden">
                   <div
                     className="bg-[#a80012] rounded-l-full"
-                    style={{ width: `${(breakdown.sales / 30) * 100}%` }}
-                    title={`Vendas: ${breakdown.sales}/30`}
+                    style={{ width: `${(breakdown.sales / 35) * 100}%` }}
+                    title={`Vendas: ${breakdown.sales}/35`}
                   />
                   <div
                     className="bg-[#775a19]"
-                    style={{ width: `${(breakdown.inventory / 20) * 100}%` }}
-                    title={`Estoque: ${breakdown.inventory}/20`}
+                    style={{ width: `${(breakdown.inventory / 25) * 100}%` }}
+                    title={`Estoque: ${breakdown.inventory}/25`}
                   />
                   <div
                     className="bg-[#291715]/60"
@@ -302,22 +267,16 @@ export default function FranchiseHealthScore({
                     title={`Pedidos: ${breakdown.orders}/20`}
                   />
                   <div
-                    className="bg-[#0f766e]"
-                    style={{ width: `${(breakdown.checklist / 15) * 100}%` }}
-                    title={`Checklist: ${breakdown.checklist}/15`}
-                  />
-                  <div
                     className="bg-[#2563eb] rounded-r-full"
-                    style={{ width: `${(breakdown.contacts / 15) * 100}%` }}
-                    title={`Contatos: ${breakdown.contacts}/15`}
+                    style={{ width: `${(breakdown.contacts / 20) * 100}%` }}
+                    title={`WhatsApp: ${breakdown.contacts}/20`}
                   />
                 </div>
                 <div className="flex gap-3 mt-1.5 text-xs text-[#1b1c1d]/70 font-medium">
-                  <span>Vendas {breakdown.sales}/{30}</span>
-                  <span>Estoque {breakdown.inventory}/{20}</span>
+                  <span>Vendas {breakdown.sales}/{35}</span>
+                  <span>Estoque {breakdown.inventory}/{25}</span>
                   <span>Pedidos {breakdown.orders}/{20}</span>
-                  <span className="hidden md:inline">Check {breakdown.checklist}/{15}</span>
-                  <span className="hidden md:inline">WhatsApp {breakdown.contacts}/{15}</span>
+                  <span className="hidden md:inline">WhatsApp {breakdown.contacts}/{20}</span>
                 </div>
               </div>
             </div>

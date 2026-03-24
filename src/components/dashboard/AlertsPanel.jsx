@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 const LEVEL_ORDER = { red: 0, yellow: 1 };
 
-export default function AlertsPanel({ franchises, summaries, inventoryByFranchise, checklistByFranchise, purchaseOrders }) {
+export default function AlertsPanel({ franchises, summaries, inventoryByFranchise, purchaseOrders }) {
   const alerts = useMemo(() => {
     const result = [];
     const twoDaysAgo = subDays(new Date(), 2);
@@ -62,18 +62,6 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         });
       }
 
-      if (!checklistByFranchise?.[franchise.id]) {
-        result.push({
-          level: "yellow",
-          franchise: fName,
-          franchiseId: franchise.id,
-          description: "Checklist de abertura não foi realizado hoje",
-          action: "Ver franquia",
-          actionUrl: createPageUrl("Franchises"),
-          icon: "checklist",
-        });
-      }
-
       // Purchase order alert: no order in 30+ days
       const franchiseOrders = (purchaseOrders || []).filter(
         (po) =>
@@ -101,7 +89,7 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
     }
 
     return result.sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
-  }, [franchises, summaries, inventoryByFranchise, checklistByFranchise, purchaseOrders]);
+  }, [franchises, summaries, inventoryByFranchise, purchaseOrders]);
 
   const navigate = useNavigate();
 

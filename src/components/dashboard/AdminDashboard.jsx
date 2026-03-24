@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, DailyChecklist, PurchaseOrder } from "@/entities/all";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -22,7 +22,6 @@ export default function AdminDashboard() {
   const [yesterdaySales, setYesterdaySales] = useState([]);
   const [yesterdayContacts, setYesterdayContacts] = useState([]);
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
-  const [checklistByFranchise, setChecklistByFranchise] = useState({});
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
@@ -62,11 +61,8 @@ export default function AdminDashboard() {
       setYesterdaySales(yesterdaySaleData);
       setPurchaseOrders(purchaseOrderData);
 
-      // Fetch ALL inventory and checklists in 2 queries (instead of N*2)
-      const [allInventory, allChecklists] = await Promise.all([
-        InventoryItem.list(),
-        DailyChecklist.filter({ date: today }),
-      ]);
+      // Fetch ALL inventory in 1 query (instead of N)
+      const allInventory = await InventoryItem.list();
 
       // Group inventory by franchise UUID (using evoId → franchise.id mapping)
       const evoToId = {};
@@ -83,15 +79,8 @@ export default function AdminDashboard() {
         }
       });
 
-      const checklistMap = {};
-      allChecklists.forEach((cl) => {
-        const fUuid = evoToId[cl.franchise_id];
-        if (fUuid) checklistMap[fUuid] = cl;
-      });
-
       if (!mountedRef.current) return;
       setInventoryByFranchise(inventoryMap);
-      setChecklistByFranchise(checklistMap);
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard admin:", err);
@@ -354,7 +343,6 @@ export default function AdminDashboard() {
         franchises={franchises}
         summaries={summaries}
         inventoryByFranchise={inventoryByFranchise}
-        checklistByFranchise={checklistByFranchise}
         purchaseOrders={purchaseOrders}
       />
 
@@ -368,7 +356,6 @@ export default function AdminDashboard() {
         franchises={franchises}
         todaySales={todaySales}
         inventoryByFranchise={inventoryByFranchise}
-        checklistByFranchise={checklistByFranchise}
         purchaseOrders={purchaseOrders}
         todayContacts={todayContacts}
       />
