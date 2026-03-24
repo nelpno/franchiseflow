@@ -28,7 +28,7 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 3: Prepare Seu Espaço ===
   "3-1": {
-    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial de 28 produtos. Freezer vertical também funciona, desde que mantenha a temperatura adequada.\n\nTemperatura: -18°C ou menos. Verifique diariamente. Produto descongelado = produto perdido.\n\nDicas importantes:\n• Não sobrecarregue — deixe espaço para o ar circular\n• Use um termômetro digital (R$15-25 no Mercado Livre) para monitorar\n• Posicione o freezer em local ventilado, longe de luz solar direta\n• Organize por categoria (Massas | Molhos | Outros) para facilitar o dia a dia",
+    text: "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial. Freezer vertical também funciona!\n\nMantenha sempre em -18°C ou menos. Produto descongelado = produto perdido.\n\nDicas:\n• Deixe espaço entre os produtos para o ar circular\n• Posicione o freezer em local ventilado, longe do sol\n• Organize por categoria (Massas | Molhos | Outros) para achar tudo rápido",
   },
   "3-2": {
     text: "Organize por categoria: Massas | Molhos | Outros.\n\nNo app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
@@ -94,14 +94,13 @@ export const ITEM_DETAILS = {
     text: "O franqueador cuida da criação do Facebook, Instagram, vinculação do WhatsApp e configuração do Meta Business Suite. Será marcado quando tudo estiver pronto.",
   },
   "8-2": {
-    text: "Acesse o Meta Business Suite (business.facebook.com) e aprenda a ver:\n- Alcance (quantas pessoas viram seus posts)\n- Engajamento (curtidas, comentários)\n- Resultados dos anúncios (leads, custo por lead)\n\nTem um vídeo sobre isso no Drive!",
-    links: [{ label: "Vídeos Meta Business Suite", url: "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU?usp=drive_link" }],
+    text: "No Drive tem uma pasta com vídeos tutoriais do Meta Business Suite. Assista na ordem:\n\n1. Meta Business Suite — visão geral da ferramenta\n2. Menu Lateral — onde fica cada coisa\n3. Planner — como agendar seus posts\n4. Planner Reforço — dicas extras para programar conteúdo\n\nDepois de assistir, acesse business.facebook.com e explore:\n- Alcance (quantas pessoas viram seus posts)\n- Engajamento (curtidas, comentários)\n- Resultados dos anúncios (leads, custo por lead)",
+    links: [{ label: "Assistir Vídeos Tutoriais", url: "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU?usp=drive_link" }],
   },
   "8-3": {
-    text: "O material de conteúdo está no Drive. O franqueador já preparou as artes do primeiro mês — você só precisa agendar nos horários recomendados.\n\nAssista o vídeo tutorial do Planner para aprender a programar seus posts!\n\nTambém tem artes prontas na seção Marketing do app!",
+    text: "O franqueador já preparou artes prontas para você usar! No Drive tem:\n\n- Artes por ano (2023 a 2026) — posts mensais já prontos\n- Postagens Neutras — servem para qualquer época\n- Reels Neutros — vídeos curtos para Instagram\n- Destaques do Instagram — capas para organizar seu perfil\n- Stories Feedback — modelos de stories com depoimentos\n- Vídeos Influencer — conteúdo com influenciadores\n\nBaixe as artes, agende no Planner do Meta Business Suite e pronto!\n\nTambém tem artes prontas na seção Marketing do app!",
     links: [
-      { label: "Vídeo Tutorial do Planner", url: "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU?usp=drive_link" },
-      { label: "Acessar Drive", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" },
+      { label: "Artes Redes Sociais", url: "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC?usp=drive_link" },
       { label: "Abrir Marketing no app", url: "/Marketing" },
     ],
   },

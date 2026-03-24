@@ -52,7 +52,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
   const isComplete = checkedCount === total;
 
   // Separate franchisee items from franchisor items
-  const franchiseeItems = blockItems.filter(i => i.role === "franchisee" || i.role === "both");
+  const franchiseeItems = blockItems.filter(i => i.role === "franchisee" || i.role === "both" || i.role === "auto");
   const franchisorItems = blockItems.filter(i => i.role === "franchisor");
 
   // Micro-celebration: detect completion transition
