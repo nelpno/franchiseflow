@@ -122,6 +122,27 @@ async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
   await supabase.from('franchise_invites').delete().eq('franchise_id', evoId);
   // franchise_notes tem ON DELETE CASCADE no banco, deletada automaticamente
 
+  // Deletar franqueados vinculados (role=franchisee cujo ÚNICO vínculo é esta franquia)
+  const { data: linkedUsers } = await supabase
+    .from('profiles')
+    .select('id, managed_franchise_ids, role')
+    .or(`managed_franchise_ids.cs.{${franchiseId}},managed_franchise_ids.cs.{${evoId}}`);
+
+  for (const user of (linkedUsers || [])) {
+    if (user.role !== 'franchisee') continue;
+    // Remover esta franquia dos vínculos
+    const remaining = (user.managed_franchise_ids || []).filter(
+      id => id !== franchiseId && id !== evoId
+    );
+    if (remaining.length === 0) {
+      // Sem outras franquias → deletar usuário completamente
+      await supabase.rpc('delete_user_complete', { p_user_id: user.id });
+    } else {
+      // Tem outras franquias → apenas desvincular
+      await supabase.from('profiles').update({ managed_franchise_ids: remaining }).eq('id', user.id);
+    }
+  }
+
   // Finalmente deletar a franquia
   const { error } = await supabase.from('franchises').delete().eq('id', franchiseId);
   if (error) throw error;
