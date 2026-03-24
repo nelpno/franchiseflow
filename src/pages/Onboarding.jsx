@@ -129,7 +129,7 @@ export default function Onboarding() {
         auto["6-1"] = true;
       }
       // 6-3: Has any inventory with stock > 0
-      if (inventory.some(i => (i.current_stock || 0) > 0)) {
+      if (inventory.some(i => (i.quantity || 0) > 0)) {
         auto["6-3"] = true;
       }
     } catch (err) {
@@ -140,10 +140,12 @@ export default function Onboarding() {
 
   const loadFranchiseChecklist = async (franchise) => {
     // Parallel: checklist + auto-detect (saves ~1 round trip)
+    // Admin: use cached allChecklists to avoid redundant DB query
+    const cachedForAdmin = allChecklists.filter(c => c.franchise_id === franchise.evolution_instance_id);
     const [existing, autoItems] = await Promise.all([
-      OnboardingChecklist.filter({
-        franchise_id: franchise.evolution_instance_id,
-      }),
+      cachedForAdmin.length > 0
+        ? cachedForAdmin
+        : OnboardingChecklist.filter({ franchise_id: franchise.evolution_instance_id }),
       detectAutoItems(franchise.evolution_instance_id),
     ]);
 
@@ -183,8 +185,14 @@ export default function Onboarding() {
     if (!franchise) return;
     setSelectedFranchise(franchise);
     setIsLoading(true);
-    await loadFranchiseChecklist(franchise);
-    setIsLoading(false);
+    try {
+      await loadFranchiseChecklist(franchise);
+    } catch (error) {
+      console.error("Erro ao carregar checklist:", error);
+      toast.error("Erro ao carregar onboarding.");
+    } finally {
+      if (mountedRef.current) setIsLoading(false);
+    }
   };
 
   const handleDeleteOnboarding = async () => {
