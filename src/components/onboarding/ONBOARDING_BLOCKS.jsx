@@ -54,7 +54,8 @@ export const BLOCKS = [
     color: "#F57C00",
     icon: "smart_toy",
     items: [
-      { key: "5-1", label: "Formulário 'Meu Vendedor' preenchido por completo no app", role: "auto" },
+      { key: "5-1", label: "Cardápio personalizado criado no Canva", role: "franchisee" },
+      { key: "5-2", label: "Formulário 'Meu Vendedor' preenchido por completo no app", role: "auto" },
     ],
   },
   {

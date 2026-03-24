@@ -119,10 +119,10 @@ export default function Onboarding() {
         PurchaseOrder.filter({ franchise_id: evoId }),
         InventoryItem.filter({ franchise_id: evoId }),
       ]);
-      // 5-1: Wizard complete if config has required fields
+      // 5-2: Wizard complete if config has required fields
       const cfg = configs[0];
       if (cfg && cfg.unit_address && cfg.pix_key && cfg.delivery_radius != null) {
-        auto["5-1"] = true;
+        auto["5-2"] = true;
       }
       // 6-1: Has at least one purchase order
       if (orders.length > 0) {

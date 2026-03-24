@@ -53,7 +53,11 @@ export const ITEM_DETAILS = {
 
   // === MISSÃO 5: Configure Seu Vendedor ===
   "5-1": {
-    text: "Essa é a missão mais importante! No menu lateral, clique em 'Meu Vendedor' e preencha o formulário completo (6 passos).\n\nEle configura de uma vez:\n- Dados da sua unidade\n- Horários de funcionamento\n- Formas de pagamento e PIX\n- Raio e taxa de entrega\n- Catálogo de produtos (foto JPG)\n\nQuando terminar, seu robô de vendas estará pronto para atender clientes 24h!\n\nEste item marca automaticamente quando o formulário estiver completo.",
+    text: "Você tem um modelo pronto de cardápio no Canva! Siga os passos:\n\n1. Abra o link abaixo (precisa ter conta no Canva — é grátis)\n2. Clique em \"Arquivo\" → \"Fazer uma cópia\"\n3. O modelo vai aparecer no seu Canva pessoal\n4. Edite com os dados da sua unidade (cidade, telefone, preços se diferentes)\n5. Quando terminar, exporte como JPG (Compartilhar → Baixar → JPG)\n\nEsse cardápio será usado no catálogo do WhatsApp e no robô de vendas (próximo passo).",
+    links: [{ label: "Abrir template no Canva", url: "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" }],
+  },
+  "5-2": {
+    text: "Essa é a missão mais importante! No menu lateral, clique em 'Meu Vendedor' e preencha o formulário completo (6 passos).\n\nEle configura de uma vez:\n- Dados da sua unidade\n- Horários de funcionamento\n- Formas de pagamento e PIX\n- Raio e taxa de entrega\n- Catálogo de produtos (foto JPG do cardápio que você criou no Canva)\n\nQuando terminar, seu robô de vendas estará pronto para atender clientes 24h!\n\nEste item marca automaticamente quando o formulário estiver completo.",
     links: [{ label: "Abrir Meu Vendedor", url: "/FranchiseSettings" }],
   },
 
