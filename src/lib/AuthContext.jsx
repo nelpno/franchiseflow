@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFranchise, setSelectedFranchiseState] = useState(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(
-    () => localStorage.getItem('needs_password_setup') === 'true'
+    () => sessionStorage.getItem('needs_password_setup') === 'true'
   );
 
   // Persist selected franchise to localStorage
@@ -24,8 +24,8 @@ export const AuthProvider = ({ children }) => {
 
   const clearPasswordSetup = useCallback(() => {
     setNeedsPasswordSetup(false);
-    localStorage.removeItem('needs_password_setup');
-    localStorage.removeItem('password_setup_type');
+    sessionStorage.removeItem('needs_password_setup');
+    sessionStorage.removeItem('password_setup_type');
   }, []);
 
   const loadUserProfile = useCallback(async (authUser) => {
@@ -55,15 +55,33 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     } catch (error) {
       console.error('[Auth] Error loading profile:', error);
-      // Fallback: use auth user data without profile
-      setUser({
-        id: authUser.id,
-        email: authUser.email,
-        full_name: authUser.email,
-        role: 'franchisee',
-        managed_franchise_ids: [],
-      });
-      setIsAuthenticated(true);
+      // Retry once before falling back
+      try {
+        const { data: retryProfile, error: retryError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+        if (retryError) throw retryError;
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+          full_name: retryProfile?.full_name || authUser.email,
+          role: retryProfile?.role || 'franchisee',
+          managed_franchise_ids: retryProfile?.managed_franchise_ids || [],
+        });
+        setIsAuthenticated(true);
+      } catch (retryErr) {
+        console.error('[Auth] Retry failed, using fallback:', retryErr);
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+          full_name: authUser.email,
+          role: 'franchisee',
+          managed_franchise_ids: [],
+        });
+        setIsAuthenticated(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -79,8 +97,8 @@ export const AuthProvider = ({ children }) => {
 
     if (type === 'invite' || type === 'recovery') {
       setNeedsPasswordSetup(true);
-      localStorage.setItem('needs_password_setup', 'true');
-      localStorage.setItem('password_setup_type', type);
+      sessionStorage.setItem('needs_password_setup', 'true');
+      sessionStorage.setItem('password_setup_type', type);
     }
 
     const initAuth = async () => {
@@ -121,8 +139,8 @@ export const AuthProvider = ({ children }) => {
       async (event, session) => {
         if (event === 'PASSWORD_RECOVERY' && session?.user) {
           setNeedsPasswordSetup(true);
-          localStorage.setItem('needs_password_setup', 'true');
-          localStorage.setItem('password_setup_type', 'recovery');
+          sessionStorage.setItem('needs_password_setup', 'true');
+          sessionStorage.setItem('password_setup_type', 'recovery');
           await loadUserProfile(session.user);
         } else if (event === 'SIGNED_IN' && session?.user) {
           await loadUserProfile(session.user);
