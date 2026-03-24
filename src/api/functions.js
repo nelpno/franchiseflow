@@ -45,7 +45,7 @@ export async function inviteFranchisee(email) {
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/franchise-invite`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, redirectTo: window.location.origin + '/set-password?type=invite' })
   });
   if (!response.ok) throw new Error('Erro ao enviar convite: ' + response.status);
   return response.json();

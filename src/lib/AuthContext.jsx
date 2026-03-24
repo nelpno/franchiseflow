@@ -107,7 +107,15 @@ export const AuthProvider = ({ children }) => {
         const code = searchParams.get('code');
         if (code) {
           try {
-            await supabase.auth.exchangeCodeForSession(code);
+            const { data } = await supabase.auth.exchangeCodeForSession(code);
+            // Detect invite: PKCE doesn't pass type=invite in URL
+            // If code exchange succeeded, no type was detected from URL,
+            // and user hasn't set password yet → this is an invite
+            if (data?.user && !type && !data.user.user_metadata?.password_set) {
+              setNeedsPasswordSetup(true);
+              sessionStorage.setItem('needs_password_setup', 'true');
+              sessionStorage.setItem('password_setup_type', 'invite');
+            }
             // Clean URL params after exchange
             window.history.replaceState({}, '', window.location.pathname);
           } catch (e) {

@@ -14,7 +14,7 @@ export default function SetPassword() {
   const { clearPasswordSetup } = useAuth();
   const navigate = useNavigate();
 
-  const isRecovery = localStorage.getItem('password_setup_type') === 'recovery';
+  const isRecovery = sessionStorage.getItem('password_setup_type') === 'recovery';
 
   const hasUppercase = /[A-Z]/.test(password);
   const hasLowercase = /[a-z]/.test(password);
@@ -36,12 +36,12 @@ export default function SetPassword() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({ password, data: { password_set: true } });
       if (error) throw error;
 
       toast.success(isRecovery ? 'Senha redefinida com sucesso!' : 'Senha criada com sucesso! Bem-vindo!');
       clearPasswordSetup();
-      localStorage.removeItem('password_setup_type');
+      sessionStorage.removeItem('password_setup_type');
       navigate(isRecovery ? '/' : '/OnboardingWelcome');
     } catch (error) {
       toast.error('Erro ao definir senha: ' + error.message);
