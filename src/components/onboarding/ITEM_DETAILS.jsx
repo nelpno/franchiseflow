@@ -95,10 +95,10 @@ export const ITEM_DETAILS = {
     links: [{ label: "Assistir Vídeos Tutoriais", url: "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU?usp=drive_link" }],
   },
   "8-3": {
-    text: "O franqueador já preparou artes prontas para você usar! No Drive tem:\n\n- Artes por ano (2023 a 2026) — posts mensais já prontos\n- Postagens Neutras — servem para qualquer época\n- Reels Neutros — vídeos curtos para Instagram\n- Destaques do Instagram — capas para organizar seu perfil\n- Stories Feedback — modelos de stories com depoimentos\n- Vídeos Influencer — conteúdo com influenciadores\n\nBaixe as artes, agende no Planner do Meta Business Suite e pronto!\n\nTambém tem artes prontas na seção Marketing do app!",
+    text: "Você tem dois lugares com artes prontas:\n\n📱 Marketing no app — aqui ficam as postagens do mês atual. Abra, baixe e poste!\n\n📁 Drive Artes Redes Sociais — banco completo com todo o acervo:\n- Artes por ano (2023 a 2026) — posts de meses anteriores\n- Postagens Neutras — servem para qualquer época\n- Reels Neutros — vídeos curtos para Instagram\n- Destaques do Instagram — capas para organizar seu perfil\n- Stories Feedback — modelos de stories com depoimentos\n- Vídeos Influencer — conteúdo com influenciadores\n\nRotina: todo mês, abra o Marketing no app, baixe as artes novas e agende no Planner do Meta Business Suite.",
     links: [
-      { label: "Artes Redes Sociais", url: "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC?usp=drive_link" },
-      { label: "Abrir Marketing no app", url: "/Marketing" },
+      { label: "Postagens do Mês (Marketing)", url: "/Marketing" },
+      { label: "Acervo Completo (Drive)", url: "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC?usp=drive_link" },
     ],
   },
 
