@@ -371,6 +371,12 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 170. n8n API PUT `/workflows/{id}` settings aceita apenas campos conhecidos (`executionOrder`, `callerPolicy`) — `availableInMCP`, `binaryMode` causam 400. Não incluir `staticData` também
 171. EnviaPedidoFechado V2 validado em produção (24/03): 8 nós OK, matching correto, sale_items com product_name, WhatsApp enviado
 172. EnviaPedidoFechado V2 "Prepare Sale Data": `valor_total` do `$fromAI()` pode vir 0 — nó calcula `sum(qty * price) + frete` dos itens como fallback. NUNCA confiar apenas no total do agente
+173. Deploy Portainer: SEMPRE seguir ordem `git push` → force update service. Sem push, container rebuilda código antigo do GitHub — NÃO adianta só fazer force update
+174. `deleteFranchiseCascade` usa evoId para TODAS as tabelas (incluindo sales) — NUNCA usar UUID para deletar sales, contacts, expenses etc. Única exceção: `franchises.delete().eq('id', franchiseId)` no final
+175. `deleteFranchiseCascade` também deleta franqueados vinculados (role=franchisee sem outras franquias) via RPC `delete_user_complete` — admins/gerentes nunca são deletados
+176. Tabelas com RLS ativo DEVEM ter DELETE policy para admin — sem ela, `.delete()` retorna sucesso mas deleta 0 rows (silencioso). Verificar ao criar tabela nova
+177. `delete_user_complete(p_user_id UUID)`: RPC SECURITY DEFINER que limpa notifications + audit_logs + auth.users (cascadeia profiles). Requer is_admin(). SQL: `supabase/delete-user-rpc.sql`
+178. `sales_goals` tem FK para `franchises.evolution_instance_id` — incluída no cascade delete. DELETE policy criada em 24/03
 
 ## Scripts
 ```bash
