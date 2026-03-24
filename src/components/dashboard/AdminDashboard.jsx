@@ -33,15 +33,7 @@ export default function AdminDashboard() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [
-        franchiseData,
-        summaryData,
-        todayContactData,
-        yesterdayContactData,
-        todaySaleData,
-        yesterdaySaleData,
-        purchaseOrderData,
-      ] = await Promise.all([
+      const results = await Promise.allSettled([
         Franchise.list("city"),
         DailySummary.list("-date", 365),
         DailyUniqueContact.filter({ date: today }),
@@ -53,6 +45,30 @@ export default function AdminDashboard() {
 
       if (!mountedRef.current) return;
 
+      const getValue = (r) => r.status === "fulfilled" ? r.value : [];
+      const franchiseData = getValue(results[0]);
+      const summaryData = getValue(results[1]);
+      const todayContactData = getValue(results[2]);
+      const yesterdayContactData = getValue(results[3]);
+      const todaySaleData = getValue(results[4]);
+      const yesterdaySaleData = getValue(results[5]);
+      const purchaseOrderData = getValue(results[6]);
+
+      // Log individual failures without blocking the dashboard
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
+      // Franchises is critical — if it failed, show error state
+      if (results[0].status === "rejected") {
+        setLoadError("Erro ao carregar franquias. Tente novamente.");
+        return;
+      }
+
       setFranchises(franchiseData);
       setSummaries(summaryData);
       setTodayContacts(todayContactData);
@@ -62,7 +78,14 @@ export default function AdminDashboard() {
       setPurchaseOrders(purchaseOrderData);
 
       // Fetch ALL inventory in 1 query (instead of N)
-      const allInventory = await InventoryItem.list();
+      let allInventory = [];
+      try {
+        allInventory = await InventoryItem.list();
+      } catch (invErr) {
+        console.warn("Falha ao carregar estoque:", invErr);
+      }
+
+      if (!mountedRef.current) return;
 
       // Group inventory by franchise UUID (using evoId → franchise.id mapping)
       const evoToId = {};
@@ -79,7 +102,6 @@ export default function AdminDashboard() {
         }
       });
 
-      if (!mountedRef.current) return;
       setInventoryByFranchise(inventoryMap);
     } catch (err) {
       if (!mountedRef.current) return;
