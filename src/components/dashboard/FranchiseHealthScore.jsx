@@ -405,7 +405,7 @@ export default function FranchiseHealthScore({
                 <Button
                   onClick={() => {
                     setSelectedScore(null);
-                    navigate("/Franchises");
+                    navigate("/Acompanhamento");
                   }}
                   className="w-full bg-[#a80012] hover:bg-[#8b0010] text-white font-bold rounded-xl"
                 >
