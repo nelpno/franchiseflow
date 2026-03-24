@@ -133,7 +133,8 @@ export default function Franchises() {
       loadData();
     } catch (error) {
       console.error("Erro ao criar franquia:", error);
-      toast.error("Erro ao criar franquia. Tente novamente.");
+      const msg = error?.message || error?.details || "Erro desconhecido";
+      toast.error(`Erro ao criar franquia: ${msg}`);
     }
     setIsSubmitting(false);
   };
