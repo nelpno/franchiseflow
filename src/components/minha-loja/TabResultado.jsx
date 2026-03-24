@@ -65,18 +65,28 @@ export default function TabResultado({ franchiseId, currentUser }) {
     if (!franchiseId) return;
     setLoading(true);
     try {
-      const [salesData, saleItemsData, expensesData, inventoryData, auditData] = await Promise.all([
+      const results = await Promise.allSettled([
         Sale.filter({ franchise_id: franchiseId }),
         SaleItem.list(),
         Expense.filter({ franchise_id: franchiseId }),
         InventoryItem.filter({ franchise_id: franchiseId }),
         AuditLog.filter({ franchise_id: franchiseId }, "-created_at", 20),
       ]);
-      setSales(salesData);
-      setSaleItems(saleItemsData);
-      setExpenses(expensesData);
-      setInventoryItems(inventoryData);
-      setAuditLogs(auditData);
+
+      const getValue = (r) => r.status === "fulfilled" ? r.value : [];
+      setSales(getValue(results[0]));
+      setSaleItems(getValue(results[1]));
+      setExpenses(getValue(results[2]));
+      setInventoryItems(getValue(results[3]));
+      setAuditLogs(getValue(results[4]));
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["vendas","itens","despesas","estoque","auditoria"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados do resultado.");

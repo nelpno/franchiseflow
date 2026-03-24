@@ -100,14 +100,27 @@ function FranchiseSettingsContent() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [configsData, franchisesData, currentUserData] = await Promise.all([
+      const results = await Promise.allSettled([
         FranchiseConfiguration.list(),
         Franchise.list(),
         User.me()
       ]);
+
+      const configsData = results[0].status === "fulfilled" ? results[0].value : [];
+      const franchisesData = results[1].status === "fulfilled" ? results[1].value : [];
+      const currentUserData = results[2].status === "fulfilled" ? results[2].value : null;
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["configs","franchises","user"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
       setConfigurations(configsData);
       setFranchises(franchisesData);
-      setCurrentUser(currentUserData);
+      if (currentUserData) setCurrentUser(currentUserData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar configurações. Por favor, recarregue a página.");

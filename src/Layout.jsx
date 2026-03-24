@@ -218,10 +218,12 @@ export default function Layout({ children, currentPageName }) {
   const loadQuickStats = async () => {
     try {
       const today = format(new Date(), "yyyy-MM-dd");
-      const [contactsData, salesData] = await Promise.all([
+      const results = await Promise.allSettled([
         DailyUniqueContact.filter({ date: today }),
         Sale.list("-sale_date", 50),
       ]);
+      const contactsData = results[0].status === "fulfilled" ? results[0].value : [];
+      const salesData = results[1].status === "fulfilled" ? results[1].value : [];
       setTodayContacts(contactsData.length);
       const todaySalesCount = salesData.filter((s) => s.sale_date === today).length;
       setTodaySales(todaySalesCount);

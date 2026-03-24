@@ -113,11 +113,23 @@ export default function PurchaseOrders() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [ordersData, franchisesData] = await Promise.all([
+      const results = await Promise.allSettled([
         PurchaseOrder.list("-ordered_at"),
         Franchise.list(),
       ]);
       if (!mountedRef.current) return;
+
+      const ordersData = results[0].status === "fulfilled" ? results[0].value : [];
+      const franchisesData = results[1].status === "fulfilled" ? results[1].value : [];
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["pedidos","franquias"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
       setOrders(ordersData);
       setFranchises(franchisesData);
     } catch (error) {

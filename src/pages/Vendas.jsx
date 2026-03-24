@@ -38,11 +38,14 @@ export default function Vendas() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [userData, franchisesData] = await Promise.all([
+      const [userResult, franchisesResult] = await Promise.allSettled([
         User.me(),
         Franchise.list(),
       ]);
       if (!mountedRef.current) return;
+      const userData = userResult.status === "fulfilled" ? userResult.value : null;
+      const franchisesData = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
+      if (!userData) throw new Error("Não foi possível carregar usuário");
       setCurrentUser(userData);
       setFranchises(franchisesData);
 
@@ -78,16 +81,17 @@ export default function Vendas() {
 
   const handleRefreshSales = async () => {
     try {
-      const [salesData, saleItemsData, contactsData, inventoryData] = await Promise.all([
+      const refreshResults = await Promise.allSettled([
         Sale.list("-created_at", 500),
         SaleItem.list('-created_at', 500),
         Contact.list('-created_at', 200),
         InventoryItem.list("-updated_at"),
       ]);
-      setSales(salesData);
-      setSaleItems(saleItemsData);
-      setContacts(contactsData);
-      setInventoryItems(inventoryData);
+      const getVal = (r) => r.status === "fulfilled" ? r.value : [];
+      setSales(getVal(refreshResults[0]));
+      setSaleItems(getVal(refreshResults[1]));
+      setContacts(getVal(refreshResults[2]));
+      setInventoryItems(getVal(refreshResults[3]));
     } catch (error) {
       console.error("Erro ao recarregar vendas:", error);
     }

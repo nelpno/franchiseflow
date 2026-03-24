@@ -78,10 +78,13 @@ export default function Onboarding() {
     setLoadError(null);
     try {
       // Parallel: user + franchises (saves ~1 round trip)
-      const [user, allFranchises] = await Promise.all([
+      const [userResult, franchisesResult] = await Promise.allSettled([
         User.me(),
         Franchise.list(),
       ]);
+      const user = userResult.status === "fulfilled" ? userResult.value : null;
+      const allFranchises = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
+      if (!user) throw new Error("Não foi possível carregar usuário");
       if (!mountedRef.current) return;
       setCurrentUser(user);
 
@@ -114,11 +117,14 @@ export default function Onboarding() {
   const detectAutoItems = async (evoId) => {
     const auto = { "1-1": true, "1-2": true }; // Always done when franchisee has access
     try {
-      const [configs, orders, inventory] = await Promise.all([
+      const autoResults = await Promise.allSettled([
         FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }),
         PurchaseOrder.filter({ franchise_id: evoId }),
         InventoryItem.filter({ franchise_id: evoId }),
       ]);
+      const configs = autoResults[0].status === "fulfilled" ? autoResults[0].value : [];
+      const orders = autoResults[1].status === "fulfilled" ? autoResults[1].value : [];
+      const inventory = autoResults[2].status === "fulfilled" ? autoResults[2].value : [];
       // 5-2: Wizard complete if config has required fields
       const cfg = configs[0];
       if (cfg && cfg.unit_address && cfg.pix_key && cfg.delivery_radius != null) {
@@ -142,12 +148,14 @@ export default function Onboarding() {
     // Parallel: checklist + auto-detect (saves ~1 round trip)
     // Admin: use cached allChecklists to avoid redundant DB query
     const cachedForAdmin = allChecklists.filter(c => c.franchise_id === franchise.evolution_instance_id);
-    const [existing, autoItems] = await Promise.all([
+    const [existingResult, autoItemsResult] = await Promise.allSettled([
       cachedForAdmin.length > 0
-        ? cachedForAdmin
+        ? Promise.resolve(cachedForAdmin)
         : OnboardingChecklist.filter({ franchise_id: franchise.evolution_instance_id }),
       detectAutoItems(franchise.evolution_instance_id),
     ]);
+    const existing = existingResult.status === "fulfilled" ? existingResult.value : [];
+    const autoItems = autoItemsResult.status === "fulfilled" ? autoItemsResult.value : {};
 
     if (existing.length > 0) {
       const cl = existing[0];

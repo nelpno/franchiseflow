@@ -43,11 +43,14 @@ export default function Gestao() {
       setLoadError(null);
 
       // Dados críticos — sem eles a página não funciona
-      const [userData, franchisesData] = await Promise.all([
+      const [userResult, franchisesResult] = await Promise.allSettled([
         User.me(),
         Franchise.list(),
       ]);
       if (!mountedRef.current) return;
+      const userData = userResult.status === "fulfilled" ? userResult.value : null;
+      const franchisesData = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
+      if (!userData) throw new Error("Não foi possível carregar usuário");
       setCurrentUser(userData);
       setFranchises(franchisesData);
 

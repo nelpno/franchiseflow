@@ -52,8 +52,7 @@ export default function Acompanhamento() {
         return;
       }
 
-      const [allFranchises, sales, inventory, orders, onboarding, configs, checklists, notes] =
-        await Promise.all([
+      const results = await Promise.allSettled([
           Franchise.list(),
           Sale.list("-created_at", 1000),
           InventoryItem.list("franchise_id", 3000),
@@ -65,6 +64,31 @@ export default function Acompanhamento() {
         ]);
 
       if (!mountedRef.current) return;
+
+      const getValue = (r) => r.status === "fulfilled" ? r.value : [];
+      const allFranchises = getValue(results[0]);
+      const sales = getValue(results[1]);
+      const inventory = getValue(results[2]);
+      const orders = getValue(results[3]);
+      const onboarding = getValue(results[4]);
+      const configs = getValue(results[5]);
+      const checklists = getValue(results[6]);
+      const notes = getValue(results[7]);
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["franchises","sales","inventory","orders","onboarding","configs","checklists","notes"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
+      // Franchises is critical
+      if (results[0].status === "rejected") {
+        setLoadError("Erro ao carregar franquias. Tente novamente.");
+        if (mountedRef.current) setIsLoading(false);
+        return;
+      }
 
       const data = { sales, inventory, orders, onboarding, configs, checklists };
 

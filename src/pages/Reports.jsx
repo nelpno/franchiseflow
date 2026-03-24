@@ -46,7 +46,7 @@ function ReportsContent() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [currentUserData, franchisesData, salesData, contactsData, dailyContactsData, summariesData] = await Promise.all([
+      const results = await Promise.allSettled([
         User.me(),
         Franchise.list(),
         Sale.list('-sale_date', 200),
@@ -56,12 +56,29 @@ function ReportsContent() {
       ]);
 
       if (!mountedRef.current) return;
-      setCurrentUser(currentUserData);
-      setFranchises(franchisesData);
-      setRawSales(salesData);
-      setRawContacts(contactsData);
-      setRawDailyContacts(dailyContactsData);
-      setRawSummaries(summariesData);
+
+      const getValue = (r) => r.status === "fulfilled" ? r.value : (r.value === undefined ? null : []);
+      const currentUserData = results[0].status === "fulfilled" ? results[0].value : null;
+      const franchisesData = getValue(results[1]);
+      const salesData = getValue(results[2]);
+      const contactsData = getValue(results[3]);
+      const dailyContactsData = getValue(results[4]);
+      const summariesData = getValue(results[5]);
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["user","franchises","sales","contacts","dailyContacts","summaries"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
+      if (currentUserData) setCurrentUser(currentUserData);
+      setFranchises(franchisesData || []);
+      setRawSales(salesData || []);
+      setRawContacts(contactsData || []);
+      setRawDailyContacts(dailyContactsData || []);
+      setRawSummaries(summariesData || []);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       if (!mountedRef.current) return;

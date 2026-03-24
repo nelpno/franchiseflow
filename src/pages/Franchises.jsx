@@ -66,7 +66,7 @@ export default function Franchises() {
     setLoadError(null);
     try {
       const todayStr = format(new Date(), "yyyy-MM-dd");
-      const [franchisesData, dailyContactsToday, usersData, currentUserData] = await Promise.all([
+      const results = await Promise.allSettled([
         Franchise.list(),
         DailyUniqueContact.filter({ date: todayStr }),
         User.list(),
@@ -74,6 +74,21 @@ export default function Franchises() {
       ]);
 
       if (!mountedRef.current) return;
+
+      const getValue = (r) => r.status === "fulfilled" ? r.value : [];
+      const franchisesData = getValue(results[0]);
+      const dailyContactsToday = getValue(results[1]);
+      const usersData = getValue(results[2]);
+      const currentUserData = results[3].status === "fulfilled" ? results[3].value : null;
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["franchises","contacts","users","currentUser"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
       const franchisesWithContacts = franchisesData.map((f) => ({
         ...f,
         daily_unique_contacts: dailyContactsToday.filter(
@@ -83,7 +98,7 @@ export default function Franchises() {
 
       setFranchises(franchisesWithContacts);
       setUsers(usersData);
-      setCurrentUser(currentUserData);
+      if (currentUserData) setCurrentUser(currentUserData);
     } catch (error) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dados:", error);

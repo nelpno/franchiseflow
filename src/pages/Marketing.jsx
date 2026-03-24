@@ -831,11 +831,20 @@ export default function Marketing() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [allFiles, allFranchises] = await Promise.all([
+      const results = await Promise.allSettled([
         MarketingFile.list("-created_at"),
         isAdmin ? Franchise.list("city") : Promise.resolve([]),
       ]);
       if (!mountedRef.current) return;
+
+      const allFiles = results[0].status === "fulfilled" ? results[0].value : [];
+      const allFranchises = results[1].status === "fulfilled" ? results[1].value : [];
+
+      if (results[0].status === "rejected") {
+        console.warn("Falha ao carregar arquivos:", results[0].reason);
+        toast.error("Erro ao carregar materiais de marketing.");
+      }
+
       setFiles(allFiles);
       setFranchises(allFranchises);
     } catch (err) {
