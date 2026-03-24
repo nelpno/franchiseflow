@@ -148,6 +148,13 @@ function FranchiseSettingsContent() {
     }
   }, [isLoading, currentUser, franchises, configurations]);
 
+  // Auto-check WhatsApp status when config is selected/loaded
+  useEffect(() => {
+    if (currentConfig && currentConfig.franchise_evolution_instance_id && !checkingStatusFor) {
+      handleCheckStatusFromBadge(currentConfig);
+    }
+  }, [selectedConfigId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) { e.preventDefault(); e.returnValue = ''; }
