@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, DailyUniqueContact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
@@ -21,7 +21,9 @@ import { generateSmartActions } from "@/lib/smartActions";
 export default function FranchiseeDashboard() {
   const { user, selectedFranchise: ctxFranchise } = useAuth();
   const navigate = useNavigate();
+  const mountedRef = useRef(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [franchise, setFranchise] = useState(null);
   const [todaySales, setTodaySales] = useState([]);
   const [yesterdaySales, setYesterdaySales] = useState([]);
@@ -45,6 +47,7 @@ export default function FranchiseeDashboard() {
       return;
     }
     setIsLoading(true);
+    setLoadError(null);
     try {
       setFranchise(ctxFranchise);
 
@@ -61,17 +64,22 @@ export default function FranchiseeDashboard() {
         evoId ? Contact.filter({ franchise_id: evoId }) : Promise.resolve([]),
       ]);
 
-      const val = (i) => results[i].status === "fulfilled" ? results[i].value : [];
-      const todaySalesData = val(0);
-      const yesterdaySalesData = val(1);
-      const summariesData = val(2);
-      const inventoryData = val(3);
-      const checklistData = val(4);
-      const contactsData = val(5);
+      if (!mountedRef.current) return;
 
-      const failed = results.filter(r => r.status === "rejected");
-      if (failed.length > 0) {
-        console.warn("Dashboard queries falharam:", failed.map(f => f.reason?.message));
+      const getValue = (i) => results[i].status === "fulfilled" ? results[i].value : [];
+      const todaySalesData = getValue(0);
+      const yesterdaySalesData = getValue(1);
+      const summariesData = getValue(2);
+      const inventoryData = getValue(3);
+      const checklistData = getValue(4);
+      const contactsData = getValue(5);
+
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? ["vendas hoje","vendas ontem","resumos","estoque","checklist","contatos"][i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Dashboard queries falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
       }
 
       setTodaySales(todaySalesData);
@@ -86,6 +94,7 @@ export default function FranchiseeDashboard() {
         try {
           const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
           const recentContacts = await DailyUniqueContact.filter({ franchise_id: evoId });
+          if (!mountedRef.current) return;
           const hasRecent = recentContacts.some((c) => c.date >= threeDaysAgo);
           setBotActive(hasRecent);
         } catch {
@@ -104,22 +113,29 @@ export default function FranchiseeDashboard() {
 
       try {
         const rankData = await getFranchiseRanking(today, fId);
+        if (!mountedRef.current) return;
         setRanking(rankData);
       } catch {
         setRanking(null);
       }
     } catch (err) {
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard:", err);
-      toast.error("Erro ao carregar dados do dashboard.");
+      setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
+      toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, [franchiseId]);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
     const interval = setInterval(loadData, 120000);
-    return () => clearInterval(interval);
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
   }, [loadData]);
 
   const evoId = franchise?.evolution_instance_id;
@@ -187,6 +203,21 @@ export default function FranchiseeDashboard() {
           <Skeleton className="h-40 rounded-xl" />
         </div>
         <Skeleton className="h-48 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa]">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
+          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <button onClick={loadData} className="mt-2 px-4 py-2 border border-[#cac0c0] rounded-lg text-sm text-[#4a3d3d] hover:bg-white">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" />
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }

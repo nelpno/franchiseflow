@@ -54,19 +54,21 @@ export default function AdminDashboard() {
       const yesterdaySaleData = getValue(results[5]);
       const purchaseOrderData = getValue(results[6]);
 
-      // Log individual failures without blocking the dashboard
+      // Franchises is critical — if it failed, show error state
+      if (results[0].status === "rejected") {
+        const reason = results[0].reason?.message || "Erro desconhecido";
+        setLoadError(`Erro ao carregar franquias: ${reason}`);
+        toast.error(`Erro ao carregar franquias: ${reason}`);
+        return;
+      }
+
+      // Log non-critical failures without blocking the dashboard
       const failedQueries = results
         .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
         toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
-      }
-
-      // Franchises is critical — if it failed, show error state
-      if (results[0].status === "rejected") {
-        setLoadError("Erro ao carregar franquias. Tente novamente.");
-        return;
       }
 
       setFranchises(franchiseData);
@@ -106,8 +108,8 @@ export default function AdminDashboard() {
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard admin:", err);
-      setLoadError("Erro ao carregar dados do dashboard. Tente novamente.");
-      toast.error("Erro ao carregar dados do dashboard.");
+      setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
+      toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
     } finally {
       if (mountedRef.current) setIsLoading(false);
     }

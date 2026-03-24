@@ -51,6 +51,10 @@ export default function Gestao() {
       const userData = userResult.status === "fulfilled" ? userResult.value : null;
       const franchisesData = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
       if (!userData) throw new Error("Não foi possível carregar usuário");
+      if (franchisesResult.status === "rejected") {
+        console.warn("Falha ao carregar franquias:", franchisesResult.reason?.message);
+        toast.error(`Erro ao carregar franquias: ${franchisesResult.reason?.message || "Erro desconhecido"}`);
+      }
       setCurrentUser(userData);
       setFranchises(franchisesData);
 

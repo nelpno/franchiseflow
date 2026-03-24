@@ -842,7 +842,10 @@ export default function Marketing() {
 
       if (results[0].status === "rejected") {
         console.warn("Falha ao carregar arquivos:", results[0].reason);
-        toast.error("Erro ao carregar materiais de marketing.");
+        toast.error(`Erro ao carregar materiais: ${results[0].reason?.message || "Erro desconhecido"}`);
+      }
+      if (results[1].status === "rejected") {
+        console.warn("Falha ao carregar franquias:", results[1].reason);
       }
 
       setFiles(allFiles);
