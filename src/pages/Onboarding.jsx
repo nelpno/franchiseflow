@@ -61,27 +61,34 @@ export default function Onboarding() {
   const [checklist, setChecklist] = useState(null);
   const [items, setItems] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [allChecklists, setAllChecklists] = useState([]);
   const [celebrated, setCelebrated] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
   const [completedBlocks, setCompletedBlocks] = useState(new Set());
+  const mountedRef = useRef(true);
   const saveTimerRef = useRef(null);
   const celebrationTimerRef = useRef(null);
   const blockRefs = useRef({});
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
-      const user = await User.me();
+      // Parallel: user + franchises (saves ~1 round trip)
+      const [user, allFranchises] = await Promise.all([
+        User.me(),
+        Franchise.list(),
+      ]);
+      if (!mountedRef.current) return;
       setCurrentUser(user);
-
-      const allFranchises = await Franchise.list();
 
       if (user.role === "admin") {
         setFranchises(allFranchises);
         const allOb = await OnboardingChecklist.list();
+        if (!mountedRef.current) return;
         setAllChecklists(allOb);
       } else {
         const ids = user.managed_franchise_ids || [];
@@ -92,14 +99,15 @@ export default function Onboarding() {
 
         if (myFranchises.length > 0) {
           setSelectedFranchise(myFranchises[0]);
-          await loadFranchiseChecklist(myFranchises[0], user);
+          await loadFranchiseChecklist(myFranchises[0]);
         }
       }
     } catch (error) {
       console.error("Erro ao carregar onboarding:", error);
-      toast.error("Erro ao carregar dados. Tente recarregar a página.");
+      if (mountedRef.current) setLoadError("Erro ao carregar dados.");
+    } finally {
+      if (mountedRef.current) setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   // Auto-detect completed items from system data
@@ -131,12 +139,13 @@ export default function Onboarding() {
   };
 
   const loadFranchiseChecklist = async (franchise) => {
-    const existing = await OnboardingChecklist.filter({
-      franchise_id: franchise.evolution_instance_id,
-    });
-
-    // Detect auto items from system
-    const autoItems = await detectAutoItems(franchise.evolution_instance_id);
+    // Parallel: checklist + auto-detect (saves ~1 round trip)
+    const [existing, autoItems] = await Promise.all([
+      OnboardingChecklist.filter({
+        franchise_id: franchise.evolution_instance_id,
+      }),
+      detectAutoItems(franchise.evolution_instance_id),
+    ]);
 
     if (existing.length > 0) {
       const cl = existing[0];
@@ -222,6 +231,8 @@ export default function Onboarding() {
 
       const autoCount = Object.values(autoItems).filter(Boolean).length;
       toast.success(`Missões iniciadas! ${autoCount} itens já marcados automaticamente.`);
+      // Notify Layout to show Onboarding in sidebar
+      window.dispatchEvent(new Event("onboarding-started"));
     } catch (error) {
       console.error("Erro ao iniciar onboarding:", error);
       toast.error("Erro ao iniciar onboarding. Verifique as permissões.");
@@ -229,8 +240,10 @@ export default function Onboarding() {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
     return () => {
+      mountedRef.current = false;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
     };
@@ -362,6 +375,20 @@ export default function Onboarding() {
         <div className="text-center text-[#4a3d3d]">
           <MaterialIcon icon="rocket_launch" size={40} className="mx-auto mb-3 animate-pulse text-[#d4af37]" />
           Carregando onboarding...
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <div className="text-center">
+          <MaterialIcon icon="error_outline" size={48} className="mx-auto mb-3 text-[#b91c1c]/40" />
+          <p className="text-[#4a3d3d] mb-4">{loadError}</p>
+          <Button onClick={loadData} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl">
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
