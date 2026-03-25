@@ -8,6 +8,8 @@
 --   4. Telefones sem código de país → campo personal_phone_wa com 55 para WhatsApp API
 --   5. delivery_fee_rules retorna JSONB nativo (sem cast ::text)
 --   6. social_media_links retorna JSONB nativo
+--   7. Cast ::numeric em JSONB protegido com NULLIF (empty string → NULL, não crashea)
+--   8. Campos numéricos (radius, min_order, prep_time) mantidos NULL se não configurados
 --
 -- IMPORTANTE: DROP + CREATE porque CREATE OR REPLACE não permite mudar tipo de coluna
 -- =============================================================================
@@ -102,11 +104,13 @@ SELECT
     THEN (
       SELECT STRING_AGG(
         'Até ' || (rule->>'max_km') || 'km: R$' ||
-        REPLACE(TO_CHAR((rule->>'fee')::numeric, 'FM999G990D00'), '.', ','),
+        REPLACE(TO_CHAR((NULLIF(rule->>'fee', ''))::numeric, 'FM999G990D00'), '.', ','),
         ' | '
-        ORDER BY (rule->>'max_km')::numeric
+        ORDER BY (NULLIF(rule->>'max_km', ''))::numeric NULLS LAST
       )
       FROM jsonb_array_elements(fc.delivery_fee_rules) AS rule
+      WHERE NULLIF(rule->>'max_km', '') IS NOT NULL
+        AND NULLIF(rule->>'fee', '') IS NOT NULL
     )
     ELSE ''
   END AS shipping_rules_costs,
