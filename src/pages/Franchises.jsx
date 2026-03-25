@@ -131,46 +131,51 @@ export default function Franchises() {
     }
     setIsSubmitting(true);
     try {
+      // Etapa 1: Criar franquia (triggers populam config + 28 produtos — pode demorar)
       const newFranchise = await Franchise.create({
         ...franchiseData,
         name: franchiseData.name || `MaxiMassas ${franchiseData.city}`,
       });
 
-      if (franchiseeEmail) {
-        try {
-          await FranchiseInvite.create({
-            franchise_id: newFranchise.evolution_instance_id,
-            email: franchiseeEmail,
-            status: "pending",
-          });
-          await inviteFranchisee(franchiseeEmail);
-          // Envia email de definir senha (mais confiável que o link do invite)
-          await supabase.auth.resetPasswordForEmail(franchiseeEmail, {
-            redirectTo: window.location.origin + '/set-password'
-          });
-          toast.success(`Franquia criada! Email de primeiro acesso enviado para ${franchiseeEmail}`);
-        } catch (inviteError) {
-          console.error("Erro ao criar convite:", inviteError);
-          toast.success("Franquia criada com sucesso!");
-          toast.error("Não foi possível enviar o convite. Tente reenviar manualmente.");
-        }
-      } else {
+      // Franquia criada — fechar form e atualizar lista imediatamente
+      setShowForm(false);
+      setIsSubmitting(false);
+      loadData();
+
+      if (!franchiseeEmail) {
         toast.success("Franquia criada com sucesso!");
+        return;
       }
 
-      setShowForm(false);
-      loadData();
+      // Etapa 2: Enviar convite em background (não bloqueia UI)
+      toast.success("Franquia criada! Enviando convite...");
+      try {
+        await FranchiseInvite.create({
+          franchise_id: newFranchise.evolution_instance_id,
+          email: franchiseeEmail,
+          status: "pending",
+        });
+        await inviteFranchisee(franchiseeEmail);
+        // Envia email de definir senha (mais confiável que o link do invite)
+        await supabase.auth.resetPasswordForEmail(franchiseeEmail, {
+          redirectTo: window.location.origin + '/set-password'
+        });
+        toast.success(`Email de primeiro acesso enviado para ${franchiseeEmail}`);
+      } catch (inviteError) {
+        console.error("Erro ao enviar convite:", inviteError);
+        toast.error(`Convite não enviado: ${inviteError?.message || "erro desconhecido"}. Reenvie manualmente.`);
+      }
     } catch (error) {
       console.error("Erro ao criar franquia:", error);
+      setIsSubmitting(false);
       const msg = error?.message || error?.details || "Erro desconhecido";
       if (msg.includes("Tempo limite")) {
         toast.error("Tempo limite excedido ao criar franquia. A franquia pode ter sido criada — atualize a página para verificar.");
       } else {
         toast.error(`Erro ao criar franquia: ${msg}`);
       }
+      loadData(); // Recarrega mesmo em caso de erro (franquia pode ter sido criada server-side)
     }
-    setIsSubmitting(false);
-    loadData(); // Recarrega lista mesmo em caso de erro (franquia pode ter sido criada server-side)
   };
 
   const handleDeleteFranchise = async () => {
