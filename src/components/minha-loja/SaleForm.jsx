@@ -681,7 +681,7 @@ export default function SaleForm({
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
         net_value: netValue,
-        sale_date: sale?.sale_date || new Date().toISOString().split("T")[0],
+        sale_date: sale?.sale_date || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
       };
 
       let saleId;

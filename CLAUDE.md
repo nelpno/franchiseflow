@@ -402,8 +402,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 200. Credenciais Supabase (Management API token, service_role key) ficam em `memory/reference_supabase_credentials.md` — NÃO depender de env vars da sessão
 201. Todas operações de escrita (create/update/delete) usam timeout 30s — Supabase pode ser lento sob carga mesmo no plano Pro. `inviteFranchisee()` também usa 30s (SMTP lento)
 202. `vw_dadosunidade` usa SECURITY INVOKER (NÃO DEFINER) — n8n acessa via service_role que já bypassa RLS. Ao recriar a view, NUNCA usar SECURITY DEFINER (gera alerta CRITICAL no Supabase Security Advisor)
+203. `handle_new_user()` auto-cria `onboarding_checklists` para cada franquia vinculada — itens 1-1 e 1-2 pré-marcados, `ON CONFLICT (franchise_id) DO NOTHING`. SQL: `supabase/auto-create-onboarding.sql`
+204. Management API token no `.mcp.json` expira frequentemente — SEMPRE tentar primeiro o token do `.env`/memory, fallback para service_role via REST API
 203. Data fetching com múltiplas queries DEVE usar `Promise.allSettled` (NÃO `Promise.all`) — falha em uma query não deve bloquear a página inteira. Pattern: `getValue = (r) => r.status === "fulfilled" ? r.value : []`, log failedQueries com nomes, checar query crítica separadamente
 204. FranchiseeDashboard tem `mountedRef` + `loadError` + retry UI — manter consistente com AdminDashboard. Polling 120s com cleanup no useEffect
+205. `new Date().toISOString().split("T")[0]` é BUG de timezone — após 21h BRT retorna data de amanhã (UTC). Para data local usar `getFullYear()/getMonth()/getDate()` ou `format(new Date(), "yyyy-MM-dd")` do date-fns
 
 ## Scripts
 ```bash
