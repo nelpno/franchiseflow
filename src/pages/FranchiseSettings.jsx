@@ -484,59 +484,65 @@ function FranchiseSettingsContent() {
               onClick={() => currentConfig && handleCheckStatusFromBadge(currentConfig)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${
                 isConnected
-                  ? 'bg-[#ffdad6]/30 border-[#b91c1c]/10'
-                  : 'bg-red-50 border-red-200'
+                  ? 'bg-emerald-50 border-emerald-200'
+                  : 'bg-[#e9e8e9]/50 border-[#bccac0]/30'
               }`}
               title="Clique para verificar o status atual"
             >
               {checkingStatusFor === currentConfig?.id ? (
-                <MaterialIcon icon="progress_activity" size={8} className="animate-spin text-[#b91c1c]" />
+                <MaterialIcon icon="progress_activity" size={8} className="animate-spin text-[#4a3d3d]" />
               ) : (
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-[#b91c1c] animate-pulse' : 'bg-red-500'}`} />
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-[#7a6d6d]'}`} />
               )}
-              <span className={`text-xs font-semibold ${isConnected ? 'text-[#b91c1c]' : 'text-red-600'}`}>
-                {checkingStatusFor === currentConfig?.id ? 'Verificando...' : isConnected ? 'Conectado' : 'Desconectado'}
+              <span className={`text-xs font-semibold ${isConnected ? 'text-emerald-700' : 'text-[#4a3d3d]'}`}>
+                {checkingStatusFor === currentConfig?.id ? 'Verificando...' : isConnected ? 'Conectado' : 'Não conectado'}
               </span>
             </button>
           </div>
         </div>
 
         {/* WhatsApp Connection Card */}
-        <section className="bg-white rounded-2xl shadow-sm border border-[#bccac0]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <section className={`rounded-2xl shadow-sm border p-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${
+          isConnected ? 'bg-emerald-50/50 border-emerald-200/50' : 'bg-white border-[#bccac0]/5'
+        }`}>
           <div className="flex items-center gap-5">
             <div className="relative">
-              <div className="w-20 h-20 bg-[#e9e8e9]/50 rounded-xl flex items-center justify-center overflow-hidden">
-                <MaterialIcon icon="qr_code_2" size={52} className={isConnected ? 'text-[#bccac0]/20' : 'text-[#bccac0]/40'} />
-                {isConnected && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <MaterialIcon icon="check_circle" filled size={28} className="text-[#b91c1c]" />
-                  </div>
+              <div className={`w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden ${
+                isConnected ? 'bg-emerald-100' : 'bg-[#e9e8e9]/50'
+              }`}>
+                {isConnected ? (
+                  <MaterialIcon icon="check_circle" filled size={32} className="text-emerald-600" />
+                ) : (
+                  <MaterialIcon icon="qr_code_2" size={36} className="text-[#bccac0]/60" />
                 )}
               </div>
             </div>
             <div>
               <h3 className="text-base font-bold text-[#1b1c1d]">
-                {currentConfig?.franchise_name || currentFranchise?.city || 'N/A'}
+                {isConnected ? 'WhatsApp ativo' : 'Conectar WhatsApp'}
               </h3>
-              <p className="text-xs text-[#3d4a42]/70 mt-0.5">
-                Conecte pelo QR Code abaixo
+              <p className="text-xs text-[#4a3d3d] mt-0.5">
+                {isConnected
+                  ? 'Seu vendedor está recebendo mensagens'
+                  : 'Escaneie o QR Code para ativar seu vendedor'}
               </p>
-              <div className={`mt-1.5 text-xs font-semibold ${isConnected ? 'text-[#b91c1c]' : 'text-red-500'}`}>
-                {isConnected ? 'WhatsApp ativo' : 'WhatsApp desconectado'}
-              </div>
             </div>
           </div>
           <button
             onClick={() => currentConfig && handleConnectWhatsApp(currentConfig)}
             disabled={isConnectingWhatsApp}
-            className="px-5 py-2.5 rounded-xl border border-[#b91c1c] text-[#b91c1c] text-sm font-bold hover:bg-[#b91c1c]/5 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap ${
+              isConnected
+                ? 'border border-[#7a6d6d]/30 text-[#4a3d3d] hover:bg-[#e9e8e9]/50'
+                : 'bg-[#b91c1c] text-white hover:bg-[#991b1b]'
+            }`}
           >
             {isConnectingWhatsApp ? (
               <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
             ) : (
-              <MaterialIcon icon="smartphone" size={16} />
+              <MaterialIcon icon={isConnected ? 'refresh' : 'qr_code_2'} size={16} />
             )}
-            {isConnected ? 'Reconectar' : 'Conectar'}
+            {isConnectingWhatsApp ? 'Gerando QR Code...' : isConnected ? 'Reconectar' : 'Gerar QR Code'}
           </button>
         </section>
 

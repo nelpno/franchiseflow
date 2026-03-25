@@ -108,10 +108,14 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
       }
     } catch (error) {
       console.error("Erro detalhado ao conectar WhatsApp:", error);
-      toast.error(error.response?.status === 403
-        ? "Você não tem permissão para conectar o WhatsApp desta franquia."
-        : "Falha ao conectar. Tente novamente."
-      );
+      const isTimeout = error.name === 'AbortError' || error.message?.includes('abort');
+      if (isTimeout) {
+        toast.error("O QR Code demorou para ser gerado. Tente novamente em alguns segundos.", { duration: 6000 });
+      } else if (error.response?.status === 403) {
+        toast.error("Você não tem permissão para conectar o WhatsApp desta franquia.");
+      } else {
+        toast.error(`Falha ao conectar: ${error.message || "Tente novamente."}`);
+      }
       setModalData(null);
     } finally {
       setIsConnectingWhatsApp(false);
