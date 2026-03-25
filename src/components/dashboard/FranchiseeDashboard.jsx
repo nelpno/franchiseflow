@@ -55,16 +55,15 @@ export default function FranchiseeDashboard() {
       const today = getToday();
       const yesterday = getYesterday();
       const evoId = ctxFranchise?.evolution_instance_id;
-      const fId = evoId || franchiseId;
       const results = await Promise.allSettled([
         evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }) : Promise.resolve([]),       // [0]
         evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }) : Promise.resolve([]),   // [1]
         evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30) : Promise.resolve([]),    // [2]
         evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),                // [3]
         evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),  // [4]
-        evoId ? Contact.filter({ franchise_id: evoId }) : Promise.resolve([]),                      // [5]
-        evoId ? DailyUniqueContact.filter({ franchise_id: evoId }) : Promise.resolve([]),           // [6]
-        getFranchiseRanking(today, fId),                                                             // [7]
+        evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200) : Promise.resolve([]), // [5]
+        evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10) : Promise.resolve([]), // [6]
+        evoId ? getFranchiseRanking(today, evoId) : Promise.resolve(null),                          // [7]
       ]);
 
       if (!mountedRef.current) return;
@@ -163,6 +162,8 @@ export default function FranchiseeDashboard() {
   }, [period, todaySales, yesterdaySales, summaries, evoId]);
 
   const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+
+  const pendingActionsCount = useMemo(() => generateSmartActions(contacts, 0).length, [contacts]);
 
   const dailyGoal = useMemo(() => {
     if (!summaries.length || !evoId) return null;
@@ -278,7 +279,7 @@ export default function FranchiseeDashboard() {
 
       <QuickAccessCards
         lowStockCount={lowStockCount}
-        pendingActionsCount={generateSmartActions(contacts, 0).length}
+        pendingActionsCount={pendingActionsCount}
       />
 
       <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} />
