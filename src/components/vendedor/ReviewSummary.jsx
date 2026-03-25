@@ -55,8 +55,18 @@ export default function ReviewSummary({ formData, onGoToStep }) {
   };
 
   const feeRulesText = () => {
-    const rules = formData.delivery_fee_rules;
-    if (!rules || !Array.isArray(rules) || rules.length === 0) return "";
+    const data = formData.delivery_fee_rules;
+    if (!data) return "";
+    // Modo modalidade
+    if (data?.mode === "modality") {
+      return (data.rules || [])
+        .filter((r) => r.label && r.fee)
+        .map((r) => `${r.label}: R$ ${r.fee}`)
+        .join(" | ");
+    }
+    // Modo distância (array legado)
+    const rules = Array.isArray(data) ? data : [];
+    if (rules.length === 0) return "";
     return rules
       .filter((r) => r.max_km && r.fee)
       .map((r) => `Até ${r.max_km}km: R$ ${r.fee}`)

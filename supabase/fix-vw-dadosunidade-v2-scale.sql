@@ -93,10 +93,16 @@ SELECT
   fc.avg_prep_time_minutes,
 
   -- === Entrega — regras de frete (JSONB nativo, sem cast ::text) ===
-  COALESCE(fc.delivery_fee_rules, '[]'::jsonb) AS delivery_fee_rules,
+  -- Protege contra formato objeto (mode=modality) que crashea jsonb_array_length
+  CASE
+    WHEN fc.delivery_fee_rules ? 'mode'
+    THEN fc.delivery_fee_rules
+    ELSE COALESCE(fc.delivery_fee_rules, '[]'::jsonb)
+  END AS delivery_fee_rules,
 
   -- === Frete — campo TEXT legado (GERADO de delivery_fee_rules se vazio) ===
-  -- Formato: "Até 5km: R$10,00 | Até 10km: R$18,00"
+  -- Formato distância: "Até 5km: R$10,00 | Até 10km: R$18,00"
+  -- Formato modalidade: "Entrega programada: R$10,00 | Entrega imediata: R$15,00"
   -- charges_delivery_fee=false → "Entrega grátis"
   -- Prioriza campo antigo se preenchido (backward compat franquias legadas)
   CASE
@@ -104,6 +110,20 @@ SELECT
     THEN 'Entrega grátis'
     WHEN COALESCE(NULLIF(fc.shipping_rules_costs, ''), NULL) IS NOT NULL
     THEN fc.shipping_rules_costs
+    -- Formato modalidade: { mode: "modality", rules: [{ label, fee }] }
+    WHEN fc.delivery_fee_rules ? 'mode'
+      AND fc.delivery_fee_rules->>'mode' = 'modality'
+    THEN (
+      SELECT STRING_AGG(
+        (rule->>'label') || ': R$' ||
+        REPLACE(TO_CHAR((NULLIF(rule->>'fee', ''))::numeric, 'FM999G990D00'), '.', ','),
+        ' | '
+      )
+      FROM jsonb_array_elements(fc.delivery_fee_rules->'rules') AS rule
+      WHERE NULLIF(rule->>'label', '') IS NOT NULL
+        AND NULLIF(rule->>'fee', '') IS NOT NULL
+    )
+    -- Array legado (distância): [{ max_km, fee }]
     WHEN fc.delivery_fee_rules IS NOT NULL
       AND jsonb_array_length(COALESCE(fc.delivery_fee_rules, '[]'::jsonb)) > 0
     THEN (

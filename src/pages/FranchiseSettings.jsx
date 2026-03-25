@@ -818,7 +818,7 @@ function FranchiseSettingsContent() {
 
               {formData.charges_delivery_fee !== false ? (
                 <div>
-                  <label className={labelClass}>Taxas de entrega por faixa de distância</label>
+                  <label className={labelClass}>Regras de frete</label>
                   <DeliveryFeeEditor
                     value={formData.delivery_fee_rules}
                     onChange={(val) => handleInputChange('delivery_fee_rules', val)}
