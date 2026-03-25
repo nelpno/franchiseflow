@@ -325,20 +325,32 @@ export default function Tutoriais() {
 
       {/* Video player modal */}
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
-        <DialogContent className={`p-0 overflow-hidden bg-black/95 border-none ${selectedVideo?.isShort ? "max-w-sm" : "max-w-3xl"}`}>
+        <DialogContent className={`p-0 overflow-hidden bg-black border-none ${selectedVideo?.isShort ? "max-w-[360px]" : "max-w-3xl"}`}>
           <DialogTitle className="sr-only">
             {selectedVideo?.title}
           </DialogTitle>
           {selectedVideo?.youtubeId ? (
-            <div className={`w-full ${selectedVideo?.isShort ? "aspect-[9/16] max-h-[80vh]" : "aspect-video"}`}>
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${selectedVideo.youtubeId}?autoplay=1&rel=0`}
-                title={selectedVideo.title}
-                className="w-full h-full"
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            </div>
+            selectedVideo?.isShort ? (
+              <div className="w-[360px] h-[640px] max-h-[85vh] mx-auto">
+                <iframe
+                  src={`https://www.youtube.com/embed/${selectedVideo.youtubeId}?autoplay=1&rel=0&loop=1&playlist=${selectedVideo.youtubeId}`}
+                  title={selectedVideo.title}
+                  className="w-full h-full"
+                  allow="autoplay; encrypted-media; gyroscope"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="aspect-video w-full">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${selectedVideo.youtubeId}?autoplay=1&rel=0`}
+                  title={selectedVideo.title}
+                  className="w-full h-full"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+              </div>
+            )
           ) : (
             <div className="aspect-video w-full flex flex-col items-center justify-center gap-4 text-white/70">
               <MaterialIcon icon={selectedVideo?.icon || "play_circle"} size={48} className="text-white/40" />
