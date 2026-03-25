@@ -55,7 +55,9 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
     } catch (error) {
       console.error('[Auth] Error loading profile:', error);
-      // Retry once before falling back
+      // Wait for handle_new_user trigger to finish creating profile (first login)
+      await new Promise(resolve => setTimeout(resolve, 800));
+      // Retry once after delay
       try {
         const { data: retryProfile, error: retryError } = await supabase
           .from('profiles')

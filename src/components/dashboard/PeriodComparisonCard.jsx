@@ -74,7 +74,7 @@ export default function PeriodComparisonCard({ franchiseId }) {
   const [activePreset, setActivePreset] = useState("week");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const loadComparison = useCallback(async (presetKey) => {
     if (!franchiseId) return;
@@ -85,23 +85,24 @@ export default function PeriodComparisonCard({ franchiseId }) {
     try {
       const { period1, period2 } = preset.getPeriods();
 
-      // Fetch sales for both periods
-      const allSales = await Sale.list("-sale_date", 500);
+      // Fetch sales and contacts in parallel
+      const [salesResult, contactsResult] = await Promise.allSettled([
+        Sale.filter({ franchise_id: franchiseId }, "-sale_date", 500),
+        Contact.filter({ franchise_id: franchiseId }),
+      ]);
+      const allSales = salesResult.status === "fulfilled" ? salesResult.value : [];
+      const allContacts = contactsResult.status === "fulfilled" ? contactsResult.value : [];
+
       const sales1 = allSales.filter(
         (s) =>
-          s.franchise_id === franchiseId &&
           s.sale_date >= period1.start &&
           s.sale_date <= period1.end
       );
       const sales2 = allSales.filter(
         (s) =>
-          s.franchise_id === franchiseId &&
           s.sale_date >= period2.start &&
           s.sale_date <= period2.end
       );
-
-      // Fetch contacts
-      const allContacts = await Contact.filter({ franchise_id: franchiseId });
       const contacts1 = allContacts.filter(
         (c) =>
           c.created_at &&

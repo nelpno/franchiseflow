@@ -57,12 +57,14 @@ export default function FranchiseeDashboard() {
       const evoId = ctxFranchise?.evolution_instance_id;
       const fId = evoId || franchiseId;
       const results = await Promise.allSettled([
-        evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }) : Promise.resolve([]),
-        evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }) : Promise.resolve([]),
-        DailySummary.list("-date", 30),
-        evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),
-        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),
-        evoId ? Contact.filter({ franchise_id: evoId }) : Promise.resolve([]),
+        evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }) : Promise.resolve([]),       // [0]
+        evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }) : Promise.resolve([]),   // [1]
+        evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30) : Promise.resolve([]),    // [2]
+        evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),                // [3]
+        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),  // [4]
+        evoId ? Contact.filter({ franchise_id: evoId }) : Promise.resolve([]),                      // [5]
+        evoId ? DailyUniqueContact.filter({ franchise_id: evoId }) : Promise.resolve([]),           // [6]
+        getFranchiseRanking(today, fId),                                                             // [7]
       ]);
 
       if (!mountedRef.current) return;
@@ -76,7 +78,7 @@ export default function FranchiseeDashboard() {
       const contactsData = getValue(5);
 
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["vendas hoje","vendas ontem","resumos","estoque","checklist","contatos"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["vendas hoje","vendas ontem","resumos","estoque","checklist","contatos","bot activity","ranking"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Dashboard queries falharam:", failedQueries);
@@ -90,18 +92,10 @@ export default function FranchiseeDashboard() {
       setContacts(contactsData);
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
 
-      // Check bot activity (DailyUniqueContact in last 3 days)
-      if (evoId) {
-        try {
-          const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
-          const recentContacts = await DailyUniqueContact.filter({ franchise_id: evoId });
-          if (!mountedRef.current) return;
-          const hasRecent = recentContacts.some((c) => c.date >= threeDaysAgo);
-          setBotActive(hasRecent);
-        } catch {
-          setBotActive(false);
-        }
-      }
+      // Bot activity (already parallel — index 6)
+      const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
+      const recentContacts = getValue(6);
+      setBotActive(evoId ? recentContacts.some((c) => c.date >= threeDaysAgo) : false);
 
       if (checklistData.length > 0) {
         const items = checklistData[0].items || {};
@@ -112,13 +106,8 @@ export default function FranchiseeDashboard() {
         });
       }
 
-      try {
-        const rankData = await getFranchiseRanking(today, fId);
-        if (!mountedRef.current) return;
-        setRanking(rankData);
-      } catch {
-        setRanking(null);
-      }
+      // Ranking (already parallel — index 7)
+      setRanking(results[7].status === "fulfilled" ? results[7].value : null);
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard:", err);
