@@ -422,6 +422,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 218. n8n `neverError: true` retorna erros como JSON com HTTP 200 — frontend DEVE checar `data.code >= 400` antes de considerar sucesso. Pattern em `inviteFranchisee()` de `functions.js`
 219. Workflow `franchise-invite` (nbLDyd1KoFIeeJEF) envia `data: { role: 'franchisee' }` no payload do invite — SEM isso, users sem invite pendente ficam com role vazio
 220. `connectWhatsappRobot()` usa timeout 30s (NÃO 15s) — workflow n8n tem Wait 3s nodes entre connect e QR, 15s estourava antes do QR voltar. Card de conexão WhatsApp: verde quando conectado, neutro (cinza) quando desconectado — NUNCA vermelho para "desconectado" (gera ansiedade desnecessária)
+221. Invite PKCE do Supabase é instável (token expira, email client consome link, PKCE não passa params) — após `inviteFranchisee()`, SEMPRE chamar `resetPasswordForEmail()` que gera link confiável de definir senha
+222. Login.jsx tem "Primeiro acesso? Defina sua senha aqui" como rede de segurança — ativa modo reset de senha. "Não possui acesso? Solicite ao administrador" é texto secundário (não clicável)
+223. Rota `/set-password` redireciona para `/login` quando `isAuthenticated=false` — NÃO mostrar `PageFallback` (spinner infinito). Franqueado usa "Primeiro acesso" no login como fallback
 
 ## Scripts
 ```bash
