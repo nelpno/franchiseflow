@@ -414,12 +414,13 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 210. Backup pre-RabbitMQ do V2: `docs/vendedor-generico-workflow-v2-pre-rabbitmq.json`. Rollback: reativar V1 via `POST /api/v1/workflows/PALRV1RqD3opHMzk/activate`
 211. Workflow ZuckZapGo (`brmZAsAykq6hSMpL`): TODOS os caminhos connect→QR têm nó Wait 3s (`Aguarda QR Ready`, `Aguarda QR Ready1`, `Aguarda QR Ready2`) — ZuckZapGo precisa de tempo entre `/session/connect` e `/session/qr`, sem Wait retorna 500 "not connected"
 212. `N8N_API_KEY` env var pode não estar disponível no shell da sessão — ler do `.env` na raiz do projeto como fallback
-213. `onboarding_checklists` tem UNIQUE INDEX em `franchise_id` — obrigatório para `ON CONFLICT (franchise_id) DO NOTHING` no trigger. Postgres REJEITA ON CONFLICT sem UNIQUE constraint
-214. `franchise_invites` tem partial UNIQUE INDEX `(franchise_id, email) WHERE status = 'pending'` — impede convites pendentes duplicados para mesma franquia+email
-215. `handle_new_user()` fallback de role: invites pendentes → `raw_user_meta_data->>'role'` → default `'franchisee'`. NUNCA deixar role vazio (CHECK constraint rejeita)
-216. Supabase Auth `/invite` pode quebrar silenciosamente (HTTP 500 genérico) se trigger `handle_new_user` falha — debugar com `RAISE EXCEPTION` contextual, NÃO com INSERT em tabela de log (rollback apaga)
-217. n8n `neverError: true` retorna erros como JSON com HTTP 200 — frontend DEVE checar `data.code >= 400` antes de considerar sucesso. Pattern em `inviteFranchisee()` de `functions.js`
-218. Workflow `franchise-invite` (nbLDyd1KoFIeeJEF) envia `data: { role: 'franchisee' }` no payload do invite — SEM isso, users sem invite pendente ficam com role vazio
+213. `logout()` limpa state ANTES do `await signOut()` — se Supabase travar (Navigator Locks, rede), UI reage instantaneamente. NUNCA colocar `setUser(null)` depois de `await`
+214. `onboarding_checklists` tem UNIQUE INDEX em `franchise_id` — obrigatório para `ON CONFLICT (franchise_id) DO NOTHING` no trigger. Postgres REJEITA ON CONFLICT sem UNIQUE constraint
+215. `franchise_invites` tem partial UNIQUE INDEX `(franchise_id, email) WHERE status = 'pending'` — impede convites pendentes duplicados para mesma franquia+email
+216. `handle_new_user()` fallback de role: invites pendentes → `raw_user_meta_data->>'role'` → default `'franchisee'`. NUNCA deixar role vazio (CHECK constraint rejeita)
+217. Supabase Auth `/invite` pode quebrar silenciosamente (HTTP 500 genérico) se trigger `handle_new_user` falha — debugar com `RAISE EXCEPTION` contextual, NÃO com INSERT em tabela de log (rollback apaga)
+218. n8n `neverError: true` retorna erros como JSON com HTTP 200 — frontend DEVE checar `data.code >= 400` antes de considerar sucesso. Pattern em `inviteFranchisee()` de `functions.js`
+219. Workflow `franchise-invite` (nbLDyd1KoFIeeJEF) envia `data: { role: 'franchisee' }` no payload do invite — SEM isso, users sem invite pendente ficam com role vazio
 
 ## Scripts
 ```bash
