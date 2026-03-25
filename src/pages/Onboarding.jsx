@@ -16,6 +16,8 @@ const ALL_BLOCK_KEYS = [
   ...GATE_BLOCK.items.map(i => i.key),
 ];
 
+const STORAGE_KEY_PREFIX = 'onboarding_items_';
+
 function computeCounts(items) {
   const count = ALL_BLOCK_KEYS.filter(k => items[k]).length;
   return {
@@ -72,6 +74,7 @@ export default function Onboarding() {
   const saveTimerRef = useRef(null);
   const celebrationTimerRef = useRef(null);
   const blockRefs = useRef({});
+  const pendingSaveRef = useRef(null);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -160,15 +163,38 @@ export default function Onboarding() {
     if (existing.length > 0) {
       const cl = existing[0];
       // Merge auto-detected items into saved items
-      const mergedItems = { ...(cl.items || {}), ...autoItems };
+      let mergedItems = { ...(cl.items || {}), ...autoItems };
+
+      // Recover from localStorage backup (crash/session-expiry recovery)
+      let recoveredFromLocal = false;
+      const storageKey = STORAGE_KEY_PREFIX + franchise.evolution_instance_id;
+      try {
+        const localBackup = localStorage.getItem(storageKey);
+        if (localBackup) {
+          const localItems = JSON.parse(localBackup);
+          const localTrueKeys = Object.keys(localItems).filter(k => localItems[k] && k !== "9-1");
+          const dbTrueKeys = Object.keys(mergedItems).filter(k => mergedItems[k] && k !== "9-1");
+          // If localStorage has items not in DB, recover them
+          const missingInDb = localTrueKeys.filter(k => !mergedItems[k]);
+          if (missingInDb.length > 0) {
+            missingInDb.forEach(k => { mergedItems[k] = true; });
+            recoveredFromLocal = true;
+          }
+          localStorage.removeItem(storageKey);
+        }
+      } catch {}
+
       setChecklist(cl);
       setItems(mergedItems);
 
-      // Save auto-detected changes if any new items were found
+      // Save recovered/auto-detected changes if any new items were found
       const hasNewAuto = Object.keys(autoItems).some(k => !(cl.items || {})[k] && autoItems[k]);
-      if (hasNewAuto) {
+      if (hasNewAuto || recoveredFromLocal) {
         const counts = computeCounts({ ...mergedItems, "9-1": blocks1to8Complete(mergedItems) });
         OnboardingChecklist.update(cl.id, { items: mergedItems, ...counts }).catch(() => {});
+        if (recoveredFromLocal) {
+          toast.success("Progresso recuperado! Seus itens foram restaurados.", { duration: 5000 });
+        }
       }
 
       // Set initial expanded block
@@ -260,7 +286,19 @@ export default function Onboarding() {
     loadData();
     return () => {
       mountedRef.current = false;
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      // Flush pending save instead of discarding (prevents data loss on navigation)
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        if (pendingSaveRef.current) {
+          const { items: pi, checklist: pc } = pendingSaveRef.current;
+          if (pc) {
+            const b18 = blocks1to8Complete(pi);
+            const fi = { ...pi, "9-1": b18 };
+            OnboardingChecklist.update(pc.id, { items: fi, ...computeCounts(fi), status: pc.status }).catch(() => {});
+          }
+          pendingSaveRef.current = null;
+        }
+      }
       if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
     };
   }, [loadData]);
@@ -298,9 +336,19 @@ export default function Onboarding() {
 
       const updated = await OnboardingChecklist.update(currentChecklist.id, updateData);
       setChecklist(updated);
+      pendingSaveRef.current = null;
+      // Clear localStorage backup (DB is now in sync)
+      try { localStorage.removeItem(STORAGE_KEY_PREFIX + currentChecklist.franchise_id); } catch {}
     } catch (error) {
       console.error("Erro ao salvar checklist:", error);
-      toast.error("Erro ao salvar. Tente novamente.");
+      const msg = error?.message || "";
+      if (msg.includes("JWT") || msg.includes("token") || msg.includes("expired") || msg.includes("refresh_token")) {
+        toast.error("Sessão expirada. Recarregue a página e faça login novamente.", { duration: 8000 });
+      } else if (msg.includes("Tempo limite")) {
+        toast.error("Tempo limite ao salvar. Verifique sua conexão.", { duration: 5000 });
+      } else {
+        toast.error(`Erro ao salvar: ${msg || "Tente novamente."}`, { duration: 5000 });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -309,6 +357,12 @@ export default function Onboarding() {
   const handleToggle = (key) => {
     const newItems = { ...items, [key]: !items[key] };
     setItems(newItems);
+
+    // Persist to localStorage immediately as crash-recovery backup
+    const evoId = selectedFranchise?.evolution_instance_id || franchises[0]?.evolution_instance_id;
+    if (evoId) {
+      try { localStorage.setItem(STORAGE_KEY_PREFIX + evoId, JSON.stringify(newItems)); } catch {}
+    }
 
     // Check if any block just became complete
     BLOCKS.forEach((block, idx) => {
@@ -343,6 +397,9 @@ export default function Onboarding() {
         }, 3400);
       }
     });
+
+    // Track pending save for flush-on-unmount
+    pendingSaveRef.current = { items: newItems, checklist, user: currentUser };
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
