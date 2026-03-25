@@ -501,12 +501,12 @@ export default function SaleForm({
     [items]
   );
 
+  const effectiveDeliveryFee = deliveryMethod === "delivery" ? deliveryFee : 0;
+
   const cardFeeAmount = useMemo(() => {
     if (paymentMethod !== "card_machine") return 0;
-    return subtotal * (cardFeePercent / 100);
-  }, [subtotal, paymentMethod, cardFeePercent]);
-
-  const effectiveDeliveryFee = deliveryMethod === "delivery" ? deliveryFee : 0;
+    return (subtotal + effectiveDeliveryFee) * (cardFeePercent / 100);
+  }, [subtotal, effectiveDeliveryFee, paymentMethod, cardFeePercent]);
 
   const netValue = subtotal - cardFeeAmount + effectiveDeliveryFee;
 
