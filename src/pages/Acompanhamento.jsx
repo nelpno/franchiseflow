@@ -23,6 +23,7 @@ export default function Acompanhamento() {
   const [franchises, setFranchises] = useState([]);
   const [healthScores, setHealthScores] = useState([]);
   const [allNotes, setAllNotes] = useState([]);
+  const [allInventory, setAllInventory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -103,6 +104,7 @@ export default function Acompanhamento() {
       setFranchises(allFranchises);
       setHealthScores(scores);
       setAllNotes(notes);
+      setAllInventory(inventory);
       setLastRefresh(new Date());
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
@@ -393,6 +395,9 @@ export default function Acompanhamento() {
                         currentUserId={currentUser?.id}
                         currentUserName={currentUser?.full_name}
                         onNoteAdded={loadData}
+                        inventoryItems={allInventory.filter(
+                          (i) => i.franchise_id === franchise.evolution_instance_id
+                        )}
                       />
                     )}
                   </div>

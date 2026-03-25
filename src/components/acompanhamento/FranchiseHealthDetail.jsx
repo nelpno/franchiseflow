@@ -1,18 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from "@/components/ui/button";
 import { STATUS_COLORS } from "@/lib/healthScore";
 import { getWhatsAppLink } from "@/lib/whatsappUtils";
 import FranchiseNotes from "./FranchiseNotes";
+import InventorySheet from "./InventorySheet";
 
 /**
  * Inline drill-down panel for a franchise in the health list.
  */
 export default function FranchiseHealthDetail({
-  franchise, healthData, notes, currentUserId, currentUserName, onNoteAdded
+  franchise, healthData, notes, currentUserId, currentUserName, onNoteAdded, inventoryItems
 }) {
   const navigate = useNavigate();
+  const [showInventory, setShowInventory] = useState(false);
   const { dimensions } = healthData;
 
   const dimensionRows = [
@@ -84,6 +86,13 @@ export default function FranchiseHealthDetail({
           <MaterialIcon icon="edit_note" className="text-base mr-1" />
           Anotar
         </Button>
+        <Button
+          variant="outline" size="sm"
+          onClick={() => setShowInventory(true)}
+        >
+          <MaterialIcon icon="inventory_2" className="text-base mr-1" />
+          Ver Estoque
+        </Button>
         {healthData.dimensions.setup.score < 100 && (
           <Button variant="outline" size="sm" onClick={() => navigate("/Onboarding")}>
             <MaterialIcon icon="rocket_launch" className="text-base mr-1" />
@@ -91,6 +100,13 @@ export default function FranchiseHealthDetail({
           </Button>
         )}
       </div>
+
+      <InventorySheet
+        open={showInventory}
+        onOpenChange={setShowInventory}
+        franchiseName={franchise.city || franchise.owner_name || "Franquia"}
+        items={inventoryItems || []}
+      />
     </div>
   );
 }
