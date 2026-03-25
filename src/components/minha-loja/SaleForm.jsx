@@ -504,7 +504,7 @@ export default function SaleForm({
   const effectiveDeliveryFee = deliveryMethod === "delivery" ? deliveryFee : 0;
 
   const cardFeeAmount = useMemo(() => {
-    if (paymentMethod !== "card_machine") return 0;
+    if (paymentMethod !== "card_machine" && paymentMethod !== "payment_link") return 0;
     return (subtotal + effectiveDeliveryFee) * (cardFeePercent / 100);
   }, [subtotal, effectiveDeliveryFee, paymentMethod, cardFeePercent]);
 
@@ -676,8 +676,8 @@ export default function SaleForm({
         contact_id: resolvedContactId || null,
         source: "manual",
         payment_method: paymentMethod,
-        card_fee_percent: paymentMethod === "card_machine" ? cardFeePercent : null,
-        card_fee_amount: paymentMethod === "card_machine" ? cardFeeAmount : null,
+        card_fee_percent: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeePercent : null,
+        card_fee_amount: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeeAmount : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
         net_value: netValue,
@@ -981,9 +981,9 @@ export default function SaleForm({
           ))}
         </div>
 
-        {paymentMethod === "card_machine" && (
+        {(paymentMethod === "card_machine" || paymentMethod === "payment_link") && (
           <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
-            <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa do cartao (%)</Label>
+            <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
             <Input
               type="number"
               min={0}
@@ -1055,9 +1055,9 @@ export default function SaleForm({
           </span>
         </div>
 
-        {paymentMethod === "card_machine" && cardFeeAmount > 0 && (
+        {(paymentMethod === "card_machine" || paymentMethod === "payment_link") && cardFeeAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#4a3d3d]">Taxa cartao ({cardFeePercent}%)</span>
+            <span className="text-[#4a3d3d]">Taxa {paymentMethod === "payment_link" ? "link" : "cartão"} ({cardFeePercent}%)</span>
             <span className="font-medium text-[#b91c1c] font-mono-numbers">
               - {formatCurrency(cardFeeAmount)}
             </span>

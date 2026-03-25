@@ -452,7 +452,7 @@ export default function TabLancar({
                           {sale.card_fee_amount > 0 && (
                             <div className="flex justify-between">
                               <span className="text-[#4a3d3d]">
-                                Taxa cartão ({sale.card_fee_percent}%)
+                                Taxa {sale.payment_method === "payment_link" ? "link" : "cartão"} ({sale.card_fee_percent}%)
                               </span>
                               <span className="text-[#dc2626] font-mono-numbers">
                                 - {formatCurrency(sale.card_fee_amount)}
