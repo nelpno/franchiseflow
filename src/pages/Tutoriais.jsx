@@ -14,7 +14,8 @@ const TUTORIAL_VIDEOS = [
     description: "Login, primeiro acesso, navegação pelo menu e visão geral da tela inicial.",
     duration: "2 min",
     icon: "waving_hand",
-    youtubeId: "",
+    youtubeId: "EH-zq8NzvjQ",
+    isShort: true,
     steps: [
       "Abra o app e faça login com seu email e senha.",
       "Essa é sua tela inicial (Dashboard) — aqui você vê um resumo rápido do dia.",
@@ -36,7 +37,8 @@ const TUTORIAL_VIDEOS = [
     description: "Checklist de missões, como marcar itens concluídos e acompanhar seu progresso.",
     duration: "3 min",
     icon: "checklist",
-    youtubeId: "",
+    youtubeId: "nnPNlIF26Ic",
+    isShort: true,
     steps: [
       "Abra o Onboarding pelo menu lateral.",
       "Aqui estão todas as missões pra você começar bem. O anel de progresso mostra quanto você já completou.",
@@ -54,7 +56,8 @@ const TUTORIAL_VIDEOS = [
     description: "Passo a passo do wizard: dados, horário, delivery, pagamento, catálogo e conexão WhatsApp.",
     duration: "4 min",
     icon: "smart_toy",
-    youtubeId: "",
+    youtubeId: "DOdLNBQomhs",
+    isShort: true,
     steps: [
       "Vá em \"Meu Vendedor\" no menu. São 5 passos para configurar seu vendedor automático.",
       "Passo 1 — Informações: preencha o nome da franquia, endereço e ponto de referência.",
@@ -72,7 +75,8 @@ const TUTORIAL_VIDEOS = [
     description: "Selecionar produtos, forma de pagamento, entrega, gerar e compartilhar comprovante.",
     duration: "3 min",
     icon: "point_of_sale",
-    youtubeId: "",
+    youtubeId: "u3T7EWFmmy8",
+    isShort: true,
     steps: [
       "Toque no botão redondo \"Vender\" na barra de baixo (ou vá em Vendas no menu).",
       "Selecione um cliente existente ou crie um novo. Também pode deixar sem cliente.",
@@ -91,7 +95,8 @@ const TUTORIAL_VIDEOS = [
     description: "Entenda seu faturamento, despesas, taxas e gráficos com filtros por período.",
     duration: "3 min",
     icon: "bar_chart",
-    youtubeId: "",
+    youtubeId: "MS6Affwjyx0",
+    isShort: true,
     steps: [
       "Vá em Gestão e toque na aba \"Resultado\".",
       "Aqui é o coração do seu negócio — tudo que entrou e saiu.",
@@ -111,7 +116,8 @@ const TUTORIAL_VIDEOS = [
     description: "Conferir quantidades, editar preços, fazer pedido de reposição e acompanhar status.",
     duration: "3 min",
     icon: "inventory_2",
-    youtubeId: "",
+    youtubeId: "Kj19HM7EjPI",
+    isShort: true,
     steps: [
       "Vá em Gestão e toque na aba \"Estoque\".",
       "Aqui estão todos os seus produtos com a quantidade atual.",
@@ -130,7 +136,8 @@ const TUTORIAL_VIDEOS = [
     description: "Pipeline de status, adicionar contatos, filtrar e ações rápidas direto para venda.",
     duration: "3 min",
     icon: "people",
-    youtubeId: "",
+    youtubeId: "us5HqjrEgio",
+    isShort: true,
     steps: [
       "Vá em \"Meus Clientes\". Aqui ficam todos os seus clientes — os que compraram e os que o robô captou.",
       "Use as abas para filtrar por status:",
@@ -151,7 +158,8 @@ const TUTORIAL_VIDEOS = [
     description: "Botão rápido de venda, notificações, Dashboard como painel e outras dicas úteis.",
     duration: "2 min",
     icon: "lightbulb",
-    youtubeId: "",
+    youtubeId: "98tGH5KoEjA",
+    isShort: true,
     steps: [
       "O botão \"Vender\" na barra de baixo está sempre disponível, de qualquer tela. É o jeito mais rápido de registrar uma venda.",
       "O sininho no topo mostra avisos de pedidos e atualizações. Fique de olho!",
@@ -317,12 +325,12 @@ export default function Tutoriais() {
 
       {/* Video player modal */}
       <Dialog open={!!selectedVideo} onOpenChange={() => setSelectedVideo(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black/95 border-none">
+        <DialogContent className={`p-0 overflow-hidden bg-black/95 border-none ${selectedVideo?.isShort ? "max-w-sm" : "max-w-3xl"}`}>
           <DialogTitle className="sr-only">
             {selectedVideo?.title}
           </DialogTitle>
           {selectedVideo?.youtubeId ? (
-            <div className="aspect-video w-full">
+            <div className={`w-full ${selectedVideo?.isShort ? "aspect-[9/16] max-h-[80vh]" : "aspect-video"}`}>
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${selectedVideo.youtubeId}?autoplay=1&rel=0`}
                 title={selectedVideo.title}

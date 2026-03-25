@@ -1,6 +1,9 @@
 -- RPC que retorna posição do franqueado no ranking do dia
 -- Sem expor faturamento de outras franquias (seguro via RLS)
-create or replace function get_franchise_ranking(p_date date, p_franchise_id uuid)
+-- Drop old UUID version if exists
+drop function if exists get_franchise_ranking(date, uuid);
+
+create or replace function get_franchise_ranking(p_date date, p_franchise_id text)
 returns json
 language plpgsql
 security definer
@@ -33,4 +36,4 @@ begin
 end;
 $$;
 
-grant execute on function get_franchise_ranking(date, uuid) to authenticated;
+grant execute on function get_franchise_ranking(date, text) to authenticated;

@@ -150,11 +150,10 @@ export default function MyContacts() {
   useEffect(() => {
     mountedRef.current = true;
     loadContacts();
-    loadInstanceName();
     return () => { mountedRef.current = false; };
   }, []);
 
-  const loadContacts = async () => {
+  const loadContacts = async (retryCount = 0) => {
     try {
       setLoading(true);
       setLoadError(null);
@@ -163,6 +162,11 @@ export default function MyContacts() {
       setContacts(data);
     } catch (error) {
       if (!mountedRef.current) return;
+      if (retryCount < 1) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (mountedRef.current) return loadContacts(retryCount + 1);
+        return;
+      }
       console.error("Erro ao carregar contatos:", error);
       setLoadError("Erro ao carregar contatos. Tente novamente.");
       toast.error("Erro ao carregar contatos");
@@ -171,19 +175,6 @@ export default function MyContacts() {
     }
   };
 
-  const loadInstanceName = async () => {
-    try {
-      const franchiseId = currentUser?.managed_franchise_ids?.[0];
-      if (!franchiseId) return;
-      const franchises = await Franchise.list();
-      if (!mountedRef.current) return;
-      const myFranchise = franchises.find(
-        (f) => f.id === franchiseId || f.evolution_instance_id === franchiseId
-      );
-    } catch {
-      // Silently fail
-    }
-  };
 
   const statusCounts = useMemo(() => {
     const counts = {};

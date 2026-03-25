@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { User, Franchise, Sale, InventoryItem, SaleItem, Contact } from "@/entities/all";
+import { User, Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import TabLancar from "@/components/minha-loja/TabLancar";
 
 export default function Vendas() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedFranchise } = useAuth();
   const rawAction = searchParams.get("action");
   const actionParam = rawAction === "nova-venda" ? rawAction : null;
@@ -22,7 +22,6 @@ export default function Vendas() {
   const [franchises, setFranchises] = useState([]);
   const [sales, setSales] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
-  const [saleItems, setSaleItems] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -34,7 +33,7 @@ export default function Vendas() {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (retryCount = 0) => {
     try {
       setLoading(true);
       setLoadError(null);
@@ -49,20 +48,18 @@ export default function Vendas() {
       setCurrentUser(userData);
       setFranchises(franchisesData);
 
-      const [salesResult, inventoryResult, saleItemsResult, contactsResult] = await Promise.allSettled([
+      const [salesResult, inventoryResult, contactsResult] = await Promise.allSettled([
         Sale.list("-created_at", 500),
         InventoryItem.list("-updated_at"),
-        SaleItem.list('-created_at', 500),
         Contact.list('-created_at', 200),
       ]);
       if (!mountedRef.current) return;
 
       setSales(salesResult.status === "fulfilled" ? salesResult.value : []);
       setInventoryItems(inventoryResult.status === "fulfilled" ? inventoryResult.value : []);
-      setSaleItems(saleItemsResult.status === "fulfilled" ? saleItemsResult.value : []);
       setContacts(contactsResult.status === "fulfilled" ? contactsResult.value : []);
 
-      const failed = [salesResult, inventoryResult, saleItemsResult, contactsResult]
+      const failed = [salesResult, inventoryResult, contactsResult]
         .filter(r => r.status === "rejected");
       if (failed.length > 0) {
         console.warn("Algumas queries falharam:", failed.map(f => f.reason?.message));
@@ -70,6 +67,11 @@ export default function Vendas() {
       }
     } catch (error) {
       if (!mountedRef.current) return;
+      if (retryCount < 1) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (mountedRef.current) return loadData(retryCount + 1);
+        return;
+      }
       console.error("Erro ao carregar dados:", error);
       const msg = error?.message || "Erro desconhecido";
       setLoadError(`Erro ao carregar dados de vendas: ${msg}`);
@@ -83,15 +85,14 @@ export default function Vendas() {
     try {
       const refreshResults = await Promise.allSettled([
         Sale.list("-created_at", 500),
-        SaleItem.list('-created_at', 500),
         Contact.list('-created_at', 200),
         InventoryItem.list("-updated_at"),
       ]);
+      if (!mountedRef.current) return;
       const getVal = (r) => r.status === "fulfilled" ? r.value : [];
       setSales(getVal(refreshResults[0]));
-      setSaleItems(getVal(refreshResults[1]));
-      setContacts(getVal(refreshResults[2]));
-      setInventoryItems(getVal(refreshResults[3]));
+      setContacts(getVal(refreshResults[1]));
+      setInventoryItems(getVal(refreshResults[2]));
     } catch (error) {
       console.error("Erro ao recarregar vendas:", error);
     }
@@ -186,6 +187,11 @@ export default function Vendas() {
           inventoryItems={franchiseInventory}
           onRefresh={handleRefreshSales}
           autoOpenForm={actionParam === "nova-venda"}
+          onFormOpened={() => {
+            if (actionParam) {
+              setSearchParams({}, { replace: true });
+            }
+          }}
           initialContactId={contactIdParam}
           initialPhone={phoneParam}
         />

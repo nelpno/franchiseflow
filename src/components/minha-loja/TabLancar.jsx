@@ -80,10 +80,21 @@ export default function TabLancar({
   inventoryItems,
   onRefresh,
   autoOpenForm = false,
+  onFormOpened,
   initialContactId = null,
   initialPhone = null,
 }) {
   const [showFormDialog, setShowFormDialog] = useState(autoOpenForm);
+
+  // React to autoOpenForm changes (e.g. FAB clicked while already on Vendas)
+  useEffect(() => {
+    if (autoOpenForm) {
+      setEditingSale(null);
+      setShowFormDialog(true);
+      onFormOpened?.();
+    }
+  }, [autoOpenForm]);
+
   const [editingSale, setEditingSale] = useState(null);
   const [expandedSaleId, setExpandedSaleId] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
