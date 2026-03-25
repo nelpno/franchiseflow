@@ -355,30 +355,38 @@ export default function Franchises() {
     if (!invitingFranchise || !inviteEmail) return;
     setIsSendingInvite(true);
     try {
-      // Verificar se já existe convite pendente para este email+franquia
-      const existing = await FranchiseInvite.filter({
-        franchise_id: invitingFranchise.evolution_instance_id,
-        email: inviteEmail,
-        status: "pending",
-      });
-      if (!existing || existing.length === 0) {
+      // Cria convite no banco (unique constraint impede duplicatas automaticamente)
+      try {
         await FranchiseInvite.create({
           franchise_id: invitingFranchise.evolution_instance_id,
           email: inviteEmail,
           status: "pending",
         });
+      } catch (createErr) {
+        // Constraint de duplicata (23505) = convite já existe, prosseguir com reenvio
+        const isDuplicate = createErr?.code === "23505" || createErr?.message?.includes("duplicate");
+        if (!isDuplicate) throw createErr;
       }
-      // Dispara convite n8n + reset senha em paralelo, sem bloquear UI
+
+      // Fechar modal imediatamente
       const emailToInvite = inviteEmail;
+      setInvitingFranchise(null);
+      setInviteEmail("");
+      setIsSendingInvite(false);
+      toast.success("Convite registrado! Enviando email...");
+
+      // Dispara convite n8n + reset senha em background (não bloqueia UI)
       Promise.all([
         inviteFranchisee(emailToInvite).catch(err => console.warn("Invite webhook:", err.message)),
         supabase.auth.resetPasswordForEmail(emailToInvite, {
           redirectTo: window.location.origin + '/set-password'
         }).catch(err => console.warn("Reset password:", err.message)),
-      ]);
-      toast.success(`Email de primeiro acesso enviado para ${inviteEmail}`);
-      setInvitingFranchise(null);
-      setInviteEmail("");
+      ]).then(() => {
+        toast.success(`Email de primeiro acesso enviado para ${emailToInvite}`);
+      }).catch(() => {
+        toast.error("Convite salvo, mas email pode não ter sido enviado. Reenvie se necessário.");
+      });
+      return;
     } catch (error) {
       console.error("Erro ao enviar convite:", error);
       toast.error(`Erro ao enviar convite: ${error?.message || "Erro desconhecido"}`);
