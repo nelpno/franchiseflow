@@ -322,7 +322,6 @@ export default function Acompanhamento() {
                   { label: "Estoque", score: health.dimensions.estoque.score },
                   { label: "Pedidos", score: health.dimensions.reposicao.score },
                   { label: "Setup", score: health.dimensions.setup.score },
-                  { label: "Ativid.", score: health.dimensions.atividade.score },
                 ];
 
                 return (
