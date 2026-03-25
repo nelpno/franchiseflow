@@ -426,6 +426,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 222. Login.jsx tem "Primeiro acesso? Defina sua senha aqui" como rede de segurança — ativa modo reset de senha. "Não possui acesso? Solicite ao administrador" é texto secundário (não clicável)
 223. Rota `/set-password` redireciona para `/login` quando `isAuthenticated=false` — NÃO mostrar `PageFallback` (spinner infinito). Franqueado usa "Primeiro acesso" no login como fallback
 224. `fetchWithTimeout()` abort gera `error.name === 'AbortError'` — usar para mostrar mensagem específica de timeout ao invés de erro genérico. Pattern em `useWhatsAppConnection.js` linha 112
+225. Workflow ZuckZapGo (`brmZAsAykq6hSMpL`) refatorado em 25/03: `action_switch` separa `check_status` (retorna status leve) de `smart_connect` (executa conexão). Path unificado: SEMPRE desconecta antes de reconectar (elimina bug "already logged in" de sessão stale). `Desconecta Whatsapp` tem `onError=continueRegularOutput`. Backup pré-refactor: `docs/criar-usuario-zuckzapgo-pre-refactor-backup.json`
 225. Onboarding items suportam `dependsOn: "key"` — item fica bloqueado (cadeado) até dependência ser marcada. Ex: `6-2` depende de `6-1` (conferir pedido só após fazer pedido). `canMark()` em OnboardingBlock.jsx checa dependência
 226. `card_fee_amount` calculado sobre `subtotal + effectiveDeliveryFee` (valor total na maquininha) — franqueado passa cartão no valor cheio incluindo frete
 
