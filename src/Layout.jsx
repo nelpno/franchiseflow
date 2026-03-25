@@ -232,8 +232,12 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error('[Layout] Logout failed:', e);
+    }
   };
 
   const isAdmin = currentUser?.role === "admin";
