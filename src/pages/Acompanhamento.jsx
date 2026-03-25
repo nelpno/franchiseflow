@@ -170,7 +170,7 @@ export default function Acompanhamento() {
         return bDays - aDays;
       });
     } else if (sortBy === "name") {
-      list.sort((a, b) => (a.franchise.owner_name || "").localeCompare(b.franchise.owner_name || ""));
+      list.sort((a, b) => (a.franchise.name || "").localeCompare(b.franchise.name || ""));
     }
 
     return list;
@@ -347,11 +347,16 @@ export default function Acompanhamento() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold truncate" style={{ color: "#1b1c1d" }}>
-                            {franchise.owner_name || franchise.name}
+                            {franchise.name}
                           </span>
                           <span className="text-sm shrink-0" style={{ color: "#7a6d6d" }}>
                             · {franchise.city}
                           </span>
+                          {franchise.owner_name && (
+                            <span className="text-xs shrink-0 hidden sm:inline" style={{ color: "#7a6d6d" }}>
+                              — {franchise.owner_name}
+                            </span>
+                          )}
                           {health.isNew && (
                             <span
                               className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
