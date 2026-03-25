@@ -130,7 +130,7 @@ export default function Onboarding() {
       const inventory = autoResults[2].status === "fulfilled" ? autoResults[2].value : [];
       // 5-2: Wizard complete if config has required fields
       const cfg = configs[0];
-      if (cfg && cfg.unit_address && cfg.pix_key && cfg.delivery_radius != null) {
+      if (cfg && cfg.unit_address && cfg.pix_key_data && cfg.max_delivery_radius_km != null) {
         auto["5-2"] = true;
       }
       // 6-1: Has at least one purchase order
