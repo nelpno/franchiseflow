@@ -49,10 +49,7 @@ const STATUS_CONFIG = {
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado", order: 4 },
 };
 
-const PRODUCT_CATEGORIES = [
-  "Canelone", "Conchiglione", "Massa", "Nhoque",
-  "Rondelli", "Sofioli", "Molho", "Outros",
-];
+const PRODUCT_CATEGORIES = ["Massas", "Molhos", "Outros"];
 
 const PRODUCT_UNITS = [
   { value: "un", label: "Unidade (un)" },
