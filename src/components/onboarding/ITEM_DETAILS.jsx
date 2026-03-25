@@ -46,7 +46,7 @@ export const ITEM_DETAILS = {
     text: "No WhatsApp Business → Configurações → Perfil comercial, preencha:\n- Foto: logo da Maxi Massas\n- Nome: Maxi Massas [Sua Cidade]\n- Categoria: Restaurante\n- Descrição: Massas artesanais congeladas prontas em minutos!\n- Endereço e horário de funcionamento",
   },
   "4-3": {
-    text: "Crie 8 etiquetas no WhatsApp Business para organizar suas conversas:\n\nContato Novo — Acabou de chegar, responder rápido!\nInteressado — Respondeu mas não fechou. Follow-up em 24h.\nPedido Confirmado — Fechou, aguardando pagamento/entrega.\nCliente — Comprou pelo menos 1 vez.\nCliente Fiel — Comprou 3+ vezes. Tratamento VIP.\nClientes Sumidos — Inativo 15+ dias. Reativar com oferta.\nNão Fechou — Tentar novamente em 30 dias.\nIndicação — Chegou por indicação. Prioridade!",
+    text: "Crie 5 etiquetas no WhatsApp Business usando as cores padrão. Elas casam com o pipeline de 'Meus Clientes' no app:\n\n🟢 Novo — Acabou de chegar, responder rápido!\n🔵 Negociando — Respondeu mas ainda não fechou. Follow-up em 24h.\n🟡 Cliente — Já comprou pelo menos 1 vez.\n🟠 VIP — Comprou 3+ vezes. Tratamento especial!\n🔴 Reativar — Sumiu há 15+ dias. Mandar oferta!",
   },
   "4-4": {
     text: "Este item é responsabilidade do franqueador. Será marcado quando seu WhatsApp for adicionado ao grupo oficial.",
@@ -79,7 +79,7 @@ export const ITEM_DETAILS = {
   // === MISSÃO 7: Treinamento ===
   "7-1": {
     text: "Assista os 3 vídeos no Drive:\n1. Configuração do WhatsApp Business\n2. Como usar o Meta Business Suite\n3. Como funciona o Robô de Atendimento\n\nDura cerca de 45 minutos no total. Pode assistir no seu ritmo!",
-    links: [{ label: "Acessar Drive", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
+    links: [{ label: "Acessar Drive", url: "https://drive.google.com/drive/u/1/folders/1DwQLHOKo2Lf8RJ83-ADAqJcIYmi5m-VH" }],
   },
   "7-2": {
     text: "Envie uma mensagem de outro celular para o número do WhatsApp Business. O robô deve responder automaticamente. Verifique se a saudação, cardápio e informações estão corretos.\n\nSe algo estiver errado, ajuste em Meu Vendedor no app.",

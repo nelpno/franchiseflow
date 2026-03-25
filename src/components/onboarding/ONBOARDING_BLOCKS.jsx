@@ -44,7 +44,7 @@ export const BLOCKS = [
     items: [
       { key: "4-1", label: "Número exclusivo obtido e WhatsApp Business instalado", role: "franchisee" },
       { key: "4-2", label: "Perfil comercial completo (foto, nome, descrição, endereço, horário)", role: "franchisee" },
-      { key: "4-3", label: "8 etiquetas de organização criadas no WhatsApp Business", role: "franchisee" },
+      { key: "4-3", label: "5 etiquetas de organização criadas no WhatsApp Business", role: "franchisee" },
       { key: "4-4", label: "WhatsApp Business adicionado no grupo da franquia", role: "franchisor" },
     ],
   },
