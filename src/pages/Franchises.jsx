@@ -134,7 +134,11 @@ export default function Franchises() {
             status: "pending",
           });
           await inviteFranchisee(franchiseeEmail);
-          toast.success(`Franquia criada! Convite enviado para ${franchiseeEmail}`);
+          // Envia email de definir senha (mais confiável que o link do invite)
+          await supabase.auth.resetPasswordForEmail(franchiseeEmail, {
+            redirectTo: window.location.origin + '/set-password'
+          });
+          toast.success(`Franquia criada! Email de primeiro acesso enviado para ${franchiseeEmail}`);
         } catch (inviteError) {
           console.error("Erro ao criar convite:", inviteError);
           toast.success("Franquia criada com sucesso!");
@@ -350,7 +354,11 @@ export default function Franchises() {
         });
       }
       await inviteFranchisee(inviteEmail);
-      toast.success(`Convite enviado para ${inviteEmail}`);
+      // Envia email de definir senha (mais confiável que o link do invite)
+      await supabase.auth.resetPasswordForEmail(inviteEmail, {
+        redirectTo: window.location.origin + '/set-password'
+      });
+      toast.success(`Email de primeiro acesso enviado para ${inviteEmail}`);
       setInvitingFranchise(null);
       setInviteEmail("");
     } catch (error) {
