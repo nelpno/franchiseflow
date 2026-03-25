@@ -65,6 +65,10 @@ export default function Franchises() {
   const [isDeletingFranchise, setIsDeletingFranchise] = useState(false);
   const [isDeletingStaff, setIsDeletingStaff] = useState(false);
 
+  // Unlink user confirmation
+  const [unlinkingUser, setUnlinkingUser] = useState(null); // { user, franchise }
+  const [isUnlinking, setIsUnlinking] = useState(false);
+
   useEffect(() => {
     mountedRef.current = true;
     loadData();
@@ -259,18 +263,49 @@ export default function Franchises() {
     }
   };
 
-  const handleUnlinkUser = async (user, franchise) => {
+  const handleUnlinkUser = async () => {
+    if (!unlinkingUser) return;
+    const { user, franchise } = unlinkingUser;
+    setIsUnlinking(true);
     try {
       const currentIds = user.managed_franchise_ids || [];
       const newIds = currentIds.filter(
         (id) => id !== franchise.id && id !== franchise.evolution_instance_id
       );
-      await User.update(user.id, { managed_franchise_ids: newIds });
-      toast.success(`${user.full_name || user.email} desvinculado de ${getDisplayName(franchise)}`);
+
+      if (newIds.length > 0) {
+        // Ainda tem outras franquias — apenas atualizar
+        await User.update(user.id, { managed_franchise_ids: newIds });
+      } else {
+        // Órfão — deletar usuário completamente
+        await supabase.rpc('delete_user_complete', { p_user_id: user.id });
+      }
+
+      // Limpar franchise_invites para este email+franquia
+      try {
+        const invites = await FranchiseInvite.filter({
+          franchise_id: franchise.evolution_instance_id,
+        });
+        const userInvites = invites.filter((inv) => inv.email === user.email);
+        for (const inv of userInvites) {
+          await FranchiseInvite.delete(inv.id);
+        }
+      } catch (invErr) {
+        console.warn("Erro ao limpar invites (não-crítico):", invErr);
+      }
+
+      toast.success(
+        newIds.length > 0
+          ? `${user.full_name || user.email} desvinculado de ${getDisplayName(franchise)}`
+          : `${user.full_name || user.email} desvinculado e conta removida`
+      );
+      setUnlinkingUser(null);
       loadData();
     } catch (error) {
       console.error("Erro ao desvincular:", error);
-      toast.error("Erro ao desvincular usuário.");
+      toast.error(`Erro ao desvincular: ${error?.message || "erro desconhecido"}`);
+    } finally {
+      setIsUnlinking(false);
     }
   };
 
@@ -355,15 +390,21 @@ export default function Franchises() {
     if (!invitingFranchise || !inviteEmail) return;
     setIsSendingInvite(true);
     try {
-      // Cria convite no banco (unique constraint impede duplicatas automaticamente)
+      // Cria convite no banco (insert direto sem .select() — não precisamos do retorno)
       try {
-        await FranchiseInvite.create({
-          franchise_id: invitingFranchise.evolution_instance_id,
-          email: inviteEmail,
-          status: "pending",
-        });
+        const { error: invErr } = await supabase
+          .from('franchise_invites')
+          .insert({
+            franchise_id: invitingFranchise.evolution_instance_id,
+            email: inviteEmail,
+            status: "pending",
+          });
+        if (invErr) {
+          // Constraint de duplicata (23505) = convite já existe, prosseguir com reenvio
+          const isDuplicate = invErr.code === "23505" || invErr.message?.includes("duplicate");
+          if (!isDuplicate) throw invErr;
+        }
       } catch (createErr) {
-        // Constraint de duplicata (23505) = convite já existe, prosseguir com reenvio
         const isDuplicate = createErr?.code === "23505" || createErr?.message?.includes("duplicate");
         if (!isDuplicate) throw createErr;
       }
@@ -649,7 +690,7 @@ export default function Franchises() {
                                   className="text-[#cac0c0] hover:text-[#b91c1c] transition-colors ml-2 shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleUnlinkUser(u, franchise);
+                                    setUnlinkingUser({ user: u, franchise });
                                   }}
                                   title="Desvincular"
                                 >
@@ -854,6 +895,58 @@ export default function Franchises() {
                   className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl min-w-[100px]"
                 >
                   {isDeletingFranchise ? "Excluindo..." : "Excluir"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Unlink User Confirmation Dialog */}
+        <Dialog
+          open={!!unlinkingUser}
+          onOpenChange={(open) => {
+            if (!open && !isUnlinking) setUnlinkingUser(null);
+          }}
+        >
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#b91c1c]">
+                <MaterialIcon icon="link_off" size={20} />
+                Desvincular Usuário
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-[#4a3d3d]">
+                Deseja desvincular{" "}
+                <strong>{unlinkingUser?.user?.full_name || unlinkingUser?.user?.email}</strong> de{" "}
+                <strong>{getDisplayName(unlinkingUser?.franchise)}</strong>?
+              </p>
+              {(() => {
+                if (!unlinkingUser) return null;
+                const currentIds = unlinkingUser.user.managed_franchise_ids || [];
+                const remaining = currentIds.filter(
+                  (id) => id !== unlinkingUser.franchise.id && id !== unlinkingUser.franchise.evolution_instance_id
+                );
+                if (remaining.length === 0) {
+                  return (
+                    <p className="text-xs text-[#b91c1c] mt-2 flex items-start gap-1.5">
+                      <MaterialIcon icon="warning" size={14} className="shrink-0 mt-0.5" />
+                      Este usuário não tem outras franquias e será removido do sistema.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="outline" onClick={() => setUnlinkingUser(null)} disabled={isUnlinking} className="rounded-xl">
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleUnlinkUser}
+                  disabled={isUnlinking}
+                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl min-w-[120px]"
+                >
+                  {isUnlinking ? "Desvinculando..." : "Desvincular"}
                 </Button>
               </div>
             </div>
