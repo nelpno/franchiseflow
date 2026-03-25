@@ -274,7 +274,8 @@ export default function Franchises() {
         await User.update(user.id, { managed_franchise_ids: newIds });
       } else {
         // Órfão — deletar usuário completamente
-        await supabase.rpc('delete_user_complete', { p_user_id: user.id });
+        const { error: rpcError } = await supabase.rpc('delete_user_complete', { p_user_id: user.id });
+        if (rpcError) throw rpcError;
       }
 
       // Limpar franchise_invites para este email+franquia
