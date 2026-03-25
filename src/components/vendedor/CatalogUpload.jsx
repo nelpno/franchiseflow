@@ -6,8 +6,37 @@ import { toast } from "sonner";
 /**
  * Upload de imagem do catálogo para Supabase Storage.
  * Salva no bucket "catalog-images" (público).
- * Aceita JPG, PNG, WebP. Max 5MB.
+ * Aceita JPG, PNG, WebP — converte para JPG antes do upload (compatibilidade n8n).
+ * Max 10MB antes da conversão.
  */
+
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function convertToJpeg(file, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      // Fundo branco (PNG com transparência ficaria preto)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Falha na conversão da imagem"));
+          resolve(new File([blob], "catalogo.jpg", { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+    img.onerror = () => reject(new Error("Não foi possível carregar a imagem"));
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 export default function CatalogUpload({ value, onChange, franchiseId }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -17,24 +46,29 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
   const handleFile = async (file) => {
     if (!file) return;
 
-    // Validate — JPG only para compatibilidade com automação n8n
-    if (file.type !== "image/jpeg") {
-      toast.error("Use apenas imagens JPG. Exporte do Canva em JPG.");
+    // Validate — aceita JPG, PNG, WebP (converte para JPG antes do upload)
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error("Use imagens JPG, PNG ou WebP.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Imagem muito grande. Máximo 5MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagem muito grande. Máximo 10MB.");
       return;
     }
 
     setIsUploading(true);
     try {
+      // Converter para JPG se necessário (n8n espera JPG)
+      const jpegFile = file.type === "image/jpeg"
+        ? file
+        : await convertToJpeg(file);
+
       const fileName = `${franchiseId || "default"}/catalogo.jpg`;
 
       // Upload with 30s timeout to avoid infinite loading
       const uploadPromise = supabase.storage
         .from("catalog-images")
-        .upload(fileName, file, { upsert: true, contentType: "image/jpeg" });
+        .upload(fileName, jpegFile, { upsert: true, contentType: "image/jpeg" });
 
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), 30000)
@@ -146,9 +180,9 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
               <p className="text-sm font-medium text-[#3d4a42]">
                 Arraste a imagem do catálogo ou <span className="text-[#b91c1c] font-bold">clique para selecionar</span>
               </p>
-              <p className="text-xs text-[#3d4a42]/70">Apenas JPG • Máximo 5MB</p>
+              <p className="text-xs text-[#3d4a42]/70">JPG, PNG ou WebP • Máximo 10MB</p>
               <p className="text-xs text-[#3d4a42]/70">
-                Dica: Exporte do Canva em JPG para melhor qualidade
+                Dica: Baixe direto do Canva e envie aqui
               </p>
             </div>
           )}
@@ -158,7 +192,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg"
+        accept="image/jpeg,image/png,image/webp"
         className="hidden"
         onChange={(e) => handleFile(e.target.files[0])}
       />
