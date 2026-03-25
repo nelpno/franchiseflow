@@ -278,7 +278,11 @@ export default function Tutoriais() {
       return;
     }
     localStorage.setItem(`tutorial_watched_${video.id}`, "true");
-    setSelectedVideo(video);
+    // Open YouTube directly — embed doesn't render Shorts well
+    const url = video.isShort
+      ? `https://www.youtube.com/shorts/${video.youtubeId}`
+      : `https://www.youtube.com/watch?v=${video.youtubeId}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const watchedCount = TUTORIAL_VIDEOS.filter(
