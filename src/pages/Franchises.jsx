@@ -336,18 +336,26 @@ export default function Franchises() {
     if (!invitingFranchise || !inviteEmail) return;
     setIsSendingInvite(true);
     try {
-      await FranchiseInvite.create({
+      // Verificar se já existe convite pendente para este email+franquia
+      const existing = await FranchiseInvite.filter({
         franchise_id: invitingFranchise.evolution_instance_id,
         email: inviteEmail,
         status: "pending",
       });
+      if (!existing || existing.length === 0) {
+        await FranchiseInvite.create({
+          franchise_id: invitingFranchise.evolution_instance_id,
+          email: inviteEmail,
+          status: "pending",
+        });
+      }
       await inviteFranchisee(inviteEmail);
       toast.success(`Convite enviado para ${inviteEmail}`);
       setInvitingFranchise(null);
       setInviteEmail("");
     } catch (error) {
       console.error("Erro ao enviar convite:", error);
-      toast.error("Erro ao enviar convite.");
+      toast.error(`Erro ao enviar convite: ${error?.message || "Erro desconhecido"}`);
     }
     setIsSendingInvite(false);
   };

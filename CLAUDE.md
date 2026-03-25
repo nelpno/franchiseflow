@@ -412,6 +412,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 208. Credencial Supabase nos nós n8n usa key `supabaseApi` (NÃO `supabase`) — ex: `credentials: { supabaseApi: { id: "mIVPcJBNcDCx21LR" } }`
 209. `franchise_configurations` NÃO tem coluna `personal_phone` — o campo correto é `personal_phone_for_summary` (11 dígitos sem 55). View `vw_dadosunidade` computa `personal_phone_wa` = `'55' + personal_phone_for_summary`
 210. Backup pre-RabbitMQ do V2: `docs/vendedor-generico-workflow-v2-pre-rabbitmq.json`. Rollback: reativar V1 via `POST /api/v1/workflows/PALRV1RqD3opHMzk/activate`
+211. Workflow ZuckZapGo (`brmZAsAykq6hSMpL`): TODOS os caminhos connect→QR têm nó Wait 3s (`Aguarda QR Ready`, `Aguarda QR Ready1`, `Aguarda QR Ready2`) — ZuckZapGo precisa de tempo entre `/session/connect` e `/session/qr`, sem Wait retorna 500 "not connected"
+212. `N8N_API_KEY` env var pode não estar disponível no shell da sessão — ler do `.env` na raiz do projeto como fallback
 
 ## Scripts
 ```bash

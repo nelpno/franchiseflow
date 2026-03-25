@@ -166,13 +166,18 @@ export const AuthProvider = ({ children }) => {
   }, [loadUserProfile]);
 
   const logout = async () => {
+    // Clear state immediately so UI reacts even if signOut is slow
+    setUser(null);
+    setIsAuthenticated(false);
+    setSelectedFranchiseState(null);
+    localStorage.removeItem('selected_franchise_id');
+    sessionStorage.removeItem('needs_password_setup');
+    sessionStorage.removeItem('password_setup_type');
     try {
       await supabase.auth.signOut();
     } catch (e) {
       console.error('[Auth] Logout error:', e);
     }
-    setUser(null);
-    setIsAuthenticated(false);
   };
 
   const navigateToLogin = () => {

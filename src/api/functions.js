@@ -49,7 +49,12 @@ export async function inviteFranchisee(email) {
     body: JSON.stringify({ email, redirectTo: window.location.origin + '/set-password?type=invite' })
   }, 30000);
   if (!response.ok) throw new Error('Erro ao enviar convite: ' + response.status);
-  return response.json();
+  const data = await response.json();
+  // n8n retorna erro do Supabase como JSON com HTTP 200 (neverError: true)
+  if (data.code && data.code >= 400) {
+    throw new Error(data.msg || data.message || 'Erro no servidor ao criar convite');
+  }
+  return data;
 }
 
 // WhatsApp History — busca mensagens do ZuckZapGo
