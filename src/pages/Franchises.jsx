@@ -368,11 +368,14 @@ export default function Franchises() {
           status: "pending",
         });
       }
-      await inviteFranchisee(inviteEmail);
-      // Envia email de definir senha (mais confiável que o link do invite)
-      await supabase.auth.resetPasswordForEmail(inviteEmail, {
-        redirectTo: window.location.origin + '/set-password'
-      });
+      // Dispara convite n8n + reset senha em paralelo, sem bloquear UI
+      const emailToInvite = inviteEmail;
+      Promise.all([
+        inviteFranchisee(emailToInvite).catch(err => console.warn("Invite webhook:", err.message)),
+        supabase.auth.resetPasswordForEmail(emailToInvite, {
+          redirectTo: window.location.origin + '/set-password'
+        }).catch(err => console.warn("Reset password:", err.message)),
+      ]);
       toast.success(`Email de primeiro acesso enviado para ${inviteEmail}`);
       setInvitingFranchise(null);
       setInviteEmail("");
