@@ -407,6 +407,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 203. Data fetching com múltiplas queries DEVE usar `Promise.allSettled` (NÃO `Promise.all`) — falha em uma query não deve bloquear a página inteira. Pattern: `getValue = (r) => r.status === "fulfilled" ? r.value : []`, log failedQueries com nomes, checar query crítica separadamente
 204. FranchiseeDashboard tem `mountedRef` + `loadError` + retry UI — manter consistente com AdminDashboard. Polling 120s com cleanup no useEffect
 205. `new Date().toISOString().split("T")[0]` é BUG de timezone — após 21h BRT retorna data de amanhã (UTC). Para data local usar `getFullYear()/getMonth()/getDate()` ou `format(new Date(), "yyyy-MM-dd")` do date-fns
+206. V2 vendedor (`w7loLOXUmRR3AzuO`) migrado para RabbitMQ em 25/03 — trigger `rabbitmqTrigger`, queue `zuckzapgo.events`, cred `zuckzapgo` (id: `jXFF2vYatoDW2caz`). V1 (`PALRV1RqD3opHMzk`) DESATIVADO
+207. `blockedNumbers` no V2 é cache dinâmico via `$getWorkflowStaticData('global')` — busca `franchise_configurations.personal_phone_for_summary` a cada 30min via Supabase REST. Normaliza telefone (strip 55, remove formatação) para 11 dígitos
+208. Credencial Supabase nos nós n8n usa key `supabaseApi` (NÃO `supabase`) — ex: `credentials: { supabaseApi: { id: "mIVPcJBNcDCx21LR" } }`
+209. `franchise_configurations` NÃO tem coluna `personal_phone` — o campo correto é `personal_phone_for_summary` (11 dígitos sem 55). View `vw_dadosunidade` computa `personal_phone_wa` = `'55' + personal_phone_for_summary`
+210. Backup pre-RabbitMQ do V2: `docs/vendedor-generico-workflow-v2-pre-rabbitmq.json`. Rollback: reativar V1 via `POST /api/v1/workflows/PALRV1RqD3opHMzk/activate`
 
 ## Scripts
 ```bash
