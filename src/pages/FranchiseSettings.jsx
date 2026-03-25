@@ -50,6 +50,8 @@ const initialFormData = {
   city: '',
   neighborhood: '',
   order_cutoff_time: '',
+  delivery_start_time: '',
+  charges_delivery_fee: true,
   catalog_image_url: '',
   bot_personality: '',
 };
@@ -773,20 +775,61 @@ function FranchiseSettingsContent() {
                   <FieldHint text="Tempo total desde o pedido fechado até o cliente receber: separar, chamar motoboy e entregar." />
                 </div>
                 <div>
-                  <label className={labelClass}>Horário limite para pedidos</label>
-                  <input className={inputClass} type="text" value={formData.order_cutoff_time}
-                    onChange={(e) => handleInputChange('order_cutoff_time', e.target.value)}
-                    placeholder="Ex: Pedidos até 17h" />
-                  <FieldHint text="Depois desse horário, o bot avisa que só entrega no dia seguinte." />
+                  <label className={labelClass}>Horário de entrega</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[#4a3d3d]/60 whitespace-nowrap">das</span>
+                    <select className={`${inputClass} !w-28`}
+                      value={formData.delivery_start_time || ''}
+                      onChange={(e) => handleInputChange('delivery_start_time', e.target.value)}>
+                      <option value="">--</option>
+                      {Array.from({ length: 35 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 6;
+                        const m = i % 2 === 0 ? '00' : '30';
+                        const t = `${String(h).padStart(2, '0')}:${m}`;
+                        return <option key={t} value={t}>{t}</option>;
+                      })}
+                    </select>
+                    <span className="text-xs text-[#4a3d3d]/60 whitespace-nowrap">às</span>
+                    <select className={`${inputClass} !w-28`}
+                      value={formData.order_cutoff_time || ''}
+                      onChange={(e) => handleInputChange('order_cutoff_time', e.target.value)}>
+                      <option value="">--</option>
+                      {Array.from({ length: 35 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 6;
+                        const m = i % 2 === 0 ? '00' : '30';
+                        const t = `${String(h).padStart(2, '0')}:${m}`;
+                        return <option key={t} value={t}>{t}</option>;
+                      })}
+                    </select>
+                  </div>
+                  <FieldHint text="Fora desse horário, o bot avisa que só entrega no próximo dia." />
                 </div>
               </div>
-              <div>
-                <label className={labelClass}>Taxas de entrega por faixa de distância</label>
-                <DeliveryFeeEditor
-                  value={formData.delivery_fee_rules}
-                  onChange={(val) => handleInputChange('delivery_fee_rules', val)}
+
+              <div className="mt-2">
+                <ToggleCard
+                  icon="payments"
+                  label="Cobro taxa de entrega"
+                  description="Desative se a entrega é gratuita para o cliente"
+                  checked={formData.charges_delivery_fee !== false}
+                  onChange={(val) => handleInputChange('charges_delivery_fee', val)}
                 />
               </div>
+
+              {formData.charges_delivery_fee !== false ? (
+                <div>
+                  <label className={labelClass}>Taxas de entrega por faixa de distância</label>
+                  <DeliveryFeeEditor
+                    value={formData.delivery_fee_rules}
+                    onChange={(val) => handleInputChange('delivery_fee_rules', val)}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                  <MaterialIcon icon="local_shipping" size={20} className="text-emerald-600" />
+                  <span className="text-sm font-semibold text-emerald-700">Entrega grátis para seus clientes</span>
+                </div>
+              )}
             </WizardStep>
           )}
 

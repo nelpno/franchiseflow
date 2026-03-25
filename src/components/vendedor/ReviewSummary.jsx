@@ -122,8 +122,10 @@ export default function ReviewSummary({ formData, onGoToStep }) {
             { label: "Raio máximo", value: formData.max_delivery_radius_km ? `${formData.max_delivery_radius_km} km` : "" },
             { label: "Pedido mínimo", value: formData.min_order_value ? `R$ ${formData.min_order_value}` : "" },
             { label: "Tempo entrega", value: formData.avg_prep_time_minutes ? `${formData.avg_prep_time_minutes} min` : "" },
-            { label: "Horário limite", value: formData.order_cutoff_time },
-            { label: "Taxas de entrega", value: feeRulesText() },
+            { label: "Horário de entrega", value: formData.delivery_start_time && formData.order_cutoff_time
+              ? `das ${formData.delivery_start_time} às ${formData.order_cutoff_time}`
+              : formData.order_cutoff_time ? `até ${formData.order_cutoff_time}` : "" },
+            { label: "Taxas de entrega", value: formData.charges_delivery_fee === false ? "Entrega grátis" : feeRulesText() },
           ]}
         />
       )}

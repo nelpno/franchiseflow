@@ -1,19 +1,23 @@
 -- =============================================================================
--- FIX: vw_dadosunidade — Preparação para escala (todas franquias no V2)
+-- Melhorias no Step 4 (Entrega) do Wizard "Meu Vendedor"
 --
--- Problemas resolvidos:
---   1. shipping_rules_costs TEXT vazio → gera automaticamente de delivery_fee_rules JSONB
---   2. accepted_payment_methods TEXT vazio → gera de payment_delivery + payment_pickup TEXT[]
---   3. payment_delivery/payment_pickup com tipo errado (jsonb → text[])
---   4. Telefones sem código de país → campo personal_phone_wa com 55 para WhatsApp API
---   5. delivery_fee_rules retorna JSONB nativo (sem cast ::text)
---   6. social_media_links retorna JSONB nativo
---   7. Cast ::numeric em JSONB protegido com NULLIF (empty string → NULL, não crashea)
---   8. Campos numéricos (radius, min_order, prep_time) mantidos NULL se não configurados
+-- 1. charges_delivery_fee BOOLEAN — toggle frete grátis (Itápolis não cobra)
+-- 2. delivery_start_time TEXT — horário início da janela de entrega
+--    (order_cutoff_time já existe como horário final)
 --
--- IMPORTANTE: DROP + CREATE porque CREATE OR REPLACE não permite mudar tipo de coluna
+-- Executar via Management API ou psql
 -- =============================================================================
 
+-- 1. Novo campo: toggle frete
+ALTER TABLE franchise_configurations
+ADD COLUMN IF NOT EXISTS charges_delivery_fee BOOLEAN DEFAULT true;
+
+-- 2. Novo campo: horário início entrega
+ALTER TABLE franchise_configurations
+ADD COLUMN IF NOT EXISTS delivery_start_time TEXT;
+
+-- 3. Recriar vw_dadosunidade com novos campos
+-- IMPORTANTE: DROP + CREATE porque CREATE OR REPLACE não permite mudar tipo de coluna
 DROP VIEW IF EXISTS vw_dadosunidade;
 
 CREATE VIEW vw_dadosunidade AS
@@ -21,8 +25,6 @@ SELECT
   fc.id,
   fc.franchise_evolution_instance_id AS instance_name,
   fc.franchise_evolution_instance_id,
-  -- ZuckZapGo instance name (pode diferir do evo_id em franquias legadas)
-  -- Fallback: usa evo_id se whatsapp_instance_id não preenchido
   COALESCE(fc.whatsapp_instance_id, fc.franchise_evolution_instance_id) AS zuck_instance_name,
 
   -- === Dados da unidade ===
@@ -51,7 +53,6 @@ SELECT
   COALESCE(fc.order_cutoff_time, '') AS order_cutoff_time,
 
   -- === Pagamento — campo TEXT legado (GERADO de payment_delivery + payment_pickup se vazio) ===
-  -- Prioriza campo antigo se preenchido (backward compat franquias legadas)
   CASE
     WHEN COALESCE(NULLIF(fc.accepted_payment_methods, ''), NULL) IS NOT NULL
     THEN fc.accepted_payment_methods
@@ -96,9 +97,6 @@ SELECT
   COALESCE(fc.delivery_fee_rules, '[]'::jsonb) AS delivery_fee_rules,
 
   -- === Frete — campo TEXT legado (GERADO de delivery_fee_rules se vazio) ===
-  -- Formato: "Até 5km: R$10,00 | Até 10km: R$18,00"
-  -- charges_delivery_fee=false → "Entrega grátis"
-  -- Prioriza campo antigo se preenchido (backward compat franquias legadas)
   CASE
     WHEN COALESCE(fc.charges_delivery_fee, true) = false
     THEN 'Entrega grátis'
@@ -129,7 +127,6 @@ SELECT
   -- === Catálogo e mídia ===
   COALESCE(fc.price_table_url, '') AS price_table_url,
   COALESCE(fc.catalog_image_url, '') AS catalog_image_url,
-  -- JSONB nativo (sem cast ::text) — prompt acessa .instagram
   COALESCE(fc.social_media_links, '{}'::jsonb) AS social_media_links,
 
   -- === Metadata ===
@@ -145,6 +142,8 @@ GRANT SELECT ON vw_dadosunidade TO authenticated;
 COMMENT ON VIEW vw_dadosunidade IS
   'View para vendedor genérico n8n (V2 Supabase). '
   'Campos TEXT legados (accepted_payment_methods, shipping_rules_costs) gerados automaticamente dos campos estruturados. '
+  'charges_delivery_fee=false gera "Entrega grátis" em shipping_rules_costs. '
+  'delivery_start_time + order_cutoff_time = janela de horário de entrega. '
   'Campo personal_phone_wa inclui código 55 para ZuckZapGo API. '
   'JSONB (delivery_fee_rules, social_media_links) retornados nativos. '
   'TEXT[] (payment_delivery, payment_pickup) com tipo correto. '
