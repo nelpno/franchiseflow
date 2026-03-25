@@ -20,7 +20,6 @@ export default function FranchiseHealthDetail({
     { key: "estoque", label: "Estoque", icon: "inventory_2", data: dimensions.estoque },
     { key: "reposicao", label: "Reposição", icon: "local_shipping", data: dimensions.reposicao },
     { key: "setup", label: "Setup", icon: "rocket_launch", data: dimensions.setup },
-    { key: "atividade", label: "Atividade", icon: "task_alt", data: dimensions.atividade },
   ];
 
   function getScoreColor(score) {
