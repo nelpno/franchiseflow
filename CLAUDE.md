@@ -421,6 +421,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 217. Supabase Auth `/invite` pode quebrar silenciosamente (HTTP 500 genérico) se trigger `handle_new_user` falha — debugar com `RAISE EXCEPTION` contextual, NÃO com INSERT em tabela de log (rollback apaga)
 218. n8n `neverError: true` retorna erros como JSON com HTTP 200 — frontend DEVE checar `data.code >= 400` antes de considerar sucesso. Pattern em `inviteFranchisee()` de `functions.js`
 219. Workflow `franchise-invite` (nbLDyd1KoFIeeJEF) envia `data: { role: 'franchisee' }` no payload do invite — SEM isso, users sem invite pendente ficam com role vazio
+220. `connectWhatsappRobot()` usa timeout 30s (NÃO 15s) — workflow n8n tem Wait 3s nodes entre connect e QR, 15s estourava antes do QR voltar. Card de conexão WhatsApp: verde quando conectado, neutro (cinza) quando desconectado — NUNCA vermelho para "desconectado" (gera ansiedade desnecessária)
 
 ## Scripts
 ```bash
