@@ -427,6 +427,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 223. Rota `/set-password` redireciona para `/login` quando `isAuthenticated=false` — NÃO mostrar `PageFallback` (spinner infinito). Franqueado usa "Primeiro acesso" no login como fallback
 224. `fetchWithTimeout()` abort gera `error.name === 'AbortError'` — usar para mostrar mensagem específica de timeout ao invés de erro genérico. Pattern em `useWhatsAppConnection.js` linha 112
 225. Onboarding items suportam `dependsOn: "key"` — item fica bloqueado (cadeado) até dependência ser marcada. Ex: `6-2` depende de `6-1` (conferir pedido só após fazer pedido). `canMark()` em OnboardingBlock.jsx checa dependência
+226. `card_fee_amount` calculado sobre `subtotal + effectiveDeliveryFee` (valor total na maquininha) — franqueado passa cartão no valor cheio incluindo frete
 
 ## Scripts
 ```bash
