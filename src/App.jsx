@@ -93,7 +93,6 @@ function AppRoutes() {
       } />
       <Route path="/set-password" element={
         isAuthenticated ? <SetPassword /> :
-        needsPasswordSetup ? <PageFallback /> :
         <Navigate to="/login" replace />
       } />
       <Route path="/OnboardingWelcome" element={

@@ -242,10 +242,25 @@ export default function Login() {
 
             </form>
 
-            <div className="mt-6 md:mt-12 text-center">
+            <div className="mt-6 md:mt-12 text-center space-y-2">
               <p className="text-sm text-[#3d4a42]">
-                Não possui acesso?{' '}
-                <span className="text-[#e31818] font-bold">Solicite ao administrador</span>
+                Primeiro acesso?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!email) {
+                      toast.error('Digite seu email primeiro');
+                      return;
+                    }
+                    setIsResetMode(true);
+                  }}
+                  className="text-[#e31818] font-bold hover:underline"
+                >
+                  Defina sua senha aqui
+                </button>
+              </p>
+              <p className="text-xs text-[#4a3d3d]/60">
+                Não possui acesso? Solicite ao administrador
               </p>
             </div>
           </div>

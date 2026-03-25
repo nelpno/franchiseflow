@@ -9,12 +9,13 @@ function fetchWithTimeout(url, options, timeout = WEBHOOK_TIMEOUT) {
 }
 
 // WhatsApp - chamadas diretas ao n8n
+// Timeout maior (30s) porque workflow n8n tem Wait 3s entre connect e QR
 export async function connectWhatsappRobot({ instanceName, action }) {
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/a9c45ef7-36f7-4a64-ad9e-edadb69a31af`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ instanceName, action: action || 'smart_connect' })
-  });
+  }, 30000);
   if (!response.ok) throw new Error('Erro ao conectar WhatsApp: ' + response.status);
   return response.json();
 }
