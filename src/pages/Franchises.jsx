@@ -18,6 +18,16 @@ import { toast } from "sonner";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 
 
+/** Retorna nome legível da franquia: nome da loja (sem "Maxi Massas") ou cidade */
+function getDisplayName(franchise) {
+  if (!franchise) return "";
+  if (franchise.name) {
+    const clean = franchise.name.replace(/^Maxi\s*Massas\s*/i, "").trim();
+    if (clean) return clean;
+  }
+  return franchise.city || "";
+}
+
 export default function Franchises() {
   const [franchises, setFranchises] = useState([]);
   const [users, setUsers] = useState([]);
@@ -168,7 +178,7 @@ export default function Franchises() {
     setIsDeletingFranchise(true);
     try {
       await Franchise.deleteCascade(deletingFranchise.id, deletingFranchise.evolution_instance_id);
-      toast.success(`Franquia ${deletingFranchise.city} excluída com sucesso.`);
+      toast.success(`Franquia ${getDisplayName(deletingFranchise)} excluída com sucesso.`);
       setDeletingFranchise(null);
       setSelectedFranchise(null);
       loadData();
@@ -251,7 +261,7 @@ export default function Franchises() {
         (id) => id !== franchise.id && id !== franchise.evolution_instance_id
       );
       await User.update(user.id, { managed_franchise_ids: newIds });
-      toast.success(`${user.full_name || user.email} desvinculado de ${franchise.city}`);
+      toast.success(`${user.full_name || user.email} desvinculado de ${getDisplayName(franchise)}`);
       loadData();
     } catch (error) {
       console.error("Erro ao desvincular:", error);
@@ -581,13 +591,19 @@ export default function Franchises() {
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-xl font-bold font-plus-jakarta text-[#1b1c1d]">
-                        {franchise.city}
+                        {getDisplayName(franchise)}
                       </CardTitle>
                       <Badge className={getStatusColor(franchise.status)}>
                         <MaterialIcon icon="monitoring" size={12} className="mr-1" />
                         {getStatusText(franchise.status)}
                       </Badge>
                     </div>
+                    {franchise.name && (
+                      <p className="text-sm text-[#4a3d3d] mt-1">
+                        <MaterialIcon icon="location_on" size={14} className="inline mr-1 align-text-bottom" />
+                        {franchise.city}
+                      </p>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-3 text-[#4a3d3d]">
@@ -810,7 +826,7 @@ export default function Franchises() {
             <div className="py-4">
               <p className="text-sm text-[#4a3d3d]">
                 Tem certeza que deseja excluir a franquia de{" "}
-                <strong>{deletingFranchise?.city}</strong>? Esta ação não pode ser desfeita.
+                <strong>{getDisplayName(deletingFranchise)}</strong>? Esta ação não pode ser desfeita.
               </p>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="outline" onClick={() => setDeletingFranchise(null)} disabled={isDeletingFranchise} className="rounded-xl">
@@ -839,7 +855,7 @@ export default function Franchises() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
                 <MaterialIcon icon="settings" size={20} />
-                Permissões - {editingPermissions?.city}
+                Permissões - {getDisplayName(editingPermissions)}
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
@@ -912,7 +928,7 @@ export default function Franchises() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
                 <MaterialIcon icon="mail" size={20} />
-                Convidar - {invitingFranchise?.city}
+                Convidar - {getDisplayName(invitingFranchise)}
               </DialogTitle>
             </DialogHeader>
             <div className="py-4 space-y-4">
@@ -1011,7 +1027,7 @@ export default function Franchises() {
             <SheetHeader className="mb-6">
               <SheetTitle className="text-xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-2">
                 <MaterialIcon icon="store" size={22} className="text-[#b91c1c]" />
-                {selectedFranchise?.city}
+                {getDisplayName(selectedFranchise)}
               </SheetTitle>
               <SheetDescription className="text-[#4a3d3d]">
                 Detalhes da franquia e usuários vinculados
@@ -1052,7 +1068,7 @@ export default function Franchises() {
                         <span className="text-sm">{selectedFranchise.phone_number}</span>
                       </div>
                     )}
-                    {selectedFranchise.name && (
+                    {selectedFranchise.name && selectedFranchise.name !== selectedFranchise.city && (
                       <div className="flex items-center gap-3 text-[#4a3d3d]">
                         <MaterialIcon icon="apartment" size={16} />
                         <span className="text-sm">{selectedFranchise.name}</span>
