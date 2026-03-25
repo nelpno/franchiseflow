@@ -84,6 +84,8 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
   const canMark = (item) => {
     if (isAdmin) return item.role !== "auto";
     if (item.role === "franchisor" || item.role === "auto") return false;
+    // Block item if dependency not yet completed
+    if (item.dependsOn && !items[item.dependsOn]) return false;
     return true;
   };
 

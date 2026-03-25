@@ -65,7 +65,7 @@ export const BLOCKS = [
     icon: "shopping_cart",
     items: [
       { key: "6-1", label: "Primeiro pedido de reposição feito pelo app (Gestão → Reposição)", role: "auto" },
-      { key: "6-2", label: "Pedido recebido e conferido (quantidades, estado, validade)", role: "franchisee" },
+      { key: "6-2", label: "Pedido recebido e conferido (quantidades, estado, validade)", role: "franchisee", dependsOn: "6-1" },
       { key: "6-3", label: "Estoque registrado no app (Gestão → Estoque)", role: "auto" },
     ],
   },
