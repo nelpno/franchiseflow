@@ -75,8 +75,8 @@ export default function Franchises() {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setLoadError(null);
     try {
       const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -144,7 +144,7 @@ export default function Franchises() {
       // Franquia criada — fechar form e atualizar lista imediatamente
       setShowForm(false);
       setIsSubmitting(false);
-      loadData();
+      loadData(true);
 
       if (!franchiseeEmail) {
         toast.success("Franquia criada com sucesso!");
@@ -178,7 +178,7 @@ export default function Franchises() {
       } else {
         toast.error(`Erro ao criar franquia: ${msg}`);
       }
-      loadData(); // Recarrega mesmo em caso de erro (franquia pode ter sido criada server-side)
+      loadData(true); // Recarrega mesmo em caso de erro (franquia pode ter sido criada server-side)
     }
   };
 
@@ -190,7 +190,7 @@ export default function Franchises() {
       toast.success(`Franquia ${getDisplayName(deletingFranchise)} excluída com sucesso.`);
       setDeletingFranchise(null);
       setSelectedFranchise(null);
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error("Erro ao excluir franquia:", error);
       toast.error(error?.message || "Erro ao excluir franquia.");
@@ -256,7 +256,7 @@ export default function Franchises() {
       setShowAddStaff(false);
       setAddStaffEmail("");
       setAddStaffRole("manager");
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error("Erro ao adicionar membro:", error);
       toast.error("Erro ao adicionar membro à equipe.");
@@ -300,7 +300,7 @@ export default function Franchises() {
           : `${user.full_name || user.email} desvinculado e conta removida`
       );
       setUnlinkingUser(null);
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error("Erro ao desvincular:", error);
       toast.error(`Erro ao desvincular: ${error?.message || "erro desconhecido"}`);
@@ -376,7 +376,7 @@ export default function Franchises() {
 
       toast.success("Permissões atualizadas!");
       setEditingPermissions(null);
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error("Erro ao salvar permissões:", error);
       toast.error("Erro ao salvar permissões.");
@@ -415,6 +415,9 @@ export default function Franchises() {
       setInviteEmail("");
       setIsSendingInvite(false);
       toast.success("Convite registrado! Enviando email...");
+
+      // Atualiza lista para refletir o novo convite
+      loadData(true);
 
       // Dispara convite n8n + reset senha em background (não bloqueia UI)
       Promise.all([
