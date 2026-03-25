@@ -14,7 +14,21 @@ const TUTORIAL_VIDEOS = [
     description: "Login, primeiro acesso, navegação pelo menu e visão geral da tela inicial.",
     duration: "2 min",
     icon: "waving_hand",
-    youtubeId: "", // placeholder
+    youtubeId: "",
+    steps: [
+      "Abra o app e faça login com seu email e senha.",
+      "Essa é sua tela inicial (Dashboard) — aqui você vê um resumo rápido do dia.",
+      "Toque no menu (3 risquinhos no canto) para ver todas as opções:",
+      "Início — seu painel com resumo do dia.",
+      "Vendas — onde você registra cada venda.",
+      "Gestão — seu financeiro, estoque e reposição.",
+      "Meus Clientes — todos os contatos dos seus clientes.",
+      "Marketing — materiais e ferramentas de divulgação.",
+      "Meu Vendedor — configura o robô do WhatsApp.",
+      "Tutoriais — esses tutoriais que você está lendo agora.",
+      "Na barra de baixo ficam os atalhos mais usados. O botão redondo no centro é o atalho rápido pra registrar venda.",
+      "O sininho no topo mostra suas notificações.",
+    ],
   },
   {
     id: "onboarding",
@@ -23,6 +37,16 @@ const TUTORIAL_VIDEOS = [
     duration: "3 min",
     icon: "checklist",
     youtubeId: "",
+    steps: [
+      "Abra o Onboarding pelo menu lateral.",
+      "Aqui estão todas as missões pra você começar bem. O anel de progresso mostra quanto você já completou.",
+      "Cada bloco é um tema. Toque para abrir e ver os itens.",
+      "Alguns itens já vêm marcados automaticamente (como o kick-off).",
+      "Para completar um item, toque no checkbox ao lado dele.",
+      "Quando completar um bloco inteiro, aparece uma mensagem de parabéns!",
+      "São 8 blocos: Primeiros Passos, Conheça Seus Produtos, Prepare Seu Espaço, Configure WhatsApp, Configure Seu Vendedor, Faça Seu Primeiro Pedido, Treinamento e Redes Sociais.",
+      "Não precisa fazer tudo de uma vez. Vá no seu ritmo — o progresso fica salvo.",
+    ],
   },
   {
     id: "meu-vendedor",
@@ -31,6 +55,16 @@ const TUTORIAL_VIDEOS = [
     duration: "4 min",
     icon: "smart_toy",
     youtubeId: "",
+    steps: [
+      "Vá em \"Meu Vendedor\" no menu. São 5 passos para configurar seu vendedor automático.",
+      "Passo 1 — Informações: preencha o nome da franquia, endereço e ponto de referência.",
+      "Passo 2 — Horário: selecione os dias que você trabalha e o horário de funcionamento. Se tiver janela de entrega diferente, configure aqui.",
+      "Passo 3 — Delivery: ative se você faz entrega e defina o raio máximo em km. Configure a tabela de frete por distância. Se tiver frete grátis, ative o toggle.",
+      "Passo 4 — Pagamento: marque as formas que você aceita. Se aceita Pix, preencha sua chave.",
+      "Passo 5 — Catálogo: suba a foto do seu cardápio em JPG. Pode colocar link do Instagram e da tabela de preços.",
+      "Na Revisão, confira tudo e salve.",
+      "Para conectar o WhatsApp: toque no botão de conectar e aponte a câmera do celular pro QR Code. Quando ficar verde, está conectado e o robô já começa a atender!",
+    ],
   },
   {
     id: "vendas",
@@ -39,6 +73,17 @@ const TUTORIAL_VIDEOS = [
     duration: "3 min",
     icon: "point_of_sale",
     youtubeId: "",
+    steps: [
+      "Toque no botão redondo \"Vender\" na barra de baixo (ou vá em Vendas no menu).",
+      "Selecione um cliente existente ou crie um novo. Também pode deixar sem cliente.",
+      "Adicione produtos tocando neles e escolhendo a quantidade.",
+      "Confira o resumo dos itens e o valor total.",
+      "Selecione a forma de pagamento: Pix, dinheiro, cartão...",
+      "Se for entrega, preencha a taxa de entrega.",
+      "Toque em \"Registrar Venda\".",
+      "O comprovante aparece na tela. Toque em compartilhar para enviar pro cliente pelo WhatsApp.",
+      "Pronto! A venda já aparece no seu financeiro e o estoque desconta automaticamente.",
+    ],
   },
   {
     id: "resultado",
@@ -47,6 +92,18 @@ const TUTORIAL_VIDEOS = [
     duration: "3 min",
     icon: "bar_chart",
     youtubeId: "",
+    steps: [
+      "Vá em Gestão e toque na aba \"Resultado\".",
+      "Aqui é o coração do seu negócio — tudo que entrou e saiu.",
+      "Use o filtro de período para ver por dia, semana ou mês.",
+      "Faturamento — total das suas vendas.",
+      "Taxa de entrega — o que você cobrou de frete (é sua receita).",
+      "Taxas de cartão — desconto das maquininhas e links de pagamento.",
+      "Despesas — o que você gastou (sacolas, aluguel, etc.).",
+      "O resultado final mostra quanto sobrou no período.",
+      "Os gráficos mostram a evolução ao longo dos dias.",
+      "Dica: consulte toda semana pra acompanhar como está indo!",
+    ],
   },
   {
     id: "estoque",
@@ -55,6 +112,17 @@ const TUTORIAL_VIDEOS = [
     duration: "3 min",
     icon: "inventory_2",
     youtubeId: "",
+    steps: [
+      "Vá em Gestão e toque na aba \"Estoque\".",
+      "Aqui estão todos os seus produtos com a quantidade atual.",
+      "Toque em um produto para editar o preço de custo e de venda.",
+      "O estoque atualiza automaticamente quando você registra uma venda.",
+      "Agora troque para a aba \"Reposição\".",
+      "Quando precisar de mais produtos, é aqui que você faz o pedido para a fábrica.",
+      "Selecione os produtos e as quantidades desejadas e envie o pedido.",
+      "O pedido aparece como \"Pendente\". Depois vai para \"Confirmado\", \"Em Rota\" e \"Entregue\".",
+      "Quando chegar como \"Entregue\", seu estoque sobe automaticamente!",
+    ],
   },
   {
     id: "clientes",
@@ -63,6 +131,19 @@ const TUTORIAL_VIDEOS = [
     duration: "3 min",
     icon: "people",
     youtubeId: "",
+    steps: [
+      "Vá em \"Meus Clientes\". Aqui ficam todos os seus clientes — os que compraram e os que o robô captou.",
+      "Use as abas para filtrar por status:",
+      "\"Todos\" — lista completa de contatos.",
+      "\"Responder\" — leads novos que ainda não foram atendidos.",
+      "\"Negociando\" — clientes em conversa.",
+      "\"Clientes\" — quem já comprou pelo menos uma vez.",
+      "\"Fiéis\" — clientes recorrentes.",
+      "\"Sumidos\" — faz tempo que não compram (oportunidade de remarketing!).",
+      "Toque no botão \"+\" para adicionar um contato manualmente.",
+      "Toque em um cliente para ver detalhes: compras, valor total e última compra.",
+      "Dica: o robô do WhatsApp já salva os contatos automaticamente aqui!",
+    ],
   },
   {
     id: "dicas",
@@ -71,37 +152,48 @@ const TUTORIAL_VIDEOS = [
     duration: "2 min",
     icon: "lightbulb",
     youtubeId: "",
+    steps: [
+      "O botão \"Vender\" na barra de baixo está sempre disponível, de qualquer tela. É o jeito mais rápido de registrar uma venda.",
+      "O sininho no topo mostra avisos de pedidos e atualizações. Fique de olho!",
+      "O Dashboard mostra o resumo do dia sem precisar abrir cada tela.",
+      "Se você tem mais de uma unidade, use o seletor de franquia no topo para trocar.",
+      "O estoque desconta sozinho quando você vende, e sobe quando o pedido de reposição chega como \"Entregue\".",
+      "Se tiver dúvida, volte aqui nos Tutoriais — ficam sempre salvos no menu.",
+      "Boas vendas!",
+    ],
   },
 ];
 
-function VideoCard({ video, index, onClick }) {
+function VideoCard({ video, index, onPlay, onRead }) {
   const watched = localStorage.getItem(`tutorial_watched_${video.id}`) === "true";
 
   return (
-    <button
-      onClick={() => onClick(video)}
-      className="group relative bg-white rounded-2xl border border-[#f2e7e7] hover:border-[#b91c1c]/20 hover:shadow-md transition-all text-left overflow-hidden active:scale-[0.98]"
-    >
-      {/* Thumbnail area */}
-      <div className="relative aspect-video bg-gradient-to-br from-[#fdf8f8] to-[#f2e7e7] flex items-center justify-center">
-        <div className="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-          <MaterialIcon icon={video.icon} size={28} className="text-[#b91c1c]" />
-        </div>
-        {/* Play overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
-          <div className="w-12 h-12 rounded-full bg-[#b91c1c] flex items-center justify-center shadow-lg">
-            <MaterialIcon icon="play_arrow" size={28} className="text-white" />
+    <div className="group relative bg-white rounded-2xl border border-[#f2e7e7] hover:border-[#b91c1c]/20 hover:shadow-md transition-all overflow-hidden">
+      {/* Thumbnail area — clickable for video */}
+      <button
+        onClick={() => onPlay(video)}
+        className="w-full text-left"
+      >
+        <div className="relative aspect-video bg-gradient-to-br from-[#fdf8f8] to-[#f2e7e7] flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+            <MaterialIcon icon={video.icon} size={28} className="text-[#b91c1c]" />
           </div>
+          {/* Play overlay */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
+            <div className="w-12 h-12 rounded-full bg-[#b91c1c] flex items-center justify-center shadow-lg">
+              <MaterialIcon icon="play_arrow" size={28} className="text-white" />
+            </div>
+          </div>
+          {/* Episode number */}
+          <span className="absolute top-3 left-3 text-xs font-bold text-[#b91c1c]/60 bg-white/80 px-2 py-0.5 rounded-full">
+            {index + 1}/{TUTORIAL_VIDEOS.length}
+          </span>
+          {/* Duration badge */}
+          <span className="absolute top-3 right-3 text-xs font-medium text-[#4a3d3d] bg-white/80 px-2 py-0.5 rounded-full">
+            {video.duration}
+          </span>
         </div>
-        {/* Episode number */}
-        <span className="absolute top-3 left-3 text-xs font-bold text-[#b91c1c]/60 bg-white/80 px-2 py-0.5 rounded-full">
-          {index + 1}/{TUTORIAL_VIDEOS.length}
-        </span>
-        {/* Duration badge */}
-        <span className="absolute top-3 right-3 text-xs font-medium text-[#4a3d3d] bg-white/80 px-2 py-0.5 rounded-full">
-          {video.duration}
-        </span>
-      </div>
+      </button>
 
       {/* Content */}
       <div className="p-4">
@@ -116,17 +208,64 @@ function VideoCard({ video, index, onClick }) {
         <p className="text-xs text-[#7a6d6d] mt-1.5 leading-relaxed line-clamp-2">
           {video.description}
         </p>
+        {/* Read tutorial button */}
+        <button
+          onClick={() => onRead(video)}
+          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#b91c1c] hover:text-[#a80012] transition-colors active:scale-[0.97]"
+        >
+          <MaterialIcon icon="menu_book" size={16} />
+          Ler passo a passo
+        </button>
       </div>
-    </button>
+    </div>
+  );
+}
+
+function StepGuide({ video, onClose }) {
+  return (
+    <div className="max-h-[70vh] overflow-y-auto">
+      {/* Header */}
+      <div className="sticky top-0 bg-white border-b border-[#f2e7e7] px-6 py-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-[#fdf8f8] flex items-center justify-center shrink-0">
+          <MaterialIcon icon={video.icon} size={22} className="text-[#b91c1c]" />
+        </div>
+        <div>
+          <h3 className="text-base font-semibold text-[#1b1c1d]">{video.title}</h3>
+          <p className="text-xs text-[#7a6d6d]">Passo a passo</p>
+        </div>
+      </div>
+
+      {/* Steps */}
+      <div className="px-6 py-4 space-y-3">
+        {video.steps.map((step, i) => (
+          <div key={i} className="flex gap-3">
+            <div className="w-6 h-6 rounded-full bg-[#fdf8f8] border border-[#f2e7e7] flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-xs font-bold text-[#b91c1c]">{i + 1}</span>
+            </div>
+            <p className="text-sm text-[#4a3d3d] leading-relaxed pt-0.5">{step}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="sticky bottom-0 bg-white border-t border-[#f2e7e7] px-6 py-3 flex justify-end">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-[#b91c1c] hover:bg-[#b91c1c]/5 rounded-lg transition-colors"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
   );
 }
 
 export default function Tutoriais() {
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [readingVideo, setReadingVideo] = useState(null);
 
   const handleVideoClick = (video) => {
     if (!video.youtubeId) {
-      // No video uploaded yet — show placeholder
       setSelectedVideo(video);
       return;
     }
@@ -146,7 +285,7 @@ export default function Tutoriais() {
           Tutoriais
         </h2>
         <p className="text-sm text-[#7a6d6d] mt-1">
-          Aprenda a usar todas as ferramentas do seu app em vídeos curtos e práticos.
+          Aprenda a usar todas as ferramentas do seu app. Assista aos vídeos ou leia o passo a passo.
         </p>
         {watchedCount > 0 && (
           <div className="flex items-center gap-2 mt-3">
@@ -170,7 +309,8 @@ export default function Tutoriais() {
             key={video.id}
             video={video}
             index={index}
-            onClick={handleVideoClick}
+            onPlay={handleVideoClick}
+            onRead={setReadingVideo}
           />
         ))}
       </div>
@@ -203,6 +343,18 @@ export default function Tutoriais() {
                 </p>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Step-by-step reading modal */}
+      <Dialog open={!!readingVideo} onOpenChange={() => setReadingVideo(null)}>
+        <DialogContent className="max-w-lg p-0 overflow-hidden">
+          <DialogTitle className="sr-only">
+            {readingVideo?.title} — Passo a passo
+          </DialogTitle>
+          {readingVideo && (
+            <StepGuide video={readingVideo} onClose={() => setReadingVideo(null)} />
           )}
         </DialogContent>
       </Dialog>
