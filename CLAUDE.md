@@ -430,6 +430,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 225. Onboarding items suportam `dependsOn: "key"` — item fica bloqueado (cadeado) até dependência ser marcada. Ex: `6-2` depende de `6-1` (conferir pedido só após fazer pedido). `canMark()` em OnboardingBlock.jsx checa dependência
 226. `card_fee_amount` calculado sobre `subtotal + effectiveDeliveryFee` (valor total na maquininha) — franqueado passa cartão no valor cheio incluindo frete
 227. Onboarding etiquetas WhatsApp: 5 etiquetas (NÃO 8) casando com cores nativas do WhatsApp Business e pipeline do app — 🟢Novo, 🔵Negociando, 🟡Cliente, 🟠VIP, 🔴Reativar
+237. `detectAutoItems()` no Onboarding verifica wizard completo (item 5-2) usando `cfg.pix_key_data` e `cfg.max_delivery_radius_km` — NÃO `pix_key`/`delivery_radius` (nomes errados corrigidos em 25/03)
 228. Logo otimizado: usar `logo-maxi-massas-optimized.png` (16KB) — NUNCA `logo-maxi-massas.png` (1.4MB). Original mantido para print/alta resolução
 229. Favicon SVG em `public/favicon.svg` + PWA manifest em `public/manifest.json` + ícones PNG 192/512 — Vite serve `public/` automaticamente
 230. `AuthContext.Provider` value DEVE ser memoizado com `useMemo` — sem isso, 20+ componentes re-renderizam a cada mudança de state
