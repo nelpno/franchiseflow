@@ -69,6 +69,13 @@ const navigationItems = [
     adminSection: "Principal",
   },
   {
+    title: "Tutoriais",
+    url: createPageUrl("Tutoriais"),
+    materialIcon: "play_circle",
+    franchiseeOnly: true,
+    adminSection: "Principal",
+  },
+  {
     title: "Relatórios",
     url: createPageUrl("Reports"),
     materialIcon: "bar_chart",
