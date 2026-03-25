@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Notification } from '@/entities/all';
 import MaterialIcon from '@/components/ui/MaterialIcon';
 import { useNavigate } from 'react-router-dom';
@@ -31,9 +32,9 @@ export default function NotificationBell({ size = 20 }) {
 
   useEffect(() => {
     loadNotifications();
-    const interval = setInterval(loadNotifications, 30000); // poll every 30s
-    return () => clearInterval(interval);
   }, [loadNotifications]);
+
+  useVisibilityPolling(loadNotifications, 30000);
 
   useEffect(() => {
     function handleClickOutside(e) {

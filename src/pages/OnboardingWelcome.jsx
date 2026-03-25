@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from "@/components/ui/button";
-import logoImg from "@/assets/logo-maxi-massas.png";
+import logoImg from "@/assets/logo-maxi-massas-optimized.png";
 import { toast } from "sonner";
 
 const STEPS = [

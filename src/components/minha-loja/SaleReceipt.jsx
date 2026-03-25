@@ -2,7 +2,7 @@ import React from "react";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import logoMaxi from "@/assets/logo-maxi-massas.png";
+import logoMaxi from "@/assets/logo-maxi-massas-optimized.png";
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(

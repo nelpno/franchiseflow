@@ -1,11 +1,11 @@
-import html2canvas from "html2canvas";
-
 /**
  * Generates a PNG blob from a DOM element using html2canvas.
+ * html2canvas is loaded dynamically to avoid 94KB in initial bundle.
  * @param {HTMLElement} element - The DOM element to capture
  * @returns {Promise<Blob>} PNG blob
  */
 export async function generateReceiptImage(element) {
+  const { default: html2canvas } = await import("html2canvas");
   const canvas = await html2canvas(element, {
     scale: 2,
     backgroundColor: "#ffffff",

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
 import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, DailyUniqueContact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
@@ -131,12 +132,12 @@ export default function FranchiseeDashboard() {
   useEffect(() => {
     mountedRef.current = true;
     loadData();
-    const interval = setInterval(loadData, 120000);
     return () => {
       mountedRef.current = false;
-      clearInterval(interval);
     };
   }, [loadData]);
+
+  useVisibilityPolling(loadData, 120000);
 
   const evoId = franchise?.evolution_instance_id;
 

@@ -49,20 +49,20 @@
  */
 import { lazy } from 'react';
 
-// Static imports — lightweight pages loaded eagerly
+// Static imports — only critical first-paint pages loaded eagerly
 import Dashboard from './pages/Dashboard';
 import Vendas from './pages/Vendas';
-import MyChecklist from './pages/MyChecklist';
-import MyContacts from './pages/MyContacts';
 import __Layout from './Layout.jsx';
 
-// Lazy imports — heavy pages loaded on demand
+// Lazy imports — all other pages loaded on demand
 const Acompanhamento = lazy(() => import('./pages/Acompanhamento'));
 const FranchiseSettings = lazy(() => import('./pages/FranchiseSettings'));
 const Franchises = lazy(() => import('./pages/Franchises'));
 const Gestao = lazy(() => import('./pages/Gestao'));
 const Marketing = lazy(() => import('./pages/Marketing'));
 const MinhaLoja = lazy(() => import('./pages/MinhaLoja'));
+const MyChecklist = lazy(() => import('./pages/MyChecklist'));
+const MyContacts = lazy(() => import('./pages/MyContacts'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 const Reports = lazy(() => import('./pages/Reports'));

@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import logoMaxiMassas from "@/assets/logo-maxi-massas.png";
+import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
 
 export default function SetPassword() {
   const [password, setPassword] = useState('');

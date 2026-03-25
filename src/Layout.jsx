@@ -3,7 +3,7 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import NotificationBell from "@/components/ui/NotificationBell";
-import logoImg from "@/assets/logo-maxi-massas.png";
+import logoImg from "@/assets/logo-maxi-massas-optimized.png";
 import {
   Sidebar,
   SidebarContent,

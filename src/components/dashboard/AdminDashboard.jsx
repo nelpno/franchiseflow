@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -118,12 +119,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     mountedRef.current = true;
     loadData();
-    const interval = setInterval(loadData, 180000);
     return () => {
       mountedRef.current = false;
-      clearInterval(interval);
     };
   }, [loadData]);
+
+  useVisibilityPolling(loadData, 180000);
 
   const stats = useMemo(() => {
     if (period === "today") {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/api/supabaseClient';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import logoMaxiMassas from "@/assets/logo-maxi-massas.png";
+import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
 
 export default function Login() {
   const [email, setEmail] = useState('');

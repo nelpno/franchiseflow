@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
@@ -184,23 +184,25 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/login';
   };
 
+  const contextValue = useMemo(() => ({
+    user,
+    isAuthenticated,
+    isLoading,
+    isLoadingAuth: isLoading,
+    isLoadingPublicSettings: false,
+    authError: null,
+    appPublicSettings: null,
+    needsPasswordSetup,
+    clearPasswordSetup,
+    selectedFranchise,
+    setSelectedFranchise,
+    logout,
+    navigateToLogin,
+    checkAppState: () => {}
+  }), [user, isAuthenticated, isLoading, needsPasswordSetup, clearPasswordSetup, selectedFranchise, setSelectedFranchise, logout, navigateToLogin]);
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoading,
-      isLoadingAuth: isLoading,
-      isLoadingPublicSettings: false,
-      authError: null,
-      appPublicSettings: null,
-      needsPasswordSetup,
-      clearPasswordSetup,
-      selectedFranchise,
-      setSelectedFranchise,
-      logout,
-      navigateToLogin,
-      checkAppState: () => {}
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
