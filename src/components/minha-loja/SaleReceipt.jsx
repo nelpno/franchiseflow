@@ -198,6 +198,27 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           </div>
         )}
 
+        {/* Discount */}
+        {parseFloat(sale.discount_amount) > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "8px 0",
+              borderTop: "1px solid #e9e8e9",
+              fontSize: 13,
+              color: "#dc2626",
+            }}
+          >
+            <span>
+              Desconto{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
+            </span>
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+              −{formatCurrency(sale.discount_amount)}
+            </span>
+          </div>
+        )}
+
         {/* Total */}
         <div
           style={{

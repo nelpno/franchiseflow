@@ -364,6 +364,10 @@ export default function SaleForm({
   const [deliveryMethod, setDeliveryMethod] = useState("retirada");
   const [deliveryFee, setDeliveryFee] = useState(0);
 
+  // Discount
+  const [discountType, setDiscountType] = useState("fixed"); // "fixed" | "percent"
+  const [discountInput, setDiscountInput] = useState(0);
+
   // Sale items rows
   const [items, setItems] = useState([
     { inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 },
@@ -382,6 +386,8 @@ export default function SaleForm({
     setCardFeePercent(sale.card_fee_percent ?? 3.5);
     setDeliveryMethod(sale.delivery_method || "retirada");
     setDeliveryFee(sale.delivery_fee ?? 0);
+    setDiscountType(sale.discount_type || "fixed");
+    setDiscountInput(sale.discount_input ?? 0);
     setContactId(sale.contact_id || null);
 
     // Set contact search display
@@ -430,6 +436,8 @@ export default function SaleForm({
     if (draft.cardFeePercent != null) setCardFeePercent(draft.cardFeePercent);
     if (draft.deliveryMethod) setDeliveryMethod(draft.deliveryMethod);
     if (draft.deliveryFee != null) setDeliveryFee(draft.deliveryFee);
+    if (draft.discountType) setDiscountType(draft.discountType);
+    if (draft.discountInput != null) setDiscountInput(draft.discountInput);
 
     toast.info("Rascunho recuperado", {
       action: {
@@ -443,6 +451,8 @@ export default function SaleForm({
           setCardFeePercent(3.5);
           setDeliveryMethod("retirada");
           setDeliveryFee(0);
+          setDiscountType("fixed");
+          setDiscountInput(0);
           toast.success("Rascunho descartado");
         },
       },
@@ -471,8 +481,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput]
   );
 
   useEffect(() => {
@@ -503,12 +513,20 @@ export default function SaleForm({
 
   const effectiveDeliveryFee = deliveryMethod === "delivery" ? deliveryFee : 0;
 
+  const discountAmount = useMemo(() => {
+    if (!discountInput || discountInput <= 0) return 0;
+    if (discountType === "percent") {
+      return Math.min(subtotal * (discountInput / 100), subtotal);
+    }
+    return Math.min(discountInput, subtotal);
+  }, [discountInput, discountType, subtotal]);
+
   const cardFeeAmount = useMemo(() => {
     if (paymentMethod !== "card_machine" && paymentMethod !== "payment_link") return 0;
-    return (subtotal + effectiveDeliveryFee) * (cardFeePercent / 100);
-  }, [subtotal, effectiveDeliveryFee, paymentMethod, cardFeePercent]);
+    return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
+  }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent]);
 
-  const netValue = subtotal - cardFeeAmount + effectiveDeliveryFee;
+  const netValue = subtotal - discountAmount - cardFeeAmount + effectiveDeliveryFee;
 
   // Item handlers
   const handleAddItem = () => {
@@ -680,6 +698,9 @@ export default function SaleForm({
         card_fee_amount: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeeAmount : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
+        discount_amount: discountAmount || 0,
+        discount_type: discountInput > 0 ? discountType : null,
+        discount_input: discountInput > 0 ? discountInput : null,
         net_value: netValue,
         sale_date: sale?.sale_date || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
       };
@@ -960,6 +981,56 @@ export default function SaleForm({
         </Button>
       </div>
 
+      {/* Discount */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-[#1b1c1d]">Desconto</Label>
+        <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#fbf9fa] rounded-lg border border-[#291715]/10">
+            <button
+              type="button"
+              onClick={() => { setDiscountType("fixed"); setDiscountInput(0); }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                discountType === "fixed"
+                  ? "bg-white text-[#b91c1c] shadow-sm"
+                  : "text-[#7a6d6d] hover:text-[#4a3d3d]"
+              }`}
+            >
+              R$
+            </button>
+            <button
+              type="button"
+              onClick={() => { setDiscountType("percent"); setDiscountInput(0); }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                discountType === "percent"
+                  ? "bg-white text-[#b91c1c] shadow-sm"
+                  : "text-[#7a6d6d] hover:text-[#4a3d3d]"
+              }`}
+            >
+              %
+            </button>
+          </div>
+          <Input
+            type="number"
+            min={0}
+            max={discountType === "percent" ? 100 : undefined}
+            step={discountType === "percent" ? 1 : 0.5}
+            value={discountInput || ""}
+            onChange={(e) => {
+              let val = parseFloat(e.target.value) || 0;
+              if (discountType === "percent") val = Math.min(val, 100);
+              setDiscountInput(val);
+            }}
+            className="flex-1 bg-white text-right font-mono-numbers"
+            placeholder={discountType === "percent" ? "0" : "0,00"}
+          />
+        </div>
+        {discountAmount > 0 && (
+          <p className="text-xs text-[#7a6d6d]">
+            −{formatCurrency(discountAmount)} no subtotal
+          </p>
+        )}
+      </div>
+
       {/* Payment method */}
       <div className="space-y-2">
         <Label className="text-sm font-medium text-[#1b1c1d]">Forma de Pagamento</Label>
@@ -1054,6 +1125,17 @@ export default function SaleForm({
             {formatCurrency(subtotal)}
           </span>
         </div>
+
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-[#4a3d3d]">
+              Desconto{discountType === "percent" ? ` (${discountInput}%)` : ""}
+            </span>
+            <span className="font-medium text-[#dc2626] font-mono-numbers">
+              − {formatCurrency(discountAmount)}
+            </span>
+          </div>
+        )}
 
         {(paymentMethod === "card_machine" || paymentMethod === "payment_link") && cardFeeAmount > 0 && (
           <div className="flex justify-between text-sm">

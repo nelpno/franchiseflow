@@ -141,7 +141,12 @@ export default function TabResultado({ franchiseId, currentUser }) {
     [monthSales]
   );
 
-  const totalRecebido = vendas + freteCobrado;
+  const totalDescontos = useMemo(
+    () => monthSales.reduce((sum, s) => sum + (parseFloat(s.discount_amount) || 0), 0),
+    [monthSales]
+  );
+
+  const totalRecebido = vendas + freteCobrado - totalDescontos;
 
   const custoProdutos = useMemo(
     () =>
@@ -173,7 +178,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
         const dateStr = s.sale_date || s.created_at;
         return isInMonth(dateStr, prevMonth);
       })
-      .reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      .reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0) - (parseFloat(s.discount_amount) || 0), 0);
   }, [sales, prevMonth]);
 
   const monthDiffPercent = useMemo(() => {
@@ -359,7 +364,16 @@ export default function TabResultado({ franchiseId, currentUser }) {
                   </div>
                 )}
 
-                {freteCobrado > 0 && (
+                {totalDescontos > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-[#dc2626] font-medium">(-) Descontos</span>
+                    <span className="text-sm text-[#dc2626] font-mono-numbers">
+                      {formatBRL(totalDescontos)}
+                    </span>
+                  </div>
+                )}
+
+                {(freteCobrado > 0 || totalDescontos > 0) && (
                   <div className="flex justify-between items-center pt-1 border-t border-[#291715]/5">
                     <span className="text-sm text-[#1d1b1b] font-semibold">Total recebido</span>
                     <span className="text-sm font-bold text-[#1d1b1b] font-mono-numbers">
