@@ -70,6 +70,7 @@ export const BOT_PERSONALITIES = [
  */
 export const PIX_KEY_TYPES = [
   { value: "cpf", label: "CPF" },
+  { value: "cnpj", label: "CNPJ" },
   { value: "phone", label: "Telefone" },
   { value: "email", label: "E-mail" },
   { value: "random", label: "Chave aleatória" },
