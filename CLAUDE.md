@@ -251,7 +251,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 
 ### Convites
 - Webhook n8n com service role (NÃO supabase.auth.admin no frontend). Workflow envia `role: 'franchisee'`
-- PKCE instável — após invite, SEMPRE chamar `resetPasswordForEmail()` como backup
+- Convite usa APENAS `inviteFranchisee()` (webhook n8n) — NÃO chamar `resetPasswordForEmail()` junto (causa e-mail duplicado)
 - `inviteFranchisee()` envia `redirectTo: origin + '/set-password?type=invite'`
 
 ### Health Score & Acompanhamento

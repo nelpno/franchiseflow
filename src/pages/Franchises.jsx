@@ -77,7 +77,7 @@ export default function Franchises() {
 
   const loadData = async (silent = false) => {
     if (!silent) setIsLoading(true);
-    setLoadError(null);
+    if (!silent) setLoadError(null);
     try {
       const todayStr = format(new Date(), "yyyy-MM-dd");
       const results = await Promise.allSettled([
@@ -160,10 +160,6 @@ export default function Franchises() {
           status: "pending",
         });
         await inviteFranchisee(franchiseeEmail);
-        // Envia email de definir senha (mais confiável que o link do invite)
-        await supabase.auth.resetPasswordForEmail(franchiseeEmail, {
-          redirectTo: window.location.origin + '/set-password'
-        });
         toast.success(`Email de primeiro acesso enviado para ${franchiseeEmail}`);
       } catch (inviteError) {
         console.error("Erro ao enviar convite:", inviteError);
@@ -419,13 +415,8 @@ export default function Franchises() {
       // Atualiza lista para refletir o novo convite
       loadData(true);
 
-      // Dispara convite n8n + reset senha em background (não bloqueia UI)
-      Promise.all([
-        inviteFranchisee(emailToInvite).catch(err => console.warn("Invite webhook:", err.message)),
-        supabase.auth.resetPasswordForEmail(emailToInvite, {
-          redirectTo: window.location.origin + '/set-password'
-        }).catch(err => console.warn("Reset password:", err.message)),
-      ]).then(() => {
+      // Dispara convite n8n em background (não bloqueia UI)
+      inviteFranchisee(emailToInvite).then(() => {
         toast.success(`Email de primeiro acesso enviado para ${emailToInvite}`);
       }).catch(() => {
         toast.error("Convite salvo, mas email pode não ter sido enviado. Reenvie se necessário.");
