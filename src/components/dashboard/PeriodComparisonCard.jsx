@@ -87,8 +87,10 @@ export default function PeriodComparisonCard({ franchiseId }) {
 
       // Fetch sales and contacts in parallel
       const [salesResult, contactsResult] = await Promise.allSettled([
-        Sale.filter({ franchise_id: franchiseId }, "-sale_date", 500),
-        Contact.filter({ franchise_id: franchiseId }),
+        Sale.filter({ franchise_id: franchiseId }, "-sale_date", 500,
+          { columns: 'id, sale_date, value, delivery_fee, discount_amount, franchise_id' }),
+        Contact.filter({ franchise_id: franchiseId }, null, null,
+          { columns: 'id, created_at, franchise_id' }),
       ]);
       const allSales = salesResult.status === "fulfilled" ? salesResult.value : [];
       const allContacts = contactsResult.status === "fulfilled" ? contactsResult.value : [];

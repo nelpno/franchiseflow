@@ -125,7 +125,7 @@ export default function TabEstoque({
 
   // --- Filtering ---
 
-  const filteredItems = items.filter((item) => {
+  const filteredItems = useMemo(() => items.filter((item) => {
     const itemCategory = item.category || getCategoryFromName(item.product_name);
     const matchesSearch =
       !searchTerm ||
@@ -145,7 +145,7 @@ export default function TabEstoque({
     }
 
     return matchesSearch && matchesCategory && matchesStockLevel;
-  });
+  }), [items, searchTerm, filterCategory, filterStockLevel]);
 
   // --- Grouping by product type (first word of product_name) ---
 

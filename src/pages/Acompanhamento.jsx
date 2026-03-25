@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
 import {
   Franchise, User, Sale, InventoryItem, PurchaseOrder,
@@ -118,9 +119,10 @@ export default function Acompanhamento() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 120000);
-    return () => clearInterval(interval);
   }, [loadData]);
+
+  // Polling inteligente: só refaz queries quando a aba está visível
+  useVisibilityPolling(loadData, 120000);
 
   // Summary metrics
   const metrics = useMemo(() => {

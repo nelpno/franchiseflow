@@ -65,23 +65,35 @@ export default function TabResultado({ franchiseId, currentUser }) {
     if (!franchiseId) return;
     setLoading(true);
     try {
+      // Round 1: queries paralelas (SaleItem depende dos sale IDs)
       const results = await Promise.allSettled([
-        Sale.filter({ franchise_id: franchiseId }),
-        SaleItem.list(),
+        Sale.filter({ franchise_id: franchiseId }, null, null,
+          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, contact_id, source, payment_method, net_value, created_at' }),
         Expense.filter({ franchise_id: franchiseId }),
-        InventoryItem.filter({ franchise_id: franchiseId }),
-        AuditLog.filter({ franchise_id: franchiseId }, "-created_at", 20),
+        InventoryItem.filter({ franchise_id: franchiseId }, null, null,
+          { columns: 'id, product_name, quantity, cost_price, sale_price, min_stock' }),
+        AuditLog.filter({ franchise_id: franchiseId }, "-created_at", 20,
+          { columns: 'id, action, details, created_at, user_name, entity_type' }),
       ]);
 
       const getValue = (r) => r.status === "fulfilled" ? r.value : [];
-      setSales(getValue(results[0]));
-      setSaleItems(getValue(results[1]));
-      setExpenses(getValue(results[2]));
-      setInventoryItems(getValue(results[3]));
-      setAuditLogs(getValue(results[4]));
+      const salesData = getValue(results[0]);
+
+      // Round 2: SaleItem filtrado apenas pelos sale IDs desta franquia
+      const saleIds = salesData.map(s => s.id);
+      const saleItemsData = saleIds.length > 0
+        ? await SaleItem.filter({ sale_id: saleIds }, null, null,
+            { columns: 'id, sale_id, inventory_item_id, quantity, sale_price, cost_price, product_name' })
+        : [];
+
+      setSales(salesData);
+      setSaleItems(saleItemsData);
+      setExpenses(getValue(results[1]));
+      setInventoryItems(getValue(results[2]));
+      setAuditLogs(getValue(results[3]));
 
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["vendas","itens","despesas","estoque","auditoria"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["vendas","despesas","estoque","auditoria"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);

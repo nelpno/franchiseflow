@@ -26,6 +26,7 @@ export default defineConfig({
           'vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tooltip'],
           'supabase': ['@supabase/supabase-js'],
+          'dates': ['date-fns'],
         }
       }
     }

@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 
-export default function FranchiseRanking({ franchises, summaries, isLoading }) {
+function FranchiseRanking({ franchises, summaries, isLoading }) {
   const rankedFranchises = useMemo(() => {
     const today = format(new Date(), "yyyy-MM-dd");
     const todaySummaries = summaries.filter((s) => s.date === today);
@@ -157,3 +157,5 @@ export default function FranchiseRanking({ franchises, summaries, isLoading }) {
     </div>
   );
 }
+
+export default React.memo(FranchiseRanking);

@@ -1,6 +1,7 @@
+import React from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
-export default function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isValue = false }) {
+function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isValue = false }) {
   // Extract numeric value from formatted string like "R$ 123.45"
   const numericValue = typeof value === 'string'
     ? parseFloat(value.replace(/[^0-9,.-]+/g, "").replace(",", "."))
@@ -39,3 +40,5 @@ export default function StatsCard({ title, value, previousValue, icon: Icon, tre
     </div>
   );
 }
+
+export default React.memo(StatsCard);

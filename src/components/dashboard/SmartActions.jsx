@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
-export default function SmartActions({ contacts, franchiseId }) {
+function SmartActions({ contacts, franchiseId }) {
   const navigate = useNavigate();
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [loadingIds, setLoadingIds] = useState(new Set());
@@ -147,3 +147,5 @@ export default function SmartActions({ contacts, franchiseId }) {
     </section>
   );
 }
+
+export default React.memo(SmartActions);

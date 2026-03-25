@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, role, managed_franchise_ids')
         .eq('id', authUser.id)
         .single();
 
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data: retryProfile, error: retryError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, full_name, role, managed_franchise_ids')
           .eq('id', authUser.id)
           .single();
         if (retryError) throw retryError;

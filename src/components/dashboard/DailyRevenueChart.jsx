@@ -4,7 +4,7 @@ import { formatBRL } from "@/lib/formatters";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export default function DailyRevenueChart({ summaries, isLoading, days = 7, todayRevenue = 0 }) {
+function DailyRevenueChart({ summaries, isLoading, days = 7, todayRevenue = 0 }) {
   const chartData = useMemo(() => {
     const data = [];
     const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -62,3 +62,5 @@ export default function DailyRevenueChart({ summaries, isLoading, days = 7, toda
     </div>
   );
 }
+
+export default React.memo(DailyRevenueChart);

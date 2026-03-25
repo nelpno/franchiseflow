@@ -20,8 +20,8 @@ function withTimeout(promise, ms = QUERY_TIMEOUT_MS) {
 
 function createEntity(tableName) {
   return {
-    async list(orderBy, limit) {
-      let query = supabase.from(tableName).select('*');
+    async list(orderBy, limit, { columns } = {}) {
+      let query = supabase.from(tableName).select(columns || '*');
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);
@@ -30,8 +30,8 @@ function createEntity(tableName) {
       return data || [];
     },
 
-    async filter(criteria, orderBy, limit) {
-      let query = supabase.from(tableName).select('*');
+    async filter(criteria, orderBy, limit, { columns } = {}) {
+      let query = supabase.from(tableName).select(columns || '*');
       if (criteria) {
         for (const [key, value] of Object.entries(criteria)) {
           if (Array.isArray(value)) {

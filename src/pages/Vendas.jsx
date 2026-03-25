@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { User, Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
+import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import TabLancar from "@/components/minha-loja/TabLancar";
 
 export default function Vendas() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedFranchise } = useAuth();
+  const { user, selectedFranchise } = useAuth();
   const rawAction = searchParams.get("action");
   const actionParam = rawAction === "nova-venda" ? rawAction : null;
   const rawPhone = searchParams.get("phone");
@@ -37,30 +37,26 @@ export default function Vendas() {
     try {
       setLoading(true);
       setLoadError(null);
-      const [userResult, franchisesResult] = await Promise.allSettled([
-        User.me(),
-        Franchise.list(),
+
+      // 1 round único — user vem do AuthContext (useAuth)
+      const results = await Promise.allSettled([
+        Franchise.list(null, null, { columns: 'id, evolution_instance_id, franchise_name, city, owner_name' }),
+        Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, franchise_id, source, payment_method, created_at' }),
+        InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
+        Contact.list('-created_at', 200, { columns: 'id, nome, telefone, status, franchise_id' }),
       ]);
       if (!mountedRef.current) return;
-      const userData = userResult.status === "fulfilled" ? userResult.value : null;
-      const franchisesData = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
-      if (!userData) throw new Error("Não foi possível carregar usuário");
-      setCurrentUser(userData);
+
+      const getValue = (r) => r.status === "fulfilled" ? r.value : [];
+      const franchisesData = getValue(results[0]);
+      if (results[0].status === "rejected") throw new Error("Não foi possível carregar franquias");
+      setCurrentUser(user);
       setFranchises(franchisesData);
+      setSales(getValue(results[1]));
+      setInventoryItems(getValue(results[2]));
+      setContacts(getValue(results[3]));
 
-      const [salesResult, inventoryResult, contactsResult] = await Promise.allSettled([
-        Sale.list("-created_at", 500),
-        InventoryItem.list("-updated_at"),
-        Contact.list('-created_at', 200),
-      ]);
-      if (!mountedRef.current) return;
-
-      setSales(salesResult.status === "fulfilled" ? salesResult.value : []);
-      setInventoryItems(inventoryResult.status === "fulfilled" ? inventoryResult.value : []);
-      setContacts(contactsResult.status === "fulfilled" ? contactsResult.value : []);
-
-      const failed = [salesResult, inventoryResult, contactsResult]
-        .filter(r => r.status === "rejected");
+      const failed = results.slice(1).filter(r => r.status === "rejected");
       if (failed.length > 0) {
         console.warn("Algumas queries falharam:", failed.map(f => f.reason?.message));
         toast.error("Alguns dados não carregaram. Tente recarregar.");
@@ -84,9 +80,9 @@ export default function Vendas() {
   const handleRefreshSales = async () => {
     try {
       const refreshResults = await Promise.allSettled([
-        Sale.list("-created_at", 500),
-        Contact.list('-created_at', 200),
-        InventoryItem.list("-updated_at"),
+        Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, franchise_id, source, payment_method, created_at' }),
+        Contact.list('-created_at', 200, { columns: 'id, nome, telefone, status, franchise_id' }),
+        InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
       ]);
       if (!mountedRef.current) return;
       const getVal = (r) => r.status === "fulfilled" ? r.value : [];

@@ -35,13 +35,14 @@ export default function AdminDashboard() {
     setLoadError(null);
     try {
       const results = await Promise.allSettled([
-        Franchise.list("city"),
-        DailySummary.list("-date", 365),
-        DailyUniqueContact.filter({ date: today }),
-        DailyUniqueContact.filter({ date: yesterday }),
-        Sale.filter({ sale_date: today }),
-        Sale.filter({ sale_date: yesterday }),
-        PurchaseOrder.list("-ordered_at"),
+        Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, franchise_name' }),
+        DailySummary.list("-date", 90, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts' }),
+        DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date, contact_count' }),
+        DailyUniqueContact.filter({ date: yesterday }, null, null, { columns: 'id, franchise_id, date, contact_count' }),
+        Sale.filter({ sale_date: today }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
+        Sale.filter({ sale_date: yesterday }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
+        PurchaseOrder.list("-ordered_at", null, { columns: 'id, franchise_id, status, ordered_at, delivered_at' }),
+        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id' }),
       ]);
 
       if (!mountedRef.current) return;
@@ -65,7 +66,7 @@ export default function AdminDashboard() {
 
       // Log non-critical failures without blocking the dashboard
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders","estoque"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -80,13 +81,8 @@ export default function AdminDashboard() {
       setYesterdaySales(yesterdaySaleData);
       setPurchaseOrders(purchaseOrderData);
 
-      // Fetch ALL inventory in 1 query (instead of N)
-      let allInventory = [];
-      try {
-        allInventory = await InventoryItem.list();
-      } catch (invErr) {
-        console.warn("Falha ao carregar estoque:", invErr);
-      }
+      // Inventory já veio paralelo no Promise.allSettled (index 7)
+      const allInventory = getValue(results[7]);
 
       if (!mountedRef.current) return;
 

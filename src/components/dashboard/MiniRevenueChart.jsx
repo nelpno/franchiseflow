@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0 }) {
+function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0 }) {
   const chartData = useMemo(() => {
     const days = [];
     const todayDate = format(new Date(), "yyyy-MM-dd");
@@ -75,3 +75,5 @@ export default function MiniRevenueChart({ summaries, franchiseId, todayRevenue 
     </section>
   );
 }
+
+export default React.memo(MiniRevenueChart);

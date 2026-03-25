@@ -56,13 +56,26 @@ export default function FranchiseeDashboard() {
       const yesterday = getYesterday();
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
-        evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }) : Promise.resolve([]),       // [0]
-        evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }) : Promise.resolve([]),   // [1]
-        evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30) : Promise.resolve([]),    // [2]
-        evoId ? InventoryItem.filter({ franchise_id: evoId }) : Promise.resolve([]),                // [3]
-        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }) : Promise.resolve([]),  // [4]
-        evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200) : Promise.resolve([]), // [5]
-        evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10) : Promise.resolve([]), // [6]
+        evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }, null, null,
+          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method' })
+          : Promise.resolve([]),       // [0]
+        evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }, null, null,
+          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method' })
+          : Promise.resolve([]),   // [1]
+        evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30,
+          { columns: 'id, date, sales_count, sales_value, unique_contacts' })
+          : Promise.resolve([]),    // [2]
+        evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
+          { columns: 'id, product_name, quantity, min_stock' })
+          : Promise.resolve([]),                // [3]
+        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today })
+          : Promise.resolve([]),  // [4]
+        evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200,
+          { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at' })
+          : Promise.resolve([]), // [5]
+        evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10,
+          { columns: 'id, date, contact_count' })
+          : Promise.resolve([]), // [6]
         evoId ? getFranchiseRanking(today, evoId) : Promise.resolve(null),                          // [7]
       ]);
 
