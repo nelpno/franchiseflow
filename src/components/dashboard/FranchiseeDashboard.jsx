@@ -74,7 +74,7 @@ export default function FranchiseeDashboard() {
           { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at' })
           : Promise.resolve([]), // [5]
         evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10,
-          { columns: 'id, date, contact_count' })
+          { columns: 'id, date' })
           : Promise.resolve([]), // [6]
         evoId ? getFranchiseRanking(today, evoId) : Promise.resolve(null),                          // [7]
       ]);

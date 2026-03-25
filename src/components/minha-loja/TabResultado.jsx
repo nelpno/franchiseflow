@@ -83,7 +83,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
       const saleIds = salesData.map(s => s.id);
       const saleItemsData = saleIds.length > 0
         ? await SaleItem.filter({ sale_id: saleIds }, null, null,
-            { columns: 'id, sale_id, inventory_item_id, quantity, sale_price, cost_price, product_name' })
+            { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name' })
         : [];
 
       setSales(salesData);

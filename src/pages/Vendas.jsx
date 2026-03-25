@@ -40,7 +40,7 @@ export default function Vendas() {
 
       // 1 round único — user vem do AuthContext (useAuth)
       const results = await Promise.allSettled([
-        Franchise.list(null, null, { columns: 'id, evolution_instance_id, franchise_name, city, owner_name' }),
+        Franchise.list(null, null, { columns: 'id, evolution_instance_id, name, city, owner_name' }),
         Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, franchise_id, source, payment_method, created_at' }),
         InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
         Contact.list('-created_at', 200, { columns: 'id, nome, telefone, status, franchise_id' }),
