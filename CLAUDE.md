@@ -430,6 +430,15 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token para API
 225. Onboarding items suportam `dependsOn: "key"` — item fica bloqueado (cadeado) até dependência ser marcada. Ex: `6-2` depende de `6-1` (conferir pedido só após fazer pedido). `canMark()` em OnboardingBlock.jsx checa dependência
 226. `card_fee_amount` calculado sobre `subtotal + effectiveDeliveryFee` (valor total na maquininha) — franqueado passa cartão no valor cheio incluindo frete
 227. Onboarding etiquetas WhatsApp: 5 etiquetas (NÃO 8) casando com cores nativas do WhatsApp Business e pipeline do app — 🟢Novo, 🔵Negociando, 🟡Cliente, 🟠VIP, 🔴Reativar
+228. Logo otimizado: usar `logo-maxi-massas-optimized.png` (16KB) — NUNCA `logo-maxi-massas.png` (1.4MB). Original mantido para print/alta resolução
+229. Favicon SVG em `public/favicon.svg` + PWA manifest em `public/manifest.json` + ícones PNG 192/512 — Vite serve `public/` automaticamente
+230. `AuthContext.Provider` value DEVE ser memoizado com `useMemo` — sem isso, 20+ componentes re-renderizam a cada mudança de state
+231. `useVisibilityPolling(callback, intervalMs)` hook em `src/hooks/` — substitui `setInterval` + `clearInterval` manual. Pausa polling quando aba em background, resume + executa imediatamente ao voltar. Usado em FranchiseeDashboard (120s), AdminDashboard (180s), NotificationBell (30s)
+232. Vite `manualChunks` inclui `ui` (Radix) e `supabase` além de recharts/export/vendor — manter chunks separados para melhor cache
+233. nginx: `gzip_vary on` obrigatório (Traefik proxy precisa), `gzip_comp_level 6`, `Permissions-Policy` header, `keepalive_timeout 65`
+234. Material Symbols carregado async via `media="print" onload="this.media='all'"` — não bloqueia first paint. Inter preloaded como fonte crítica
+235. `html2canvas` é dynamic import em `shareUtils.js` — NÃO importar estaticamente (94KB removidos do bundle inicial)
+236. lucide-react usado internamente por componentes shadcn/ui (accordion, dialog, select, etc.) — NÃO remover do package.json. Regra 19 (Material Symbols) aplica a código nosso, não a shadcn
 
 ## Scripts
 ```bash
@@ -467,6 +476,7 @@ npm run typecheck # TypeScript check
   - Redesign visual onboarding (ProgressRing, cards missão, micro-celebrações) ✅
   - Auditoria completa do banco de dados (13 fixes, 4 tabelas mortas removidas, triggers corrigidos) ✅
   - Compartilhar comprovante de venda via WhatsApp (imagem PNG com html2canvas + Web Share API) ✅
+  - Performance: logo -99% (1.4MB→16KB), bundle inicial -66%, favicon PWA, preconnect, visibility polling, AuthContext memo ✅
   - Swipe touch no tutorial OnboardingWelcome
   - Busca global por franqueado (admin header)
   - Calendário de publicação (Marketing)
@@ -488,7 +498,7 @@ npm run typecheck # TypeScript check
 
 ## Performance
 - Páginas pesadas usam `React.lazy()` + `<Suspense>` (configurado em `pages.config.js`)
-- Vite `manualChunks`: recharts, jspdf/xlsx/file-saver, vendor (react/react-dom)
+- Vite `manualChunks`: recharts, export (jspdf/xlsx/file-saver), vendor (react/react-dom), ui (Radix), supabase
 - AdminDashboard: buscar InventoryItem.list() + DailyChecklist.filter({date}) e agrupar no frontend (NÃO fazer N+1 por franquia)
 - FranchiseeDashboard: usar `ctxFranchise` do AuthContext (NÃO buscar Franchise.list())
 - Polling: FranchiseeDashboard 120s, AdminDashboard 180s, NotificationBell 30s
