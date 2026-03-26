@@ -769,7 +769,7 @@ export default function PurchaseOrders() {
                         toast.success("Ficha de separacao gerada!");
                       } catch (err) {
                         console.error("Erro ao gerar ficha:", err);
-                        toast.error("Erro ao gerar ficha de separacao.");
+                        toast.error(`Erro: ${err?.message || String(err)}`);
                       }
                     }}
                     disabled={loadingItems || orderItems.length === 0}
