@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Franchise, Sale, Contact, DailyUniqueContact, DailySummary, User } from "@/entities/all";
+import { Franchise, Sale, Contact, DailyUniqueContact, DailySummary, User, FranchiseConfiguration } from "@/entities/all";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,7 @@ import KpiCards from "../components/reports/KpiCards";
 import SalesRevenueChart from "../components/reports/SalesRevenueChart";
 import PaymentMethodChart from "../components/reports/PaymentMethodChart";
 import FranchiseRankingChart from "../components/reports/FranchiseRankingChart";
+import { buildConfigMap } from "@/lib/franchiseUtils";
 import FranchiseComparisonTable from "../components/reports/FranchiseComparisonTable";
 import ExportButton from "../components/reports/ExportButton";
 
@@ -28,6 +29,7 @@ function ReportsContent() {
   const [rawContacts, setRawContacts] = useState([]);
   const [rawDailyContacts, setRawDailyContacts] = useState([]);
   const [rawSummaries, setRawSummaries] = useState([]);
+  const [configMap, setConfigMap] = useState({});
 
   // Filtros simplificados
   const [selectedFranchise, setSelectedFranchise] = useState('all');
@@ -52,7 +54,8 @@ function ReportsContent() {
         Sale.list('-sale_date', 200),
         Contact.list('-created_at', 200),
         DailyUniqueContact.list('-date', 200),
-        DailySummary.list('-date', 200)
+        DailySummary.list('-date', 200),
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' })
       ]);
 
       if (!mountedRef.current) return;
@@ -66,7 +69,7 @@ function ReportsContent() {
       const summariesData = getValue(results[5]);
 
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["user","franchises","sales","contacts","dailyContacts","summaries"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["user","franchises","sales","contacts","dailyContacts","summaries","configs"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -79,6 +82,8 @@ function ReportsContent() {
       setRawContacts(contactsData || []);
       setRawDailyContacts(dailyContactsData || []);
       setRawSummaries(summariesData || []);
+      const configData = getValue(results[6]);
+      setConfigMap(buildConfigMap(configData || []));
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       if (!mountedRef.current) return;
@@ -285,6 +290,7 @@ function ReportsContent() {
                 sales={sales}
                 franchises={availableFranchises}
                 isLoading={isLoading}
+                configMap={configMap}
               />
             </div>
 

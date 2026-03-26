@@ -146,17 +146,21 @@ export default function AdminDashboard() {
     // "7 dias" = hoje + 6 anteriores (subDays 6), "30 dias" = hoje + 29 anteriores
     const cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
     const prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
 
-    const currentPeriod = summaries.filter((s) => s.date >= cutoff);
+    // Summaries don't include today (cron runs at 02:00 BRT), so merge live data
+    const currentPeriod = summaries.filter((s) => s.date >= cutoff && s.date < todayStr);
     const prevPeriod = summaries.filter((s) => s.date >= prevCutoff && s.date < cutoff);
 
     const sum = (arr, field) => arr.reduce((s, r) => s + (r[field] || 0), 0);
 
-    const salesCount = sum(currentPeriod, "sales_count");
+    // Add today's live data to current period totals
+    const todayRevenue = todaySales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const salesCount = sum(currentPeriod, "sales_count") + todaySales.length;
     const prevSalesCount = sum(prevPeriod, "sales_count");
-    const revenue = sum(currentPeriod, "sales_value");
+    const revenue = sum(currentPeriod, "sales_value") + todayRevenue;
     const prevRevenue = sum(prevPeriod, "sales_value");
-    const contacts = sum(currentPeriod, "unique_contacts");
+    const contacts = sum(currentPeriod, "unique_contacts") + todayContacts.length;
     const prevContacts = sum(prevPeriod, "unique_contacts");
     const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
     const prevConversion = prevContacts > 0 ? Math.round((prevSalesCount / prevContacts) * 100) : 0;

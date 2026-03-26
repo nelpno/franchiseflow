@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
+import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
 const RANK_COLORS = ['#d4af37', '#9a8c8c', '#cd7f32', '#a80012', '#b91c1c', '#4a3d3d', '#7a6b6b', '#291715'];
 
@@ -17,13 +18,14 @@ const CustomTooltip = ({ active, payload }) => {
   );
 };
 
-export default function FranchiseRankingChart({ sales, franchises, isLoading }) {
+export default function FranchiseRankingChart({ sales, franchises, isLoading, configMap = {} }) {
   const getData = () => {
     return franchises.map(f => {
       const fSales = sales.filter(s => s.franchise_id === f.evolution_instance_id);
-      const revenue = fSales.reduce((sum, s) => sum + (s.value || 0), 0);
+      const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const config = configMap[f.evolution_instance_id];
       return {
-        name: f.city,
+        name: getFranchiseDisplayName(f, config),
         revenue,
         salesCount: fSales.length,
       };

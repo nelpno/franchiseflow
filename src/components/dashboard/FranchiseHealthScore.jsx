@@ -193,6 +193,7 @@ export default function FranchiseHealthScore({
 }) {
   const navigate = useNavigate();
   const [selectedScore, setSelectedScore] = useState(null);
+  const [expanded, setExpanded] = useState(false);
 
   const scores = useMemo(() => {
     return franchises
@@ -230,7 +231,7 @@ export default function FranchiseHealthScore({
       </div>
 
       <div className="space-y-3">
-        {scores.map(({ franchise, total, breakdown, reasons }) => {
+        {(expanded ? scores : scores.slice(0, 5)).map(({ franchise, total, breakdown, reasons }) => {
           const color = getScoreColor(total);
           const label = getScoreLabel(total);
 
@@ -285,6 +286,18 @@ export default function FranchiseHealthScore({
           );
         })}
       </div>
+
+      {scores.length > 5 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#a80012] hover:bg-[#a80012]/5 rounded-xl transition-colors"
+        >
+          <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={18} />
+          {expanded
+            ? "Mostrar menos"
+            : `Ver todas (+${scores.length - 5})`}
+        </button>
+      )}
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#291715]/5 text-xs text-[#1b1c1d]/70 font-medium">

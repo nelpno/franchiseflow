@@ -93,14 +93,21 @@ export function buildConfigMap(configs) {
 
 /**
  * Nome padronizado de franquia.
- * - compact (default): retorna string — "Sorocaba Centro"
+ * - compact (default): retorna string — "Bauru", "Itápolis Centro"
  * - full: retorna { primary, owner, city } para layouts detalhados
  *
+ * Strip automático de "Maxi Massas" do franchise_name (cadastrado com prefixo).
  * Fallback: config.franchise_name → franchise.city → franchise.owner_name → "Franquia"
  */
+function stripBrandPrefix(name) {
+  if (!name) return name;
+  return name.replace(/^Maxi\s*Massas\s*/i, "").trim() || name;
+}
+
 export function getFranchiseDisplayName(franchise, config, mode = "compact") {
-  const primary =
+  const raw =
     config?.franchise_name || franchise?.city || franchise?.owner_name || "Franquia";
+  const primary = stripBrandPrefix(raw);
 
   if (mode === "compact") return primary;
 
