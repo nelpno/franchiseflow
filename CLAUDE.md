@@ -106,6 +106,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Telefones: SEMPRE prefixo 55 no WhatsApp. DB armazena 11 dígitos
 - `blockedNumbers`: cache dinâmico via staticData, busca a cada 30min, formato 11 dígitos
 - Prompts usam dados estruturados: `payment_delivery[]`, `delivery_fee_rules[]` JSONB — NÃO campos texto antigos
+- `delivery_schedule_text`: campo computado na view, gera texto de horários/frete por dia para o bot (ex: "Seg-Sex: 06:00-23:00 | Sab: 08:00-14:00")
 - `valor_total` do $fromAI() pode vir 0 — calcular sum(qty * price) + frete como fallback
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros causam 400
@@ -144,7 +145,7 @@ src/
 │   ├── dashboard/    # AdminDashboard, FranchiseeDashboard, StatsCard, AlertsPanel
 │   ├── minha-loja/   # TabLancar, TabResultado, TabEstoque, SaleForm, ExpenseForm
 │   ├── my-contacts/  # ActionPanel (ações inteligentes)
-│   ├── vendedor/     # Wizard "Meu Vendedor" (WizardStepper, WizardStep, ReviewSummary)
+│   ├── vendedor/     # Wizard "Meu Vendedor" (WizardStepper, WizardStep, ReviewSummary, DeliveryScheduleEditor)
 │   ├── onboarding/   # ONBOARDING_BLOCKS, ProgressRing, OnboardingBlock
 │   ├── whatsapp/     # WhatsAppConnectionModal
 │   └── ui/           # shadcn/ui + MaterialIcon.jsx
@@ -215,7 +216,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `onboarding_checklists`: NÃO tem total_items, started_at, user_id
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` (TEXT) + `working_days` (TEXT)
 - `payment_delivery`/`payment_pickup` são `TEXT[]`, NÃO JSONB
-- Campos entrega: `free_shipping` (bool), `delivery_time_start`/`delivery_time_end` (text HH:MM), `charges_delivery_fee` (bool)
+- Campos entrega: `free_shipping` (bool), `delivery_start_time`/`order_cutoff_time` (text HH:MM), `charges_delivery_fee` (bool)
+- `delivery_schedule` JSONB: horários de entrega por dia da semana. Array de `{days, delivery_start, delivery_end, charges_fee, fee_rules}`. Campos legados sincronizados da primeira faixa
 
 **Constraints e índices:**
 - `onboarding_checklists` UNIQUE INDEX em franchise_id
