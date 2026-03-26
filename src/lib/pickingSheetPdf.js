@@ -6,17 +6,8 @@ const GROUP_ORDER = [
   "Fatiado", "Rondelli", "Sofioli", "Molho",
 ];
 
-const STATUS_LABELS = {
-  pendente: "Pendente",
-  confirmado: "Confirmado",
-  em_rota: "Em Rota",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
-};
-
 function groupItems(items, editedQuantities) {
   const groupMap = {};
-
   items.forEach((item) => {
     const qty = Number(editedQuantities?.[item.id] ?? item.quantity ?? 0);
     if (!qty || qty <= 0) return;
@@ -24,35 +15,29 @@ function groupItems(items, editedQuantities) {
     if (!groupMap[firstWord]) groupMap[firstWord] = { label: firstWord.toUpperCase(), items: [] };
     groupMap[firstWord].items.push({ ...item, finalQty: qty });
   });
-
   const groups = Object.values(groupMap);
   groups.sort((a, b) => {
     const ai = GROUP_ORDER.indexOf(a.label.charAt(0).toUpperCase() + a.label.slice(1).toLowerCase());
     const bi = GROUP_ORDER.indexOf(b.label.charAt(0).toUpperCase() + b.label.slice(1).toLowerCase());
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
-
   groups.forEach((g) => g.items.sort((a, b) => a.product_name.localeCompare(b.product_name)));
   return groups;
 }
 
-function formatCurrency(value) {
-  if (value == null) return "---";
-  return "R$ " + Number(value).toFixed(2).replace(".", ",");
+function fmtBRL(v) {
+  if (v == null) return "---";
+  return "R$ " + Number(v).toFixed(2).replace(".", ",");
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return "---";
-  try {
-    const d = new Date(dateStr);
-    return format(d, "dd/MM/yyyy", { locale: ptBR });
-  } catch {
-    return String(dateStr);
-  }
+function fmtDate(d) {
+  if (!d) return "---";
+  try { return format(new Date(d), "dd/MM/yyyy", { locale: ptBR }); }
+  catch { return String(d); }
 }
 
 /**
- * Generates a printable A4 picking sheet PDF for a purchase order.
+ * Compact A4 picking sheet — designed to fit on a single page.
  */
 export async function generatePickingSheet({ order, items, franchiseName, editedQuantities }) {
   const [jspdfModule, autoTableModule] = await Promise.all([
@@ -63,221 +48,162 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   const autoTable = autoTableModule.default;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageWidth = 210;
-  const margin = 12;
-  const usable = pageWidth - margin * 2;
+  const pw = 210;
+  const m = 8; // tight margins
+  const usable = pw - m * 2;
   const shortId = order.id.slice(0, 8).toUpperCase();
 
-  // ── Header ──────────────────────────────────────────────
-  let y = margin;
-
-  doc.setFontSize(22);
+  // ── Header — 1 line brand + subtitle ──────────────────
+  let y = m;
+  doc.setFontSize(16);
   doc.setTextColor(185, 28, 28);
   doc.setFont("helvetica", "bold");
-  doc.text("MAXI MASSAS", margin, y + 7);
+  doc.text("MAXI MASSAS", m, y + 5);
 
-  doc.setFontSize(13);
-  doc.setTextColor(180, 148, 47);
-  doc.setFont("helvetica", "bold");
-  doc.text("FICHA DE SEPARACAO", margin, y + 14);
+  doc.setFontSize(10);
+  doc.setTextColor(140, 110, 50);
+  doc.text("FICHA DE SEPARACAO", m + 48, y + 5);
 
-  // Order ID right-aligned
-  doc.setFontSize(16);
+  doc.setFontSize(12);
+  doc.setTextColor(40, 40, 40);
+  doc.text(`PED-${shortId}`, pw - m, y + 5, { align: "right" });
+
+  y += 9;
+  doc.setDrawColor(185, 28, 28);
+  doc.setLineWidth(0.6);
+  doc.line(m, y, pw - m, y);
+  y += 4;
+
+  // ── Info — 1 compact line ─────────────────────────────
+  doc.setFontSize(9);
   doc.setTextColor(40, 40, 40);
   doc.setFont("helvetica", "bold");
-  doc.text(`PED-${shortId}`, pageWidth - margin, y + 7, { align: "right" });
-
-  doc.setFontSize(9);
-  doc.setTextColor(120, 120, 120);
+  doc.text(franchiseName || "---", m, y);
   doc.setFont("helvetica", "normal");
-  doc.text(`Status: ${STATUS_LABELS[order.status] || order.status}`, pageWidth - margin, y + 13, { align: "right" });
+  doc.setTextColor(100, 100, 100);
+  const infoRight = `Pedido: ${fmtDate(order.ordered_at)}    Entrega: ${fmtDate(order.estimated_delivery)}`;
+  doc.text(infoRight, pw - m, y, { align: "right" });
 
-  y += 20;
-
-  // Separator line
-  doc.setDrawColor(185, 28, 28);
-  doc.setLineWidth(0.8);
-  doc.line(margin, y, pageWidth - margin, y);
   y += 5;
 
-  // Info block — 2 columns
-  doc.setFontSize(10);
-  doc.setTextColor(40, 40, 40);
-  const col2x = margin + usable / 2;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Franquia:", margin, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(franchiseName || "---", margin + 22, y);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Data do Pedido:", col2x, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(formatDate(order.ordered_at), col2x + 36, y);
-
-  y += 6;
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Previsao Entrega:", margin, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(formatDate(order.estimated_delivery), margin + 40, y);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("Impresso em:", col2x, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR }), col2x + 30, y);
-
-  y += 8;
-
-  // ── Items Table ─────────────────────────────────────────
+  // ── Items Table ───────────────────────────────────────
   const groups = groupItems(items, editedQuantities);
   const tableBody = [];
-  let seq = 0;
   let totalUnits = 0;
   let totalItems = 0;
+  let totalValue = 0;
 
   groups.forEach((group) => {
-    // Group header row
+    // Group separator — thin gray row
     tableBody.push([
-      { content: group.label, colSpan: 6, styles: { fillColor: [235, 235, 235], fontStyle: "bold", fontSize: 9, textColor: [60, 60, 60], halign: "left" } },
+      { content: group.label, colSpan: 5, styles: { fillColor: [230, 230, 230], fontStyle: "bold", fontSize: 6.5, textColor: [100, 100, 100], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
     ]);
 
     group.items.forEach((item) => {
-      seq++;
       totalItems++;
       totalUnits += item.finalQty;
+      totalValue += item.finalQty * Number(item.unit_price || 0);
       tableBody.push([
-        { content: String(seq), styles: { halign: "center", fontSize: 9 } },
-        { content: item.product_name || "Produto sem nome", styles: { fontSize: 10 } },
-        { content: String(item.finalQty), styles: { halign: "center", fontStyle: "bold", fontSize: 13 } },
-        { content: "", styles: { halign: "center" } }, // Sep. checkbox
-        { content: "", styles: { halign: "center" } }, // Conf. checkbox
-        { content: "", styles: { fontSize: 8 } }, // Obs
+        item.product_name || "---",
+        String(item.finalQty),
+        fmtBRL(item.unit_price),
+        "", // Sep
+        "", // Conf
       ]);
     });
   });
 
-  const checkboxSize = 5;
+  const chk = 3.5; // checkbox size
 
   autoTable(doc, {
     startY: y,
-    head: [["#", "Produto", "Qtd", "Sep.", "Conf.", "Obs"]],
+    head: [["PRODUTO", "QTD", "UNIT", "SEP", "CONF"]],
     body: tableBody,
     styles: {
-      fontSize: 9,
-      cellPadding: 3,
-      lineColor: [200, 200, 200],
-      lineWidth: 0.2,
+      fontSize: 8,
+      cellPadding: { top: 1, bottom: 1, left: 2, right: 2 },
+      lineColor: [180, 180, 180],
+      lineWidth: 0.15,
+      textColor: [30, 30, 30],
     },
     headStyles: {
       fillColor: [185, 28, 28],
       textColor: 255,
       fontStyle: "bold",
-      fontSize: 9,
+      fontSize: 7,
       halign: "center",
+      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
     },
     columnStyles: {
-      0: { cellWidth: 8, halign: "center" },
-      1: { cellWidth: 70 },
-      2: { cellWidth: 20, halign: "center" },
-      3: { cellWidth: 18, halign: "center" },
-      4: { cellWidth: 18, halign: "center" },
-      5: { cellWidth: usable - 8 - 70 - 20 - 18 - 18 },
+      0: { cellWidth: usable - 16 - 18 - 14 - 14 }, // Produto — flex
+      1: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 9 }, // QTD
+      2: { cellWidth: 18, halign: "right", fontSize: 7 }, // Unit price small
+      3: { cellWidth: 14, halign: "center" }, // Sep
+      4: { cellWidth: 14, halign: "center" }, // Conf
     },
-    alternateRowStyles: { fillColor: [251, 249, 250] },
+    alternateRowStyles: { fillColor: [248, 247, 247] },
     showHead: "everyPage",
-    margin: { left: margin, right: margin },
+    margin: { left: m, right: m },
     didDrawCell: (data) => {
       if (data.section !== "body") return;
       if (data.column.index !== 3 && data.column.index !== 4) return;
-      // Skip group header rows (raw array has 1 element with colSpan)
       const raw = data.row.raw;
       if (Array.isArray(raw) && raw.length === 1 && raw[0]?.colSpan) return;
       const cx = data.cell.x + data.cell.width / 2;
       const cy = data.cell.y + data.cell.height / 2;
-      doc.setDrawColor(100, 100, 100);
-      doc.setLineWidth(0.3);
-      doc.rect(cx - checkboxSize / 2, cy - checkboxSize / 2, checkboxSize, checkboxSize);
+      doc.setDrawColor(120, 120, 120);
+      doc.setLineWidth(0.25);
+      doc.rect(cx - chk / 2, cy - chk / 2, chk, chk);
     },
   });
 
-  // ── Summary ─────────────────────────────────────────────
+  // ── Footer ────────────────────────────────────────────
   const tableEnd = doc.lastAutoTable || doc.previousAutoTable;
-  let finalY = (tableEnd ? tableEnd.finalY : y + 20) + 8;
-
-  // Check if we need a new page for summary + signatures (~50mm)
-  if (finalY > 250) {
-    doc.addPage();
-    finalY = margin;
-  }
+  let fy = (tableEnd ? tableEnd.finalY : y + 20) + 4;
 
   doc.setDrawColor(185, 28, 28);
-  doc.setLineWidth(0.5);
-  doc.line(margin, finalY - 2, pageWidth - margin, finalY - 2);
+  doc.setLineWidth(0.4);
+  doc.line(m, fy, pw - m, fy);
+  fy += 4;
 
-  doc.setFontSize(10);
+  // Totals — single line
+  doc.setFontSize(8);
   doc.setTextColor(40, 40, 40);
-  doc.setFont("helvetica", "bold");
-  doc.text("Resumo", margin, finalY + 4);
-
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  finalY += 10;
-
-  const totalValue = items.reduce((sum, item) => {
-    const qty = Number(editedQuantities?.[item.id] ?? item.quantity ?? 0);
-    return sum + qty * Number(item.unit_price || 0);
-  }, 0);
-
-  doc.text(`Total de itens: ${totalItems}`, margin, finalY);
-  doc.text(`Total de unidades: ${totalUnits}`, margin + 50, finalY);
-  doc.text(`Valor total: ${formatCurrency(totalValue)}`, margin + 105, finalY);
-  finalY += 5;
-
-  if (order.freight_cost) {
-    doc.text(`Frete: ${formatCurrency(order.freight_cost)}`, margin, finalY);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Total com frete: ${formatCurrency(totalValue + Number(order.freight_cost))}`, margin + 50, finalY);
-    doc.setFont("helvetica", "normal");
-    finalY += 5;
+  let summary = `${totalItems} itens  |  ${totalUnits} un  |  ${fmtBRL(totalValue)}`;
+  if (order.freight_cost && Number(order.freight_cost) > 0) {
+    summary += `  |  Frete: ${fmtBRL(order.freight_cost)}  |  Total: ${fmtBRL(totalValue + Number(order.freight_cost))}`;
   }
+  doc.text(summary, m, fy);
 
   if (order.notes) {
-    finalY += 2;
+    fy += 4;
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(8);
-    doc.setTextColor(80, 80, 80);
-    const noteLines = doc.splitTextToSize(`Obs: ${order.notes}`, usable);
-    doc.text(noteLines, margin, finalY);
-    finalY += noteLines.length * 4 + 2;
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text(doc.splitTextToSize(`Obs: ${order.notes}`, usable), m, fy);
+    fy += 4;
   }
 
-  // ── Signature Block ─────────────────────────────────────
-  finalY += 12;
-  if (finalY > 265) {
-    doc.addPage();
-    finalY = margin + 10;
-  }
+  // Signatures — compact, inline
+  fy += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(80, 80, 80);
+  doc.setFontSize(7);
+  doc.setDrawColor(120, 120, 120);
+  doc.setLineWidth(0.2);
 
-  doc.setTextColor(60, 60, 60);
-  doc.setFontSize(9);
-  doc.setDrawColor(80, 80, 80);
-  doc.setLineWidth(0.3);
+  const sig1 = m + 5;
+  const sig2 = pw / 2 + 10;
+  const sw = 55;
 
-  const sigWidth = 65;
-  const sig1x = margin + 10;
-  const sig2x = pageWidth - margin - sigWidth - 10;
+  doc.line(sig1, fy, sig1 + sw, fy);
+  doc.text("Separado por", sig1, fy + 4);
 
-  doc.line(sig1x, finalY, sig1x + sigWidth, finalY);
-  doc.text("Separado por", sig1x + sigWidth / 2, finalY + 5, { align: "center" });
-  doc.text("Data: ___/___/______", sig1x + sigWidth / 2, finalY + 10, { align: "center" });
+  doc.line(sig2, fy, sig2 + sw, fy);
+  doc.text("Conferido por", sig2, fy + 4);
 
-  doc.line(sig2x, finalY, sig2x + sigWidth, finalY);
-  doc.text("Conferido por", sig2x + sigWidth / 2, finalY + 5, { align: "center" });
-  doc.text("Data: ___/___/______", sig2x + sigWidth / 2, finalY + 10, { align: "center" });
-
-  // ── Save ────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────
   const dateStr = format(new Date(), "yyyyMMdd");
   doc.save(`Ficha_Separacao_${shortId}_${dateStr}.pdf`);
 }
