@@ -763,7 +763,7 @@ export default function PurchaseOrders() {
                         await generatePickingSheet({
                           order: selectedOrder,
                           items: orderItems,
-                          franchiseName: getFranchiseName(selectedOrder.franchise_id),
+                          franchiseName: "Maxi Massas " + getFranchiseName(selectedOrder.franchise_id),
                           editedQuantities,
                         });
                         toast.success("Ficha de separacao gerada!");

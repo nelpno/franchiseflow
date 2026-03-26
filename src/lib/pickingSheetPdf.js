@@ -73,7 +73,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   doc.setFontSize(18);
   doc.setTextColor(185, 28, 28);
   doc.setFont("helvetica", "bold");
-  const brandLabel = franchiseName ? `MAXI MASSAS ${franchiseName}`.toUpperCase() : "MAXI MASSAS";
+  const brandLabel = franchiseName ? franchiseName.toUpperCase() : "MAXI MASSAS";
   doc.text(brandLabel, m, y + 5);
   const brandWidth = doc.getTextWidth(brandLabel);
 
