@@ -1,9 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
+import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
-function FranchiseRanking({ franchises, summaries, todaySales = [], period = "today", isLoading }) {
+const VISIBLE_COUNT = 5;
+
+function FranchiseRanking({ franchises, summaries, todaySales = [], period = "today", isLoading, configMap = {} }) {
+  const [expanded, setExpanded] = useState(false);
   // Map evoId → franchise for ID resolution (daily_summaries + sales use evo_id)
   const evoMap = useMemo(() => {
     const map = {};
@@ -61,14 +65,15 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
     return Object.entries(revenueByEvo)
       .map(([evoId, revenue]) => {
         const f = evoMap[evoId];
+        const config = configMap[evoId];
         return {
           id: f?.id || evoId,
-          name: f ? (f.city || f.name || f.owner_name || "Franquia") : evoId,
+          name: f ? getFranchiseDisplayName(f, config) : evoId,
           revenue,
         };
       })
       .sort((a, b) => b.revenue - a.revenue);
-  }, [franchises, summaries, todaySales, period, evoMap]);
+  }, [franchises, summaries, todaySales, period, evoMap, configMap]);
 
   // Dynamic daily goal: average of last 30 days + 10% (same as FranchiseeDashboard)
   const dailyGoal = useMemo(() => {
@@ -123,7 +128,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         </h4>
 
         <div className="space-y-8">
-          {rankedFranchises.map((f, i) => {
+          {(expanded ? rankedFranchises : rankedFranchises.slice(0, VISIBLE_COUNT)).map((f, i) => {
             const pct = maxRevenue > 0 ? Math.max((f.revenue / maxRevenue) * 100, 2) : 2;
             const isFirst = i === 0;
             const opacityClass = isFirst ? "" : i === 1 ? "opacity-80" : i === 2 ? "opacity-70" : "opacity-60";
@@ -158,6 +163,18 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
             );
           })}
         </div>
+
+        {rankedFranchises.length > VISIBLE_COUNT && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="mt-6 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#a80012] hover:bg-[#a80012]/5 rounded-xl transition-colors"
+          >
+            <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={18} />
+            {expanded
+              ? "Mostrar menos"
+              : `Ver todas (+${rankedFranchises.length - VISIBLE_COUNT})`}
+          </button>
+        )}
       </div>
 
       {/* Meta do Dia — only for "today" period */}

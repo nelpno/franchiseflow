@@ -11,6 +11,7 @@ import { toast } from "sonner";
  */
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const CANVA_TEMPLATE_URL = "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 function convertToJpeg(file, quality = 0.85) {
   return new Promise((resolve, reject) => {
@@ -41,6 +42,7 @@ function convertToJpeg(file, quality = 0.85) {
 export default function CatalogUpload({ value, onChange, franchiseId }) {
   const [isUploading, setIsUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [canvaExpanded, setCanvaExpanded] = useState(false);
   const inputRef = useRef(null);
 
   const handleFile = async (file) => {
@@ -118,6 +120,59 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
 
   return (
     <div className="space-y-3">
+      {/* Bloco expansível Canva */}
+      <div className="rounded-xl border border-[#d4af37]/30 bg-[#d4af37]/5">
+        <button
+          type="button"
+          onClick={() => setCanvaExpanded(!canvaExpanded)}
+          className="w-full flex items-center justify-between px-4 py-3"
+        >
+          <div className="flex items-center gap-2">
+            <MaterialIcon icon="palette" size={18} className="text-[#775a19]" />
+            <span className="text-sm font-semibold text-[#775a19]">
+              Criar cardápio no Canva
+            </span>
+          </div>
+          <MaterialIcon
+            icon={canvaExpanded ? "expand_less" : "expand_more"}
+            size={18}
+            className="text-[#775a19]"
+          />
+        </button>
+
+        {canvaExpanded && (
+          <div className="px-4 pb-4 space-y-3">
+            <ol className="space-y-2 text-sm text-[#4a3d3d]">
+              <li className="flex gap-2">
+                <span className="font-bold text-[#775a19]">1.</span>
+                Abra o template no Canva (conta gratuita)
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-[#775a19]">2.</span>
+                Clique em "Arquivo" → "Fazer uma cópia"
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-[#775a19]">3.</span>
+                Edite com os dados da sua unidade (cidade, telefone, preços)
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-[#775a19]">4.</span>
+                Exporte como JPG (Compartilhar → Baixar → JPG)
+              </li>
+            </ol>
+            <a
+              href={CANVA_TEMPLATE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#775a19] text-white text-sm font-bold rounded-lg hover:bg-[#5a4312] transition-colors"
+            >
+              <MaterialIcon icon="open_in_new" size={16} />
+              Abrir template no Canva
+            </a>
+          </div>
+        )}
+      </div>
+
       {value ? (
         /* Preview */
         <div className="relative rounded-xl overflow-hidden border border-[#bccac0]/10 bg-white">
@@ -181,9 +236,6 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
                 Arraste a imagem do catálogo ou <span className="text-[#b91c1c] font-bold">clique para selecionar</span>
               </p>
               <p className="text-xs text-[#3d4a42]/70">JPG, PNG ou WebP • Máximo 10MB</p>
-              <p className="text-xs text-[#3d4a42]/70">
-                Dica: Baixe direto do Canva e envie aqui
-              </p>
             </div>
           )}
         </div>

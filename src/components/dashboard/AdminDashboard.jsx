@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder } from "@/entities/all";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -12,6 +12,7 @@ import FranchiseRanking from "./FranchiseRanking";
 import FranchiseHealthScore from "./FranchiseHealthScore";
 import DailyRevenueChart from "./DailyRevenueChart";
 import MessagesTrend from "./MessagesTrend";
+import { buildConfigMap } from "@/lib/franchiseUtils";
 
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
   const [yesterdayContacts, setYesterdayContacts] = useState([]);
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
   const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [configMap, setConfigMap] = useState({});
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
 
@@ -43,6 +45,7 @@ export default function AdminDashboard() {
         Sale.filter({ sale_date: yesterday }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
         PurchaseOrder.list("-ordered_at", null, { columns: 'id, franchise_id, status, ordered_at, delivered_at' }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id' }),
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' }),
       ]);
 
       if (!mountedRef.current) return;
@@ -66,7 +69,7 @@ export default function AdminDashboard() {
 
       // Log non-critical failures without blocking the dashboard
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders","estoque"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders","estoque","configs"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -102,6 +105,10 @@ export default function AdminDashboard() {
       });
 
       setInventoryByFranchise(inventoryMap);
+
+      // Build configMap for standardized franchise display names
+      const configData = getValue(results[8]);
+      setConfigMap(buildConfigMap(configData));
     } catch (err) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard admin:", err);
@@ -365,6 +372,7 @@ export default function AdminDashboard() {
         summaries={summaries}
         inventoryByFranchise={inventoryByFranchise}
         purchaseOrders={purchaseOrders}
+        configMap={configMap}
       />
 
       <FranchiseRanking
@@ -373,6 +381,7 @@ export default function AdminDashboard() {
         todaySales={todaySales}
         period={period}
         isLoading={isLoading}
+        configMap={configMap}
       />
 
       <FranchiseHealthScore
@@ -381,6 +390,7 @@ export default function AdminDashboard() {
         inventoryByFranchise={inventoryByFranchise}
         purchaseOrders={purchaseOrders}
         todayContacts={todayContacts}
+        configMap={configMap}
       />
 
       {/* Charts */}

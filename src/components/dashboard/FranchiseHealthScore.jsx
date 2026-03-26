@@ -3,6 +3,7 @@ import { format, subDays, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 import {
   Dialog,
   DialogContent,
@@ -188,6 +189,7 @@ export default function FranchiseHealthScore({
   inventoryByFranchise,
   purchaseOrders,
   todayContacts,
+  configMap = {},
 }) {
   const navigate = useNavigate();
   const [selectedScore, setSelectedScore] = useState(null);
@@ -247,7 +249,7 @@ export default function FranchiseHealthScore({
               {/* Franchise info */}
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta truncate">
-                  {franchise.city || franchise.owner_name || "Franquia"}
+                  {getFranchiseDisplayName(franchise, configMap[franchise.evolution_instance_id])}
                 </p>
                 {/* Mini breakdown bar */}
                 <div className="flex gap-0.5 h-1.5 mt-2 rounded-full overflow-hidden">
@@ -320,7 +322,7 @@ export default function FranchiseHealthScore({
               </div>
               <div>
                 <p className="text-lg">
-                  {selectedScore?.franchise?.city || selectedScore?.franchise?.owner_name || "Franquia"}
+                  {selectedScore ? getFranchiseDisplayName(selectedScore.franchise, configMap[selectedScore.franchise?.evolution_instance_id]) : "Franquia"}
                 </p>
                 <p className="text-sm font-normal text-[#4a3d3d]">
                   Detalhes do Health Score

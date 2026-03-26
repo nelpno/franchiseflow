@@ -77,6 +77,41 @@ export const PIX_KEY_TYPES = [
 ];
 
 /**
+ * Monta um Map de configs indexado por franchise_evolution_instance_id.
+ * Usado para lookup rápido ao exibir nomes padronizados.
+ */
+export function buildConfigMap(configs) {
+  const map = {};
+  if (!configs) return map;
+  configs.forEach((c) => {
+    if (c.franchise_evolution_instance_id) {
+      map[c.franchise_evolution_instance_id] = c;
+    }
+  });
+  return map;
+}
+
+/**
+ * Nome padronizado de franquia.
+ * - compact (default): retorna string — "Sorocaba Centro"
+ * - full: retorna { primary, owner, city } para layouts detalhados
+ *
+ * Fallback: config.franchise_name → franchise.city → franchise.owner_name → "Franquia"
+ */
+export function getFranchiseDisplayName(franchise, config, mode = "compact") {
+  const primary =
+    config?.franchise_name || franchise?.city || franchise?.owner_name || "Franquia";
+
+  if (mode === "compact") return primary;
+
+  return {
+    primary,
+    owner: franchise?.owner_name || "",
+    city: franchise?.city || "",
+  };
+}
+
+/**
  * Dias da semana para chips.
  */
 export const WEEKDAYS = [
