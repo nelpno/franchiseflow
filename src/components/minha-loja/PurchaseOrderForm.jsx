@@ -126,6 +126,10 @@ export default function PurchaseOrderForm({
   });
 
   const setQty = (itemId, value) => {
+    if (value === "" || value === undefined) {
+      setQuantities((prev) => ({ ...prev, [itemId]: "" }));
+      return;
+    }
     const parsed = parseInt(value, 10);
     setQuantities((prev) => ({
       ...prev,
