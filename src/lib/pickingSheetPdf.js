@@ -3,22 +3,33 @@ import { ptBR } from "date-fns/locale";
 
 const GROUP_ORDER = [
   "Canelone", "Conchiglione", "Massa", "Nhoque",
-  "Fatiado", "Rondelli", "Sofioli", "Molho",
+  "Fatiado", "Rondelli Fatiado", "Rondelli Rolo", "Sofioli", "Molho",
 ];
+
+function getGroupKey(productName) {
+  const words = (productName || "Outros").split(" ");
+  if (words[0].toLowerCase() === "rondelli" && words[1]) {
+    return words[0] + " " + words[1];
+  }
+  return words[0];
+}
 
 function groupItems(items, editedQuantities) {
   const groupMap = {};
   items.forEach((item) => {
     const qty = Number(editedQuantities?.[item.id] ?? item.quantity ?? 0);
     if (!qty || qty <= 0) return;
-    const firstWord = (item.product_name || "Outros").split(" ")[0];
-    if (!groupMap[firstWord]) groupMap[firstWord] = { label: firstWord.toUpperCase(), items: [] };
-    groupMap[firstWord].items.push({ ...item, finalQty: qty });
+    const key = getGroupKey(item.product_name);
+    if (!groupMap[key]) groupMap[key] = { label: key.toUpperCase(), items: [] };
+    groupMap[key].items.push({ ...item, finalQty: qty });
   });
   const groups = Object.values(groupMap);
   groups.sort((a, b) => {
-    const ai = GROUP_ORDER.indexOf(a.label.charAt(0).toUpperCase() + a.label.slice(1).toLowerCase());
-    const bi = GROUP_ORDER.indexOf(b.label.charAt(0).toUpperCase() + b.label.slice(1).toLowerCase());
+    const normalize = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    const labelA = a.label.split(" ").map(normalize).join(" ");
+    const labelB = b.label.split(" ").map(normalize).join(" ");
+    const ai = GROUP_ORDER.indexOf(labelA);
+    const bi = GROUP_ORDER.indexOf(labelB);
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
   groups.forEach((g) => g.items.sort((a, b) => a.product_name.localeCompare(b.product_name)));
@@ -55,14 +66,16 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
 
   // ── Header — 1 line brand + subtitle ──────────────────
   let y = m;
-  doc.setFontSize(16);
+  doc.setFontSize(18);
   doc.setTextColor(185, 28, 28);
   doc.setFont("helvetica", "bold");
-  doc.text("MAXI MASSAS", m, y + 5);
+  const brandLabel = franchiseName ? `MAXI MASSAS ${franchiseName}`.toUpperCase() : "MAXI MASSAS";
+  doc.text(brandLabel, m, y + 5);
+  const brandWidth = doc.getTextWidth(brandLabel);
 
   doc.setFontSize(10);
   doc.setTextColor(140, 110, 50);
-  doc.text("FICHA DE SEPARACAO", m + 48, y + 5);
+  doc.text("FICHA DE SEPARACAO", m + brandWidth + 6, y + 5);
 
   doc.setFontSize(12);
   doc.setTextColor(40, 40, 40);
