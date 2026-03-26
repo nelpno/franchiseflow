@@ -13,18 +13,31 @@ import { toast } from "sonner";
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const CANVA_TEMPLATE_URL = "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
-function convertToJpeg(file, quality = 0.85) {
+const MAX_DIMENSION = 1600; // WhatsApp não precisa mais que isso
+
+function convertToJpeg(file, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+
+      // Redimensionar se maior que MAX_DIMENSION
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext("2d");
       // Fundo branco (PNG com transparência ficaria preto)
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
         (blob) => {
           if (!blob) return reject(new Error("Falha na conversão da imagem"));
@@ -34,13 +47,17 @@ function convertToJpeg(file, quality = 0.85) {
         quality
       );
     };
-    img.onerror = () => reject(new Error("Não foi possível carregar a imagem"));
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Não foi possível carregar a imagem"));
+    };
+    img.src = objectUrl;
   });
 }
 
 export default function CatalogUpload({ value, onChange, franchiseId }) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [canvaExpanded, setCanvaExpanded] = useState(false);
   const inputRef = useRef(null);
@@ -60,23 +77,36 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
 
     setIsUploading(true);
     try {
-      // Converter para JPG se necessário (n8n espera JPG)
-      const jpegFile = file.type === "image/jpeg"
-        ? file
-        : await convertToJpeg(file);
+      // Só converter se não for JPG ou se for muito grande (> 1MB precisa resize)
+      let uploadFile = file;
+      const needsConversion = file.type !== "image/jpeg" || file.size > 1024 * 1024;
+      if (needsConversion) {
+        setUploadStep("Otimizando imagem...");
+        uploadFile = await convertToJpeg(file);
+      }
 
       const fileName = `${franchiseId || "default"}/catalogo.jpg`;
 
-      // Upload with 30s timeout to avoid infinite loading
-      const uploadPromise = supabase.storage
-        .from("catalog-images")
-        .upload(fileName, jpegFile, { upsert: true, contentType: "image/jpeg" });
+      const doUpload = () => {
+        const uploadPromise = supabase.storage
+          .from("catalog-images")
+          .upload(fileName, uploadFile, { upsert: true, contentType: "image/jpeg" });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 45000)
+        );
+        return Promise.race([uploadPromise, timeoutPromise]);
+      };
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("timeout")), 30000)
-      );
+      // Primeira tentativa
+      setUploadStep("Enviando...");
+      let result = await doUpload();
 
-      const result = await Promise.race([uploadPromise, timeoutPromise]);
+      // Retry automático em caso de timeout ou erro de rede
+      if (result?.error || result instanceof Error) {
+        setUploadStep("Reenviando...");
+        result = await doUpload();
+      }
+
       if (result?.error) throw result.error;
 
       // Get public URL
@@ -101,6 +131,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       }
     } finally {
       setIsUploading(false);
+      setUploadStep("");
       // Reset input so same file can be re-selected
       if (inputRef.current) inputRef.current.value = "";
     }
@@ -227,7 +258,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <div className="w-8 h-8 border-2 border-[#b91c1c] border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#3d4a42]">Enviando...</span>
+              <span className="text-sm text-[#3d4a42]">{uploadStep || "Enviando..."}</span>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
