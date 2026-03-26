@@ -111,6 +111,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros causam 400
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
+- **`R$` em expressões n8n `{{ }}`**: o `$` pode ser comido pelo parser de expressões. Usar `'R' + '$'` (concatenação) em IIFEs dentro de systemMessage. Expressões simples fora de IIFE toleram `R$` literal
+- `Pedido_Checkout1`: sub-agente Finalizador de Pedidos. systemMessage com IIFE de frete — se corromper, causa "invalid syntax" + loop do agente
 - n8n `neverError: true` retorna erros com HTTP 200 — checar `data.code >= 400`
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
 
