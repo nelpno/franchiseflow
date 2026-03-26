@@ -909,7 +909,7 @@ export default function TabEstoque({
                               </TableCell>
 
                               {/* Quantity - inline edit */}
-                              <TableCell className="text-center">
+                              <TableCell className="text-center w-20">
                                 {editingCell?.itemId === item.id &&
                                 editingCell?.field === "quantity" ? (
                                   <Input
@@ -921,11 +921,11 @@ export default function TabEstoque({
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
-                                    className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                    className="w-16 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                   />
                                 ) : (
                                   <span
-                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
+                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block w-16 text-center"
                                     onClick={() =>
                                       handleCellClick(item.id, "quantity", item.quantity)
                                     }
@@ -941,7 +941,7 @@ export default function TabEstoque({
                               </TableCell>
 
                               {/* Min stock - inline edit */}
-                              <TableCell className="text-center">
+                              <TableCell className="text-center w-16">
                                 {editingCell?.itemId === item.id &&
                                 editingCell?.field === "min_stock" ? (
                                   <Input
@@ -953,11 +953,11 @@ export default function TabEstoque({
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
-                                    className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                    className="w-16 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                   />
                                 ) : (
                                   <span
-                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block min-w-[3rem]"
+                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block w-16 text-center"
                                     onClick={() =>
                                       handleCellClick(item.id, "min_stock", item.min_stock)
                                     }
@@ -974,7 +974,7 @@ export default function TabEstoque({
                               </TableCell>
 
                               {/* Sale price - inline edit */}
-                              <TableCell className="text-right">
+                              <TableCell className="text-right w-24">
                                 {editingCell?.itemId === item.id &&
                                 editingCell?.field === "sale_price" ? (
                                   <Input
@@ -987,7 +987,7 @@ export default function TabEstoque({
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
                                     placeholder={getRecommendedPrice(item) ? formatBRL(getRecommendedPrice(item)) : "0,00"}
-                                    className="w-24 ml-auto text-right h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                    className="w-20 ml-auto text-right h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                   />
                                 ) : (
                                   <span
