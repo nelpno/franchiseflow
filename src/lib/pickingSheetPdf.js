@@ -105,8 +105,8 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
       totalValue += item.finalQty * Number(item.unit_price || 0);
       tableBody.push([
         item.product_name || "---",
-        String(item.finalQty),
         fmtBRL(item.unit_price),
+        String(item.finalQty),
         "", // Sep
         "", // Conf
       ]);
@@ -117,7 +117,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
 
   autoTable(doc, {
     startY: y,
-    head: [["PRODUTO", "QTD", "UNIT", "SEP", "CONF"]],
+    head: [["PRODUTO", "UNIT", "QTD", "SEP", "CONF"]],
     body: tableBody,
     styles: {
       fontSize: 8,
@@ -135,9 +135,9 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
       cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
     },
     columnStyles: {
-      0: { cellWidth: usable - 16 - 18 - 14 - 14 }, // Produto — flex
-      1: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 9 }, // QTD
-      2: { cellWidth: 18, halign: "right", fontSize: 7 }, // Unit price small
+      0: { cellWidth: usable - 18 - 16 - 14 - 14, fontSize: 9 }, // Produto
+      1: { cellWidth: 18, halign: "right", fontSize: 7 }, // Unit price
+      2: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 9 }, // QTD
       3: { cellWidth: 14, halign: "center" }, // Sep
       4: { cellWidth: 14, halign: "center" }, // Conf
     },
