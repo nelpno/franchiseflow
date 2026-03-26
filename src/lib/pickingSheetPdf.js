@@ -163,7 +163,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
     body: tableBody,
     styles: {
       fontSize: 9,
-      cellPadding: { top: 3, right: 2, bottom: 3, left: 2 },
+      cellPadding: 3,
       lineColor: [200, 200, 200],
       lineWidth: 0.2,
     },
@@ -186,21 +186,16 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
     showHead: "everyPage",
     margin: { left: margin, right: margin },
     didDrawCell: (data) => {
-      // Draw checkboxes for Sep. (col 3) and Conf. (col 4) in body rows
-      if (data.section === "body" && (data.column.index === 3 || data.column.index === 4)) {
-        // Skip group header rows (they have colSpan)
-        if (data.row.cells[0]?.colSpan > 1) return;
-        const cellCenterX = data.cell.x + data.cell.width / 2;
-        const cellCenterY = data.cell.y + data.cell.height / 2;
-        doc.setDrawColor(100, 100, 100);
-        doc.setLineWidth(0.3);
-        doc.rect(
-          cellCenterX - checkboxSize / 2,
-          cellCenterY - checkboxSize / 2,
-          checkboxSize,
-          checkboxSize
-        );
-      }
+      if (data.section !== "body") return;
+      if (data.column.index !== 3 && data.column.index !== 4) return;
+      // Skip group header rows (raw array has 1 element with colSpan)
+      const raw = data.row.raw;
+      if (Array.isArray(raw) && raw.length === 1 && raw[0]?.colSpan) return;
+      const cx = data.cell.x + data.cell.width / 2;
+      const cy = data.cell.y + data.cell.height / 2;
+      doc.setDrawColor(100, 100, 100);
+      doc.setLineWidth(0.3);
+      doc.rect(cx - checkboxSize / 2, cy - checkboxSize / 2, checkboxSize, checkboxSize);
     },
   });
 
