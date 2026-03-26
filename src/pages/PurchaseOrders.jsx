@@ -754,6 +754,30 @@ export default function PurchaseOrders() {
               {/* Action buttons */}
               <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between">
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { generatePickingSheet } = await import("@/lib/pickingSheetPdf");
+                        await generatePickingSheet({
+                          order: selectedOrder,
+                          items: orderItems,
+                          franchiseName: getFranchiseName(selectedOrder.franchise_id),
+                          editedQuantities,
+                        });
+                        toast.success("Ficha de separacao gerada!");
+                      } catch (err) {
+                        console.error("Erro ao gerar ficha:", err);
+                        toast.error("Erro ao gerar ficha de separacao.");
+                      }
+                    }}
+                    disabled={loadingItems || orderItems.length === 0}
+                    className="text-[#d4af37] border-[#d4af37]/30 rounded-xl hover:bg-[#d4af37]/5 gap-1"
+                  >
+                    <MaterialIcon icon="print" size={16} />
+                    Ficha de Separacao
+                  </Button>
                   {selectedOrder.status !== "entregue" && selectedOrder.status !== "cancelado" && (
                     <Button
                       variant="outline"
