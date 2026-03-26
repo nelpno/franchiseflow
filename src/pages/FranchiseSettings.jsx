@@ -10,6 +10,7 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import WizardStepper from "@/components/vendedor/WizardStepper";
 import WizardStep from "@/components/vendedor/WizardStep";
 import DeliveryFeeEditor from "@/components/vendedor/DeliveryFeeEditor";
+import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor";
 import ReviewSummary from "@/components/vendedor/ReviewSummary";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
@@ -52,6 +53,7 @@ const initialFormData = {
   order_cutoff_time: '',
   delivery_start_time: '',
   charges_delivery_fee: true,
+  delivery_schedule: [],
   catalog_image_url: '',
   bot_personality: '',
 };
@@ -201,6 +203,7 @@ function FranchiseSettingsContent() {
       payment_delivery: config.payment_delivery || [],
       payment_pickup: config.payment_pickup || [],
       delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
+      delivery_schedule: config.delivery_schedule || [],
       pix_key_type: config.pix_key_type || '',
       order_cutoff_time: config.order_cutoff_time || '',
       bot_personality: config.bot_personality || '',
@@ -780,62 +783,29 @@ function FranchiseSettingsContent() {
                     placeholder="40" />
                   <FieldHint text="Tempo total desde o pedido fechado até o cliente receber: separar, chamar motoboy e entregar." />
                 </div>
-                <div>
-                  <label className={labelClass}>Horário de entrega</label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#4a3d3d]/60 whitespace-nowrap">das</span>
-                    <select className={`${inputClass} !w-28`}
-                      value={formData.delivery_start_time || ''}
-                      onChange={(e) => handleInputChange('delivery_start_time', e.target.value)}>
-                      <option value="">--</option>
-                      {Array.from({ length: 35 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 6;
-                        const m = i % 2 === 0 ? '00' : '30';
-                        const t = `${String(h).padStart(2, '0')}:${m}`;
-                        return <option key={t} value={t}>{t}</option>;
-                      })}
-                    </select>
-                    <span className="text-xs text-[#4a3d3d]/60 whitespace-nowrap">às</span>
-                    <select className={`${inputClass} !w-28`}
-                      value={formData.order_cutoff_time || ''}
-                      onChange={(e) => handleInputChange('order_cutoff_time', e.target.value)}>
-                      <option value="">--</option>
-                      {Array.from({ length: 35 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 6;
-                        const m = i % 2 === 0 ? '00' : '30';
-                        const t = `${String(h).padStart(2, '0')}:${m}`;
-                        return <option key={t} value={t}>{t}</option>;
-                      })}
-                    </select>
-                  </div>
-                  <FieldHint text="Fora desse horário, o bot avisa que só entrega no próximo dia." />
-                </div>
               </div>
 
               <div className="mt-2">
-                <ToggleCard
-                  icon="payments"
-                  label="Cobro taxa de entrega"
-                  description="Desative se a entrega é gratuita para o cliente"
-                  checked={formData.charges_delivery_fee !== false}
-                  onChange={(val) => handleInputChange('charges_delivery_fee', val)}
+                <label className={labelClass}>Horários e taxas de entrega</label>
+                <p className="text-[11px] text-[#4a3d3d]/70 mb-3 flex items-start gap-1">
+                  <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
+                  <span>Configure horários e fretes diferentes por dia da semana. Adicione faixas extras para sábados ou domingos com horário diferente.</span>
+                </p>
+                <DeliveryScheduleEditor
+                  value={formData.delivery_schedule}
+                  onChange={(val) => {
+                    handleInputChange('delivery_schedule', val);
+                    // Sync legacy fields from first range for backward compatibility
+                    if (val.length > 0) {
+                      const first = val[0];
+                      handleInputChange('delivery_start_time', first.delivery_start || '');
+                      handleInputChange('order_cutoff_time', first.delivery_end || '');
+                      handleInputChange('charges_delivery_fee', first.charges_fee !== false);
+                      handleInputChange('delivery_fee_rules', first.fee_rules || [{ max_km: '', fee: '' }]);
+                    }
+                  }}
                 />
               </div>
-
-              {formData.charges_delivery_fee !== false ? (
-                <div>
-                  <label className={labelClass}>Regras de frete</label>
-                  <DeliveryFeeEditor
-                    value={formData.delivery_fee_rules}
-                    onChange={(val) => handleInputChange('delivery_fee_rules', val)}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                  <MaterialIcon icon="local_shipping" size={20} className="text-emerald-600" />
-                  <span className="text-sm font-semibold text-emerald-700">Entrega grátis para seus clientes</span>
-                </div>
-              )}
             </WizardStep>
           )}
 

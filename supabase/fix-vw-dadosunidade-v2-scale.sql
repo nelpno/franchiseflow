@@ -52,6 +52,72 @@ SELECT
   COALESCE(fc.delivery_start_time, '') AS delivery_start_time,
   COALESCE(fc.order_cutoff_time, '') AS order_cutoff_time,
 
+  -- === Horários de entrega por dia (JSONB nativo + TEXT gerado para bot) ===
+  COALESCE(fc.delivery_schedule, '[]'::jsonb) AS delivery_schedule,
+
+  CASE
+    WHEN fc.delivery_schedule IS NOT NULL
+      AND fc.delivery_schedule != '[]'::jsonb
+      AND jsonb_typeof(fc.delivery_schedule) = 'array'
+      AND jsonb_array_length(fc.delivery_schedule) > 0
+    THEN (
+      SELECT STRING_AGG(
+        -- Label dos dias
+        COALESCE(
+          CASE
+            WHEN jsonb_array_length(grp->'days') = 7 THEN 'Todos os dias'
+            WHEN jsonb_array_length(grp->'days') = 1 THEN UPPER(LEFT(grp->'days'->>0, 1)) || SUBSTRING(grp->'days'->>0 FROM 2)
+            ELSE (
+              SELECT STRING_AGG(UPPER(LEFT(d.val, 1)) || SUBSTRING(d.val FROM 2), ', ')
+              FROM jsonb_array_elements_text(grp->'days') AS d(val)
+            )
+          END,
+          'Geral'
+        ) || ': ' ||
+        COALESCE(grp->>'delivery_start', '') || '-' || COALESCE(grp->>'delivery_end', '') ||
+        -- Frete info
+        CASE
+          WHEN (grp->>'charges_fee')::boolean = false THEN ' (frete gratis)'
+          WHEN grp->'fee_rules' IS NOT NULL
+            AND grp->'fee_rules' != '[]'::jsonb
+            AND grp->'fee_rules' != 'null'::jsonb
+          THEN ' | Frete: ' ||
+            CASE
+              WHEN grp->'fee_rules' ? 'mode' AND grp->'fee_rules'->>'mode' = 'modality'
+              THEN COALESCE((
+                SELECT STRING_AGG(
+                  (r->>'label') || ': R$' || REPLACE(TO_CHAR((NULLIF(r->>'fee',''))::numeric, 'FM999G990D00'), '.', ','),
+                  ', '
+                )
+                FROM jsonb_array_elements(grp->'fee_rules'->'rules') r
+                WHERE NULLIF(r->>'label','') IS NOT NULL AND NULLIF(r->>'fee','') IS NOT NULL
+              ), '')
+              ELSE COALESCE((
+                SELECT STRING_AGG(
+                  'Ate ' || (r->>'max_km') || 'km: R$' || REPLACE(TO_CHAR((NULLIF(r->>'fee',''))::numeric, 'FM999G990D00'), '.', ','),
+                  ', '
+                  ORDER BY (NULLIF(r->>'max_km',''))::numeric NULLS LAST
+                )
+                FROM jsonb_array_elements(grp->'fee_rules') r
+                WHERE NULLIF(r->>'max_km','') IS NOT NULL AND NULLIF(r->>'fee','') IS NOT NULL
+              ), '')
+            END
+          ELSE ''
+        END,
+        ' | '
+      )
+      FROM jsonb_array_elements(fc.delivery_schedule) AS grp
+    )
+    -- Fallback: campos legados
+    ELSE
+      CASE
+        WHEN COALESCE(fc.delivery_start_time, '') != '' OR COALESCE(fc.order_cutoff_time, '') != ''
+        THEN COALESCE(fc.delivery_start_time, '') || '-' || COALESCE(fc.order_cutoff_time, '') ||
+          CASE WHEN COALESCE(fc.charges_delivery_fee, true) = false THEN ' (frete gratis)' ELSE '' END
+        ELSE ''
+      END
+  END AS delivery_schedule_text,
+
   -- === Pagamento — campo TEXT legado (GERADO de payment_delivery + payment_pickup se vazio) ===
   -- Prioriza campo antigo se preenchido (backward compat franquias legadas)
   CASE
@@ -168,6 +234,7 @@ COMMENT ON VIEW vw_dadosunidade IS
   'View para vendedor genérico n8n (V2 Supabase). '
   'Campos TEXT legados (accepted_payment_methods, shipping_rules_costs) gerados automaticamente dos campos estruturados. '
   'Campo personal_phone_wa inclui código 55 para ZuckZapGo API. '
-  'JSONB (delivery_fee_rules, social_media_links) retornados nativos. '
+  'JSONB (delivery_fee_rules, delivery_schedule, social_media_links) retornados nativos. '
+  'delivery_schedule_text gera texto legível de horários/frete por dia para o bot. '
   'TEXT[] (payment_delivery, payment_pickup) com tipo correto. '
   'Uso: SELECT * FROM vw_dadosunidade WHERE instance_name = $instanceName';
