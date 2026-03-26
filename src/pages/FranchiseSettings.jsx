@@ -212,28 +212,30 @@ function FranchiseSettingsContent() {
       catalog_image_url: config.catalog_image_url || '',
     };
 
-    // Restore draft from localStorage if recent, newer than last save
-    const draftKey = `wizard_draft_${config.franchise_evolution_instance_id}`;
-    try {
-      const draftRaw = localStorage.getItem(draftKey);
-      if (draftRaw) {
-        const draft = JSON.parse(draftRaw);
-        const maxDraftAge = 24 * 60 * 60 * 1000; // 24h max
-        const draftAge = Date.now() - (draft.savedAt || 0);
-        // If updated_at missing, treat config as "just now" to avoid stale drafts overriding
-        const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : Date.now();
+    // Restore draft from localStorage only for franchisees (admin edits directly, no drafts)
+    if (currentUser?.role !== 'admin') {
+      const draftKey = `wizard_draft_${config.franchise_evolution_instance_id}`;
+      try {
+        const draftRaw = localStorage.getItem(draftKey);
+        if (draftRaw) {
+          const draft = JSON.parse(draftRaw);
+          const maxDraftAge = 24 * 60 * 60 * 1000; // 24h max
+          const draftAge = Date.now() - (draft.savedAt || 0);
+          // If updated_at missing, treat config as "just now" to avoid stale drafts overriding
+          const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : Date.now();
 
-        if (draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
-          setFormData({ ...baseData, ...draft.data });
-          setCurrentStep(draft.step || 1);
-          setIsDirty(true);
-          toast.info("Rascunho restaurado. Suas alterações não salvas foram recuperadas.", { duration: 5000 });
-          return;
-        } else {
-          localStorage.removeItem(draftKey);
+          if (draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
+            setFormData({ ...baseData, ...draft.data });
+            setCurrentStep(draft.step || 1);
+            setIsDirty(true);
+            toast.info("Rascunho restaurado. Suas alterações não salvas foram recuperadas.", { duration: 5000 });
+            return;
+          } else {
+            localStorage.removeItem(draftKey);
+          }
         }
-      }
-    } catch { /* corrupted draft — ignore */ }
+      } catch { /* corrupted draft — ignore */ }
+    }
 
     setFormData(baseData);
     setIsDirty(false);
@@ -305,11 +307,13 @@ function FranchiseSettingsContent() {
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      // Auto-save draft to localStorage per franchise
-      const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
-      try {
-        localStorage.setItem(draftKey, JSON.stringify({ data: updated, step: currentStep, savedAt: Date.now() }));
-      } catch { /* quota exceeded — ignore */ }
+      // Auto-save draft to localStorage only for franchisees (admin edits directly)
+      if (currentUser?.role !== 'admin') {
+        const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
+        try {
+          localStorage.setItem(draftKey, JSON.stringify({ data: updated, step: currentStep, savedAt: Date.now() }));
+        } catch { /* quota exceeded — ignore */ }
+      }
       return updated;
     });
     setIsDirty(true);
@@ -366,16 +370,18 @@ function FranchiseSettingsContent() {
   const goToStep = (step) => {
     if (skippedSteps.includes(step)) return;
     setCurrentStep(step);
-    // Persist current step in draft
-    const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id}`;
-    try {
-      const draftRaw = localStorage.getItem(draftKey);
-      if (draftRaw) {
-        const draft = JSON.parse(draftRaw);
-        draft.step = step;
-        localStorage.setItem(draftKey, JSON.stringify(draft));
-      }
-    } catch { /* ignore */ }
+    // Persist current step in draft only for franchisees
+    if (currentUser?.role !== 'admin') {
+      const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id}`;
+      try {
+        const draftRaw = localStorage.getItem(draftKey);
+        if (draftRaw) {
+          const draft = JSON.parse(draftRaw);
+          draft.step = step;
+          localStorage.setItem(draftKey, JSON.stringify(draft));
+        }
+      } catch { /* ignore */ }
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
