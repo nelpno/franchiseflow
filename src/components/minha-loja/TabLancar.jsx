@@ -580,7 +580,7 @@ export default function TabLancar({
 
       {/* Sale Form Dialog */}
       <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
-        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[85dvh] overflow-y-auto overscroll-contain">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">
               {editingSale ? "Editar Venda" : "Nova Venda"}

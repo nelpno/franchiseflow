@@ -507,7 +507,7 @@ export default function SaleForm({
 
   // Calculations
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + it.quantity * it.unit_price, 0),
+    () => items.reduce((sum, it) => sum + (Number(it.quantity) || 0) * it.unit_price, 0),
     [items]
   );
 
@@ -727,7 +727,7 @@ export default function SaleForm({
               sale_id: saleId,
               inventory_item_id: it.inventory_item_id,
               product_name: it.product_name,
-              quantity: it.quantity,
+              quantity: Number(it.quantity) || 1,
               unit_price: it.unit_price,
               cost_price: it.cost_price,
             })
@@ -918,10 +918,24 @@ export default function SaleForm({
                 data-qty-input
                 type="number"
                 min={1}
-                value={item.quantity}
-                onChange={(e) =>
-                  handleItemChange(index, "quantity", parseInt(e.target.value) || 1)
-                }
+                inputMode="numeric"
+                value={item.quantity === "" ? "" : item.quantity}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    handleItemChange(index, "quantity", "");
+                  } else {
+                    const parsed = parseInt(raw);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      handleItemChange(index, "quantity", parsed);
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                    handleItemChange(index, "quantity", 1);
+                  }
+                }}
                 className="bg-white text-center"
                 placeholder="Qtd"
               />
@@ -945,7 +959,7 @@ export default function SaleForm({
             {/* Line total */}
             <div className="flex items-center justify-between md:w-28">
               <span className="text-sm font-medium text-[#4a3d3d] font-mono-numbers md:text-right md:w-full">
-                {formatCurrency(item.quantity * item.unit_price)}
+                {formatCurrency((Number(item.quantity) || 0) * item.unit_price)}
               </span>
               {items.length > 1 && (
                 <button
