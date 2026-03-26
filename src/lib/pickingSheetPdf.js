@@ -55,10 +55,15 @@ function formatDate(dateStr) {
  * Generates a printable A4 picking sheet PDF for a purchase order.
  */
 export async function generatePickingSheet({ order, items, franchiseName, editedQuantities }) {
-  const jspdfModule = await import("jspdf");
-  const jsPDF = jspdfModule.default || jspdfModule.jsPDF;
-  const autoTableModule = await import("jspdf-autotable");
-  if (autoTableModule.default) autoTableModule.default(jsPDF);
+  const [jspdfModule, autoTableModule] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const jsPDF = jspdfModule.jsPDF || jspdfModule.default;
+  const applyPlugin = autoTableModule.default;
+  if (typeof applyPlugin === "function") {
+    try { applyPlugin(jsPDF); } catch (_) { /* already applied */ }
+  }
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = 210;
