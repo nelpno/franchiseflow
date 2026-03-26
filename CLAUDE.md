@@ -278,6 +278,8 @@ npm run dev       # Dev server
 npm run build     # Build produção
 npm run lint      # ESLint
 ```
+- `npm run build` pode completar sem output visível no bash (Windows). Verificar sucesso pelo timestamp de `dist/index.html`
+- `dist/` está no `.gitignore` — NÃO fazer `git add dist/`
 
 ## Performance
 - `React.lazy()` + `<Suspense>` via `pages.config.js`
