@@ -37,17 +37,17 @@ function groupItems(items, editedQuantities) {
 }
 
 function formatCurrency(value) {
-  if (value == null) return "—";
-  return "R" + "$ " + Number(value).toFixed(2).replace(".", ",");
+  if (value == null) return "---";
+  return "R$ " + Number(value).toFixed(2).replace(".", ",");
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return "—";
+  if (!dateStr) return "---";
   try {
     const d = new Date(dateStr);
     return format(d, "dd/MM/yyyy", { locale: ptBR });
   } catch {
-    return dateStr;
+    return String(dateStr);
   }
 }
 
@@ -106,7 +106,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   doc.setFont("helvetica", "bold");
   doc.text("Franquia:", margin, y);
   doc.setFont("helvetica", "normal");
-  doc.text(franchiseName || "—", margin + 22, y);
+  doc.text(franchiseName || "---", margin + 22, y);
 
   doc.setFont("helvetica", "bold");
   doc.text("Data do Pedido:", col2x, y);
