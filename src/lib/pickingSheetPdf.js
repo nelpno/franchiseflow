@@ -7,9 +7,13 @@ const GROUP_ORDER = [
 ];
 
 function getGroupKey(productName) {
-  const words = (productName || "Outros").split(" ");
-  if (words[0].toLowerCase() === "rondelli" && words[1]) {
-    return words[0] + " " + words[1];
+  const name = productName || "Outros";
+  const words = name.split(" ");
+  if (words[0].toLowerCase() === "rondelli") {
+    const lower = name.toLowerCase();
+    if (lower.includes("fatiado")) return "Rondelli Fatiado";
+    if (lower.includes("rolo")) return "Rondelli Rolo";
+    return "Rondelli";
   }
   return words[0];
 }
@@ -149,7 +153,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
     },
     columnStyles: {
       0: { cellWidth: usable - 18 - 16 - 14 - 14, fontSize: 9 }, // Produto
-      1: { cellWidth: 18, halign: "right", fontSize: 7 }, // Unit price
+      1: { cellWidth: 18, halign: "right", fontSize: 9 }, // Unit price
       2: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 9 }, // QTD
       3: { cellWidth: 14, halign: "center" }, // Sep
       4: { cellWidth: 14, halign: "center" }, // Conf
