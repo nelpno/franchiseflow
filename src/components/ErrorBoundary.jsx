@@ -15,6 +15,20 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error Boundary capturou erro:', error, errorInfo);
+
+    // Auto-reload on chunk load failures (happens after new deploys)
+    const isChunkError = error?.message?.includes('dynamically imported module')
+      || error?.message?.includes('Failed to fetch')
+      || error?.message?.includes('Loading chunk')
+      || error?.name === 'ChunkLoadError';
+
+    if (isChunkError && !sessionStorage.getItem('chunk_reload')) {
+      sessionStorage.setItem('chunk_reload', '1');
+      window.location.reload();
+      return;
+    }
+    // Clear flag so future deploys can auto-reload again
+    sessionStorage.removeItem('chunk_reload');
   }
 
   handleReset = () => {
