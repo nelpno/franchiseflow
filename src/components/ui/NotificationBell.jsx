@@ -34,7 +34,7 @@ export default function NotificationBell({ size = 20 }) {
     loadNotifications();
   }, [loadNotifications]);
 
-  useVisibilityPolling(loadNotifications, 30000);
+  useVisibilityPolling(loadNotifications, 120000);
 
   useEffect(() => {
     function handleClickOutside(e) {

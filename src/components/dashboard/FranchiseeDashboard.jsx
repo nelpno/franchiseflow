@@ -138,7 +138,7 @@ export default function FranchiseeDashboard() {
     };
   }, [loadData]);
 
-  useVisibilityPolling(loadData, 120000);
+  useVisibilityPolling(loadData, 300000);
 
   const evoId = franchise?.evolution_instance_id;
 

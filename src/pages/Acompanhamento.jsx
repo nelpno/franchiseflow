@@ -122,7 +122,7 @@ export default function Acompanhamento() {
   }, [loadData]);
 
   // Polling inteligente: só refaz queries quando a aba está visível
-  useVisibilityPolling(loadData, 120000);
+  useVisibilityPolling(loadData, 300000);
 
   // Summary metrics
   const metrics = useMemo(() => {

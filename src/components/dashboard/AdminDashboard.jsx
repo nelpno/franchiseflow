@@ -120,7 +120,7 @@ export default function AdminDashboard() {
     };
   }, [loadData]);
 
-  useVisibilityPolling(loadData, 180000);
+  useVisibilityPolling(loadData, 300000);
 
   const stats = useMemo(() => {
     if (period === "today") {
