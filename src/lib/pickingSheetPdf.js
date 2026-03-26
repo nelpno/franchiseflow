@@ -18,8 +18,8 @@ function groupItems(items, editedQuantities) {
   const groupMap = {};
 
   items.forEach((item) => {
-    const qty = editedQuantities?.[item.id] ?? item.quantity ?? 0;
-    if (qty <= 0) return;
+    const qty = Number(editedQuantities?.[item.id] ?? item.quantity ?? 0);
+    if (!qty || qty <= 0) return;
     const firstWord = (item.product_name || "Outros").split(" ")[0];
     if (!groupMap[firstWord]) groupMap[firstWord] = { label: firstWord.toUpperCase(), items: [] };
     groupMap[firstWord].items.push({ ...item, finalQty: qty });
@@ -60,10 +60,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
     import("jspdf-autotable"),
   ]);
   const jsPDF = jspdfModule.jsPDF || jspdfModule.default;
-  const applyPlugin = autoTableModule.default;
-  if (typeof applyPlugin === "function") {
-    try { applyPlugin(jsPDF); } catch (_) { /* already applied */ }
-  }
+  const autoTable = autoTableModule.default;
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageWidth = 210;
@@ -162,7 +159,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
 
   const checkboxSize = 5;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [["#", "Produto", "Qtd", "Sep.", "Conf.", "Obs"]],
     body: tableBody,
@@ -205,7 +202,8 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   });
 
   // ── Summary ─────────────────────────────────────────────
-  let finalY = doc.lastAutoTable.finalY + 8;
+  const tableEnd = doc.lastAutoTable || doc.previousAutoTable;
+  let finalY = (tableEnd ? tableEnd.finalY : y + 20) + 8;
 
   // Check if we need a new page for summary + signatures (~50mm)
   if (finalY > 250) {
@@ -227,8 +225,8 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   finalY += 10;
 
   const totalValue = items.reduce((sum, item) => {
-    const qty = editedQuantities?.[item.id] ?? item.quantity ?? 0;
-    return sum + qty * (item.unit_price || 0);
+    const qty = Number(editedQuantities?.[item.id] ?? item.quantity ?? 0);
+    return sum + qty * Number(item.unit_price || 0);
   }, 0);
 
   doc.text(`Total de itens: ${totalItems}`, margin, finalY);
