@@ -85,6 +85,7 @@ export default function TabEstoque({
   const [filterStockLevel, setFilterStockLevel] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const editInputRef = useRef(null);
+  const editingCellRef = useRef(null);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -177,7 +178,9 @@ export default function TabEstoque({
   // --- Inline edit ---
 
   const handleCellClick = (itemId, field, currentValue) => {
-    setEditingCell({ itemId, field });
+    const cell = { itemId, field };
+    editingCellRef.current = cell;
+    setEditingCell(cell);
     setEditValue(String(currentValue ?? ""));
   };
 
@@ -185,6 +188,14 @@ export default function TabEstoque({
     if (!editingCell) return;
 
     const { itemId, field } = editingCell;
+    const blurredCell = editingCell;
+    const clearIfSame = () => {
+      if (editingCellRef.current === blurredCell) {
+        editingCellRef.current = null;
+        setEditingCell(null);
+      }
+    };
+
     const item = items.find((i) => i.id === itemId);
     const isIntField = field === "quantity" || field === "min_stock";
     const isFloatField = field === "sale_price" || field === "cost_price";
@@ -192,12 +203,12 @@ export default function TabEstoque({
 
     if (isNaN(newValue) || newValue < 0) {
       toast.error("Valor inválido. Insira um número positivo.");
-      setEditingCell(null);
+      clearIfSame();
       return;
     }
 
     if (Number(item[field]) === newValue) {
-      setEditingCell(null);
+      clearIfSame();
       return;
     }
 
@@ -231,7 +242,7 @@ export default function TabEstoque({
       console.error("Erro ao atualizar:", error);
       toast.error("Erro ao atualizar estoque.");
     } finally {
-      setEditingCell(null);
+      clearIfSame();
     }
   };
 
@@ -239,6 +250,7 @@ export default function TabEstoque({
     if (e.key === "Enter") {
       e.target.blur();
     } else if (e.key === "Escape") {
+      editingCellRef.current = null;
       setEditingCell(null);
     }
   };
