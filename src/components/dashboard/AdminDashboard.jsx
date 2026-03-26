@@ -370,6 +370,8 @@ export default function AdminDashboard() {
       <FranchiseRanking
         franchises={franchises}
         summaries={summaries}
+        todaySales={todaySales}
+        period={period}
         isLoading={isLoading}
       />
 
