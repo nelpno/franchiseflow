@@ -237,6 +237,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 **Data fetching:** `mountedRef` + cleanup obrigatório. `loadError` + retry. `Promise.allSettled` para múltiplas queries. `setIsLoading(false)` antes de early return. `subDays(new Date(), N-1)` para filtros de dias.
 - Reports.jsx: limits altos (Sale/Contact 2000, DailyUnique/Summary 500) — 200 trunca dados em 90d com múltiplas franquias
 - Campos numéricos do Supabase podem vir como string — SEMPRE `parseFloat(s.value) || 0` nos reduces, NUNCA `s.value || 0`
+- AdminDashboard: 9 queries paralelas com `Promise.allSettled` — TODAS devem ter `limit` explícito. Query de franquias tem auto-retry (crítica)
+- Queries sem limite em páginas com múltiplas chamadas simultâneas causam timeout — sempre definir limits razoáveis
 
 **Error handling:** Mostrar `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout. `setIsSubmitting` SEMPRE em `finally`. Toast separados sucesso/erro.
 
