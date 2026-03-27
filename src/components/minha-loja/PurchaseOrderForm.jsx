@@ -192,10 +192,8 @@ export default function PurchaseOrderForm({
           unit_price: parseFloat(item.cost_price),
         }));
 
-      // Create each item
-      for (const orderItem of itemsToCreate) {
-        await PurchaseOrderItem.create(orderItem);
-      }
+      // Create all items in parallel to avoid timeout with many items
+      await Promise.all(itemsToCreate.map(item => PurchaseOrderItem.create(item)));
 
       toast.success("Pedido enviado com sucesso!");
       if (onSave) onSave();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { PurchaseOrder, PurchaseOrderItem, Franchise, addDefaultProduct } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,7 @@ const STATUS_FILTER_OPTIONS = [
 export default function PurchaseOrders() {
   const [orders, setOrders] = useState([]);
   const [franchises, setFranchises] = useState([]);
+  const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
@@ -113,14 +114,16 @@ export default function PurchaseOrders() {
       const results = await Promise.allSettled([
         PurchaseOrder.list("-ordered_at"),
         Franchise.list(),
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' }),
       ]);
       if (!mountedRef.current) return;
 
       const ordersData = results[0].status === "fulfilled" ? results[0].value : [];
       const franchisesData = results[1].status === "fulfilled" ? results[1].value : [];
+      const configsData = results[2].status === "fulfilled" ? results[2].value : [];
 
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["pedidos","franquias"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["pedidos","franquias","configs"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -129,6 +132,7 @@ export default function PurchaseOrders() {
 
       setOrders(ordersData);
       setFranchises(franchisesData);
+      setConfigs(configsData);
     } catch (error) {
       if (!mountedRef.current) return;
       console.error("Erro ao carregar pedidos:", error);
@@ -156,9 +160,20 @@ export default function PurchaseOrders() {
     return map;
   }, [franchises]);
 
+  const configMap = useMemo(() => {
+    const map = {};
+    configs.forEach((c) => {
+      if (c.franchise_evolution_instance_id) {
+        map[c.franchise_evolution_instance_id] = c;
+      }
+    });
+    return map;
+  }, [configs]);
+
   const getFranchiseName = (franchiseId) => {
     const f = franchiseMap[franchiseId];
-    return f ? f.city || f.owner_name || "Franquia" : franchiseId || "Desconhecida";
+    const cfg = configMap[franchiseId] || configMap[f?.evolution_instance_id];
+    return cfg?.franchise_name || f?.city || f?.owner_name || "Franquia";
   };
 
   const filteredOrders = useMemo(() => {
