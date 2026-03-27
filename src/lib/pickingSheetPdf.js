@@ -51,6 +51,13 @@ function fmtDate(d) {
   catch { return String(d); }
 }
 
+function getDisplayName(productName) {
+  if (productName && productName.includes("Fatiado") && !productName.startsWith("Fatiado")) {
+    return "Fatiado " + productName.replace(/\s*Fatiado\s*/, " ").trim();
+  }
+  return productName;
+}
+
 /**
  * Compact A4 picking sheet — designed to fit on a single page.
  */
@@ -68,24 +75,24 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   const usable = pw - m * 2;
   const shortId = order.id.slice(0, 8).toUpperCase();
 
-  // ── Header — 1 line brand + subtitle ──────────────────
+  // ── Header — brand + PED on line 1, subtitle on line 2 ──
   let y = m;
   doc.setFontSize(18);
   doc.setTextColor(185, 28, 28);
   doc.setFont("helvetica", "bold");
   const brandLabel = franchiseName ? franchiseName.toUpperCase() : "MAXI MASSAS";
   doc.text(brandLabel, m, y + 5);
-  const brandWidth = doc.getTextWidth(brandLabel);
-
-  doc.setFontSize(10);
-  doc.setTextColor(140, 110, 50);
-  doc.text("FICHA DE SEPARACAO", m + brandWidth + 6, y + 5);
 
   doc.setFontSize(12);
   doc.setTextColor(40, 40, 40);
   doc.text(`PED-${shortId}`, pw - m, y + 5, { align: "right" });
 
-  y += 9;
+  doc.setFontSize(10);
+  doc.setTextColor(140, 110, 50);
+  doc.setFont("helvetica", "normal");
+  doc.text("FICHA DE SEPARACAO", m, y + 11);
+
+  y += 15;
   doc.setDrawColor(185, 28, 28);
   doc.setLineWidth(0.6);
   doc.line(m, y, pw - m, y);
@@ -113,7 +120,7 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
   groups.forEach((group) => {
     // Group separator — thin gray row
     tableBody.push([
-      { content: group.label, colSpan: 5, styles: { fillColor: [230, 230, 230], fontStyle: "bold", fontSize: 6.5, textColor: [100, 100, 100], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
+      { content: group.label, colSpan: 5, styles: { fillColor: [230, 230, 230], fontStyle: "bold", fontSize: 7.5, textColor: [100, 100, 100], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
     ]);
 
     group.items.forEach((item) => {
@@ -121,11 +128,11 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
       totalUnits += item.finalQty;
       totalValue += item.finalQty * Number(item.unit_price || 0);
       tableBody.push([
-        item.product_name || "---",
-        fmtBRL(item.unit_price),
+        "", // Sep checkbox
+        getDisplayName(item.product_name) || "---",
         String(item.finalQty),
-        "", // Sep
-        "", // Conf
+        "", // Conf checkbox
+        fmtBRL(item.unit_price),
       ]);
     });
   });
@@ -134,10 +141,10 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
 
   autoTable(doc, {
     startY: y,
-    head: [["PRODUTO", "UNIT", "QTD", "SEP", "CONF"]],
+    head: [["SEP", "PRODUTO", "QTD", "CONF", "UNIT"]],
     body: tableBody,
     styles: {
-      fontSize: 8,
+      fontSize: 9,
       cellPadding: { top: 1, bottom: 1, left: 2, right: 2 },
       lineColor: [180, 180, 180],
       lineWidth: 0.15,
@@ -147,23 +154,23 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
       fillColor: [185, 28, 28],
       textColor: 255,
       fontStyle: "bold",
-      fontSize: 7,
+      fontSize: 8,
       halign: "center",
       cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
     },
     columnStyles: {
-      0: { cellWidth: usable - 18 - 16 - 14 - 14, fontSize: 9 }, // Produto
-      1: { cellWidth: 18, halign: "right", fontSize: 9 }, // Unit price
-      2: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 9 }, // QTD
-      3: { cellWidth: 14, halign: "center" }, // Sep
-      4: { cellWidth: 14, halign: "center" }, // Conf
+      0: { cellWidth: 14, halign: "center" }, // Sep checkbox
+      1: { cellWidth: usable - 14 - 16 - 14 - 18, fontSize: 10 }, // Produto
+      2: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 10 }, // QTD
+      3: { cellWidth: 14, halign: "center" }, // Conf checkbox
+      4: { cellWidth: 18, halign: "right", fontSize: 10 }, // Unit price
     },
     alternateRowStyles: { fillColor: [248, 247, 247] },
     showHead: "everyPage",
     margin: { left: m, right: m },
     didDrawCell: (data) => {
       if (data.section !== "body") return;
-      if (data.column.index !== 3 && data.column.index !== 4) return;
+      if (data.column.index !== 0 && data.column.index !== 3) return;
       const raw = data.row.raw;
       if (Array.isArray(raw) && raw.length === 1 && raw[0]?.colSpan) return;
       const cx = data.cell.x + data.cell.width / 2;
