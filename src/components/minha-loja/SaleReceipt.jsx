@@ -16,7 +16,6 @@ function getPaymentLabel(method) {
 
 function formatReceiptDate(saleDate, createdAt) {
   try {
-    // Use sale_date for the date, created_at for the time
     const datePart = saleDate
       ? format(parseISO(saleDate), "dd/MM/yyyy", { locale: ptBR })
       : null;
@@ -33,12 +32,20 @@ function formatReceiptDate(saleDate, createdAt) {
   }
 }
 
+const dashedBorder = "1px dashed #999";
+
 const SaleReceipt = React.forwardRef(function SaleReceipt(
   { sale, saleItems, contact, franchiseName },
   ref
 ) {
+  const subtotal = saleItems.reduce(
+    (sum, item) => sum + (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0),
+    0
+  );
+  const deliveryFee = parseFloat(sale.delivery_fee) || 0;
+  const discountAmount = parseFloat(sale.discount_amount) || 0;
   const totalValue =
-    (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0);
+    (parseFloat(sale.value) || 0) + deliveryFee;
 
   return (
     <div
@@ -47,248 +54,266 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         width: 400,
         fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif",
         backgroundColor: "#ffffff",
-        borderRadius: 16,
-        overflow: "hidden",
-        boxShadow: "0 2px 16px rgba(0,0,0,0.08)",
+        padding: "20px 16px",
+        color: "#1b1c1d",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
-          padding: "24px 24px 20px",
-          textAlign: "center",
-        }}
-      >
+      {/* Header — logo + nome + subtítulo */}
+      <div style={{ textAlign: "center", marginBottom: 12 }}>
         <img
           src={logoMaxi}
           alt="Maxi Massas"
           style={{
-            width: 64,
-            height: 64,
+            width: 52,
+            height: 52,
             objectFit: "contain",
-            margin: "0 auto 8px",
+            margin: "0 auto 6px",
             display: "block",
-            borderRadius: 12,
           }}
         />
         <div
           style={{
-            color: "#ffffff",
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: 700,
             fontFamily: "'Plus Jakarta Sans', sans-serif",
+            letterSpacing: "0.02em",
           }}
         >
           {franchiseName || "Maxi Massas"}
         </div>
         <div
           style={{
-            color: "rgba(255,255,255,0.8)",
-            fontSize: 12,
-            marginTop: 4,
+            fontSize: 11,
+            color: "#666",
+            marginTop: 2,
           }}
         >
           Comprovante de Venda
         </div>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: "20px 24px" }}>
-        {/* Client & Date */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: 16,
-            paddingBottom: 16,
-            borderBottom: "1px solid #e9e8e9",
-          }}
-        >
-          <div>
-            {contact?.nome && (
-              <>
-                <div style={{ fontSize: 11, color: "#7a6d6d", marginBottom: 2 }}>
-                  Cliente
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#1b1c1d" }}>
-                  {contact.nome}
-                </div>
-              </>
-            )}
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 11, color: "#7a6d6d", marginBottom: 2 }}>
-              Data
-            </div>
-            <div style={{ fontSize: 13, color: "#1b1c1d" }}>
-              {formatReceiptDate(sale.sale_date, sale.created_at)}
-            </div>
-          </div>
-        </div>
+      {/* Separador */}
+      <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
 
-        {/* Items */}
-        {saleItems.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: "#7a6d6d",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                marginBottom: 8,
-              }}
-            >
-              Produtos
-            </div>
-            {saleItems.map((item, i) => (
+      {/* Cliente e Data */}
+      <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+        {contact?.nome && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#666" }}>Cliente</span>
+            <span style={{ fontWeight: 600 }}>{contact.nome}</span>
+          </div>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ color: "#666" }}>Data</span>
+          <span>{formatReceiptDate(sale.sale_date, sale.created_at)}</span>
+        </div>
+      </div>
+
+      <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
+
+      {/* Cabeçalho da tabela */}
+      {saleItems.length > 0 && (
+        <>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "#444",
+              marginBottom: 6,
+            }}
+          >
+            Produtos
+          </div>
+
+          {/* Header da tabela */}
+          <div
+            style={{
+              display: "flex",
+              fontSize: 9,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              color: "#888",
+              letterSpacing: "0.04em",
+              paddingBottom: 4,
+              borderBottom: "1px solid #ddd",
+            }}
+          >
+            <span style={{ flex: 1 }}>Item</span>
+            <span style={{ width: 36, textAlign: "center" }}>Qtd</span>
+            <span style={{ width: 64, textAlign: "right" }}>Vl. Unit</span>
+            <span style={{ width: 72, textAlign: "right" }}>Total</span>
+          </div>
+
+          {/* Itens */}
+          {saleItems.map((item, i) => {
+            const lineTotal = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+            return (
               <div
                 key={item.id || i}
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "6px 0",
+                  fontSize: 12,
+                  padding: "5px 0",
                   borderBottom:
-                    i < saleItems.length - 1 ? "1px solid #f3f2f2" : "none",
+                    i < saleItems.length - 1 ? "1px solid #f0f0f0" : "none",
                 }}
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, color: "#1b1c1d" }}>
-                    {item.product_name}
-                  </span>
-                  <span style={{ fontSize: 12, color: "#7a6d6d", marginLeft: 6 }}>
-                    x{item.quantity}
-                  </span>
-                </div>
-                <div
+                <span
                   style={{
-                    fontSize: 13,
-                    color: "#4a3d3d",
-                    fontVariantNumeric: "tabular-nums",
-                    marginLeft: 12,
-                    flexShrink: 0,
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    paddingRight: 4,
                   }}
                 >
-                  {formatCurrency(item.quantity * item.unit_price)}
-                </div>
+                  {item.product_name}
+                </span>
+                <span
+                  style={{
+                    width: 36,
+                    textAlign: "center",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {item.quantity}
+                </span>
+                <span
+                  style={{
+                    width: 64,
+                    textAlign: "right",
+                    fontVariantNumeric: "tabular-nums",
+                    color: "#444",
+                    fontSize: 11,
+                  }}
+                >
+                  {formatCurrency(item.unit_price)}
+                </span>
+                <span
+                  style={{
+                    width: 72,
+                    textAlign: "right",
+                    fontVariantNumeric: "tabular-nums",
+                    fontWeight: 500,
+                  }}
+                >
+                  {formatCurrency(lineTotal)}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
 
-        {/* Delivery fee */}
-        {parseFloat(sale.delivery_fee) > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "8px 0",
-              borderTop: "1px solid #e9e8e9",
-              fontSize: 13,
-              color: "#4a3d3d",
-            }}
-          >
-            <span>Frete</span>
+          <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
+        </>
+      )}
+
+      {/* Subtotais */}
+      <div style={{ fontSize: 12, lineHeight: 1.8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ color: "#444" }}>Valor dos produtos</span>
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            {formatCurrency(subtotal)}
+          </span>
+        </div>
+
+        {deliveryFee > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#444" }}>Frete</span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>
-              {formatCurrency(sale.delivery_fee)}
+              {formatCurrency(deliveryFee)}
             </span>
           </div>
         )}
 
-        {/* Discount */}
-        {parseFloat(sale.discount_amount) > 0 && (
+        {discountAmount > 0 && (
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              padding: "8px 0",
-              borderTop: "1px solid #e9e8e9",
-              fontSize: 13,
               color: "#dc2626",
             }}
           >
             <span>
-              Desconto{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
+              Desconto
+              {sale.discount_type === "percent" && sale.discount_input
+                ? ` (${sale.discount_input}%)`
+                : ""}
             </span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>
-              −{formatCurrency(sale.discount_amount)}
+              −{formatCurrency(discountAmount)}
             </span>
           </div>
         )}
-
-        {/* Total */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "12px 0",
-            borderTop: "2px solid #1b1c1d",
-            marginTop: 4,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#1b1c1d",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}
-          >
-            Total
-          </span>
-          <span
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: "#1b1c1d",
-              fontVariantNumeric: "tabular-nums",
-              fontFamily: "'Plus Jakarta Sans', sans-serif",
-            }}
-          >
-            {formatCurrency(totalValue)}
-          </span>
-        </div>
-
-        {/* Payment method */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: 13,
-            color: "#4a3d3d",
-            paddingTop: 4,
-          }}
-        >
-          <span>Pagamento</span>
-          <span style={{ fontWeight: 500 }}>
-            {getPaymentLabel(sale.payment_method)}
-          </span>
-        </div>
       </div>
 
-      {/* Footer */}
+      {/* Total — destaque */}
       <div
         style={{
-          backgroundColor: "#fbf9fa",
-          padding: "16px 24px",
-          textAlign: "center",
-          borderTop: "1px solid #e9e8e9",
+          borderTop: "2px solid #1b1c1d",
+          marginTop: 6,
+          paddingTop: 8,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <div style={{ fontSize: 13, color: "#4a3d3d", marginBottom: 4 }}>
-          Obrigado pela preferencia!
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
+          Total
+        </span>
+        <span
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            fontVariantNumeric: "tabular-nums",
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
+          {formatCurrency(totalValue)}
+        </span>
+      </div>
+
+      <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
+
+      {/* Pagamento */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 12,
+          color: "#444",
+        }}
+      >
+        <span>Pagamento</span>
+        <span style={{ fontWeight: 600, color: "#1b1c1d" }}>
+          {getPaymentLabel(sale.payment_method)}
+        </span>
+      </div>
+
+      <div style={{ borderTop: dashedBorder, margin: "10px 0" }} />
+
+      {/* Footer */}
+      <div style={{ textAlign: "center", paddingTop: 2 }}>
+        <div style={{ fontSize: 12, color: "#444" }}>
+          Obrigado pela preferência!
         </div>
         <div
           style={{
             fontSize: 11,
-            color: "#7a6d6d",
-            fontWeight: 600,
+            fontWeight: 700,
             textTransform: "uppercase",
-            letterSpacing: "0.05em",
+            letterSpacing: "0.08em",
+            color: "#1b1c1d",
+            marginTop: 4,
           }}
         >
           Maxi Massas
