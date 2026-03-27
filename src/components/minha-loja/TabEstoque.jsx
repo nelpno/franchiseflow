@@ -172,12 +172,18 @@ export default function TabEstoque({
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
 
+    // Ordem alfabetica dentro de cada grupo para evitar reordenacao ao atualizar estoque
+    groups.forEach(g => g.items.sort((a, b) =>
+      a.product_name.localeCompare(b.product_name, 'pt-BR')
+    ));
+
     return groups;
   }, [filteredItems]);
 
   // --- Inline edit ---
 
   const handleCellClick = (itemId, field, currentValue) => {
+    if (editingCell?.itemId === itemId && editingCell?.field === field) return;
     const cell = { itemId, field };
     editingCellRef.current = cell;
     setEditingCell(cell);
@@ -718,10 +724,12 @@ export default function TabEstoque({
                                 <Input
                                   ref={editInputRef}
                                   type="number"
+                                  inputMode="numeric"
                                   min="0"
                                   step="1"
                                   value={editValue}
                                   onChange={(e) => setEditValue(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
                                   className="w-full h-6 font-bold bg-transparent border-none rounded-none p-0 focus-visible:ring-0"
@@ -749,10 +757,12 @@ export default function TabEstoque({
                                 <Input
                                   ref={editInputRef}
                                   type="number"
+                                  inputMode="numeric"
                                   min="0"
                                   step="1"
                                   value={editValue}
                                   onChange={(e) => setEditValue(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
                                   className="w-full h-6 font-bold bg-transparent border-none rounded-none p-0 focus-visible:ring-0"
@@ -792,10 +802,12 @@ export default function TabEstoque({
                                 <Input
                                   ref={editInputRef}
                                   type="number"
+                                  inputMode="decimal"
                                   min="0"
                                   step="0.01"
                                   value={editValue}
                                   onChange={(e) => setEditValue(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
                                   onBlur={handleCellBlur}
                                   onKeyDown={handleCellKeyDown}
                                   placeholder={getRecommendedPrice(item) ? formatBRL(getRecommendedPrice(item)) : "0,00"}
