@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
 import { toast } from "sonner";
 
@@ -44,15 +44,12 @@ function validateVendorConfig(config) {
 
 export default function useWhatsAppConnection({ currentUser, updateConfigurationStatus }) {
   const [isConnectingWhatsApp, setIsConnectingWhatsApp] = useState(false);
-  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [selectedConfigForWhatsApp, setSelectedConfigForWhatsApp] = useState(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [checkingStatusFor, setCheckingStatusFor] = useState(null);
   const [modalData, setModalData] = useState(null);
 
-  useEffect(() => {
-    setShowWhatsAppModal(!!modalData);
-  }, [modalData]);
+  const showWhatsAppModal = !!modalData;
 
   const handleConnectWhatsApp = useCallback(async (config) => {
     if (!config || !config.franchise_evolution_instance_id) {
@@ -144,8 +141,8 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
 
   const handleCloseModalAndCheckStatus = useCallback(() => {
     setModalData(null);
-    if (selectedConfigForWhatsApp) setTimeout(() => handleCheckWhatsAppStatus(), 500);
-  }, [selectedConfigForWhatsApp, handleCheckWhatsAppStatus]);
+    setSelectedConfigForWhatsApp(null);
+  }, []);
 
   const handleCheckStatusFromBadge = useCallback(async (config) => {
     if (checkingStatusFor === config.id) return;
