@@ -36,15 +36,25 @@ export default function AdminDashboard() {
     setIsLoading(true);
     setLoadError(null);
     try {
+      // Franchise é crítica — retry automático em caso de timeout
+      const fetchFranchises = async () => {
+        try {
+          return await Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name' });
+        } catch (err) {
+          // Uma tentativa extra antes de desistir
+          return await Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name' });
+        }
+      };
+
       const results = await Promise.allSettled([
-        Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name' }),
+        fetchFranchises(),
         DailySummary.list("-date", 90, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts' }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date' }),
         DailyUniqueContact.filter({ date: yesterday }, null, null, { columns: 'id, franchise_id, date' }),
         Sale.filter({ sale_date: today }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
         Sale.filter({ sale_date: yesterday }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
-        PurchaseOrder.list("-ordered_at", null, { columns: 'id, franchise_id, status, ordered_at, delivered_at' }),
-        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id' }),
+        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at' }),
+        InventoryItem.list(null, 1000, { columns: 'id, product_name, quantity, min_stock, franchise_id' }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' }),
       ]);
 
