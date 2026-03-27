@@ -96,8 +96,12 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Fallback role: invites → `raw_user_meta_data->>'role'` → default `'franchisee'`
 
 ### Integração Vendedor Genérico (n8n)
-- V2 (`w7loLOXUmRR3AzuO`): RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
+- V3 (`XqWZyLl1AHlnJvdj`): PRODUÇÃO ATUAL. RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
+- V2 (`w7loLOXUmRR3AzuO`): ARQUIVADO (substituído pelo V3)
 - V1 (`PALRV1RqD3opHMzk`): DESATIVADO (Base44 legado)
+- Bot respeita `has_pickup`/`has_delivery` — regras condicionais no GerenteGeral1 e Pedido_Checkout1
+- systemMessage fica em `node.parameters.options.systemMessage` (GerenteGeral1 e Pedido_Checkout1)
+- Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
 - Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 8 nós, dados via $fromAI(). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
 - View `vw_dadosunidade`: mapeia franchise_configurations. SQL: `supabase/fix-vw-dadosunidade-v2-scale.sql`
@@ -111,8 +115,10 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `valor_total` do $fromAI() pode vir 0 — calcular sum(qty * price) + frete como fallback
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros causam 400
+- n8n API PUT body DEVE incluir `name` do workflow — sem ele retorna 400 `must have required property 'name'`
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
-- **`R$` em expressões n8n `{{ }}`**: o `$` pode ser comido pelo parser de expressões. Usar `'R' + '$'` (concatenação) em IIFEs dentro de systemMessage. Expressões simples fora de IIFE toleram `R$` literal
+- **`R$` em expressões n8n `{{ }}`**: `R$` literal funciona APENAS dentro de IIFEs `(() => { ... })()`. Em ternários simples, o `$` é comido pelo parser
+- **NUNCA usar `String.replace()` com `$` no replacement string** — `$'` é padrão especial JS que duplica conteúdo. Usar `split(old).join(new)` para substituições seguras em systemMessages
 - **Regex em systemMessage n8n**: NUNCA `[^.]*` — expressões `{{ }}` contêm pontos. Usar `.*?` (lazy)
 - `Pedido_Checkout1`: sub-agente Finalizador de Pedidos. systemMessage com IIFE de frete — se corromper, causa "invalid syntax" + loop do agente
 - n8n `neverError: true` retorna erros com HTTP 200 — checar `data.code >= 400`
@@ -183,8 +189,8 @@ SUPABASE_SERVICE_ROLE_KEY=          # Service role key (bypasses RLS)
 SUPABASE_MANAGEMENT_TOKEN=          # sbp_ token para Management API
 VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 N8N_API_KEY=                        # Pode não estar no shell — ler do .env
-N8N_VENDEDOR_V2_WORKFLOW_ID=w7loLOXUmRR3AzuO
-N8N_VENDEDOR_V2_TESTE_WORKFLOW_ID=XqWZyLl1AHlnJvdj
+N8N_VENDEDOR_V2_WORKFLOW_ID=w7loLOXUmRR3AzuO  # ARQUIVADO
+N8N_VENDEDOR_V3_WORKFLOW_ID=XqWZyLl1AHlnJvdj  # PRODUÇÃO ATUAL
 N8N_WHATSAPP_WEBHOOK=a9c45ef7-36f7-4a64-ad9e-edadb69a31af
 ZUCKZAPGO_URL=                      # zuck.dynamicagents.tech
 ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
