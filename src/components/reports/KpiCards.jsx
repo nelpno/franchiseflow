@@ -42,12 +42,12 @@ function KpiCard({ icon, iconBg, label, value, subtitle, delta, isLoading }) {
 }
 
 export default function KpiCards({ sales, contacts, previousSales, previousContacts, isLoading }) {
-  const totalRevenue = sales.reduce((sum, s) => sum + (s.value || 0), 0);
+  const totalRevenue = sales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
   const totalSales = sales.length;
   const avgTicket = totalSales > 0 ? totalRevenue / totalSales : 0;
   const totalContacts = contacts.length;
 
-  const prevRevenue = previousSales.reduce((sum, s) => sum + (s.value || 0), 0);
+  const prevRevenue = previousSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
   const prevSalesCount = previousSales.length;
   const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
   const prevContacts = previousContacts.length;
@@ -85,7 +85,7 @@ export default function KpiCards({ sales, contacts, previousSales, previousConta
       <KpiCard
         icon="avg_pace"
         iconBg="bg-[#a80012]"
-        label="Ticket Médio"
+        label="Valor Médio"
         value={formatBRL(avgTicket)}
         subtitle={prevAvgTicket > 0 ? `vs. ${formatBRL(prevAvgTicket)} anterior` : null}
         delta={calcDelta(avgTicket, prevAvgTicket)}

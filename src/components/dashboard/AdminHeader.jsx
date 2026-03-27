@@ -1,3 +1,4 @@
+import NotificationBell from "@/components/ui/NotificationBell";
 
 const PERIODS = [
   { value: "today", label: "Hoje" },
@@ -29,6 +30,7 @@ export default function AdminHeader({ period, onPeriodChange }) {
             </button>
           ))}
         </div>
+        <NotificationBell size={20} />
       </div>
     </header>
   );

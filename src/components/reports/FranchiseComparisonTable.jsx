@@ -2,16 +2,17 @@ import { useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
+import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
 const SORT_KEYS = [
   { key: 'city', label: 'Franquia' },
   { key: 'salesCount', label: 'Vendas' },
   { key: 'revenue', label: 'Faturamento' },
-  { key: 'avgTicket', label: 'Ticket Médio' },
+  { key: 'avgTicket', label: 'Valor Médio' },
   { key: 'contactsCount', label: 'Leads' },
 ];
 
-export default function FranchiseComparisonTable({ sales, contacts, summaries, franchises, isLoading, periodLabel }) {
+export default function FranchiseComparisonTable({ sales, contacts, summaries, franchises, isLoading, periodLabel, configMap = {} }) {
   const [sortKey, setSortKey] = useState('revenue');
   const [sortDir, setSortDir] = useState('desc');
 
@@ -19,14 +20,15 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
     return franchises.map(f => {
       const fSales = sales.filter(s => s.franchise_id === f.evolution_instance_id);
       const fContacts = contacts.filter(c => c.franchise_id === f.evolution_instance_id);
-      const revenue = fSales.reduce((sum, s) => sum + (s.value || 0), 0);
+      const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const salesCount = fSales.length;
       const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
       const contactsCount = fContacts.length;
+      const config = configMap[f.evolution_instance_id];
 
       return {
         id: f.id,
-        city: f.city,
+        city: getFranchiseDisplayName(f, config),
         ownerName: f.owner_name,
         salesCount,
         revenue,
@@ -34,7 +36,7 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
         contactsCount,
       };
     });
-  }, [franchises, sales, contacts]);
+  }, [franchises, sales, contacts, configMap]);
 
   const sorted = useMemo(() => {
     return [...data].sort((a, b) => {
@@ -104,7 +106,7 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                   <SortHeader colKey="city" label="Franquia" />
                   <SortHeader colKey="salesCount" label="Vendas" align="right" />
                   <SortHeader colKey="revenue" label="Faturamento" align="right" />
-                  <SortHeader colKey="avgTicket" label="Ticket Médio" align="right" />
+                  <SortHeader colKey="avgTicket" label="Valor Médio" align="right" />
                   <SortHeader colKey="contactsCount" label="Leads" align="right" />
                 </tr>
               </thead>

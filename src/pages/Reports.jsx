@@ -34,7 +34,7 @@ function ReportsContent() {
   // Filtros simplificados
   const [selectedFranchise, setSelectedFranchise] = useState('all');
   const [periodPreset, setPeriodPreset] = useState('30d');
-  const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [startDate, setStartDate] = useState(format(subDays(new Date(), 29), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   // Carrega tudo uma vez só
@@ -51,10 +51,10 @@ function ReportsContent() {
       const results = await Promise.allSettled([
         User.me(),
         Franchise.list(),
-        Sale.list('-sale_date', 200),
-        Contact.list('-created_at', 200),
-        DailyUniqueContact.list('-date', 200),
-        DailySummary.list('-date', 200),
+        Sale.list('-sale_date', 2000),
+        Contact.list('-created_at', 2000),
+        DailyUniqueContact.list('-date', 500),
+        DailySummary.list('-date', 500),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' })
       ]);
 
@@ -98,11 +98,11 @@ function ReportsContent() {
     const now = new Date();
     switch (periodPreset) {
       case '7d':
-        setStartDate(format(subDays(now, 7), 'yyyy-MM-dd'));
+        setStartDate(format(subDays(now, 6), 'yyyy-MM-dd'));
         setEndDate(format(now, 'yyyy-MM-dd'));
         break;
       case '30d':
-        setStartDate(format(subDays(now, 30), 'yyyy-MM-dd'));
+        setStartDate(format(subDays(now, 29), 'yyyy-MM-dd'));
         setEndDate(format(now, 'yyyy-MM-dd'));
         break;
       case 'month':
@@ -110,7 +110,7 @@ function ReportsContent() {
         setEndDate(format(endOfMonth(now), 'yyyy-MM-dd'));
         break;
       case '90d':
-        setStartDate(format(subDays(now, 90), 'yyyy-MM-dd'));
+        setStartDate(format(subDays(now, 89), 'yyyy-MM-dd'));
         setEndDate(format(now, 'yyyy-MM-dd'));
         break;
       default:
@@ -302,6 +302,7 @@ function ReportsContent() {
               franchises={availableFranchises}
               isLoading={isLoading}
               periodLabel={periodLabel}
+              configMap={configMap}
             />
           </>
         )}

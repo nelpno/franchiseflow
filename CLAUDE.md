@@ -2,6 +2,7 @@
 
 ## Sobre
 Dashboard de gestão de franquias da Maxi Massas (massas artesanais congeladas).
+Franquias são **home-based** (NÃO loja física) — vocabulário bot: NUNCA "loja física"/"unidade física", usar "ponto de retirada" ou só endereço.
 Migrado de Base44 para Supabase Cloud. Frontend React hospedado via Docker/Portainer.
 
 ## Stack
@@ -112,6 +113,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros causam 400
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
 - **`R$` em expressões n8n `{{ }}`**: o `$` pode ser comido pelo parser de expressões. Usar `'R' + '$'` (concatenação) em IIFEs dentro de systemMessage. Expressões simples fora de IIFE toleram `R$` literal
+- **Regex em systemMessage n8n**: NUNCA `[^.]*` — expressões `{{ }}` contêm pontos. Usar `.*?` (lazy)
 - `Pedido_Checkout1`: sub-agente Finalizador de Pedidos. systemMessage com IIFE de frete — se corromper, causa "invalid syntax" + loop do agente
 - n8n `neverError: true` retorna erros com HTTP 200 — checar `data.code >= 400`
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
@@ -182,6 +184,7 @@ SUPABASE_MANAGEMENT_TOKEN=          # sbp_ token para Management API
 VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 N8N_API_KEY=                        # Pode não estar no shell — ler do .env
 N8N_VENDEDOR_V2_WORKFLOW_ID=w7loLOXUmRR3AzuO
+N8N_VENDEDOR_V2_TESTE_WORKFLOW_ID=XqWZyLl1AHlnJvdj
 N8N_WHATSAPP_WEBHOOK=a9c45ef7-36f7-4a64-ad9e-edadb69a31af
 ZUCKZAPGO_URL=                      # zuck.dynamicagents.tech
 ZUCKZAPGO_ADMIN_TOKEN=              # Admin token

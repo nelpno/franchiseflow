@@ -33,7 +33,7 @@ export default function SalesRevenueChart({ sales, isLoading, startDate, endDate
     return days.map(day => {
       const dayStr = format(day, 'yyyy-MM-dd');
       const daySales = sales.filter(s => s.sale_date?.substring(0, 10) === dayStr);
-      const totalRevenue = daySales.reduce((sum, s) => sum + (s.value || 0), 0);
+      const totalRevenue = daySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
 
       return {
         date: format(day, 'dd/MM'),
