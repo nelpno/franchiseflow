@@ -239,6 +239,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - Campos numéricos do Supabase podem vir como string — SEMPRE `parseFloat(s.value) || 0` nos reduces, NUNCA `s.value || 0`
 - AdminDashboard: 9 queries paralelas com `Promise.allSettled` — TODAS devem ter `limit` explícito. Query de franquias tem auto-retry (crítica)
 - Queries sem limite em páginas com múltiplas chamadas simultâneas causam timeout — sempre definir limits razoáveis
+- Inline edit mobile: inputs dentro de `<div onClick>` PRECISAM `onClick={e => e.stopPropagation()}` + `inputMode="numeric"/"decimal"` — sem isso, click borbulha e reseta valor
+- Listas vindas do Supabase: SEMPRE sort explícito no frontend (ex: `localeCompare('pt-BR')`) — ordem do banco muda após updates
 
 **Error handling:** Mostrar `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout. `setIsSubmitting` SEMPRE em `finally`. Toast separados sucesso/erro.
 
