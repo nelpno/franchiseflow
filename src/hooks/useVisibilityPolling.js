@@ -11,12 +11,13 @@ import { useEffect, useRef, useCallback } from "react";
 export function useVisibilityPolling(callback, intervalMs, enabled = true) {
   const intervalRef = useRef(null);
   const callbackRef = useRef(callback);
+  const activeRef = useRef(false);
   callbackRef.current = callback;
 
   const startPolling = useCallback(() => {
     if (intervalRef.current) return;
     intervalRef.current = setInterval(() => {
-      callbackRef.current();
+      if (activeRef.current) callbackRef.current();
     }, intervalMs);
   }, [intervalMs]);
 
@@ -33,10 +34,12 @@ export function useVisibilityPolling(callback, intervalMs, enabled = true) {
       return;
     }
 
+    activeRef.current = true;
+
     const handleVisibility = () => {
       if (document.hidden) {
         stopPolling();
-      } else {
+      } else if (activeRef.current) {
         callbackRef.current();
         startPolling();
       }
@@ -48,6 +51,7 @@ export function useVisibilityPolling(callback, intervalMs, enabled = true) {
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      activeRef.current = false;
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibility);
     };

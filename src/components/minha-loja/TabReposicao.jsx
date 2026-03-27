@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,17 +30,27 @@ export default function TabReposicao({
   const [initialQuantities, setInitialQuantities] = useState(null);
   const [lastOrder, setLastOrder] = useState(null);
   const [loadingLastOrder, setLoadingLastOrder] = useState(true);
+  const abortControllerRef = useRef(null);
 
   // Load last order for "Repetir Ultimo"
   useEffect(() => {
     if (!franchiseId) return;
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoadingLastOrder(true);
-    PurchaseOrder.filter({ franchise_id: franchiseId }, "-ordered_at", 1)
+    PurchaseOrder.filter({ franchise_id: franchiseId }, "-ordered_at", 1, { signal: controller.signal })
       .then((orders) => {
         setLastOrder(orders.length > 0 ? orders[0] : null);
       })
-      .catch(() => setLastOrder(null))
+      .catch((err) => {
+        if (err?.name === 'AbortError') return;
+        setLastOrder(null);
+      })
       .finally(() => setLoadingLastOrder(false));
+
+    return () => controller.abort();
   }, [franchiseId, orderRefreshKey]);
 
   // Suggestion data (reuse same logic as PurchaseOrderForm)

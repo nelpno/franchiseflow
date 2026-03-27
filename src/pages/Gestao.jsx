@@ -30,28 +30,37 @@ export default function Gestao() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     mountedRef.current = true;
     loadData();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   const loadData = async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
     try {
       setLoading(true);
       setLoadError(null);
 
       // Dados críticos — sem eles a página não funciona
       const [userResult, franchisesResult] = await Promise.allSettled([
-        User.me(),
-        Franchise.list(),
+        User.me({ signal }),
+        Franchise.list(null, null, { signal }),
       ]);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal.aborted) return;
       const userData = userResult.status === "fulfilled" ? userResult.value : null;
       const franchisesData = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
       if (!userData) throw new Error("Não foi possível carregar usuário");
-      if (franchisesResult.status === "rejected") {
+      if (franchisesResult.status === "rejected" && !signal.aborted) {
         console.warn("Falha ao carregar franquias:", franchisesResult.reason?.message);
         toast.error(`Erro ao carregar franquias: ${franchisesResult.reason?.message || "Erro desconhecido"}`);
       }
@@ -60,10 +69,10 @@ export default function Gestao() {
 
       // Dados de tabs — carregam em paralelo, falha não bloqueia a página
       const [inventoryResult, saleItemsResult] = await Promise.allSettled([
-        InventoryItem.list("-updated_at"),
-        SaleItem.list(),
+        InventoryItem.list("-updated_at", null, { signal }),
+        SaleItem.list(null, null, { signal }),
       ]);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal.aborted) return;
 
       if (inventoryResult.status === "fulfilled") {
         setInventoryItems(inventoryResult.value);
@@ -76,6 +85,7 @@ export default function Gestao() {
         console.warn("Falha ao carregar itens de venda:", saleItemsResult.reason?.message);
       }
     } catch (error) {
+      if (error?.name === 'AbortError') return;
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dados:", error);
       const msg = error?.message || "Erro desconhecido";

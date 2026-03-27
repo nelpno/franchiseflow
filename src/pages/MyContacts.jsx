@@ -113,6 +113,7 @@ export default function MyContacts() {
   const [dateFilter, setDateFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
 
   const capitalize = (str) => {
     if (!str) return str;
@@ -150,17 +151,25 @@ export default function MyContacts() {
   useEffect(() => {
     mountedRef.current = true;
     loadContacts();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   const loadContacts = async (retryCount = 0) => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       setLoading(true);
       setLoadError(null);
-      const data = await Contact.list("-created_at", 200);
+      const data = await Contact.list("-created_at", 200, { signal: controller.signal });
       if (!mountedRef.current) return;
       setContacts(data);
     } catch (error) {
+      if (error?.name === 'AbortError') return;
       if (!mountedRef.current) return;
       if (retryCount < 1) {
         await new Promise(r => setTimeout(r, 1000));

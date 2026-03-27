@@ -28,37 +28,47 @@ export default function AdminDashboard() {
   const [configMap, setConfigMap] = useState({});
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+  const hasLoadedOnceRef = useRef(false);
 
-  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
-  const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
+  const getToday = () => format(new Date(), "yyyy-MM-dd");
+  const getYesterday = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
 
   const loadData = useCallback(async () => {
-    setIsLoading(true);
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
+    if (!hasLoadedOnceRef.current) setIsLoading(true);
     setLoadError(null);
     try {
+      const today = getToday();
+      const yesterday = getYesterday();
+
       // Franchise é crítica — retry automático em caso de timeout
       const fetchFranchises = async () => {
         try {
-          return await Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name' });
+          return await Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name', signal });
         } catch (err) {
-          // Uma tentativa extra antes de desistir
-          return await Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name' });
+          if (err?.name === 'AbortError') throw err;
+          return await Franchise.list("city", null, { columns: 'id, city, owner_name, evolution_instance_id, name', signal });
         }
       };
 
       const results = await Promise.allSettled([
         fetchFranchises(),
-        DailySummary.list("-date", 90, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts' }),
-        DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date' }),
-        DailyUniqueContact.filter({ date: yesterday }, null, null, { columns: 'id, franchise_id, date' }),
-        Sale.filter({ sale_date: today }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
-        Sale.filter({ sale_date: yesterday }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date' }),
-        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at' }),
-        InventoryItem.list(null, 1000, { columns: 'id, product_name, quantity, min_stock, franchise_id' }),
-        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' }),
+        DailySummary.list("-date", 90, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
+        DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
+        DailyUniqueContact.filter({ date: yesterday }, null, null, { columns: 'id, franchise_id, date', signal }),
+        Sale.filter({ sale_date: today }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
+        Sale.filter({ sale_date: yesterday }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
+        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
+        InventoryItem.list(null, 1000, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal }),
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
       ]);
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal.aborted) return;
 
       const getValue = (r) => r.status === "fulfilled" ? r.value : [];
       const franchiseData = getValue(results[0]);
@@ -120,20 +130,25 @@ export default function AdminDashboard() {
       const configData = getValue(results[8]);
       setConfigMap(buildConfigMap(configData));
     } catch (err) {
+      if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard admin:", err);
       setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
       toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
     } finally {
-      if (mountedRef.current) setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+        hasLoadedOnceRef.current = true;
+      }
     }
-  }, [today, yesterday]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
     loadData();
     return () => {
       mountedRef.current = false;
+      abortControllerRef.current?.abort();
     };
   }, [loadData]);
 

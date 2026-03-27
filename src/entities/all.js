@@ -10,28 +10,37 @@ function parseOrderBy(orderByStr) {
 // Timeout para queries de leitura — evita hang infinito quando Supabase trava
 const QUERY_TIMEOUT_MS = 15000;
 
-function withTimeout(promise, ms = QUERY_TIMEOUT_MS) {
+function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
+  if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
   let timeoutId;
   const timeout = new Promise((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error('Tempo limite excedido')), ms);
   });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+  const parts = [promise, timeout];
+  if (signal) {
+    parts.push(new Promise((_, reject) => {
+      signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+    }));
+  }
+  return Promise.race(parts).finally(() => clearTimeout(timeoutId));
 }
 
 function createEntity(tableName) {
   return {
-    async list(orderBy, limit, { columns } = {}) {
+    async list(orderBy, limit, { columns, signal } = {}) {
       let query = supabase.from(tableName).select(columns || '*');
+      if (signal) query = query.abortSignal(signal);
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);
-      const { data, error } = await withTimeout(query);
+      const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
       if (error) throw error;
       return data || [];
     },
 
-    async filter(criteria, orderBy, limit, { columns } = {}) {
+    async filter(criteria, orderBy, limit, { columns, signal } = {}) {
       let query = supabase.from(tableName).select(columns || '*');
+      if (signal) query = query.abortSignal(signal);
       if (criteria) {
         for (const [key, value] of Object.entries(criteria)) {
           if (Array.isArray(value)) {
@@ -44,7 +53,7 @@ function createEntity(tableName) {
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);
-      const { data, error } = await withTimeout(query);
+      const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
       if (error) throw error;
       return data || [];
     },
@@ -177,11 +186,13 @@ export const AuditLog = createEntity('audit_logs');
 export const FranchiseNote = createEntity('franchise_notes');
 
 // RPC helpers
-export async function getFranchiseRanking(date, franchiseId) {
-  const { data, error } = await supabase.rpc('get_franchise_ranking', {
+export async function getFranchiseRanking(date, franchiseId, { signal } = {}) {
+  let query = supabase.rpc('get_franchise_ranking', {
     p_date: date,
     p_franchise_id: franchiseId,
   });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
   if (error) throw error;
   return data;
 }
@@ -201,17 +212,15 @@ export async function addDefaultProduct({ name, category, unit, costPrice, minSt
 // User é especial - tem método .me() além dos métodos padrão
 export const User = {
   ...createEntity('profiles'),
-  async me() {
+  async me({ signal } = {}) {
     return withTimeout((async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw authError || new Error('Not authenticated');
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      let query = supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (signal) query = query.abortSignal(signal);
+      const { data: profile, error: profileError } = await query;
       if (profileError) throw profileError;
       return { ...user, ...profile };
-    })());
+    })(), QUERY_TIMEOUT_MS, signal);
   }
 };

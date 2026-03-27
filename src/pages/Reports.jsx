@@ -25,6 +25,7 @@ function ReportsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
   const [rawSales, setRawSales] = useState([]);
   const [rawContacts, setRawContacts] = useState([]);
   const [rawDailyContacts, setRawDailyContacts] = useState([]);
@@ -41,24 +42,32 @@ function ReportsContent() {
   useEffect(() => {
     mountedRef.current = true;
     loadAllData();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   const loadAllData = async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
     setIsLoading(true);
     setLoadError(null);
     try {
       const results = await Promise.allSettled([
-        User.me(),
-        Franchise.list(),
-        Sale.list('-sale_date', 2000),
-        Contact.list('-created_at', 2000),
-        DailyUniqueContact.list('-date', 500),
-        DailySummary.list('-date', 500),
-        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' })
+        User.me({ signal }),
+        Franchise.list(null, null, { signal }),
+        Sale.list('-sale_date', 2000, { signal }),
+        Contact.list('-created_at', 2000, { signal }),
+        DailyUniqueContact.list('-date', 500, { signal }),
+        DailySummary.list('-date', 500, { signal }),
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal })
       ]);
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal.aborted) return;
 
       const getValue = (r) => r.status === "fulfilled" ? r.value : (r.value === undefined ? null : []);
       const currentUserData = results[0].status === "fulfilled" ? results[0].value : null;
@@ -85,6 +94,7 @@ function ReportsContent() {
       const configData = getValue(results[6]);
       setConfigMap(buildConfigMap(configData || []));
     } catch (error) {
+      if (error?.name === 'AbortError') return;
       console.error("Erro ao carregar dados:", error);
       if (!mountedRef.current) return;
       setLoadError("Não foi possível carregar os dados dos relatórios.");

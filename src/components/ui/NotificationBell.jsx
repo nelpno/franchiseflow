@@ -20,18 +20,25 @@ export default function NotificationBell({ size = 20 }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  const abortControllerRef = useRef(null);
+
   const loadNotifications = useCallback(async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     try {
-      const data = await Notification.list('-created_at', 20);
+      const data = await Notification.list('-created_at', 20, { signal: controller.signal });
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.read).length);
     } catch (e) {
+      if (e?.name === 'AbortError') return;
       // silently fail
     }
   }, []);
 
   useEffect(() => {
     loadNotifications();
+    return () => abortControllerRef.current?.abort();
   }, [loadNotifications]);
 
   useVisibilityPolling(loadNotifications, 120000);

@@ -23,6 +23,8 @@ export default function FranchiseeDashboard() {
   const { user, selectedFranchise: ctxFranchise } = useAuth();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+  const hasLoadedOnceRef = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [franchise, setFranchise] = useState(null);
@@ -47,7 +49,13 @@ export default function FranchiseeDashboard() {
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
+
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
+    if (!hasLoadedOnceRef.current) setIsLoading(true);
     setLoadError(null);
     try {
       setFranchise(ctxFranchise);
@@ -57,29 +65,29 @@ export default function FranchiseeDashboard() {
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
         evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }, null, null,
-          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method' })
+          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method', signal })
           : Promise.resolve([]),       // [0]
         evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }, null, null,
-          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method' })
+          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method', signal })
           : Promise.resolve([]),   // [1]
         evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30,
-          { columns: 'id, date, sales_count, sales_value, unique_contacts' })
+          { columns: 'id, date, sales_count, sales_value, unique_contacts', signal })
           : Promise.resolve([]),    // [2]
         evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
-          { columns: 'id, product_name, quantity, min_stock' })
+          { columns: 'id, product_name, quantity, min_stock', signal })
           : Promise.resolve([]),                // [3]
-        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today })
+        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }, null, null, { signal })
           : Promise.resolve([]),  // [4]
         evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200,
-          { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at' })
+          { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at', signal })
           : Promise.resolve([]), // [5]
         evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10,
-          { columns: 'id, date' })
+          { columns: 'id, date', signal })
           : Promise.resolve([]), // [6]
-        evoId ? getFranchiseRanking(today, evoId) : Promise.resolve(null),                          // [7]
+        evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null),                          // [7]
       ]);
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal.aborted) return;
 
       const getValue = (i) => results[i].status === "fulfilled" ? results[i].value : [];
       const todaySalesData = getValue(0);
@@ -121,12 +129,16 @@ export default function FranchiseeDashboard() {
       // Ranking (already parallel — index 7)
       setRanking(results[7].status === "fulfilled" ? results[7].value : null);
     } catch (err) {
+      if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard:", err);
       setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
       toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
     } finally {
-      if (mountedRef.current) setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+        hasLoadedOnceRef.current = true;
+      }
     }
   }, [franchiseId]);
 
@@ -135,6 +147,7 @@ export default function FranchiseeDashboard() {
     loadData();
     return () => {
       mountedRef.current = false;
+      abortControllerRef.current?.abort();
     };
   }, [loadData]);
 
