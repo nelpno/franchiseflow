@@ -235,6 +235,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 ### Frontend & React
 
 **Data fetching:** `mountedRef` + cleanup obrigatório. `loadError` + retry. `Promise.allSettled` para múltiplas queries. `setIsLoading(false)` antes de early return. `subDays(new Date(), N-1)` para filtros de dias.
+- Reports.jsx: limits altos (Sale/Contact 2000, DailyUnique/Summary 500) — 200 trunca dados em 90d com múltiplas franquias
+- Campos numéricos do Supabase podem vir como string — SEMPRE `parseFloat(s.value) || 0` nos reduces, NUNCA `s.value || 0`
 
 **Error handling:** Mostrar `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout. `setIsSubmitting` SEMPRE em `finally`. Toast separados sucesso/erro.
 
