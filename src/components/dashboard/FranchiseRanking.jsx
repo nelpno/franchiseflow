@@ -99,7 +99,10 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
     return Math.round(avg * 1.10);
   }, [summaries]);
 
-  const maxRevenue = rankedFranchises[0]?.revenue || 1;
+  // Only show franchises with actual revenue in the ranking
+  const activeFranchises = rankedFranchises.filter(f => f.revenue > 0);
+  const inactiveFranchises = rankedFranchises.length - activeFranchises.length;
+  const maxRevenue = activeFranchises[0]?.revenue || 1;
 
   if (isLoading || rankedFranchises.length === 0) return null;
 
@@ -128,7 +131,10 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         </h4>
 
         <div className="space-y-8">
-          {(expanded ? rankedFranchises : rankedFranchises.slice(0, VISIBLE_COUNT)).map((f, i) => {
+          {activeFranchises.length === 0 && (
+            <p className="text-sm text-[#4a3d3d]/60 text-center py-4">Nenhuma franquia com vendas no período</p>
+          )}
+          {(expanded ? activeFranchises : activeFranchises.slice(0, VISIBLE_COUNT)).map((f, i) => {
             const pct = maxRevenue > 0 ? Math.max((f.revenue / maxRevenue) * 100, 2) : 2;
             const isFirst = i === 0;
             const opacityClass = isFirst ? "" : i === 1 ? "opacity-80" : i === 2 ? "opacity-70" : "opacity-60";
@@ -164,7 +170,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
           })}
         </div>
 
-        {rankedFranchises.length > VISIBLE_COUNT && (
+        {activeFranchises.length > VISIBLE_COUNT && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="mt-6 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#a80012] hover:bg-[#a80012]/5 rounded-xl transition-colors"
@@ -172,8 +178,13 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
             <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={18} />
             {expanded
               ? "Mostrar menos"
-              : `Ver todas (+${rankedFranchises.length - VISIBLE_COUNT})`}
+              : `Ver todas (+${activeFranchises.length - VISIBLE_COUNT})`}
           </button>
+        )}
+        {inactiveFranchises > 0 && (
+          <p className="text-xs text-[#4a3d3d]/40 text-center mt-3">
+            {inactiveFranchises} franquia{inactiveFranchises > 1 ? "s" : ""} sem vendas no período
+          </p>
         )}
       </div>
 
