@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Franchise, DailyUniqueContact, User, FranchiseInvite } from "@/entities/all";
+import { Franchise, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee } from "@/api/functions";
 import { format } from "date-fns";
@@ -69,6 +69,9 @@ export default function Franchises() {
   const [unlinkingUser, setUnlinkingUser] = useState(null); // { user, franchise }
   const [isUnlinking, setIsUnlinking] = useState(false);
 
+  // Onboarding progress
+  const [onboardingMap, setOnboardingMap] = useState({}); // { franchise_evo_id: completion_percentage }
+
   useEffect(() => {
     mountedRef.current = true;
     loadData();
@@ -85,6 +88,7 @@ export default function Franchises() {
         DailyUniqueContact.filter({ date: todayStr }),
         User.list(),
         User.me(),
+        OnboardingChecklist.list("franchise_id", 200),
       ]);
 
       if (!mountedRef.current) return;
@@ -95,8 +99,16 @@ export default function Franchises() {
       const usersData = getValue(results[2]);
       const currentUserData = results[3].status === "fulfilled" ? results[3].value : null;
 
+      // Build onboarding progress map
+      const onboardingData = getValue(results[4]);
+      const obMap = {};
+      onboardingData.forEach(ob => {
+        if (ob.franchise_id) obMap[ob.franchise_id] = ob.completion_percentage || 0;
+      });
+      setOnboardingMap(obMap);
+
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","contacts","users","currentUser"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","contacts","users","currentUser","onboarding"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -668,6 +680,21 @@ export default function Franchises() {
                         <span className="text-sm">{franchise.phone_number}</span>
                       </div>
                     )}
+
+                    {/* Onboarding Progress — only show if not completed */}
+                    {(() => {
+                      const pct = onboardingMap[franchise.evolution_instance_id];
+                      if (pct === undefined || pct >= 100) return null;
+                      return (
+                        <div className="flex items-center gap-2">
+                          <MaterialIcon icon="school" size={14} className="text-[#d4af37]" />
+                          <div className="flex-1 h-1.5 bg-[#291715]/5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-[#d4af37]" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs font-semibold text-[#d4af37]">{pct}%</span>
+                        </div>
+                      );
+                    })()}
 
                     {/* Linked Users */}
                     <div className="pt-3 border-t border-[#291715]/5">

@@ -29,7 +29,7 @@ const STEPS = [
     features: [
       { icon: "add_shopping_cart", label: "Lançamento Rápido", desc: "Selecione produtos e registre em segundos" },
       { icon: "receipt_long", label: "Comprovante", desc: "Compartilhe o comprovante pelo WhatsApp" },
-      { icon: "person_search", label: "Vincular Cliente", desc: "Associe a venda a um contato cadastrado" },
+      { icon: "person_search", label: "Vincular Cliente", desc: "Conecte vendas aos clientes e acompanhe histórico, recorrência e valor total de cada um" },
     ],
   },
   {

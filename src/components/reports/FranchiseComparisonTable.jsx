@@ -4,12 +4,20 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
+const TIER_CONFIG = {
+  4: { label: "Elite", icon: "star", className: "bg-[#d4af37]/15 text-[#775a19] border-[#d4af37]/30" },
+  3: { label: "Bom", icon: "trending_up", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  2: { label: "Atenção", icon: "trending_down", className: "bg-amber-50 text-amber-700 border-amber-200" },
+  1: { label: "Crítico", icon: "warning", className: "bg-red-50 text-red-600 border-red-200" },
+};
+
 const SORT_KEYS = [
   { key: 'city', label: 'Franquia' },
   { key: 'salesCount', label: 'Vendas' },
   { key: 'revenue', label: 'Faturamento' },
   { key: 'avgTicket', label: 'Valor Médio' },
   { key: 'contactsCount', label: 'Leads' },
+  { key: 'tier', label: 'Performance' },
 ];
 
 export default function FranchiseComparisonTable({ sales, contacts, summaries, franchises, isLoading, periodLabel, configMap = {} }) {
@@ -17,7 +25,7 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
   const [sortDir, setSortDir] = useState('desc');
 
   const data = useMemo(() => {
-    return franchises.map(f => {
+    const rows = franchises.map(f => {
       const fSales = sales.filter(s => s.franchise_id === f.evolution_instance_id);
       const fContacts = contacts.filter(c => c.franchise_id === f.evolution_instance_id);
       const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
@@ -34,8 +42,25 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
         revenue,
         avgTicket,
         contactsCount,
+        tier: 0,
       };
     });
+
+    // Assign performance tiers based on revenue percentile
+    if (rows.length > 0) {
+      const revenues = rows.map(r => r.revenue).sort((a, b) => b - a);
+      const p75 = revenues[Math.floor(revenues.length * 0.25)] || 0;
+      const p50 = revenues[Math.floor(revenues.length * 0.5)] || 0;
+      const p25 = revenues[Math.floor(revenues.length * 0.75)] || 0;
+      rows.forEach(r => {
+        if (r.revenue >= p75 && r.revenue > 0) r.tier = 4;      // Elite
+        else if (r.revenue >= p50 && r.revenue > 0) r.tier = 3;  // Bom
+        else if (r.revenue >= p25 && r.revenue > 0) r.tier = 2;  // Atenção
+        else r.tier = 1;                                          // Crítico
+      });
+    }
+
+    return rows;
   }, [franchises, sales, contacts, configMap]);
 
   const sorted = useMemo(() => {
@@ -108,6 +133,7 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                   <SortHeader colKey="revenue" label="Faturamento" align="right" />
                   <SortHeader colKey="avgTicket" label="Valor Médio" align="right" />
                   <SortHeader colKey="contactsCount" label="Leads" align="right" />
+                  <SortHeader colKey="tier" label="Performance" align="center" />
                 </tr>
               </thead>
               <tbody>
@@ -148,6 +174,17 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                       </td>
                       <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
                         {row.contactsCount}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        {(() => {
+                          const t = TIER_CONFIG[row.tier] || TIER_CONFIG[1];
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${t.className}`}>
+                              <MaterialIcon icon={t.icon} size={12} />
+                              {t.label}
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );

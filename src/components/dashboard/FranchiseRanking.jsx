@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
@@ -7,6 +8,7 @@ import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 const VISIBLE_COUNT = 5;
 
 function FranchiseRanking({ franchises, summaries, todaySales = [], period = "today", isLoading, configMap = {} }) {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   // Map evoId → franchise for ID resolution (daily_summaries + sales use evo_id)
   const evoMap = useMemo(() => {
@@ -68,6 +70,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         const config = configMap[evoId];
         return {
           id: f?.id || evoId,
+          evoId,
           name: f ? getFranchiseDisplayName(f, config) : evoId,
           revenue,
         };
@@ -140,7 +143,12 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
             const opacityClass = isFirst ? "" : i === 1 ? "opacity-80" : i === 2 ? "opacity-70" : "opacity-60";
 
             return (
-              <div key={f.id} className="flex items-center gap-4">
+              <div
+                key={f.id}
+                className="flex items-center gap-4 cursor-pointer hover:bg-[#fbf9fa] rounded-xl px-2 py-1 -mx-2 transition-colors"
+                onClick={() => navigate(`/Acompanhamento?franchise=${f.evoId}`)}
+                title={`Ver detalhes de ${f.name}`}
+              >
                 <span className="w-6 text-sm font-bold text-[#1b1c1d]/70">
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -181,6 +189,31 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
               : `Ver todas (+${activeFranchises.length - VISIBLE_COUNT})`}
           </button>
         )}
+        {/* Bottom performers — "Precisam de Atenção" */}
+        {activeFranchises.length > 5 && (() => {
+          const bottom5 = activeFranchises.slice(-5).reverse();
+          return (
+            <div className="mt-6 pt-4 border-t border-[#291715]/5">
+              <h5 className="text-xs font-bold uppercase tracking-[0.15em] text-[#b91c1c]/70 mb-3 flex items-center gap-1.5">
+                <MaterialIcon icon="trending_down" size={14} />
+                Precisam de Atenção
+              </h5>
+              <div className="space-y-2">
+                {bottom5.map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-red-50/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/Acompanhamento?franchise=${f.evoId}`)}
+                  >
+                    <span className="text-sm text-[#4a3d3d] font-medium">{f.name}</span>
+                    <span className="text-xs font-semibold text-[#b91c1c]">{formatBRL(f.revenue)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {inactiveFranchises > 0 && (
           <p className="text-xs text-[#4a3d3d]/40 text-center mt-3">
             {inactiveFranchises} franquia{inactiveFranchises > 1 ? "s" : ""} sem vendas no período
