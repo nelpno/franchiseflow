@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration } from "@/entities/all";
+import { Franchise, DailySummary, Sale, Contact, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -23,6 +23,8 @@ export default function AdminDashboard() {
   const [todaySales, setTodaySales] = useState([]);
   const [yesterdaySales, setYesterdaySales] = useState([]);
   const [yesterdayContacts, setYesterdayContacts] = useState([]);
+  const [allSales, setAllSales] = useState([]);
+  const [allContacts, setAllContacts] = useState([]);
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [configMap, setConfigMap] = useState({});
@@ -61,8 +63,8 @@ export default function AdminDashboard() {
         DailySummary.list("-date", 90, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         DailyUniqueContact.filter({ date: yesterday }, null, null, { columns: 'id, franchise_id, date', signal }),
-        Sale.filter({ sale_date: today }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
-        Sale.filter({ sale_date: yesterday }, null, null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
+        Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
+        Contact.list('-created_at', 2000, { columns: 'id, created_at, franchise_id', signal }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, 1000, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
@@ -75,8 +77,10 @@ export default function AdminDashboard() {
       const summaryData = getValue(results[1]);
       const todayContactData = getValue(results[2]);
       const yesterdayContactData = getValue(results[3]);
-      const todaySaleData = getValue(results[4]);
-      const yesterdaySaleData = getValue(results[5]);
+      const allSaleData = getValue(results[4]);
+      const allContactData = getValue(results[5]);
+      const todaySaleData = allSaleData.filter(s => s.sale_date === today);
+      const yesterdaySaleData = allSaleData.filter(s => s.sale_date === yesterday);
       const purchaseOrderData = getValue(results[6]);
 
       // Franchises is critical — if it failed, show error state
@@ -89,7 +93,7 @@ export default function AdminDashboard() {
 
       // Log non-critical failures without blocking the dashboard
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","todaySales","yesterdaySales","purchaseOrders","estoque","configs"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","allSales","allContacts","purchaseOrders","estoque","configs"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -102,6 +106,8 @@ export default function AdminDashboard() {
       setYesterdayContacts(yesterdayContactData);
       setTodaySales(todaySaleData);
       setYesterdaySales(yesterdaySaleData);
+      setAllSales(allSaleData);
+      setAllContacts(allContactData);
       setPurchaseOrders(purchaseOrderData);
 
       // Inventory já veio paralelo no Promise.allSettled (index 7)
@@ -168,30 +174,39 @@ export default function AdminDashboard() {
     }
 
     const days = period === "7d" ? 7 : 30;
-    // "7 dias" = hoje + 6 anteriores (subDays 6), "30 dias" = hoje + 29 anteriores
     const cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
     const prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
     const todayStr = format(new Date(), "yyyy-MM-dd");
 
-    // Summaries don't include today (cron runs at 02:00 BRT), so merge live data
-    const currentPeriod = summaries.filter((s) => s.date >= cutoff && s.date < todayStr);
-    const prevPeriod = summaries.filter((s) => s.date >= prevCutoff && s.date < cutoff);
+    // Use raw sales/contacts data (like Reports.jsx) for accurate period filtering
+    const currentSales = allSales.filter(s => {
+      const d = s.sale_date;
+      return d >= cutoff && d <= todayStr;
+    });
+    const prevSales = allSales.filter(s => {
+      const d = s.sale_date;
+      return d >= prevCutoff && d < cutoff;
+    });
+    const currentContacts = allContacts.filter(c => {
+      const d = c.created_at?.substring(0, 10);
+      return d >= cutoff && d <= todayStr;
+    });
+    const prevContactsList = allContacts.filter(c => {
+      const d = c.created_at?.substring(0, 10);
+      return d >= prevCutoff && d < cutoff;
+    });
 
-    const sum = (arr, field) => arr.reduce((s, r) => s + (r[field] || 0), 0);
-
-    // Add today's live data to current period totals
-    const todayRevenue = todaySales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
-    const salesCount = sum(currentPeriod, "sales_count") + todaySales.length;
-    const prevSalesCount = sum(prevPeriod, "sales_count");
-    const revenue = sum(currentPeriod, "sales_value") + todayRevenue;
-    const prevRevenue = sum(prevPeriod, "sales_value");
-    const contacts = sum(currentPeriod, "unique_contacts") + todayContacts.length;
-    const prevContacts = sum(prevPeriod, "unique_contacts");
+    const salesCount = currentSales.length;
+    const prevSalesCount = prevSales.length;
+    const revenue = currentSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const prevRevenue = prevSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const contacts = currentContacts.length;
+    const prevContacts = prevContactsList.length;
     const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
     const prevConversion = prevContacts > 0 ? Math.round((prevSalesCount / prevContacts) * 100) : 0;
 
     return { salesCount, prevSalesCount, revenue, prevRevenue, contacts, prevContacts, conversion, prevConversion };
-  }, [period, todaySales, yesterdaySales, todayContacts, yesterdayContacts, summaries]);
+  }, [period, allSales, allContacts, todaySales, yesterdaySales, todayContacts, yesterdayContacts]);
 
   // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>

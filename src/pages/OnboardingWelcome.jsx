@@ -202,7 +202,7 @@ export default function OnboardingWelcome() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex items-start justify-center px-4 py-4 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center px-4 py-4 overflow-y-auto">
         <div
           className={`max-w-lg w-full transition-all duration-200 ${
             animating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"

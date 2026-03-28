@@ -78,11 +78,19 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
   const selectedProduct = products.find((p) => p.id === selectedId);
 
   const filtered = useMemo(() => {
-    if (!query) return products;
-    const q = query.toLowerCase();
-    return products.filter(
-      (p) => p.product_name.toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q)
-    );
+    let list = products;
+    if (query) {
+      const q = query.toLowerCase();
+      list = products.filter(
+        (p) => p.product_name.toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q)
+      );
+    }
+    // Sort: products with stock first, then without
+    return [...list].sort((a, b) => {
+      const aHas = (a.quantity || 0) > 0 ? 0 : 1;
+      const bHas = (b.quantity || 0) > 0 ? 0 : 1;
+      return aHas - bHas;
+    });
   }, [products, query]);
 
   useEffect(() => {
@@ -148,7 +156,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
                 }
               }}
               className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fbf9fa] transition-colors flex justify-between items-center ${
-                p.id === selectedId ? "bg-[#b91c1c]/5 text-[#b91c1c]" : "text-[#1b1c1d]"
+                p.id === selectedId ? "bg-[#b91c1c]/5 text-[#b91c1c]" : (p.quantity || 0) <= 0 ? "text-[#1b1c1d]/40" : "text-[#1b1c1d]"
               }`}
             >
               <span>
@@ -1170,7 +1178,7 @@ export default function SaleForm({
         )}
 
         <div className="border-t border-[#291715]/10 pt-2 flex justify-between">
-          <span className="font-medium text-[#1b1c1d]">Valor liquido</span>
+          <span className="font-medium text-[#1b1c1d]">Total a receber</span>
           <span className="font-bold text-lg text-[#1b1c1d] font-mono-numbers">
             {formatCurrency(netValue)}
           </span>

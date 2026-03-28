@@ -171,8 +171,8 @@ export function calculateFranchiseHealth(franchise, data) {
 
   let status;
   if (isNew) status = "nova";
-  else if (total >= 70) status = "saudavel";
-  else if (total >= 40) status = "atencao";
+  else if (total >= 80) status = "saudavel";
+  else if (total >= 50) status = "atencao";
   else status = "critico";
 
   const problems = [];

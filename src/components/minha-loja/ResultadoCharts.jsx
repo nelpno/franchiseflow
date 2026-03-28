@@ -132,7 +132,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
         <CardContent className="p-5 md:p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
-              Evolucao
+              Evolução
             </h3>
           </div>
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -142,7 +142,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
               className="text-[#cac0c0] mb-3"
             />
             <p className="text-sm text-[#4a3d3d]">
-              Dados insuficientes para graficos
+              Dados insuficientes para gráficos
             </p>
             <p className="text-xs text-[#4a3d3d]/70 mt-1">
               Lance vendas em pelo menos 2 meses diferentes
@@ -158,7 +158,7 @@ export default function ResultadoCharts({ sales, expenses, saleItems }) {
       <CardContent className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
-            Evolucao
+            Evolução
           </h3>
           <Button
             variant="ghost"

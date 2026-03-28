@@ -884,7 +884,7 @@ export default function TabEstoque({
                         Giro
                       </TableHead>
                       <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
-                        Sugestao
+                        Sugestão
                       </TableHead>
                       <TableHead className="w-[80px]"></TableHead>
                     </TableRow>
