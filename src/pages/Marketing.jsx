@@ -28,6 +28,32 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
+// Insert direto via REST API — bypass do supabase-js que trava em writes
+async function directInsert(data) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Sessão expirada. Faça login novamente.");
+
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/marketing_files`,
+    {
+      method: "POST",
+      headers: {
+        "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(15000),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erro ${res.status}`);
+  }
+}
+
 const CATEGORIES = [
   { value: "posts", label: "Posts", icon: "image", color: "bg-blue-100 text-blue-700" },
   { value: "stories", label: "Stories", icon: "smartphone", color: "bg-purple-100 text-purple-700" },
@@ -247,19 +273,16 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
         const url = externalUrl.trim();
         const fileType = detectFileType(url);
 
-        const { error: insertError } = await supabase
-          .from("marketing_files")
-          .insert({
-            title: title.trim(),
-            description: description || null,
-            category,
-            file_path: url,
-            file_type: fileType,
-            month,
-            franchise_id: franchiseId === "shared" ? null : franchiseId,
-            campaign: resolvedCampaign,
-          });
-        if (insertError) throw insertError;
+        await directInsert({
+          title: title.trim(),
+          description: description || null,
+          category,
+          file_path: url,
+          file_type: fileType,
+          month,
+          franchise_id: franchiseId === "shared" ? null : franchiseId,
+          campaign: resolvedCampaign,
+        });
 
         toast.success("Link adicionado com sucesso!");
       } else {
@@ -287,19 +310,16 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
           const fileTitle = files.length > 1 ? `${title} (${file.name})` : title;
           const fileType = isPdfFile(file.name) ? "pdf" : "image";
 
-          const { error: insertError } = await supabase
-            .from("marketing_files")
-            .insert({
-              title: fileTitle,
-              description: description || null,
-              category,
-              file_path: storagePath,
-              file_type: fileType,
-              month,
-              franchise_id: franchiseId === "shared" ? null : franchiseId,
-              campaign: resolvedCampaign,
-            });
-          if (insertError) throw insertError;
+          await directInsert({
+            title: fileTitle,
+            description: description || null,
+            category,
+            file_path: storagePath,
+            file_type: fileType,
+            month,
+            franchise_id: franchiseId === "shared" ? null : franchiseId,
+            campaign: resolvedCampaign,
+          });
         }
 
         toast.success(
