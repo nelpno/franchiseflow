@@ -438,7 +438,7 @@ RETURNS void AS $$
     FROM daily_unique_contacts WHERE date = target_date GROUP BY franchise_id
   ) c ON c.franchise_id = f.evolution_instance_id
   LEFT JOIN (
-    SELECT franchise_id, COUNT(*) as cnt, SUM(value) as total
+    SELECT franchise_id, COUNT(*) as cnt, SUM(value - COALESCE(discount_amount, 0) + COALESCE(delivery_fee, 0)) as total
     FROM sales WHERE sale_date = target_date GROUP BY franchise_id
   ) s ON s.franchise_id = f.evolution_instance_id
   WHERE f.status = 'active'

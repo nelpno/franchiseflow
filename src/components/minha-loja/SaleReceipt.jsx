@@ -45,7 +45,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
   const deliveryFee = parseFloat(sale.delivery_fee) || 0;
   const discountAmount = parseFloat(sale.discount_amount) || 0;
   const totalValue =
-    (parseFloat(sale.value) || 0) + deliveryFee;
+    (parseFloat(sale.value) || 0) - discountAmount + deliveryFee;
 
   return (
     <div
@@ -95,12 +95,20 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
       {/* Separador */}
       <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
 
-      {/* Cliente e Data */}
+      {/* Cliente, Endereço e Data */}
       <div style={{ fontSize: 12, lineHeight: 1.6 }}>
         {contact?.nome && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#666" }}>Cliente</span>
             <span style={{ fontWeight: 600 }}>{contact.nome}</span>
+          </div>
+        )}
+        {(contact?.endereco || contact?.bairro) && (
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ color: "#666", flexShrink: 0 }}>Endereço</span>
+            <span style={{ textAlign: "right", color: "#444", fontSize: 11 }}>
+              {[contact.endereco, contact.bairro].filter(Boolean).join(" — ")}
+            </span>
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -127,24 +135,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             Produtos
           </div>
 
-          {/* Header da tabela */}
-          <div
-            style={{
-              display: "flex",
-              fontSize: 9,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              color: "#888",
-              letterSpacing: "0.04em",
-              paddingBottom: 4,
-              borderBottom: "1px solid #ddd",
-            }}
-          >
-            <span style={{ flex: 1 }}>Item</span>
-            <span style={{ width: 36, textAlign: "center" }}>Qtd</span>
-            <span style={{ width: 64, textAlign: "right" }}>Vl. Unit</span>
-            <span style={{ width: 72, textAlign: "right" }}>Total</span>
-          </div>
+          <div style={{ borderBottom: "1px solid #ddd", paddingBottom: 2 }} />
 
           {/* Itens */}
           {saleItems.map((item, i) => {
@@ -153,56 +144,25 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
               <div
                 key={item.id || i}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: "5px 0",
                   borderBottom:
                     i < saleItems.length - 1 ? "1px solid #f0f0f0" : "none",
                 }}
               >
-                <span
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    paddingRight: 4,
-                  }}
-                >
+                {/* Nome do produto — nunca corta */}
+                <div style={{ marginBottom: 2, lineHeight: 1.3, wordBreak: "break-word" }}>
                   {item.product_name}
-                </span>
-                <span
-                  style={{
-                    width: 36,
-                    textAlign: "center",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {item.quantity}
-                </span>
-                <span
-                  style={{
-                    width: 64,
-                    textAlign: "right",
-                    fontVariantNumeric: "tabular-nums",
-                    color: "#444",
-                    fontSize: 11,
-                  }}
-                >
-                  {formatCurrency(item.unit_price)}
-                </span>
-                <span
-                  style={{
-                    width: 72,
-                    textAlign: "right",
-                    fontVariantNumeric: "tabular-nums",
-                    fontWeight: 500,
-                  }}
-                >
-                  {formatCurrency(lineTotal)}
-                </span>
+                </div>
+                {/* Qtd × Preço = Total na mesma linha */}
+                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, fontSize: 12, color: "#444" }}>
+                  <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {item.quantity} × {formatCurrency(item.unit_price)}
+                  </span>
+                  <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: "#1b1c1d", minWidth: 72, textAlign: "right" }}>
+                    {formatCurrency(lineTotal)}
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -212,7 +172,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
       )}
 
       {/* Subtotais */}
-      <div style={{ fontSize: 12, lineHeight: 1.8 }}>
+      <div style={{ fontSize: 13, lineHeight: 1.8 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ color: "#444" }}>Valor dos produtos</span>
           <span style={{ fontVariantNumeric: "tabular-nums" }}>

@@ -164,8 +164,8 @@ export default function AdminDashboard() {
     if (period === "today") {
       const salesCount = todaySales.length;
       const prevSalesCount = yesterdaySales.length;
-      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
-      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const contacts = todayContacts.length;
       const prevContacts = yesterdayContacts.length;
       const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
@@ -198,8 +198,8 @@ export default function AdminDashboard() {
 
     const salesCount = currentSales.length;
     const prevSalesCount = prevSales.length;
-    const revenue = currentSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
-    const prevRevenue = prevSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const revenue = currentSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const prevRevenue = prevSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
     const contacts = currentContacts.length;
     const prevContacts = prevContactsList.length;
     const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
 
   // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>
-    todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
+    todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
     [todaySales]
   );
   const liveTodayContactsCount = todayContacts.length;
