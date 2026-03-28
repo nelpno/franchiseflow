@@ -149,7 +149,7 @@ export function calculateFranchiseHealth(franchise, data) {
   const setup = calcSetupScore(franchise, onboarding, configs);
 
   const isNew = franchise.created_at &&
-    differenceInDays(new Date(), new Date(franchise.created_at)) < 30;
+    differenceInDays(new Date(), new Date(franchise.created_at)) < 14;
 
   const weights = isNew
     ? { vendas: 0.25, estoque: 0.15, reposicao: 0.20, setup: 0.40 }
