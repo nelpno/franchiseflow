@@ -23,6 +23,8 @@ Importar sempre de `@/entities/all` — NÃO usar supabase.from() diretamente na
 - Timeouts: leitura 15s, escrita 30s via `withTimeout()` — NUNCA remover
 - Antes de `Entity.update()`, remover campos read-only (`id`, `created_at`, `updated_at`, `franchise`, `whatsapp_status`)
 - Entities principais: `Contact`, `Sale`, `SaleItem`, `Expense`, `InventoryItem`, `PurchaseOrder`, `PurchaseOrderItem`, `Notification`, `FranchiseConfiguration`
+- **EXCEÇÃO `marketing_files`**: NÃO usa entity adapter — supabase-js trava em TODAS operações nesta tabela. Marketing.jsx usa `fetch()` direto à REST API (`directList`, `directInsert`, `directDelete`) com token do localStorage e `AbortSignal.timeout(15s)`
+- Storage bucket: `marketing-assets` (público). NUNCA `marketing-files` (não existe)
 
 ### Autenticação (src/lib/AuthContext.jsx)
 Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supabase signInWithPassword.
