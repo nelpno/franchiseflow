@@ -48,6 +48,9 @@ function ReportsContent() {
     };
   }, []);
 
+  const retryCountRef = useRef(0);
+  const MAX_AUTO_RETRIES = 2;
+
   const loadAllData = async () => {
     abortControllerRef.current?.abort();
     const controller = new AbortController();
@@ -80,11 +83,24 @@ function ReportsContent() {
       const failedQueries = results
         .map((r, i) => r.status === "rejected" ? ["user","franchises","sales","contacts","dailyContacts","summaries","configs"][i] : null)
         .filter(Boolean);
-      if (failedQueries.length > 0) {
-        console.warn("Queries parcialmente falharam:", failedQueries);
-        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+
+      // Auto-retry if ALL queries failed (likely transient connection/auth issue)
+      if (failedQueries.length === results.length && retryCountRef.current < MAX_AUTO_RETRIES) {
+        retryCountRef.current++;
+        const delay = retryCountRef.current * 2000; // 2s, 4s
+        setTimeout(() => { if (mountedRef.current) loadAllData(); }, delay);
+        return;
       }
 
+      if (failedQueries.length > 0) {
+        console.warn("Queries parcialmente falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`, {
+          action: { label: 'Tentar novamente', onClick: () => { retryCountRef.current = 0; loadAllData(); } },
+          duration: 8000,
+        });
+      }
+
+      retryCountRef.current = 0; // Reset on any success
       if (currentUserData) setCurrentUser(currentUserData);
       setFranchises(franchisesData || []);
       setRawSales(salesData || []);
@@ -98,7 +114,10 @@ function ReportsContent() {
       console.error("Erro ao carregar dados:", error);
       if (!mountedRef.current) return;
       setLoadError("Não foi possível carregar os dados dos relatórios.");
-      toast.error("Erro ao carregar dados dos relatórios.");
+      toast.error("Erro ao carregar relatórios.", {
+        action: { label: 'Tentar novamente', onClick: () => { retryCountRef.current = 0; loadAllData(); } },
+        duration: 8000,
+      });
     }
     if (mountedRef.current) setIsLoading(false);
   };

@@ -493,7 +493,7 @@ export default function Layout({ children, currentPageName }) {
           </header>
 
           {/* Page content */}
-          <div className={`flex-1 overflow-auto ${
+          <div className={`flex-1 min-h-0 overflow-auto ${
             isAdmin && location.pathname === createPageUrl("Dashboard") ? "" : "md:pt-20"
           } ${!isAdmin ? "pb-20 md:pb-0" : ""}`}>
             <div className="max-w-6xl mx-auto w-full">

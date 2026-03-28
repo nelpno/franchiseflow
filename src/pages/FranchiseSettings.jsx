@@ -266,7 +266,13 @@ function FranchiseSettingsContent() {
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
+    if (isSubmitting) return; // Prevent double-click
     setIsSubmitting(true);
+
+    // Show slow-save warning after 8s
+    const slowTimer = setTimeout(() => {
+      toast.info("Salvamento em andamento... A conexão está lenta.");
+    }, 8000);
 
     // Strip UI-only / read-only fields before sending to DB
     const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = formData;
@@ -297,12 +303,15 @@ function FranchiseSettingsContent() {
     } catch (error) {
       console.error("Erro ao salvar:", error);
       const msg = error?.message || "Erro desconhecido";
-      if (msg.includes("column") || msg.includes("schema")) {
+      if (msg.includes("Tempo limite")) {
+        toast.error("Tempo limite excedido. Verifique sua conexão e tente novamente.", { duration: 6000 });
+      } else if (msg.includes("column") || msg.includes("schema")) {
         toast.error("Erro de schema: um campo pode não existir no banco. Contate o suporte.");
       } else {
         toast.error(`Falha ao salvar: ${msg}`);
       }
     } finally {
+      clearTimeout(slowTimer);
       setIsSubmitting(false);
     }
   };
