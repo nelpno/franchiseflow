@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { MarketingFile, Franchise } from "@/entities/all";
+import { Franchise } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { format, differenceInDays } from "date-fns";
@@ -28,35 +28,65 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
-// Insert direto via REST API — bypass TOTAL do supabase-js (inclusive auth)
+// REST API direta — bypass TOTAL do supabase-js (trava em marketing_files)
+const SB_URL = import.meta.env.VITE_SUPABASE_URL;
+const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 function getAccessToken() {
   const raw = localStorage.getItem("sb-sulgicnqqopyhulglakd-auth-token");
   if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed?.access_token || null;
-  } catch { return null; }
+  try { return JSON.parse(raw)?.access_token || null; }
+  catch { return null; }
+}
+
+function sbHeaders() {
+  const token = getAccessToken();
+  if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+  return {
+    "apikey": SB_KEY,
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function directList(orderBy = "created_at.desc") {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/marketing_files?select=*&order=${orderBy}`,
+    { headers: sbHeaders(), signal: AbortSignal.timeout(15000) }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erro ${res.status}`);
+  }
+  return res.json();
 }
 
 async function directInsert(data) {
-  const token = getAccessToken();
-  if (!token) throw new Error("Sessão expirada. Faça login novamente.");
-
   const res = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/marketing_files`,
+    `${SB_URL}/rest/v1/marketing_files`,
     {
       method: "POST",
-      headers: {
-        "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal",
-      },
+      headers: { ...sbHeaders(), "Prefer": "return=minimal" },
       body: JSON.stringify(data),
       signal: AbortSignal.timeout(15000),
     }
   );
 
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erro ${res.status}`);
+  }
+}
+
+async function directDelete(id) {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/marketing_files?id=eq.${id}`,
+    {
+      method: "DELETE",
+      headers: sbHeaders(),
+      signal: AbortSignal.timeout(15000),
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || `Erro ${res.status}`);
@@ -674,7 +704,7 @@ function FileCard({ file, isAdmin, onDelete }) {
           console.error("Erro ao excluir arquivo do storage:", storageErr);
         }
       }
-      await MarketingFile.delete(file.id);
+      await directDelete(file.id);
       toast.success("Material excluído.");
       onDelete();
     } catch (err) {
@@ -867,7 +897,7 @@ export default function Marketing() {
     setLoadError(null);
     try {
       const results = await Promise.allSettled([
-        MarketingFile.list("-created_at"),
+        directList("created_at.desc"),
         isAdmin ? Franchise.list("city") : Promise.resolve([]),
       ]);
       if (!mountedRef.current) return;
