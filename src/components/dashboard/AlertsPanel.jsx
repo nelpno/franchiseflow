@@ -7,15 +7,41 @@ import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
 const PREVIEW_NAMES = 3;
 
-function AlertGroup({ level, icon, label, names }) {
+function formatAlertDetail(item, type) {
+  const name = typeof item === "string" ? item : item.name;
+  if (type === "noSales") {
+    const days = item.days;
+    return days ? `${name} (${days}d)` : `${name} (nunca)`;
+  }
+  if (type === "zeroStock" || type === "lowStock") {
+    return item.count ? `${name} (${item.count} itens)` : name;
+  }
+  if (type === "noReorder") {
+    const days = item.days;
+    return days ? `${name} (${days}d)` : `${name} (nunca)`;
+  }
+  return name;
+}
+
+function AlertGroup({ level, icon, label, items, type }) {
   const [expanded, setExpanded] = useState(false);
   const isRed = level === "red";
   const borderColor = isRed ? "border-[#a80012]" : "border-[#775a19]";
   const bgColor = isRed ? "bg-[#a80012]/5" : "bg-[#775a19]/5";
   const iconColor = isRed ? "text-[#a80012]" : "text-[#775a19]";
 
+  const names = items.map(i => typeof i === "string" ? i : i.name);
   const preview = names.slice(0, PREVIEW_NAMES);
   const remaining = names.length - PREVIEW_NAMES;
+
+  // Dynamic label with max days
+  const dynamicLabel = useMemo(() => {
+    if (type === "noSales") {
+      const maxDays = Math.max(...items.map(i => i.days || 0));
+      return maxDays > 0 ? `sem vendas (até ${maxDays}d)` : label;
+    }
+    return label;
+  }, [items, type, label]);
 
   return (
     <div className={`${bgColor} border-l-4 ${borderColor} rounded-r-xl`}>
@@ -27,9 +53,9 @@ function AlertGroup({ level, icon, label, names }) {
         <MaterialIcon icon={icon} size={18} className={iconColor} />
         <div className="flex-1 min-w-0">
           <span className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta">
-            {names.length} {names.length === 1 ? "franquia" : "franquias"}
+            {items.length} {items.length === 1 ? "franquia" : "franquias"}
           </span>
-          <span className="text-[#4a3d3d] text-sm"> — {label}</span>
+          <span className="text-[#4a3d3d] text-sm"> — {dynamicLabel}</span>
         </div>
         <MaterialIcon
           icon={expanded ? "expand_less" : "expand_more"}
@@ -41,12 +67,12 @@ function AlertGroup({ level, icon, label, names }) {
       {expanded && (
         <div className="px-3 pb-3 pl-10">
           <p className="text-xs text-[#4a3d3d]">
-            {names.join(", ")}
+            {items.map(i => formatAlertDetail(i, type)).join(", ")}
           </p>
         </div>
       )}
 
-      {!expanded && names.length > 0 && (
+      {!expanded && items.length > 0 && (
         <div className="px-3 pb-2 pl-10">
           <p className="text-xs text-[#4a3d3d]/70">
             {preview.join(", ")}
@@ -85,36 +111,38 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
 
       if (!hasAnySales && !hasInventory) continue;
 
-      // No sales in 2+ days
+      // No sales in 2+ days — with exact day count
       const sortedSummaries = [...franchiseSummaries].sort(
         (a, b) => new Date(b.date) - new Date(a.date)
       );
       const lastSaleDay = sortedSummaries.find((s) => (s.sales_count || 0) > 0);
       if (!lastSaleDay || new Date(lastSaleDay.date) < twoDaysAgo) {
-        noSales.push(fName);
+        const days = lastSaleDay ? differenceInDays(now, new Date(lastSaleDay.date)) : null;
+        noSales.push({ name: fName, days });
       }
 
-      // Zero stock
+      // Zero stock — with count of zeroed products
       const zeroItems = inventory.filter((i) => (i.quantity || 0) === 0);
       if (zeroItems.length > 0) {
-        zeroStock.push(fName);
+        zeroStock.push({ name: fName, count: zeroItems.length });
       }
 
       // Low stock
       const lowItems = inventory.filter((i) => (i.quantity || 0) > 0 && (i.quantity || 0) < 5);
       if (lowItems.length > 0) {
-        lowStock.push(fName);
+        lowStock.push({ name: fName, count: lowItems.length });
       }
 
-      // No reorder in 30+ days
+      // No reorder in 30+ days — with exact day count
       const franchiseOrders = (purchaseOrders || []).filter(
         (po) => po.franchise_id === franchise.id || po.franchise_id === evoId
       );
       const latestOrder = franchiseOrders.sort(
         (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
       )[0];
-      if (!latestOrder || differenceInDays(now, new Date(latestOrder.ordered_at)) >= 30) {
-        noReorder.push(fName);
+      const reorderDays = latestOrder ? differenceInDays(now, new Date(latestOrder.ordered_at)) : null;
+      if (!latestOrder || reorderDays >= 30) {
+        noReorder.push({ name: fName, days: reorderDays });
       }
     }
 
@@ -167,7 +195,8 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
               level="red"
               icon="warning"
               label="sem vendas há 2+ dias"
-              names={alertGroups.noSales}
+              items={alertGroups.noSales}
+              type="noSales"
             />
           )}
           {alertGroups.zeroStock.length > 0 && (
@@ -175,7 +204,8 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
               level="red"
               icon="inventory"
               label="com estoque zerado"
-              names={alertGroups.zeroStock}
+              items={alertGroups.zeroStock}
+              type="zeroStock"
             />
           )}
           {alertGroups.lowStock.length > 0 && (
@@ -183,7 +213,8 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
               level="yellow"
               icon="inventory"
               label="com estoque baixo"
-              names={alertGroups.lowStock}
+              items={alertGroups.lowStock}
+              type="lowStock"
             />
           )}
           {alertGroups.noReorder.length > 0 && (
@@ -191,7 +222,8 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
               level="yellow"
               icon="local_shipping"
               label="sem reposição há 30+ dias"
-              names={alertGroups.noReorder}
+              items={alertGroups.noReorder}
+              type="noReorder"
             />
           )}
 

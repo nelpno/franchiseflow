@@ -177,10 +177,10 @@ function getScoreLabel(score) {
 }
 
 const CATEGORY_CONFIG = [
-  { key: "sales", label: "Vendas", max: 35, icon: "point_of_sale", color: "bg-[#a80012]" },
-  { key: "inventory", label: "Estoque", max: 25, icon: "inventory_2", color: "bg-[#775a19]" },
-  { key: "orders", label: "Pedidos", max: 20, icon: "local_shipping", color: "bg-[#291715]/60" },
-  { key: "contacts", label: "WhatsApp", max: 20, icon: "chat", color: "bg-[#2563eb]" },
+  { key: "sales", label: "Vendas", max: 35, icon: "point_of_sale", color: "bg-[#a80012]", tip: "Frequência de vendas recentes. 100% = vendeu hoje." },
+  { key: "inventory", label: "Estoque", max: 25, icon: "inventory_2", color: "bg-[#775a19]", tip: "% de produtos acima do estoque mínimo." },
+  { key: "orders", label: "Pedidos", max: 20, icon: "local_shipping", color: "bg-[#291715]/60", tip: "Regularidade de pedidos de reposição à fábrica." },
+  { key: "contacts", label: "WhatsApp", max: 20, icon: "chat", color: "bg-[#2563eb]", tip: "Bot conectado e atendendo clientes." },
 ];
 
 export default function FranchiseHealthScore({
@@ -354,9 +354,10 @@ export default function FranchiseHealthScore({
                 return (
                   <div key={cat.key} className="p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" title={cat.tip}>
                         <MaterialIcon icon={cat.icon} size={18} className="text-[#4a3d3d]" />
                         <span className="text-sm font-semibold text-[#1b1c1d]">{cat.label}</span>
+                        <MaterialIcon icon="info" size={14} className="text-[#7a6d6d] opacity-50" />
                       </div>
                       <span className="text-sm font-bold font-mono-numbers text-[#1b1c1d]">
                         {score}/{cat.max}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Sale, SaleItem, Contact, AuditLog } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -798,6 +798,37 @@ export default function SaleForm({
     return inventoryItems.filter((p) => !usedIds.includes(p.id));
   };
 
+  // Mobile collapsible sections
+  const [expandedSections, setExpandedSections] = useState({});
+  const toggleSection = useCallback((key) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const MobileSection = useCallback(({ id, label, icon, summary, children }) => (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => toggleSection(id)}
+        className="md:hidden flex items-center justify-between w-full text-left"
+      >
+        <Label className="text-sm font-medium text-[#1b1c1d] flex items-center gap-1.5 pointer-events-none">
+          <MaterialIcon icon={icon} size={16} className="text-[#7a6d6d]" />
+          {label}
+        </Label>
+        <div className="flex items-center gap-2">
+          {!expandedSections[id] && summary && (
+            <span className="text-xs text-[#7a6d6d] max-w-[140px] truncate">{summary}</span>
+          )}
+          <MaterialIcon icon={expandedSections[id] ? "expand_less" : "expand_more"} size={18} className="text-[#7a6d6d]" />
+        </div>
+      </button>
+      <Label className="hidden md:block text-sm font-medium text-[#1b1c1d]">{label}</Label>
+      <div className={`${expandedSections[id] ? "" : "hidden md:block"}`}>
+        {children}
+      </div>
+    </div>
+  ), [expandedSections, toggleSection]);
+
   if (loadingItems) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -806,6 +837,11 @@ export default function SaleForm({
       </div>
     );
   }
+
+  // Mobile section summaries
+  const discountSummary = discountAmount > 0 ? `−${formatCurrency(discountAmount)}` : "Nenhum";
+  const paymentSummary = PAYMENT_METHODS.find(p => p.value === paymentMethod)?.label || "—";
+  const deliverySummary = deliveryMethod === "delivery" ? `Delivery${effectiveDeliveryFee > 0 ? ` ${formatCurrency(effectiveDeliveryFee)}` : ""}` : "Retirada";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -1004,8 +1040,7 @@ export default function SaleForm({
       </div>
 
       {/* Discount */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-[#1b1c1d]">Desconto</Label>
+      <MobileSection id="discount" label="Desconto" icon="sell" summary={discountSummary}>
         <div className="flex items-center gap-2">
           <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#fbf9fa] rounded-lg border border-[#291715]/10">
             <button
@@ -1051,11 +1086,10 @@ export default function SaleForm({
             −{formatCurrency(discountAmount)} no subtotal
           </p>
         )}
-      </div>
+      </MobileSection>
 
       {/* Payment method */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-[#1b1c1d]">Forma de Pagamento</Label>
+      <MobileSection id="payment" label="Pagamento" icon="payments" summary={paymentSummary}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {PAYMENT_METHODS.map((pm) => (
             <button
@@ -1091,11 +1125,10 @@ export default function SaleForm({
             </span>
           </div>
         )}
-      </div>
+      </MobileSection>
 
       {/* Delivery method */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium text-[#1b1c1d]">Entrega</Label>
+      <MobileSection id="delivery" label="Entrega" icon="delivery_dining" summary={deliverySummary}>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -1137,7 +1170,7 @@ export default function SaleForm({
             />
           </div>
         )}
-      </div>
+      </MobileSection>
 
       {/* Summary */}
       <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 space-y-2">
