@@ -124,8 +124,58 @@ export default function TabReposicao({
     setShowOrderDialog(true);
   };
 
+  // Items below minimum stock (critical)
+  const criticalItems = useMemo(() => {
+    return (inventoryItems || [])
+      .filter(item => {
+        const qty = item.quantity || 0;
+        const min = item.min_stock || 0;
+        return min > 0 && qty < min;
+      })
+      .sort((a, b) => (a.quantity || 0) - (b.quantity || 0));
+  }, [inventoryItems]);
+
   return (
     <div className="space-y-6">
+      {/* Critical stock alert */}
+      {criticalItems.length > 0 && (
+        <Card className="bg-gradient-to-r from-[#dc2626]/5 to-[#dc2626]/10 rounded-2xl shadow-sm border border-[#dc2626]/20">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <MaterialIcon icon="warning" size={20} className="text-[#dc2626]" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-[#dc2626] font-plus-jakarta">
+                Estoque Crítico ({criticalItems.length})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {criticalItems.slice(0, 8).map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/60"
+                >
+                  <span className="text-sm font-medium text-[#1b1c1d] truncate flex-1 min-w-0">
+                    {item.product_name}
+                  </span>
+                  <div className="text-right ml-3 flex items-center gap-2">
+                    <span className="text-sm font-bold text-[#dc2626] font-mono-numbers">
+                      {item.quantity || 0}
+                    </span>
+                    <span className="text-xs text-[#4a3d3d]">
+                      / mín {item.min_stock}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {criticalItems.length > 8 && (
+                <p className="text-xs text-[#dc2626]/60 text-center">
+                  +{criticalItems.length - 8} produtos abaixo do mínimo
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Suggestion card */}
       {suggestions.length > 0 ? (
         <Card className="bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 rounded-2xl shadow-sm border border-[#d4af37]/20">

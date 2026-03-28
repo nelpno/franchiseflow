@@ -454,6 +454,39 @@ export default function PurchaseOrders() {
         </Button>
       </div>
 
+      {/* Summary Stats */}
+      {(() => {
+        const now = new Date();
+        const thisMonth = (o) => o.ordered_at && new Date(o.ordered_at).getMonth() === now.getMonth() && new Date(o.ordered_at).getFullYear() === now.getFullYear();
+        const pendentes = orders.filter(o => o.status === "pendente" || o.status === "confirmado");
+        const emRota = orders.filter(o => o.status === "em_rota");
+        const entregues = orders.filter(o => o.status === "entregue" && thisMonth(o));
+        const cancelados = orders.filter(o => o.status === "cancelado" && thisMonth(o));
+        const pendentesTotal = pendentes.reduce((s, o) => s + (parseFloat(o.total_amount) || 0), 0);
+        const stats = [
+          { icon: "schedule", label: "Pendentes", value: pendentes.length, detail: pendentesTotal > 0 ? formatBRL(pendentesTotal) : null, color: "#d97706" },
+          { icon: "local_shipping", label: "Em Rota", value: emRota.length, color: "#ea580c" },
+          { icon: "inventory", label: "Entregues", value: entregues.length, detail: "este mês", color: "#16a34a" },
+          { icon: "cancel", label: "Cancelados", value: cancelados.length, detail: "este mês", color: "#6b7280" },
+        ];
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {stats.map((s) => (
+              <div key={s.label} className="bg-white p-4 rounded-2xl shadow-sm border border-[#291715]/5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: s.color + "15", color: s.color }}>
+                    <MaterialIcon icon={s.icon} size={18} />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#1b1c1d]/60 font-plus-jakarta">{s.label}</span>
+                </div>
+                <p className="text-2xl font-bold text-[#1b1c1d]">{s.value}</p>
+                {s.detail && <p className="text-xs text-[#4a3d3d] mt-0.5">{s.detail}</p>}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* Filters */}
       <FilterBar
         searchValue={searchTerm}
