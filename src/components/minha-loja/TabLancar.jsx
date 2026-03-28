@@ -268,7 +268,7 @@ export default function TabLancar({
 
   // Summary for the filtered period
   const periodStats = useMemo(() => {
-    const total = filteredSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const total = filteredSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
     return { count: filteredSales.length, total };
   }, [filteredSales]);
 
@@ -402,11 +402,13 @@ export default function TabLancar({
                     {/* Values */}
                     <div className="text-right shrink-0">
                       <p className="font-bold text-[#1b1c1d] font-mono-numbers">
-                        {formatCurrency((parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0))}
+                        {formatCurrency((parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0))}
                       </p>
-                      {sale.delivery_fee > 0 && (
+                      {(sale.delivery_fee > 0 || sale.discount_amount > 0) && (
                         <p className="text-xs text-[#4a3d3d] font-mono-numbers">
-                          {formatCurrency(sale.value)} + {formatCurrency(sale.delivery_fee)} frete
+                          {formatCurrency(sale.value)}
+                          {sale.discount_amount > 0 && ` − ${formatCurrency(sale.discount_amount)} desc`}
+                          {sale.delivery_fee > 0 && ` + ${formatCurrency(sale.delivery_fee)} frete`}
                         </p>
                       )}
                     </div>
@@ -450,8 +452,18 @@ export default function TabLancar({
                       )}
 
                       {/* Financial breakdown */}
-                      {(sale.card_fee_amount > 0 || sale.delivery_fee > 0) && (
+                      {(sale.card_fee_amount > 0 || sale.delivery_fee > 0 || sale.discount_amount > 0) && (
                         <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
+                          {sale.discount_amount > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-[#4a3d3d]">
+                                Desconto{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
+                              </span>
+                              <span className="text-[#dc2626] font-mono-numbers">
+                                − {formatCurrency(sale.discount_amount)}
+                              </span>
+                            </div>
+                          )}
                           {sale.delivery_fee > 0 && (
                             <div className="flex justify-between">
                               <span className="text-[#4a3d3d]">Frete cobrado</span>
@@ -479,7 +491,7 @@ export default function TabLancar({
                           (sum, si) => sum + (parseFloat(si.cost_price) || 0) * (si.quantity || 1),
                           0
                         );
-                        const totalRecebido = (parseFloat(sale.value) || 0) + (parseFloat(sale.delivery_fee) || 0);
+                        const totalRecebido = (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0);
                         const taxaCartao = parseFloat(sale.card_fee_amount) || 0;
                         const lucro = totalRecebido - custoTotal - taxaCartao;
                         const margem = totalRecebido > 0 ? (lucro / totalRecebido) * 100 : 0;

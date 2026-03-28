@@ -700,7 +700,7 @@ export default function SaleForm({
         franchise_id: franchiseId,
         value: subtotal,
         contact_id: resolvedContactId || null,
-        source: "manual",
+        source: isEditing ? (sale.source || "manual") : "manual",
         payment_method: paymentMethod,
         card_fee_percent: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeePercent : null,
         card_fee_amount: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeeAmount : null,
