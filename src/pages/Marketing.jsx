@@ -242,12 +242,13 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
     }
 
     setUploading(true);
+    const UPLOAD_TIMEOUT = 15000;
     try {
       if (uploadMode === "link") {
         const url = externalUrl.trim();
         const fileType = detectFileType(url);
 
-        await MarketingFile.create({
+        const createPromise = MarketingFile.create({
           title: title.trim(),
           description: description || null,
           category,
@@ -257,6 +258,10 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
           franchise_id: franchiseId === "shared" ? null : franchiseId,
           campaign: resolvedCampaign,
         });
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Tempo limite excedido. Verifique sua conexão e tente novamente.")), UPLOAD_TIMEOUT)
+        );
+        await Promise.race([createPromise, timeout]);
 
         toast.success("Link adicionado com sucesso!");
       } else {
@@ -276,15 +281,15 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
         for (const file of files) {
           const ext = file.name.split(".").pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-          const { error: uploadError } = await supabase.storage.from("marketing-files").upload(fileName, file);
+          const { error: uploadError } = await supabase.storage.from("marketing-assets").upload(fileName, file);
           if (uploadError) throw uploadError;
-          const { data: urlData } = supabase.storage.from("marketing-files").getPublicUrl(fileName);
+          const { data: urlData } = supabase.storage.from("marketing-assets").getPublicUrl(fileName);
           const storagePath = urlData.publicUrl;
 
           const fileTitle = files.length > 1 ? `${title} (${file.name})` : title;
           const fileType = isPdfFile(file.name) ? "pdf" : "image";
 
-          await MarketingFile.create({
+          const createPromise = MarketingFile.create({
             title: fileTitle,
             description: description || null,
             category,
@@ -294,6 +299,10 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
             franchise_id: franchiseId === "shared" ? null : franchiseId,
             campaign: resolvedCampaign,
           });
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Tempo limite excedido. Verifique sua conexão e tente novamente.")), UPLOAD_TIMEOUT)
+          );
+          await Promise.race([createPromise, timeout]);
         }
 
         toast.success(
@@ -307,7 +316,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
       onClose();
       onUploaded();
     } catch (err) {
-      console.error("Erro ao enviar:", err);
+      console.error("Erro ao enviar material:", err);
       toast.error("Erro ao enviar: " + (err.message || "Erro desconhecido"));
     } finally {
       setUploading(false);
