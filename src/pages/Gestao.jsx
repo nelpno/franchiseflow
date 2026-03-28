@@ -182,9 +182,9 @@ export default function Gestao() {
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="bg-white border border-[#291715]/5 rounded-xl p-1 w-full md:w-auto flex">
             {[
-              { value: "resultado", icon: "analytics", label: "Resultado", shortLabel: "Result." },
+              { value: "resultado", icon: "analytics", label: "Resultado", shortLabel: "Resultado" },
               { value: "estoque", icon: "inventory_2", label: "Estoque", shortLabel: "Estoque" },
-              { value: "reposicao", icon: "local_shipping", label: "Reposição", shortLabel: "Repos." },
+              { value: "reposicao", icon: "local_shipping", label: "Reposição", shortLabel: "Reposição" },
             ].map((tab) => (
               <TabsTrigger
                 key={tab.value}

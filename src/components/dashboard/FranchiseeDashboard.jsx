@@ -3,7 +3,7 @@ import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
 import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, DailyUniqueContact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfWeek, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -167,9 +167,17 @@ export default function FranchiseeDashboard() {
       return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
     }
 
-    const days = period === "7d" ? 7 : 30;
-    const cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
-    const prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
+    let cutoff, prevCutoff;
+    if (period === "week") {
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday
+      const days = differenceInDays(new Date(), weekStart) + 1;
+      cutoff = format(weekStart, "yyyy-MM-dd");
+      prevCutoff = format(subDays(weekStart, days), "yyyy-MM-dd");
+    } else {
+      const days = period === "7d" ? 7 : 30;
+      cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
+      prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
+    }
 
     const mySummaries = summaries.filter((s) => s.franchise_id === evoId);
     const currentPeriod = mySummaries.filter((s) => s.date >= cutoff);
@@ -263,6 +271,7 @@ export default function FranchiseeDashboard() {
       <div className="flex bg-[#291715]/5 p-1 rounded-xl mb-4">
         {[
           { value: "today", label: "Hoje" },
+          { value: "week", label: "Semana" },
           { value: "7d", label: "7 dias" },
           { value: "30d", label: "30 dias" },
         ].map((p) => (
