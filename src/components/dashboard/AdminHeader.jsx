@@ -30,7 +30,9 @@ export default function AdminHeader({ period, onPeriodChange }) {
             </button>
           ))}
         </div>
-        <NotificationBell size={20} />
+        <div className="hidden md:block">
+          <NotificationBell size={20} />
+        </div>
       </div>
     </header>
   );

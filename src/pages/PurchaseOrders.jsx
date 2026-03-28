@@ -431,7 +431,7 @@ export default function PurchaseOrders() {
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#b91c1c]/10 flex items-center justify-center">
             <MaterialIcon icon="local_shipping" size={22} className="text-[#b91c1c]" />
           </div>

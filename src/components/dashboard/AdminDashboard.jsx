@@ -241,7 +241,7 @@ export default function AdminDashboard() {
     return (
       <div className="p-4 md:p-8 space-y-6 bg-[#fbf9fa]">
         <Skeleton className="h-14 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statsCards.map((card) => {
           // Icon is now MaterialIcon
           const numericValue = typeof card.value === "string"
@@ -358,12 +358,12 @@ export default function AdminDashboard() {
           return (
             <div
               key={card.title}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-[#291715]/5 flex flex-col gap-4"
+              className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-[#291715]/5 flex flex-col gap-3 md:gap-4"
             >
               {/* Top: icon + trend */}
               <div className="flex justify-between items-start">
-                <div className={`w-12 h-12 rounded-xl ${card.iconBg} ${card.iconColor} flex items-center justify-center`}>
-                  <MaterialIcon icon={card.materialIcon} size={24} />
+                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${card.iconBg} ${card.iconColor} flex items-center justify-center`}>
+                  <MaterialIcon icon={card.materialIcon} size={20} className="md:!text-[24px]" />
                 </div>
                 {card.trend && (
                   <div className={`flex items-center gap-1 text-sm font-bold ${trendTextColor}`}>
@@ -382,7 +382,7 @@ export default function AdminDashboard() {
                 <p className="text-[#1b1c1d]/60 text-sm font-bold font-plus-jakarta tracking-tight">
                   {card.title}
                 </p>
-                <h3 className="text-3xl font-extrabold tracking-tight font-mono-numbers text-[#1b1c1d]">
+                <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight font-mono-numbers text-[#1b1c1d]">
                   {card.value}
                 </h3>
               </div>

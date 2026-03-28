@@ -86,9 +86,9 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
     }
   };
 
-  const SortHeader = ({ colKey, label, align = 'left' }) => (
+  const SortHeader = ({ colKey, label, align = 'left', className: extraClass = '' }) => (
     <th
-      className={`px-4 py-3 font-semibold text-xs uppercase tracking-wider text-[#7a6b6b] cursor-pointer hover:text-[#a80012] transition-colors select-none ${align === 'right' ? 'text-right' : 'text-left'}`}
+      className={`px-3 md:px-4 py-3 font-semibold text-xs uppercase tracking-wider text-[#7a6b6b] cursor-pointer hover:text-[#a80012] transition-colors select-none ${align === 'right' ? 'text-right' : 'text-left'} ${extraClass}`}
       onClick={() => handleSort(colKey)}
     >
       <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
@@ -131,8 +131,8 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                   <SortHeader colKey="city" label="Franquia" />
                   <SortHeader colKey="salesCount" label="Vendas" align="right" />
                   <SortHeader colKey="revenue" label="Faturamento" align="right" />
-                  <SortHeader colKey="avgTicket" label="Valor Médio" align="right" />
-                  <SortHeader colKey="contactsCount" label="Leads" align="right" />
+                  <SortHeader colKey="avgTicket" label="Valor Médio" align="right" className="hidden md:table-cell" />
+                  <SortHeader colKey="contactsCount" label="Leads" align="right" className="hidden md:table-cell" />
                   <SortHeader colKey="tier" label="Performance" align="center" />
                 </tr>
               </thead>
@@ -148,7 +148,7 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                         isBest ? 'bg-emerald-50/50' : isWorst ? 'bg-red-50/30' : ''
                       }`}
                     >
-                      <td className="px-4 py-3.5">
+                      <td className="px-3 md:px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           {isBest && (
                             <div className="w-5 h-5 rounded-full bg-[#d4af37] flex items-center justify-center text-white text-[10px] font-bold">1</div>
@@ -161,21 +161,21 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#1b1c1d]">
+                      <td className="px-3 md:px-4 py-3.5 text-right font-mono-numbers font-medium text-[#1b1c1d]">
                         {row.salesCount}
                       </td>
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-3 md:px-4 py-3.5 text-right">
                         <span className={`font-mono-numbers font-bold ${isBest ? 'text-emerald-700' : isWorst ? 'text-red-600' : 'text-[#1b1c1d]'}`}>
                           {formatBRL(row.revenue)}
                         </span>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
+                      <td className="hidden md:table-cell px-3 md:px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
                         {formatBRL(row.avgTicket)}
                       </td>
-                      <td className="px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
+                      <td className="hidden md:table-cell px-3 md:px-4 py-3.5 text-right font-mono-numbers font-medium text-[#4a3d3d]">
                         {row.contactsCount}
                       </td>
-                      <td className="px-4 py-3.5 text-center">
+                      <td className="px-3 md:px-4 py-3.5 text-center">
                         {(() => {
                           const t = TIER_CONFIG[row.tier] || TIER_CONFIG[1];
                           return (

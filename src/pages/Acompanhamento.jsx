@@ -222,7 +222,7 @@ export default function Acompanhamento() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+        <div className="hidden md:block">
           <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta flex items-center gap-3" style={{ color: "#1b1c1d" }}>
             <MaterialIcon icon="monitoring" size={28} className="shrink-0" style={{ color: "#b91c1c" }} />
             Acompanhamento

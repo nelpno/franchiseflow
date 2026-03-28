@@ -200,7 +200,7 @@ function ReportsContent() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-          <div>
+          <div className="hidden md:block">
             <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#a80012] flex items-center justify-center">
                 <MaterialIcon icon="bar_chart" size={24} className="text-white" />

@@ -275,11 +275,11 @@ export default function FranchiseHealthScore({
                     title={`WhatsApp: ${breakdown.contacts}/20`}
                   />
                 </div>
-                <div className="flex gap-3 mt-1.5 text-xs text-[#1b1c1d]/70 font-medium">
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs text-[#1b1c1d]/70 font-medium">
                   <span>Vendas {breakdown.sales}/{35}</span>
                   <span>Estoque {breakdown.inventory}/{25}</span>
                   <span>Pedidos {breakdown.orders}/{20}</span>
-                  <span className="hidden md:inline">WhatsApp {breakdown.contacts}/{20}</span>
+                  <span>WhatsApp {breakdown.contacts}/{20}</span>
                 </div>
               </div>
             </div>
