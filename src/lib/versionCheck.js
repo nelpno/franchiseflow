@@ -22,7 +22,7 @@ function getInitialHash() {
 
 export function startVersionCheck(onNewVersion) {
   currentHash = getInitialHash();
-  if (!currentHash) return;
+  if (!currentHash) return () => {};
 
   const check = async () => {
     try {
@@ -40,11 +40,17 @@ export function startVersionCheck(onNewVersion) {
     } catch { /* network error — ignore */ }
   };
 
-  setInterval(check, CHECK_INTERVAL);
-  // Also check on visibility change (user returns to tab/app)
-  document.addEventListener('visibilitychange', () => {
+  const intervalId = setInterval(check, CHECK_INTERVAL);
+  const onVisibility = () => {
     if (document.visibilityState === 'visible') {
       setTimeout(check, 2000);
     }
-  });
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
+  // Cleanup function
+  return () => {
+    clearInterval(intervalId);
+    document.removeEventListener('visibilitychange', onVisibility);
+  };
 }

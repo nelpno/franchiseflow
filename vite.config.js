@@ -6,9 +6,6 @@ import path from 'path'
 export default defineConfig({
   logLevel: 'error',
   plugins: [react()],
-  define: {
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

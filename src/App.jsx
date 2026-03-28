@@ -1,6 +1,6 @@
 import './App.css'
-import { Suspense } from 'react'
-import { Toaster } from "sonner"
+import { Suspense, useEffect } from 'react'
+import { Toaster, toast } from "sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { pagesConfig } from './pages.config'
@@ -110,6 +110,25 @@ function AppRoutes() {
 }
 
 function App() {
+  useEffect(() => {
+    let cleanup;
+    // Defer version check to ensure Toaster is mounted
+    const timer = setTimeout(() => {
+      import('@/lib/versionCheck').then(({ startVersionCheck }) => {
+        cleanup = startVersionCheck(() => {
+          toast('Nova versão disponível!', {
+            duration: Infinity,
+            action: {
+              label: 'Atualizar',
+              onClick: () => window.location.reload(),
+            },
+          });
+        });
+      });
+    }, 3000);
+    return () => { clearTimeout(timer); cleanup?.(); };
+  }, []);
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
