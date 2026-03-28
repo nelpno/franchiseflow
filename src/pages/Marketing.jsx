@@ -31,9 +31,10 @@ import { toast } from "sonner";
 // REST API direta — bypass TOTAL do supabase-js (trava em marketing_files)
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
 const SB_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SB_REF = new URL(SB_URL).hostname.split(".")[0];
 
 function getAccessToken() {
-  const raw = localStorage.getItem("sb-sulgicnqqopyhulglakd-auth-token");
+  const raw = localStorage.getItem(`sb-${SB_REF}-auth-token`);
   if (!raw) return null;
   try { return JSON.parse(raw)?.access_token || null; }
   catch { return null; }
@@ -79,6 +80,7 @@ async function directInsert(data) {
 }
 
 async function directDelete(id) {
+  if (!id) throw new Error("ID do material ausente");
   const res = await fetch(
     `${SB_URL}/rest/v1/marketing_files?id=eq.${id}`,
     {
