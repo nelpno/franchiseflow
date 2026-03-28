@@ -1027,7 +1027,7 @@ export default function SaleForm({
             type="number"
             min={0}
             max={discountType === "percent" ? 100 : undefined}
-            step={discountType === "percent" ? 1 : 0.5}
+            step={discountType === "percent" ? 1 : 0.01}
             value={discountInput || ""}
             onChange={(e) => {
               let val = parseFloat(e.target.value) || 0;
@@ -1121,7 +1121,7 @@ export default function SaleForm({
             <Input
               type="number"
               min={0}
-              step={0.5}
+              step={0.01}
               value={deliveryFee || ""}
               onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
               className="w-28 bg-white text-right font-mono-numbers"
