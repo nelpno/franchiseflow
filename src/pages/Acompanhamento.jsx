@@ -133,7 +133,7 @@ export default function Acompanhamento() {
     const avg = healthScores.length
       ? Math.round(healthScores.reduce((sum, s) => sum + s.health.total, 0) / healthScores.length)
       : 0;
-    return { criticos, atencao, saudaveis: saudaveis + novas, avg };
+    return { criticos, atencao, saudaveis, novas, avg };
   }, [healthScores]);
 
   // Filtered + sorted list
@@ -215,6 +215,7 @@ export default function Acompanhamento() {
     { label: "Críticos", icon: "warning", count: metrics.criticos, status: "critico" },
     { label: "Atenção", icon: "info", count: metrics.atencao, status: "atencao" },
     { label: "Saudáveis", icon: "check_circle", count: metrics.saudaveis, status: "saudavel" },
+    { label: "Novas", icon: "fiber_new", count: metrics.novas, status: "nova" },
   ];
 
   return (
