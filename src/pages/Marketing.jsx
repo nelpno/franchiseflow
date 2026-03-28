@@ -28,10 +28,19 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
-// Insert direto via REST API — bypass do supabase-js que trava em writes
+// Insert direto via REST API — bypass TOTAL do supabase-js (inclusive auth)
+function getAccessToken() {
+  const raw = localStorage.getItem("sb-sulgicnqqopyhulglakd-auth-token");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.access_token || null;
+  } catch { return null; }
+}
+
 async function directInsert(data) {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("Sessão expirada. Faça login novamente.");
+  const token = getAccessToken();
+  if (!token) throw new Error("Sessão expirada. Faça login novamente.");
 
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/marketing_files`,
@@ -39,7 +48,7 @@ async function directInsert(data) {
       method: "POST",
       headers: {
         "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${session.access_token}`,
+        "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json",
         "Prefer": "return=minimal",
       },
