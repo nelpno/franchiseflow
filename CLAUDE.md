@@ -100,10 +100,11 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - V2 (`w7loLOXUmRR3AzuO`): ARQUIVADO (substituído pelo V3)
 - V1 (`PALRV1RqD3opHMzk`): DESATIVADO (Base44 legado)
 - Bot respeita `has_pickup`/`has_delivery` — regras condicionais no GerenteGeral1 e Pedido_Checkout1
-- systemMessage fica em `node.parameters.options.systemMessage` (GerenteGeral1 e Pedido_Checkout1)
+- systemMessage fica em `node.parameters.options.systemMessage` (GerenteGeral1 e sub-agentes)
 - Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
 - Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 8 nós, dados via $fromAI(). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
+- Credencial Google Gemini: `ezQN27UjYZVHyDEf` | Credencial OpenAI: `fIhzSXiiBXB3ad6Y`
 - View `vw_dadosunidade`: mapeia franchise_configurations. SQL: `supabase/fix-vw-dadosunidade-v2-scale.sql`
   - SECURITY INVOKER (NUNCA DEFINER). Campos JSONB retornam nativo (cast `::text` quebra sub-campos)
   - Ao recriar: CONFERIR `zuck_instance_name`. Usar `DROP VIEW` + `CREATE VIEW` (replace não muda tipo)
@@ -114,15 +115,27 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `delivery_schedule_text`: campo computado na view, gera texto de horários/frete por dia para o bot (ex: "Seg-Sex: 06:00-23:00 | Sab: 08:00-14:00")
 - `valor_total` do $fromAI() pode vir 0 — calcular sum(qty * price) + frete como fallback
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
-- n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros causam 400
+- n8n API URL: `https://teste.dynamicagents.tech/api/v1` (env `N8N_API_URL`) — NÃO confundir com webhook base
+- n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`
 - n8n API PUT body DEVE incluir `name` do workflow — sem ele retorna 400 `must have required property 'name'`
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
 - **`R$` em expressões n8n `{{ }}`**: `R$` literal funciona APENAS dentro de IIFEs `(() => { ... })()`. Em ternários simples, o `$` é comido pelo parser
 - **NUNCA usar `String.replace()` com `$` no replacement string** — `$'` é padrão especial JS que duplica conteúdo. Usar `split(old).join(new)` para substituições seguras em systemMessages
 - **Regex em systemMessage n8n**: NUNCA `[^.]*` — expressões `{{ }}` contêm pontos. Usar `.*?` (lazy)
-- `Pedido_Checkout1`: sub-agente Finalizador de Pedidos. systemMessage com IIFE de frete — se corromper, causa "invalid syntax" + loop do agente
 - n8n `neverError: true` retorna erros com HTTP 200 — checar `data.code >= 400`
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
+
+#### Sub-agentes do Vendedor V3
+- **GerenteGeral1**: orquestrador principal. LLMs: Gemini Flash (primary) + GPT-5.2 (fallback)
+- **CalculaFrete1**: calcula frete via GetDistance1 + tabela de regras. Isolado do GerenteGeral para evitar que o LLM invente valores de frete
+- **Pedido_Checkout1**: fecha pedido, calcula total, dispara checkout. Taxa de frete deve vir calculada pelo CalculaFrete1 antes
+- **Estoque1**: consulta produtos/preços/disponibilidade no Supabase
+- **Memoria_Lead1**: salva dados do cliente no CRM (nome, endereço, preferências)
+- **preparo_faq1**: FAQ de modo de preparo, ingredientes, porções
+- Padrão LLM sub-agentes: Gemini Flash (primary, mais barato) + gpt-4o-mini (fallback)
+- Tools do GerenteGeral1: CalculaFrete1, Estoque1, Memoria_Lead1, preparo_faq1, Pedido_Checkout1, EnviarCatalogo1, avisa_franqueado
+- GetDistance1 está DENTRO de CalculaFrete1 (NÃO no GerenteGeral1) — sub-workflow `q4ACGWuR3WFQjBfg` (DistanceService)
+- `shipping_rules_costs` NÃO deve aparecer inline no prompt do GerenteGeral1 — regras de frete ficam no CalculaFrete1
 
 ### Integração WhatsApp (ZuckZapGo)
 - Server: `https://zuck.dynamicagents.tech`
