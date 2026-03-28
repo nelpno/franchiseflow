@@ -242,26 +242,24 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
     }
 
     setUploading(true);
-    const UPLOAD_TIMEOUT = 15000;
     try {
       if (uploadMode === "link") {
         const url = externalUrl.trim();
         const fileType = detectFileType(url);
 
-        const createPromise = MarketingFile.create({
-          title: title.trim(),
-          description: description || null,
-          category,
-          file_path: url,
-          file_type: fileType,
-          month,
-          franchise_id: franchiseId === "shared" ? null : franchiseId,
-          campaign: resolvedCampaign,
-        });
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Tempo limite excedido. Verifique sua conexão e tente novamente.")), UPLOAD_TIMEOUT)
-        );
-        await Promise.race([createPromise, timeout]);
+        const { error: insertError } = await supabase
+          .from("marketing_files")
+          .insert({
+            title: title.trim(),
+            description: description || null,
+            category,
+            file_path: url,
+            file_type: fileType,
+            month,
+            franchise_id: franchiseId === "shared" ? null : franchiseId,
+            campaign: resolvedCampaign,
+          });
+        if (insertError) throw insertError;
 
         toast.success("Link adicionado com sucesso!");
       } else {
@@ -289,20 +287,19 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
           const fileTitle = files.length > 1 ? `${title} (${file.name})` : title;
           const fileType = isPdfFile(file.name) ? "pdf" : "image";
 
-          const createPromise = MarketingFile.create({
-            title: fileTitle,
-            description: description || null,
-            category,
-            file_path: storagePath,
-            file_type: fileType,
-            month,
-            franchise_id: franchiseId === "shared" ? null : franchiseId,
-            campaign: resolvedCampaign,
-          });
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Tempo limite excedido. Verifique sua conexão e tente novamente.")), UPLOAD_TIMEOUT)
-          );
-          await Promise.race([createPromise, timeout]);
+          const { error: insertError } = await supabase
+            .from("marketing_files")
+            .insert({
+              title: fileTitle,
+              description: description || null,
+              category,
+              file_path: storagePath,
+              file_type: fileType,
+              month,
+              franchise_id: franchiseId === "shared" ? null : franchiseId,
+              campaign: resolvedCampaign,
+            });
+          if (insertError) throw insertError;
         }
 
         toast.success(
