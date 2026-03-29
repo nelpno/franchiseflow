@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { User, Franchise, InventoryItem, SaleItem } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -40,6 +41,12 @@ export default function Gestao() {
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  // Reload automático ao voltar para a aba (resolve reload manual no mobile)
+  const reloadOnVisibility = useCallback(() => {
+    if (!loading) loadData();
+  }, [loading]);
+  useVisibilityPolling(reloadOnVisibility, 300000); // 5 min
 
   const loadData = async () => {
     abortControllerRef.current?.abort();

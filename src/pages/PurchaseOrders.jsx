@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -342,6 +343,28 @@ export default function PurchaseOrders() {
       }
 
       await PurchaseOrder.update(orderId, updates);
+
+      // Notificar franqueado sobre mudança de status (fire-and-forget)
+      const franchiseUUID = franchiseMap[selectedOrder?.franchise_id]?.id;
+      if (franchiseUUID) {
+        const statusMessages = {
+          confirmado: { title: "Pedido confirmado", message: "Seu pedido de reposição foi confirmado pela fábrica.", icon: "check_circle" },
+          em_rota: { title: "Pedido em rota", message: "Seu pedido está a caminho!", icon: "local_shipping" },
+          entregue: { title: "Pedido entregue", message: "Seu pedido foi entregue — estoque atualizado automaticamente.", icon: "inventory" },
+          cancelado: { title: "Pedido cancelado", message: "Seu pedido de reposição foi cancelado.", icon: "cancel" },
+        };
+        const msg = statusMessages[newStatus];
+        if (msg) {
+          supabase.rpc('notify_franchise_users', {
+            p_franchise_id: franchiseUUID,
+            p_title: msg.title,
+            p_message: msg.message,
+            p_type: newStatus === "cancelado" ? "warning" : "info",
+            p_icon: msg.icon,
+            p_link: '/Gestao?tab=reposicao',
+          }).catch(() => {});
+        }
+      }
 
       if (newStatus === "entregue") {
         toast.success("Pedido entregue! Estoque da franquia atualizado.");

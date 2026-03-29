@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -171,9 +172,11 @@ export default function PurchaseOrderForm({
     }
 
     setIsSubmitting(true);
+    const toastId = toast.loading("Enviando pedido...");
+    let order = null;
     try {
-      // Create PurchaseOrder
-      const order = await PurchaseOrder.create({
+      // Create PurchaseOrder header
+      order = await PurchaseOrder.create({
         franchise_id: franchiseId,
         status: "pendente",
         total_amount: grandTotal,
@@ -181,7 +184,7 @@ export default function PurchaseOrderForm({
         ordered_at: new Date().toISOString(),
       });
 
-      // Create PurchaseOrderItems
+      // Create all items in a single atomic request
       const itemsToCreate = standardProducts
         .filter((item) => (quantities[item.id] || 0) > 0)
         .map((item) => ({
@@ -192,14 +195,26 @@ export default function PurchaseOrderForm({
           unit_price: parseFloat(item.cost_price),
         }));
 
-      // Create all items in parallel to avoid timeout with many items
-      await Promise.all(itemsToCreate.map(item => PurchaseOrderItem.create(item)));
+      await PurchaseOrderItem.createMany(itemsToCreate);
 
-      toast.success("Pedido enviado com sucesso!");
+      // Notificar admins (fire-and-forget)
+      supabase.rpc('notify_admins', {
+        p_title: 'Novo pedido de reposição',
+        p_message: `Pedido de ${formatBRL(grandTotal)} — ${itemsToCreate.length} produtos`,
+        p_type: 'info',
+        p_icon: 'local_shipping',
+        p_link: '/PurchaseOrders',
+      }).catch(() => {});
+
+      toast.success("Pedido enviado com sucesso!", { id: toastId });
       if (onSave) onSave();
     } catch (error) {
       console.error("Erro ao criar pedido:", error);
-      toast.error(getErrorMessage(error));
+      // Cleanup orphan order if items failed
+      if (order?.id) {
+        PurchaseOrder.delete(order.id).catch(() => {});
+      }
+      toast.error(getErrorMessage(error), { id: toastId });
     } finally {
       setIsSubmitting(false);
     }

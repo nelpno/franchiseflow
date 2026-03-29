@@ -71,6 +71,16 @@ function createEntity(tableName) {
       return created;
     },
 
+    async createMany(rows) {
+      if (!rows || rows.length === 0) return [];
+      const { data, error } = await withTimeout(
+        supabase.from(tableName).insert(rows).select(),
+        60000
+      );
+      if (error) throw error;
+      return data || [];
+    },
+
     async update(id, data) {
       const { data: updated, error } = await withTimeout(
         supabase
