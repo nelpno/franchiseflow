@@ -291,12 +291,15 @@ export default function PurchaseOrders() {
         total_amount: newTotal,
       });
 
-      // Update items with changed quantities
-      for (const item of orderItems) {
+      // Only update items whose quantity actually changed (numeric comparison)
+      const changedItems = orderItems.filter((item) => {
         const newQty = editedQuantities[item.id];
-        if (newQty !== undefined && newQty !== item.quantity) {
-          await PurchaseOrderItem.update(item.id, { quantity: newQty });
-        }
+        return newQty !== undefined && parseFloat(newQty) !== parseFloat(item.quantity);
+      });
+      if (changedItems.length > 0) {
+        await Promise.all(changedItems.map((item) =>
+          PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })
+        ));
       }
 
       toast.success("Pedido atualizado com sucesso!");
@@ -333,12 +336,15 @@ export default function PurchaseOrders() {
         updates.estimated_delivery = editedDeliveryDate || null;
         updates.total_amount = newTotal;
 
-        // Update items
-        for (const item of orderItems) {
+        // Only update items whose quantity actually changed (numeric comparison)
+        const changedItems = orderItems.filter((item) => {
           const newQty = editedQuantities[item.id];
-          if (newQty !== undefined && newQty !== item.quantity) {
-            await PurchaseOrderItem.update(item.id, { quantity: newQty });
-          }
+          return newQty !== undefined && parseFloat(newQty) !== parseFloat(item.quantity);
+        });
+        if (changedItems.length > 0) {
+          await Promise.all(changedItems.map((item) =>
+            PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })
+          ));
         }
       }
 
