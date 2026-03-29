@@ -3,18 +3,17 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const STEPS = [
   { num: 1, label: "Sua Unidade", icon: "storefront" },
-  { num: 2, label: "Horários", icon: "schedule" },
-  { num: 3, label: "Operação", icon: "settings" },
-  { num: 4, label: "Entrega", icon: "delivery_dining" },
-  { num: 5, label: "Vendedor", icon: "smart_toy" },
-  { num: 6, label: "Revisão", icon: "checklist" },
+  { num: 2, label: "Operação", icon: "settings" },
+  { num: 3, label: "Entrega", icon: "delivery_dining" },
+  { num: 4, label: "Vendedor", icon: "smart_toy" },
+  { num: 5, label: "Revisão", icon: "checklist" },
 ];
 
 export { STEPS };
 
 export default function WizardStepper({ currentStep, completedSteps = [], skippedSteps = [], onStepClick }) {
-  // Revisão (step 6) não conta como etapa — é apenas visualização
-  const REVIEW_STEP = 6;
+  // Revisão (step 5) não conta como etapa — é apenas visualização
+  const REVIEW_STEP = 5;
   const countableSteps = STEPS.filter(s => s.num !== REVIEW_STEP && !skippedSteps.includes(s.num));
   const completedCount = completedSteps.filter(s => s !== REVIEW_STEP && !skippedSteps.includes(s)).length;
   const progressPct = countableSteps.length > 0 ? Math.round((completedCount / countableSteps.length) * 100) : 0;

@@ -136,43 +136,44 @@ export default function ReviewSummary({ formData, onGoToStep }) {
       />
 
       <ReviewSection
-        icon="schedule"
-        title="Horários"
-        stepNum={2}
-        onGoToStep={onGoToStep}
-        fields={[
-          { label: "Dias", value: formData.working_days, warning: !formData.working_days },
-          { label: "Horário", value: formData.opening_hours, warning: !formData.opening_hours },
-        ]}
-      />
-
-      <ReviewSection
         icon="settings"
         title="Operação e Pagamentos"
-        stepNum={3}
+        stepNum={2}
         onGoToStep={onGoToStep}
         fields={operationFields}
       />
 
-      {hasDelivery && (
+      {hasDelivery ? (
         <ReviewSection
           icon="delivery_dining"
           title="Entrega"
-          stepNum={4}
+          stepNum={3}
           onGoToStep={onGoToStep}
           fields={[
+            { label: "Funcionamento", value: formData.opening_hours, warning: !formData.opening_hours },
             { label: "Raio máximo", value: formData.max_delivery_radius_km ? `${formData.max_delivery_radius_km} km` : "" },
             { label: "Pedido mínimo", value: formData.min_order_value ? `R$ ${formData.min_order_value}` : "" },
             { label: "Tempo entrega", value: formData.avg_prep_time_minutes ? `${formData.avg_prep_time_minutes} min` : "" },
             ...deliveryScheduleFields(),
           ]}
         />
-      )}
+      ) : (hasPickup && (
+        <ReviewSection
+          icon="schedule"
+          title="Horários de Atendimento"
+          stepNum={3}
+          onGoToStep={onGoToStep}
+          fields={[
+            { label: "Dias", value: formData.working_days, warning: !formData.working_days },
+            { label: "Horário", value: formData.opening_hours, warning: !formData.opening_hours },
+          ]}
+        />
+      ))}
 
       <ReviewSection
         icon="smart_toy"
         title="Seu Vendedor"
-        stepNum={5}
+        stepNum={4}
         onGoToStep={onGoToStep}
         fields={[
           { label: "Nome", value: formData.agent_name, warning: !formData.agent_name },

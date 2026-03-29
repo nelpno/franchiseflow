@@ -362,20 +362,26 @@ function FranchiseSettingsContent() {
   const hasDelivery = formData.has_delivery ?? true;
   const hasPickup = formData.has_pickup ?? false;
   const skippedSteps = [
-    ...(!hasDelivery ? [4] : []),
+    ...(!hasDelivery && !hasPickup ? [3] : []),
   ];
 
   // Determine completed steps (basic validation)
   const completedSteps = useMemo(() => {
     const done = [];
     if (formData.franchise_name && formData.unit_address) done.push(1);
-    if ((formData.operating_hours?.length > 0) || (formData.working_days && formData.opening_hours)) done.push(2);
-    // Step 3: Operação e Pagamentos — complete if operation mode set + relevant payments configured
+    // Step 2: Operação e Pagamentos
     const deliveryPaymentOk = !hasDelivery || (formData.payment_delivery?.length > 0);
     const pickupPaymentOk = !hasPickup || (formData.payment_pickup?.length > 0);
-    if (formData.has_delivery !== undefined && deliveryPaymentOk && pickupPaymentOk) done.push(3);
-    if (!hasDelivery || formData.max_delivery_radius_km) done.push(4);
-    if (formData.agent_name) done.push(5);
+    if (formData.has_delivery !== undefined && deliveryPaymentOk && pickupPaymentOk) done.push(2);
+    // Step 3: Entrega (or Horários for pickup-only)
+    if (hasDelivery) {
+      if (formData.max_delivery_radius_km) done.push(3);
+    } else if (hasPickup) {
+      if ((formData.operating_hours?.length > 0) || (formData.working_days && formData.opening_hours)) done.push(3);
+    } else {
+      done.push(3);
+    }
+    if (formData.agent_name) done.push(4);
     return done;
   }, [formData, hasDelivery, hasPickup]);
 
@@ -399,8 +405,8 @@ function FranchiseSettingsContent() {
 
   const nextStep = () => {
     let next = currentStep + 1;
-    while (next <= 6 && skippedSteps.includes(next)) next++;
-    if (next <= 6) goToStep(next);
+    while (next <= 5 && skippedSteps.includes(next)) next++;
+    if (next <= 5) goToStep(next);
   };
 
   const prevStep = () => {
@@ -628,32 +634,8 @@ function FranchiseSettingsContent() {
           )}
 
           {/* Step 2: Horários */}
+          {/* Step 2: Operação e Pagamentos */}
           {currentStep === 2 && (
-            <WizardStep icon="schedule" title="Horários" subtitle="Quando sua unidade funciona">
-              <div>
-                <label className={labelClass}>Faixas de horário</label>
-                <p className="text-xs text-[#3d4a42]/60 mb-3">
-                  Defina horários diferentes para cada grupo de dias (ex: Seg-Sex um horário, Sáb outro)
-                </p>
-                <OperatingHoursEditor
-                  value={formData.operating_hours || []}
-                  onChange={(val) => {
-                    handleInputChange('operating_hours', val);
-                    // Sync with legacy fields for backward compatibility
-                    const summary = val.map(r => {
-                      const days = r.days.join(',');
-                      return `${days}: ${r.open}-${r.close}`;
-                    }).join(' | ');
-                    handleInputChange('opening_hours', summary);
-                    handleInputChange('working_days', val.flatMap(r => r.days).join(','));
-                  }}
-                />
-              </div>
-            </WizardStep>
-          )}
-
-          {/* Step 3: Operação e Pagamentos */}
-          {currentStep === 3 && (
             <WizardStep icon="settings" title="Operação e Pagamentos" subtitle="Entrega, retirada e formas de pagamento">
               {/* Delivery toggle + options */}
               <ToggleCard
@@ -764,9 +746,10 @@ function FranchiseSettingsContent() {
             </WizardStep>
           )}
 
-          {/* Step 4: Entrega (skipped if has_delivery=false) */}
-          {currentStep === 4 && (
-            <WizardStep icon="delivery_dining" title="Entrega" subtitle="Configure raio, taxas e regras — o bot usa isso para calcular frete automaticamente">
+          {/* Step 3: Entrega + Horários (pickup-only mostra só horários) */}
+          {currentStep === 3 && (
+            hasDelivery ? (
+            <WizardStep icon="delivery_dining" title="Entrega" subtitle="Configure raio, horários, taxas e regras — o bot usa isso para calcular frete automaticamente">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Raio maximo de entrega (km)</label>
@@ -798,13 +781,13 @@ function FranchiseSettingsContent() {
                 <label className={labelClass}>Horários e taxas de entrega</label>
                 <p className="text-[11px] text-[#4a3d3d]/70 mb-3 flex items-start gap-1">
                   <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
-                  <span>Configure horários e fretes diferentes por dia da semana. Adicione faixas extras para sábados ou domingos com horário diferente.</span>
+                  <span>Configure horários e fretes diferentes por dia da semana. Esses horários também definem quando sua unidade funciona.</span>
                 </p>
                 <DeliveryScheduleEditor
                   value={formData.delivery_schedule}
                   onChange={(val) => {
                     handleInputChange('delivery_schedule', val);
-                    // Sync legacy fields from first range for backward compatibility
+                    // Sync legacy delivery fields from first range
                     if (val.length > 0) {
                       const first = val[0];
                       handleInputChange('delivery_start_time', first.delivery_start || '');
@@ -812,14 +795,46 @@ function FranchiseSettingsContent() {
                       handleInputChange('charges_delivery_fee', first.charges_fee !== false);
                       handleInputChange('delivery_fee_rules', first.fee_rules || [{ max_km: '', fee: '' }]);
                     }
+                    // Derive operating_hours from delivery_schedule
+                    const opHours = val.map(r => ({
+                      days: r.days,
+                      open: r.delivery_start,
+                      close: r.delivery_end,
+                    }));
+                    handleInputChange('operating_hours', opHours);
+                    const summary = opHours.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
+                    handleInputChange('opening_hours', summary);
+                    handleInputChange('working_days', val.flatMap(r => r.days).join(','));
                   }}
                 />
               </div>
             </WizardStep>
+            ) : (
+            <WizardStep icon="schedule" title="Horários de Atendimento" subtitle="Quando sua unidade funciona para retirada">
+              <div>
+                <label className={labelClass}>Faixas de horário</label>
+                <p className="text-xs text-[#3d4a42]/60 mb-3">
+                  Defina horários diferentes para cada grupo de dias (ex: Seg-Sex um horário, Sáb outro)
+                </p>
+                <OperatingHoursEditor
+                  value={formData.operating_hours || []}
+                  onChange={(val) => {
+                    handleInputChange('operating_hours', val);
+                    const summary = val.map(r => {
+                      const days = r.days.join(',');
+                      return `${days}: ${r.open}-${r.close}`;
+                    }).join(' | ');
+                    handleInputChange('opening_hours', summary);
+                    handleInputChange('working_days', val.flatMap(r => r.days).join(','));
+                  }}
+                />
+              </div>
+            </WizardStep>
+            )
           )}
 
-          {/* Step 5: Seu Vendedor */}
-          {currentStep === 5 && (
+          {/* Step 4: Seu Vendedor */}
+          {currentStep === 4 && (
             <WizardStep icon="smart_toy" title="Seu Vendedor" subtitle="Configure a personalidade e as mensagens do seu assistente virtual de vendas">
               <div>
                 <label className={labelClass}>Nome do assistente virtual<RequiredDot /></label>
@@ -846,8 +861,8 @@ function FranchiseSettingsContent() {
             </WizardStep>
           )}
 
-          {/* Step 6: Revisão */}
-          {currentStep === 6 && (
+          {/* Step 5: Revisão */}
+          {currentStep === 5 && (
             <WizardStep icon="checklist" title="Revisão" subtitle="Confira todos os dados antes de salvar">
               <ReviewSummary formData={formData} onGoToStep={goToStep} />
             </WizardStep>
@@ -887,7 +902,7 @@ function FranchiseSettingsContent() {
           {/* Center: step dots (mobile) + save status */}
           <div className="flex flex-col items-center gap-1">
             <div className="flex gap-1.5 md:hidden">
-              {[1, 2, 3, 4, 5, 6].map((s) => (
+              {[1, 2, 3, 4, 5].map((s) => (
                 <div
                   key={s}
                   className={`w-2 h-2 rounded-full transition-colors ${
@@ -909,7 +924,7 @@ function FranchiseSettingsContent() {
 
           {/* Right: Próximo / Salvar */}
           <div className="w-28 flex justify-end">
-            {currentStep < 6 ? (
+            {currentStep < 5 ? (
               <button
                 type="button"
                 onClick={nextStep}
