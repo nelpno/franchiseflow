@@ -32,7 +32,7 @@ DECLARE
 BEGIN
   SELECT c.id, c.nome, c.telefone, c.endereco, c.bairro,
          c.status, c.purchase_count, c.total_spent,
-         c.last_purchase_at, c.last_contact_at
+         c.last_purchase_at, c.last_contact_at, c.created_at
   INTO v_contact
   FROM contacts c
   WHERE c.franchise_id = p_franchise_id AND c.telefone = p_phone
@@ -52,6 +52,8 @@ BEGIN
     WHEN v_contact.purchase_count >= 5 THEN 'vip'
     WHEN v_contact.purchase_count >= 2 AND v_days_since_last <= 30 THEN 'recorrente'
     WHEN v_contact.purchase_count >= 1 AND v_days_since_last > 30 THEN 'dormindo'
+    WHEN v_contact.purchase_count = 0
+         AND v_contact.created_at >= now() - interval '2 minutes' THEN 'novo'
     WHEN v_contact.purchase_count = 0 THEN 'lead'
     ELSE 'cliente'
   END;
