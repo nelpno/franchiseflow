@@ -37,6 +37,10 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `password_setup_type` usa `sessionStorage` (NÃO localStorage)
 - Login.jsx tem "Primeiro acesso? Defina sua senha aqui" como rede de segurança
 - Login.jsx e SetPassword.jsx compartilham template visual — manter consistência
+- `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (NÃO seta `isAuthenticated=true` com dados vazios)
+- `ProfileRetryScreen` em App.jsx: retry + "Voltar ao login" como escape. `retryProfile` busca sessão fresca via `getSession()`
+- Safety timeout auth: 8s → mostra retry UI (NÃO redirect silencioso para login)
+- `logout()` e `navigateToLogin()` são `useCallback` — sem isso, `useMemo` do contextValue é inútil (20+ consumers)
 
 ### Row Level Security
 - Admin vê tudo; franqueado vê apenas suas franquias (managed_franchise_ids)
@@ -173,6 +177,8 @@ src/
 │   ├── vendedor/     # Wizard "Meu Vendedor" (WizardStepper, WizardStep, ReviewSummary, DeliveryScheduleEditor)
 │   ├── onboarding/   # ONBOARDING_BLOCKS, ProgressRing, OnboardingBlock
 │   ├── whatsapp/     # WhatsAppConnectionModal
+│   ├── ErrorBoundary.jsx    # Fallback raiz (auto-reload chunk errors)
+│   ├── PageErrorBoundary.jsx # Boundary por rota (retry local)
 │   └── ui/           # shadcn/ui + MaterialIcon.jsx
 ├── hooks/            # useWhatsAppConnection, useVisibilityPolling
 ├── lib/              # AuthContext, franchiseUtils, smartActions, whatsappUtils, healthScore
@@ -254,6 +260,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 **Delete cascade:** `Franchise.deleteCascade(id, evoId)` — usa evoId para TODAS as tabelas operacionais, UUID apenas para `franchises.delete()` no final. Também deleta franqueados órfãos via `delete_user_complete()` RPC.
 
 ### Frontend & React
+
+**Error Boundaries:** `ErrorBoundary.jsx` (raiz, fallback final + auto-reload em chunk errors) + `PageErrorBoundary.jsx` (por rota, key={location.pathname}, retry local sem F5). Toda página é envolvida em `<PageErrorBoundary>` no App.jsx
 
 **Data fetching:** `mountedRef` + cleanup obrigatório. `loadError` + retry. `Promise.allSettled` para múltiplas queries. `setIsLoading(false)` antes de early return. `subDays(new Date(), N-1)` para filtros de dias.
 - Reports.jsx: limits altos (Sale/Contact 2000, DailyUnique/Summary 500) — 200 trunca dados em 90d com múltiplas franquias
