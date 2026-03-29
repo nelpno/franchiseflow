@@ -88,6 +88,11 @@ export default function PurchaseOrders() {
   const [editedDeliveryDate, setEditedDeliveryDate] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Delete state
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteAction, setConfirmDeleteAction] = useState(null); // { type: "single" | "bulk", orderId? }
+
   // New default product dialog
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -398,6 +403,63 @@ export default function PurchaseOrders() {
     }
   };
 
+  // --- Delete logic ---
+
+  const isDeletable = (order) => order.status === "pendente" || order.status === "cancelado";
+
+  const toggleSelectOrder = (orderId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const deletableInView = filteredOrders.filter(isDeletable);
+    if (selectedIds.size === deletableInView.length && deletableInView.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(deletableInView.map((o) => o.id)));
+    }
+  };
+
+  const deleteOrders = async (orderIds) => {
+    setDeleting(true);
+    const toastId = toast.loading(`Excluindo ${orderIds.length} pedido${orderIds.length > 1 ? "s" : ""}...`);
+    try {
+      for (const oid of orderIds) {
+        // Delete items first (FK constraint)
+        const items = await PurchaseOrderItem.filter({ order_id: oid });
+        if (items.length > 0) {
+          await Promise.all(items.map((item) => PurchaseOrderItem.delete(item.id)));
+        }
+        await PurchaseOrder.delete(oid);
+      }
+      toast.success(`${orderIds.length} pedido${orderIds.length > 1 ? "s excluídos" : " excluído"}.`, { id: toastId });
+      setSelectedIds(new Set());
+      closeDialog();
+      loadData();
+    } catch (error) {
+      console.error("Erro ao excluir:", error);
+      toast.error(error?.message || "Erro ao excluir pedido(s).", { id: toastId });
+      loadData(); // re-sync after partial failure
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteAction(null);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!confirmDeleteAction) return;
+    if (confirmDeleteAction.type === "single") {
+      deleteOrders([confirmDeleteAction.orderId]);
+    } else {
+      deleteOrders(Array.from(selectedIds));
+    }
+  };
+
   // --- New Default Product ---
 
   const handleCreateDefaultProduct = async () => {
@@ -545,6 +607,34 @@ export default function PurchaseOrders() {
         ]}
       />
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between bg-[#b91c1c]/5 border border-[#b91c1c]/20 rounded-xl px-4 py-3">
+          <span className="text-sm text-[#1b1c1d] font-medium">
+            {selectedIds.size} pedido{selectedIds.size > 1 ? "s" : ""} selecionado{selectedIds.size > 1 ? "s" : ""}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl text-xs"
+            >
+              Limpar
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setConfirmDeleteAction({ type: "bulk" })}
+              disabled={deleting}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1 text-xs"
+            >
+              <MaterialIcon icon="delete" size={14} />
+              Excluir Selecionados
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
       {filteredOrders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -566,6 +656,17 @@ export default function PurchaseOrders() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b border-[#cac0c0]/30">
+                        <TableHead className="w-10">
+                          <input
+                            type="checkbox"
+                            checked={(() => {
+                              const deletable = filteredOrders.filter(isDeletable);
+                              return deletable.length > 0 && deletable.every((o) => selectedIds.has(o.id));
+                            })()}
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                          />
+                        </TableHead>
                         <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
                           Franquia
                         </TableHead>
@@ -598,6 +699,19 @@ export default function PurchaseOrders() {
                                 : "hover:bg-[#fbf9fa]"
                             }
                           >
+                            <TableCell className="w-10">
+                              {isDeletable(order) ? (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIds.has(order.id)}
+                                  onChange={() => toggleSelectOrder(order.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                                />
+                              ) : (
+                                <span className="w-4 h-4 block" />
+                              )}
+                            </TableCell>
                             <TableCell className="font-medium text-[#1b1c1d]">
                               {getFranchiseName(order.franchise_id)}
                             </TableCell>
@@ -653,6 +767,15 @@ export default function PurchaseOrders() {
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
+                    {isDeletable(order) && (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(order.id)}
+                        onChange={() => toggleSelectOrder(order.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 mt-1 mr-3 flex-shrink-0 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-[#1b1c1d] truncate font-plus-jakarta">
                         {getFranchiseName(order.franchise_id)}
@@ -860,11 +983,23 @@ export default function PurchaseOrders() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleStatusChange("cancelado")}
-                      disabled={saving}
+                      disabled={saving || deleting}
                       className="text-[#6b7280] border-[#6b7280]/30 rounded-xl hover:bg-[#6b7280]/5 gap-1"
                     >
                       <MaterialIcon icon="cancel" size={16} />
                       Cancelar Pedido
+                    </Button>
+                  )}
+                  {isDeletable(selectedOrder) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmDeleteAction({ type: "single", orderId: selectedOrder.id })}
+                      disabled={saving || deleting}
+                      className="text-[#dc2626] border-[#dc2626]/30 rounded-xl hover:bg-[#dc2626]/5 gap-1"
+                    >
+                      <MaterialIcon icon="delete" size={16} />
+                      Excluir
                     </Button>
                   )}
                 </div>
@@ -973,6 +1108,49 @@ export default function PurchaseOrders() {
                 />
               )}
               {confirmAction?.type === "entregue" ? "Confirmar" : "Cancelar Pedido"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!confirmDeleteAction} onOpenChange={(open) => { if (!open) setConfirmDeleteAction(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
+              <MaterialIcon icon="delete" size={20} className="text-[#dc2626]" />
+              Excluir Pedido{confirmDeleteAction?.type === "bulk" && selectedIds.size > 1 ? "s" : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-[#4a3d3d]">
+            {confirmDeleteAction?.type === "bulk"
+              ? `Excluir ${selectedIds.size} pedido${selectedIds.size > 1 ? "s" : ""} permanentemente? Essa ação não pode ser desfeita.`
+              : "Excluir este pedido permanentemente? Essa ação não pode ser desfeita."}
+          </p>
+
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmDeleteAction(null)}
+              disabled={deleting}
+              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
+            >
+              Voltar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1"
+            >
+              {deleting ? (
+                <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+              ) : (
+                <MaterialIcon icon="delete" size={16} />
+              )}
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>

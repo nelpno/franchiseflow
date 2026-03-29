@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,7 @@ export default function PurchaseOrderForm({
 }) {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   // Standard products = those with cost_price > 0
   const standardProducts = useMemo(() => {
@@ -165,12 +166,14 @@ export default function PurchaseOrderForm({
 
   const handleSubmit = async () => {
     if (!hasAnyQty) return;
+    if (submittingRef.current) return;
 
     if (!franchiseId) {
       toast.error("Franquia não identificada. Atualize a página.");
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     const toastId = toast.loading("Enviando pedido...");
     let order = null;
@@ -197,16 +200,19 @@ export default function PurchaseOrderForm({
 
       await PurchaseOrderItem.createMany(itemsToCreate);
 
-      // Notificar admins (fire-and-forget)
-      supabase.rpc('notify_admins', {
-        p_title: 'Novo pedido de reposição',
-        p_message: `Pedido de ${formatBRL(grandTotal)} — ${itemsToCreate.length} produtos`,
-        p_type: 'info',
-        p_icon: 'local_shipping',
-        p_link: '/PurchaseOrders',
-      }).catch(() => {});
+      // Notificar admins (fire-and-forget — erro aqui NÃO afeta o pedido)
+      try {
+        await supabase.rpc('notify_admins', {
+          p_title: 'Novo pedido de reposição',
+          p_message: `Pedido de ${formatBRL(grandTotal)} — ${itemsToCreate.length} produtos`,
+          p_type: 'info',
+          p_icon: 'local_shipping',
+          p_link: '/PurchaseOrders',
+        });
+      } catch { /* notificação é bonus, pedido já foi criado */ }
 
       toast.success("Pedido enviado com sucesso!", { id: toastId });
+      // NÃO resetar submittingRef — componente vai desmontar via onSave
       if (onSave) onSave();
     } catch (error) {
       console.error("Erro ao criar pedido:", error);
@@ -215,7 +221,7 @@ export default function PurchaseOrderForm({
         PurchaseOrder.delete(order.id).catch(() => {});
       }
       toast.error(getErrorMessage(error), { id: toastId });
-    } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

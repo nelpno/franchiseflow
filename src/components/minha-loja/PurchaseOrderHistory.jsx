@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -28,6 +30,8 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [orderItems, setOrderItems] = useState({});
   const [loadingItems, setLoadingItems] = useState({});
+  const [cancellingId, setCancellingId] = useState(null);
+  const [confirmCancelId, setConfirmCancelId] = useState(null);
 
   useEffect(() => {
     if (!franchiseId) return;
@@ -68,6 +72,21 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
       } finally {
         setLoadingItems((prev) => ({ ...prev, [orderId]: false }));
       }
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    setCancellingId(orderId);
+    try {
+      await PurchaseOrder.update(orderId, { status: 'cancelado' });
+      toast.success("Pedido cancelado.");
+      loadOrders();
+    } catch (error) {
+      console.error("Erro ao cancelar pedido:", error);
+      toast.error(error?.message || "Erro ao cancelar pedido.");
+    } finally {
+      setCancellingId(null);
+      setConfirmCancelId(null);
     }
   };
 
@@ -212,6 +231,51 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                           <p className="text-xs text-[#4a3d3d]">
                             <span className="font-medium">Obs:</span> {order.notes}
                           </p>
+                        </div>
+                      )}
+
+                      {/* Cancelar pedido pendente */}
+                      {order.status === "pendente" && (
+                        <div className="pt-3 mt-2 border-t border-[#cac0c0]/20">
+                          {confirmCancelId === order.id ? (
+                            <div className="flex items-center justify-between gap-2 bg-[#fbf9fa] rounded-xl p-3">
+                              <span className="text-xs text-[#4a3d3d]">Cancelar este pedido?</span>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
+                                  disabled={cancellingId === order.id}
+                                  className="h-7 text-xs border-[#cac0c0] text-[#4a3d3d] rounded-lg"
+                                >
+                                  Não
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => { e.stopPropagation(); handleCancelOrder(order.id); }}
+                                  disabled={cancellingId === order.id}
+                                  className="h-7 text-xs bg-[#6b7280] hover:bg-[#4b5563] text-white rounded-lg gap-1"
+                                >
+                                  {cancellingId === order.id ? (
+                                    <MaterialIcon icon="progress_activity" size={12} className="animate-spin" />
+                                  ) : (
+                                    <MaterialIcon icon="cancel" size={12} />
+                                  )}
+                                  Sim, cancelar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); setConfirmCancelId(order.id); }}
+                              className="w-full h-8 text-xs text-[#6b7280] border-[#6b7280]/30 rounded-xl hover:bg-[#6b7280]/5 gap-1"
+                            >
+                              <MaterialIcon icon="cancel" size={14} />
+                              Cancelar Pedido
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
