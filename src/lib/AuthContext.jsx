@@ -7,10 +7,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [selectedFranchise, setSelectedFranchiseState] = useState(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(
     () => sessionStorage.getItem('needs_password_setup') === 'true'
   );
+  const lastAuthUserRef = React.useRef(null);
 
   // Persist selected franchise to localStorage
   const setSelectedFranchise = useCallback((franchise) => {
@@ -35,6 +37,9 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
       return;
     }
+
+    lastAuthUserRef.current = authUser;
+    setProfileLoadFailed(false);
 
     try {
       const { data: profile, error } = await supabase
@@ -74,20 +79,34 @@ export const AuthProvider = ({ children }) => {
         });
         setIsAuthenticated(true);
       } catch (retryErr) {
-        console.error('[Auth] Retry failed, using fallback:', retryErr);
-        setUser({
-          id: authUser.id,
-          email: authUser.email,
-          full_name: authUser.email,
-          role: 'franchisee',
-          managed_franchise_ids: [],
-        });
-        setIsAuthenticated(true);
+        console.error('[Auth] Retry failed, showing retry UI:', retryErr);
+        setProfileLoadFailed(true);
       }
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  const retryProfile = useCallback(async () => {
+    setIsLoading(true);
+    setProfileLoadFailed(false);
+    try {
+      // Get fresh session — lastAuthUserRef may be stale if session expired
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await loadUserProfile(session.user);
+      } else {
+        // Session expired — redirect to login
+        setIsLoading(false);
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    } catch (e) {
+      console.error('[Auth] Retry failed:', e);
+      setProfileLoadFailed(true);
+      setIsLoading(false);
+    }
+  }, [loadUserProfile]);
 
   useEffect(() => {
     // Detect invite/recovery tokens in URL hash OR search params (PKCE flow)
@@ -139,10 +158,17 @@ export const AuthProvider = ({ children }) => {
 
     initAuth();
 
-    // Safety timeout — if auth check takes too long, stop loading
+    // Safety timeout — if auth check hangs completely, show retry UI instead of infinite spinner
     const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000);
+      // Only fire if still loading (loadUserProfile didn't finish yet)
+      setIsLoading(prev => {
+        if (prev) {
+          console.warn('[Auth] Safety timeout fired — profile load took >8s');
+          setProfileLoadFailed(true);
+        }
+        return false;
+      });
+    }, 8000);
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -157,6 +183,7 @@ export const AuthProvider = ({ children }) => {
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
+          setProfileLoadFailed(false);
         }
       }
     );
@@ -167,11 +194,13 @@ export const AuthProvider = ({ children }) => {
     };
   }, [loadUserProfile]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     // Clear state immediately so UI reacts even if signOut is slow
     setUser(null);
     setIsAuthenticated(false);
+    setProfileLoadFailed(false);
     setSelectedFranchiseState(null);
+    lastAuthUserRef.current = null;
     localStorage.removeItem('selected_franchise_id');
     sessionStorage.removeItem('needs_password_setup');
     sessionStorage.removeItem('password_setup_type');
@@ -180,11 +209,11 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.error('[Auth] Logout error:', e);
     }
-  };
+  }, []);
 
-  const navigateToLogin = () => {
+  const navigateToLogin = useCallback(() => {
     window.location.href = '/login';
-  };
+  }, []);
 
   const contextValue = useMemo(() => ({
     user,
@@ -196,12 +225,14 @@ export const AuthProvider = ({ children }) => {
     appPublicSettings: null,
     needsPasswordSetup,
     clearPasswordSetup,
+    profileLoadFailed,
+    retryProfile,
     selectedFranchise,
     setSelectedFranchise,
     logout,
     navigateToLogin,
     checkAppState: () => {}
-  }), [user, isAuthenticated, isLoading, needsPasswordSetup, clearPasswordSetup, selectedFranchise, setSelectedFranchise, logout, navigateToLogin]);
+  }), [user, isAuthenticated, isLoading, needsPasswordSetup, clearPasswordSetup, profileLoadFailed, retryProfile, selectedFranchise, setSelectedFranchise, logout, navigateToLogin]);
 
   return (
     <AuthContext.Provider value={contextValue}>

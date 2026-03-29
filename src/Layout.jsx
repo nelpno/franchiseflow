@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -138,17 +138,21 @@ export default function Layout({ children, currentPageName }) {
   const [needsOnboardingWelcome, setNeedsOnboardingWelcome] = useState(false);
   const [availableFranchises, setAvailableFranchises] = useState([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
     if (!currentUser) return;
+
     if (currentUser.role === "admin") {
       loadQuickStats();
       setOnboardingLoaded(true);
-      return;
+      return () => { mountedRef.current = false; };
     }
     if (currentUser.managed_franchise_ids?.length > 0) {
       Franchise.list()
         .then((allFranchises) => {
+          if (!mountedRef.current) return;
           const userFranchises = getAvailableFranchises(allFranchises, currentUser);
           setAvailableFranchises(userFranchises);
 
@@ -162,12 +166,13 @@ export default function Layout({ children, currentPageName }) {
           const primaryFranchise = getPrimaryFranchise(allFranchises, currentUser);
           const franchiseId = primaryFranchise?.evolution_instance_id;
           if (!franchiseId) {
-            setOnboardingLoaded(true);
+            if (mountedRef.current) setOnboardingLoaded(true);
             return;
           }
           return OnboardingChecklist.filter({ franchise_id: franchiseId });
         })
         .then((obs) => {
+          if (!mountedRef.current) return;
           if (!obs) {
             // Promise chain returned undefined (no franchiseId) — still mark as loaded
             const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
@@ -201,7 +206,7 @@ export default function Layout({ children, currentPageName }) {
         })
         .catch((error) => {
           console.error("Erro ao carregar onboarding:", error);
-          setOnboardingLoaded(true);
+          if (mountedRef.current) setOnboardingLoaded(true);
         });
     } else {
       // Novo franqueado sem franchise vinculada ainda — mostrar onboarding welcome
@@ -212,6 +217,8 @@ export default function Layout({ children, currentPageName }) {
       }
       setOnboardingLoaded(true);
     }
+
+    return () => { mountedRef.current = false; };
   }, [currentUser]);
 
   // Listen for onboarding-started event from Onboarding page
@@ -228,6 +235,7 @@ export default function Layout({ children, currentPageName }) {
         DailyUniqueContact.filter({ date: today }),
         Sale.list("-sale_date", 50),
       ]);
+      if (!mountedRef.current) return;
       const contactsData = results[0].status === "fulfilled" ? results[0].value : [];
       const salesData = results[1].status === "fulfilled" ? results[1].value : [];
       setTodayContacts(contactsData.length);
