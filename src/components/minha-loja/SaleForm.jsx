@@ -1115,7 +1115,7 @@ export default function SaleForm({
               type="number"
               min={0}
               max={100}
-              step={0.1}
+              step={0.01}
               value={cardFeePercent}
               onChange={(e) => setCardFeePercent(parseFloat(e.target.value) || 0)}
               className="w-24 bg-white text-right font-mono-numbers"

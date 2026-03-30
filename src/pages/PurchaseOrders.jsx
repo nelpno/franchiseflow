@@ -88,6 +88,11 @@ export default function PurchaseOrders() {
   const [editedDeliveryDate, setEditedDeliveryDate] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Ref to track current order load (race condition guard)
+  const currentLoadRef = useRef(null);
+  // Bulk PDF state
+  const [generatingBulkPdf, setGeneratingBulkPdf] = useState(false);
+
   // Delete state
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [deleting, setDeleting] = useState(false);
@@ -245,15 +250,22 @@ export default function PurchaseOrders() {
   // --- Dialog logic ---
 
   const openOrderDetail = async (order) => {
+    const loadId = order.id;
+    currentLoadRef.current = loadId;
+
+    // Reset state BEFORE opening (prevents stale data flash)
+    setOrderItems([]);
+    setEditedQuantities({});
     setSelectedOrder(order);
     setEditedFreight(order.freight_cost != null ? String(order.freight_cost) : "");
     setEditedDeliveryDate(order.estimated_delivery || "");
     setDialogOpen(true);
     setLoadingItems(true);
-    setEditedQuantities({});
 
     try {
       const items = await PurchaseOrderItem.filter({ order_id: order.id });
+      // Discard stale response if user opened another order
+      if (currentLoadRef.current !== loadId) return;
       setOrderItems(items);
       const qtyMap = {};
       items.forEach((item) => {
@@ -261,10 +273,13 @@ export default function PurchaseOrders() {
       });
       setEditedQuantities(qtyMap);
     } catch (error) {
+      if (currentLoadRef.current !== loadId) return;
       console.error("Erro ao carregar itens:", error);
       toast.error("Erro ao carregar itens do pedido.");
     } finally {
-      setLoadingItems(false);
+      if (currentLoadRef.current === loadId) {
+        setLoadingItems(false);
+      }
     }
   };
 
@@ -419,11 +434,10 @@ export default function PurchaseOrders() {
   };
 
   const toggleSelectAll = () => {
-    const deletableInView = filteredOrders.filter(isDeletable);
-    if (selectedIds.size === deletableInView.length && deletableInView.length > 0) {
+    if (selectedIds.size === filteredOrders.length && filteredOrders.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(deletableInView.map((o) => o.id)));
+      setSelectedIds(new Set(filteredOrders.map((o) => o.id)));
     }
   };
 
@@ -459,6 +473,34 @@ export default function PurchaseOrders() {
       deleteOrders([confirmDeleteAction.orderId]);
     } else {
       deleteOrders(Array.from(selectedIds));
+    }
+  };
+
+  // --- Bulk Picking Sheet ---
+
+  const handleBulkPickingSheet = async () => {
+    setGeneratingBulkPdf(true);
+    const toastId = toast.loading("Gerando fichas de separação...");
+    try {
+      const selectedOrders = filteredOrders.filter((o) => selectedIds.has(o.id));
+      const ordersWithItems = await Promise.all(
+        selectedOrders.map(async (order) => {
+          const items = await PurchaseOrderItem.filter({ order_id: order.id });
+          return {
+            order,
+            items,
+            franchiseName: "Maxi Massas " + getFranchiseName(order.franchise_id),
+          };
+        })
+      );
+      const { generateBulkPickingSheet } = await import("@/lib/pickingSheetPdf");
+      await generateBulkPickingSheet(ordersWithItems);
+      toast.success(`${ordersWithItems.length} fichas geradas!`, { id: toastId });
+    } catch (err) {
+      console.error("Erro ao gerar fichas:", err);
+      toast.error(err?.message || "Erro ao gerar fichas.", { id: toastId });
+    } finally {
+      setGeneratingBulkPdf(false);
     }
   };
 
@@ -625,14 +667,29 @@ export default function PurchaseOrders() {
               Limpar
             </Button>
             <Button
+              variant="outline"
               size="sm"
-              onClick={() => setConfirmDeleteAction({ type: "bulk" })}
-              disabled={deleting}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1 text-xs"
+              onClick={handleBulkPickingSheet}
+              disabled={generatingBulkPdf}
+              className="text-[#d4af37] border-[#d4af37]/30 rounded-xl text-xs gap-1"
             >
-              <MaterialIcon icon="delete" size={14} />
-              Excluir Selecionados
+              <MaterialIcon icon="print" size={14} />
+              {generatingBulkPdf ? "Gerando..." : "Fichas de Separação"}
             </Button>
+            {Array.from(selectedIds).every((id) => {
+              const o = filteredOrders.find((fo) => fo.id === id);
+              return o && isDeletable(o);
+            }) && (
+              <Button
+                size="sm"
+                onClick={() => setConfirmDeleteAction({ type: "bulk" })}
+                disabled={deleting}
+                className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1 text-xs"
+              >
+                <MaterialIcon icon="delete" size={14} />
+                Excluir Selecionados
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -661,10 +718,7 @@ export default function PurchaseOrders() {
                         <TableHead className="w-10">
                           <input
                             type="checkbox"
-                            checked={(() => {
-                              const deletable = filteredOrders.filter(isDeletable);
-                              return deletable.length > 0 && deletable.every((o) => selectedIds.has(o.id));
-                            })()}
+                            checked={filteredOrders.length > 0 && filteredOrders.every((o) => selectedIds.has(o.id))}
                             onChange={toggleSelectAll}
                             className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
                           />
@@ -702,17 +756,13 @@ export default function PurchaseOrders() {
                             }
                           >
                             <TableCell className="w-10">
-                              {isDeletable(order) ? (
-                                <input
-                                  type="checkbox"
-                                  checked={selectedIds.has(order.id)}
-                                  onChange={() => toggleSelectOrder(order.id)}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
-                                />
-                              ) : (
-                                <span className="w-4 h-4 block" />
-                              )}
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(order.id)}
+                                onChange={() => toggleSelectOrder(order.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                              />
                             </TableCell>
                             <TableCell className="font-medium text-[#1b1c1d]">
                               {getFranchiseName(order.franchise_id)}
@@ -769,15 +819,13 @@ export default function PurchaseOrders() {
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    {isDeletable(order) && (
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(order.id)}
-                        onChange={() => toggleSelectOrder(order.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 mt-1 mr-3 flex-shrink-0 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
-                      />
-                    )}
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(order.id)}
+                      onChange={() => toggleSelectOrder(order.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 mt-1 mr-3 flex-shrink-0 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                    />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-[#1b1c1d] truncate font-plus-jakarta">
                         {getFranchiseName(order.franchise_id)}
@@ -823,8 +871,8 @@ export default function PurchaseOrders() {
 
       {/* Order Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
               <MaterialIcon icon="receipt_long" size={20} className="text-[#b91c1c]" />
               Detalhes do Pedido
@@ -832,7 +880,9 @@ export default function PurchaseOrders() {
           </DialogHeader>
 
           {selectedOrder && (
-            <div className="space-y-5">
+            <div className="flex flex-col min-h-0 flex-1">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-5 pr-1">
               {/* Order info */}
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-medium text-[#1b1c1d]">
@@ -953,8 +1003,9 @@ export default function PurchaseOrders() {
                 </div>
               )}
 
-              {/* Action buttons */}
-              <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between">
+            </div>
+              {/* Action buttons — outside scroll area */}
+              <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row gap-2 sm:justify-between border-t border-[#cac0c0]/20 pt-3 mt-3">
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
