@@ -80,25 +80,35 @@ export default function Onboarding() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      // Parallel: user + franchises (saves ~1 round trip)
-      const [userResult, franchisesResult] = await Promise.allSettled([
+      // Parallel: user + franchises + configs (saves round trips)
+      const [userResult, franchisesResult, configsResult] = await Promise.allSettled([
         User.me(),
         Franchise.list(),
+        FranchiseConfiguration.list("franchise_evolution_instance_id", 200),
       ]);
       const user = userResult.status === "fulfilled" ? userResult.value : null;
       const allFranchises = franchisesResult.status === "fulfilled" ? franchisesResult.value : [];
+      const configs = configsResult.status === "fulfilled" ? configsResult.value : [];
       if (!user) throw new Error("Não foi possível carregar usuário");
       if (!mountedRef.current) return;
       setCurrentUser(user);
 
+      // Enrich franchises with franchise_name from configs
+      const configMap = {};
+      configs.forEach(c => { if (c.franchise_name) configMap[c.franchise_evolution_instance_id] = c.franchise_name; });
+      const enriched = allFranchises.map(f => ({
+        ...f,
+        franchise_name: configMap[f.evolution_instance_id] || null,
+      }));
+
       if (user.role === "admin") {
-        setFranchises(allFranchises);
+        setFranchises(enriched);
         const allOb = await OnboardingChecklist.list();
         if (!mountedRef.current) return;
         setAllChecklists(allOb);
       } else {
         const ids = user.managed_franchise_ids || [];
-        const myFranchises = allFranchises.filter(f =>
+        const myFranchises = enriched.filter(f =>
           ids.includes(f.evolution_instance_id) || ids.includes(f.id)
         );
         setFranchises(myFranchises);
