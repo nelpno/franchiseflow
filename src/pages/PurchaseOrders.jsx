@@ -312,7 +312,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar alterações.");
+      toast.error(error?.message || "Erro ao salvar alterações.");
     } finally {
       setSaving(false);
     }
@@ -355,27 +355,29 @@ export default function PurchaseOrders() {
 
       await PurchaseOrder.update(orderId, updates);
 
-      // Notificar franqueado sobre mudança de status (fire-and-forget)
-      const franchiseUUID = franchiseMap[selectedOrder?.franchise_id]?.id;
-      if (franchiseUUID) {
-        const statusMessages = {
-          confirmado: { title: "Pedido confirmado", message: "Seu pedido de reposição foi confirmado pela fábrica.", icon: "check_circle" },
-          em_rota: { title: "Pedido em rota", message: "Seu pedido está a caminho!", icon: "local_shipping" },
-          entregue: { title: "Pedido entregue", message: "Seu pedido foi entregue — estoque atualizado automaticamente.", icon: "inventory" },
-          cancelado: { title: "Pedido cancelado", message: "Seu pedido de reposição foi cancelado.", icon: "cancel" },
-        };
-        const msg = statusMessages[newStatus];
-        if (msg) {
-          supabase.rpc('notify_franchise_users', {
-            p_franchise_id: franchiseUUID,
-            p_title: msg.title,
-            p_message: msg.message,
-            p_type: newStatus === "cancelado" ? "warning" : "info",
-            p_icon: msg.icon,
-            p_link: '/Gestao?tab=reposicao',
-          }).catch(() => {});
+      // Notificar franqueado sobre mudança de status (fire-and-forget — erro aqui NÃO afeta o status)
+      try {
+        const franchiseUUID = franchiseMap[selectedOrder?.franchise_id]?.id;
+        if (franchiseUUID) {
+          const statusMessages = {
+            confirmado: { title: "Pedido confirmado", message: "Seu pedido de reposição foi confirmado pela fábrica.", icon: "check_circle" },
+            em_rota: { title: "Pedido em rota", message: "Seu pedido está a caminho!", icon: "local_shipping" },
+            entregue: { title: "Pedido entregue", message: "Seu pedido foi entregue — estoque atualizado automaticamente.", icon: "inventory" },
+            cancelado: { title: "Pedido cancelado", message: "Seu pedido de reposição foi cancelado.", icon: "cancel" },
+          };
+          const msg = statusMessages[newStatus];
+          if (msg) {
+            await supabase.rpc('notify_franchise_users', {
+              p_franchise_id: franchiseUUID,
+              p_title: msg.title,
+              p_message: msg.message,
+              p_type: newStatus === "cancelado" ? "warning" : "info",
+              p_icon: msg.icon,
+              p_link: '/Gestao?tab=reposicao',
+            });
+          }
         }
-      }
+      } catch { /* notificação é bonus, status já foi alterado */ }
 
       if (newStatus === "entregue") {
         toast.success("Pedido entregue! Estoque da franquia atualizado.");
@@ -390,7 +392,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao alterar status:", error);
-      toast.error("Erro ao alterar status do pedido.");
+      toast.error(error?.message || "Erro ao alterar status do pedido.");
     } finally {
       setSaving(false);
       setConfirmAction(null);
