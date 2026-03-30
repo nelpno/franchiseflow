@@ -540,8 +540,8 @@ export default function Onboarding() {
                           className="w-full flex items-center gap-4 px-5 py-4 hover:bg-[#d4af37]/5 transition-colors text-left"
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-[#1b1c1d] text-sm">{f.owner_name}</div>
-                            <div className="text-xs text-[#4a3d3d]/70">{f.city}</div>
+                            <div className="font-semibold text-[#1b1c1d] text-sm">{f.franchise_name || f.owner_name}</div>
+                            <div className="text-xs text-[#4a3d3d]/70">{f.owner_name}{f.city ? ` · ${f.city}` : ""}</div>
                           </div>
                           <div className="w-24 sm:w-32">
                             <div className="bg-[#291715]/5 rounded-full h-2 overflow-hidden">
@@ -591,7 +591,7 @@ export default function Onboarding() {
                     const ob = allChecklists.find(c => c.franchise_id === f.evolution_instance_id);
                     return (
                       <SelectItem key={f.id} value={f.evolution_instance_id}>
-                        <span className="font-medium">{f.owner_name}</span>
+                        <span className="font-medium">{f.franchise_name || f.owner_name}</span>
                         <span className="text-[#4a3d3d]/70 ml-2">{f.city}</span>
                         {ob && <span className="ml-2 text-xs text-[#4a3d3d]/70">{ob.completion_percentage}%</span>}
                       </SelectItem>
@@ -640,9 +640,12 @@ export default function Onboarding() {
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                   <div>
                     <h2 className="text-lg sm:text-xl font-bold text-[#1b1c1d]">
-                      {selectedFranchise?.owner_name || franchises[0]?.owner_name}
+                      {selectedFranchise?.franchise_name || selectedFranchise?.owner_name || franchises[0]?.franchise_name || franchises[0]?.owner_name}
                     </h2>
-                    <p className="text-[#4a3d3d] text-sm">{selectedFranchise?.city || franchises[0]?.city}</p>
+                    <p className="text-[#4a3d3d] text-sm">
+                      {selectedFranchise?.owner_name || franchises[0]?.owner_name}
+                      {(selectedFranchise?.city || franchises[0]?.city) ? ` · ${selectedFranchise?.city || franchises[0]?.city}` : ""}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
