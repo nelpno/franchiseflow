@@ -334,8 +334,18 @@ npm run lint      # ESLint
 - **API**: `https://porto.dynamicagents.tech/api` — header `X-API-Key`
 - **Stack**: franchiseflow (ID 39, Swarm). Endpoint ID `1`. NÃO git-based
 - **GitHub**: `https://github.com/nelpno/franchiseflow.git`
-- **Fluxo**: `git push` → force update service (increment ForceUpdate). SEMPRE nessa ordem
-- **502 por ~1 min durante rebuild** — normal. Hard refresh (Ctrl+Shift+R) após deploy
+- **Service ID**: `2zb27nndn5sg8zweyie6wscpc` (franchiseflow_app)
+- **Fluxo deploy (2 passos OBRIGATÓRIOS)**:
+  1. `git push origin main`
+  2. Force update do **serviço Docker** (NÃO apenas stack update):
+     ```
+     GET /endpoints/1/docker/services/{SERVICE_ID} → pegar Version.Index
+     POST /endpoints/1/docker/services/{SERVICE_ID}/update?version={idx}
+       body: spec com TaskTemplate.ForceUpdate incrementado
+     ```
+- **NUNCA usar apenas stack update** (`PUT /stacks/39`) — isso NÃO recria o container quando a imagem não muda. O Swarm só recria se ForceUpdate do serviço Docker for incrementado
+- **502 por ~1-2 min durante rebuild** — normal. Hard refresh (Ctrl+Shift+R) após deploy
+- **Verificação pós-deploy**: usar Playwright para buscar o chunk JS e conferir se contém código novo
 - **ctx_execute com JavaScript** para HTTP ao Portainer (NÃO shell+jq, jq quebrado no Windows)
 - **PORTAINER_API_KEY** em `.claude/settings.local.json`
 - Nginx: `$uri` em try_files precisa escaping. Traefik: `nelsonNet` + `certresolver=letsencryptresolver`
