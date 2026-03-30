@@ -118,11 +118,13 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `whatsapp_instance_id` pode DIFERIR de `evolution_instance_id` em franquias legadas
 - Telefones: SEMPRE prefixo 55 no WhatsApp. DB armazena 11 dígitos
 - `blockedNumbers`: cache dinâmico via staticData, busca a cada 30min, formato 11 dígitos
+- **DEDUP LID**: WhatsApp com LID envia 2 eventos por mensagem (placeholder sem Type + evento completo). Filtro `!info.Type` no `Code in JavaScript` descarta o placeholder. Se cliente reportar msgs duplicadas, verificar se filtro ainda está ativo
 - Prompts usam dados estruturados: `payment_delivery[]`, `delivery_fee_rules[]` JSONB — NÃO campos texto antigos
 - `delivery_schedule_text`: campo computado na view, gera texto de horários/frete por dia para o bot (ex: "Seg-Sex: 06:00-23:00 | Sab: 08:00-14:00")
 - `valor_total` do $fromAI() pode vir 0 — calcular sum(qty * price) + frete como fallback
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
 - n8n API URL: `https://teste.dynamicagents.tech/api/v1` (env `N8N_API_URL`) — NÃO confundir com webhook base
+- **ATENÇÃO**: `N8N_API_URL` no `.env` é apenas `https://teste.dynamicagents.tech` (sem `/api/v1`) — ao usar via fetch, concatenar `/api/v1` manualmente
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`
 - n8n API PUT body DEVE incluir `name` do workflow — sem ele retorna 400 `must have required property 'name'`
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
@@ -151,6 +153,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `connectWhatsappRobot()` timeout 30s. Card: verde=conectado, cinza=desconectado (NUNCA vermelho)
 - NÃO mostrar telefone no card — "Conecte pelo QR Code"
 - `useWhatsAppConnection.js` bloqueia se campos obrigatórios do wizard não preenchidos
+- ZuckZapGo NÃO tem config de deduplicação de eventos — API spec (`/api/spec.yml`) confirma. Dedup deve ser feito no workflow n8n
+- Eventos via FB Ads (click-to-WhatsApp) são especialmente propensos a LID duplicates
 
 ### Triggers Automáticos (banco)
 - `handle_new_user`: cria profile + auto-vincula franchise + cria onboarding

@@ -31,11 +31,16 @@ export default function Login() {
     e.preventDefault();
     if (isLockedOut) return;
     setIsLoading(true);
+
+    // Safety: never stay loading forever (AuthContext global spinner takes over)
+    const safetyTimer = setTimeout(() => setIsLoading(false), 10000);
+
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       setFailedAttempts(0);
-      // AuthContext.onAuthStateChange('SIGNED_IN') cuida do redirect via App.jsx
+      // Reset local loading — AuthContext.onAuthStateChange('SIGNED_IN') takes over
+      setIsLoading(false);
     } catch (error) {
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
@@ -48,6 +53,8 @@ export default function Login() {
           : 'Erro ao fazer login: ' + error.message);
       }
       setIsLoading(false);
+    } finally {
+      clearTimeout(safetyTimer);
     }
   };
 

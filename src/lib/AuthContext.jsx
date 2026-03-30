@@ -13,6 +13,8 @@ export const AuthProvider = ({ children }) => {
     () => sessionStorage.getItem('needs_password_setup') === 'true'
   );
   const lastAuthUserRef = React.useRef(null);
+  const lastSignedInTimeRef = React.useRef(0);
+  const loginSafetyTimerRef = React.useRef(null);
 
   // Persist selected franchise to localStorage
   const setSelectedFranchise = useCallback((franchise) => {
@@ -177,19 +179,47 @@ export const AuthProvider = ({ children }) => {
           setNeedsPasswordSetup(true);
           sessionStorage.setItem('needs_password_setup', 'true');
           sessionStorage.setItem('password_setup_type', 'recovery');
+          setIsLoading(true);
           await loadUserProfile(session.user);
         } else if (event === 'SIGNED_IN' && session?.user) {
+          lastSignedInTimeRef.current = Date.now();
+          setIsLoading(true);
+
+          // Safety timeout: if profile load hangs >10s, show retry UI
+          const signInTime = lastSignedInTimeRef.current;
+          if (loginSafetyTimerRef.current) clearTimeout(loginSafetyTimerRef.current);
+          loginSafetyTimerRef.current = setTimeout(() => {
+            if (lastSignedInTimeRef.current === signInTime) {
+              console.warn('[Auth] Login safety timeout — profile load took >10s');
+              setIsLoading(false);
+              setProfileLoadFailed(true);
+            }
+            loginSafetyTimerRef.current = null;
+          }, 10000);
+
           await loadUserProfile(session.user);
+          if (loginSafetyTimerRef.current) {
+            clearTimeout(loginSafetyTimerRef.current);
+            loginSafetyTimerRef.current = null;
+          }
         } else if (event === 'SIGNED_OUT') {
+          // Guard: ignore stale SIGNED_OUT if a SIGNED_IN fired recently (race condition)
+          const msSinceSignIn = Date.now() - lastSignedInTimeRef.current;
+          if (msSinceSignIn < 3000) {
+            console.warn('[Auth] Ignoring stale SIGNED_OUT — SIGNED_IN fired', msSinceSignIn, 'ms ago');
+            return;
+          }
           setUser(null);
           setIsAuthenticated(false);
           setProfileLoadFailed(false);
+          setIsLoading(false);
         }
       }
     );
 
     return () => {
       clearTimeout(timeout);
+      if (loginSafetyTimerRef.current) clearTimeout(loginSafetyTimerRef.current);
       subscription.unsubscribe();
     };
   }, [loadUserProfile]);
@@ -198,6 +228,7 @@ export const AuthProvider = ({ children }) => {
     // Clear state immediately so UI reacts even if signOut is slow
     setUser(null);
     setIsAuthenticated(false);
+    setIsLoading(false);
     setProfileLoadFailed(false);
     setSelectedFranchiseState(null);
     lastAuthUserRef.current = null;
