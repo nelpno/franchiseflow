@@ -35,7 +35,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       setFailedAttempts(0);
-      window.location.href = '/';
+      // AuthContext.onAuthStateChange('SIGNED_IN') cuida do redirect via App.jsx
     } catch (error) {
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
