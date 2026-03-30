@@ -263,9 +263,9 @@ function renderSummaryPage(doc, autoTable, ordersWithItems) {
     items.forEach((item) => {
       const qty = Number(item.quantity ?? 0);
       if (qty <= 0) return;
-      const key = item.product_name;
+      const key = (item.product_name || "").trim().toLowerCase();
       if (!productMap[key]) {
-        productMap[key] = { product_name: key, unit_price: Number(item.unit_price || 0), totalQty: 0 };
+        productMap[key] = { product_name: item.product_name, unit_price: Number(item.unit_price || 0), totalQty: 0 };
       }
       productMap[key].totalQty += qty;
     });

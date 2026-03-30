@@ -479,6 +479,7 @@ export default function PurchaseOrders() {
   // --- Bulk Picking Sheet ---
 
   const handleBulkPickingSheet = async () => {
+    if (selectedIds.size === 0) return;
     setGeneratingBulkPdf(true);
     const toastId = toast.loading("Gerando fichas de separação...");
     try {
