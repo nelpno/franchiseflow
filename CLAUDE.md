@@ -35,6 +35,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Rota `/set-password`: detecta `type=invite`/`type=recovery` no hash OU search params (PKCE). Redireciona para `/login` quando não autenticado
 - Detecção de convite usa `user_metadata.password_set` (PKCE não passa `type=invite`). SetPassword marca `password_set: true` via `updateUser()`
 - `password_setup_type` usa `sessionStorage` (NÃO localStorage)
+- Login.jsx: NUNCA `window.location.href` após signIn — `onAuthStateChange('SIGNED_IN')` + App.jsx `Navigate` cuida do redirect (evita race condition reload vs sessão)
 - Login.jsx tem "Primeiro acesso? Defina sua senha aqui" como rede de segurança
 - Login.jsx e SetPassword.jsx compartilham template visual — manter consistência
 - `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (NÃO seta `isAuthenticated=true` com dados vazios)
