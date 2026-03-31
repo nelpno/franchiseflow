@@ -212,14 +212,14 @@ function formatPhone(phone) {
 }
 
 // ---------------------------------------------------------------------------
-// ContactAutocomplete (reused pattern from Sales.jsx)
+// ContactAutocomplete — server-side search with debounce
 // ---------------------------------------------------------------------------
 function ContactAutocomplete({
   value,
   onChange,
   onSelect,
   onCreateNew,
-  contacts,
+  franchiseId,
   placeholder = "Buscar por nome ou telefone...",
   className = "",
   id,
@@ -227,7 +227,10 @@ function ContactAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [hasQuery, setHasQuery] = useState(false);
+  const [searching, setSearching] = useState(false);
   const wrapperRef = useRef(null);
+  const debounceRef = useRef(null);
+  const abortRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -236,44 +239,69 @@ function ContactAutocomplete({
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+    };
   }, []);
+
+  const doSearch = useCallback(async (term) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      setSearching(true);
+      const digits = term.replace(/\D/g, "");
+      const searchTerm = digits.length >= 3 ? digits : term.trim();
+      const searchCols = digits.length >= 3 ? ["telefone"] : ["nome"];
+
+      const results = await Contact.search(searchTerm, {
+        columns: "id, nome, telefone, status, franchise_id, endereco, bairro",
+        searchColumns: searchCols,
+        criteria: franchiseId ? { franchise_id: franchiseId } : undefined,
+        limit: 8,
+        signal: controller.signal,
+      });
+      if (!controller.signal.aborted) {
+        setSearchResults(results);
+        setShowDropdown(true);
+      }
+    } catch (err) {
+      if (err?.name !== "AbortError") {
+        console.error("Erro na busca de contatos:", err);
+        setSearchResults([]);
+      }
+    } finally {
+      if (!controller.signal.aborted) setSearching(false);
+    }
+  }, [franchiseId]);
 
   const handleChange = (e) => {
     const inputVal = e.target.value;
     onChange(inputVal);
 
-    if (inputVal.length < 1) {
+    if (inputVal.trim().length < 1) {
       setSearchResults([]);
       setShowDropdown(false);
       setHasQuery(false);
+      clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
       return;
     }
 
     setHasQuery(true);
-    const normalized = normalizePhone(inputVal);
-    const lowerInput = inputVal.toLowerCase();
-
-    const matches = contacts
-      .filter((c) => {
-        const cPhone = normalizePhone(c.telefone || "");
-        const cName = (c.nome || "").toLowerCase();
-        return (
-          cPhone.includes(normalized) ||
-          cName.includes(lowerInput) ||
-          (c.telefone || "").includes(inputVal)
-        );
-      })
-      .slice(0, 6);
-
-    setSearchResults(matches);
     setShowDropdown(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => doSearch(inputVal), 300);
   };
 
   const handleSelect = (contact) => {
     setShowDropdown(false);
     setSearchResults([]);
     setHasQuery(false);
+    clearTimeout(debounceRef.current);
     onSelect(contact);
   };
 
@@ -292,31 +320,34 @@ function ContactAutocomplete({
       />
       {showDropdown && (searchResults.length > 0 || hasQuery) && (
         <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-[#291715]/10 max-h-60 overflow-y-auto">
-          {searchResults.map((contact) => {
-            const purchaseCount = contact.total_purchases || 0;
-            return (
-              <button
-                key={contact.id}
-                type="button"
-                onClick={() => handleSelect(contact)}
-                className="w-full text-left px-4 py-3 hover:bg-[#fbf9fa] transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium text-[#1b1c1d] truncate block">
-                    {contact.nome || "Sem nome"}
-                  </span>
-                  <span className="text-sm text-[#4a3d3d]">
-                    {formatPhone(contact.telefone)}
-                  </span>
-                </div>
-                {purchaseCount > 0 && (
-                  <Badge className="bg-[#d4af37]/15 text-[#775a19] rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0">
-                    {purchaseCount} {purchaseCount === 1 ? "compra" : "compras"}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
+          {searching && searchResults.length === 0 && (
+            <div className="px-4 py-3 text-sm text-[#7a6d6d] flex items-center gap-2">
+              <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+              Buscando...
+            </div>
+          )}
+          {searchResults.map((contact) => (
+            <button
+              key={contact.id}
+              type="button"
+              onClick={() => handleSelect(contact)}
+              className="w-full text-left px-4 py-3 hover:bg-[#fbf9fa] transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
+            >
+              <div className="flex-1 min-w-0">
+                <span className="font-medium text-[#1b1c1d] truncate block">
+                  {contact.nome || "Sem nome"}
+                </span>
+                <span className="text-sm text-[#4a3d3d]">
+                  {formatPhone(contact.telefone)}
+                </span>
+              </div>
+            </button>
+          ))}
+          {!searching && hasQuery && searchResults.length === 0 && (
+            <div className="px-4 py-3 text-sm text-[#7a6d6d]">
+              Nenhum contato encontrado
+            </div>
+          )}
           {hasQuery && onCreateNew && (
             <button
               type="button"
@@ -587,13 +618,8 @@ export default function SaleForm({
     if (contactId) {
       setContactId(null); // user is typing again, clear selection
     }
-    const digits = val.replace(/\D/g, "");
-    const hasEnoughDigits = digits.length >= 8;
-    const hasMatch = contacts.some((c) => {
-      const cPhone = normalizePhone(c.telefone || "");
-      return cPhone.includes(normalizePhone(val)) || (c.nome || "").toLowerCase().includes(val.toLowerCase());
-    });
-    setIsNewContact(hasEnoughDigits && !hasMatch);
+    // isNewContact detection now simplified — "Novo contato" button is always in dropdown
+    setIsNewContact(false);
   };
 
   // Open inline create dialog
@@ -656,15 +682,24 @@ export default function SaleForm({
     // If user typed something but didn't pick, try to match or skip
     if (!contactSearch || contactSearch.trim().length < 2) return null;
 
-    const normalized = normalizePhone(contactSearch);
-    const existing = contacts.find(
-      (c) => normalizePhone(c.telefone || "") === normalized
-    );
-    if (existing) return existing.id;
+    // Server-side lookup by phone
+    const digits = contactSearch.replace(/\D/g, "");
+    if (digits.length >= 8) {
+      try {
+        const matches = await Contact.search(digits, {
+          columns: "id, telefone",
+          searchColumns: ["telefone"],
+          criteria: franchiseId ? { franchise_id: franchiseId } : undefined,
+          limit: 1,
+        });
+        if (matches.length > 0) return matches[0].id;
+      } catch { /* proceed to create */ }
+    }
 
     // Create new contact from phone + name
     try {
-      const isPhone = /\d{8,}/.test(contactSearch.replace(/\D/g, ""));
+      const isPhone = digits.length >= 8;
+      const normalized = normalizePhone(contactSearch);
       const newContact = await Contact.create({
         franchise_id: franchiseId,
         telefone: isPhone ? normalized : "",
@@ -862,7 +897,7 @@ export default function SaleForm({
           onChange={handleContactSearchChange}
           onSelect={handleContactSelect}
           onCreateNew={handleOpenInlineCreate}
-          contacts={contacts}
+          franchiseId={franchiseId}
           className="bg-[#e9e8e9]/50"
         />
         {isNewContact && !showInlineCreate && (

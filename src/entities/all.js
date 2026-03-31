@@ -58,6 +58,31 @@ function createEntity(tableName) {
       return data || [];
     },
 
+    async search(term, { columns, signal, limit = 20, searchColumns = [], criteria } = {}) {
+      let query = supabase.from(tableName).select(columns || '*');
+      if (signal) query = query.abortSignal(signal);
+      if (criteria) {
+        for (const [key, value] of Object.entries(criteria)) {
+          if (Array.isArray(value)) {
+            query = query.in(key, value);
+          } else {
+            query = query.eq(key, value);
+          }
+        }
+      }
+      if (term && searchColumns.length > 0) {
+        const orConditions = searchColumns
+          .map(col => `${col}.ilike.%${term}%`)
+          .join(',');
+        query = query.or(orConditions);
+      }
+      query = query.order('created_at', { ascending: false });
+      if (limit) query = query.limit(limit);
+      const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+      if (error) throw error;
+      return data || [];
+    },
+
     async create(data) {
       const { data: created, error } = await withTimeout(
         supabase

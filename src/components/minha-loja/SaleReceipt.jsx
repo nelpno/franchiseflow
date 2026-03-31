@@ -106,7 +106,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         {(contact?.endereco || contact?.bairro) && (
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span style={{ color: "#666", flexShrink: 0 }}>Endereço</span>
-            <span style={{ textAlign: "right", color: "#444", fontSize: 11 }}>
+            <span style={{ textAlign: "right", fontWeight: 600 }}>
               {[contact.endereco, contact.bairro].filter(Boolean).join(" — ")}
             </span>
           </div>
