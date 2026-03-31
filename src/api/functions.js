@@ -58,6 +58,25 @@ export async function inviteFranchisee(email) {
   return data;
 }
 
+// Convite de staff (admin/gerente) — cria conta + define role via n8n
+export async function staffInvite(email, role) {
+  const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/staff-invite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email,
+      role,
+      redirectTo: window.location.origin + '/set-password?type=invite'
+    })
+  }, 30000);
+  if (!response.ok) throw new Error('Erro ao enviar convite: ' + response.status);
+  const data = await response.json();
+  if (data.code && data.code >= 400) {
+    throw new Error(data.msg || data.message || 'Erro no servidor ao criar convite');
+  }
+  return data;
+}
+
 // WhatsApp History — busca mensagens do ZuckZapGo
 const ZUCKZAPGO_URL = import.meta.env.VITE_ZUCKZAPGO_URL || '';
 

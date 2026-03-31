@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Franchise, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
-import { inviteFranchisee } from "@/api/functions";
+import { inviteFranchisee, staffInvite } from "@/api/functions";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -258,8 +258,8 @@ export default function Franchises() {
         await User.update(existingUser.id, { role: addStaffRole });
         toast.success(`${existingUser.full_name || addStaffEmail} agora é ${addStaffRole === "admin" ? "Admin" : "Gerente"}`);
       } else {
-        toast.error("Usuário não encontrado. Ele precisa criar conta primeiro.");
-        return;
+        await staffInvite(addStaffEmail, addStaffRole);
+        toast.success(`Convite enviado para ${addStaffEmail}. Ele receberá um email para criar a senha.`);
       }
       setShowAddStaff(false);
       setAddStaffEmail("");
@@ -1116,7 +1116,7 @@ export default function Franchises() {
                   onChange={(e) => setAddStaffEmail(e.target.value)}
                   className="mt-1 bg-[#e9e8e9] border-none rounded-xl"
                 />
-                <p className="text-xs text-[#4a3d3d] mt-1">O usuário precisa ter conta criada no sistema</p>
+                <p className="text-xs text-[#4a3d3d] mt-1">Se não tiver conta, enviaremos um convite por email</p>
               </div>
               <div>
                 <Label className="text-[#1b1c1d]">Cargo</Label>
