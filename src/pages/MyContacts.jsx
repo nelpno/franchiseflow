@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import ActionPanel from "@/components/my-contacts/ActionPanel";
 
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
@@ -108,7 +107,6 @@ export default function MyContacts() {
   const [isCreating, setIsCreating] = useState(false);
   const [newContactForm, setNewContactForm] = useState({ nome: "", telefone: "", endereco: "", bairro: "", notas: "" });
   const [isSaving, setIsSaving] = useState(false);
-  const [actionsExpanded, setActionsExpanded] = useState(true);
   const [sortBy, setSortBy] = useState("recent");
   const [dateFilter, setDateFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -490,27 +488,6 @@ export default function MyContacts() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Smart Actions Panel */}
-      {contacts.length > 0 && (
-        <div className="space-y-2">
-          <button
-            onClick={() => setActionsExpanded(!actionsExpanded)}
-            className="flex items-center gap-2 text-sm font-bold font-plus-jakarta text-[#1b1c1d] hover:text-[#b91c1c] transition-colors"
-          >
-            <MaterialIcon icon="bolt" size={18} className="text-[#d4af37]" />
-            Ações Sugeridas
-            <MaterialIcon
-              icon={actionsExpanded ? "expand_less" : "expand_more"}
-              size={18}
-              className="text-[#4a3d3d]"
-            />
-          </button>
-          {actionsExpanded && (
-            <ActionPanel contacts={contacts} onContactUpdate={loadContacts} />
-          )}
-        </div>
-      )}
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">

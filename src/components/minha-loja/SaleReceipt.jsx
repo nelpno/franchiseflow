@@ -64,10 +64,10 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           src={logoMaxi}
           alt="Maxi Massas"
           style={{
-            width: 52,
-            height: 52,
+            width: 80,
+            height: 80,
             objectFit: "contain",
-            margin: "0 auto 6px",
+            margin: "0 auto 10px",
             display: "block",
           }}
         />
