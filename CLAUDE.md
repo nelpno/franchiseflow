@@ -57,7 +57,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `onboarding_checklists` RLS INSERT permite admin E franqueado
 
 ### Filtro de Franquias (src/lib/franchiseUtils.js)
-- `getAvailableFranchises(franchises, user)` — filtra por role, aceita UUID e evolution_instance_id
+- `getAvailableFranchises(franchises, user)` — admin/manager vê todas; franchisee filtra por managed_franchise_ids
 - `findFranchise(franchises, id)` — lookup por qualquer formato de ID
 - Constantes: `PAYMENT_METHODS`, `DELIVERY_METHODS`, `BOT_PERSONALITIES`, `PIX_KEY_TYPES`, `WEEKDAYS`
 - SEMPRE usar essas funções — NUNCA `managed_franchise_ids[0]` direto
@@ -235,6 +235,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 ## UX por Role
 - **Franqueado**: sidebar 6 itens + bottom nav mobile 5 slots (FAB Vender no centro)
 - **Admin**: itens admin (Relatórios, Financeiro, Acompanhamento, Pedidos, Franqueados)
+- **Manager (Gerente)**: mesma visão do admin (AdminDashboard, nav admin, todas as franquias) mas SEM botões de excluir franquia/staff. Checagens: `role === "admin" || role === "manager"` para visão, `role === "admin"` para delete
 - Terminologia: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio"), NÃO usar "Líquido"
 - AdminHeader fixo (`md:fixed md:left-[260px]`) — ajustar se mudar sidebar width
 - Wizard: 6 passos visuais, Revisão NÃO conta (X/5). Upload catálogo JPG only
@@ -283,7 +284,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 
 **Error handling:** Mostrar `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout. `setIsSubmitting` SEMPRE em `finally`. Toast separados sucesso/erro.
 
-**Patterns:** NUNCA importar supabase direto. supabaseClient.js tem custom lock (Navigator Locks deadlock). AdminRoute checa `isLoading`. `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval. Draft localStorage max 24h.
+**Patterns:** NUNCA importar supabase direto. supabaseClient.js tem custom lock (Navigator Locks deadlock). AdminRoute aceita admin E manager (checa `isLoading`). `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval. Draft localStorage max 24h.
 
 ### UI & Design
 - Fonte mínima `text-xs` (12px). Opacity mínima texto `opacity-70`. Touch target `min-h-[40px]`
