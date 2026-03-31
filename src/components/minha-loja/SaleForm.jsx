@@ -716,7 +716,7 @@ export default function SaleForm({
         discount_type: discountInput > 0 ? discountType : null,
         discount_input: discountInput > 0 ? discountInput : null,
         net_value: netValue,
-        sale_date: sale?.sale_date || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })(),
+        sale_date: saleDate,
       };
 
       let saleId;
@@ -1177,6 +1177,18 @@ export default function SaleForm({
           </div>
         )}
       </MobileSection>
+
+      {/* Sale date */}
+      <div className="flex items-center gap-3 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
+        <MaterialIcon icon="calendar_today" size={18} className="text-[#7a6d6d]" />
+        <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Data da venda</Label>
+        <Input
+          type="date"
+          value={saleDate}
+          onChange={(e) => setSaleDate(e.target.value)}
+          className="w-40 bg-white text-sm"
+        />
+      </div>
 
       {/* Summary */}
       <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 space-y-2">
