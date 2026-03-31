@@ -25,8 +25,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
+import MarketingPaymentsAdmin from "@/components/marketing/MarketingPaymentsAdmin";
 
 // REST API direta — bypass TOTAL do supabase-js (trava em marketing_files)
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -883,6 +885,7 @@ export default function Marketing() {
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
   const [showUpload, setShowUpload] = useState(false);
+  const [activeTab, setActiveTab] = useState("materiais");
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -1049,6 +1052,21 @@ export default function Marketing() {
         )}
       </div>
 
+      {(isAdmin || user?.role === "manager") && (
+        <Tabs defaultValue="materiais" onValueChange={(v) => setActiveTab(v)}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="materiais">Materiais</TabsTrigger>
+            <TabsTrigger value="investimento">Investimento</TabsTrigger>
+          </TabsList>
+
+          {activeTab === "investimento" && (
+            <MarketingPaymentsAdmin franchises={franchises} />
+          )}
+        </Tabs>
+      )}
+
+      {activeTab === "materiais" && (
+        <div className="space-y-6">
       {/* Search + Filters */}
       <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
         <CardContent className="p-4 space-y-3">
@@ -1258,6 +1276,9 @@ export default function Marketing() {
               </div>
             );
           })}
+        </div>
+      )}
+
         </div>
       )}
 

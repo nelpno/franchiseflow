@@ -130,3 +130,7 @@ export const WEEKDAYS = [
   { value: "sab", label: "Sáb" },
   { value: "dom", label: "Dom" },
 ];
+
+// Marketing — taxa de imposto sobre valor arrecadado (13%)
+export const MARKETING_TAX_RATE = 0.13;
+export const marketingLiquid = (amount) => amount * (1 - MARKETING_TAX_RATE);

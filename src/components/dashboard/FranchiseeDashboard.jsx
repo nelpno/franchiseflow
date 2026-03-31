@@ -17,6 +17,7 @@ import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
 import SmartActions from "./SmartActions";
 import PeriodComparisonCard from "./PeriodComparisonCard";
+import MarketingPaymentCard from "./MarketingPaymentCard";
 import { generateSmartActions } from "@/lib/smartActions";
 
 export default function FranchiseeDashboard() {
@@ -317,6 +318,8 @@ export default function FranchiseeDashboard() {
         franchiseId={evoId}
         dailyGoal={dailyGoal}
       />
+
+      <MarketingPaymentCard />
 
       <PeriodComparisonCard franchiseId={evoId} />
 
