@@ -10,7 +10,7 @@
  */
 export function getAvailableFranchises(franchises, currentUser) {
   if (!currentUser || !franchises) return [];
-  if (currentUser.role === "admin") return franchises;
+  if (currentUser.role === "admin" || currentUser.role === "manager") return franchises;
 
   const ids = currentUser.managed_franchise_ids || [];
   return franchises.filter(

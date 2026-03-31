@@ -151,7 +151,7 @@ export default function Layout({ children, currentPageName }) {
     mountedRef.current = true;
     if (!currentUser) return;
 
-    if (currentUser.role === "admin") {
+    if (currentUser.role === "admin" || currentUser.role === "manager") {
       loadQuickStats();
       setOnboardingLoaded(true);
       return () => { mountedRef.current = false; };
@@ -261,7 +261,7 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
 
   const filteredNavigationItems = navigationItems
     .filter((item) => {

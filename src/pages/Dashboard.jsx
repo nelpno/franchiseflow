@@ -4,7 +4,7 @@ import AdminDashboard from "@/components/dashboard/AdminDashboard";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "manager";
 
   return isAdmin ? <AdminDashboard /> : <FranchiseeDashboard />;
 }

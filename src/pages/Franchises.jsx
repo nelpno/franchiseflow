@@ -589,7 +589,7 @@ export default function Franchises() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1 ml-3 shrink-0">
-                            {staff.id !== currentUser?.id && (
+                            {staff.id !== currentUser?.id && currentUser?.role === "admin" && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -1280,16 +1280,18 @@ export default function Franchises() {
                       <MaterialIcon icon="mail" size={16} className="mr-2" />
                       Convidar Franqueado
                     </Button>
-                    <Button
-                      variant="ghost"
-                      className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl"
-                      onClick={() => {
-                        setDeletingFranchise(selectedFranchise);
-                      }}
-                    >
-                      <MaterialIcon icon="delete" size={16} className="mr-2" />
-                      Excluir Franquia
-                    </Button>
+                    {currentUser?.role === "admin" && (
+                      <Button
+                        variant="ghost"
+                        className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl"
+                        onClick={() => {
+                          setDeletingFranchise(selectedFranchise);
+                        }}
+                      >
+                        <MaterialIcon icon="delete" size={16} className="mr-2" />
+                        Excluir Franquia
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
