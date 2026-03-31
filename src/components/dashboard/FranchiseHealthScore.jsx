@@ -185,7 +185,7 @@ const CATEGORY_CONFIG = [
 
 export default function FranchiseHealthScore({
   franchises,
-  todaySales,
+  allSales,
   inventoryByFranchise,
   purchaseOrders,
   todayContacts,
@@ -200,7 +200,7 @@ export default function FranchiseHealthScore({
       .map((f) => {
         const score = calculateHealthScore({
           franchise: f,
-          todaySales,
+          todaySales: allSales,
           inventoryItems: inventoryByFranchise[f.id] || [],
           purchaseOrders,
           todayContacts,
@@ -211,7 +211,7 @@ export default function FranchiseHealthScore({
         };
       })
       .sort((a, b) => a.total - b.total); // worst first for attention
-  }, [franchises, todaySales, inventoryByFranchise, purchaseOrders, todayContacts]);
+  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, todayContacts]);
 
   if (scores.length === 0) return null;
 

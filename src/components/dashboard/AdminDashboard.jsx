@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Franchise, DailySummary, Sale, Contact, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration } from "@/entities/all";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -11,7 +11,6 @@ import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
 import FranchiseHealthScore from "./FranchiseHealthScore";
 import DailyRevenueChart from "./DailyRevenueChart";
-import MessagesTrend from "./MessagesTrend";
 import { buildConfigMap } from "@/lib/franchiseUtils";
 
 export default function AdminDashboard() {
@@ -22,9 +21,7 @@ export default function AdminDashboard() {
   const [todayContacts, setTodayContacts] = useState([]);
   const [todaySales, setTodaySales] = useState([]);
   const [yesterdaySales, setYesterdaySales] = useState([]);
-  const [yesterdayContacts, setYesterdayContacts] = useState([]);
   const [allSales, setAllSales] = useState([]);
-  const [allContacts, setAllContacts] = useState([]);
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [configMap, setConfigMap] = useState({});
@@ -60,11 +57,9 @@ export default function AdminDashboard() {
 
       const results = await Promise.allSettled([
         fetchFranchises(),
-        DailySummary.list("-date", 90, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
+        DailySummary.list("-date", 300, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
-        DailyUniqueContact.filter({ date: yesterday }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
-        Contact.list('-created_at', 2000, { columns: 'id, created_at, franchise_id', signal }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, 1000, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
@@ -76,12 +71,10 @@ export default function AdminDashboard() {
       const franchiseData = getValue(results[0]);
       const summaryData = getValue(results[1]);
       const todayContactData = getValue(results[2]);
-      const yesterdayContactData = getValue(results[3]);
-      const allSaleData = getValue(results[4]);
-      const allContactData = getValue(results[5]);
+      const allSaleData = getValue(results[3]);
       const todaySaleData = allSaleData.filter(s => s.sale_date === today);
       const yesterdaySaleData = allSaleData.filter(s => s.sale_date === yesterday);
-      const purchaseOrderData = getValue(results[6]);
+      const purchaseOrderData = getValue(results[4]);
 
       // Franchises is critical — if it failed, show error state
       if (results[0].status === "rejected") {
@@ -93,7 +86,7 @@ export default function AdminDashboard() {
 
       // Log non-critical failures without blocking the dashboard
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","yesterdayContacts","allSales","allContacts","purchaseOrders","estoque","configs"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","purchaseOrders","estoque","configs"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -103,15 +96,13 @@ export default function AdminDashboard() {
       setFranchises(franchiseData);
       setSummaries(summaryData);
       setTodayContacts(todayContactData);
-      setYesterdayContacts(yesterdayContactData);
       setTodaySales(todaySaleData);
       setYesterdaySales(yesterdaySaleData);
       setAllSales(allSaleData);
-      setAllContacts(allContactData);
       setPurchaseOrders(purchaseOrderData);
 
-      // Inventory já veio paralelo no Promise.allSettled (index 7)
-      const allInventory = getValue(results[7]);
+      // Inventory já veio paralelo no Promise.allSettled (index 5)
+      const allInventory = getValue(results[5]);
 
       if (!mountedRef.current) return;
 
@@ -133,7 +124,7 @@ export default function AdminDashboard() {
       setInventoryByFranchise(inventoryMap);
 
       // Build configMap for standardized franchise display names
-      const configData = getValue(results[8]);
+      const configData = getValue(results[6]);
       setConfigMap(buildConfigMap(configData));
     } catch (err) {
       if (err?.name === 'AbortError') return;
@@ -160,60 +151,56 @@ export default function AdminDashboard() {
 
   useVisibilityPolling(loadData, 300000);
 
+  // Helper: sum unique_contacts from summaries for a date range
+  const contactsFromSummaries = useCallback((startDate, endDate) => {
+    return summaries
+      .filter(s => s.date >= startDate && s.date <= endDate)
+      .reduce((sum, s) => sum + (s.unique_contacts || 0), 0);
+  }, [summaries]);
+
   const stats = useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+
     if (period === "today") {
       const salesCount = todaySales.length;
       const prevSalesCount = yesterdaySales.length;
       const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
-      const contacts = todayContacts.length;
-      const prevContacts = yesterdayContacts.length;
+      // Use live todayContacts count (DailyUniqueContact), summaries for yesterday
+      const contacts = Math.max(todayContacts.length, contactsFromSummaries(todayStr, todayStr));
+      const prevContacts = contactsFromSummaries(yesterdayStr, yesterdayStr);
       const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
       const prevConversion = prevContacts > 0 ? Math.round((prevSalesCount / prevContacts) * 100) : 0;
-      return { salesCount, prevSalesCount, revenue, prevRevenue, contacts, prevContacts, conversion, prevConversion };
+      return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
     }
 
     const days = period === "7d" ? 7 : 30;
     const cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
     const prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
-    const todayStr = format(new Date(), "yyyy-MM-dd");
 
-    // Use raw sales/contacts data (like Reports.jsx) for accurate period filtering
-    const currentSales = allSales.filter(s => {
-      const d = s.sale_date;
-      return d >= cutoff && d <= todayStr;
-    });
-    const prevSales = allSales.filter(s => {
-      const d = s.sale_date;
-      return d >= prevCutoff && d < cutoff;
-    });
-    const currentContacts = allContacts.filter(c => {
-      const d = c.created_at?.substring(0, 10);
-      return d >= cutoff && d <= todayStr;
-    });
-    const prevContactsList = allContacts.filter(c => {
-      const d = c.created_at?.substring(0, 10);
-      return d >= prevCutoff && d < cutoff;
-    });
+    const currentSales = allSales.filter(s => s.sale_date >= cutoff && s.sale_date <= todayStr);
+    const prevSales = allSales.filter(s => s.sale_date >= prevCutoff && s.sale_date < cutoff);
 
     const salesCount = currentSales.length;
     const prevSalesCount = prevSales.length;
     const revenue = currentSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
     const prevRevenue = prevSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
-    const contacts = currentContacts.length;
-    const prevContacts = prevContactsList.length;
+    // Contacts from DailySummary aggregated data
+    let contacts = contactsFromSummaries(cutoff, todayStr);
+    if (todayContacts.length > 0) contacts = Math.max(contacts, contactsFromSummaries(cutoff, format(subDays(new Date(), 1), "yyyy-MM-dd")) + todayContacts.length);
+    const prevContacts = contactsFromSummaries(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
     const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
     const prevConversion = prevContacts > 0 ? Math.round((prevSalesCount / prevContacts) * 100) : 0;
 
-    return { salesCount, prevSalesCount, revenue, prevRevenue, contacts, prevContacts, conversion, prevConversion };
-  }, [period, allSales, allContacts, todaySales, yesterdaySales, todayContacts, yesterdayContacts]);
+    return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
+  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries]);
 
   // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>
     todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
     [todaySales]
   );
-  const liveTodayContactsCount = todayContacts.length;
 
   // Generate mini sparkline data from recent summaries + live today
   const sparklineData = useMemo(() => {
@@ -224,16 +211,14 @@ export default function AdminDashboard() {
       const daySummaries = summaries.filter((s) => s.date === dateStr);
       let sales = daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0);
       let revenue = daySummaries.reduce((s, r) => s + (r.sales_value || 0), 0);
-      let contacts = daySummaries.reduce((s, r) => s + (r.unique_contacts || 0), 0);
       if (dateStr === todayStr) {
         if (todaySales.length > sales) sales = todaySales.length;
         if (liveTodayRevenue > revenue) revenue = liveTodayRevenue;
-        if (liveTodayContactsCount > contacts) contacts = liveTodayContactsCount;
       }
-      last6.push({ sales, revenue, contacts });
+      last6.push({ sales, revenue });
     }
     return last6;
-  }, [summaries, todaySales, liveTodayRevenue, liveTodayContactsCount]);
+  }, [summaries, todaySales, liveTodayRevenue]);
 
   const chartDays = period === "30d" ? 30 : 7;
 
@@ -241,8 +226,7 @@ export default function AdminDashboard() {
     return (
       <div className="p-4 md:p-8 space-y-6 bg-[#fbf9fa]">
         <Skeleton className="h-14 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <Skeleton className="h-40 rounded-2xl" />
+        <div className="grid grid-cols-3 gap-4 md:gap-6">
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
@@ -271,7 +255,7 @@ export default function AdminDashboard() {
   const trendFor = (current, previous) =>
     current > previous ? 'up' : current < previous ? 'down' : null;
 
-  // Stats card configs matching Stitch design
+  // Stats card configs matching Stitch design (3 cards: vendas, faturamento, conversão)
   const statsCards = [
     {
       title: "VENDAS",
@@ -299,18 +283,6 @@ export default function AdminDashboard() {
       isValue: true,
     },
     {
-      title: "CONTATOS",
-      value: stats.contacts,
-      previousValue: stats.prevContacts,
-      materialIcon: "chat_bubble",
-      trend: trendFor(stats.contacts, stats.prevContacts),
-      iconBg: "bg-[#291715]/5",
-      iconColor: "text-[#1b1c1d]/70",
-      trendColor: null, // dynamic: red for down, primary for up
-      sparkKey: "contacts",
-      sparkColor: "#291715",
-    },
-    {
       title: "CONVERSÃO",
       value: `${stats.conversion}%`,
       previousValue: stats.prevConversion,
@@ -329,7 +301,7 @@ export default function AdminDashboard() {
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-3 gap-4 md:gap-6">
         {statsCards.map((card) => {
           // Icon is now MaterialIcon
           const numericValue = typeof card.value === "string"
@@ -430,18 +402,15 @@ export default function AdminDashboard() {
 
       <FranchiseHealthScore
         franchises={franchises}
-        todaySales={todaySales}
+        allSales={allSales}
         inventoryByFranchise={inventoryByFranchise}
         purchaseOrders={purchaseOrders}
         todayContacts={todayContacts}
         configMap={configMap}
       />
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <DailyRevenueChart summaries={summaries} isLoading={isLoading} days={chartDays} todayRevenue={liveTodayRevenue} />
-        <MessagesTrend summaries={summaries} isLoading={isLoading} days={chartDays} todayContacts={liveTodayContactsCount} />
-      </div>
+      {/* Chart — Faturamento por dia usando dados reais de vendas */}
+      <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} todayRevenue={liveTodayRevenue} />
     </div>
   );
 }

@@ -39,6 +39,10 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Login.jsx tem "Primeiro acesso? Defina sua senha aqui" como rede de segurança
 - Login.jsx e SetPassword.jsx compartilham template visual — manter consistência
 - `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (NÃO seta `isAuthenticated=true` com dados vazios)
+- supabaseClient.js: lock auth usa mutex async in-memory (promise chaining + timeout 5s). NUNCA reverter para bypass `fn()` direto — causa race condition logout→login
+- `onAuthStateChange('SIGNED_IN')`: DEVE setar `setIsLoading(true)` ANTES de `loadUserProfile`. Safety timeout 10s via `loginSafetyTimerRef`
+- `onAuthStateChange('SIGNED_OUT')`: guard `lastSignedInTimeRef` (3s) ignora evento stale. NUNCA chamar `getSession()` dentro do handler (risco de event loop)
+- Login/SetPassword: `setIsLoading(false)` OBRIGATÓRIO no caminho de sucesso — NUNCA depender de unmount para resetar loading state
 - `ProfileRetryScreen` em App.jsx: retry + "Voltar ao login" como escape. `retryProfile` busca sessão fresca via `getSession()`
 - Safety timeout auth: 8s → mostra retry UI (NÃO redirect silencioso para login)
 - `logout()` e `navigateToLogin()` são `useCallback` — sem isso, `useMemo` do contextValue é inútil (20+ consumers)
@@ -300,6 +304,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - Webhook n8n com service role (NÃO supabase.auth.admin no frontend). Workflow envia `role: 'franchisee'`
 - Convite usa APENAS `inviteFranchisee()` (webhook n8n) — NÃO chamar `resetPasswordForEmail()` junto (causa e-mail duplicado)
 - `inviteFranchisee()` envia `redirectTo: origin + '/set-password?type=invite'`
+- **Staff invite**: `staffInvite(email, role)` → webhook `/staff-invite` (workflow `jeGBs3eCHxc2EwfG`). Role dinâmico (admin/manager) via `$json.body.role`
+- `handleAddStaff`: se usuário existe em profiles → atualiza role; se não → envia convite. Supabase 23505 (duplicate) = conta já existe em auth.users
 
 ### Health Score & Acompanhamento
 - 4 dimensões: vendas 35, estoque 25, reposição 20, setup/WhatsApp 20 (atividade REMOVIDA)

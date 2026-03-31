@@ -4,18 +4,15 @@ import { formatBRL } from "@/lib/formatters";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function DailyRevenueChart({ summaries, isLoading, days = 7, todayRevenue = 0 }) {
+function DailyRevenueChart({ allSales = [], isLoading, days = 7, todayRevenue = 0 }) {
   const chartData = useMemo(() => {
     const data = [];
     const todayStr = format(new Date(), "yyyy-MM-dd");
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const daySummaries = summaries.filter(s => s.date === dateStr);
-      let revenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
-      if (dateStr === todayStr && todayRevenue > revenue) {
-        revenue = todayRevenue;
-      }
+      const daySales = allSales.filter(s => s.sale_date === dateStr);
+      const revenue = daySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       data.push({
         dayLabel: DAY_LABELS[date.getDay()],
         revenue,
@@ -23,7 +20,7 @@ function DailyRevenueChart({ summaries, isLoading, days = 7, todayRevenue = 0 })
       });
     }
     return data;
-  }, [summaries, days, todayRevenue]);
+  }, [allSales, days]);
 
   const totalRevenue = chartData.reduce((sum, d) => sum + d.revenue, 0);
   const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
