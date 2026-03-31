@@ -40,14 +40,36 @@ export async function shareImage(blob, filename = "comprovante.png") {
     }
   }
 
-  // Fallback: download
+  // Fallback desktop: print
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  const printWindow = window.open("", "_blank", "width=450,height=600");
+  if (printWindow) {
+    const doc = printWindow.document;
+    const style = doc.createElement("style");
+    style.textContent =
+      "@media print { @page { margin: 10mm; } body { margin: 0; } } " +
+      "body { display: flex; justify-content: center; padding: 0; margin: 0; } " +
+      "img { max-width: 100%; height: auto; }";
+    doc.head.appendChild(style);
+    doc.title = "Comprovante de Venda";
+
+    const img = doc.createElement("img");
+    img.src = url;
+    img.onload = () => {
+      printWindow.print();
+      printWindow.close();
+      URL.revokeObjectURL(url);
+    };
+    doc.body.appendChild(img);
+  } else {
+    // Popup blocked — fallback to download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   return true;
 }
