@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Sale, SaleItem, Contact, AuditLog } from "@/entities/all";
+import { SaleItem, Contact, AuditLog } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -754,34 +755,28 @@ export default function SaleForm({
         sale_date: saleDate,
       };
 
-      let saleId;
-      if (isEditing) {
-        await Sale.update(sale.id, saleData);
-        saleId = sale.id;
+      const itemsData = items
+        .filter((it) => it.inventory_item_id)
+        .map((it) => ({
+          inventory_item_id: it.inventory_item_id,
+          product_name: it.product_name,
+          quantity: Number(it.quantity) || 1,
+          unit_price: it.unit_price,
+          cost_price: it.cost_price,
+        }));
 
-        // Delete old sale items then re-insert
-        const oldItems = await SaleItem.filter({ sale_id: sale.id });
-        await Promise.all(oldItems.map((oi) => SaleItem.delete(oi.id)));
-      } else {
-        const created = await Sale.create(saleData);
-        saleId = created.id;
-      }
-
-      // Insert sale items
-      await Promise.all(
-        items
-          .filter((it) => it.inventory_item_id)
-          .map((it) =>
-            SaleItem.create({
-              sale_id: saleId,
-              inventory_item_id: it.inventory_item_id,
-              product_name: it.product_name,
-              quantity: Number(it.quantity) || 1,
-              unit_price: it.unit_price,
-              cost_price: it.cost_price,
-            })
-          )
+      // Atomic RPC: sale + items in single transaction (safe to retry)
+      // 60s timeout matches previous Sale.create timeout (triggers affect 28 inventory items)
+      const rpcPromise = supabase.rpc('save_sale_with_items', {
+        p_sale_id: isEditing ? sale.id : null,
+        p_sale_data: saleData,
+        p_items: itemsData,
+      });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Tempo limite excedido')), 60000)
       );
+      const { data: saleId, error } = await Promise.race([rpcPromise, timeoutPromise]);
+      if (error) throw error;
 
       // Audit log (non-critical — no retry needed)
       try {
@@ -796,7 +791,7 @@ export default function SaleForm({
             value: subtotal,
             net_value: netValue,
             payment_method: paymentMethod,
-            items_count: items.filter((it) => it.inventory_item_id).length,
+            items_count: itemsData.length,
           },
         });
       } catch (auditErr) {

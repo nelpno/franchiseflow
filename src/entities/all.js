@@ -133,65 +133,12 @@ function createEntity(tableName) {
   };
 }
 
-// Cascade delete para franquia — limpa todos dados relacionados antes de deletar
+// Cascade delete via server-side RPC (atomic transaction — rollback on any failure)
 async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
-  const evoId = evolutionInstanceId;
-
-  // Buscar IDs de vendas e pedidos para limpar itens (FK profunda)
-  // sales.franchise_id = evolution_instance_id (TEXT), NÃO UUID
-  const { data: sales } = await supabase.from('sales').select('id').eq('franchise_id', evoId);
-  const saleIds = (sales || []).map(s => s.id);
-  const { data: orders } = await supabase.from('purchase_orders').select('id').eq('franchise_id', evoId);
-  const orderIds = (orders || []).map(o => o.id);
-
-  // Deletar itens filhos primeiro
-  if (saleIds.length > 0) await supabase.from('sale_items').delete().in('sale_id', saleIds);
-  if (orderIds.length > 0) await supabase.from('purchase_order_items').delete().in('order_id', orderIds);
-
-  // Deletar contacts ANTES de sales (sales.contact_id FK → contacts com SET NULL)
-  await supabase.from('contacts').delete().eq('franchise_id', evoId);
-
-  // Deletar sales (franchise_id = evolution_instance_id, NÃO UUID)
-  await supabase.from('sales').delete().eq('franchise_id', evoId);
-
-  // Deletar demais tabelas que usam evolution_instance_id
-  await supabase.from('purchase_orders').delete().eq('franchise_id', evoId);
-  await supabase.from('expenses').delete().eq('franchise_id', evoId);
-  await supabase.from('daily_unique_contacts').delete().eq('franchise_id', evoId);
-  await supabase.from('daily_checklists').delete().eq('franchise_id', evoId);
-  await supabase.from('inventory_items').delete().eq('franchise_id', evoId);
-  await supabase.from('onboarding_checklists').delete().eq('franchise_id', evoId);
-  await supabase.from('daily_summaries').delete().eq('franchise_id', evoId);
-  await supabase.from('marketing_files').delete().eq('franchise_id', evoId);
-  await supabase.from('audit_logs').delete().eq('franchise_id', evoId);
-  await supabase.from('sales_goals').delete().eq('franchise_id', evoId);
-  await supabase.from('franchise_configurations').delete().eq('franchise_evolution_instance_id', evoId);
-  await supabase.from('franchise_invites').delete().eq('franchise_id', evoId);
-  // franchise_notes tem ON DELETE CASCADE no banco, deletada automaticamente
-
-  // Deletar franqueados vinculados (role=franchisee cujo ÚNICO vínculo é esta franquia)
-  const { data: linkedUsers } = await supabase
-    .from('profiles')
-    .select('id, managed_franchise_ids, role')
-    .or(`managed_franchise_ids.cs.{${franchiseId}},managed_franchise_ids.cs.{${evoId}}`);
-
-  for (const user of (linkedUsers || [])) {
-    if (user.role !== 'franchisee') continue;
-    // Remover esta franquia dos vínculos
-    const remaining = (user.managed_franchise_ids || []).filter(
-      id => id !== franchiseId && id !== evoId
-    );
-    if (remaining.length === 0) {
-      // Sem outras franquias → deletar usuário completamente
-      await supabase.rpc('delete_user_complete', { p_user_id: user.id });
-    } else {
-      // Tem outras franquias → apenas desvincular
-      await supabase.from('profiles').update({ managed_franchise_ids: remaining }).eq('id', user.id);
-    }
-  }
-
-  // Finalmente deletar a franquia
-  const { error } = await supabase.from('franchises').delete().eq('id', franchiseId);
+  const { error } = await supabase.rpc('delete_franchise_cascade', {
+    p_franchise_id: franchiseId,
+    p_evolution_instance_id: evolutionInstanceId,
+  });
   if (error) throw error;
 }
 

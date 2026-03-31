@@ -1,5 +1,16 @@
+import { supabase } from '@/api/supabaseClient';
+
 const N8N_WEBHOOK_BASE = import.meta.env.VITE_N8N_WEBHOOK_BASE || 'https://webhook.dynamicagents.tech/webhook';
 const WEBHOOK_TIMEOUT = 15000;
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+}
 
 function fetchWithTimeout(url, options, timeout = WEBHOOK_TIMEOUT) {
   const controller = new AbortController();
@@ -11,9 +22,10 @@ function fetchWithTimeout(url, options, timeout = WEBHOOK_TIMEOUT) {
 // WhatsApp - chamadas diretas ao n8n
 // Timeout maior (30s) porque workflow n8n tem Wait 3s entre connect e QR
 export async function connectWhatsappRobot({ instanceName, action }) {
+  const headers = await getAuthHeaders();
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/a9c45ef7-36f7-4a64-ad9e-edadb69a31af`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ instanceName, action: action || 'smart_connect' })
   }, 30000);
   if (!response.ok) throw new Error('Erro ao conectar WhatsApp: ' + response.status);
@@ -21,9 +33,10 @@ export async function connectWhatsappRobot({ instanceName, action }) {
 }
 
 export async function checkWhatsappStatus({ instanceName }) {
+  const headers = await getAuthHeaders();
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/a9c45ef7-36f7-4a64-ad9e-edadb69a31af`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ instanceName, action: 'check_status' })
   });
   if (!response.ok) throw new Error('Erro ao verificar status WhatsApp: ' + response.status);
@@ -32,9 +45,10 @@ export async function checkWhatsappStatus({ instanceName }) {
 
 // Otimização de config - chamada direta ao n8n
 export async function optimizeConfig(configData) {
+  const headers = await getAuthHeaders();
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/adc276df-8162-46ca-bec6-5aedb9cb2b14`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(configData)
   });
   if (!response.ok) throw new Error('Erro ao otimizar configuracao: ' + response.status);
@@ -44,9 +58,10 @@ export async function optimizeConfig(configData) {
 // Convite de franqueado — envia email via Supabase Auth (n8n com service role)
 // Timeout maior (30s) porque n8n + Supabase Auth + SMTP pode demorar
 export async function inviteFranchisee(email) {
+  const headers = await getAuthHeaders();
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/franchise-invite`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ email, redirectTo: window.location.origin + '/set-password?type=invite' })
   }, 30000);
   if (!response.ok) throw new Error('Erro ao enviar convite: ' + response.status);
@@ -60,9 +75,10 @@ export async function inviteFranchisee(email) {
 
 // Convite de staff (admin/gerente) — cria conta + define role via n8n
 export async function staffInvite(email, role) {
+  const headers = await getAuthHeaders();
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/staff-invite`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       email,
       role,
