@@ -57,7 +57,14 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
   const [deposits, setDeposits] = useState([]);
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    const day = now.getDate();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return day > daysInMonth - 5
+      ? format(addMonths(now, 1), "yyyy-MM")
+      : format(now, "yyyy-MM");
+  });
   const [filterStatus, setFilterStatus] = useState("all");
   const [showDepositDialog, setShowDepositDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(null); // { paymentId }
