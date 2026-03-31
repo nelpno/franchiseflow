@@ -3,6 +3,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
@@ -93,6 +94,8 @@ export default function Vendas() {
       console.error("Erro ao recarregar vendas:", error);
     }
   };
+
+  useVisibilityPolling(handleRefreshSales, 300000);
 
   const primaryFranchise = useMemo(() => {
     if (selectedFranchise) {

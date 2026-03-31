@@ -243,7 +243,7 @@ function ContactAutocomplete({
     const inputVal = e.target.value;
     onChange(inputVal);
 
-    if (inputVal.length < 2) {
+    if (inputVal.length < 1) {
       setSearchResults([]);
       setShowDropdown(false);
       setHasQuery(false);

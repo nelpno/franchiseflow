@@ -56,6 +56,15 @@ export default function FranchiseeDashboard() {
 
     if (!hasLoadedOnceRef.current) setIsLoading(true);
     setLoadError(null);
+    // Safety timeout: garante que loading é desligado mesmo se queries travarem
+    const safetyTimer = setTimeout(() => {
+      if (mountedRef.current) {
+        console.warn('[Dashboard] Safety timeout fired — forçando fim do loading');
+        controller.abort();
+        setIsLoading(false);
+        hasLoadedOnceRef.current = true;
+      }
+    }, 10000);
     try {
       setFranchise(ctxFranchise);
 
@@ -121,6 +130,7 @@ export default function FranchiseeDashboard() {
       setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
       toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
     } finally {
+      clearTimeout(safetyTimer);
       if (mountedRef.current) {
         setIsLoading(false);
         hasLoadedOnceRef.current = true;
