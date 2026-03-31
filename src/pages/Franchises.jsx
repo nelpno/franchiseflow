@@ -46,6 +46,7 @@ export default function Franchises() {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [addStaffEmail, setAddStaffEmail] = useState("");
   const [addStaffRole, setAddStaffRole] = useState("manager");
+  const [isAddingStaff, setIsAddingStaff] = useState(false);
 
   // Permissions dialog
   const [editingPermissions, setEditingPermissions] = useState(null); // franchise object
@@ -250,7 +251,8 @@ export default function Franchises() {
   };
 
   const handleAddStaff = async () => {
-    if (!addStaffEmail) return;
+    if (!addStaffEmail || isAddingStaff) return;
+    setIsAddingStaff(true);
     try {
       // Procurar usuário existente pelo email
       const existingUser = users.find((u) => u.email === addStaffEmail);
@@ -267,7 +269,13 @@ export default function Franchises() {
       loadData(true);
     } catch (error) {
       console.error("Erro ao adicionar membro:", error);
-      toast.error("Erro ao adicionar membro à equipe.");
+      if (error.message?.includes("duplicate") || error.message?.includes("already")) {
+        toast.error("Este email já tem conta no sistema. Peça para ele fazer login primeiro.");
+      } else {
+        toast.error(error.message || "Erro ao adicionar membro à equipe.");
+      }
+    } finally {
+      setIsAddingStaff(false);
     }
   };
 
@@ -1136,11 +1144,11 @@ export default function Franchises() {
                 </Button>
                 <Button
                   onClick={handleAddStaff}
-                  disabled={!addStaffEmail}
+                  disabled={!addStaffEmail || isAddingStaff}
                   className="bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl"
                 >
-                  <MaterialIcon icon="person_add" size={16} className="mr-2" />
-                  Adicionar
+                  <MaterialIcon icon={isAddingStaff ? "hourglass_empty" : "person_add"} size={16} className="mr-2" />
+                  {isAddingStaff ? "Enviando..." : "Adicionar"}
                 </Button>
               </div>
             </div>
