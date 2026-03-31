@@ -28,8 +28,7 @@ export default function FranchiseeDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [franchise, setFranchise] = useState(null);
-  const [todaySales, setTodaySales] = useState([]);
-  const [yesterdaySales, setYesterdaySales] = useState([]);
+  const [allSales, setAllSales] = useState([]);
   const [summaries, setSummaries] = useState([]);
   const [ranking, setRanking] = useState(null);
   const [lowStockCount, setLowStockCount] = useState(0);
@@ -64,15 +63,12 @@ export default function FranchiseeDashboard() {
       const yesterday = getYesterday();
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
-        evoId ? Sale.filter({ sale_date: today, franchise_id: evoId }, null, null,
+        evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", 500,
           { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method', signal })
-          : Promise.resolve([]),       // [0]
-        evoId ? Sale.filter({ sale_date: yesterday, franchise_id: evoId }, null, null,
-          { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method', signal })
-          : Promise.resolve([]),   // [1]
+          : Promise.resolve([]),       // [0] ALL recent sales
         evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30,
-          { columns: 'id, date, sales_count, sales_value, unique_contacts', signal })
-          : Promise.resolve([]),    // [2]
+          { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal })
+          : Promise.resolve([]),    // [1]
         evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
           { columns: 'id, product_name, quantity, min_stock', signal })
           : Promise.resolve([]),                // [3]
@@ -90,31 +86,29 @@ export default function FranchiseeDashboard() {
       if (!mountedRef.current || signal.aborted) return;
 
       const getValue = (i) => results[i].status === "fulfilled" ? results[i].value : [];
-      const todaySalesData = getValue(0);
-      const yesterdaySalesData = getValue(1);
-      const summariesData = getValue(2);
-      const inventoryData = getValue(3);
-      const checklistData = getValue(4);
-      const contactsData = getValue(5);
+      const allSalesData = getValue(0);
+      const summariesData = getValue(1);
+      const inventoryData = getValue(2);
+      const checklistData = getValue(3);
+      const contactsData = getValue(4);
 
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["vendas hoje","vendas ontem","resumos","estoque","checklist","contatos","bot activity","ranking"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["vendas","resumos","estoque","checklist","contatos","bot activity","ranking"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Dashboard queries falharam:", failedQueries);
         toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
       }
 
-      setTodaySales(todaySalesData);
-      setYesterdaySales(yesterdaySalesData);
+      setAllSales(allSalesData);
       setSummaries(summariesData);
 
       setContacts(contactsData);
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
 
-      // Bot activity (already parallel — index 6)
+      // Bot activity (already parallel — index 5)
       const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
-      const recentContacts = getValue(6);
+      const recentContacts = getValue(5);
       setBotActive(evoId ? recentContacts.some((c) => c.date >= threeDaysAgo) : false);
 
       if (checklistData.length > 0) {
@@ -126,8 +120,8 @@ export default function FranchiseeDashboard() {
         });
       }
 
-      // Ranking (already parallel — index 7)
-      setRanking(results[7].status === "fulfilled" ? results[7].value : null);
+      // Ranking (already parallel — index 6)
+      setRanking(results[6].status === "fulfilled" ? results[6].value : null);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
@@ -155,13 +149,30 @@ export default function FranchiseeDashboard() {
 
   const evoId = franchise?.evolution_instance_id;
 
-  // Stats based on selected period
+  // Helper: compute revenue from sales array
+  const calcRevenue = useCallback((sales) =>
+    sales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
+  []);
+
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+  const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
+
+  // Derive today/yesterday from allSales
+  const todaySales = useMemo(() => allSales.filter((s) => s.sale_date === today), [allSales, today]);
+  const yesterdaySales = useMemo(() => allSales.filter((s) => s.sale_date === yesterday), [allSales, yesterday]);
+
+  // Stats based on selected period — uses allSales directly (real-time, not cron)
   const stats = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+
     if (period === "today") {
-      const salesCount = todaySales.length;
-      const prevSalesCount = yesterdaySales.length;
-      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
-      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const current = allSales.filter((s) => s.sale_date === today);
+      const prev = allSales.filter((s) => s.sale_date === yesterday);
+      const salesCount = current.length;
+      const prevSalesCount = prev.length;
+      const revenue = calcRevenue(current);
+      const prevRevenue = calcRevenue(prev);
       const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
       const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
       return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
@@ -169,7 +180,7 @@ export default function FranchiseeDashboard() {
 
     let cutoff, prevCutoff;
     if (period === "week") {
-      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
       const days = differenceInDays(new Date(), weekStart) + 1;
       cutoff = format(weekStart, "yyyy-MM-dd");
       prevCutoff = format(subDays(weekStart, days), "yyyy-MM-dd");
@@ -179,23 +190,20 @@ export default function FranchiseeDashboard() {
       prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
     }
 
-    const mySummaries = summaries.filter((s) => s.franchise_id === evoId);
-    const currentPeriod = mySummaries.filter((s) => s.date >= cutoff);
-    const prevPeriod = mySummaries.filter((s) => s.date >= prevCutoff && s.date < cutoff);
+    const currentSales = allSales.filter((s) => s.sale_date >= cutoff);
+    const prevSales = allSales.filter((s) => s.sale_date >= prevCutoff && s.sale_date < cutoff);
 
-    const sum = (arr, field) => arr.reduce((s, r) => s + (parseFloat(r[field]) || 0), 0);
-
-    const salesCount = sum(currentPeriod, "sales_count");
-    const prevSalesCount = sum(prevPeriod, "sales_count");
-    const revenue = sum(currentPeriod, "sales_value");
-    const prevRevenue = sum(prevPeriod, "sales_value");
+    const salesCount = currentSales.length;
+    const prevSalesCount = prevSales.length;
+    const revenue = calcRevenue(currentSales);
+    const prevRevenue = calcRevenue(prevSales);
     const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
     const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
 
     return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
-  }, [period, todaySales, yesterdaySales, summaries, evoId]);
+  }, [period, allSales, calcRevenue]);
 
-  const todayRevenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+  const todayRevenue = calcRevenue(todaySales);
 
   const pendingActionsCount = useMemo(() => generateSmartActions(contacts, 0).length, [contacts]);
 
