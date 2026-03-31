@@ -183,7 +183,7 @@ export default function FranchiseeDashboard() {
     const currentPeriod = mySummaries.filter((s) => s.date >= cutoff);
     const prevPeriod = mySummaries.filter((s) => s.date >= prevCutoff && s.date < cutoff);
 
-    const sum = (arr, field) => arr.reduce((s, r) => s + (r[field] || 0), 0);
+    const sum = (arr, field) => arr.reduce((s, r) => s + (parseFloat(r[field]) || 0), 0);
 
     const salesCount = sum(currentPeriod, "sales_count");
     const prevSalesCount = sum(prevPeriod, "sales_count");
@@ -209,7 +209,7 @@ export default function FranchiseeDashboard() {
       return d >= thirtyDaysAgo && d < now;
     });
     if (recentDays.length < 7) return null;
-    const totalRevenue = recentDays.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+    const totalRevenue = recentDays.reduce((sum, s) => sum + (parseFloat(s.sales_value) || 0), 0);
     return Math.round((totalRevenue / recentDays.length) * 1.10);
   }, [summaries, evoId]);
 

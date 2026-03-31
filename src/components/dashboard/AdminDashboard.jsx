@@ -210,7 +210,7 @@ export default function AdminDashboard() {
       const dateStr = format(subDays(new Date(), i), "yyyy-MM-dd");
       const daySummaries = summaries.filter((s) => s.date === dateStr);
       let sales = daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0);
-      let revenue = daySummaries.reduce((s, r) => s + (r.sales_value || 0), 0);
+      let revenue = daySummaries.reduce((s, r) => s + (parseFloat(r.sales_value) || 0), 0);
       if (dateStr === todayStr) {
         if (todaySales.length > sales) sales = todaySales.length;
         if (liveTodayRevenue > revenue) revenue = liveTodayRevenue;

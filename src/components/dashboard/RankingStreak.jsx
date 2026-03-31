@@ -11,7 +11,7 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
 
     let count = 0;
     for (const day of franchiseDays) {
-      if ((day.sales_value || 0) >= dailyGoal) {
+      if ((parseFloat(day.sales_value) || 0) >= dailyGoal) {
         count++;
       } else {
         break;

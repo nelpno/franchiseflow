@@ -14,7 +14,7 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0 }) {
       const daySummaries = summaries.filter(
         (s) => s.date === date && (!franchiseId || s.franchise_id === franchiseId)
       );
-      let revenue = daySummaries.reduce((sum, s) => sum + (s.sales_value || 0), 0);
+      let revenue = daySummaries.reduce((sum, s) => sum + (parseFloat(s.sales_value) || 0), 0);
       // Para hoje, usar o maior valor entre daily_summaries (cron) e vendas em tempo real
       if (date === todayDate && todayRevenue > revenue) {
         revenue = todayRevenue;

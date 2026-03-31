@@ -49,7 +49,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         if (s.date >= cutoff && s.date < todayStr) {
           const evoId = s.franchise_id;
           if (evoId in revenueByEvo) {
-            revenueByEvo[evoId] += s.sales_value || 0;
+            revenueByEvo[evoId] += parseFloat(s.sales_value) || 0;
           }
         }
       });
@@ -95,7 +95,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
     // Group by date, sum all franchises per day
     const byDate = {};
     recentDays.forEach((s) => {
-      byDate[s.date] = (byDate[s.date] || 0) + (s.sales_value || 0);
+      byDate[s.date] = (byDate[s.date] || 0) + (parseFloat(s.sales_value) || 0);
     });
     const dailyTotals = Object.values(byDate);
     const avg = dailyTotals.reduce((a, b) => a + b, 0) / dailyTotals.length;
