@@ -118,8 +118,9 @@ export default function PeriodComparisonCard({ franchiseId }) {
           c.created_at.slice(0, 10) <= period2.end
       );
 
-      const revenue1 = sales1.reduce((s, sale) => s + (parseFloat(sale.value) || 0), 0);
-      const revenue2 = sales2.reduce((s, sale) => s + (parseFloat(sale.value) || 0), 0);
+      const calcRev = (sales) => sales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+      const revenue1 = calcRev(sales1);
+      const revenue2 = calcRev(sales2);
       const avg1 = sales1.length > 0 ? revenue1 / sales1.length : 0;
       const avg2 = sales2.length > 0 ? revenue2 / sales2.length : 0;
 

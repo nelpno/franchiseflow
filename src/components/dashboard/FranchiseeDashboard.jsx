@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, DailyUniqueContact, getFranchiseRanking } from "@/entities/all";
+import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,6 @@ export default function FranchiseeDashboard() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [checklistProgress, setChecklistProgress] = useState({ done: 0, total: 0 });
   const [contacts, setContacts] = useState([]);
-  const [botActive, setBotActive] = useState(false);
   const [period, setPeriod] = useState("today");
 
   // Computed inside loadData to stay fresh after midnight
@@ -63,24 +62,24 @@ export default function FranchiseeDashboard() {
       const yesterday = getYesterday();
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
-        evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", 500,
+        evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", 1000,
           { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method', signal })
-          : Promise.resolve([]),       // [0] ALL recent sales
+          : Promise.resolve([]),                          // [0] ALL recent sales
         evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30,
           { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal })
-          : Promise.resolve([]),    // [1]
+          : Promise.resolve([]),                          // [1] summaries (MiniRevenueChart, dailyGoal)
         evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
           { columns: 'id, product_name, quantity, min_stock', signal })
-          : Promise.resolve([]),                // [3]
+          : Promise.resolve([]),                          // [2] inventory
         evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }, null, null, { signal })
-          : Promise.resolve([]),  // [4]
+          : Promise.resolve([]),                          // [3] checklist
         evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200,
           { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at', signal })
-          : Promise.resolve([]), // [5]
+          : Promise.resolve([]),                          // [4] contacts
         evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10,
           { columns: 'id, date', signal })
-          : Promise.resolve([]), // [6]
-        evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null),                          // [7]
+          : Promise.resolve([]),                          // [5] bot activity
+        evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null), // [6] ranking
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -106,10 +105,10 @@ export default function FranchiseeDashboard() {
       setContacts(contactsData);
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
 
-      // Bot activity (already parallel — index 5)
+      // Bot activity — index [5]
       const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
-      const recentContacts = getValue(5);
-      setBotActive(evoId ? recentContacts.some((c) => c.date >= threeDaysAgo) : false);
+      const botActivityData = getValue(5);
+      setBotActive(evoId ? botActivityData.some((c) => c.date >= threeDaysAgo) : false);
 
       if (checklistData.length > 0) {
         const items = checklistData[0].items || {};
@@ -120,7 +119,7 @@ export default function FranchiseeDashboard() {
         });
       }
 
-      // Ranking (already parallel — index 6)
+      // Ranking — index [6]
       setRanking(results[6].status === "fulfilled" ? results[6].value : null);
     } catch (err) {
       if (err?.name === 'AbortError') return;
@@ -154,12 +153,15 @@ export default function FranchiseeDashboard() {
     sales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
   []);
 
-  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
-  const yesterday = useMemo(() => format(subDays(new Date(), 1), "yyyy-MM-dd"), []);
-
-  // Derive today/yesterday from allSales
-  const todaySales = useMemo(() => allSales.filter((s) => s.sale_date === today), [allSales, today]);
-  const yesterdaySales = useMemo(() => allSales.filter((s) => s.sale_date === yesterday), [allSales, yesterday]);
+  // Derive today/yesterday from allSales — recalculates when allSales changes (polling refresh)
+  const todaySales = useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    return allSales.filter((s) => s.sale_date === todayStr);
+  }, [allSales]);
+  const yesterdaySales = useMemo(() => {
+    const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+    return allSales.filter((s) => s.sale_date === yesterdayStr);
+  }, [allSales]);
 
   // Stats based on selected period — uses allSales directly (real-time, not cron)
   const stats = useMemo(() => {
@@ -263,16 +265,6 @@ export default function FranchiseeDashboard() {
             userName={user?.full_name}
             franchiseName={franchise ? `Unidade ${franchise.city}` : null}
           />
-          {franchise?.evolution_instance_id && (
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold shrink-0 mt-1 ${
-              botActive
-                ? "bg-[#16a34a]/10 text-[#16a34a]"
-                : "bg-[#e9e8e9] text-[#4a3d3d]"
-            }`}>
-              <MaterialIcon icon="smart_toy" size={12} />
-              {botActive ? "Bot ativo" : "Bot inativo"}
-            </div>
-          )}
         </div>
       </div>
 
