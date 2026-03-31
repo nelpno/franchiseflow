@@ -57,7 +57,7 @@ export default function AdminDashboard() {
 
       const results = await Promise.allSettled([
         fetchFranchises(),
-        DailySummary.list("-date", 300, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
+        DailySummary.list("-date", 500, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
@@ -226,7 +226,7 @@ export default function AdminDashboard() {
     return (
       <div className="p-4 md:p-8 space-y-6 bg-[#fbf9fa]">
         <Skeleton className="h-14 w-full rounded-2xl" />
-        <div className="grid grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
         {statsCards.map((card) => {
           // Icon is now MaterialIcon
           const numericValue = typeof card.value === "string"
@@ -410,7 +410,7 @@ export default function AdminDashboard() {
       />
 
       {/* Chart — Faturamento por dia usando dados reais de vendas */}
-      <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} todayRevenue={liveTodayRevenue} />
+      <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} />
     </div>
   );
 }

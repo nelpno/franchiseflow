@@ -4,7 +4,7 @@ import { formatBRL } from "@/lib/formatters";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-function DailyRevenueChart({ allSales = [], isLoading, days = 7, todayRevenue = 0 }) {
+function DailyRevenueChart({ allSales = [], isLoading, days = 7 }) {
   const chartData = useMemo(() => {
     const data = [];
     const todayStr = format(new Date(), "yyyy-MM-dd");
