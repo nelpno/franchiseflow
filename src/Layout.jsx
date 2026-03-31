@@ -82,6 +82,13 @@ const navigationItems = [
     adminSection: "Gestão",
   },
   {
+    title: "Financeiro",
+    url: createPageUrl("Financeiro"),
+    materialIcon: "account_balance",
+    adminOnly: true,
+    adminSection: "Gestão",
+  },
+  {
     title: "Configurações",
     url: createPageUrl("FranchiseSettings"),
     materialIcon: "support_agent",

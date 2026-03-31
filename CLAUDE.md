@@ -180,6 +180,7 @@ src/
 ├── entities/         # all.js (adapter Supabase)
 ├── components/
 │   ├── acompanhamento/ # InventorySheet (admin vê estoque franqueado)
+│   ├── financeiro/   # FinanceiroKpiCards, FranchiseFinanceTable, FranchiseFinanceDrilldown
 │   ├── dashboard/    # AdminDashboard, FranchiseeDashboard, StatsCard, AlertsPanel
 │   ├── minha-loja/   # TabLancar, TabResultado, TabEstoque, SaleForm, ExpenseForm
 │   ├── my-contacts/  # ActionPanel (ações inteligentes)
@@ -190,8 +191,8 @@ src/
 │   ├── PageErrorBoundary.jsx # Boundary por rota (retry local)
 │   └── ui/           # shadcn/ui + MaterialIcon.jsx
 ├── hooks/            # useWhatsAppConnection, useVisibilityPolling
-├── lib/              # AuthContext, franchiseUtils, smartActions, whatsappUtils, healthScore
-├── pages/            # Vendas, Gestao, MinhaLoja (redirect), MyContacts, Acompanhamento
+├── lib/              # AuthContext, franchiseUtils, smartActions, whatsappUtils, healthScore, financialCalcs, marginHelpers, formatBRL
+├── pages/            # Vendas, Gestao, Financeiro, MinhaLoja (redirect), MyContacts, Acompanhamento
 └── assets/           # logo-maxi-massas-optimized.png (16KB)
 ```
 
@@ -233,7 +234,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 
 ## UX por Role
 - **Franqueado**: sidebar 6 itens + bottom nav mobile 5 slots (FAB Vender no centro)
-- **Admin**: itens admin (Relatórios, Acompanhamento, Pedidos, Franqueados)
+- **Admin**: itens admin (Relatórios, Financeiro, Acompanhamento, Pedidos, Franqueados)
 - Terminologia: "Estoque" (não "Inventário"), "Valor Médio" (não "Ticket Médio"), NÃO usar "Líquido"
 - AdminHeader fixo (`md:fixed md:left-[260px]`) — ajustar se mudar sidebar width
 - Wizard: 6 passos visuais, Revisão NÃO conta (X/5). Upload catálogo JPG only
@@ -306,6 +307,16 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `inviteFranchisee()` envia `redirectTo: origin + '/set-password?type=invite'`
 - **Staff invite**: `staffInvite(email, role)` → webhook `/staff-invite` (workflow `jeGBs3eCHxc2EwfG`). Role dinâmico (admin/manager) via `$json.body.role`
 - `handleAddStaff`: se usuário existe em profiles → atualiza role; se não → envia convite. Supabase 23505 (duplicate) = conta já existe em auth.users
+
+### Financeiro (admin)
+- Pagina `/Financeiro` (admin-only) — visao financeira comparativa de todas franquias
+- `loadBaseData` carrega dados base UMA vez (sem dep de mes). SaleItems recarrega ao trocar mes
+- SaleItem IDs em chunks de 500 para evitar limite URL Supabase
+- P&L usa `calculatePnL()` de `financialCalcs.js` (shared com TabResultado)
+- Markup estoque usa `getMarginTierCounts()` de `marginHelpers.jsx` — formula: `(sale - cost) / cost` (markup, NAO margem sobre receita)
+- `formatBRL` centralizado em `lib/formatBRL.js` com instancia cached — NUNCA `new Intl.NumberFormat` inline
+- Drill-down por franquia: P&L completo + top 5 produtos + markup estoque
+- KPI cards: Faturamento Total, Lucro Estimado, Margem Media (sobre receita), Menor Margem (alerta)
 
 ### Health Score & Acompanhamento
 - 4 dimensões: vendas 35, estoque 25, reposição 20, setup/WhatsApp 20 (atividade REMOVIDA)
