@@ -85,6 +85,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   }, [selectedMonth]);
 
   useEffect(() => {
+    mountedRef.current = true;
     loadData();
     return () => { mountedRef.current = false; };
   }, [loadData]);
@@ -304,10 +305,10 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                   >
                     {/* Franquia */}
                     <div className="md:col-span-3">
-                      <p className="text-sm font-medium text-[#1b1c1d]">{f.city}</p>
-                      {f.owner_name && (
-                        <p className="text-xs text-[#7a6d6d]">{f.owner_name}</p>
-                      )}
+                      <p className="text-sm font-medium text-[#1b1c1d]">
+                        {f.owner_name || f.city}
+                      </p>
+                      <p className="text-xs text-[#7a6d6d]">{f.city}</p>
                     </div>
 
                     {/* Valor */}

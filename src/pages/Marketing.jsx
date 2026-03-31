@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import MarketingPaymentsAdmin from "@/components/marketing/MarketingPaymentsAdmin";
+import MarketingPaymentSection from "@/components/marketing/MarketingPaymentSection";
 
 // REST API direta — bypass TOTAL do supabase-js (trava em marketing_files)
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -1067,6 +1068,11 @@ export default function Marketing() {
 
       {activeTab === "materiais" && (
         <div className="space-y-6">
+      {/* Franqueado: card de pagamento marketing */}
+      {!isAdmin && user?.role !== "manager" && (
+        <MarketingPaymentSection />
+      )}
+
       {/* Search + Filters */}
       <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
         <CardContent className="p-4 space-y-3">

@@ -103,6 +103,7 @@ CREATE OR REPLACE FUNCTION upsert_bot_contact(
 )
 RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public'
 AS $$
 DECLARE v_contact_id uuid;
 BEGIN
@@ -111,7 +112,12 @@ BEGIN
 
   IF v_contact_id IS NOT NULL THEN
     UPDATE contacts SET last_contact_at = NOW(),
-      nome = COALESCE(p_nome, contacts.nome), updated_at = NOW()
+      -- Proteger nome existente: so atualizar se estiver vazio
+      nome = CASE
+        WHEN contacts.nome IS NULL OR contacts.nome = '' THEN COALESCE(p_nome, '')
+        ELSE contacts.nome
+      END,
+      updated_at = NOW()
     WHERE id = v_contact_id;
     RETURN v_contact_id;
   ELSE

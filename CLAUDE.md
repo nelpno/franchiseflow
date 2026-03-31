@@ -22,9 +22,10 @@ Adapter pattern: cada entidade expõe `.list()/.filter()/.create()/.update()/.de
 Importar sempre de `@/entities/all` — NÃO usar supabase.from() diretamente nas páginas.
 - Timeouts: leitura 15s, escrita 30s via `withTimeout()` — NUNCA remover
 - Antes de `Entity.update()`, remover campos read-only (`id`, `created_at`, `updated_at`, `franchise`, `whatsapp_status`)
-- Entities principais: `Contact`, `Sale`, `SaleItem`, `Expense`, `InventoryItem`, `PurchaseOrder`, `PurchaseOrderItem`, `Notification`, `FranchiseConfiguration`
+- Entities principais: `Contact`, `Sale`, `SaleItem`, `Expense`, `InventoryItem`, `PurchaseOrder`, `PurchaseOrderItem`, `Notification`, `FranchiseConfiguration`, `MarketingPayment`, `MarketingMetaDeposit`
 - **EXCEÇÃO `marketing_files`**: NÃO usa entity adapter — supabase-js trava em TODAS operações nesta tabela. Marketing.jsx usa `fetch()` direto à REST API (`directList`, `directInsert`, `directDelete`) com token do localStorage e `AbortSignal.timeout(15s)`
 - Storage bucket: `marketing-assets` (público). NUNCA `marketing-files` (não existe)
+- Storage bucket: `marketing-comprovantes` (público, 5MB max, JPG/PNG/PDF) — comprovantes de pagamento marketing
 
 ### Autenticação (src/lib/AuthContext.jsx)
 Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supabase signInWithPassword.
@@ -75,6 +76,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Telefone normalizado: `normalizePhone()` em `whatsappUtils.js` — strip 55, salva 11 dígitos
 - `contacts.source`: manual/bot/whatsapp (default 'manual')
 - Nomes/endereços/bairros: `capitalize()` antes de salvar (respeita preposições)
+- `upsert_bot_contact`: protege nome existente — só preenche se vazio (NUNCA sobrescreve)
+- Telefone DB: SEMPRE 11 dígitos (DDD+número). Contatos com 55 prefix são bug de LID — normalizar
 
 ### Vendas & Gestão
 - **Vendas** (`Vendas.jsx`): registro de vendas (TabLancar standalone). Deep-linking: `?action=nova-venda&contact_id=UUID&phone=X`
@@ -97,6 +100,19 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - CHECK constraints usam português (`pendente`, `confirmado`, `em_rota`, `entregue`, `cancelado`)
 - PL/pgSQL: `WHERE evolution_instance_id = NEW.franchise_id` (NÃO `WHERE id = NEW.franchise_id`)
 - `notify_franchise_users(p_franchise_id UUID)` recebe UUID — resolver com subquery
+
+### Investimento Marketing
+- `marketing_payments`: 1 registro por franquia/mês. `franchise_id` = evolution_instance_id, `reference_month` = "2026-04"
+- `marketing_meta_deposits`: N depósitos no Meta por mês. Apenas admin cria
+- UNIQUE constraint: `(franchise_id, reference_month)` — um pagamento por franquia/mês
+- CHECK: `amount >= 200` (mínimo obrigatório)
+- `status`: 'pending' | 'confirmed' | 'rejected'. Franqueado só pode UPDATE se `status = 'rejected'`
+- `MARKETING_TAX_RATE = 0.13` em `franchiseUtils.js`. Líquido campanha = valor × 0.87
+- **Franqueado**: `MarketingPaymentCard` no FranchiseeDashboard (após RankingStreak). Upload comprovante para bucket `marketing-comprovantes`
+- **Admin**: Aba "Investimento" em Marketing.jsx (via Tabs). `MarketingPaymentsAdmin` mostra resumo (arrecadado/líquido/depositado/saldo) + tabela todas franquias + lista depósitos Meta
+- Marketing.jsx usa `activeTab` state controlado por `Tabs.onValueChange`. Conteúdo de materiais renderizado fora do `<Tabs>` via `{activeTab === "materiais" && (...)}`
+- `MetaDepositDialog`: dialog simples para registrar depósito (valor, data, notas)
+- Componentes: `src/components/dashboard/MarketingPaymentCard.jsx`, `src/components/marketing/MarketingPaymentsAdmin.jsx`, `src/components/marketing/MetaDepositDialog.jsx`
 
 ### Auto-vinculação User↔Franchise
 - Trigger `handle_new_user()` em auth.users (NÃO trigger separado em profiles)
@@ -137,6 +153,12 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Regex em systemMessage n8n**: NUNCA `[^.]*` — expressões `{{ }}` contêm pontos. Usar `.*?` (lazy)
 - n8n `neverError: true` retorna erros com HTTP 200 — checar `data.code >= 400`
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
+- **V3 NÃO usa `upsert_bot_contact` RPC** — fluxo: GET_USER1 (lookup) → IF_USER1 → CREATE_USER1 (PushName) ou Edit Fields3. `upsert_bot_contact` existe mas só é chamada externamente
+- **Normalização telefone LID**: `numero_real` node DEVE strip 55 (como `extractPhone()`). `Normaliza1.chat_id_whatsapp` re-adiciona 55 para envio WhatsApp
+- **`AtualizaNome` (Memoria_Lead1)**: Supabase Update direto (NÃO usa RPC). `$fromAI()` decide o nome — pode sobrescrever nomes editados manualmente. Prompt DEVE restringir a "SOMENTE quando cliente explicitamente reclamou"
+- **`memoriaLead` sub-workflow** (`xJocFaDvztxeBHvQ`): APENAS Redis (NÃO toca Supabase). Merge de memória via gpt-4o-mini. Chave: `chat_id + "_memfranq"`
+- **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
+- **EnviaPedidoFechado `Prepare Sale Data`**: já strip 55 de `telefonelead` para `telefone_db`. `Lookup Contact` busca por 11 dígitos
 
 #### Sub-agentes do Vendedor V3
 - **GerenteGeral1**: orquestrador principal. LLMs: Gemini Flash (primary) + GPT-5.2 (fallback)
