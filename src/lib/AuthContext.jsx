@@ -183,6 +183,11 @@ export const AuthProvider = ({ children }) => {
           await loadUserProfile(session.user);
         } else if (event === 'SIGNED_IN' && session?.user) {
           lastSignedInTimeRef.current = Date.now();
+
+          // If already authenticated with same user (tab refocus token refresh), skip reload
+          const alreadyAuthenticated = lastAuthUserRef.current?.id === session.user.id;
+          if (alreadyAuthenticated) return;
+
           setIsLoading(true);
 
           // Safety timeout: if profile load hangs >10s, show retry UI
