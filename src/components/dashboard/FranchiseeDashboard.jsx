@@ -76,10 +76,7 @@ export default function FranchiseeDashboard() {
         evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200,
           { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at', signal })
           : Promise.resolve([]),                          // [4] contacts
-        evoId ? DailyUniqueContact.filter({ franchise_id: evoId }, "-date", 10,
-          { columns: 'id, date', signal })
-          : Promise.resolve([]),                          // [5] bot activity
-        evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null), // [6] ranking
+        evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null), // [5] ranking
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -92,7 +89,7 @@ export default function FranchiseeDashboard() {
       const contactsData = getValue(4);
 
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["vendas","resumos","estoque","checklist","contatos","bot activity","ranking"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["vendas","resumos","estoque","checklist","contatos","ranking"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Dashboard queries falharam:", failedQueries);
@@ -105,11 +102,6 @@ export default function FranchiseeDashboard() {
       setContacts(contactsData);
       setLowStockCount(inventoryData.filter((i) => (i.quantity || 0) < (i.min_stock || 5)).length);
 
-      // Bot activity — index [5]
-      const threeDaysAgo = format(subDays(new Date(), 3), "yyyy-MM-dd");
-      const botActivityData = getValue(5);
-      setBotActive(evoId ? botActivityData.some((c) => c.date >= threeDaysAgo) : false);
-
       if (checklistData.length > 0) {
         const items = checklistData[0].items || {};
         const values = Object.values(items);
@@ -119,8 +111,8 @@ export default function FranchiseeDashboard() {
         });
       }
 
-      // Ranking — index [6]
-      setRanking(results[6].status === "fulfilled" ? results[6].value : null);
+      // Ranking — index [5]
+      setRanking(results[5].status === "fulfilled" ? results[5].value : null);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
