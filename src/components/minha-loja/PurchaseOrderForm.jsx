@@ -201,6 +201,8 @@ export default function PurchaseOrderForm({
       await PurchaseOrderItem.createMany(itemsToCreate);
 
       // Notificar admins (fire-and-forget — erro aqui NÃO afeta o pedido)
+      // Trigger on_new_purchase_order foi esvaziado — notificação fica no frontend
+      // porque aqui já temos valor total e quantidade calculados
       try {
         await supabase.rpc('notify_admins', {
           p_title: 'Novo pedido de reposição',

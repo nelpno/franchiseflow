@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -376,6 +377,9 @@ export default function SaleForm({
   const [discountType, setDiscountType] = useState("fixed"); // "fixed" | "percent"
   const [discountInput, setDiscountInput] = useState(0);
 
+  // Sale date
+  const [saleDate, setSaleDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+
   // Sale items rows
   const [items, setItems] = useState([
     { inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 },
@@ -396,6 +400,7 @@ export default function SaleForm({
     setDeliveryFee(sale.delivery_fee ?? 0);
     setDiscountType(sale.discount_type || "fixed");
     setDiscountInput(sale.discount_input ?? 0);
+    if (sale.sale_date) setSaleDate(sale.sale_date);
     setContactId(sale.contact_id || null);
 
     // Set contact search display
@@ -446,6 +451,7 @@ export default function SaleForm({
     if (draft.deliveryFee != null) setDeliveryFee(draft.deliveryFee);
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
+    if (draft.saleDate) setSaleDate(draft.saleDate);
 
     toast.info("Rascunho recuperado", {
       action: {
@@ -489,8 +495,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate]
   );
 
   useEffect(() => {
