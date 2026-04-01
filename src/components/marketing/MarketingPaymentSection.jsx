@@ -3,6 +3,7 @@ import { MarketingPayment } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { format, addMonths, parseISO } from "date-fns";
+import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 function getDefaultMonth() {
-  const now = new Date();
-  const day = now.getDate();
-  const target = day > 15 ? addMonths(now, 1) : now;
-  return format(target, "yyyy-MM");
+  return format(getMarketingTargetMonth(), "yyyy-MM");
 }
 
 function getMonthOptions() {
@@ -112,7 +110,7 @@ export default function MarketingPaymentSection() {
       let proofUrl = null;
       if (file) {
         const ext = file.name.split(".").pop();
-        const filePath = `${evoId}/${selectedMonth}.${ext}`;
+        const filePath = `${evoId}/${selectedMonth}_${Date.now()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from(BUCKET)
           .upload(filePath, file, { upsert: true });
@@ -130,12 +128,15 @@ export default function MarketingPaymentSection() {
       };
 
       if (editMode && currentPayment) {
-        await MarketingPayment.update(currentPayment.id, {
+        const updatePayload = {
           amount: numAmount,
           status: "pending",
-          proof_url: proofUrl,
           rejection_reason: null,
-        });
+        };
+        if (proofUrl !== null) {
+          updatePayload.proof_url = proofUrl;
+        }
+        await MarketingPayment.update(currentPayment.id, updatePayload);
       } else {
         await MarketingPayment.create(payload);
       }

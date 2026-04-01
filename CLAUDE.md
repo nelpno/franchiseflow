@@ -103,6 +103,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 
 ### Investimento Marketing
 - `marketing_payments`: 1 registro por franquia/mês. `franchise_id` = evolution_instance_id, `reference_month` = "2026-04"
+- **Mês-alvo**: últimos 5 dias do mês → `reference_month` mira no mês seguinte. Lógica DEVE ser idêntica em `MarketingPaymentCard` (franqueado) e `MarketingPaymentsAdmin` (admin default month)
 - `marketing_meta_deposits`: N depósitos no Meta por mês. Apenas admin cria
 - UNIQUE constraint: `(franchise_id, reference_month)` — um pagamento por franquia/mês
 - CHECK: `amount >= 200` (mínimo obrigatório)

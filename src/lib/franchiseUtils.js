@@ -1,3 +1,5 @@
+import { addMonths } from "date-fns";
+
 /**
  * Franchise utilities — centraliza lógica de filtro e lookup de franquias.
  * Resolve a inconsistência UUID vs evolution_instance_id.
@@ -134,3 +136,13 @@ export const WEEKDAYS = [
 // Marketing — taxa de imposto sobre valor arrecadado (13%)
 export const MARKETING_TAX_RATE = 0.13;
 export const marketingLiquid = (amount) => amount * (1 - MARKETING_TAX_RATE);
+
+/**
+ * Mês-alvo de marketing: últimos 5 dias do mês → próximo mês, senão mês atual.
+ * Retorna Date — caller formata com format(date, "yyyy-MM").
+ */
+export function getMarketingTargetMonth(now = new Date()) {
+  const day = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return day > daysInMonth - 5 ? addMonths(now, 1) : now;
+}

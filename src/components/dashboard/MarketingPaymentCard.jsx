@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { format, addMonths } from "date-fns";
+import { format } from "date-fns";
+import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -53,18 +54,9 @@ export default function MarketingPaymentCard() {
 
   if (loading || !evoId) return null;
 
-  const now = new Date();
-  const day = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const currentMonth = format(now, "yyyy-MM");
-  const nextMonth = format(addMonths(now, 1), "yyyy-MM");
-
-  // Determinar qual mes de referencia cobrar
-  // Ultimos 5 dias: cobrar proximo mes. Senao: cobrar mes atual
-  const targetMonth = day > daysInMonth - 5 ? nextMonth : currentMonth;
-  const targetMonthLabel = cap(
-    format(targetMonth === nextMonth ? addMonths(now, 1) : now, "MMMM", { locale: ptBR })
-  );
+  const targetDate = getMarketingTargetMonth();
+  const targetMonth = format(targetDate, "yyyy-MM");
+  const targetMonthLabel = cap(format(targetDate, "MMMM", { locale: ptBR }));
 
   const payment = payments.find((p) => p.reference_month === targetMonth);
 
