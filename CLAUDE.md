@@ -50,12 +50,14 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 
 ### Row Level Security
 - Admin vê tudo; franqueado vê apenas suas franquias (managed_franchise_ids)
-- Helpers SQL: `is_admin()`, `managed_franchise_ids()`
+- Helpers SQL: `is_admin()`, `is_admin_or_manager()`, `managed_franchise_ids()`
+- `is_admin_or_manager()`: usada em policies onde manager deve ter acesso (SELECT/INSERT/UPDATE). DELETE policies mantêm `is_admin()` (manager NÃO deleta)
+- Tabelas novas: usar `is_admin_or_manager()` para SELECT/INSERT/UPDATE, `is_admin()` para DELETE
 - **WORKAROUND**: `managed_franchise_ids` contém AMBOS UUID e evolution_instance_id (28 RLS policies dependem disso)
 - NUNCA usar `is_admin()` dentro de RLS policy do `profiles` (recursão infinita) — usar `USING (true)` para SELECT
 - Tabelas novas DEVEM ter DELETE policy para admin — sem ela, `.delete()` retorna sucesso mas deleta 0 rows (silencioso)
 - `sale_items` RLS usa subquery: `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
-- `onboarding_checklists` RLS INSERT permite admin E franqueado
+- `onboarding_checklists` RLS INSERT permite admin, manager E franqueado
 
 ### Filtro de Franquias (src/lib/franchiseUtils.js)
 - `getAvailableFranchises(franchises, user)` — admin/manager vê todas; franchisee filtra por managed_franchise_ids
@@ -91,6 +93,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Linhas financeiras com valor zero ficam ocultas
 - Edição de venda = deletar sale_items antigos + reinserir novos (triggers cuidam do estoque)
 - `SaleReceipt.jsx` gera comprovante PNG (html2canvas) — `shareUtils.js` com dynamic import
+- `shareUtils.js`: `shareImage` (Web Share API mobile / print desktop), `printImage` (iframe oculto → `window.print()` direto), `generateReceiptImage` (html2canvas → blob)
+- `TabLancar.jsx`: `shareData`/`receiptRef` são shared state entre share e print — desabilitar ambos botões enquanto qualquer operação estiver em andamento
+- Botões de ação vendas (Compartilhar/Imprimir/Editar/Excluir): `<span className="hidden sm:inline">` para labels, icon-only no mobile
 - `sale_items.cost_price` é snapshot do momento da venda. `sale_price` padrão = `cost_price * 2`
 - `sale_date` é DATE only — usar `created_at` para timestamp completo
 
@@ -147,6 +152,10 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - n8n API URL: `https://teste.dynamicagents.tech/api/v1` (env `N8N_API_URL`) — NÃO confundir com webhook base
 - **ATENÇÃO**: `N8N_API_URL` no `.env` é apenas `https://teste.dynamicagents.tech` (sem `/api/v1`) — ao usar via fetch, concatenar `/api/v1` manualmente
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`
+- **NUNCA `...item.json` em Code nodes n8n** — copia payload inteiro (13+ MB com WhatsApp). Output explícito: `{ json: { _processado: {...} } }`. Downstream acessa trigger via `$('NomeTrigger').item.json`
+- **n8n sizing (2026-04-01)**: Editor 1×1core/2GB, Webhook 2×1.5core/3GB, Worker 3×1.5core/3GB (concurrency=5). Binary data em filesystem, auto-prune 7 dias
+- **N8N_MIGRATE_FS_STORAGE_PATH=true** causa EBUSY crash com volume montado — NÃO usar enquanto serviços rodam
+- **redis:7-alpine** crasha no Swarm — manter `redis:latest` com `--appendonly yes --maxmemory 512mb --maxmemory-policy volatile-lru`
 - n8n API PUT body DEVE incluir `name` do workflow — sem ele retorna 400 `must have required property 'name'`
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
 - **`R$` em expressões n8n `{{ }}`**: `R$` literal funciona APENAS dentro de IIFEs `(() => { ... })()`. Em ternários simples, o `$` é comido pelo parser
@@ -378,7 +387,8 @@ npm run lint      # ESLint
 
 ## Deploy (Portainer)
 - **API**: `https://porto.dynamicagents.tech/api` — header `X-API-Key`
-- **Stack**: franchiseflow (ID 39, Swarm). Endpoint ID `1`. NÃO git-based
+- **Stacks Portainer**: FranchiseFlow (ID 39), n8n (ID 4), Redis (ID 2), Postgres (ID 1). Endpoint ID `1`
+- **Stack**: franchiseflow (ID 39, Swarm). NÃO git-based
 - **GitHub**: `https://github.com/nelpno/franchiseflow.git`
 - **Service ID**: `2zb27nndn5sg8zweyie6wscpc` (franchiseflow_app)
 - **Fluxo deploy (2 passos OBRIGATÓRIOS)**:
