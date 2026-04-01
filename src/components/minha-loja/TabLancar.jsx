@@ -16,7 +16,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
 import SaleReceipt from "./SaleReceipt";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
-import { generateReceiptImage, shareImage } from "@/lib/shareUtils";
+import { generateReceiptImage, shareImage, printImage } from "@/lib/shareUtils";
 import { toast } from "sonner";
 import { format, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -101,6 +101,7 @@ export default function TabLancar({
   const [deletingSale, setDeletingSale] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [sharingSaleId, setSharingSaleId] = useState(null);
+  const [printingSaleId, setPrintingSaleId] = useState(null);
   const receiptRef = useRef(null);
 
   // Filters
@@ -245,6 +246,37 @@ export default function TabLancar({
       toast.error("Erro ao gerar comprovante.");
     } finally {
       setSharingSaleId(null);
+      setShareData(null);
+    }
+  }, [expandedItems, contactsMap]);
+
+  const handlePrintSale = useCallback(async (sale) => {
+    const saleId = sale.id;
+    setPrintingSaleId(saleId);
+    try {
+      let items = expandedItems[saleId];
+      if (!items) {
+        items = await SaleItem.filter({ sale_id: saleId });
+        setExpandedItems((prev) => ({ ...prev, [saleId]: items }));
+      }
+
+      const contact = sale.contact_id ? contactsMap[sale.contact_id] : null;
+      setShareData({ sale, saleItems: items, contact });
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      if (!receiptRef.current) {
+        toast.error("Erro ao gerar comprovante.");
+        return;
+      }
+
+      const blob = await generateReceiptImage(receiptRef.current);
+      await printImage(blob);
+    } catch (err) {
+      console.error("Erro ao imprimir:", err);
+      toast.error("Erro ao imprimir comprovante.");
+    } finally {
+      setPrintingSaleId(null);
       setShareData(null);
     }
   }, [expandedItems, contactsMap]);
@@ -533,7 +565,7 @@ export default function TabLancar({
                       })()}
 
                       {/* Actions */}
-                      <div className="flex gap-2 pt-1">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
                         <Button
                           variant="outline"
                           size="sm"
@@ -547,12 +579,34 @@ export default function TabLancar({
                           {sharingSaleId === sale.id ? (
                             <>
                               <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
-                              Gerando...
+                              <span className="hidden sm:inline">Gerando...</span>
                             </>
                           ) : (
                             <>
                               <MaterialIcon icon="share" size={14} />
-                              Compartilhar
+                              <span className="hidden sm:inline">Compartilhar</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintSale(sale);
+                          }}
+                          disabled={printingSaleId === sale.id}
+                          className="gap-1.5 text-[#4a3d3d]"
+                        >
+                          {printingSaleId === sale.id ? (
+                            <>
+                              <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
+                              <span className="hidden sm:inline">Imprimindo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <MaterialIcon icon="print" size={14} />
+                              <span className="hidden sm:inline">Imprimir</span>
                             </>
                           )}
                         </Button>
@@ -566,7 +620,7 @@ export default function TabLancar({
                           className="gap-1.5 text-[#4a3d3d]"
                         >
                           <MaterialIcon icon="edit" size={14} />
-                          Editar
+                          <span className="hidden sm:inline">Editar</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -578,7 +632,7 @@ export default function TabLancar({
                           className="gap-1.5 text-[#b91c1c] border-[#b91c1c]/30 hover:bg-[#b91c1c]/5"
                         >
                           <MaterialIcon icon="delete" size={14} />
-                          Excluir
+                          <span className="hidden sm:inline">Excluir</span>
                         </Button>
                       </div>
                     </div>

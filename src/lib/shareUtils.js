@@ -73,3 +73,37 @@ export async function shareImage(blob, filename = "comprovante.png") {
   }
   return true;
 }
+
+/**
+ * Opens print dialog directly for a receipt image (mobile & desktop).
+ * @param {Blob} blob - The image blob to print
+ */
+export async function printImage(blob) {
+  const url = URL.createObjectURL(blob);
+
+  // Create a hidden iframe for printing (works on mobile + desktop, no popup blocker)
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:450px;height:600px;";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  const style = doc.createElement("style");
+  style.textContent =
+    "@media print { @page { margin: 10mm; } body { margin: 0; } } " +
+    "body { display: flex; justify-content: center; padding: 0; margin: 0; } " +
+    "img { max-width: 100%; height: auto; }";
+  doc.head.appendChild(style);
+  doc.title = "Comprovante de Venda";
+
+  const img = doc.createElement("img");
+  img.src = url;
+  img.onload = () => {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  };
+  doc.body.appendChild(img);
+}
