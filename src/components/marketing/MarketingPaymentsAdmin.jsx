@@ -102,7 +102,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   const totalCollected = confirmedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
   const totalLiquid = marketingLiquid(totalCollected);
   const totalDeposited = deposits.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
-  const balance = totalLiquid - totalDeposited;
+  const balance = totalCollected - totalDeposited;
   const paidCount = payments.filter((p) => p.status !== "rejected").length;
 
   // ─── Merge franquias + pagamentos ───
@@ -313,9 +313,9 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                     {/* Franquia */}
                     <div className="md:col-span-3">
                       <p className="text-sm font-medium text-[#1b1c1d]">
-                        {f.owner_name || f.city}
+                        Maxi Massas {f.city}
                       </p>
-                      <p className="text-xs text-[#7a6d6d]">{f.city}</p>
+                      <p className="text-xs text-[#7a6d6d]">{f.owner_name || f.city}{f.state ? ` — ${f.state}` : ""}</p>
                     </div>
 
                     {/* Valor */}
