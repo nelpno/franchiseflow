@@ -145,6 +145,18 @@ export default function MarketingPaymentSection() {
       setFile(null);
       setEditMode(false);
       await loadPayments();
+
+      // Notificar admins (fire-and-forget)
+      const franchiseName = ctxFranchise?.franchise_name || ctxFranchise?.owner_name || "Franquia";
+      try {
+        await supabase.rpc("notify_admins", {
+          p_title: editMode ? "Comprovante marketing reenviado" : "Novo pagamento de marketing",
+          p_message: `${franchiseName} — ${formatBRL(numAmount)} ref. ${monthLabel}`,
+          p_type: "info",
+          p_icon: "campaign",
+          p_link: "/Marketing",
+        });
+      } catch (_) { /* não bloqueia o fluxo */ }
     } catch (err) {
       console.error("Erro ao registrar pagamento:", err);
       toast.error(`Erro: ${err.message || "Tente novamente"}`);
