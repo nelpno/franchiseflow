@@ -144,7 +144,7 @@ export default function Vendas() {
     );
   }
 
-  if (currentUser?.role === "admin") {
+  if (currentUser?.role === "admin" || currentUser?.role === "manager") {
     return <Navigate to="/Dashboard" replace />;
   }
 

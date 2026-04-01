@@ -878,7 +878,7 @@ function FileCard({ file, isAdmin, onDelete }) {
 // ─── Main Page ───────────────────────────────────────────────────────
 export default function Marketing() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "manager";
 
   const [files, setFiles] = useState([]);
   const [franchises, setFranchises] = useState([]);

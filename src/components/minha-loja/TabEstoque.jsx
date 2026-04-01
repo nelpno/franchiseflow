@@ -87,7 +87,7 @@ export default function TabEstoque({
   const editInputRef = useRef(null);
   const editingCellRef = useRef(null);
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
 
   // Sync items from parent prop
   useEffect(() => {

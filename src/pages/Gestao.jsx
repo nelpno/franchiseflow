@@ -153,7 +153,7 @@ export default function Gestao() {
     );
   }
 
-  if (currentUser?.role === "admin") {
+  if (currentUser?.role === "admin" || currentUser?.role === "manager") {
     return <Navigate to="/Dashboard" replace />;
   }
 

@@ -200,7 +200,7 @@ function ReportsContent() {
   }, [rawSales, rawContacts, startDate, endDate, selectedFranchise, isLoading]);
 
   // Filtrar franquias baseado nas permissões do usuário
-  const availableFranchises = currentUser?.role === 'admin'
+  const availableFranchises = (currentUser?.role === 'admin' || currentUser?.role === 'manager')
     ? franchises
     : franchises.filter(f =>
         currentUser?.managed_franchise_ids?.includes(f.id) ||

@@ -101,7 +101,7 @@ export default function Onboarding() {
         franchise_name: configMap[f.evolution_instance_id] || null,
       }));
 
-      if (user.role === "admin") {
+      if (user.role === "admin" || user.role === "manager") {
         setFranchises(enriched);
         const allOb = await OnboardingChecklist.list();
         if (!mountedRef.current) return;
@@ -417,7 +417,7 @@ export default function Onboarding() {
     }, 500);
   };
 
-  const isAdmin = currentUser?.role === "admin";
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
   const b18Complete = blocks1to8Complete(items);
   const liveCounts = checklist ? computeCounts(items) : { completed_count: 0, completion_percentage: 0 };
   const progressPct = liveCounts.completion_percentage;

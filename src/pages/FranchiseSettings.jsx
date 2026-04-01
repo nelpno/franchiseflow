@@ -136,7 +136,7 @@ function FranchiseSettingsContent() {
 
   useEffect(() => {
     if (!isLoading && currentUser && franchises.length > 0 && configurations.length > 0) {
-      const availableFranchises = currentUser.role === 'admin'
+      const availableFranchises = (currentUser.role === 'admin' || currentUser.role === 'manager')
         ? franchises
         : franchises.filter((f) =>
             currentUser.managed_franchise_ids?.includes(f.id) ||
@@ -334,7 +334,7 @@ function FranchiseSettingsContent() {
 
   const availableFranchisesForUser = useMemo(() => {
     if (!currentUser) return [];
-    return currentUser.role === 'admin' ?
+    return (currentUser.role === 'admin' || currentUser.role === 'manager') ?
       franchises :
       franchises.filter((f) =>
         currentUser.managed_franchise_ids?.includes(f.id) ||

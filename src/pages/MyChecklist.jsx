@@ -94,7 +94,7 @@ export default function MyChecklist() {
 
       const allFranchises = await Franchise.list();
       let myFranchises;
-      if (user.role === "admin") {
+      if (user.role === "admin" || user.role === "manager") {
         myFranchises = allFranchises;
       } else {
         const ids = user.managed_franchise_ids || [];
