@@ -51,13 +51,13 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 ### Row Level Security
 - Admin vê tudo; franqueado vê apenas suas franquias (managed_franchise_ids)
 - Helpers SQL: `is_admin()`, `is_admin_or_manager()`, `managed_franchise_ids()`
-- `is_admin_or_manager()`: usada em policies onde manager deve ter acesso (SELECT/INSERT/UPDATE). DELETE policies mantêm `is_admin()` (manager NÃO deleta)
-- Tabelas novas: usar `is_admin_or_manager()` para SELECT/INSERT/UPDATE, `is_admin()` para DELETE
+- `is_admin_or_manager()`: usada em SELECT/INSERT/UPDATE onde manager deve ter acesso. DELETE mantém `is_admin()` (manager NÃO deleta)
 - **WORKAROUND**: `managed_franchise_ids` contém AMBOS UUID e evolution_instance_id (28 RLS policies dependem disso)
-- NUNCA usar `is_admin()` dentro de RLS policy do `profiles` (recursão infinita) — usar `USING (true)` para SELECT
-- Tabelas novas DEVEM ter DELETE policy para admin — sem ela, `.delete()` retorna sucesso mas deleta 0 rows (silencioso)
+- profiles SELECT usa `is_admin_or_manager() OR id = auth.uid()` — NUNCA chamar `is_admin()` sozinha no profiles (recursão infinita)
+- Tabelas novas DEVEM ter DELETE policy com `is_admin()` — sem ela, `.delete()` retorna sucesso mas deleta 0 rows (silencioso)
 - `sale_items` RLS usa subquery: `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
 - `onboarding_checklists` RLS INSERT permite admin, manager E franqueado
+- Alterações em RLS policies e funções SQL tomam efeito imediatamente (sem deploy frontend)
 
 ### Filtro de Franquias (src/lib/franchiseUtils.js)
 - `getAvailableFranchises(franchises, user)` — admin/manager vê todas; franchisee filtra por managed_franchise_ids
@@ -92,8 +92,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Faturamento bruto = `value + delivery_fee` em TODOS os cálculos de revenue. TabResultado mostra linhas separadas
 - Linhas financeiras com valor zero ficam ocultas
 - Edição de venda = deletar sale_items antigos + reinserir novos (triggers cuidam do estoque)
-- `SaleReceipt.jsx` gera comprovante PNG (html2canvas) — `shareUtils.js` com dynamic import
-- `shareUtils.js`: `shareImage` (Web Share API mobile / print desktop), `printImage` (iframe oculto → `window.print()` direto), `generateReceiptImage` (html2canvas → blob)
+- `SaleReceipt.jsx` + `shareUtils.js` (dynamic import): `shareImage` (Web Share API mobile / print desktop), `printImage` (iframe → `window.print()`), `generateReceiptImage` (html2canvas → blob)
 - `TabLancar.jsx`: `shareData`/`receiptRef` são shared state entre share e print — desabilitar ambos botões enquanto qualquer operação estiver em andamento
 - Botões de ação vendas (Compartilhar/Imprimir/Editar/Excluir): `<span className="hidden sm:inline">` para labels, icon-only no mobile
 - `sale_items.cost_price` é snapshot do momento da venda. `sale_price` padrão = `cost_price * 2`
@@ -134,6 +133,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - V1 (`PALRV1RqD3opHMzk`): DESATIVADO (Base44 legado)
 - Bot respeita `has_pickup`/`has_delivery` — regras condicionais no GerenteGeral1 e Pedido_Checkout1
 - systemMessage fica em `node.parameters.options.systemMessage` (GerenteGeral1 e sub-agentes)
+- Campo "Hoje" no systemMessage: `$now.setZone('America/Sao_Paulo').setLocale('pt-BR').toFormat(...)` — DEVE usar `setLocale('pt-BR')` para dia da semana em português (sem locale, Luxon retorna inglês e o LLM confunde com schedule em português)
+- `bot_personality` removido do prompt (hardcoded "profissional") — UI de personalidade foi removida
 - Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
 - Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 8 nós, dados via $fromAI(). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
@@ -358,7 +359,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - Acompanhamento mostra nome da franquia (NÃO só dono)
 
 ### Features Removidas (NÃO recriar)
-Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist (inativa), ReviewSummary campos Personalidade/Boas-vindas
+Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist (inativa), ReviewSummary campos Personalidade/Boas-vindas, `catalog_distributions` tabela removida
 
 ### Meta-regras
 - NUNCA alterar `franchise_configurations` sem verificar compatibilidade com vendedor genérico
