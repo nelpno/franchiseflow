@@ -166,7 +166,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
 - **V3 NÃO usa `upsert_bot_contact` RPC** — fluxo: GET_USER1 (lookup) → IF_USER1 → CREATE_USER1 (PushName) ou Edit Fields3. `upsert_bot_contact` existe mas só é chamada externamente
 - **Normalização telefone LID**: `numero_real` node DEVE strip 55 (como `extractPhone()`). `Normaliza1.chat_id_whatsapp` re-adiciona 55 para envio WhatsApp
-- **`AtualizaNome` (Memoria_Lead1)**: Supabase Update direto (NÃO usa RPC). `$fromAI()` decide o nome — pode sobrescrever nomes editados manualmente. Prompt DEVE restringir a "SOMENTE quando cliente explicitamente reclamou"
+- **`AtualizaNome`**: Supabase Update direto (NÃO usa RPC). `$fromAI()` decide o nome — pode sobrescrever nomes editados manualmente. Prompt DEVE restringir a "SOMENTE quando cliente explicitamente reclamou"
+- **REGRA CRÍTICA `AtualizaNome`**: Filtro DEVE ser por `id` (UUID via `Edit Fields3.contact_id`), NUNCA por `franchise_id + telefone`. Filtro por telefone vazio causa mass update em TODOS os contatos da franquia (incidente 02/04/2026 — 98 contatos corrompidos em Ribeirão Preto)
+- **REGRA GERAL n8n Supabase UPDATE**: SEMPRE filtrar por `id` (UUID) em nós que fazem UPDATE. NUNCA filtrar apenas por `franchise_id + telefone` — se telefone vier vazio/undefined, n8n omite o filtro e o UPDATE atinge todas as rows
 - **`memoriaLead` sub-workflow** (`xJocFaDvztxeBHvQ`): APENAS Redis (NÃO toca Supabase). Merge de memória via gpt-4o-mini. Chave: `chat_id + "_memfranq"`
 - **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
 - **EnviaPedidoFechado `Prepare Sale Data`**: já strip 55 de `telefonelead` para `telefone_db`. `Lookup Contact` busca por 11 dígitos
