@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { formatBRL } from "@/lib/formatBRL";
 import { MARKETING_TAX_RATE, marketingLiquid } from "@/lib/franchiseUtils";
 import MetaDepositDialog from "./MetaDepositDialog";
+import { FranchiseConfiguration } from "@/entities/all";
 
 function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -66,19 +67,37 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   const [rejectDialog, setRejectDialog] = useState(null); // { paymentId }
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
+  const [configs, setConfigs] = useState([]);
 
   const monthOptions = generateMonthOptions();
+
+  // Map evolution_instance_id → franchise_name from configs
+  const configNameMap = React.useMemo(() => {
+    const map = {};
+    configs.forEach((c) => {
+      if (c.franchise_evolution_instance_id && c.franchise_name) {
+        map[c.franchise_evolution_instance_id] = c.franchise_name;
+      }
+    });
+    return map;
+  }, [configs]);
+
+  const getFranchiseDisplayName = useCallback((f) => {
+    return configNameMap[f.evolution_instance_id] || `Maxi Massas ${f.city || ""}`.trim();
+  }, [configNameMap]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [paymentsResult, depositsResult] = await Promise.allSettled([
+      const [paymentsResult, depositsResult, configsResult] = await Promise.allSettled([
         MarketingPayment.filter({ reference_month: selectedMonth }, "created_at", 200),
         MarketingMetaDeposit.filter({ reference_month: selectedMonth }, "deposit_date", 100),
+        FranchiseConfiguration.list("franchise_name", 200),
       ]);
       if (!mountedRef.current) return;
       setPayments(paymentsResult.status === "fulfilled" ? paymentsResult.value : []);
       setDeposits(depositsResult.status === "fulfilled" ? depositsResult.value : []);
+      setConfigs(configsResult.status === "fulfilled" ? configsResult.value : []);
     } catch (err) {
       console.error("Erro ao carregar dados investimento:", err);
       toast.error("Erro ao carregar dados de investimento");
@@ -309,7 +328,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                     {/* Franquia */}
                     <div className="md:col-span-3">
                       <p className="text-sm font-medium text-[#1b1c1d]">
-                        Maxi Massas {f.city}
+                        {getFranchiseDisplayName(f)}
                       </p>
                       <p className="text-xs text-[#7a6d6d]">{f.owner_name || f.city}{f.state ? ` — ${f.state}` : ""}</p>
                     </div>

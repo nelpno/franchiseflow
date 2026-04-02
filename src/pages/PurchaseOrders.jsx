@@ -490,7 +490,7 @@ export default function PurchaseOrders() {
           return {
             order,
             items,
-            franchiseName: "Maxi Massas " + getFranchiseName(order.franchise_id),
+            franchiseName: getFranchiseName(order.franchise_id),
           };
         })
       );
@@ -1017,7 +1017,7 @@ export default function PurchaseOrders() {
                         await generatePickingSheet({
                           order: selectedOrder,
                           items: orderItems,
-                          franchiseName: "Maxi Massas " + getFranchiseName(selectedOrder.franchise_id),
+                          franchiseName: getFranchiseName(selectedOrder.franchise_id),
                           editedQuantities,
                         });
                         toast.success("Ficha de separacao gerada!");
