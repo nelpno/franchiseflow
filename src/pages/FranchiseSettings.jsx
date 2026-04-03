@@ -852,6 +852,7 @@ function FranchiseSettingsContent() {
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
                 <FieldHint text="O bot menciona essas promoções quando o cliente pergunta sobre ofertas." />
               </div>
+              {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <div>
                 <label className={labelClass}>ID da Página do Facebook (Meta Ads)</label>
                 <input className={inputClass} type="text" value={formData.facebook_page_id}
@@ -859,6 +860,7 @@ function FranchiseSettingsContent() {
                   placeholder="Ex: 123456789012345" />
                 <FieldHint text="Necessário para rastrear conversões via WhatsApp (CAPI). Encontre em: Página do Facebook → Sobre → ID da Página." />
               </div>
+              )}
               <div>
                 <label className={labelClass}>Catálogo / Cardápio (imagem que o bot envia ao cliente)</label>
                 <CatalogUpload
