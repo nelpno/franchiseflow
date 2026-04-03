@@ -136,7 +136,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Campo "Hoje" no systemMessage: `$now.setZone('America/Sao_Paulo').setLocale('pt-BR').toFormat(...)` — DEVE usar `setLocale('pt-BR')` para dia da semana em português (sem locale, Luxon retorna inglês e o LLM confunde com schedule em português)
 - `bot_personality` removido do prompt (hardcoded "profissional") — UI de personalidade foi removida
 - Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
-- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 8 nós, dados via $fromAI(). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
+- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 12 nós (8 originais + 4 CAPI Purchase). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
 - Credencial Google Gemini: `ezQN27UjYZVHyDEf` | Credencial OpenAI: `fIhzSXiiBXB3ad6Y`
 - View `vw_dadosunidade`: mapeia franchise_configurations. SQL: `supabase/fix-vw-dadosunidade-v2-scale.sql`
@@ -172,6 +172,23 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **`memoriaLead` sub-workflow** (`xJocFaDvztxeBHvQ`): APENAS Redis (NÃO toca Supabase). Merge de memória via gpt-4o-mini. Chave: `chat_id + "_memfranq"`
 - **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
 - **EnviaPedidoFechado `Prepare Sale Data`**: já strip 55 de `telefonelead` para `telefone_db`. `Lookup Contact` busca por 11 dígitos
+
+#### Meta CAPI (Conversions API) — implementado 2026-04-02
+- **Objetivo**: fechar loop atribuição Meta Ads → WhatsApp bot → compra
+- **Pixel**: `5852647818195435` (Pixel de FRANQUIAS) — usado em todas as campanhas click-to-WhatsApp
+- **Env vars n8n** (stack Portainer ID 4): `META_PIXEL_ID`, `META_CAPI_ACCESS_TOKEN`
+- **3 eventos**: `Lead` (novo contato com referral), `ViewContent` (catálogo enviado), `Purchase` (checkout fechado)
+- **Path real ctwaClid** (verificado exec 2568273): `data.event.Message.extendedTextMessage.contextInfo.ctwaClid` (NÃO em `Info.CtwaClid` como docs Meta sugerem)
+- **externalAdReply** em: `...contextInfo.externalAdReply` — campos: `sourceID` (ad_id), `sourceURL`, `sourceType`
+- **First-touch**: ctwa salvo só na criação do contato (CREATE_USER1). Contatos existentes NÃO são sobrescritos
+- **continueOnFail=true** em TODOS os nodes CAPI — nunca bloqueia checkout/bot
+- **Workflows modificados**:
+  - V3 (`XqWZyLl1AHlnJvdj`): Code JS extrai ctwa → CREATE_USER1 salva 6 campos → IF Has Referral → Prepare Lead CAPI → Lead CAPI
+  - EnviaPedidoFechado (`RnF1Jh6nDUj0IRHI`): após Create Sale → IF Has CTWA → Prepare CAPI Data → Meta CAPI Purchase → Mark CAPI Sent
+  - EnviarCatalogo1 (`3Q53jOqD6cS5yWt4`): após Send Catalog Image → Lookup Contact CAPI → IF Has CTWA Catalog → Prepare ViewContent → ViewContent CAPI
+- **Colunas novas** `contacts`: `ctwa_clid`, `meta_ad_id`, `meta_referral_source_url/type/body/at`
+- **Colunas novas** `sales`: `capi_sent` (bool), `capi_event_id` (text)
+- **Migration**: `supabase/migration-meta-capi-tracking.sql`
 
 #### Sub-agentes do Vendedor V3
 - **GerenteGeral1**: orquestrador principal. LLMs: Gemini Flash (primary) + GPT-5.2 (fallback)
