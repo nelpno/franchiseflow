@@ -50,7 +50,7 @@ export default function Financeiro() {
         }),
         InventoryItem.list("franchise_id", null, {
           columns: "id, franchise_id, product_name, cost_price, sale_price, quantity, min_stock",
-          range: [0, 4999],
+          fetchAll: true,
         }),
       ]);
 

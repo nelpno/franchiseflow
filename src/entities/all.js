@@ -27,16 +27,32 @@ function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
 
 function createEntity(tableName) {
   return {
-    async list(orderBy, limit, { columns, signal, range } = {}) {
+    async list(orderBy, limit, { columns, signal, fetchAll } = {}) {
+      if (fetchAll) {
+        // Paginate past Supabase max_rows (1000) limit
+        const pageSize = 1000;
+        let all = [];
+        let from = 0;
+        while (true) {
+          let query = supabase.from(tableName).select(columns || '*');
+          if (signal) query = query.abortSignal(signal);
+          const order = parseOrderBy(orderBy);
+          if (order) query = query.order(order.column, { ascending: order.ascending });
+          query = query.range(from, from + pageSize - 1);
+          const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+          if (error) throw error;
+          const batch = data || [];
+          all = all.concat(batch);
+          if (batch.length < pageSize) break;
+          from += pageSize;
+        }
+        return all;
+      }
       let query = supabase.from(tableName).select(columns || '*');
       if (signal) query = query.abortSignal(signal);
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
-      if (range) {
-        query = query.range(range[0], range[1]);
-      } else if (limit) {
-        query = query.limit(limit);
-      }
+      if (limit) query = query.limit(limit);
       const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
       if (error) throw error;
       return data || [];

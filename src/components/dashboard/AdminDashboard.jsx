@@ -61,7 +61,7 @@ export default function AdminDashboard() {
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
-        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, range: [0, 4999] }),
+        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
       ]);
 

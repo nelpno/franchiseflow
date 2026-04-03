@@ -57,7 +57,7 @@ export default function Acompanhamento() {
       const results = await Promise.allSettled([
           Franchise.list(),
           Sale.list("-created_at", 1000),
-          InventoryItem.list("franchise_id", null, { range: [0, 4999] }),
+          InventoryItem.list("franchise_id", null, { fetchAll: true }),
           PurchaseOrder.list("-ordered_at", 500),
           OnboardingChecklist.list("franchise_id", 200),
           FranchiseConfiguration.list("franchise_evolution_instance_id", 200),
