@@ -285,7 +285,10 @@ function FranchiseSettingsContent() {
         dbFields.accepted_payment_methods :
         Array.isArray(dbFields.accepted_payment_methods) ?
           dbFields.accepted_payment_methods.join(', ') : '',
-      address_reference: dbFields.address_reference || ''
+      address_reference: dbFields.address_reference || '',
+      personal_phone_for_summary: dbFields.personal_phone_for_summary
+        ? dbFields.personal_phone_for_summary.replace(/\D/g, '')
+        : ''
     };
 
     try {
