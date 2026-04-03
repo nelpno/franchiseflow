@@ -56,6 +56,7 @@ const initialFormData = {
   delivery_schedule: [],
   catalog_image_url: '',
   bot_personality: '',
+  facebook_page_id: '',
 };
 
 const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
@@ -213,6 +214,7 @@ function FranchiseSettingsContent() {
       city: config.city || '',
       neighborhood: config.neighborhood || '',
       catalog_image_url: config.catalog_image_url || '',
+      facebook_page_id: config.facebook_page_id || '',
     };
 
     // Restore draft from localStorage only for franchisees (admin edits directly, no drafts)
@@ -849,6 +851,13 @@ function FranchiseSettingsContent() {
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
                 <FieldHint text="O bot menciona essas promoções quando o cliente pergunta sobre ofertas." />
+              </div>
+              <div>
+                <label className={labelClass}>ID da Página do Facebook (Meta Ads)</label>
+                <input className={inputClass} type="text" value={formData.facebook_page_id}
+                  onChange={(e) => handleInputChange('facebook_page_id', e.target.value)}
+                  placeholder="Ex: 123456789012345" />
+                <FieldHint text="Necessário para rastrear conversões via WhatsApp (CAPI). Encontre em: Página do Facebook → Sobre → ID da Página." />
               </div>
               <div>
                 <label className={labelClass}>Catálogo / Cardápio (imagem que o bot envia ao cliente)</label>
