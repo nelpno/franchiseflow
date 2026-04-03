@@ -48,8 +48,9 @@ export default function Financeiro() {
         Expense.list("-expense_date", 2000, {
           columns: "id, franchise_id, expense_date, amount",
         }),
-        InventoryItem.list("franchise_id", 3000, {
+        InventoryItem.list("franchise_id", null, {
           columns: "id, franchise_id, product_name, cost_price, sale_price, quantity, min_stock",
+          range: [0, 4999],
         }),
       ]);
 

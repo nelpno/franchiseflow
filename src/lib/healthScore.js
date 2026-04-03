@@ -46,7 +46,7 @@ function calcInventoryScore(franchise, inventoryData) {
     (i) => i.franchise_id === franchise.evolution_instance_id
   );
 
-  if (items.length === 0) return { score: 100, detail: "Sem itens cadastrados", zeroCount: 0, zeroNames: "" };
+  if (items.length === 0) return { score: 0, detail: "Sem itens cadastrados", zeroCount: 0, zeroNames: "" };
 
   const zeroItems = items.filter((i) => (i.quantity || 0) === 0);
   const zeroCount = zeroItems.length;

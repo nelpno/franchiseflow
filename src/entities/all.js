@@ -27,12 +27,16 @@ function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
 
 function createEntity(tableName) {
   return {
-    async list(orderBy, limit, { columns, signal } = {}) {
+    async list(orderBy, limit, { columns, signal, range } = {}) {
       let query = supabase.from(tableName).select(columns || '*');
       if (signal) query = query.abortSignal(signal);
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
-      if (limit) query = query.limit(limit);
+      if (range) {
+        query = query.range(range[0], range[1]);
+      } else if (limit) {
+        query = query.limit(limit);
+      }
       const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
       if (error) throw error;
       return data || [];

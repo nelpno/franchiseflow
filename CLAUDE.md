@@ -307,6 +307,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `franchise_invites.invited_at`/`accepted_at` (NÃO created_at)
 - `notifications.read` (NÃO is_read)
 - `franchise_configurations.franchise_name` (NÃO store_name), `.personal_phone_for_summary` (NÃO personal_phone)
+- `personal_phone_for_summary`: DEVE ser salvo como 11 dígitos puros (sem 55, sem máscara). A view `vw_dadosunidade` adiciona prefixo 55 em `personal_phone_wa`. Normalizar com `.replace(/\D/g, '')` antes de salvar — WuzAPI rejeita qualquer formatação
 - `franchises` NÃO tem owner_email (email fica em franchise_invites)
 - `onboarding_checklists`: NÃO tem total_items, started_at, user_id
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` (TEXT) + `working_days` (TEXT)
