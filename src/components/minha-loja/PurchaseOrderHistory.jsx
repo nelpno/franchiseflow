@@ -179,6 +179,19 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                         Frete: {formatBRL(order.freight_cost)}
                       </span>
                     )}
+
+                    {order.delivered_at && (
+                      <span className="text-xs text-[#16a34a] flex items-center gap-1">
+                        <MaterialIcon icon="check_circle" size={12} />
+                        Entregue {format(new Date(order.delivered_at), "dd/MM", { locale: ptBR })}
+                        {order.ordered_at && (() => {
+                          const diffMs = new Date(order.delivered_at) - new Date(order.ordered_at);
+                          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                          const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                          return ` (${diffDays > 0 ? `${diffDays}d ${diffHours}h` : `${diffHours}h`})`;
+                        })()}
+                      </span>
+                    )}
                   </div>
                 </div>
 

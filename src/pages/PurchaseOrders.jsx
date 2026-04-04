@@ -350,6 +350,9 @@ export default function PurchaseOrders() {
     try {
       // Save any pending edits together with status change
       const updates = { status: newStatus };
+      if (newStatus === 'entregue') {
+        updates.delivered_at = new Date().toISOString();
+      }
       if (selectedOrder && orderId === selectedOrder.id) {
         const newTotal = recalculateTotal();
         updates.freight_cost = editedFreight ? parseFloat(editedFreight) : null;
@@ -896,6 +899,27 @@ export default function PurchaseOrders() {
                 </span>
                 {getStatusBadge(selectedOrder.status, isOverdue(selectedOrder))}
               </div>
+
+              {/* Delivery info */}
+              {selectedOrder.delivered_at && (
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#4a3d3d]">
+                  <span className="flex items-center gap-1">
+                    <MaterialIcon icon="local_shipping" size={14} />
+                    Entregue em {format(new Date(selectedOrder.delivered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                  {selectedOrder.ordered_at && (() => {
+                    const diffMs = new Date(selectedOrder.delivered_at) - new Date(selectedOrder.ordered_at);
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    return (
+                      <span className="flex items-center gap-1 text-[#16a34a]">
+                        <MaterialIcon icon="schedule" size={14} />
+                        {diffDays > 0 ? `${diffDays}d ${diffHours}h` : `${diffHours}h`} para entrega
+                      </span>
+                    );
+                  })()}
+                </div>
+              )}
 
               {/* Items */}
               {loadingItems ? (
