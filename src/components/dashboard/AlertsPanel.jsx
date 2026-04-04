@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, parseISO } from "date-fns";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
@@ -102,11 +102,12 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
       const config = configMap[evoId];
       const fName = getFranchiseDisplayName(franchise, config);
 
-      const inventory = inventoryByFranchise?.[franchise.id] || inventoryByFranchise?.[evoId] || [];
+      // inventoryByFranchise é indexado por UUID (franchise.id) no AdminDashboard
+      const inventory = inventoryByFranchise?.[franchise.id] || [];
 
-      // Vendas reais desta franquia (usa allSales, não DailySummary)
+      // sales.franchise_id é sempre evolution_instance_id (TEXT)
       const franchiseSales = (allSales || []).filter(
-        (s) => s.franchise_id === evoId || s.franchise_id === franchise.id
+        (s) => s.franchise_id === evoId
       );
 
       // Franquia operacional = tem pelo menos 1 venda OU editou estoque (qty > 0 em algum item)
@@ -119,8 +120,9 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
         const lastSaleDate = franchiseSales.reduce((latest, s) => {
           return s.sale_date > latest ? s.sale_date : latest;
         }, "");
+        // parseISO trata como local time (evita off-by-1 em UTC-3)
         const daysSinceLastSale = lastSaleDate
-          ? differenceInDays(now, new Date(lastSaleDate))
+          ? differenceInDays(now, parseISO(lastSaleDate))
           : null;
 
         if (daysSinceLastSale !== null && daysSinceLastSale >= 7) {
@@ -130,16 +132,20 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
         }
       }
 
-      // --- Estoque inteligente (usa min_stock) ---
-      // Itens gerenciados = min_stock > 0 (franqueado configurou)
+      // --- Estoque inteligente (usa min_stock quando configurado) ---
       const managedItems = inventory.filter((i) => (i.min_stock || 0) > 0);
+      const hasMinStockConfig = managedItems.length > 0;
 
-      const zeroItems = managedItems.filter((i) => (i.quantity || 0) === 0);
+      // Se franqueado configurou min_stock: usar itens gerenciados
+      // Senão: fallback para todos os itens (evita silenciar alertas)
+      const stockCheckItems = hasMinStockConfig ? managedItems : inventory;
+
+      const zeroItems = stockCheckItems.filter((i) => (i.quantity || 0) === 0);
       if (zeroItems.length > 0) {
         zeroStock.push({ name: fName, count: zeroItems.length });
       }
 
-      const lowItems = managedItems.filter((i) => {
+      const lowItems = stockCheckItems.filter((i) => {
         const qty = i.quantity || 0;
         const minStock = i.min_stock || 3;
         return qty > 0 && qty < minStock;
@@ -148,10 +154,11 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
         lowStock.push({ name: fName, count: lowItems.length });
       }
 
-      // --- Reposição (só franquias com estoque gerenciado) ---
-      if (managedItems.length > 0) {
+      // --- Reposição (só franquias operacionais com vendas) ---
+      if (hasSales) {
+        // purchase_orders.franchise_id é sempre evolution_instance_id
         const franchiseOrders = (purchaseOrders || []).filter(
-          (po) => po.franchise_id === franchise.id || po.franchise_id === evoId
+          (po) => po.franchise_id === evoId
         );
         const latestOrder = franchiseOrders.sort(
           (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
