@@ -344,6 +344,12 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `franchises` NÃO tem owner_email (email fica em franchise_invites)
 - `onboarding_checklists`: NÃO tem total_items, started_at, user_id
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` (TEXT) + `working_days` (TEXT)
+- **Endereço estruturado**: `street_address` (rua+número), `neighborhood` (bairro), `city` (cidade), `cep` — wizard monta `unit_address` automaticamente no save: `"${street}, ${bairro}, ${cidade} - ${cep}"`
+- `unit_address` é campo COMPUTADO no save (NÃO editar diretamente). Distance Service (CalculaFrete1) lê `unit_address` da view
+- Prompt do bot usa `unit_address` SEM `| city/neighborhood` (removido — já está dentro do unit_address)
+- **Horário de retirada**: `pickup_schedule` JSONB + `has_custom_pickup_hours` BOOLEAN. Formato: `[{days, open, close}]` (mesmo do OperatingHoursEditor). Quando `has_custom_pickup_hours=false`, retirada segue horário de entrega
+- `pickup_hours_text`: campo computado na view `vw_dadosunidade` — texto legível de horários de retirada para o bot
+- Horário de retirada fica no Step 2 (Operação) do wizard, NÃO no Step 3. Step 3 = apenas entrega
 - `payment_delivery`/`payment_pickup` são `TEXT[]`, NÃO JSONB
 - Campos entrega: `free_shipping` (bool), `delivery_start_time`/`order_cutoff_time` (text HH:MM), `charges_delivery_fee` (bool)
 - `delivery_schedule` JSONB: horários de entrega por dia da semana. Array de `{days, delivery_start, delivery_end, charges_fee, fee_rules}`. Campos legados sincronizados da primeira faixa
