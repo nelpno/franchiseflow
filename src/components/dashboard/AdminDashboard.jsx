@@ -390,7 +390,7 @@ export default function AdminDashboard() {
 
       <AlertsPanel
         franchises={franchises}
-        summaries={summaries}
+        allSales={allSales}
         inventoryByFranchise={inventoryByFranchise}
         purchaseOrders={purchaseOrders}
         configMap={configMap}

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { subDays, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
@@ -9,9 +9,9 @@ const PREVIEW_NAMES = 3;
 
 function formatAlertDetail(item, type) {
   const name = typeof item === "string" ? item : item.name;
-  if (type === "noSales") {
+  if (type === "noSalesCritical" || type === "noSalesWarning") {
     const days = item.days;
-    return days ? `${name} (${days}d)` : `${name} (nunca)`;
+    return days ? `${name} (${days}d)` : name;
   }
   if (type === "zeroStock" || type === "lowStock") {
     return item.count ? `${name} (${item.count} itens)` : name;
@@ -23,34 +23,36 @@ function formatAlertDetail(item, type) {
   return name;
 }
 
+const LEVEL_STYLES = {
+  red: { border: "border-[#a80012]", bg: "bg-[#a80012]/5", icon: "text-[#a80012]" },
+  orange: { border: "border-[#c2410c]", bg: "bg-[#c2410c]/5", icon: "text-[#c2410c]" },
+  yellow: { border: "border-[#775a19]", bg: "bg-[#775a19]/5", icon: "text-[#775a19]" },
+};
+
 function AlertGroup({ level, icon, label, items, type }) {
   const [expanded, setExpanded] = useState(false);
-  const isRed = level === "red";
-  const borderColor = isRed ? "border-[#a80012]" : "border-[#775a19]";
-  const bgColor = isRed ? "bg-[#a80012]/5" : "bg-[#775a19]/5";
-  const iconColor = isRed ? "text-[#a80012]" : "text-[#775a19]";
+  const styles = LEVEL_STYLES[level] || LEVEL_STYLES.yellow;
 
   const names = items.map(i => typeof i === "string" ? i : i.name);
   const preview = names.slice(0, PREVIEW_NAMES);
   const remaining = names.length - PREVIEW_NAMES;
 
-  // Dynamic label with max days
   const dynamicLabel = useMemo(() => {
-    if (type === "noSales") {
+    if (type === "noSalesCritical" || type === "noSalesWarning") {
       const maxDays = Math.max(...items.map(i => i.days || 0));
-      return maxDays > 0 ? `sem vendas (até ${maxDays}d)` : label;
+      return maxDays > 0 ? `${label} (até ${maxDays}d)` : label;
     }
     return label;
   }, [items, type, label]);
 
   return (
-    <div className={`${bgColor} border-l-4 ${borderColor} rounded-r-xl`}>
+    <div className={`${styles.bg} border-l-4 ${styles.border} rounded-r-xl`}>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 p-3 text-left"
       >
-        <MaterialIcon icon={icon} size={18} className={iconColor} />
+        <MaterialIcon icon={icon} size={18} className={styles.icon} />
         <div className="flex-1 min-w-0">
           <span className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta">
             {items.length} {items.length === 1 ? "franquia" : "franquias"}
@@ -84,15 +86,15 @@ function AlertGroup({ level, icon, label, items, type }) {
   );
 }
 
-export default function AlertsPanel({ franchises, summaries, inventoryByFranchise, purchaseOrders, configMap = {} }) {
+export default function AlertsPanel({ franchises, allSales, inventoryByFranchise, purchaseOrders, configMap = {} }) {
   const navigate = useNavigate();
 
   const alertGroups = useMemo(() => {
-    const noSales = [];
+    const noSalesCritical = []; // 7+ dias sem venda
+    const noSalesWarning = [];  // 3-7 dias sem venda
     const zeroStock = [];
     const lowStock = [];
     const noReorder = [];
-    const twoDaysAgo = subDays(new Date(), 2);
     const now = new Date();
 
     for (const franchise of franchises) {
@@ -102,57 +104,76 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
 
       const inventory = inventoryByFranchise?.[franchise.id] || inventoryByFranchise?.[evoId] || [];
 
-      // Filter: skip franchises that never operated (no sales history AND no inventory)
-      const franchiseSummaries = summaries.filter(
+      // Vendas reais desta franquia (usa allSales, não DailySummary)
+      const franchiseSales = (allSales || []).filter(
         (s) => s.franchise_id === evoId || s.franchise_id === franchise.id
       );
-      const hasAnySales = franchiseSummaries.some((s) => (s.sales_count || 0) > 0);
-      const hasInventory = inventory.length > 0;
 
-      if (!hasAnySales && !hasInventory) continue;
+      // Franquia operacional = tem pelo menos 1 venda OU editou estoque (qty > 0 em algum item)
+      const hasSales = franchiseSales.length > 0;
+      const hasActiveInventory = inventory.some((i) => (i.quantity || 0) > 0);
+      if (!hasSales && !hasActiveInventory) continue;
 
-      // No sales in 2+ days — with exact day count
-      const sortedSummaries = [...franchiseSummaries].sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
-      const lastSaleDay = sortedSummaries.find((s) => (s.sales_count || 0) > 0);
-      if (!lastSaleDay || new Date(lastSaleDay.date) < twoDaysAgo) {
-        const days = lastSaleDay ? differenceInDays(now, new Date(lastSaleDay.date)) : null;
-        noSales.push({ name: fName, days });
+      // --- Sem vendas (usa dados reais, não cron) ---
+      if (hasSales) {
+        const lastSaleDate = franchiseSales.reduce((latest, s) => {
+          return s.sale_date > latest ? s.sale_date : latest;
+        }, "");
+        const daysSinceLastSale = lastSaleDate
+          ? differenceInDays(now, new Date(lastSaleDate))
+          : null;
+
+        if (daysSinceLastSale !== null && daysSinceLastSale >= 7) {
+          noSalesCritical.push({ name: fName, days: daysSinceLastSale });
+        } else if (daysSinceLastSale !== null && daysSinceLastSale >= 3) {
+          noSalesWarning.push({ name: fName, days: daysSinceLastSale });
+        }
       }
 
-      // Zero stock — with count of zeroed products
-      const zeroItems = inventory.filter((i) => (i.quantity || 0) === 0);
+      // --- Estoque inteligente (usa min_stock) ---
+      // Itens gerenciados = min_stock > 0 (franqueado configurou)
+      const managedItems = inventory.filter((i) => (i.min_stock || 0) > 0);
+
+      const zeroItems = managedItems.filter((i) => (i.quantity || 0) === 0);
       if (zeroItems.length > 0) {
         zeroStock.push({ name: fName, count: zeroItems.length });
       }
 
-      // Low stock
-      const lowItems = inventory.filter((i) => (i.quantity || 0) > 0 && (i.quantity || 0) < 5);
+      const lowItems = managedItems.filter((i) => {
+        const qty = i.quantity || 0;
+        const minStock = i.min_stock || 3;
+        return qty > 0 && qty < minStock;
+      });
       if (lowItems.length > 0) {
         lowStock.push({ name: fName, count: lowItems.length });
       }
 
-      // No reorder in 30+ days — with exact day count
-      const franchiseOrders = (purchaseOrders || []).filter(
-        (po) => po.franchise_id === franchise.id || po.franchise_id === evoId
-      );
-      const latestOrder = franchiseOrders.sort(
-        (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
-      )[0];
-      const reorderDays = latestOrder ? differenceInDays(now, new Date(latestOrder.ordered_at)) : null;
-      if (!latestOrder || reorderDays >= 30) {
-        noReorder.push({ name: fName, days: reorderDays });
+      // --- Reposição (só franquias com estoque gerenciado) ---
+      if (managedItems.length > 0) {
+        const franchiseOrders = (purchaseOrders || []).filter(
+          (po) => po.franchise_id === franchise.id || po.franchise_id === evoId
+        );
+        const latestOrder = franchiseOrders.sort(
+          (a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0)
+        )[0];
+        const reorderDays = latestOrder
+          ? differenceInDays(now, new Date(latestOrder.ordered_at))
+          : null;
+        if (!latestOrder || reorderDays >= 45) {
+          noReorder.push({ name: fName, days: reorderDays });
+        }
       }
     }
 
-    return { noSales, zeroStock, lowStock, noReorder };
-  }, [franchises, summaries, inventoryByFranchise, purchaseOrders, configMap]);
+    return { noSalesCritical, noSalesWarning, zeroStock, lowStock, noReorder };
+  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, configMap]);
 
-  const redCount = alertGroups.noSales.length + alertGroups.zeroStock.length;
+  const redCount = alertGroups.noSalesCritical.length;
+  const orangeCount = alertGroups.noSalesWarning.length + alertGroups.zeroStock.length;
   const yellowCount = alertGroups.lowStock.length + alertGroups.noReorder.length;
   const totalGroups =
-    (alertGroups.noSales.length > 0 ? 1 : 0) +
+    (alertGroups.noSalesCritical.length > 0 ? 1 : 0) +
+    (alertGroups.noSalesWarning.length > 0 ? 1 : 0) +
     (alertGroups.zeroStock.length > 0 ? 1 : 0) +
     (alertGroups.lowStock.length > 0 ? 1 : 0) +
     (alertGroups.noReorder.length > 0 ? 1 : 0);
@@ -171,10 +192,16 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
               {redCount} {redCount === 1 ? "critico" : "criticos"}
             </span>
           )}
+          {orangeCount > 0 && (
+            <span className="flex items-center gap-1.5 text-[#c2410c]">
+              <span className="w-2 h-2 rounded-full bg-[#c2410c]" />
+              {orangeCount} {orangeCount === 1 ? "atencao" : "atencao"}
+            </span>
+          )}
           {yellowCount > 0 && (
             <span className="flex items-center gap-1.5 text-[#775a19]">
               <span className="w-2 h-2 rounded-full bg-[#775a19]" />
-              {yellowCount} atencao
+              {yellowCount} {yellowCount === 1 ? "informativo" : "informativos"}
             </span>
           )}
         </div>
@@ -190,18 +217,27 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
         </div>
       ) : (
         <div className="space-y-2">
-          {alertGroups.noSales.length > 0 && (
+          {alertGroups.noSalesCritical.length > 0 && (
             <AlertGroup
               level="red"
               icon="warning"
-              label="sem vendas há 2+ dias"
-              items={alertGroups.noSales}
-              type="noSales"
+              label="sem vendas há 7+ dias"
+              items={alertGroups.noSalesCritical}
+              type="noSalesCritical"
+            />
+          )}
+          {alertGroups.noSalesWarning.length > 0 && (
+            <AlertGroup
+              level="orange"
+              icon="schedule"
+              label="sem vendas há 3+ dias"
+              items={alertGroups.noSalesWarning}
+              type="noSalesWarning"
             />
           )}
           {alertGroups.zeroStock.length > 0 && (
             <AlertGroup
-              level="red"
+              level="orange"
               icon="inventory"
               label="com estoque zerado"
               items={alertGroups.zeroStock}
@@ -211,7 +247,7 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
           {alertGroups.lowStock.length > 0 && (
             <AlertGroup
               level="yellow"
-              icon="inventory"
+              icon="inventory_2"
               label="com estoque baixo"
               items={alertGroups.lowStock}
               type="lowStock"
@@ -221,7 +257,7 @@ export default function AlertsPanel({ franchises, summaries, inventoryByFranchis
             <AlertGroup
               level="yellow"
               icon="local_shipping"
-              label="sem reposição há 30+ dias"
+              label="sem reposição há 45+ dias"
               items={alertGroups.noReorder}
               type="noReorder"
             />

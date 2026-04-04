@@ -133,8 +133,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `franchise_id` = evolution_instance_id (TEXT). `contact_phone` = 11 dígitos (sem 55)
 - FK `conversation_id` → `bot_conversations(id)` ON DELETE SET NULL (auto-vinculado pela RPC)
 - RPC `log_conversation_message()`: SECURITY DEFINER, dedup LID via ON CONFLICT, trunca content 10K chars
-- Sub-workflow n8n `LogConversationMessage`: 4 nós, todos continueOnFail=true
-- Pontos de logging no V3: INBOUND (antes GerenteGeral1), OUTBOUND (após Send Message), HUMAN (branch outcoming após Gera Timeout1)
+- Sub-workflow n8n `LogConversationMessage` (`9XQ5Jkccus2vtkOE`): 5 nós (trigger + validate + IF + HTTP RPC + done), todos continueOnFail=true
+- Pontos de logging no V3: Log Inbound (paralelo ao GerenteGeral1, após Customer Context), Log Outbound (paralelo ao Wait5, após Enviar Mensagem), Log Human (após Gera Timeout1 no branch outcoming)
 - Entity: `ConversationMessage` em `src/entities/all.js` (sem UI nesta fase)
 - Migration: `supabase/conversation-messages.sql`
 - Volumetria: ~1.500 rows/dia, ~550K/ano (~300MB). Sem particionamento até 1M+
