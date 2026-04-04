@@ -31,7 +31,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import FilterBar from "@/components/shared/FilterBar";
 import { toast } from "sonner";
-import { format, differenceInDays, parseISO } from "date-fns";
+import { format, differenceInDays, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const formatBRL = (value) => {
@@ -77,6 +77,10 @@ export default function PurchaseOrders() {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [franchiseFilter, setFranchiseFilter] = useState("todos");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(startOfMonth(new Date()));
+  const [bulkStatus, setBulkStatus] = useState("");
+  const [bulkChanging, setBulkChanging] = useState(false);
+  const [confirmBulkAction, setConfirmBulkAction] = useState(null);
 
   // Dialog state
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -190,6 +194,15 @@ export default function PurchaseOrders() {
   const filteredOrders = useMemo(() => {
     let result = [...orders];
 
+    // Filter by month
+    const monthStart = startOfMonth(selectedMonth);
+    const monthEnd = endOfMonth(selectedMonth);
+    result = result.filter((o) => {
+      if (!o.ordered_at) return false;
+      const d = new Date(o.ordered_at);
+      return isWithinInterval(d, { start: monthStart, end: monthEnd });
+    });
+
     if (statusFilter !== "todos") {
       result = result.filter((o) => o.status === statusFilter);
     }
@@ -215,7 +228,7 @@ export default function PurchaseOrders() {
     });
 
     return result;
-  }, [orders, statusFilter, franchiseFilter, searchTerm]);
+  }, [orders, statusFilter, franchiseFilter, searchTerm, selectedMonth]);
 
   // Unique franchises present in orders for filter
   const orderFranchiseIds = useMemo(() => {
@@ -423,6 +436,61 @@ export default function PurchaseOrders() {
     }
   };
 
+  // --- Bulk status change ---
+  const doBulkStatusChange = async () => {
+    if (!confirmBulkAction) return;
+    const { status: newStatus, orderIds } = confirmBulkAction;
+    setBulkChanging(true);
+    try {
+      const updates = { status: newStatus };
+      if (newStatus === 'entregue') {
+        updates.delivered_at = new Date().toISOString();
+      }
+
+      const results = await Promise.allSettled(
+        orderIds.map((id) => PurchaseOrder.update(id, updates))
+      );
+
+      // Notify franchisees (fire-and-forget)
+      const statusMessages = {
+        confirmado: { title: "Pedido confirmado", message: "Seu pedido de reposição foi confirmado pela fábrica.", icon: "check_circle", type: "info" },
+        em_rota: { title: "Pedido em rota", message: "Seu pedido está a caminho!", icon: "local_shipping", type: "info" },
+        entregue: { title: "Pedido entregue", message: "Seu pedido foi entregue — estoque atualizado automaticamente.", icon: "inventory", type: "info" },
+      };
+      const msg = statusMessages[newStatus];
+      if (msg) {
+        const uniqueFranchiseIds = [...new Set(orderIds.map((id) => {
+          const o = orders.find((ord) => ord.id === id);
+          return o ? franchiseMap[o.franchise_id]?.id : null;
+        }).filter(Boolean))];
+        uniqueFranchiseIds.forEach((fid) => {
+          supabase.rpc('notify_franchise_users', {
+            p_franchise_id: fid, p_title: msg.title, p_message: msg.message,
+            p_type: msg.type, p_icon: msg.icon, p_link: '/Gestao?tab=reposicao',
+          }).catch(() => {});
+        });
+      }
+
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed > 0) {
+        toast.warning(`${succeeded} alterado${succeeded > 1 ? "s" : ""}, ${failed} falhou.`);
+      } else {
+        toast.success(`${succeeded} pedido${succeeded > 1 ? "s" : ""} alterado${succeeded > 1 ? "s" : ""} para ${STATUS_CONFIG[newStatus]?.label}.`);
+      }
+
+      setSelectedIds(new Set());
+      setBulkStatus("");
+      loadData();
+    } catch (error) {
+      console.error("Erro ao alterar status em lote:", error);
+      toast.error("Erro ao alterar status dos pedidos.");
+    } finally {
+      setBulkChanging(false);
+      setConfirmBulkAction(null);
+    }
+  };
+
   // --- Delete logic ---
 
   const isDeletable = (order) => order.status === "pendente" || order.status === "cancelado";
@@ -593,20 +661,56 @@ export default function PurchaseOrders() {
         </Button>
       </div>
 
+      {/* Month Selector */}
+      <div className="flex items-center justify-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedMonth((m) => subMonths(m, 1))}
+          className="hover:bg-[#b91c1c]/5 rounded-xl"
+        >
+          <MaterialIcon icon="chevron_left" size={20} />
+        </Button>
+        <span className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta min-w-[160px] text-center capitalize">
+          {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedMonth((m) => addMonths(m, 1))}
+          disabled={isSameMonth(selectedMonth, new Date())}
+          className="hover:bg-[#b91c1c]/5 rounded-xl"
+        >
+          <MaterialIcon icon="chevron_right" size={20} />
+        </Button>
+      </div>
+
       {/* Summary Stats */}
       {(() => {
-        const now = new Date();
-        const thisMonth = (o) => o.ordered_at && new Date(o.ordered_at).getMonth() === now.getMonth() && new Date(o.ordered_at).getFullYear() === now.getFullYear();
-        const pendentes = orders.filter(o => o.status === "pendente" || o.status === "confirmado");
-        const emRota = orders.filter(o => o.status === "em_rota");
-        const entregues = orders.filter(o => o.status === "entregue" && thisMonth(o));
-        const cancelados = orders.filter(o => o.status === "cancelado" && thisMonth(o));
+        const monthOrders = filteredOrders;
+        const pendentes = monthOrders.filter(o => o.status === "pendente" || o.status === "confirmado");
+        const emRota = monthOrders.filter(o => o.status === "em_rota");
+        const entregues = monthOrders.filter(o => o.status === "entregue");
         const pendentesTotal = pendentes.reduce((s, o) => s + (parseFloat(o.total_amount) || 0), 0);
+
+        // Tempo médio de entrega
+        const entregas = entregues.filter(o => o.ordered_at && o.delivered_at);
+        let tempoMedio = null;
+        if (entregas.length > 0) {
+          const totalHours = entregas.reduce((sum, o) => {
+            return sum + (new Date(o.delivered_at) - new Date(o.ordered_at)) / (1000 * 60 * 60);
+          }, 0);
+          const avgHours = totalHours / entregas.length;
+          const days = Math.floor(avgHours / 24);
+          const hours = Math.round(avgHours % 24);
+          tempoMedio = days > 0 ? `${days}d ${hours}h` : `${hours}h`;
+        }
+
         const stats = [
           { icon: "schedule", label: "Pendentes", value: pendentes.length, detail: pendentesTotal > 0 ? formatBRL(pendentesTotal) : null, color: "#d97706" },
           { icon: "local_shipping", label: "Em Rota", value: emRota.length, color: "#ea580c" },
-          { icon: "inventory", label: "Entregues", value: entregues.length, detail: "este mês", color: "#16a34a" },
-          { icon: "cancel", label: "Cancelados", value: cancelados.length, detail: "este mês", color: "#6b7280" },
+          { icon: "inventory", label: "Entregues", value: entregues.length, detail: tempoMedio ? `média ${tempoMedio}` : null, color: "#16a34a" },
+          { icon: "timer", label: "Tempo Médio", value: tempoMedio || "—", detail: entregas.length > 0 ? `${entregas.length} entrega${entregas.length > 1 ? "s" : ""}` : "sem dados", color: "#2563eb" },
         ];
         return (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -657,15 +761,63 @@ export default function PurchaseOrders() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between bg-[#b91c1c]/5 border border-[#b91c1c]/20 rounded-xl px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-[#b91c1c]/5 border border-[#b91c1c]/20 rounded-xl px-4 py-3">
           <span className="text-sm text-[#1b1c1d] font-medium">
             {selectedIds.size} pedido{selectedIds.size > 1 ? "s" : ""} selecionado{selectedIds.size > 1 ? "s" : ""}
           </span>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Bulk status change */}
+            {(() => {
+              const selectedStatuses = new Set(
+                Array.from(selectedIds).map((id) => filteredOrders.find((o) => o.id === id)?.status).filter(Boolean)
+              );
+              const hasNonFinal = Array.from(selectedIds).some((id) => {
+                const o = filteredOrders.find((fo) => fo.id === id);
+                return o && o.status !== "entregue" && o.status !== "cancelado";
+              });
+              if (!hasNonFinal) return null;
+
+              const statusOptions = [
+                { value: "confirmado", label: "Confirmar" },
+                { value: "em_rota", label: "Em Rota" },
+                { value: "entregue", label: "Entregue" },
+              ].filter((opt) => !selectedStatuses.has(opt.value) || selectedStatuses.size > 1);
+
+              return (
+                <>
+                  <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                    <SelectTrigger className="w-[130px] h-8 bg-white border-[#cac0c0] rounded-xl text-xs">
+                      <SelectValue placeholder="Alterar para..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    disabled={!bulkStatus || bulkChanging}
+                    onClick={() => {
+                      const ids = Array.from(selectedIds).filter((id) => {
+                        const o = filteredOrders.find((fo) => fo.id === id);
+                        return o && o.status !== "entregue" && o.status !== "cancelado";
+                      });
+                      setConfirmBulkAction({ status: bulkStatus, orderIds: ids });
+                    }}
+                    className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold rounded-xl gap-1 text-xs"
+                  >
+                    <MaterialIcon icon="sync" size={14} />
+                    {bulkChanging ? "Alterando..." : "Aplicar"}
+                  </Button>
+                </>
+              );
+            })()}
+
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setSelectedIds(new Set())}
+              onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}
               className="border-[#cac0c0] text-[#4a3d3d] rounded-xl text-xs"
             >
               Limpar
@@ -678,7 +830,8 @@ export default function PurchaseOrders() {
               className="text-[#d4af37] border-[#d4af37]/30 rounded-xl text-xs gap-1"
             >
               <MaterialIcon icon="print" size={14} />
-              {generatingBulkPdf ? "Gerando..." : "Fichas de Separação"}
+              <span className="hidden sm:inline">{generatingBulkPdf ? "Gerando..." : "Fichas de Separação"}</span>
+              <span className="sm:hidden">{generatingBulkPdf ? "..." : "Fichas"}</span>
             </Button>
             {Array.from(selectedIds).every((id) => {
               const o = filteredOrders.find((fo) => fo.id === id);
@@ -691,7 +844,7 @@ export default function PurchaseOrders() {
                 className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1 text-xs"
               >
                 <MaterialIcon icon="delete" size={14} />
-                Excluir Selecionados
+                <span className="hidden sm:inline">Excluir Selecionados</span>
               </Button>
             )}
           </div>
@@ -892,34 +1045,51 @@ export default function PurchaseOrders() {
                 <span className="font-medium text-[#1b1c1d]">
                   {getFranchiseName(selectedOrder.franchise_id)}
                 </span>
-                <span className="text-[#4a3d3d]">
-                  {selectedOrder.ordered_at
-                    ? format(new Date(selectedOrder.ordered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-                    : "\u2014"}
-                </span>
                 {getStatusBadge(selectedOrder.status, isOverdue(selectedOrder))}
               </div>
 
-              {/* Delivery info */}
-              {selectedOrder.delivered_at && (
-                <div className="flex flex-wrap items-center gap-3 text-xs text-[#4a3d3d]">
-                  <span className="flex items-center gap-1">
-                    <MaterialIcon icon="local_shipping" size={14} />
-                    Entregue em {format(new Date(selectedOrder.delivered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+              {/* Timeline logística */}
+              <div className="bg-[#fbf9fa] rounded-xl p-3 space-y-2">
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+                  <span className="flex items-center gap-1.5 text-[#4a3d3d]">
+                    <MaterialIcon icon="shopping_cart" size={14} className="text-[#d97706]" />
+                    <span className="font-medium">Pedido:</span>
+                    {selectedOrder.ordered_at
+                      ? format(new Date(selectedOrder.ordered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                      : "—"}
                   </span>
-                  {selectedOrder.ordered_at && (() => {
-                    const diffMs = new Date(selectedOrder.delivered_at) - new Date(selectedOrder.ordered_at);
-                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    return (
-                      <span className="flex items-center gap-1 text-[#16a34a]">
-                        <MaterialIcon icon="schedule" size={14} />
-                        {diffDays > 0 ? `${diffDays}d ${diffHours}h` : `${diffHours}h`} para entrega
-                      </span>
-                    );
-                  })()}
+                  {selectedOrder.estimated_delivery && (
+                    <span className="flex items-center gap-1.5 text-[#4a3d3d]">
+                      <MaterialIcon icon="event" size={14} className="text-[#2563eb]" />
+                      <span className="font-medium">Previsão:</span>
+                      {format(new Date(selectedOrder.estimated_delivery), "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                  )}
+                  {selectedOrder.delivered_at && (
+                    <span className="flex items-center gap-1.5 text-[#16a34a]">
+                      <MaterialIcon icon="check_circle" size={14} />
+                      <span className="font-medium">Entregue:</span>
+                      {format(new Date(selectedOrder.delivered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </span>
+                  )}
                 </div>
-              )}
+                {selectedOrder.delivered_at && selectedOrder.ordered_at && (() => {
+                  const diffMs = new Date(selectedOrder.delivered_at) - new Date(selectedOrder.ordered_at);
+                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  const wasLate = selectedOrder.estimated_delivery &&
+                    new Date(selectedOrder.delivered_at) > new Date(selectedOrder.estimated_delivery + 'T23:59:59');
+                  return (
+                    <div className="flex items-center gap-2 pt-1 border-t border-[#cac0c0]/20">
+                      <span className={`flex items-center gap-1 text-xs font-medium ${wasLate ? 'text-[#dc2626]' : 'text-[#16a34a]'}`}>
+                        <MaterialIcon icon="timer" size={14} />
+                        Tempo de atendimento: {diffDays > 0 ? `${diffDays}d ${diffHours}h` : `${diffHours}h`}
+                        {wasLate && ' (atrasado)'}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
 
               {/* Items */}
               {loadingItems ? (
@@ -1186,6 +1356,58 @@ export default function PurchaseOrders() {
                 />
               )}
               {confirmAction?.type === "entregue" ? "Confirmar" : "Cancelar Pedido"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Status Confirmation Dialog */}
+      <Dialog open={!!confirmBulkAction} onOpenChange={(open) => { if (!open) setConfirmBulkAction(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
+              <MaterialIcon
+                icon={STATUS_CONFIG[confirmBulkAction?.status]?.icon || "sync"}
+                size={20}
+                style={{ color: STATUS_CONFIG[confirmBulkAction?.status]?.icon ? undefined : "#2563eb" }}
+                className={confirmBulkAction?.status === "entregue" ? "text-[#16a34a]" : confirmBulkAction?.status === "em_rota" ? "text-[#ea580c]" : "text-[#2563eb]"}
+              />
+              Alterar {confirmBulkAction?.orderIds?.length} pedido{confirmBulkAction?.orderIds?.length > 1 ? "s" : ""} para {STATUS_CONFIG[confirmBulkAction?.status]?.label}
+            </DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-[#4a3d3d]">
+            {confirmBulkAction?.status === "entregue"
+              ? `O estoque de ${confirmBulkAction?.orderIds?.length} franquia(s) será atualizado automaticamente. Essa ação não pode ser desfeita.`
+              : `Alterar o status de ${confirmBulkAction?.orderIds?.length} pedido${confirmBulkAction?.orderIds?.length > 1 ? "s" : ""} para "${STATUS_CONFIG[confirmBulkAction?.status]?.label}".`}
+          </p>
+
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmBulkAction(null)}
+              disabled={bulkChanging}
+              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={doBulkStatusChange}
+              disabled={bulkChanging}
+              className={`font-bold rounded-xl gap-1 ${
+                confirmBulkAction?.status === "entregue" ? "bg-[#16a34a] hover:bg-[#15803d] text-white"
+                : confirmBulkAction?.status === "em_rota" ? "bg-[#ea580c] hover:bg-[#c2410c] text-white"
+                : "bg-[#2563eb] hover:bg-[#1d4ed8] text-white"
+              }`}
+            >
+              {bulkChanging ? (
+                <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+              ) : (
+                <MaterialIcon icon={STATUS_CONFIG[confirmBulkAction?.status]?.icon || "sync"} size={16} />
+              )}
+              {bulkChanging ? "Alterando..." : "Confirmar"}
             </Button>
           </DialogFooter>
         </DialogContent>
