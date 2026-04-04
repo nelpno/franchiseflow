@@ -60,6 +60,12 @@ export const AuthProvider = ({ children }) => {
         managed_franchise_ids: profile?.managed_franchise_ids || [],
       });
       setIsAuthenticated(true);
+
+      // Identify user in Microsoft Clarity for analytics segmentation
+      if (window.clarity) {
+        window.clarity("identify", authUser.id, null, null, profile?.role || 'franchisee');
+        window.clarity("set", "role", profile?.role || 'franchisee');
+      }
     } catch (error) {
       console.error('[Auth] Error loading profile:', error);
       // Wait for handle_new_user trigger to finish creating profile (first login)
