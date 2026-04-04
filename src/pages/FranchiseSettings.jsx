@@ -463,7 +463,7 @@ function FranchiseSettingsContent() {
                   <SelectValue placeholder="Selecione uma franquia..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {franchisesWithoutConfig.map((f) =>
+                  {[...franchisesWithoutConfig].sort((a, b) => (a.city || '').localeCompare(b.city || '', 'pt-BR')).map((f) =>
                     <SelectItem key={f.id} value={f.evolution_instance_id}>{f.city}</SelectItem>
                   )}
                 </SelectContent>
@@ -514,7 +514,7 @@ function FranchiseSettingsContent() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {displayConfigurations.map((c) => (
+                  {[...displayConfigurations].sort((a, b) => (a.franchise_name || a.franchise?.city || '').localeCompare(b.franchise_name || b.franchise?.city || '', 'pt-BR')).map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.franchise_name || c.franchise?.city || 'Franquia'}
                     </SelectItem>
