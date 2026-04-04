@@ -127,6 +127,18 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Puxa `owner_name` da franquia para `full_name` (fallback: user_metadata, email)
 - Fallback role: invites → `raw_user_meta_data->>'role'` → default `'franchisee'`
 
+### Conversation Messages (xLLM data capture)
+- `conversation_messages`: log de TODAS as mensagens do bot WhatsApp (in/out/human)
+- `direction`: 'in' (cliente→bot), 'out' (bot→cliente), 'human' (franqueado respondeu na mão)
+- `franchise_id` = evolution_instance_id (TEXT). `contact_phone` = 11 dígitos (sem 55)
+- FK `conversation_id` → `bot_conversations(id)` ON DELETE SET NULL (auto-vinculado pela RPC)
+- RPC `log_conversation_message()`: SECURITY DEFINER, dedup LID via ON CONFLICT, trunca content 10K chars
+- Sub-workflow n8n `LogConversationMessage`: 4 nós, todos continueOnFail=true
+- Pontos de logging no V3: INBOUND (antes GerenteGeral1), OUTBOUND (após Send Message), HUMAN (branch outcoming após Gera Timeout1)
+- Entity: `ConversationMessage` em `src/entities/all.js` (sem UI nesta fase)
+- Migration: `supabase/conversation-messages.sql`
+- Volumetria: ~1.500 rows/dia, ~550K/ano (~300MB). Sem particionamento até 1M+
+
 ### Integração Vendedor Genérico (n8n)
 - V3 (`XqWZyLl1AHlnJvdj`): PRODUÇÃO ATUAL. RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
 - V2 (`w7loLOXUmRR3AzuO`): ARQUIVADO (substituído pelo V3)
@@ -173,22 +185,29 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
 - **EnviaPedidoFechado `Prepare Sale Data`**: já strip 55 de `telefonelead` para `telefone_db`. `Lookup Contact` busca por 11 dígitos
 
-#### Meta CAPI (Conversions API) — implementado 2026-04-02
+#### Meta CAPI (Conversions API) — implementado 2026-04-02, fix 2026-04-03
 - **Objetivo**: fechar loop atribuição Meta Ads → WhatsApp bot → compra
-- **Pixel**: `5852647818195435` (Pixel de FRANQUIAS) — usado em todas as campanhas click-to-WhatsApp
-- **Env vars n8n** (stack Portainer ID 4): `META_PIXEL_ID`, `META_CAPI_ACCESS_TOKEN`
-- **3 eventos**: `Lead` (novo contato com referral), `ViewContent` (catálogo enviado), `Purchase` (checkout fechado)
-- **Path real ctwaClid** (verificado exec 2568273): `data.event.Message.extendedTextMessage.contextInfo.ctwaClid` (NÃO em `Info.CtwaClid` como docs Meta sugerem)
-- **externalAdReply** em: `...contextInfo.externalAdReply` — campos: `sourceID` (ad_id), `sourceURL`, `sourceType`
-- **First-touch**: ctwa salvo só na criação do contato (CREATE_USER1). Contatos existentes NÃO são sobrescritos
-- **continueOnFail=true** em TODOS os nodes CAPI — nunca bloqueia checkout/bot
+- **Pixel**: `5852647818195435` (Pixel de FRANQUIAS) — fallback quando franquia não tem `meta_dataset_id`
+- **WABA dataset_id**: preferido sobre pixel. Cada franquia pode ter `meta_dataset_id` + `whatsapp_business_account_id` em `franchise_configurations`
+- **Env vars n8n** (stack Portainer ID 4): `META_PIXEL_ID` (fallback), `META_CAPI_ACCESS_TOKEN`
+- **3 eventos**: `LeadSubmitted` (novo contato com referral), `ViewContent` (catálogo enviado), `Purchase` (checkout fechado)
+- **Path real ctwaClid**: `contextInfo.externalAdReply.ctwaClid` (fallback: `contextInfo.ctwaClid`). Extração no "Code in JavaScript" do V3
+- **externalAdReply** em: `...contextInfo.externalAdReply` — campos: `sourceID` (ad_id), `sourceURL`, `sourceType`, `sourceApp`, `mediaURL`
+- **First-touch**: ctwa salvo na criação (CREATE_USER1) E atualizado em contatos existentes (Update CTWA Existente)
+- **has_meta_referral**: baseado APENAS em `!!ctwa_clid_val` — NUNCA `extAdReply` (objeto truthy causa falso positivo)
+- **REGRA: NUNCA `require('crypto')` em Code nodes n8n** — sandbox Task Runner bloqueia módulos Node.js. Usar apenas `ctwa_clid` para atribuição (identificador primário Meta para CTWA)
+- **REGRA: NUNCA usar Code node para Prepare CAPI no V3** — Code nodes usam task runner com pool limitado. Lead CAPI usa expressão inline no HTTP Request
+- **user_data CAPI**: `ctwa_clid` + `page_id` (condicional) + `whatsapp_business_account_id` (condicional). `ph` (phone hash) removido — `require('crypto')` bloqueado pelo sandbox
+- **CAPI URL**: `https://graph.facebook.com/v21.0/{dataset_id}/events` — usa `meta_dataset_id` da franchise_configurations com fallback `$env.META_PIXEL_ID`
+- **continueOnFail=true** OBRIGATÓRIO em TODOS os nodes CAPI (Code + HTTP + Supabase) — nunca bloqueia checkout/bot
 - **Workflows modificados**:
-  - V3 (`XqWZyLl1AHlnJvdj`): Code JS extrai ctwa → CREATE_USER1 salva 6 campos → IF Has Referral → Prepare Lead CAPI → Lead CAPI
-  - EnviaPedidoFechado (`RnF1Jh6nDUj0IRHI`): após Create Sale → IF Has CTWA → Prepare CAPI Data → Meta CAPI Purchase → Mark CAPI Sent
-  - EnviarCatalogo1 (`3Q53jOqD6cS5yWt4`): após Send Catalog Image → Lookup Contact CAPI → IF Has CTWA Catalog → Prepare ViewContent → ViewContent CAPI
-- **Colunas novas** `contacts`: `ctwa_clid`, `meta_ad_id`, `meta_referral_source_url/type/body/at`
-- **Colunas novas** `sales`: `capi_sent` (bool), `capi_event_id` (text)
-- **Migration**: `supabase/migration-meta-capi-tracking.sql`
+  - V3 (`XqWZyLl1AHlnJvdj`): Code JS extrai ctwa → CREATE_USER1 salva 9 campos → IF Has Referral → Lead CAPI (HTTP inline com dataset_id da dadosunidade, SEM Code node Prepare)
+  - EnviaPedidoFechado (`RnF1Jh6nDUj0IRHI`): após Create Sale → IF Has CTWA → Prepare CAPI Data (Code, busca meta_dataset_id+waba_id, continueOnFail) → Meta CAPI Purchase (URL com dataset_id || pixel fallback) → Mark CAPI Sent
+  - EnviarCatalogo1 (`3Q53jOqD6cS5yWt4`): após Send Catalog Image → Lookup Contact CAPI → IF Has CTWA Catalog → Prepare ViewContent (Code, busca meta_dataset_id+waba_id, continueOnFail) → ViewContent CAPI (URL com dataset_id || pixel fallback)
+- **Colunas** `contacts`: `ctwa_clid`, `meta_ad_id`, `meta_referral_source_url/type/body/at`, `meta_source_app`, `meta_media_url`, `meta_conversion_delay_seconds`
+- **Colunas** `sales`: `capi_sent` (bool), `capi_event_id` (text)
+- **Migrations**: `supabase/migration-meta-capi-tracking.sql`, `supabase/migration-meta-capi-extra-fields.sql`
+- **INCIDENTE 03/04**: Code node "Prepare Lead CAPI" sem continueOnFail travava execuções por 300s (task runner timeout). Fix: eliminado Code node, payload inline no HTTP Request
 
 #### Sub-agentes do Vendedor V3
 - **GerenteGeral1**: orquestrador principal. LLMs: Gemini Flash (primary) + GPT-5.2 (fallback)
@@ -300,7 +319,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 ### Banco de Dados & Schema
 
 **FKs — franchise_id em tabelas operacionais = evolution_instance_id (TEXT), NÃO UUID:**
-`inventory_items`, `sales`, `contacts`, `purchase_orders`, `daily_checklists`, `expenses`, `franchise_configurations` (usa `franchise_evolution_instance_id`), `franchise_invites`, `sales_goals`
+`inventory_items`, `sales`, `contacts`, `purchase_orders`, `daily_checklists`, `expenses`, `franchise_configurations` (usa `franchise_evolution_instance_id`), `franchise_invites`, `sales_goals`, `conversation_messages`, `bot_conversations`
 
 **Nomes de colunas que diferem do esperado:**
 - `inventory_items.quantity` (NÃO current_stock), `.product_name` (NÃO name)
@@ -308,6 +327,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `notifications.read` (NÃO is_read)
 - `franchise_configurations.franchise_name` (NÃO store_name), `.personal_phone_for_summary` (NÃO personal_phone)
 - `personal_phone_for_summary`: DEVE ser salvo como 11 dígitos puros (sem 55, sem máscara). A view `vw_dadosunidade` adiciona prefixo 55 em `personal_phone_wa`. Normalizar com `.replace(/\D/g, '')` antes de salvar — WuzAPI rejeita qualquer formatação
+- `contacts.meta_source_app`: plataforma de origem do anúncio (facebook/instagram)
+- `contacts.meta_media_url`: URL do criativo (reel/imagem) que gerou o click
+- `contacts.meta_conversion_delay_seconds`: segundos entre click no anúncio e primeira mensagem WhatsApp
+- `franchise_configurations.whatsapp_business_account_id`: WABA ID do Meta para CAPI
+- `franchise_configurations.meta_dataset_id`: Dataset ID do WABA para enviar eventos CAPI (NÃO usar pixel)
 - `franchises` NÃO tem owner_email (email fica em franchise_invites)
 - `onboarding_checklists`: NÃO tem total_items, started_at, user_id
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` (TEXT) + `working_days` (TEXT)
