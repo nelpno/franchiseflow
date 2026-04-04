@@ -188,6 +188,7 @@ export const AuditLog = createEntity('audit_logs');
 export const FranchiseNote = createEntity('franchise_notes');
 export const MarketingPayment = createEntity('marketing_payments');
 export const MarketingMetaDeposit = createEntity('marketing_meta_deposits');
+export const ConversationMessage = createEntity('conversation_messages');
 
 // RPC helpers
 export async function getFranchiseRanking(date, franchiseId, { signal } = {}) {

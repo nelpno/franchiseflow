@@ -220,6 +220,11 @@ SELECT
   -- JSONB nativo (sem cast ::text) — prompt acessa .instagram
   COALESCE(fc.social_media_links, '{}'::jsonb) AS social_media_links,
 
+  -- === Meta CAPI — per-franchise tracking ===
+  COALESCE(fc.facebook_page_id, '') AS facebook_page_id,
+  COALESCE(fc.whatsapp_business_account_id, '') AS whatsapp_business_account_id,
+  COALESCE(fc.meta_dataset_id, '') AS meta_dataset_id,
+
   -- === Metadata ===
   fc.updated_at
 
@@ -231,10 +236,11 @@ GRANT SELECT ON vw_dadosunidade TO anon;
 GRANT SELECT ON vw_dadosunidade TO authenticated;
 
 COMMENT ON VIEW vw_dadosunidade IS
-  'View para vendedor genérico n8n (V2 Supabase). '
+  'View para vendedor genérico n8n (V3 Supabase). '
   'Campos TEXT legados (accepted_payment_methods, shipping_rules_costs) gerados automaticamente dos campos estruturados. '
   'Campo personal_phone_wa inclui código 55 para ZuckZapGo API. '
   'JSONB (delivery_fee_rules, delivery_schedule, social_media_links) retornados nativos. '
   'delivery_schedule_text gera texto legível de horários/frete por dia para o bot. '
   'TEXT[] (payment_delivery, payment_pickup) com tipo correto. '
+  'Meta CAPI: facebook_page_id, whatsapp_business_account_id, meta_dataset_id para tracking por franquia. '
   'Uso: SELECT * FROM vw_dadosunidade WHERE instance_name = $instanceName';
