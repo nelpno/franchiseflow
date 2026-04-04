@@ -320,7 +320,7 @@ export default function FranchiseeDashboard() {
         pendingActionsCount={pendingActionsCount}
       />
 
-      <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} />
+      <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} allSales={allSales} />
 
       <RankingStreak
         ranking={ranking}

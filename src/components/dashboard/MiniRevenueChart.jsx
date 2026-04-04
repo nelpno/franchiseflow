@@ -2,27 +2,29 @@ import React, { useMemo } from "react";
 import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0 }) {
+function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales = [] }) {
   const chartData = useMemo(() => {
     const days = [];
-    const todayDate = format(new Date(), "yyyy-MM-dd");
     for (let i = 6; i >= 0; i--) {
       const date = format(subDays(new Date(), i), "yyyy-MM-dd");
       const dayFull = format(subDays(new Date(), i), "EEEE", { locale: ptBR });
       const shortLabels = { "domingo": "Dom", "segunda-feira": "Seg", "terça-feira": "Ter", "quarta-feira": "Qua", "quinta-feira": "Qui", "sexta-feira": "Sex", "sábado": "Sáb" };
       const capitalizedLabel = shortLabels[dayFull] || dayFull.slice(0, 3);
+      // Revenue from daily_summaries (cron)
       const daySummaries = summaries.filter(
         (s) => s.date === date && (!franchiseId || s.franchise_id === franchiseId)
       );
-      let revenue = daySummaries.reduce((sum, s) => sum + (parseFloat(s.sales_value) || 0), 0);
-      // Para hoje, usar o maior valor entre daily_summaries (cron) e vendas em tempo real
-      if (date === todayDate && todayRevenue > revenue) {
-        revenue = todayRevenue;
-      }
+      const cronRevenue = daySummaries.reduce((sum, s) => sum + (parseFloat(s.sales_value) || 0), 0);
+      // Revenue from allSales (real-time fallback para cobrir falhas do cron)
+      const daySales = allSales.filter((s) => s.sale_date === date);
+      const realtimeRevenue = daySales.reduce(
+        (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
+      );
+      const revenue = Math.max(cronRevenue, realtimeRevenue);
       days.push({ day: capitalizedLabel, valor: revenue, isToday: i === 0 });
     }
     return days;
-  }, [summaries, franchiseId, todayRevenue]);
+  }, [summaries, franchiseId, allSales]);
 
   const hasData = chartData.some((d) => d.valor > 0);
   if (!hasData) return null;
