@@ -213,6 +213,10 @@ function FranchiseSettingsContent() {
       pix_bank: config.pix_bank || '',
       city: config.city || '',
       neighborhood: config.neighborhood || '',
+      street_address: config.street_address || config.unit_address || '',
+      cep: config.cep || '',
+      pickup_schedule: config.pickup_schedule || [],
+      has_custom_pickup_hours: config.has_custom_pickup_hours ?? false,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
     };
@@ -279,8 +283,17 @@ function FranchiseSettingsContent() {
     // Strip UI-only / read-only fields before sending to DB
     const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = formData;
 
+    // Build unit_address from structured fields
+    const streetPart = (dbFields.street_address || '').trim();
+    const neighborhoodPart = (dbFields.neighborhood || '').trim();
+    const cityPart = (dbFields.city || '').trim();
+    const cepPart = (dbFields.cep || '').trim();
+    const assembledAddress = [streetPart, neighborhoodPart, cityPart].filter(Boolean).join(', ')
+      + (cepPart ? ` - ${cepPart}` : '');
+
     const finalData = {
       ...dbFields,
+      unit_address: assembledAddress,
       accepted_payment_methods: typeof dbFields.accepted_payment_methods === 'string' ?
         dbFields.accepted_payment_methods :
         Array.isArray(dbFields.accepted_payment_methods) ?
@@ -367,24 +380,22 @@ function FranchiseSettingsContent() {
   const hasDelivery = formData.has_delivery ?? true;
   const hasPickup = formData.has_pickup ?? false;
   const skippedSteps = [
-    ...(!hasDelivery && !hasPickup ? [3] : []),
+    ...(!hasDelivery ? [3] : []),
   ];
 
   // Determine completed steps (basic validation)
   const completedSteps = useMemo(() => {
     const done = [];
-    if (formData.franchise_name && formData.unit_address) done.push(1);
+    if (formData.franchise_name && formData.street_address && formData.neighborhood && formData.city) done.push(1);
     // Step 2: Operação e Pagamentos
     const deliveryPaymentOk = !hasDelivery || (formData.payment_delivery?.length > 0);
     const pickupPaymentOk = !hasPickup || (formData.payment_pickup?.length > 0);
     if (formData.has_delivery !== undefined && deliveryPaymentOk && pickupPaymentOk) done.push(2);
-    // Step 3: Entrega (or Horários for pickup-only)
+    // Step 3: Entrega (only when hasDelivery — pickup hours moved to Step 2)
     if (hasDelivery) {
       if (formData.max_delivery_radius_km) done.push(3);
-    } else if (hasPickup) {
-      if ((formData.operating_hours?.length > 0) || (formData.working_days && formData.opening_hours)) done.push(3);
     } else {
-      done.push(3);
+      done.push(3); // Skipped step counts as done
     }
     if (formData.agent_name) done.push(4);
     return done;
@@ -600,27 +611,33 @@ function FranchiseSettingsContent() {
                   placeholder="Ex: Maxi Massas - Itaim Bibi" />
                 <FieldHint text="Esse nome aparece nas mensagens do bot para o cliente." />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Rua e número<RequiredDot /></label>
+                <input className={inputClass} type="text" value={formData.street_address}
+                  onChange={(e) => handleInputChange('street_address', e.target.value)}
+                  placeholder="Ex: Rua das Flores, 123" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className={labelClass}>Cidade</label>
-                  <input className={inputClass} type="text" value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="Ex: Sao Joao da Boa Vista" />
-                </div>
-                <div>
-                  <label className={labelClass}>Bairro</label>
+                  <label className={labelClass}>Bairro<RequiredDot /></label>
                   <input className={inputClass} type="text" value={formData.neighborhood}
                     onChange={(e) => handleInputChange('neighborhood', e.target.value)}
                     placeholder="Ex: Centro" />
                 </div>
+                <div>
+                  <label className={labelClass}>Cidade<RequiredDot /></label>
+                  <input className={inputClass} type="text" value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="Ex: São João da Boa Vista" />
+                </div>
+                <div>
+                  <label className={labelClass}>CEP</label>
+                  <input className={inputClass} type="text" value={formData.cep}
+                    onChange={(e) => handleInputChange('cep', e.target.value)}
+                    placeholder="00000-000" />
+                </div>
               </div>
-              <div>
-                <label className={labelClass}>Endereço completo com número e CEP<RequiredDot /></label>
-                <input className={inputClass} type="text" value={formData.unit_address}
-                  onChange={(e) => handleInputChange('unit_address', e.target.value)}
-                  placeholder="Rua, número, bairro, cidade - CEP" />
-                <FieldHint text="O bot envia esse endereço quando o cliente pede para retirar o pedido." />
-              </div>
+              <FieldHint text="O bot usa esse endereço para calcular frete e informar o ponto de retirada." />
               <div>
                 <label className={labelClass}>Ponto de referência para clientes</label>
                 <textarea className={`${inputClass} resize-none`} rows={2} value={formData.address_reference}
@@ -688,14 +705,61 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_pickup', val)}
               />
               {(formData.has_pickup ?? false) && (
-                <div>
-                  <label className={labelClass}>Pagamento aceito na RETIRADA</label>
-                  <PaymentChipsMulti
-                    options={PAYMENT_METHODS}
-                    value={formData.payment_pickup || []}
-                    onChange={(val) => handleInputChange('payment_pickup', val)}
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className={labelClass}>Pagamento aceito na RETIRADA</label>
+                    <PaymentChipsMulti
+                      options={PAYMENT_METHODS}
+                      value={formData.payment_pickup || []}
+                      onChange={(val) => handleInputChange('payment_pickup', val)}
+                    />
+                  </div>
+
+                  {/* Pickup hours — only when both delivery and pickup are enabled */}
+                  {(formData.has_delivery ?? true) ? (
+                    <div className="mt-2">
+                      <ToggleCard
+                        icon="schedule"
+                        label="Horário de retirada diferente da entrega?"
+                        description="Se desligado, a retirada segue o mesmo horário da entrega"
+                        checked={formData.has_custom_pickup_hours ?? false}
+                        onChange={(val) => {
+                          handleInputChange('has_custom_pickup_hours', val);
+                          if (!val) handleInputChange('pickup_schedule', []);
+                        }}
+                      />
+                      {(formData.has_custom_pickup_hours ?? false) && (
+                        <div className="mt-3">
+                          <label className={labelClass}>Horários de retirada</label>
+                          <OperatingHoursEditor
+                            value={formData.pickup_schedule || []}
+                            onChange={(val) => handleInputChange('pickup_schedule', val)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <label className={labelClass}>Horários de retirada</label>
+                      <p className="text-[11px] text-[#4a3d3d]/70 mb-3 flex items-start gap-1">
+                        <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
+                        <span>Defina quando sua unidade aceita retirada. Esses horários também definem quando sua unidade funciona.</span>
+                      </p>
+                      <OperatingHoursEditor
+                        value={formData.pickup_schedule?.length > 0 ? formData.pickup_schedule : (formData.operating_hours || [])}
+                        onChange={(val) => {
+                          handleInputChange('pickup_schedule', val);
+                          handleInputChange('has_custom_pickup_hours', true);
+                          // Sync legacy fields for bot compatibility
+                          const summary = val.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
+                          handleInputChange('opening_hours', summary);
+                          handleInputChange('working_days', [...new Set(val.flatMap(r => r.days))].join(','));
+                          handleInputChange('operating_hours', val);
+                        }}
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Shared payment data */}
@@ -752,8 +816,7 @@ function FranchiseSettingsContent() {
           )}
 
           {/* Step 3: Entrega + Horários (pickup-only mostra só horários) */}
-          {currentStep === 3 && (
-            hasDelivery ? (
+          {currentStep === 3 && hasDelivery && (
             <WizardStep icon="delivery_dining" title="Entrega" subtitle="Configure raio, horários, taxas e regras — o bot usa isso para calcular frete automaticamente">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -809,33 +872,11 @@ function FranchiseSettingsContent() {
                     handleInputChange('operating_hours', opHours);
                     const summary = opHours.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
                     handleInputChange('opening_hours', summary);
-                    handleInputChange('working_days', val.flatMap(r => r.days).join(','));
+                    handleInputChange('working_days', [...new Set(val.flatMap(r => r.days))].join(','));
                   }}
                 />
               </div>
             </WizardStep>
-            ) : (
-            <WizardStep icon="schedule" title="Horários de Atendimento" subtitle="Quando sua unidade funciona para retirada">
-              <div>
-                <label className={labelClass}>Faixas de horário</label>
-                <p className="text-xs text-[#3d4a42]/60 mb-3">
-                  Defina horários diferentes para cada grupo de dias (ex: Seg-Sex um horário, Sáb outro)
-                </p>
-                <OperatingHoursEditor
-                  value={formData.operating_hours || []}
-                  onChange={(val) => {
-                    handleInputChange('operating_hours', val);
-                    const summary = val.map(r => {
-                      const days = r.days.join(',');
-                      return `${days}: ${r.open}-${r.close}`;
-                    }).join(' | ');
-                    handleInputChange('opening_hours', summary);
-                    handleInputChange('working_days', val.flatMap(r => r.days).join(','));
-                  }}
-                />
-              </div>
-            </WizardStep>
-            )
           )}
 
           {/* Step 4: Seu Vendedor */}

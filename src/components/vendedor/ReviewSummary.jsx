@@ -115,6 +115,13 @@ export default function ReviewSummary({ formData, onGoToStep }) {
     ...(hasDelivery ? [{ label: "Pgto entrega", value: paymentLabels(formData.payment_delivery), warning: !formData.payment_delivery?.length }] : []),
     { label: "Retirada", value: hasPickup ? "Sim" : "Não" },
     ...(hasPickup ? [{ label: "Pgto retirada", value: paymentLabels(formData.payment_pickup), warning: !formData.payment_pickup?.length }] : []),
+    ...(hasPickup && formData.has_custom_pickup_hours && formData.pickup_schedule?.length > 0
+      ? [{ label: "Horário retirada", value: formData.pickup_schedule.map(r => `${scheduleLabel(r.days)}: ${r.open}-${r.close}`).join(' | ') }]
+      : hasPickup && !hasDelivery && formData.pickup_schedule?.length > 0
+      ? [{ label: "Horário retirada", value: formData.pickup_schedule.map(r => `${scheduleLabel(r.days)}: ${r.open}-${r.close}`).join(' | ') }]
+      : hasPickup && !hasDelivery
+      ? [{ label: "Horário retirada", value: formData.opening_hours || "", warning: !formData.opening_hours }]
+      : []),
     { label: "Tipo PIX", value: pixTypeLabel },
     { label: "Chave PIX", value: formData.pix_key_data },
     { label: "Link pagamento", value: formData.payment_link },
@@ -129,7 +136,10 @@ export default function ReviewSummary({ formData, onGoToStep }) {
         onGoToStep={onGoToStep}
         fields={[
           { label: "Nome", value: formData.franchise_name, warning: !formData.franchise_name },
-          { label: "Endereço", value: formData.unit_address, warning: !formData.unit_address },
+          { label: "Rua e número", value: formData.street_address, warning: !formData.street_address },
+          { label: "Bairro", value: formData.neighborhood, warning: !formData.neighborhood },
+          { label: "Cidade", value: formData.city, warning: !formData.city },
+          ...(formData.cep ? [{ label: "CEP", value: formData.cep }] : []),
           { label: "Referência", value: formData.address_reference },
           { label: "WhatsApp pessoal", value: formData.personal_phone_for_summary },
         ]}
@@ -143,7 +153,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
         fields={operationFields}
       />
 
-      {hasDelivery ? (
+      {hasDelivery && (
         <ReviewSection
           icon="delivery_dining"
           title="Entrega"
@@ -157,18 +167,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
             ...deliveryScheduleFields(),
           ]}
         />
-      ) : (hasPickup && (
-        <ReviewSection
-          icon="schedule"
-          title="Horários de Atendimento"
-          stepNum={3}
-          onGoToStep={onGoToStep}
-          fields={[
-            { label: "Dias", value: formData.working_days, warning: !formData.working_days },
-            { label: "Horário", value: formData.opening_hours, warning: !formData.opening_hours },
-          ]}
-        />
-      ))}
+      )}
 
       <ReviewSection
         icon="smart_toy"

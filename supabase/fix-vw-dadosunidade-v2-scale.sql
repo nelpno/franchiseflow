@@ -30,6 +30,8 @@ SELECT
   -- === Dados da unidade ===
   COALESCE(fc.franchise_name, '') AS franchise_name,
   COALESCE(fc.unit_address, '') AS unit_address,
+  COALESCE(fc.street_address, '') AS street_address,
+  COALESCE(fc.cep, '') AS cep,
   COALESCE(fc.address_reference, '') AS address_reference,
   COALESCE(fc.city, '') AS city,
   COALESCE(fc.neighborhood, '') AS neighborhood,
@@ -219,6 +221,38 @@ SELECT
   COALESCE(fc.catalog_image_url, '') AS catalog_image_url,
   -- JSONB nativo (sem cast ::text) — prompt acessa .instagram
   COALESCE(fc.social_media_links, '{}'::jsonb) AS social_media_links,
+
+  -- === Horário de retirada (separado da entrega) ===
+  COALESCE(fc.has_custom_pickup_hours, false) AS has_custom_pickup_hours,
+  COALESCE(fc.pickup_schedule, '[]'::jsonb) AS pickup_schedule,
+
+  -- pickup_hours_text: texto legível de horários de retirada para o bot
+  CASE
+    WHEN fc.has_custom_pickup_hours = true
+      AND fc.pickup_schedule IS NOT NULL
+      AND fc.pickup_schedule != '[]'::jsonb
+      AND jsonb_typeof(fc.pickup_schedule) = 'array'
+      AND jsonb_array_length(fc.pickup_schedule) > 0
+    THEN (
+      SELECT STRING_AGG(
+        COALESCE(
+          CASE
+            WHEN jsonb_array_length(grp->'days') = 7 THEN 'Todos os dias'
+            WHEN jsonb_array_length(grp->'days') = 1 THEN UPPER(LEFT(grp->'days'->>0, 1)) || SUBSTRING(grp->'days'->>0 FROM 2)
+            ELSE (
+              SELECT STRING_AGG(UPPER(LEFT(d.val, 1)) || SUBSTRING(d.val FROM 2), ', ')
+              FROM jsonb_array_elements_text(grp->'days') AS d(val)
+            )
+          END,
+          'Geral'
+        ) || ': ' || COALESCE(grp->>'open', '') || '-' || COALESCE(grp->>'close', ''),
+        ' | '
+      )
+      FROM jsonb_array_elements(fc.pickup_schedule) AS grp
+    )
+    WHEN COALESCE(fc.has_pickup, false) = true THEN COALESCE(fc.opening_hours, '')
+    ELSE NULL
+  END AS pickup_hours_text,
 
   -- === Meta CAPI — per-franchise tracking ===
   COALESCE(fc.facebook_page_id, '') AS facebook_page_id,

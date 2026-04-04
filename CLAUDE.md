@@ -221,6 +221,15 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - GetDistance1 está DENTRO de CalculaFrete1 (NÃO no GerenteGeral1) — sub-workflow `q4ACGWuR3WFQjBfg` (DistanceService)
 - `shipping_rules_costs` NÃO deve aparecer inline no prompt do GerenteGeral1 — regras de frete ficam no CalculaFrete1
 
+### n8n Loops & Sub-workflows
+- Expressão `={{}}` (objeto vazio) é INVÁLIDA — causa "invalid syntax". Usar `={{ JSON.stringify({}) }}`
+- Dentro de `splitInBatches` loop, `$json` após HTTP Request vira a resposta da API (NÃO o item do loop). Referenciar dados PRÉ-request via `$('NodeAnterior')`
+- Nós de logging/side-effects devem ficar FORA do loop (conectar em paralelo no nó que alimenta o loop)
+- Branch `outcoming` do Origem1 NÃO acessa nós do branch `incoming` via `$('NodeName')` — usar `$json` direto
+- Sub-workflows precisam ser ATIVADOS (POST `/activate`) antes de serem referenciados. `executeWorkflowTrigger` v1.1 exige `workflowInputs` definidos
+- HTTP Request chamando Supabase RPC: usar Response Format = "Text" (RPC retorna UUID como texto, não JSON)
+- Credentials via API: n8n API não vincula credentials existentes. Usar headers inline (apikey + Authorization Bearer)
+
 ### Integração WhatsApp (ZuckZapGo)
 - Server: `https://zuck.dynamicagents.tech`
 - Workflow: `brmZAsAykq6hSMpL` — `action_switch` separa `check_status` de `smart_connect`
