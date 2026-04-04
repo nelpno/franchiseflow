@@ -13,6 +13,7 @@ Migrado de Base44 para Supabase Cloud. Frontend React hospedado via Docker/Porta
 - **WhatsApp**: ZuckZapGo (WuzAPI) em zuck.dynamicagents.tech
 - **Deploy**: Docker Swarm (Nginx Alpine) via Portainer — domínio `app.maximassas.tech`
 - **Infra**: Hostinger VPS (82.29.60.220), Traefik reverse proxy + Let's Encrypt SSL, rede `nelsonNet`
+- **Analytics**: Microsoft Clarity (projeto `w6o3hwtbya`) — heatmaps, gravações, rage clicks
 - **Email**: SMTP via `fabrica@maximassas.com.br` (Google Workspace) — templates PT-BR com logo
 
 ## Arquitetura
@@ -159,7 +160,11 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `blockedNumbers`: cache dinâmico via staticData, busca a cada 30min, formato 11 dígitos
 - **DEDUP LID**: WhatsApp com LID envia 2 eventos por mensagem (placeholder sem Type + evento completo). Filtro `!info.Type` no `Code in JavaScript` descarta o placeholder. Se cliente reportar msgs duplicadas, verificar se filtro ainda está ativo
 - Prompts usam dados estruturados: `payment_delivery[]`, `delivery_fee_rules[]` JSONB — NÃO campos texto antigos
-- `delivery_schedule_text`: campo computado na view, gera texto de horários/frete por dia para o bot (ex: "Seg-Sex: 06:00-23:00 | Sab: 08:00-14:00")
+- **Prompt do GerenteGeral1 organizado em seções**: `=== DADOS DA UNIDADE ===` (endereço, horários, frete), `=== PAGAMENTO ===`, `=== EXTRAS ===`. Header usa campos computados da view
+- `delivery_schedule_text`: campo computado na view, gera texto de horários/frete por dia para o bot. Inclui frete por km OU por modalidade, e "(frete gratis)" quando `charges_fee=false`. Usado no prompt como `>>> HORARIOS E FRETE DE ENTREGA`
+- `pickup_hours_text`: campo computado na view, gera texto de horários de retirada. Quando `has_custom_pickup_hours=true`, usa `pickup_schedule` JSONB; senão, fallback para `opening_hours`. Usado no prompt como `>>> HORARIOS DE RETIRADA`
+- **Prompt NÃO usa mais**: `delivery_fee_rules` inline (frete está dentro de `delivery_schedule_text`), `order_cutoff_time` legado, `delivery_start_time` legado, `city`/`neighborhood` separados (já dentro de `unit_address`)
+- **Pedido_Checkout1** também recebe `delivery_schedule_text` e `pickup_hours_text` para validar horários no checkout
 - `valor_total` do $fromAI() pode vir 0 — calcular sum(qty * price) + frete como fallback
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
 - n8n API URL: `https://teste.dynamicagents.tech/api/v1` (env `N8N_API_URL`) — NÃO confundir com webhook base
@@ -203,11 +208,13 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Workflows modificados**:
   - V3 (`XqWZyLl1AHlnJvdj`): Code JS extrai ctwa → CREATE_USER1 salva 9 campos → IF Has Referral → Lead CAPI (HTTP inline com dataset_id da dadosunidade, SEM Code node Prepare)
   - EnviaPedidoFechado (`RnF1Jh6nDUj0IRHI`): após Create Sale → IF Has CTWA → Prepare CAPI Data (Code, busca meta_dataset_id+waba_id, continueOnFail) → Meta CAPI Purchase (URL com dataset_id || pixel fallback) → Mark CAPI Sent
-  - EnviarCatalogo1 (`3Q53jOqD6cS5yWt4`): após Send Catalog Image → Lookup Contact CAPI → IF Has CTWA Catalog → Prepare ViewContent (Code, busca meta_dataset_id+waba_id, continueOnFail) → ViewContent CAPI (URL com dataset_id || pixel fallback)
+  - EnviarCatalogo1 (`3Q53jOqD6cS5yWt4`): após Send Catalog Image → [paralelo] Lookup Contact CAPI → IF Has CTWA Catalog → TRUE: Prepare ViewContent → ViewContent CAPI | FALSE: No CAPI Response (Set node). Branch CAPI é paralelo ao Set Catalog Flag → Success Response. TODOS os caminhos DEVEM terminar com nó que produz output (fix 04/04 — sem isso, `executeWorkflowTrigger` retorna "did not return a response")
 - **Colunas** `contacts`: `ctwa_clid`, `meta_ad_id`, `meta_referral_source_url/type/body/at`, `meta_source_app`, `meta_media_url`, `meta_conversion_delay_seconds`
 - **Colunas** `sales`: `capi_sent` (bool), `capi_event_id` (text)
 - **Migrations**: `supabase/migration-meta-capi-tracking.sql`, `supabase/migration-meta-capi-extra-fields.sql`
 - **INCIDENTE 03/04**: Code node "Prepare Lead CAPI" sem continueOnFail travava execuções por 300s (task runner timeout). Fix: eliminado Code node, payload inline no HTTP Request
+- **INCIDENTE 04/04**: EnviarCatalogo1 retornava "did not return a response" — branch FALSE do IF Has CTWA Catalog não tinha nó conectado. Fix: adicionado "No CAPI Response" Set node
+- **REGRA sub-workflows**: TODOS os caminhos de execução em sub-workflows chamados via `executeWorkflowTrigger` DEVEM terminar com nó que produz output. Branches paralelos com IF sem nó na saída FALSE causam "did not return a response"
 
 #### Sub-agentes do Vendedor V3
 - **GerenteGeral1**: orquestrador principal. LLMs: Gemini Flash (primary) + GPT-5.2 (fallback)
@@ -219,7 +226,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Padrão LLM sub-agentes: Gemini Flash (primary, mais barato) + gpt-4o-mini (fallback)
 - Tools do GerenteGeral1: CalculaFrete1, Estoque1, Memoria_Lead1, preparo_faq1, Pedido_Checkout1, EnviarCatalogo1, avisa_franqueado
 - GetDistance1 está DENTRO de CalculaFrete1 (NÃO no GerenteGeral1) — sub-workflow `q4ACGWuR3WFQjBfg` (DistanceService)
-- `shipping_rules_costs` NÃO deve aparecer inline no prompt do GerenteGeral1 — regras de frete ficam no CalculaFrete1
+- Frete no prompt vem de `delivery_schedule_text` (por grupo de dias) — NÃO mais de `delivery_fee_rules` ou `shipping_rules_costs` inline
 
 ### n8n Loops & Sub-workflows
 - Expressão `={{}}` (objeto vazio) é INVÁLIDA — causa "invalid syntax". Usar `={{ JSON.stringify({}) }}`
@@ -351,8 +358,9 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `pickup_hours_text`: campo computado na view `vw_dadosunidade` — texto legível de horários de retirada para o bot
 - Horário de retirada fica no Step 2 (Operação) do wizard, NÃO no Step 3. Step 3 = apenas entrega
 - `payment_delivery`/`payment_pickup` são `TEXT[]`, NÃO JSONB
-- Campos entrega: `free_shipping` (bool), `delivery_start_time`/`order_cutoff_time` (text HH:MM), `charges_delivery_fee` (bool)
-- `delivery_schedule` JSONB: horários de entrega por dia da semana. Array de `{days, delivery_start, delivery_end, charges_fee, fee_rules}`. Campos legados sincronizados da primeira faixa
+- Campos entrega: `free_shipping` (bool), `delivery_start_time`/`order_cutoff_time` (text HH:MM — LEGADOS, cobertos por `delivery_schedule`), `charges_delivery_fee` (bool)
+- `delivery_schedule` JSONB: horários de entrega por dia da semana. Array de `{days, delivery_start, delivery_end, charges_fee, fee_rules}`. `fee_rules` pode ser array `[{max_km, fee}]` (por distância) OU objeto `{mode: "modality", rules: [{label, fee}]}` (por modalidade). Campos legados sincronizados da primeira faixa
+- `delivery_schedule_text`: campo computado na view — concatena horários + frete por grupo de dias. Fonte principal do prompt do bot (substitui `delivery_fee_rules` inline e `order_cutoff_time`)
 
 **Constraints e índices:**
 - `onboarding_checklists` UNIQUE INDEX em franchise_id
@@ -416,6 +424,13 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - DOIS sistemas: `healthScore.js` + `FranchiseHealthScore.jsx` — atualizar AMBOS
 - AlertsPanel: APENAS vermelhos (max 3). `InventorySheet.jsx` admin vê estoque via Sheet
 - Acompanhamento mostra nome da franquia (NÃO só dono)
+
+### Analytics (Microsoft Clarity)
+- Projeto: `w6o3hwtbya` — https://clarity.microsoft.com
+- Script no `index.html`, identify por user ID + role no `AuthContext.jsx`
+- Segmentação: role (admin/franchisee/manager) via `clarity("set", "role", ...)`
+- Dados: heatmaps, gravações de sessão, rage clicks, dead clicks, scroll depth
+- Revisão quinzenal dos dados para priorizar melhorias de UX
 
 ### Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist (inativa), ReviewSummary campos Personalidade/Boas-vindas, `catalog_distributions` tabela removida
