@@ -33,6 +33,9 @@ BEGIN
   END IF;
 
   -- Operational tables (all use evolution_instance_id)
+  -- REGRA: toda tabela nova com franchise_id (evo_id) DEVE ser adicionada aqui
+  DELETE FROM conversation_messages WHERE franchise_id = p_evolution_instance_id;
+  DELETE FROM bot_conversations WHERE franchise_id = p_evolution_instance_id;
   DELETE FROM contacts WHERE franchise_id = p_evolution_instance_id;
   DELETE FROM sales WHERE franchise_id = p_evolution_instance_id;
   DELETE FROM purchase_orders WHERE franchise_id = p_evolution_instance_id;
@@ -46,7 +49,7 @@ BEGIN
   DELETE FROM audit_logs WHERE franchise_id = p_evolution_instance_id;
   DELETE FROM sales_goals WHERE franchise_id = p_evolution_instance_id;
   DELETE FROM marketing_payments WHERE franchise_id = p_evolution_instance_id;
-  DELETE FROM marketing_meta_deposits WHERE franchise_id = p_evolution_instance_id;
+  -- marketing_meta_deposits NÃO tem franchise_id (é global por mês)
   DELETE FROM franchise_configurations WHERE franchise_evolution_instance_id = p_evolution_instance_id;
   DELETE FROM franchise_invites WHERE franchise_id = p_evolution_instance_id;
 
