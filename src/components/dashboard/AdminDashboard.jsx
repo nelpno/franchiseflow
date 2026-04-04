@@ -57,7 +57,7 @@ export default function AdminDashboard() {
 
       const results = await Promise.allSettled([
         fetchFranchises(),
-        DailySummary.list("-date", 500, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
+        DailySummary.list("-date", 2000, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
@@ -202,23 +202,28 @@ export default function AdminDashboard() {
     [todaySales]
   );
 
-  // Generate mini sparkline data from recent summaries + live today
+  // Generate mini sparkline data from recent summaries + real-time fallback
   const sparklineData = useMemo(() => {
     const last6 = [];
-    const todayStr = format(new Date(), "yyyy-MM-dd");
     for (let i = 5; i >= 0; i--) {
       const dateStr = format(subDays(new Date(), i), "yyyy-MM-dd");
+      // Cron data
       const daySummaries = summaries.filter((s) => s.date === dateStr);
-      let sales = daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0);
-      let revenue = daySummaries.reduce((s, r) => s + (parseFloat(r.sales_value) || 0), 0);
-      if (dateStr === todayStr) {
-        if (todaySales.length > sales) sales = todaySales.length;
-        if (liveTodayRevenue > revenue) revenue = liveTodayRevenue;
-      }
-      last6.push({ sales, revenue });
+      const cronSales = daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0);
+      const cronRevenue = daySummaries.reduce((s, r) => s + (parseFloat(r.sales_value) || 0), 0);
+      // Real-time fallback from allSales
+      const daySalesArr = allSales.filter((s) => s.sale_date === dateStr);
+      const rtSales = daySalesArr.length;
+      const rtRevenue = daySalesArr.reduce(
+        (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
+      );
+      last6.push({
+        sales: Math.max(cronSales, rtSales),
+        revenue: Math.max(cronRevenue, rtRevenue),
+      });
     }
     return last6;
-  }, [summaries, todaySales, liveTodayRevenue]);
+  }, [summaries, allSales]);
 
   const chartDays = period === "30d" ? 30 : 7;
 
