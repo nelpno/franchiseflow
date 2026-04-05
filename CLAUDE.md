@@ -177,8 +177,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Campo "Hoje" no systemMessage: `$now.setZone('America/Sao_Paulo').setLocale('pt-BR').toFormat(...)` — DEVE usar `setLocale('pt-BR')` para dia da semana em português (sem locale, Luxon retorna inglês e o LLM confunde com schedule em português)
 - `bot_personality` removido do prompt (hardcoded "profissional") — UI de personalidade foi removida
 - Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
-- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 15 nós (12 originais + 3 dedup Redis). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
+- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 16 nós (12 originais + 3 dedup Redis + Mark Bot Converted). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
 - **REGRA REDIS n8n**: n8n Redis node v1 NÃO suporta LRANGE. RPUSH cria LIST mas GET lê STRING (WRONGTYPE error). Para buffer de msgs: usar GET→Append(Code)→SET com string JSON array, NUNCA RPUSH+GET
+- **REGRA REDIS n8n OUTPUT**: Redis GET node retorna resultado em `$json.propertyName` (NÃO `$json.value`). Em IFs, usar `={{ $json.propertyName }}` — `$json.value` é undefined e fallback `$json` vira `[object Object]` (nunca empty). Incidente 05/04: 20+ vendas perdidas
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
 - Credencial Google Gemini: `ezQN27UjYZVHyDEf` | Credencial OpenAI: `fIhzSXiiBXB3ad6Y`
 - View `vw_dadosunidade`: mapeia franchise_configurations. SQL: `supabase/fix-vw-dadosunidade-v2-scale.sql`
@@ -198,7 +199,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
 - n8n API URL: `https://teste.dynamicagents.tech/api/v1` (env `N8N_API_URL`) — NÃO confundir com webhook base
 - **ATENÇÃO**: `N8N_API_URL` no `.env` é apenas `https://teste.dynamicagents.tech` (sem `/api/v1`) — ao usar via fetch, concatenar `/api/v1` manualmente
-- n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`
+- n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`. Ao fazer PUT com settings do GET, filtrar campos antes de enviar
 - **NUNCA `...item.json` em Code nodes n8n** — copia payload inteiro (13+ MB com WhatsApp). Output explícito: `{ json: { _processado: {...} } }`. Downstream acessa trigger via `$('NomeTrigger').item.json`
 - **n8n sizing (2026-04-01)**: Editor 1×1core/2GB, Webhook 2×1.5core/3GB, Worker 3×1.5core/3GB (concurrency=5). Binary data em filesystem, auto-prune 7 dias
 - **N8N_MIGRATE_FS_STORAGE_PATH=true** causa EBUSY crash com volume montado — NÃO usar enquanto serviços rodam
@@ -219,6 +220,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
 - **EnviaPedidoFechado `Prepare Sale Data`**: strip 55, dedup via Redis (key `sale_dedup_{tel}_{instance}_{valor}`, TTL 5min), payment default `pix` (18 aliases), itens validados
 - **EnviaPedidoFechado `Match Items`**: SEMPRE usar `sale_price` do inventário (fonte de verdade), NUNCA preço do LLM. Log itens não matched
+- **EnviaPedidoFechado `Create Sale`**: grava `customer_name` (do Start.nomecliente) e `contact_phone` (telefone_db). Campos adicionados 05/04
+- **EnviaPedidoFechado Dedup Redis**: Redis GET → `IF Nao Duplicado?` → Redis SET (TTL 5min). Chave: `sale_dedup_{tel}_{instance}_{valor}`. Redis nodes com `continueOnFail` (Redis down não bloqueia venda)
+- **EnviaPedidoFechado ordem**: `Prepare Sale Data` dispara em PARALELO: (1) `WhatsApp Franqueado` (alerta) e (2) `Redis GET Dedup → IF → Create Sale → Items`. Alerta é enviado ANTES da venda ser criada — se Create Sale falhar, franqueado recebe alerta de venda fantasma
 - **V4 Prepara Contexto Completo**: Code node que pré-computa TODOS os dados dinâmicos (payment, delivery, frete, social, horários). systemMessage do GerenteGeral referencia campos pré-computados — ZERO IIFEs inline. Vantagem: elimina risco de corrupção por `$` em expressões n8n
 
 #### Meta CAPI (Conversions API) — implementado 2026-04-02, fix 2026-04-03
