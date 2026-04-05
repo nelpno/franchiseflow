@@ -194,10 +194,12 @@ export default function PurchaseOrders() {
   const filteredOrders = useMemo(() => {
     let result = [...orders];
 
-    // Filter by month
+    // Filter by month — but always show pending/confirmed/em_rota (actionable orders)
     const monthStart = startOfMonth(selectedMonth);
     const monthEnd = endOfMonth(selectedMonth);
     result = result.filter((o) => {
+      // Actionable orders always visible regardless of month
+      if (o.status === "pendente" || o.status === "confirmado" || o.status === "em_rota") return true;
       if (!o.ordered_at) return false;
       const d = new Date(o.ordered_at);
       return isWithinInterval(d, { start: monthStart, end: monthEnd });
