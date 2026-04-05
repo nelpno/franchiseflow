@@ -56,6 +56,7 @@ import __Layout from './Layout.jsx';
 
 // Lazy imports — all other pages loaded on demand
 const Acompanhamento = lazy(() => import('./pages/Acompanhamento'));
+const BotIntelligence = lazy(() => import('./pages/BotIntelligence'));
 const Financeiro = lazy(() => import('./pages/Financeiro'));
 const FranchiseSettings = lazy(() => import('./pages/FranchiseSettings'));
 const Franchises = lazy(() => import('./pages/Franchises'));
@@ -72,6 +73,7 @@ const Tutoriais = lazy(() => import('./pages/Tutoriais'));
 
 export const PAGES = {
     "Acompanhamento": Acompanhamento,
+    "BotIntelligence": BotIntelligence,
 
     "Dashboard": Dashboard,
     "Financeiro": Financeiro,

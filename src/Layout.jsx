@@ -117,6 +117,13 @@ const navigationItems = [
     adminSection: "Gestão",
   },
   {
+    title: "Inteligência Bot",
+    url: createPageUrl("BotIntelligence"),
+    materialIcon: "psychology",
+    adminOnly: true,
+    adminSection: "Gestão",
+  },
+  {
     title: "Franqueados",
     url: createPageUrl("Franchises"),
     materialIcon: "group",
