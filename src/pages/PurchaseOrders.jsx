@@ -442,15 +442,21 @@ export default function PurchaseOrders() {
   const doBulkStatusChange = async () => {
     if (!confirmBulkAction) return;
     const { status: newStatus, orderIds } = confirmBulkAction;
+    if (!orderIds || orderIds.length === 0 || !newStatus) {
+      toast.error("Nenhum pedido válido para alterar.");
+      setConfirmBulkAction(null);
+      return;
+    }
     setBulkChanging(true);
     try {
-      const updates = { status: newStatus };
-      if (newStatus === 'entregue') {
-        updates.delivered_at = new Date().toISOString();
-      }
-
       const results = await Promise.allSettled(
-        orderIds.map((id) => PurchaseOrder.update(id, updates))
+        orderIds.map((id) => {
+          const updates = { status: newStatus };
+          if (newStatus === 'entregue') {
+            updates.delivered_at = new Date().toISOString();
+          }
+          return PurchaseOrder.update(id, updates);
+        })
       );
 
       // Notify franchisees (fire-and-forget)
@@ -474,9 +480,11 @@ export default function PurchaseOrders() {
       }
 
       const succeeded = results.filter((r) => r.status === "fulfilled").length;
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed > 0) {
-        toast.warning(`${succeeded} alterado${succeeded > 1 ? "s" : ""}, ${failed} falhou.`);
+      const failedResults = results.filter((r) => r.status === "rejected");
+      if (failedResults.length > 0) {
+        console.error("Bulk status failures:", failedResults.map((r) => r.reason));
+        const firstError = failedResults[0]?.reason?.message || "Erro desconhecido";
+        toast.warning(`${succeeded} alterado${succeeded > 1 ? "s" : ""}, ${failedResults.length} falhou: ${firstError}`);
       } else {
         toast.success(`${succeeded} pedido${succeeded > 1 ? "s" : ""} alterado${succeeded > 1 ? "s" : ""} para ${STATUS_CONFIG[newStatus]?.label}.`);
       }
@@ -486,7 +494,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao alterar status em lote:", error);
-      toast.error("Erro ao alterar status dos pedidos.");
+      toast.error(error?.message || "Erro ao alterar status dos pedidos.");
     } finally {
       setBulkChanging(false);
       setConfirmBulkAction(null);
