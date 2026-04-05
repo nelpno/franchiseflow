@@ -105,6 +105,12 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - CHECK constraints usam português (`pendente`, `confirmado`, `em_rota`, `entregue`, `cancelado`)
 - PL/pgSQL: `WHERE evolution_instance_id = NEW.franchise_id` (NÃO `WHERE id = NEW.franchise_id`)
 - `notify_franchise_users(p_franchise_id UUID)` recebe UUID — resolver com subquery
+- `delivered_at` TIMESTAMPTZ: salvo automaticamente ao marcar "entregue" (individual ou lote)
+- **Filtro por mês**: seletor chevron no topo. Pedidos pendentes/confirmados/em_rota aparecem SEMPRE (independente do mês) para não serem esquecidos. Mês filtra apenas entregues/cancelados
+- **Alteração de status em lote**: selecionar múltiplos → dropdown "Alterar para..." → Confirmar/Em Rota/Entregue. Dialog de confirmação antes de executar
+- **Timeline logística no dialog**: data do pedido → previsão → entrega + tempo de atendimento. Indica "(atrasado)" se entrega ultrapassou previsão
+- **Stats cards filtrados por mês**: Pendentes, Em Rota, Entregues, Tempo Médio de entrega
+- **Franquias ordenadas alfabeticamente** no dropdown do Meu Vendedor (localeCompare pt-BR)
 
 ### Investimento Marketing
 - `marketing_payments`: 1 registro por franquia/mês. `franchise_id` = evolution_instance_id, `reference_month` = "2026-04"
