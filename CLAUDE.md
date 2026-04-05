@@ -146,7 +146,26 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Migration: `supabase/conversation-messages.sql`
 - Volumetria: ~1.500 rows/dia, ~550K/ano (~300MB). Sem particionamento até 1M+
 
+### Bot Intelligence (classificação LLM pós-conversa)
+- **Arquitetura 3 camadas**: Captura (V3/V4 n8n) → Processamento (Gemini 2.5 Flash-Lite cron 30min) → Visualização (React)
+- `bot_conversations` campos LLM: `summary`, `intent`, `sentiment`, `outcome`, `quality_score` (1-10), `quality_notes`, `tools_used[]`, `llm_abandon_reason`, `topics[]`, `improvement_hint`, `processed_at`, `processing_model`
+- **`llm_abandon_reason`** (NÃO `abandon_reason`) — campo original já existia, renomeado para evitar ambiguidade
+- CHECK constraints: `intent` IN (compra, duvida_produto, duvida_entrega, reclamacao, preparo_faq, preco, catalogo, saudacao, outro), `sentiment` IN (positivo, neutro, negativo, frustrado), `outcome` IN (converted, abandoned, escalated, informational, ongoing), `quality_score` BETWEEN 1 AND 10
+- RLS `bot_conversations`: SELECT/INSERT/UPDATE usa `is_admin_or_manager()`, DELETE usa `is_admin()`
+- RPC: `get_unprocessed_conversations(p_limit)` — busca conversas com mensagens para classificar
+- Entity: `BotConversation` em `src/entities/all.js`
+- **V3/V4 captura**: Log Outbound enriquecido (model_used, response_time_ms, metadata.segment, whatsapp_message_id). Log Inbound com message_type dinâmico. `Upsert BotConv Started` paralelo ao Log Inbound (continueOnFail=true)
+- **Workflow Analyzer**: `Bot Conversation Analyzer` (ID: `jh1ro9klxhbEvWgl`) — cron 30min, Gemini 2.5 Flash-Lite via credencial `ezQN27UjYZVHyDEf`, classifica conversas encerradas (>30min sem msg)
+- **Workflow Weekly Report**: `Weekly Bot Report` (ID: `JSzGEHQBo6Jmxhi3`) — cron segunda 8h, envia resumo WhatsApp para franqueados (personal_phone_for_summary) e admin. PENDENTE: configurar telefone admin + token WuzAPI
+- **Página admin**: `/BotIntelligence` — KPIs (grid-cols-3), funil conversas (BarChart), insights abandono/intent/topics, ranking franquias com drill-down
+- **Widget franqueado**: `BotPerformanceCard` no FranchiseeDashboard (após RankingStreak). Oculto se < 5 conversas/mês
+- **Custo**: ~R$ 5/mês (Gemini 2.5 Flash-Lite, ~150 conversas/dia)
+- **CUIDADO**: PUT na API n8n pode desativar workflows — sempre verificar `active` e reativar após updates
+- Migration: `supabase/migration-bot-intelligence.sql`
+- Spec: `docs/superpowers/specs/2026-04-04-bot-intelligence-design.md`
+
 ### Integração Vendedor Genérico (n8n)
+- V4 (`aRBzPABwrjhWCPvq`): TESTE (desativado). 96 nós. Buffer string JSON (não LIST), zero IIFEs no GerenteGeral, Prepara Contexto V4.1 pré-computa tudo
 - V3 (`XqWZyLl1AHlnJvdj`): PRODUÇÃO ATUAL. RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
 - V2 (`w7loLOXUmRR3AzuO`): ARQUIVADO (substituído pelo V3)
 - V1 (`PALRV1RqD3opHMzk`): DESATIVADO (Base44 legado)
@@ -155,7 +174,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Campo "Hoje" no systemMessage: `$now.setZone('America/Sao_Paulo').setLocale('pt-BR').toFormat(...)` — DEVE usar `setLocale('pt-BR')` para dia da semana em português (sem locale, Luxon retorna inglês e o LLM confunde com schedule em português)
 - `bot_personality` removido do prompt (hardcoded "profissional") — UI de personalidade foi removida
 - Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
-- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 12 nós (8 originais + 4 CAPI Purchase). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
+- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 15 nós (12 originais + 3 dedup Redis). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
+- **REGRA REDIS n8n**: n8n Redis node v1 NÃO suporta LRANGE. RPUSH cria LIST mas GET lê STRING (WRONGTYPE error). Para buffer de msgs: usar GET→Append(Code)→SET com string JSON array, NUNCA RPUSH+GET
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
 - Credencial Google Gemini: `ezQN27UjYZVHyDEf` | Credencial OpenAI: `fIhzSXiiBXB3ad6Y`
 - View `vw_dadosunidade`: mapeia franchise_configurations. SQL: `supabase/fix-vw-dadosunidade-v2-scale.sql`
@@ -194,7 +214,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **REGRA GERAL n8n Supabase UPDATE**: SEMPRE filtrar por `id` (UUID) em nós que fazem UPDATE. NUNCA filtrar apenas por `franchise_id + telefone` — se telefone vier vazio/undefined, n8n omite o filtro e o UPDATE atinge todas as rows
 - **`memoriaLead` sub-workflow** (`xJocFaDvztxeBHvQ`): APENAS Redis (NÃO toca Supabase). Merge de memória via gpt-4o-mini. Chave: `chat_id + "_memfranq"`
 - **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
-- **EnviaPedidoFechado `Prepare Sale Data`**: já strip 55 de `telefonelead` para `telefone_db`. `Lookup Contact` busca por 11 dígitos
+- **EnviaPedidoFechado `Prepare Sale Data`**: strip 55, dedup via Redis (key `sale_dedup_{tel}_{instance}_{valor}`, TTL 5min), payment default `pix` (18 aliases), itens validados
+- **EnviaPedidoFechado `Match Items`**: SEMPRE usar `sale_price` do inventário (fonte de verdade), NUNCA preço do LLM. Log itens não matched
+- **V4 Prepara Contexto Completo**: Code node que pré-computa TODOS os dados dinâmicos (payment, delivery, frete, social, horários). systemMessage do GerenteGeral referencia campos pré-computados — ZERO IIFEs inline. Vantagem: elimina risco de corrupção por `$` em expressões n8n
 
 #### Meta CAPI (Conversions API) — implementado 2026-04-02, fix 2026-04-03
 - **Objetivo**: fechar loop atribuição Meta Ads → WhatsApp bot → compra
@@ -233,6 +255,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Tools do GerenteGeral1: CalculaFrete1, Estoque1, Memoria_Lead1, preparo_faq1, Pedido_Checkout1, EnviarCatalogo1, avisa_franqueado
 - GetDistance1 está DENTRO de CalculaFrete1 (NÃO no GerenteGeral1) — sub-workflow `q4ACGWuR3WFQjBfg` (DistanceService)
 - Frete no prompt vem de `delivery_schedule_text` (por grupo de dias) — NÃO mais de `delivery_fee_rules` ou `shipping_rules_costs` inline
+
+- `social_media_links`: JSONB `{instagram, facebook, whatsapp_channel}` — NUNCA concatenar como string (resulta `[object Object]`). Formatar campo a campo
+- **Teste Redis via n8n API**: criar workflow temporário com webhook trigger + nós Redis + responseMode lastNode → chamar webhook → verificar resposta → deletar workflow
 
 ### n8n Loops & Sub-workflows
 - Expressão `={{}}` (objeto vazio) é INVÁLIDA — causa "invalid syntax". Usar `={{ JSON.stringify({}) }}`
@@ -496,6 +521,7 @@ npm run lint      # ESLint
   - Redesign onboarding ✅ | Auditoria banco ✅ | Comprovante venda ✅ | Performance ✅
   - Estoque franqueado (admin) ✅ | Toggle frete grátis + janela entrega ✅
   - Meta CAPI ✅ | Conversation logging ✅ | Microsoft Clarity analytics ✅
+  - Bot Intelligence ✅ (classificação LLM + dashboard admin + widget franqueado + relatório semanal)
   - Swipe tutorial | Busca global admin | Calendário Marketing | Docs PDF
   - Convite equipe interna | Permissões dono vs funcionário
 
