@@ -891,9 +891,9 @@ export default function BotIntelligence() {
                           {INTENT_LABELS[c.intent] || c.intent}
                         </span>
                       )}
-                      {c.llm_sentiment && (
+                      {c.sentiment && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#d4af37]/10 text-[#775a19]">
-                          {SENTIMENT_LABELS[c.llm_sentiment] || c.llm_sentiment}
+                          {SENTIMENT_LABELS[c.sentiment] || c.sentiment}
                         </span>
                       )}
                       {c.outcome === "escalated" && (
