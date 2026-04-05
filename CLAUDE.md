@@ -343,11 +343,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `notifications.read` (NÃO is_read)
 - `franchise_configurations.franchise_name` (NÃO store_name), `.personal_phone_for_summary` (NÃO personal_phone)
 - `personal_phone_for_summary`: DEVE ser salvo como 11 dígitos puros (sem 55, sem máscara). A view `vw_dadosunidade` adiciona prefixo 55 em `personal_phone_wa`. Normalizar com `.replace(/\D/g, '')` antes de salvar — WuzAPI rejeita qualquer formatação
-- `contacts.meta_source_app`: plataforma de origem do anúncio (facebook/instagram)
-- `contacts.meta_media_url`: URL do criativo (reel/imagem) que gerou o click
-- `contacts.meta_conversion_delay_seconds`: segundos entre click no anúncio e primeira mensagem WhatsApp
-- `franchise_configurations.whatsapp_business_account_id`: WABA ID do Meta para CAPI
-- `franchise_configurations.meta_dataset_id`: Dataset ID do WABA para enviar eventos CAPI (NÃO usar pixel)
+- `contacts.meta_*`: campos Meta CAPI — ver seção "Meta CAPI" para detalhes
+- `franchise_configurations.meta_dataset_id` / `.whatsapp_business_account_id`: IDs Meta para CAPI (ver seção Meta CAPI)
 - `franchises` NÃO tem owner_email (email fica em franchise_invites)
 - `onboarding_checklists`: NÃO tem total_items, started_at, user_id
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` (TEXT) + `working_days` (TEXT)
@@ -358,9 +355,8 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `pickup_hours_text`: campo computado na view `vw_dadosunidade` — texto legível de horários de retirada para o bot
 - Horário de retirada fica no Step 2 (Operação) do wizard, NÃO no Step 3. Step 3 = apenas entrega
 - `payment_delivery`/`payment_pickup` são `TEXT[]`, NÃO JSONB
-- Campos entrega: `free_shipping` (bool), `delivery_start_time`/`order_cutoff_time` (text HH:MM — LEGADOS, cobertos por `delivery_schedule`), `charges_delivery_fee` (bool)
-- `delivery_schedule` JSONB: horários de entrega por dia da semana. Array de `{days, delivery_start, delivery_end, charges_fee, fee_rules}`. `fee_rules` pode ser array `[{max_km, fee}]` (por distância) OU objeto `{mode: "modality", rules: [{label, fee}]}` (por modalidade). Campos legados sincronizados da primeira faixa
-- `delivery_schedule_text`: campo computado na view — concatena horários + frete por grupo de dias. Fonte principal do prompt do bot (substitui `delivery_fee_rules` inline e `order_cutoff_time`)
+- Campos entrega: `free_shipping` (bool), `delivery_start_time`/`order_cutoff_time` (LEGADOS, cobertos por `delivery_schedule`), `charges_delivery_fee` (bool)
+- `delivery_schedule` JSONB: ver detalhes na seção "Integração Vendedor Genérico" (campos computados `delivery_schedule_text` e `pickup_hours_text` na view)
 
 **Constraints e índices:**
 - `onboarding_checklists` UNIQUE INDEX em franchise_id
@@ -493,6 +489,7 @@ npm run lint      # ESLint
 - **FASE 8** (em andamento):
   - Redesign onboarding ✅ | Auditoria banco ✅ | Comprovante venda ✅ | Performance ✅
   - Estoque franqueado (admin) ✅ | Toggle frete grátis + janela entrega ✅
+  - Meta CAPI ✅ | Conversation logging ✅ | Microsoft Clarity analytics ✅
   - Swipe tutorial | Busca global admin | Calendário Marketing | Docs PDF
   - Convite equipe interna | Permissões dono vs funcionário
 
