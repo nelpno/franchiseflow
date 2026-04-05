@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { BotConversation, Franchise, FranchiseConfiguration } from "@/entities/all";
+import { BotConversation, ConversationMessage, Sale, Franchise, FranchiseConfiguration } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises } from "@/lib/franchiseUtils";
+import { formatBRL } from "@/lib/formatBRL";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -170,6 +171,10 @@ export default function BotIntelligence() {
   const [franchises, setFranchises] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [allConversations, setAllConversations] = useState([]);
+  const [humanMsgMap, setHumanMsgMap] = useState({});
+  const [botSalesMap, setBotSalesMap] = useState({});
+  const [msgCountMap, setMsgCountMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
 
@@ -233,32 +238,69 @@ export default function BotIntelligence() {
         if (cfg) filterParams.franchise_id = cfg.franchise_evolution_instance_id;
       }
 
-      // Fetch all classified conversations for the month
-      const all = await BotConversation.list("-started_at", 2000);
+      // Fetch conversations + messages + sales in parallel
+      const [allConvsRes, msgsRes, salesRes] = await Promise.allSettled([
+        BotConversation.list("-started_at", 2000),
+        ConversationMessage.list("-created_at", 5000, { columns: "id,conversation_id,direction,franchise_id" }),
+        Sale.filter({ source: "bot" }, "-sale_date", 2000, { columns: "id,franchise_id,value,delivery_fee,sale_date" }),
+      ]);
       if (!mountedRef.current) return;
 
-      // Filter client-side: processed_at not null + within month
-      const filtered = all.filter((c) => {
-        if (!c.processed_at) return false;
+      const allConvs = allConvsRes.status === "fulfilled" ? allConvsRes.value : [];
+      const msgs = msgsRes.status === "fulfilled" ? msgsRes.value : [];
+      const botSales = salesRes.status === "fulfilled" ? salesRes.value : [];
+
+      // Build human message map: conversation_id → has_human
+      const hmMap = {};
+      for (const m of msgs) {
+        if (!m.conversation_id) continue;
+        if (!hmMap[m.conversation_id]) hmMap[m.conversation_id] = { human: false, count: 0 };
+        hmMap[m.conversation_id].count++;
+        if (m.direction === "human") hmMap[m.conversation_id].human = true;
+      }
+
+      // Build msg count map per conversation
+      const mcMap = {};
+      for (const m of msgs) {
+        if (m.conversation_id) {
+          mcMap[m.conversation_id] = (mcMap[m.conversation_id] || 0) + 1;
+        }
+      }
+
+      // Build bot sales map: franchise_id → { count, revenue }
+      const bsMap = {};
+      const salesStart = format(startOfMonth(selectedMonth), "yyyy-MM-dd");
+      const salesEnd = format(endOfMonth(selectedMonth), "yyyy-MM-dd");
+      for (const s of botSales) {
+        if (s.sale_date < salesStart || s.sale_date > salesEnd) continue;
+        if (!bsMap[s.franchise_id]) bsMap[s.franchise_id] = { count: 0, revenue: 0 };
+        bsMap[s.franchise_id].count++;
+        bsMap[s.franchise_id].revenue += parseFloat(s.value || 0) + parseFloat(s.delivery_fee || 0);
+      }
+
+      // Filter conversations within month (all, not just processed)
+      const monthlyAll = allConvs.filter((c) => {
         const started = c.started_at || c.created_at;
         if (!started) return false;
         const d = new Date(started);
         return d >= new Date(start) && d <= new Date(end);
       });
 
-      // If franchise filter active, filter by franchise_id
-      const result =
-        selectedFranchiseId !== "todas"
-          ? filtered.filter((c) => {
-              if (filterParams.franchise_id) {
-                return c.franchise_id === filterParams.franchise_id;
-              }
-              return true;
-            })
-          : filtered;
+      // Processed only for LLM-based analytics
+      const processed = monthlyAll.filter((c) => c.processed_at);
+
+      // Apply franchise filter
+      const applyFilter = (list) =>
+        selectedFranchiseId !== "todas" && filterParams.franchise_id
+          ? list.filter((c) => c.franchise_id === filterParams.franchise_id)
+          : list;
 
       if (!mountedRef.current) return;
-      setConversations(result);
+      setAllConversations(applyFilter(monthlyAll));
+      setConversations(applyFilter(processed));
+      setHumanMsgMap(hmMap);
+      setMsgCountMap(mcMap);
+      setBotSalesMap(bsMap);
     } catch (e) {
       if (e.name === "AbortError") return;
       if (!mountedRef.current) return;
@@ -275,9 +317,43 @@ export default function BotIntelligence() {
 
   // --- Computed analytics ---
   const analytics = useMemo(() => {
-    if (!conversations.length) return null;
+    if (!allConversations.length && !conversations.length) return null;
 
-    const total = conversations.length;
+    // Use ALL conversations (not just processed) for operational metrics
+    const totalAll = allConversations.length;
+    const totalProcessed = conversations.length;
+
+    // Autonomia: conversations without any human message
+    let autonomousCount = 0;
+    for (const c of allConversations) {
+      const info = humanMsgMap[c.id];
+      if (!info || !info.human) autonomousCount++;
+    }
+    const autonomyRate = totalAll ? ((autonomousCount / totalAll) * 100).toFixed(1) : "0.0";
+
+    // Dropoff: conversations with ≤1 message
+    let dropoffCount = 0;
+    for (const c of allConversations) {
+      const cnt = msgCountMap[c.id] || 0;
+      if (cnt <= 1) dropoffCount++;
+    }
+    const dropoffRate = totalAll ? ((dropoffCount / totalAll) * 100).toFixed(1) : "0.0";
+
+    // Bot sales totals (across selected scope)
+    let totalBotSales = 0;
+    let totalBotRevenue = 0;
+    const scopeIds = selectedFranchiseId !== "todas" ? null : undefined;
+    for (const [fid, data] of Object.entries(botSalesMap)) {
+      if (scopeIds === null) {
+        // franchise filter active — check if any allConversations match
+        if (!allConversations.some((c) => c.franchise_id === fid)) continue;
+      }
+      totalBotSales += data.count;
+      totalBotRevenue += data.revenue;
+    }
+
+    // From processed conversations (LLM-classified)
+    const total = totalProcessed;
     const converted = conversations.filter((c) => c.outcome === "converted").length;
     const escalated = conversations.filter((c) => c.outcome === "escalated").length;
     const scores = conversations
@@ -344,21 +420,36 @@ export default function BotIntelligence() {
       .slice(0, 10)
       .map(([topic, count]) => ({ topic, count }));
 
-    // Ranking by franchise
+    // Ranking by franchise — use ALL conversations for operational metrics
     const franchiseMap = {};
-    conversations.forEach((c) => {
+    allConversations.forEach((c) => {
       const fid = c.franchise_id;
       if (!franchiseMap[fid]) {
         franchiseMap[fid] = {
           franchise_id: fid,
-          total: 0,
+          totalAll: 0,
+          totalProcessed: 0,
           converted: 0,
           escalated: 0,
+          autonomous: 0,
+          dropoff1msg: 0,
           scores: [],
           abandonReasons: {},
         };
       }
-      franchiseMap[fid].total++;
+      franchiseMap[fid].totalAll++;
+      // Autonomy
+      const info = humanMsgMap[c.id];
+      if (!info || !info.human) franchiseMap[fid].autonomous++;
+      // Dropoff
+      const cnt = msgCountMap[c.id] || 0;
+      if (cnt <= 1) franchiseMap[fid].dropoff1msg++;
+    });
+    // Add LLM data from processed conversations
+    conversations.forEach((c) => {
+      const fid = c.franchise_id;
+      if (!franchiseMap[fid]) return;
+      franchiseMap[fid].totalProcessed++;
       if (c.outcome === "converted") franchiseMap[fid].converted++;
       if (c.outcome === "escalated") franchiseMap[fid].escalated++;
       if (c.quality_score !== null && c.quality_score !== undefined)
@@ -376,42 +467,51 @@ export default function BotIntelligence() {
             ? f.scores.reduce((a, b) => a + b, 0) / f.scores.length
             : null;
         const topAbandon = Object.entries(f.abandonReasons).sort((a, b) => b[1] - a[1])[0];
-        // Find franchise name
         const cfg = configs.find(
           (c) => c.franchise_evolution_instance_id === f.franchise_id
         );
         const fr = franchises.find(
           (fr) => fr.id === cfg?.franchise_id
         );
+        const bs = botSalesMap[f.franchise_id] || { count: 0, revenue: 0 };
         return {
           ...f,
           name: fr?.name || cfg?.franchise_name || f.franchise_id,
           avgScore: avgS,
-          conversionRate: f.total ? ((f.converted / f.total) * 100).toFixed(1) : "0.0",
-          humanRate: f.total
-            ? (((f.total - f.escalated) / f.total) * 100).toFixed(1)
+          autonomyRate: f.totalAll ? ((f.autonomous / f.totalAll) * 100).toFixed(1) : "0.0",
+          dropoffRate: f.totalAll ? ((f.dropoff1msg / f.totalAll) * 100).toFixed(1) : "0.0",
+          botSales: bs.count,
+          botRevenue: bs.revenue,
+          conversionRate: f.totalAll ? ((bs.count / f.totalAll) * 100).toFixed(1) : "0.0",
+          humanRate: f.totalAll
+            ? (((f.totalAll - f.escalated) / f.totalAll) * 100).toFixed(1)
             : "0.0",
           topAbandon: topAbandon
             ? ABANDON_REASON_LABELS[topAbandon[0]] || topAbandon[0]
             : "—",
         };
       })
-      .sort((a, b) => (b.avgScore ?? -1) - (a.avgScore ?? -1));
+      .sort((a, b) => parseFloat(b.autonomyRate) - parseFloat(a.autonomyRate));
 
     return {
       total,
+      totalAll,
       converted,
       escalated,
       avgScore,
       conversionRate,
       humanResolutionRate,
+      autonomyRate,
+      dropoffRate,
+      totalBotSales,
+      totalBotRevenue,
       funnelData,
       abandonData,
       intentData,
       topicsData,
       rankingData,
     };
-  }, [conversations, configs, franchises]);
+  }, [conversations, allConversations, configs, franchises, humanMsgMap, msgCountMap, botSalesMap, selectedFranchiseId]);
 
   // --- Open drill-down sheet ---
   function openSheet(row) {
@@ -522,22 +622,48 @@ export default function BotIntelligence() {
       {/* Content */}
       {(isLoading || analytics) && (
         <>
-          {/* Section 1 — KPIs */}
+          {/* Section 1 — KPIs (2 rows) */}
           <div className="grid grid-cols-3 gap-4">
             <KpiCard
-              icon="conversion_path"
-              label="Taxa de Conversão"
-              value={isLoading ? "—" : `${analytics?.conversionRate}`}
+              icon="precision_manufacturing"
+              label="Taxa de Autonomia"
+              value={isLoading ? "—" : `${analytics?.autonomyRate}`}
               suffix="%"
+              color="#16a34a"
+              loading={isLoading}
+            />
+            <KpiCard
+              icon="shopping_bag"
+              label="Vendas via Bot"
+              value={isLoading ? "—" : `${analytics?.totalBotSales || 0}`}
+              suffix={!isLoading && analytics?.totalBotRevenue ? ` (${formatBRL(analytics.totalBotRevenue)})` : ""}
               color="#b91c1c"
               loading={isLoading}
             />
             <KpiCard
-              icon="support_agent"
-              label="Resolução sem Humano"
-              value={isLoading ? "—" : `${analytics?.humanResolutionRate}`}
+              icon="person_off"
+              label="Dropoff 1ª Msg"
+              value={isLoading ? "—" : `${analytics?.dropoffRate}`}
               suffix="%"
-              color="#16a34a"
+              color="#dc2626"
+              loading={isLoading}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <KpiCard
+              icon="forum"
+              label="Total Conversas"
+              value={isLoading ? "—" : `${analytics?.totalAll || 0}`}
+              suffix={!isLoading && analytics?.total ? ` (${analytics.total} classif.)` : ""}
+              color="#1b1c1d"
+              loading={isLoading}
+            />
+            <KpiCard
+              icon="conversion_path"
+              label="Taxa de Conversão"
+              value={isLoading ? "—" : analytics?.totalAll ? `${((analytics.totalBotSales / analytics.totalAll) * 100).toFixed(1)}` : "0.0"}
+              suffix="%"
+              color="#d4af37"
               loading={isLoading}
             />
             <KpiCard
@@ -747,10 +873,10 @@ export default function BotIntelligence() {
                       <TableRow className="border-[#e9e8e9]">
                         <TableHead className="text-xs text-[#7a6d6d] font-medium">Franquia</TableHead>
                         <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Conversas</TableHead>
-                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Conversão</TableHead>
-                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Score Bot</TableHead>
-                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Sem Humano</TableHead>
-                        <TableHead className="text-xs text-[#7a6d6d] font-medium">Principal Abandono</TableHead>
+                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Autonomia</TableHead>
+                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Vendas Bot</TableHead>
+                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Dropoff</TableHead>
+                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Score</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -764,32 +890,47 @@ export default function BotIntelligence() {
                             {row.name}
                           </TableCell>
                           <TableCell className="text-sm text-right text-[#4a3d3d]">
-                            {row.total}
+                            {row.totalAll}
                           </TableCell>
                           <TableCell className="text-sm text-right font-medium">
                             <span
                               style={{
                                 color:
-                                  parseFloat(row.conversionRate) >= 20
+                                  parseFloat(row.autonomyRate) >= 60
                                     ? "#16a34a"
-                                    : parseFloat(row.conversionRate) >= 10
+                                    : parseFloat(row.autonomyRate) >= 30
                                     ? "#d4af37"
                                     : "#dc2626",
                               }}
                             >
-                              {row.conversionRate}%
+                              {row.autonomyRate}%
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-right text-[#4a3d3d]">
+                            {row.botSales > 0 ? (
+                              <span className="font-medium">{row.botSales}</span>
+                            ) : (
+                              <span className="text-[#7a6d6d]">0</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-right">
+                            <span
+                              style={{
+                                color:
+                                  parseFloat(row.dropoffRate) <= 15
+                                    ? "#16a34a"
+                                    : parseFloat(row.dropoffRate) <= 40
+                                    ? "#d4af37"
+                                    : "#dc2626",
+                              }}
+                            >
+                              {row.dropoffRate}%
                             </span>
                           </TableCell>
                           <TableCell className="text-sm text-right font-bold">
                             <span style={{ color: scoreColor(row.avgScore) }}>
                               {row.avgScore !== null ? row.avgScore.toFixed(1) : "—"}
                             </span>
-                          </TableCell>
-                          <TableCell className="text-sm text-right text-[#4a3d3d]">
-                            {row.humanRate}%
-                          </TableCell>
-                          <TableCell className="text-sm text-[#7a6d6d]">
-                            {row.topAbandon}
                           </TableCell>
                         </TableRow>
                       ))}

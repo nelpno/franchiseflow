@@ -155,10 +155,13 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - RPC: `get_unprocessed_conversations(p_limit)` — busca conversas com mensagens para classificar
 - Entity: `BotConversation` em `src/entities/all.js`
 - **V3/V4 captura**: Log Outbound enriquecido (model_used, response_time_ms, metadata.segment, whatsapp_message_id). Log Inbound com message_type dinâmico. `Upsert BotConv Started` paralelo ao Log Inbound (continueOnFail=true)
-- **Workflow Analyzer**: `Bot Conversation Analyzer` (ID: `jh1ro9klxhbEvWgl`) — cron 30min, Gemini 2.5 Flash-Lite via credencial `ezQN27UjYZVHyDEf`, classifica conversas encerradas (>30min sem msg)
+- **Workflow Analyzer**: `Bot Conversation Analyzer` (ID: `jh1ro9klxhbEvWgl`) — cron 30min, Gemini 2.5 Flash via credencial `ezQN27UjYZVHyDEf`, classifica conversas encerradas (>30min sem msg)
+  - Parse JSON: strip markdown fences + extrai `{` a `}` (fix 05/04 — Gemini retornava JSON wrappado)
+  - Prompt v4: guia de intent (NUNCA "outro" como default), sentiment (NÃO neutro como padrão), topics com lista de produtos Maxi Massas
 - **Workflow Weekly Report**: `Weekly Bot Report` (ID: `JSzGEHQBo6Jmxhi3`) — cron segunda 8h, envia resumo WhatsApp para franqueados (personal_phone_for_summary) e admin. PENDENTE: configurar telefone admin + token WuzAPI
-- **Página admin**: `/BotIntelligence` — KPIs (grid-cols-3), funil conversas (BarChart), insights abandono/intent/topics, ranking franquias com drill-down
-- **Widget franqueado**: `BotPerformanceCard` no FranchiseeDashboard (após RankingStreak). Oculto se < 5 conversas/mês
+- **EnviaPedidoFechado V2** (`RnF1Jh6nDUj0IRHI`): nó `Mark Bot Converted` (HTTP Request → `upsert_bot_conversation` com `p_status='converted'`) adicionado paralelo ao Create Sale (fix 05/04 — funil nunca marcava conversão)
+- **Página admin**: `/BotIntelligence` — 6 KPIs (2 rows grid-cols-3): Autonomia, Vendas Bot, Dropoff 1ª Msg, Total Conversas, Taxa Conversão, Score Médio. Funil, insights, ranking com autonomia/vendas/dropoff por franquia + drill-down
+- **Widget franqueado**: `BotPerformanceCard` — grid-cols-3 (Atendimentos, Vendas Bot com receita real, Autonomia com benchmark vs média rede 40%). Dica inteligente baseada em autonomia vs rede. Oculto se < 5 conversas/mês
 - **Custo**: ~R$ 5/mês (Gemini 2.5 Flash-Lite, ~150 conversas/dia)
 - **CUIDADO**: PUT na API n8n pode desativar workflows — sempre verificar `active` e reativar após updates
 - Migration: `supabase/migration-bot-intelligence.sql`
