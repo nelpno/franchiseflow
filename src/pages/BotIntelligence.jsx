@@ -234,7 +234,7 @@ export default function BotIntelligence() {
       }
 
       // Fetch all classified conversations for the month
-      const all = await BotConversation.list(2000);
+      const all = await BotConversation.list("-started_at", 2000);
       if (!mountedRef.current) return;
 
       // Filter client-side: processed_at not null + within month
