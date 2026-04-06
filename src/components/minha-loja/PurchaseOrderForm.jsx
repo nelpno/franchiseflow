@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,7 +51,25 @@ export default function PurchaseOrderForm({
   onSave,
   onCancel,
 }) {
-  const [notes, setNotes] = useState("");
+  const DRAFT_KEY = `reposicao_draft_${franchiseId}`;
+  const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
+
+  const loadDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return null;
+      const draft = JSON.parse(raw);
+      if (Date.now() - draft.savedAt > DRAFT_MAX_AGE) {
+        localStorage.removeItem(DRAFT_KEY);
+        return null;
+      }
+      return draft;
+    } catch { return null; }
+  };
+
+  const draft = useRef(loadDraft());
+
+  const [notes, setNotes] = useState(draft.current?.notes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
@@ -116,16 +134,35 @@ export default function PurchaseOrderForm({
     return Math.max(0, Math.ceil(wt * 2) - qty);
   };
 
-  // Quantities state: { itemId: qty }
+  // Quantities state: { itemId: qty } — restore from draft > initialQuantities > 0
   const [quantities, setQuantities] = useState(() => {
+    const savedQtys = draft.current?.quantities;
     const init = {};
     standardProducts.forEach((item) => {
-      init[item.id] = initialQuantities && initialQuantities[item.id]
-        ? initialQuantities[item.id]
-        : 0;
+      if (initialQuantities && initialQuantities[item.id]) {
+        init[item.id] = initialQuantities[item.id];
+      } else if (savedQtys && savedQtys[item.id]) {
+        init[item.id] = savedQtys[item.id];
+      } else {
+        init[item.id] = 0;
+      }
     });
     return init;
   });
+
+  // Persist draft to localStorage on change
+  const saveDraft = useCallback((qtys, n) => {
+    const hasData = Object.values(qtys).some(v => v > 0) || n.trim().length > 0;
+    if (hasData) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, savedAt: Date.now() }));
+    } else {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  }, [DRAFT_KEY]);
+
+  useEffect(() => { saveDraft(quantities, notes); }, [quantities, notes, saveDraft]);
+
+  const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
 
   const setQty = (itemId, value) => {
     if (value === "" || value === undefined) {
@@ -213,6 +250,7 @@ export default function PurchaseOrderForm({
         });
       } catch { /* notificação é bonus, pedido já foi criado */ }
 
+      clearDraft();
       toast.success("Pedido enviado com sucesso!", { id: toastId });
       // NÃO resetar submittingRef — componente vai desmontar via onSave
       if (onSave) onSave();
@@ -234,6 +272,27 @@ export default function PurchaseOrderForm({
 
   return (
     <div className="space-y-4">
+      {/* Draft restored indicator */}
+      {draft.current && !initialQuantities && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-sm text-[#775a19]">
+          <MaterialIcon icon="history" size={18} />
+          <span>Rascunho restaurado.</span>
+          <button
+            onClick={() => {
+              clearDraft();
+              const reset = {};
+              standardProducts.forEach(i => { reset[i.id] = 0; });
+              setQuantities(reset);
+              setNotes("");
+              draft.current = null;
+            }}
+            className="ml-auto text-xs font-medium underline"
+          >
+            Limpar
+          </button>
+        </div>
+      )}
+
       {/* Header with suggestion button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-sm text-[#4a3d3d]">
