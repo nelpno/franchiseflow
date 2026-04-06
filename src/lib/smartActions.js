@@ -107,4 +107,53 @@ export function generateSmartActions(contacts, limit = 5) {
   return limit ? actions.slice(0, limit) : actions;
 }
 
+export function generateBotCoachActions(botReport, limit = 3) {
+  if (!botReport?.metrics) return [];
+  const actions = [];
+  const m = botReport.metrics;
+
+  // Stock misses -> highest priority
+  if (m.operational?.stock_misses?.length > 0) {
+    for (const miss of m.operational.stock_misses.slice(0, 2)) {
+      actions.push({
+        type: "repor_estoque",
+        label: "Repor Estoque",
+        icon: "inventory",
+        color: "#dc2626",
+        bgColor: "#fef2f2",
+        priority: 1,
+        message: `Repor ${miss.product} (${miss.times_mentioned} menções, ${miss.times_empty} stock-outs, ~R$ ${miss.est_lost_revenue} perdidos)`,
+      });
+    }
+  }
+
+  // Stale leads
+  if (m.pipeline?.stale_leads_7d > 5) {
+    actions.push({
+      type: "follow_up_leads",
+      label: "Follow-up Leads",
+      icon: "person_search",
+      color: "#d97706",
+      bgColor: "#fffbeb",
+      priority: 2,
+      message: `Follow-up em ${m.pipeline.stale_leads_7d} leads parados há mais de 7 dias`,
+    });
+  }
+
+  // Frete abandonment
+  if (m.delivery?.abandon_by_frete_count > 2) {
+    actions.push({
+      type: "revisar_frete",
+      label: "Revisar Frete",
+      icon: "local_shipping",
+      color: "#ea580c",
+      bgColor: "#fff7ed",
+      priority: 3,
+      message: `Revisar tabela de frete (${m.delivery.abandon_by_frete_count} abandonos por frete)`,
+    });
+  }
+
+  return actions.sort((a, b) => a.priority - b.priority).slice(0, limit);
+}
+
 export { ACTION_RULES };

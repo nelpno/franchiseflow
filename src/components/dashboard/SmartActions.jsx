@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Contact } from "@/entities/all";
-import { generateSmartActions } from "@/lib/smartActions";
+import { Contact, BotReport } from "@/entities/all";
+import { generateSmartActions, generateBotCoachActions } from "@/lib/smartActions";
 import { getWhatsAppLink } from "@/lib/whatsappUtils";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -11,11 +11,23 @@ function SmartActions({ contacts, franchiseId }) {
   const navigate = useNavigate();
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [loadingIds, setLoadingIds] = useState(new Set());
+  const [botReport, setBotReport] = useState(null);
+
+  useEffect(() => {
+    if (franchiseId) {
+      BotReport.filter({ franchise_id: franchiseId }, "-report_period_end", 1)
+        .then((data) => setBotReport(data?.[0] || null))
+        .catch(() => {});
+    }
+  }, [franchiseId]);
 
   const actions = useMemo(() => {
-    const all = generateSmartActions(contacts, 5);
-    return all.filter((a) => !dismissedIds.has(a.contact.id));
-  }, [contacts, dismissedIds]);
+    const coachActions = generateBotCoachActions(botReport, 2);
+    const contactActions = generateSmartActions(contacts, 5).filter(
+      (a) => !dismissedIds.has(a.contact.id)
+    );
+    return [...coachActions, ...contactActions].slice(0, 5);
+  }, [contacts, dismissedIds, botReport]);
 
   const handleDone = async (action) => {
     const contactId = action.contact.id;
@@ -73,11 +85,15 @@ function SmartActions({ contacts, franchiseId }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {actions.map((action) => {
-          const isLoading = loadingIds.has(action.contact.id);
+        {actions.map((action, idx) => {
+          const isCoachAction = !action.contact;
+          const actionKey = isCoachAction
+            ? `coach-${action.type}-${idx}`
+            : action.contact.id;
+          const isLoading = !isCoachAction && loadingIds.has(action.contact.id);
           return (
             <div
-              key={action.contact.id}
+              key={actionKey}
               className="rounded-2xl border border-[#291715]/5 p-4 flex flex-col gap-3 shadow-sm"
               style={{ backgroundColor: action.bgColor }}
             >
@@ -108,28 +124,32 @@ function SmartActions({ contacts, franchiseId }) {
 
               {/* Action buttons */}
               <div className="flex items-center gap-2 mt-auto">
-                <button
-                  onClick={() =>
-                    window.open(
-                      getWhatsAppLink(
-                        action.contact.telefone || action.contact.contact_phone
-                      ),
-                      "_blank"
-                    )
-                  }
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
-                >
-                  <MaterialIcon icon="chat" size={16} />
-                  WhatsApp
-                </button>
-                <button
-                  onClick={() => handleDone(action)}
-                  disabled={isLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-white/60 text-[#4a3d3d] hover:bg-white/80 transition-colors disabled:opacity-50"
-                >
-                  <MaterialIcon icon="check" size={16} />
-                  {isLoading ? "..." : "Feito"}
-                </button>
+                {!isCoachAction && (
+                  <>
+                    <button
+                      onClick={() =>
+                        window.open(
+                          getWhatsAppLink(
+                            action.contact.telefone || action.contact.contact_phone
+                          ),
+                          "_blank"
+                        )
+                      }
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                    >
+                      <MaterialIcon icon="chat" size={16} />
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={() => handleDone(action)}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-white/60 text-[#4a3d3d] hover:bg-white/80 transition-colors disabled:opacity-50"
+                    >
+                      <MaterialIcon icon="check" size={16} />
+                      {isLoading ? "..." : "Feito"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           );

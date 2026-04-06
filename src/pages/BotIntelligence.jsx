@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { BotConversation, ConversationMessage, Sale, Franchise, FranchiseConfiguration } from "@/entities/all";
+import { BotConversation, ConversationMessage, Sale, Franchise, FranchiseConfiguration, BotReport } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises } from "@/lib/franchiseUtils";
 import { formatBRL } from "@/lib/formatBRL";
@@ -19,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -160,6 +161,230 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
+// --- Tier helpers ---
+const TIER_CONFIG = {
+  beginner: { label: "Iniciante", color: "#dc2626", bg: "#fef2f2" },
+  intermediate: { label: "Intermediário", color: "#d4af37", bg: "#fffbeb" },
+  advanced: { label: "Avançado", color: "#16a34a", bg: "#f0fdf4" },
+};
+
+function TierBadge({ tier }) {
+  const cfg = TIER_CONFIG[tier] || TIER_CONFIG.beginner;
+  return (
+    <span
+      className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+      style={{ color: cfg.color, backgroundColor: cfg.bg, border: `1px solid ${cfg.color}30` }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+// --- Coaching Tab ---
+function CoachingTab({ botReports, reportsLoading, franchises, configs }) {
+  // Group by franchise — latest per franchise
+  const latestByFranchise = useMemo(() => {
+    const map = {};
+    for (const r of botReports) {
+      const fid = r.franchise_id;
+      if (!map[fid] || new Date(r.created_at) > new Date(map[fid].created_at)) {
+        map[fid] = r;
+      }
+    }
+    return Object.values(map).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+  }, [botReports]);
+
+  // Network insights
+  const networkInsights = useMemo(() => {
+    if (!latestByFranchise.length) return null;
+    const total = latestByFranchise.length;
+
+    // Tier distribution
+    const tierCounts = { beginner: 0, intermediate: 0, advanced: 0 };
+    for (const r of latestByFranchise) {
+      const tier = r.metrics?.profile_tier || r.profile_tier || "beginner";
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+    }
+    const beginnerPct = total ? Math.round((tierCounts.beginner / total) * 100) : 0;
+
+    // Most common abandon reason
+    const abandonCounts = {};
+    for (const r of latestByFranchise) {
+      const reasons = r.metrics?.abandon_reasons || r.metrics?.conversion?.abandon_reasons || {};
+      for (const [reason, count] of Object.entries(reasons)) {
+        abandonCounts[reason] = (abandonCounts[reason] || 0) + (parseFloat(count) || 0);
+      }
+    }
+    const topAbandon = Object.entries(abandonCounts).sort((a, b) => b[1] - a[1])[0];
+
+    // Most common stock miss
+    const stockMissCounts = {};
+    for (const r of latestByFranchise) {
+      const misses = r.metrics?.operational?.stock_misses || [];
+      for (const miss of misses) {
+        if (miss.product) {
+          stockMissCounts[miss.product] = (stockMissCounts[miss.product] || 0) + (parseFloat(miss.times_mentioned) || 1);
+        }
+      }
+    }
+    const topStockMiss = Object.entries(stockMissCounts).sort((a, b) => b[1] - a[1])[0];
+
+    return { total, tierCounts, beginnerPct, topAbandon, topStockMiss };
+  }, [latestByFranchise]);
+
+  const getFranchiseName = (franchiseId) => {
+    const cfg = configs.find(
+      (c) => c.franchise_evolution_instance_id === franchiseId
+    );
+    const fr = franchises.find((f) => f.id === cfg?.franchise_id);
+    return fr?.name || cfg?.franchise_name || franchiseId;
+  };
+
+  if (reportsLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!latestByFranchise.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <MaterialIcon icon="school" className="text-5xl text-[#e9e8e9]" />
+        <p className="text-base font-semibold text-[#4a3d3d]">
+          Nenhum relatório gerado ainda
+        </p>
+        <p className="text-sm text-[#7a6d6d] text-center max-w-xs">
+          O primeiro relatório será enviado no dia 1º ou 15º do mês.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Network Insights */}
+      {networkInsights && (
+        <Card className="border border-[#e9e8e9] shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold font-plus-jakarta" style={{ color: "#1b1c1d" }}>
+              <div className="flex items-center gap-2">
+                <MaterialIcon icon="insights" className="text-base" style={{ color: "#d4af37" }} />
+                Panorama da Rede
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-[#fbf9fa] rounded-lg p-3 border border-[#e9e8e9]">
+                <p className="text-xs text-[#7a6d6d] mb-1">Tier Iniciante</p>
+                <p className="text-lg font-bold text-[#1b1c1d]">
+                  {networkInsights.beginnerPct}%
+                  <span className="text-xs font-normal text-[#7a6d6d] ml-1">
+                    das franquias ({networkInsights.tierCounts.beginner}/{networkInsights.total})
+                  </span>
+                </p>
+              </div>
+              <div className="bg-[#fbf9fa] rounded-lg p-3 border border-[#e9e8e9]">
+                <p className="text-xs text-[#7a6d6d] mb-1">Abandono mais comum</p>
+                <p className="text-lg font-bold text-[#1b1c1d] capitalize">
+                  {networkInsights.topAbandon
+                    ? `${networkInsights.topAbandon[0]} (${networkInsights.topAbandon[1]}x)`
+                    : "—"}
+                </p>
+              </div>
+              <div className="bg-[#fbf9fa] rounded-lg p-3 border border-[#e9e8e9]">
+                <p className="text-xs text-[#7a6d6d] mb-1">Stock miss frequente</p>
+                <p className="text-lg font-bold text-[#1b1c1d] capitalize">
+                  {networkInsights.topStockMiss
+                    ? `${networkInsights.topStockMiss[0]} (${networkInsights.topStockMiss[1]}x)`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Reports table */}
+      <Card className="border border-[#e9e8e9] shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold font-plus-jakarta" style={{ color: "#1b1c1d" }}>
+            Relatórios por Franquia
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-[#e9e8e9]">
+                  <TableHead className="text-xs text-[#7a6d6d] font-medium">Franquia</TableHead>
+                  <TableHead className="text-xs text-[#7a6d6d] font-medium">Tier</TableHead>
+                  <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Autonomia</TableHead>
+                  <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Data</TableHead>
+                  <TableHead className="text-xs text-[#7a6d6d] font-medium text-center">Enviado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {latestByFranchise.map((report) => {
+                  const tier = report.metrics?.profile_tier || report.profile_tier || "beginner";
+                  const autonomy = parseFloat(report.metrics?.autonomy_rate ?? report.metrics?.operational?.autonomy_rate ?? 0);
+                  const prevAutonomy = parseFloat(report.metrics?.prev_autonomy_rate ?? 0);
+                  const trend = autonomy > prevAutonomy ? "up" : autonomy < prevAutonomy ? "down" : "flat";
+                  return (
+                    <TableRow key={report.id} className="border-[#e9e8e9] hover:bg-[#fbf9fa] transition-colors">
+                      <TableCell className="text-sm font-medium text-[#1b1c1d]">
+                        {getFranchiseName(report.franchise_id)}
+                      </TableCell>
+                      <TableCell>
+                        <TierBadge tier={tier} />
+                      </TableCell>
+                      <TableCell className="text-sm text-right">
+                        <span
+                          className="font-medium"
+                          style={{
+                            color: autonomy >= 60 ? "#16a34a" : autonomy >= 30 ? "#d4af37" : "#dc2626",
+                          }}
+                        >
+                          {autonomy.toFixed(1)}%
+                        </span>
+                        {trend !== "flat" && (
+                          <MaterialIcon
+                            icon={trend === "up" ? "arrow_upward" : "arrow_downward"}
+                            className="text-xs ml-1 inline"
+                            style={{ color: trend === "up" ? "#16a34a" : "#dc2626" }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-right text-[#7a6d6d]">
+                        {report.created_at
+                          ? format(new Date(report.created_at), "dd/MM/yyyy", { locale: ptBR })
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {report.sent_at ? (
+                          <MaterialIcon icon="check_circle" className="text-base" style={{ color: "#16a34a" }} />
+                        ) : (
+                          <MaterialIcon icon="schedule" className="text-base" style={{ color: "#7a6d6d" }} />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // --- Main component ---
 export default function BotIntelligence() {
   const { user } = useAuth();
@@ -177,6 +402,13 @@ export default function BotIntelligence() {
   const [msgCountMap, setMsgCountMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+
+  // Tab
+  const [activeTab, setActiveTab] = useState("visao-geral");
+
+  // Coaching tab data
+  const [botReports, setBotReports] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   // Drill-down sheet
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -314,6 +546,24 @@ export default function BotIntelligence() {
   useEffect(() => {
     if (configs.length > 0 || selectedFranchiseId === "todas") loadData();
   }, [loadData]);
+
+  // Load bot reports when coaching tab is active
+  useEffect(() => {
+    if (activeTab !== "coaching") return;
+    let cancelled = false;
+    setReportsLoading(true);
+    BotReport.list("-created_at", 100)
+      .then((data) => {
+        if (!cancelled) setBotReports(data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setBotReports([]);
+      })
+      .finally(() => {
+        if (!cancelled) setReportsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   // --- Computed analytics ---
   const analytics = useMemo(() => {
@@ -590,6 +840,18 @@ export default function BotIntelligence() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-[#fbf9fa] border border-[#e9e8e9]">
+          <TabsTrigger value="visao-geral" className="text-sm data-[state=active]:bg-white data-[state=active]:text-[#b91c1c]">
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="coaching" className="text-sm data-[state=active]:bg-white data-[state=active]:text-[#b91c1c]">
+            Coaching
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="visao-geral" className="space-y-6 mt-4">
       {/* Error state */}
       {loadError && (
         <Card className="border-[#dc2626]/20 bg-[#dc2626]/5">
@@ -946,6 +1208,19 @@ export default function BotIntelligence() {
           </Card>
         </>
       )}
+
+        </TabsContent>
+
+        {/* Coaching Tab */}
+        <TabsContent value="coaching" className="space-y-6 mt-4">
+          <CoachingTab
+            botReports={botReports}
+            reportsLoading={reportsLoading}
+            franchises={franchises}
+            configs={configs}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Drill-down Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
