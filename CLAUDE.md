@@ -179,7 +179,12 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Workflow Analyzer**: `Bot Conversation Analyzer` (ID: `jh1ro9klxhbEvWgl`) — cron 30min, Gemini 2.5 Flash via credencial `ezQN27UjYZVHyDEf`, classifica conversas encerradas (>30min sem msg)
   - Parse JSON: strip markdown fences + extrai `{` a `}` (fix 05/04 — Gemini retornava JSON wrappado)
   - Prompt v4: guia de intent (NUNCA "outro" como default), sentiment (NÃO neutro como padrão), topics com lista de produtos Maxi Massas
-- **Workflow Weekly Report**: `Weekly Bot Report` (ID: `JSzGEHQBo6Jmxhi3`) — cron segunda 8h, envia resumo WhatsApp para franqueados (personal_phone_for_summary) e admin. PENDENTE: configurar telefone admin + token WuzAPI
+- **Workflow Weekly Report**: `Weekly Bot Report` (ID: `JSzGEHQBo6Jmxhi3`) — INATIVO/OBSOLETO (substituído pelo Bot Coach Report)
+- **Bot Coach Report** (`gDTZPdrsVLhUk031`): 25 nós, cron dia 1 e 16 às 8h. RPC `get_franchise_report_data` → Gemini 2.5 Flash (chainLlm, texto puro) → Save `bot_reports` → WuzAPI admin_nelson. Wait Anti-Spam 5-15s entre envios
+  - `bot_reports`: relatório quinzenal por franquia. Entity `BotReport`. RLS: admin/manager SELECT, franqueado vê os seus, admin DELETE
+  - WhatsApp: resumo curto (~300 chars, gerado por Code node). Dashboard: relatório completo (~1800 chars) no BotCoachSheet
+  - Instância WuzAPI: `admin_nelson` (send-only, token `e72e83eb-...`). NUNCA configurar inbound nessa instância
+  - RPC `get_franchise_report_data(p_franchise_id, p_start_date, p_end_date)`: retorna 9 datasets em 1 chamada (SECURITY DEFINER)
 - **EnviaPedidoFechado V2** (`RnF1Jh6nDUj0IRHI`): nó `Mark Bot Converted` (HTTP Request → `upsert_bot_conversation` com `p_status='converted'`) adicionado paralelo ao Create Sale (fix 05/04 — funil nunca marcava conversão)
 - **Página admin**: `/BotIntelligence` — 6 KPIs (2 rows grid-cols-3): Autonomia, Vendas Bot, Dropoff 1ª Msg, Total Conversas, Taxa Conversão, Score Médio. Funil, insights, ranking com autonomia/vendas/dropoff por franquia + drill-down
 - **Widget franqueado**: `BotPerformanceCard` — grid-cols-3 (Atendimentos, Vendas Bot com receita real, Autonomia com benchmark vs média rede 40%). Dica inteligente baseada em autonomia vs rede. Oculto se < 5 conversas/mês
@@ -288,6 +293,12 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Teste Redis via n8n API**: criar workflow temporário com webhook trigger + nós Redis + responseMode lastNode → chamar webhook → verificar resposta → deletar workflow
 
 ### n8n Loops & Sub-workflows
+- **SplitInBatches v3**: output 0 = **Done**, output 1 = **Loop** (INVERTIDO vs v1/v2). TODOS os workflows ativos usam v3 com `{"options":{}}`
+- **`$('NodeName')` NÃO funciona** entre branches paralelos dentro de SplitInBatches — dados retornam vazio silenciosamente. Usar RPC Supabase ou cadeia sequencial
+- **Code node sandbox**: `fetch()` indisponível, `require('https'/'http'/'axios')` bloqueado. Para múltiplas queries paralelas, criar RPC Supabase
+- **chainLlm + Gemini**: NÃO usar `modelName` (inválido para v1). Remover `maxOutputTokens` para output longo. Texto puro > JSON (JSON desperdiça tokens e modelo para cedo)
+- **`alwaysOutputData: true`** obrigatório em HTTP Request nodes que podem retornar 0 items (ex: consulta sem resultados). Sem isso, cadeia downstream para silenciosamente
+- **n8n editor aberto sobrescreve PUT via API** — SEMPRE fechar aba do editor antes de salvar via API
 - Expressão `={{}}` (objeto vazio) é INVÁLIDA — causa "invalid syntax". Usar `={{ JSON.stringify({}) }}`
 - Dentro de `splitInBatches` loop, `$json` após HTTP Request vira a resposta da API (NÃO o item do loop). Referenciar dados PRÉ-request via `$('NodeAnterior')`
 - Nós de logging/side-effects devem ficar FORA do loop (conectar em paralelo no nó que alimenta o loop)
@@ -556,7 +567,8 @@ npm run lint      # ESLint
   - Redesign onboarding ✅ | Auditoria banco ✅ | Comprovante venda ✅ | Performance ✅
   - Estoque franqueado (admin) ✅ | Toggle frete grátis + janela entrega ✅
   - Meta CAPI ✅ | Conversation logging ✅ | Microsoft Clarity analytics ✅
-  - Bot Intelligence ✅ (classificação LLM + dashboard admin + widget franqueado + relatório semanal)
+  - Bot Intelligence ✅ (classificação LLM + dashboard admin + widget franqueado)
+  - Bot Coach Report ✅ (relatório quinzenal Gemini + WhatsApp + dashboard, cron dia 1/16)
   - Dashboard Coach-First ✅ (Health Score franqueado + Ação Prioritária + Diagnóstico + draft reposição)
   - Conferência de pagamentos ✅ (toggle recebido/pendente, filtro, lote, borda colorida)
   - Swipe tutorial | Busca global admin | Calendário Marketing | Docs PDF
