@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { BotConversation, ConversationMessage, Sale } from "@/entities/all";
+import { BotConversation, ConversationMessage, Sale, BotReport } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, startOfMonth } from "date-fns";
+import { format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatBRL } from "@/lib/formatBRL";
+import BotCoachSheet from "./BotCoachSheet";
 
 const MIN_CONVERSATIONS = 5;
 
@@ -32,6 +33,20 @@ function topNFromMap(map, n) {
     .map(([key]) => key);
 }
 
+function TrendArrow({ current, previous }) {
+  if (previous === null || previous === undefined) return null;
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.5) return null;
+  const icon = diff > 0 ? "trending_up" : "trending_down";
+  const color = diff > 0 ? "#16a34a" : "#dc2626";
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium" style={{ color }}>
+      <MaterialIcon icon={icon} size={12} />
+      {Math.abs(Math.round(diff))}{current <= 100 ? "pp" : ""}
+    </span>
+  );
+}
+
 export default function BotPerformanceCard() {
   const { selectedFranchise: ctxFranchise } = useAuth();
   const mountedRef = useRef(true);
@@ -39,6 +54,7 @@ export default function BotPerformanceCard() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!evoId) {
@@ -46,13 +62,17 @@ export default function BotPerformanceCard() {
       return;
     }
     try {
-      const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+      const now = new Date();
+      const monthStart = format(startOfMonth(now), "yyyy-MM-dd");
+      const prevMonthStart = format(startOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
+      const prevMonthEnd = format(startOfMonth(now), "yyyy-MM-dd"); // exclusive
 
-      // Fetch conversations, messages, and bot sales in parallel
-      const [convsRes, msgsRes, salesRes] = await Promise.allSettled([
+      // Fetch conversations, messages, bot sales, and latest BotReport in parallel
+      const [convsRes, msgsRes, salesRes, reportRes] = await Promise.allSettled([
         BotConversation.filter({ franchise_id: evoId }, "-started_at", 500),
         ConversationMessage.filter({ franchise_id: evoId }, "-created_at", 2000, { columns: "id,conversation_id,direction" }),
-        Sale.filter({ franchise_id: evoId, source: "bot" }, "-sale_date", 200, { columns: "id,value,delivery_fee,sale_date" }),
+        Sale.filter({ franchise_id: evoId, source: "bot" }, "-sale_date", 400, { columns: "id,value,delivery_fee,sale_date" }),
+        BotReport.filter({ franchise_id: evoId }, "-report_period_end", 1),
       ]);
 
       if (!mountedRef.current) return;
@@ -60,10 +80,16 @@ export default function BotPerformanceCard() {
       const conversations = convsRes.status === "fulfilled" ? convsRes.value : [];
       const msgs = msgsRes.status === "fulfilled" ? msgsRes.value : [];
       const botSales = salesRes.status === "fulfilled" ? salesRes.value : [];
+      const latestReport = reportRes.status === "fulfilled" && reportRes.value.length > 0 ? reportRes.value[0] : null;
 
       // Filter to current month
       const monthly = conversations.filter(
         (c) => c.started_at && c.started_at >= monthStart
+      );
+
+      // Filter to previous month
+      const prevMonthly = conversations.filter(
+        (c) => c.started_at && c.started_at >= prevMonthStart && c.started_at < prevMonthEnd
       );
 
       const total = monthly.length;
@@ -72,6 +98,15 @@ export default function BotPerformanceCard() {
       const monthlySales = botSales.filter((s) => s.sale_date >= monthStart);
       const botSalesCount = monthlySales.length;
       const botRevenue = monthlySales.reduce(
+        (acc, s) => acc + parseFloat(s.value || 0) + parseFloat(s.delivery_fee || 0), 0
+      );
+
+      // Previous month bot sales
+      const prevMonthlySales = botSales.filter(
+        (s) => s.sale_date >= prevMonthStart && s.sale_date < prevMonthEnd
+      );
+      const prevBotSalesCount = prevMonthlySales.length;
+      const prevBotRevenue = prevMonthlySales.reduce(
         (acc, s) => acc + parseFloat(s.value || 0) + parseFloat(s.delivery_fee || 0), 0
       );
 
@@ -89,6 +124,15 @@ export default function BotPerformanceCard() {
         if (!humanConvIds.has(c.id)) autonomous++;
       }
       const autonomyRate = total ? Math.round((autonomous / total) * 100) : 0;
+
+      // Previous month autonomy
+      let prevAutonomous = 0;
+      const prevTotal = prevMonthly.length;
+      for (const c of prevMonthly) {
+        if (!humanConvIds.has(c.id)) prevAutonomous++;
+      }
+      const prevAutonomyRate = prevTotal > 0 ? Math.round((prevAutonomous / prevTotal) * 100) : null;
+      const prevBotSalesCountVal = prevTotal > 0 ? prevBotSalesCount : null;
 
       // Average autonomy benchmark (~40% from network data)
       const networkAvg = 40;
@@ -114,15 +158,23 @@ export default function BotPerformanceCard() {
       }
       const topAbandon = topNFromMap(abandonMap, 1)[0] || null;
 
-      // Smart tip based on autonomy + abandon reason
+      // Smart tip: prefer BotReport action_items, fallback to static tips
       let tip = null;
-      if (autonomyRate < networkAvg) {
-        tip = "franquias que deixam o bot atender primeiro vendem mais. Tente não responder nos primeiros segundos!";
-      } else if (topAbandon) {
-        tip = ABANDON_TIPS[topAbandon];
+      if (latestReport?.action_items && Array.isArray(latestReport.action_items) && latestReport.action_items.length > 0) {
+        tip = latestReport.action_items[0].message || latestReport.action_items[0].text || null;
+      }
+      if (!tip) {
+        if (autonomyRate < networkAvg) {
+          tip = "franquias que deixam o bot atender primeiro vendem mais. Tente não responder nos primeiros segundos!";
+        } else if (topAbandon) {
+          tip = ABANDON_TIPS[topAbandon];
+        }
       }
 
-      setData({ total, botSalesCount, botRevenue, escalated, autonomyRate, networkAvg, topTopics, tip });
+      setData({
+        total, botSalesCount, botRevenue, escalated, autonomyRate, networkAvg, topTopics, tip,
+        prevAutonomyRate, prevBotSalesCount: prevBotSalesCountVal, prevTotal: prevTotal > 0 ? prevTotal : null,
+      });
     } catch (err) {
       console.warn("BotPerformanceCard: erro ao carregar dados:", err);
     } finally {
@@ -158,12 +210,13 @@ export default function BotPerformanceCard() {
 
   if (!data || data.total < MIN_CONVERSATIONS) return null;
 
-  const { total, botSalesCount, botRevenue, escalated, autonomyRate, networkAvg, topTopics, tip } = data;
+  const { total, botSalesCount, botRevenue, escalated, autonomyRate, networkAvg, topTopics, tip, prevAutonomyRate, prevBotSalesCount, prevTotal } = data;
 
   const autonomyColor = autonomyRate >= 60 ? "#16a34a" : autonomyRate >= 30 ? "#d4af37" : "#dc2626";
   const autonomyVsAvg = autonomyRate >= networkAvg ? "acima" : "abaixo";
 
   return (
+    <>
     <Card className="mb-4 border-0 shadow-sm">
       <CardContent className="p-4">
         {/* Header */}
@@ -182,13 +235,19 @@ export default function BotPerformanceCard() {
             <p className="text-2xl font-plus-jakarta font-bold text-[#1b1c1d]">
               {total}
             </p>
-            <p className="text-xs text-[#7a6d6d] mt-0.5">Atendimentos</p>
+            <div className="flex items-center justify-center gap-1 mt-0.5">
+              <p className="text-xs text-[#7a6d6d]">Atendimentos</p>
+              <TrendArrow current={total} previous={prevTotal} />
+            </div>
           </div>
           <div className="bg-[#16a34a]/10 rounded-xl p-3 text-center">
             <p className="text-2xl font-plus-jakarta font-bold text-[#16a34a]">
               {botSalesCount}
             </p>
-            <p className="text-xs text-[#7a6d6d] mt-0.5">Vendas bot</p>
+            <div className="flex items-center justify-center gap-1 mt-0.5">
+              <p className="text-xs text-[#7a6d6d]">Vendas bot</p>
+              <TrendArrow current={botSalesCount} previous={prevBotSalesCount} />
+            </div>
             {botRevenue > 0 && (
               <p className="text-[10px] text-[#16a34a] mt-0.5">{formatBRL(botRevenue)}</p>
             )}
@@ -197,7 +256,10 @@ export default function BotPerformanceCard() {
             <p className="text-2xl font-plus-jakarta font-bold" style={{ color: autonomyColor }}>
               {autonomyRate}%
             </p>
-            <p className="text-xs text-[#7a6d6d] mt-0.5">Autonomia</p>
+            <div className="flex items-center justify-center gap-1 mt-0.5">
+              <p className="text-xs text-[#7a6d6d]">Autonomia</p>
+              <TrendArrow current={autonomyRate} previous={prevAutonomyRate} />
+            </div>
           </div>
         </div>
 
@@ -240,7 +302,19 @@ export default function BotPerformanceCard() {
             </p>
           </div>
         )}
+
+        {/* Ver detalhes */}
+        <button
+          onClick={() => setSheetOpen(true)}
+          className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-[#b91c1c] hover:text-[#a80012] transition-colors min-h-[40px]"
+        >
+          <MaterialIcon icon="insights" size={16} />
+          Ver detalhes
+        </button>
       </CardContent>
     </Card>
+
+    <BotCoachSheet franchiseId={evoId} isOpen={sheetOpen} onClose={() => setSheetOpen(false)} />
+    </>
   );
 }
