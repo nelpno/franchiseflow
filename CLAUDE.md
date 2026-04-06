@@ -169,8 +169,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Spec: `docs/superpowers/specs/2026-04-04-bot-intelligence-design.md`
 
 ### Integração Vendedor Genérico (n8n)
-- V4 (`aRBzPABwrjhWCPvq`): TESTE (desativado). 96 nós. Buffer string JSON (não LIST), zero IIFEs no GerenteGeral, Prepara Contexto V4.1 pré-computa tudo
-- V3 (`XqWZyLl1AHlnJvdj`): PRODUÇÃO ATUAL. RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
+- V4 (`aRBzPABwrjhWCPvq`): PRODUÇÃO ATUAL (desde 05/04/2026). 97 nós. Buffer debounce 10s, string JSON (não LIST), zero IIFEs no GerenteGeral, Prepara Contexto V4.1 pré-computa tudo
+- V3 (`XqWZyLl1AHlnJvdj`): DESATIVADO (rollback disponível). RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
 - V2 (`w7loLOXUmRR3AzuO`): ARQUIVADO (substituído pelo V3)
 - V1 (`PALRV1RqD3opHMzk`): DESATIVADO (Base44 legado)
 - Bot respeita `has_pickup`/`has_delivery` — regras condicionais no GerenteGeral1 e Pedido_Checkout1
@@ -347,7 +347,8 @@ SUPABASE_MANAGEMENT_TOKEN=          # sbp_ token para Management API
 VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 N8N_API_KEY=                        # Pode não estar no shell — ler do .env
 N8N_VENDEDOR_V2_WORKFLOW_ID=w7loLOXUmRR3AzuO  # ARQUIVADO
-N8N_VENDEDOR_V3_WORKFLOW_ID=XqWZyLl1AHlnJvdj  # PRODUÇÃO ATUAL
+N8N_VENDEDOR_V3_WORKFLOW_ID=XqWZyLl1AHlnJvdj  # DESATIVADO (rollback)
+N8N_VENDEDOR_V4_WORKFLOW_ID=aRBzPABwrjhWCPvq  # PRODUÇÃO ATUAL
 N8N_WHATSAPP_WEBHOOK=a9c45ef7-36f7-4a64-ad9e-edadb69a31af
 ZUCKZAPGO_URL=                      # zuck.dynamicagents.tech
 ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
@@ -466,6 +467,12 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - Segmentação: role (admin/franchisee/manager) via `clarity("set", "role", ...)`
 - Dados: heatmaps, gravações de sessão, rage clicks, dead clicks, scroll depth
 - Revisão quinzenal dos dados para priorizar melhorias de UX
+- **Data Export API**: `GET https://www.clarity.ms/export-data/api/v1/project-live-insights`
+  - Auth: `Authorization: Bearer $CLARITY_DATA_EXPORT_TOKEN` (token no `.env`)
+  - Params: `numOfDays` (1-3), `dimension1`/`dimension2`/`dimension3` (Device, URL, Source, OS, Browser, Country/Region, Medium, Campaign, Channel)
+  - Métricas: Traffic, EngagementTime, DeadClickCount, RageClickCount, QuickbackClick, ExcessiveScroll, ScriptErrorCount, ErrorClickCount, ScrollDepth, PopularPages
+  - Limites: 10 req/dia, max 1000 rows, max 3 dimensões, dados últimos 1-3 dias, UTC
+  - **Client API**: `window.clarity("set", key, value)` para custom tags, `window.clarity("event", name)` para eventos, `window.clarity("identify", id)` para identificação
 
 ### Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist (inativa), ReviewSummary campos Personalidade/Boas-vindas, `catalog_distributions` tabela removida
