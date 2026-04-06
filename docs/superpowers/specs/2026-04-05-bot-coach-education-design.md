@@ -4,6 +4,8 @@
 
 O Bot Intelligence (classificação LLM de conversas, dashboard admin, widget franqueado) está ativo desde 04/04/2026. Dados acumulando — autonomia varia 0-83% entre franquias, 32% vendas via bot, abandono por frete/preço/estoque são padrões recorrentes.
 
+**Nota sobre dados**: Os números citados nesta spec (83% autonomia Itatiba, 6.2 msgs Guarujá, etc) são do snapshot inicial de 04-05/04 com ~2 dias de dados. São ilustrativos — o sistema calcula TUDO dinamicamente a cada relatório. Conforme dados acumulam, os benchmarks e rankings se estabilizam.
+
 **Problema**: franqueados não sabem O QUE FAZER com os dados. Guarapiranga intervém demais, Cajamar ignora o bot, ninguém sabe que perde R$ por estoque zerado. Os dados existem mas não educam.
 
 **Solução**: Sistema "Coach de Negócio" que transforma dados reais de 9 dimensões em relatórios quinzenais personalizados via WhatsApp + evolui o dashboard existente com histórico e insights acionáveis.
