@@ -139,11 +139,13 @@ function calcSetupScore(franchise, onboardingData, configData) {
     (c) => c.franchise_evolution_instance_id === evoId
   );
 
-  // Onboarding: 0-70 pts
+  // Onboarding: 0-70 pts (items is JSONB map {itemId: boolean})
   let onboardingPct = 0;
   if (checklist) {
-    const completedCount = checklist.completed_count || 0;
-    const totalItems = 27; // Fixed from ONBOARDING_BLOCKS
+    const items = checklist.items || {};
+    const values = Object.values(items);
+    const completedCount = values.filter(Boolean).length;
+    const totalItems = values.length || 27;
     onboardingPct = Math.min(100, Math.round((completedCount / totalItems) * 100));
   }
   const onboardingPts = Math.round((onboardingPct / 100) * 70);

@@ -3,7 +3,7 @@ import ProgressRing from "@/components/onboarding/ProgressRing";
 import { STATUS_COLORS, STATUS_LABELS } from "@/lib/healthScore";
 import DiagnosticoSheet from "./DiagnosticoSheet";
 
-export default function SaudeDoNegocioCard({ healthResult, franchise }) {
+export default function SaudeDoNegocioCard({ healthResult, franchise, botReport }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   if (!healthResult) return null;
@@ -62,6 +62,7 @@ export default function SaudeDoNegocioCard({ healthResult, franchise }) {
         onClose={() => setSheetOpen(false)}
         healthResult={healthResult}
         franchise={franchise}
+        botReport={botReport}
       />
     </>
   );

@@ -38,7 +38,7 @@ function DimensionBar({ name, dim }) {
   );
 }
 
-export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franchise }) {
+export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franchise, botReport }) {
   const navigate = useNavigate();
   const [botSheetOpen, setBotSheetOpen] = useState(false);
 
@@ -95,16 +95,53 @@ export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franch
               <MaterialIcon icon="smart_toy" size={18} />
               Vendedor Digital
             </h3>
-            {healthResult.dimensions.bot?.hasData ? (
+            {botReport ? (
+              <div className="space-y-3">
+                {botReport.metrics?.autonomy_rate != null && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#4a3d3d]">Autonomia</span>
+                    <span className="font-semibold" style={{
+                      color: botReport.metrics.autonomy_rate >= 60 ? "#16a34a" : botReport.metrics.autonomy_rate >= 30 ? "#d97706" : "#dc2626"
+                    }}>
+                      {Math.round(botReport.metrics.autonomy_rate)}%
+                    </span>
+                  </div>
+                )}
+                {botReport.metrics?.total_conversations != null && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#4a3d3d]">Atendimentos no período</span>
+                    <span className="font-semibold text-[#1b1c1d]">{botReport.metrics.total_conversations}</span>
+                  </div>
+                )}
+                {botReport.metrics?.conversion_rate != null && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#4a3d3d]">Taxa de conversão</span>
+                    <span className="font-semibold text-[#1b1c1d]">{Math.round(botReport.metrics.conversion_rate)}%</span>
+                  </div>
+                )}
+                {botReport.report_text && (
+                  <div className="p-3 rounded-lg bg-[#f8fafc] border border-[#e9e8e9]">
+                    <p className="text-xs font-semibold text-[#7a6d6d] mb-1">Análise do Coach</p>
+                    <p className="text-sm text-[#4a3d3d] leading-relaxed">{botReport.report_text}</p>
+                  </div>
+                )}
+                <button
+                  onClick={() => setBotSheetOpen(true)}
+                  className="text-sm text-[#b91c1c] font-medium hover:underline"
+                >
+                  Ver histórico completo →
+                </button>
+              </div>
+            ) : evoId ? (
               <div>
                 <p className="text-sm text-[#4a3d3d] mb-2">
-                  Autonomia: <strong>{Math.round(healthResult.dimensions.bot.autonomyRate || 0)}%</strong>
+                  Aguardando primeiro relatório do bot. Dados aparecem após o relatório quinzenal.
                 </p>
                 <button
                   onClick={() => setBotSheetOpen(true)}
                   className="text-sm text-[#b91c1c] font-medium hover:underline"
                 >
-                  Ver detalhes do vendedor →
+                  Ver detalhes →
                 </button>
               </div>
             ) : (

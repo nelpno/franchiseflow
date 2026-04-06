@@ -379,7 +379,7 @@ export default function FranchiseeDashboard() {
 
       <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
 
-      {healthResult && <SaudeDoNegocioCard healthResult={healthResult} franchise={franchise} />}
+      {healthResult && <SaudeDoNegocioCard healthResult={healthResult} franchise={franchise} botReport={latestBotReport} />}
 
       <PriorityAction
         healthResult={healthResult}
