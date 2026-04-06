@@ -646,11 +646,12 @@ function FranchiseSettingsContent() {
                 <FieldHint text="O bot informa essa referência quando o cliente pergunta onde fica sua unidade." />
               </div>
               <div>
-                <label className={labelClass}>Seu WhatsApp pessoal (recebe resumo diário)</label>
-                <input className={inputClass} type="text" value={formData.personal_phone_for_summary}
-                  onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value)}
+                <label className={labelClass}>Seu WhatsApp pessoal (recebe relatório quinzenal)</label>
+                <input className={inputClass} type="tel" inputMode="numeric"
+                  value={formData.personal_phone_for_summary?.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3').replace(/^(\d{2})(\d{1,5})$/, '($1) $2').replace(/^(\d{1,2})$/, '($1') || ''}
+                  onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder="(11) 98765-4321" />
-                <FieldHint text="Você recebe um resumo diário de vendas e atendimentos nesse número." />
+                <FieldHint text="Formato: DDD + número (11 dígitos). Ex: 11987654321" />
               </div>
             </WizardStep>
           )}
