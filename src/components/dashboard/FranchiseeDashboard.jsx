@@ -269,8 +269,14 @@ export default function FranchiseeDashboard() {
     [latestBotReport]
   );
 
-  // Smart actions for contacts
-  const actions = useMemo(() => generateSmartActions(contacts, 5), [contacts]);
+  // Bot is active if franchise has a config with evolution_instance_id
+  const botActive = !!(franchiseConfig && evoId);
+
+  // Smart actions for contacts (bot active = suppress "responder" since bot handles first contact)
+  const actions = useMemo(
+    () => generateSmartActions(contacts, 5, { botActive }),
+    [contacts, botActive]
+  );
 
   // Which priority type is active (to exclude from SmartActions "Outras Ações")
   const activePriorityType = useMemo(() => {
@@ -281,9 +287,9 @@ export default function FranchiseeDashboard() {
     if (coachActions.some(a => a.type === 'revisar_frete')) return 'revisar_frete';
     if (d.reposicao?.daysSince >= 30) return 'reposicao';
     if (!marketingPayment || marketingPayment.status === 'rejected') return 'marketing';
-    if (franchise?.whatsapp_status !== 'connected') return 'bot_inativo';
+    if (!botActive) return 'bot_inativo';
     return null;
-  }, [healthResult, actions, coachActions, marketingPayment, franchise]);
+  }, [healthResult, actions, coachActions, marketingPayment, botActive]);
 
   if (isLoading) {
     return (
@@ -380,7 +386,7 @@ export default function FranchiseeDashboard() {
         smartActions={actions}
         coachActions={coachActions}
         marketingPayment={marketingPayment}
-        franchise={franchise}
+        botActive={botActive}
       />
 
       <RankingStreak

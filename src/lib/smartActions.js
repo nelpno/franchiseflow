@@ -93,10 +93,12 @@ const ACTION_RULES = [
   },
 ];
 
-export function generateSmartActions(contacts, limit = 5) {
+export function generateSmartActions(contacts, limit = 5, { botActive = false } = {}) {
   const actions = [];
   for (const contact of contacts) {
     for (const rule of ACTION_RULES) {
+      // Bot ativo cuida de leads automaticamente — suprimir "responder"
+      if (botActive && rule.type === "responder") continue;
       if (rule.test(contact)) {
         actions.push({
           ...rule,

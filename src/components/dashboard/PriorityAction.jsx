@@ -79,7 +79,7 @@ const SCENARIOS = [
   },
   {
     key: "bot",
-    check: ({ franchise }) => franchise?.whatsapp_status !== "connected",
+    check: ({ botActive }) => !botActive,
     render: () => ({
       icon: "smart_toy",
       title: "Ative seu Vendedor Digital",
@@ -91,10 +91,10 @@ const SCENARIOS = [
   },
 ];
 
-export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, franchise }) {
+export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, botActive }) {
   const navigate = useNavigate();
 
-  const ctx = { healthResult, smartActions, coachActions, marketingPayment, franchise };
+  const ctx = { healthResult, smartActions, coachActions, marketingPayment, botActive };
   const activeScenario = SCENARIOS.find(s => s.check(ctx));
 
   if (!activeScenario) {
