@@ -98,6 +98,14 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Botões de ação vendas (Compartilhar/Imprimir/Editar/Excluir): `<span className="hidden sm:inline">` para labels, icon-only no mobile
 - `sale_items.cost_price` é snapshot do momento da venda. `sale_price` padrão = `cost_price * 2`
 - `sale_date` é DATE only — usar `created_at` para timestamp completo
+- **Conferência de pagamentos**: `payment_confirmed` (bool, default false) + `confirmed_at` (timestamptz) na tabela sales
+  - Chip toggle "Pendente"/"Recebido" no card collapsed (amber/verde) com borda esquerda colorida
+  - Filtro Todas/Pendentes/Confirmadas + resumo split (pendentes R$ | recebidas R$)
+  - "Confirmar todas" em lote (batching grupos de 10, dialog confirmação)
+  - `totalPendingCount` calculado separado do `periodStats` (badge independe do filtro ativo)
+  - `Vendas.jsx` columns DEVE incluir `payment_confirmed, confirmed_at` — sem eles o card não atualiza visualmente
+  - Index: `idx_sales_payment_confirmed (franchise_id, payment_confirmed)`
+  - Migration: `supabase/add-payment-confirmation.sql`
 
 ### Dashboard Franqueado (Coach-First)
 - **Ordem**: Saudação → Seletor (Hoje/Semana/Mês) → Stats → Meta do Dia → SaúdeDoNegócioCard → PriorityAction → RankingStreak → MiniRevenueChart → MarketingPaymentCard → SmartActions ("Outras Ações")
@@ -550,6 +558,7 @@ npm run lint      # ESLint
   - Meta CAPI ✅ | Conversation logging ✅ | Microsoft Clarity analytics ✅
   - Bot Intelligence ✅ (classificação LLM + dashboard admin + widget franqueado + relatório semanal)
   - Dashboard Coach-First ✅ (Health Score franqueado + Ação Prioritária + Diagnóstico + draft reposição)
+  - Conferência de pagamentos ✅ (toggle recebido/pendente, filtro, lote, borda colorida)
   - Swipe tutorial | Busca global admin | Calendário Marketing | Docs PDF
   - Convite equipe interna | Permissões dono vs funcionário
 
