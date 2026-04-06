@@ -1,33 +1,29 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Contact, BotReport } from "@/entities/all";
+import { Contact } from "@/entities/all";
 import { generateSmartActions, generateBotCoachActions } from "@/lib/smartActions";
 import { getWhatsAppLink } from "@/lib/whatsappUtils";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
-function SmartActions({ contacts, franchiseId }) {
+function SmartActions({ contacts, franchiseId, botReport, excludeType }) {
   const navigate = useNavigate();
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [loadingIds, setLoadingIds] = useState(new Set());
-  const [botReport, setBotReport] = useState(null);
-
-  useEffect(() => {
-    if (franchiseId) {
-      BotReport.filter({ franchise_id: franchiseId }, "-report_period_end", 1)
-        .then((data) => setBotReport(data?.[0] || null))
-        .catch(() => {});
-    }
-  }, [franchiseId]);
 
   const actions = useMemo(() => {
     const coachActions = generateBotCoachActions(botReport, 2);
     const contactActions = generateSmartActions(contacts, 5).filter(
       (a) => !dismissedIds.has(a.contact.id)
     );
-    return [...coachActions, ...contactActions].slice(0, 5);
-  }, [contacts, dismissedIds, botReport]);
+    const all = [...coachActions, ...contactActions];
+    // Exclude the type already shown in PriorityAction
+    const filtered = excludeType
+      ? all.filter((a) => a.type !== excludeType)
+      : all;
+    return filtered.slice(0, 4);
+  }, [contacts, dismissedIds, botReport, excludeType]);
 
   const handleDone = async (action) => {
     const contactId = action.contact.id;
@@ -56,7 +52,7 @@ function SmartActions({ contacts, franchiseId }) {
         <div className="flex items-center gap-2 mb-3">
           <MaterialIcon icon="bolt" size={20} className="text-[#d4af37]" />
           <h2 className="text-base font-bold font-plus-jakarta text-[#1b1c1d]">
-            Ações Sugeridas
+            Outras Ações
           </h2>
         </div>
         <div className="bg-white rounded-2xl border border-[#291715]/5 p-6 flex flex-col items-center text-center">
@@ -77,7 +73,7 @@ function SmartActions({ contacts, franchiseId }) {
       <div className="flex items-center gap-2 mb-3">
         <MaterialIcon icon="bolt" size={20} className="text-[#d4af37]" />
         <h2 className="text-base font-bold font-plus-jakarta text-[#1b1c1d]">
-          Ações Sugeridas
+          Outras Ações
         </h2>
         <span className="text-xs px-2 py-0.5 rounded-full bg-[#b91c1c]/10 text-[#b91c1c] font-bold">
           {actions.length}

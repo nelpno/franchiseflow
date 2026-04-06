@@ -2,7 +2,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const TRACK_WIDTH = 4;
 
-export default function ProgressRing({ size = 48, progress = 0, color, isComplete = false, icon }) {
+export default function ProgressRing({ size = 48, progress = 0, color, isComplete = false, icon, label }) {
   const clamped = Math.max(0, Math.min(100, progress));
   const radius = (size - TRACK_WIDTH * 2) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -45,15 +45,21 @@ export default function ProgressRing({ size = 48, progress = 0, color, isComplet
           style={{ transition: "stroke-dashoffset 400ms ease-out, stroke 300ms ease" }}
         />
       </svg>
-      {/* Center icon */}
+      {/* Center content */}
       <div
         className={`absolute inset-0 flex items-center justify-center ${isComplete ? "animate-ring-pulse" : ""}`}
       >
-        <MaterialIcon
-          icon={isComplete ? "check" : (icon || String(size))}
-          size={iconSize}
-          style={{ color: activeColor }}
-        />
+        {label != null ? (
+          <span style={{ fontSize: Math.round(size * 0.28), fontWeight: 700, color: activeColor, lineHeight: 1 }}>
+            {label}
+          </span>
+        ) : (
+          <MaterialIcon
+            icon={isComplete ? "check" : (icon || String(size))}
+            size={iconSize}
+            style={{ color: activeColor }}
+          />
+        )}
       </div>
       <style>{`
         @keyframes ring-pulse {

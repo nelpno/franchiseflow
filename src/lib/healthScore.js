@@ -63,7 +63,7 @@ function calcInventoryScore(franchise, inventoryData) {
     ? "Estoque OK"
     : `${zeroCount} ite${zeroCount > 1 ? "ns" : "m"} zerado${zeroCount > 1 ? "s" : ""}`;
 
-  const zeroNames = zeroItems.slice(0, 4).map((i) => i.name).join(", ");
+  const zeroNames = zeroItems.slice(0, 4).map((i) => i.product_name || i.name).join(", ");
 
   return { score, detail, zeroCount, zeroNames };
 }
