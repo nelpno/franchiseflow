@@ -86,7 +86,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Vendas** (`Vendas.jsx`): registro de vendas (TabLancar standalone). Deep-linking: `?action=nova-venda&contact_id=UUID&phone=X`
 - **Gestão** (`Gestao.jsx`): 3 abas (Resultado, Estoque, Reposição) — `?tab=resultado|estoque|reposicao`
 - `MinhaLoja.jsx`: APENAS redirect backward-compat — NÃO adicionar lógica. NUNCA usar `/MinhaLoja?tab=` em código novo
-- `sale_items`: FK sale_id + inventory_item_id, triggers `stock_decrement`/`stock_revert`
+- `sale_items`: FK sale_id + inventory_item_id, triggers `stock_decrement`/`stock_revert`. Coluna preço é `unit_price` (NÃO `sale_price` — `sale_price` existe em `inventory_items`, NÃO em `sale_items`)
 - `expenses`: despesas avulsas (sacolas, aluguel). Sacolas são DESPESAS, NÃO itens de estoque
 - `card_fee_amount` calculado sobre `subtotal + effectiveDeliveryFee` — aplica para `card_machine` E `payment_link`. Label dinâmica
 - `delivery_fee` é RECEITA do franqueado — NÃO deduzir no resultado
@@ -248,7 +248,12 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **EnviaPedidoFechado `Match Items`**: SEMPRE usar `sale_price` do inventário (fonte de verdade), NUNCA preço do LLM. Log itens não matched
 - **EnviaPedidoFechado `Create Sale`**: grava `customer_name` (do Start.nomecliente) e `contact_phone` (telefone_db). Campos adicionados 05/04
 - **EnviaPedidoFechado Dedup Redis**: Redis GET → `IF Nao Duplicado?` → Redis SET (TTL 5min). Chave: `sale_dedup_{tel}_{instance}_{valor}`. Redis nodes com `continueOnFail` (Redis down não bloqueia venda)
-- **EnviaPedidoFechado ordem**: `Prepare Sale Data` dispara em PARALELO: (1) `WhatsApp Franqueado` (alerta) e (2) `Redis GET Dedup → IF → Create Sale → Items`. Alerta é enviado ANTES da venda ser criada — se Create Sale falhar, franqueado recebe alerta de venda fantasma
+- **EnviaPedidoFechado ordem**: `Prepare Sale Data` dispara em PARALELO: (1) `WhatsApp Franqueado` (alerta) e (2) `Redis GET Dedup → IF → Create Sale → Items + PIX`. Alerta é enviado ANTES da venda ser criada — se Create Sale falhar, franqueado recebe alerta de venda fantasma
+- **PIX Copia e Cola automático** (06/04/2026): Branch paralelo após `Create Sale` (NÃO após Prepare Sale Data — evita envio duplicado em dedup). 6 nós: `Busca Dados PIX` (Supabase REST) → `Gera PIX Copia e Cola` (Code, JS puro BR Code EMVCo/BACEN) → `IF Pix Valido?` → `Envia PIX Texto` (WuzAPI text) → `Envia PIX QR Code` (WuzAPI image). Só dispara se `payment_method === 'pix'` E `pix_key_data` não é null. Todos nós com `continueOnFail: true`. Bot continua informando chave Pix textualmente — Copia e Cola é complementar (cliente usa o que preferir)
+  - Payload PIX: CRC16-CCITT em JS puro (polynomial 0x1021), TLV encoding, suporta phone/cpf/cnpj/email/random
+  - QR Code: API pública `api.qrserver.com` (PNG 300x300)
+  - WuzAPI campos: imagem usa `Phone`/`Image`/`Caption` (maiúsculo), texto usa `phone`/`Body`
+  - **NUNCA mover branch PIX para antes do Create Sale** — causa envio duplicado quando Redis dedup bloqueia segunda execução
 - **V4 Prepara Contexto Completo**: Code node que pré-computa TODOS os dados dinâmicos (payment, delivery, frete, social, horários). systemMessage do GerenteGeral referencia campos pré-computados — ZERO IIFEs inline. Vantagem: elimina risco de corrupção por `$` em expressões n8n
 
 #### Meta CAPI (Conversions API) — implementado 2026-04-02, fix 2026-04-03
