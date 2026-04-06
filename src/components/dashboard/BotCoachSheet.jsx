@@ -217,8 +217,8 @@ export default function BotCoachSheet({ franchiseId, isOpen, onClose }) {
                   <MaterialIcon icon="description" size={16} className="text-[#7a6d6d]" />
                   Análise do Coach
                 </h3>
-                <div className="bg-[#fbf9fa] rounded-xl p-3">
-                  <p className="text-xs text-[#4a3d3d] leading-relaxed whitespace-pre-line">
+                <div className="bg-[#fbf9fa] rounded-xl p-3 max-h-[60vh] overflow-y-auto">
+                  <p className="text-sm text-[#4a3d3d] leading-relaxed whitespace-pre-line">
                     {latest.report_text}
                   </p>
                 </div>

@@ -122,7 +122,16 @@ export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franch
                 {botReport.report_text && (
                   <div className="p-3 rounded-lg bg-[#f8fafc] border border-[#e9e8e9]">
                     <p className="text-xs font-semibold text-[#7a6d6d] mb-1">Análise do Coach</p>
-                    <p className="text-sm text-[#4a3d3d] leading-relaxed">{botReport.report_text}</p>
+                    <div className="relative max-h-[72px] overflow-hidden">
+                      <p className="text-sm text-[#4a3d3d] leading-relaxed whitespace-pre-line">{botReport.report_text}</p>
+                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#f8fafc] to-transparent" />
+                    </div>
+                    <button
+                      onClick={() => setBotSheetOpen(true)}
+                      className="text-xs text-[#b91c1c] font-medium mt-1 hover:underline"
+                    >
+                      Ler relatório completo →
+                    </button>
                   </div>
                 )}
                 <button
