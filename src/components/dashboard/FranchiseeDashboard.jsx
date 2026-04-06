@@ -400,7 +400,7 @@ export default function FranchiseeDashboard() {
 
       <MarketingPaymentCard />
 
-      <SmartActions contacts={contacts} franchiseId={evoId} botReport={latestBotReport} excludeType={activePriorityType} />
+      <SmartActions contacts={contacts} franchiseId={evoId} botReport={latestBotReport} excludeType={activePriorityType} botActive={botActive} />
 
       {/* CTA — hidden on mobile (FAB "Vender" in bottom nav handles it) */}
       <div className="hidden md:flex fixed bottom-10 right-10 z-50">

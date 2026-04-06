@@ -7,15 +7,15 @@ import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 
-function SmartActions({ contacts, franchiseId, botReport, excludeType }) {
+function SmartActions({ contacts, franchiseId, botReport, excludeType, botActive }) {
   const navigate = useNavigate();
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [loadingIds, setLoadingIds] = useState(new Set());
 
   const actions = useMemo(() => {
     const coachActions = generateBotCoachActions(botReport, 2);
-    const contactActions = generateSmartActions(contacts, 5).filter(
-      (a) => !dismissedIds.has(a.contact.id)
+    const contactActions = generateSmartActions(contacts, 5, { botActive }).filter(
+      (a) => !dismissedIds.has(a.contact?.id)
     );
     const all = [...coachActions, ...contactActions];
     // Exclude the type already shown in PriorityAction
