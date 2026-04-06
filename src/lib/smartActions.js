@@ -10,9 +10,13 @@ const ACTION_RULES = [
     test: (contact) =>
       contact.status === "novo_lead" &&
       contact.created_at &&
-      differenceInDays(new Date(), new Date(contact.created_at)) >= 1,
+      differenceInDays(new Date(), new Date(contact.created_at)) >= 1 &&
+      // Se bot já respondeu nas últimas 24h, não alertar
+      (!contact.last_contact_at ||
+        differenceInDays(new Date(), new Date(contact.last_contact_at)) >= 1),
     message: (contact) => {
-      const days = differenceInDays(new Date(), new Date(contact.created_at));
+      const ref = contact.last_contact_at || contact.created_at;
+      const days = differenceInDays(new Date(), new Date(ref));
       return `${contact.nome || contact.telefone} entrou em contato h\u00e1 ${days} dia${days > 1 ? "s" : ""} \u2014 responda!`;
     },
     priority: 1,

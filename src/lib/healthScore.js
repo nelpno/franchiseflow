@@ -226,7 +226,11 @@ export function calculateFranchiseHealth(franchise, data) {
   if (vendas.score < 50 && vendas.daysSince !== null) problems.push(vendas.detail);
   if (estoque.score < 50 && estoque.zeroCount > 0) problems.push(estoque.detail);
   if (reposicao.score < 50 && reposicao.daysSince !== null) problems.push(reposicao.detail);
-  if (setup.score < 50 && !setup.onboardingComplete) problems.push(setup.detail);
+  if (setup.score < 50 && !setup.onboardingComplete) {
+    problems.push(setup.onboardingPct > 0
+      ? `Onboarding ${setup.onboardingPct}% — complete a configuração`
+      : "Complete a configuração da sua franquia");
+  }
   if (hasBotData && bot.score < 50) problems.push(bot.detail);
 
   return {
