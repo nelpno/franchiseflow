@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration } from "@/entities/all";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, BotConversation, ConversationMessage, Contact } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -25,6 +25,9 @@ export default function AdminDashboard() {
   const [inventoryByFranchise, setInventoryByFranchise] = useState({});
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [configMap, setConfigMap] = useState({});
+  const [botConversations, setBotConversations] = useState([]);
+  const [conversationMessages, setConversationMessages] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
   const abortControllerRef = useRef(null);
@@ -63,6 +66,9 @@ export default function AdminDashboard() {
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
+        BotConversation.list('-started_at', 2000, { columns: 'id, franchise_id, started_at, created_at, quality_score, outcome', signal }),
+        ConversationMessage.filter({ direction: 'human' }, '-created_at', 2000, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal }),
+        Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at', signal, fetchAll: true }),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -86,7 +92,7 @@ export default function AdminDashboard() {
 
       // Log non-critical failures without blocking the dashboard
       const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","purchaseOrders","estoque","configs"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","purchaseOrders","estoque","configs","botConversations","conversationMessages","contacts"][i] : null)
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
@@ -126,6 +132,11 @@ export default function AdminDashboard() {
       // Build configMap for standardized franchise display names
       const configData = getValue(results[6]);
       setConfigMap(buildConfigMap(configData));
+
+      // Bot data for health score & alerts
+      setBotConversations(getValue(results[7]));
+      setConversationMessages(getValue(results[8]));
+      setContacts(getValue(results[9]));
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
@@ -394,6 +405,9 @@ export default function AdminDashboard() {
         inventoryByFranchise={inventoryByFranchise}
         purchaseOrders={purchaseOrders}
         configMap={configMap}
+        botConversations={botConversations}
+        conversationMessages={conversationMessages}
+        contacts={contacts}
       />
 
       <FranchiseRanking
@@ -412,6 +426,9 @@ export default function AdminDashboard() {
         purchaseOrders={purchaseOrders}
         todayContacts={todayContacts}
         configMap={configMap}
+        botConversations={botConversations}
+        conversationMessages={conversationMessages}
+        botSales={allSales}
       />
 
       {/* Chart — Faturamento por dia usando dados reais de vendas */}

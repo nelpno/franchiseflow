@@ -28,6 +28,9 @@ function calculateHealthScore({
   inventoryItems,
   purchaseOrders,
   todayContacts,
+  botConversations = [],
+  conversationMessages = [],
+  botSales = [],
 }) {
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
@@ -82,13 +85,45 @@ function calculateHealthScore({
     else if (mostRecentOrder >= sixtyDaysAgo) ordersScore = 10;
   }
 
-  // --- WhatsApp / Contacts (20 pts) ---
+  // --- WhatsApp / Contacts (15 pts) ---
   let contactsScore = 0;
   const franchiseContacts = todayContacts.filter(
     (c) => c.franchise_id === evoId
   );
   if (franchiseContacts.length > 0) {
-    contactsScore = 20;
+    contactsScore = 15;
+  }
+
+  // --- Bot (20 pts) ---
+  let botScore = 0;
+  let hasBotData = false;
+  const botConvos = botConversations.filter((c) => c.franchise_id === evoId);
+  if (botConvos.length > 0) {
+    hasBotData = true;
+    // Autonomy (10pts max, target 40%)
+    const humanMsgsByConvo = {};
+    conversationMessages.forEach((m) => {
+      if (m.franchise_id === evoId && m.conversation_id) {
+        humanMsgsByConvo[m.conversation_id] = (humanMsgsByConvo[m.conversation_id] || 0) + 1;
+      }
+    });
+    const autonomousCount = botConvos.filter((c) => !humanMsgsByConvo[c.id]).length;
+    const autonomyRate = autonomousCount / botConvos.length;
+    const autonomyPts = Math.min(10, Math.round((autonomyRate / 0.40) * 10));
+
+    // Quality (5pts max, target 7.0)
+    const scored = botConvos.filter((c) => parseFloat(c.quality_score) > 0);
+    const avgQuality = scored.length > 0
+      ? scored.reduce((sum, c) => sum + (parseFloat(c.quality_score) || 0), 0) / scored.length
+      : 0;
+    const qualityPts = Math.min(5, Math.round((avgQuality / 7.0) * 5));
+
+    // Conversion (5pts max, target 15%)
+    const franchiseBotSales = botSales.filter((s) => s.franchise_id === evoId && s.source === "bot");
+    const conversionRate = franchiseBotSales.length / botConvos.length;
+    const conversionPts = Math.min(5, Math.round((conversionRate / 0.15) * 5));
+
+    botScore = autonomyPts + qualityPts + conversionPts;
   }
 
   // --- Detail reasons ---
@@ -145,21 +180,53 @@ function calculateHealthScore({
     contactsReason = `${franchiseContacts.length} contato${franchiseContacts.length > 1 ? "s" : ""} recebido${franchiseContacts.length > 1 ? "s" : ""} hoje`;
   }
 
-  const total = salesScore + inventoryScore + ordersScore + contactsScore;
+  let botReason = "Sem dados do bot";
+  if (hasBotData) {
+    const humanMsgsByConvo2 = {};
+    conversationMessages.forEach((m) => {
+      if (m.franchise_id === evoId && m.conversation_id) {
+        humanMsgsByConvo2[m.conversation_id] = true;
+      }
+    });
+    const autoCount = botConvos.filter((c) => !humanMsgsByConvo2[c.id]).length;
+    const autoRate = Math.round((autoCount / botConvos.length) * 100);
+    botReason = `${botConvos.length} conversas, ${autoRate}% autonomia`;
+  }
+
+  // If no bot data, redistribute bot points proportionally
+  let effectiveBotScore = botScore;
+  let effectiveSalesScore = salesScore;
+  let effectiveInventoryScore = inventoryScore;
+  let effectiveOrdersScore = ordersScore;
+  let effectiveContactsScore = contactsScore;
+
+  if (!hasBotData) {
+    // Redistribute 20 bot pts: +5 sales, +5 inventory, +5 orders, +5 contacts
+    effectiveSalesScore = Math.round((salesScore / 30) * 35);
+    effectiveInventoryScore = Math.round((inventoryScore / 20) * 25);
+    effectiveOrdersScore = Math.round((ordersScore / 15) * 20);
+    effectiveContactsScore = Math.round((contactsScore / 15) * 20);
+    effectiveBotScore = 0;
+  }
+
+  const total = effectiveSalesScore + effectiveInventoryScore + effectiveOrdersScore + effectiveContactsScore + effectiveBotScore;
 
   return {
     total,
+    hasBotData,
     breakdown: {
-      sales: salesScore,
-      inventory: inventoryScore,
-      orders: ordersScore,
-      contacts: contactsScore,
+      sales: hasBotData ? salesScore : effectiveSalesScore,
+      inventory: hasBotData ? inventoryScore : effectiveInventoryScore,
+      orders: hasBotData ? ordersScore : effectiveOrdersScore,
+      contacts: hasBotData ? contactsScore : effectiveContactsScore,
+      bot: effectiveBotScore,
     },
     reasons: {
       sales: salesReason,
       inventory: inventoryReason,
       orders: ordersReason,
       contacts: contactsReason,
+      bot: botReason,
     },
   };
 }
@@ -176,7 +243,15 @@ function getScoreLabel(score) {
   return "Critico";
 }
 
-const CATEGORY_CONFIG = [
+const CATEGORY_CONFIG_WITH_BOT = [
+  { key: "sales", label: "Vendas", max: 30, icon: "point_of_sale", color: "bg-[#a80012]", tip: "Frequência de vendas recentes. 100% = vendeu hoje." },
+  { key: "inventory", label: "Estoque", max: 20, icon: "inventory_2", color: "bg-[#775a19]", tip: "% de produtos acima do estoque mínimo." },
+  { key: "orders", label: "Pedidos", max: 15, icon: "local_shipping", color: "bg-[#291715]/60", tip: "Regularidade de pedidos de reposição à fábrica." },
+  { key: "contacts", label: "WhatsApp", max: 15, icon: "chat", color: "bg-[#2563eb]", tip: "Bot conectado e atendendo clientes." },
+  { key: "bot", label: "Bot", max: 20, icon: "smart_toy", color: "bg-[#b91c1c]", tip: "Autonomia, qualidade e conversão do bot vendedor." },
+];
+
+const CATEGORY_CONFIG_NO_BOT = [
   { key: "sales", label: "Vendas", max: 35, icon: "point_of_sale", color: "bg-[#a80012]", tip: "Frequência de vendas recentes. 100% = vendeu hoje." },
   { key: "inventory", label: "Estoque", max: 25, icon: "inventory_2", color: "bg-[#775a19]", tip: "% de produtos acima do estoque mínimo." },
   { key: "orders", label: "Pedidos", max: 20, icon: "local_shipping", color: "bg-[#291715]/60", tip: "Regularidade de pedidos de reposição à fábrica." },
@@ -190,6 +265,9 @@ export default function FranchiseHealthScore({
   purchaseOrders,
   todayContacts,
   configMap = {},
+  botConversations = [],
+  conversationMessages = [],
+  botSales = [],
 }) {
   const navigate = useNavigate();
   const [selectedScore, setSelectedScore] = useState(null);
@@ -204,6 +282,9 @@ export default function FranchiseHealthScore({
           inventoryItems: inventoryByFranchise[f.id] || [],
           purchaseOrders,
           todayContacts,
+          botConversations,
+          conversationMessages,
+          botSales,
         });
         return {
           franchise: f,
@@ -211,7 +292,7 @@ export default function FranchiseHealthScore({
         };
       })
       .sort((a, b) => a.total - b.total); // worst first for attention
-  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, todayContacts]);
+  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, todayContacts, botConversations, conversationMessages, botSales]);
 
   if (scores.length === 0) return null;
 
@@ -231,14 +312,15 @@ export default function FranchiseHealthScore({
       </div>
 
       <div className="space-y-3">
-        {(expanded ? scores : scores.slice(0, 5)).map(({ franchise, total, breakdown, reasons }) => {
+        {(expanded ? scores : scores.slice(0, 5)).map(({ franchise, total, breakdown, reasons, hasBotData: itemHasBot }) => {
           const color = getScoreColor(total);
           const label = getScoreLabel(total);
+          const cats = itemHasBot ? CATEGORY_CONFIG_WITH_BOT : CATEGORY_CONFIG_NO_BOT;
 
           return (
             <div
               key={franchise.id}
-              onClick={() => setSelectedScore({ franchise, total, breakdown, reasons })}
+              onClick={() => setSelectedScore({ franchise, total, breakdown, reasons, hasBotData: itemHasBot })}
               className={`flex items-center gap-4 p-3 rounded-xl border ${color.border} ${color.bg}/30 cursor-pointer hover:shadow-md transition-shadow`}
             >
               {/* Score badge */}
@@ -254,32 +336,19 @@ export default function FranchiseHealthScore({
                 </p>
                 {/* Mini breakdown bar */}
                 <div className="flex gap-0.5 h-1.5 mt-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-[#a80012] rounded-l-full"
-                    style={{ width: `${(breakdown.sales / 35) * 100}%` }}
-                    title={`Vendas: ${breakdown.sales}/35`}
-                  />
-                  <div
-                    className="bg-[#775a19]"
-                    style={{ width: `${(breakdown.inventory / 25) * 100}%` }}
-                    title={`Estoque: ${breakdown.inventory}/25`}
-                  />
-                  <div
-                    className="bg-[#291715]/60"
-                    style={{ width: `${(breakdown.orders / 20) * 100}%` }}
-                    title={`Pedidos: ${breakdown.orders}/20`}
-                  />
-                  <div
-                    className="bg-[#2563eb] rounded-r-full"
-                    style={{ width: `${(breakdown.contacts / 20) * 100}%` }}
-                    title={`WhatsApp: ${breakdown.contacts}/20`}
-                  />
+                  {cats.map((cat, idx) => (
+                    <div
+                      key={cat.key}
+                      className={`${cat.color} ${idx === 0 ? "rounded-l-full" : ""} ${idx === cats.length - 1 ? "rounded-r-full" : ""}`}
+                      style={{ width: `${((breakdown[cat.key] || 0) / cat.max) * 100}%` }}
+                      title={`${cat.label}: ${breakdown[cat.key] || 0}/${cat.max}`}
+                    />
+                  ))}
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs text-[#1b1c1d]/70 font-medium">
-                  <span>Vendas {breakdown.sales}/{35}</span>
-                  <span>Estoque {breakdown.inventory}/{25}</span>
-                  <span>Pedidos {breakdown.orders}/{20}</span>
-                  <span>WhatsApp {breakdown.contacts}/{20}</span>
+                  {cats.map((cat) => (
+                    <span key={cat.key}>{cat.label} {breakdown[cat.key] || 0}/{cat.max}</span>
+                  ))}
                 </div>
               </div>
             </div>
@@ -346,7 +415,7 @@ export default function FranchiseHealthScore({
 
           {selectedScore && (
             <div className="space-y-3 pt-2">
-              {CATEGORY_CONFIG.map((cat) => {
+              {(selectedScore.hasBotData ? CATEGORY_CONFIG_WITH_BOT : CATEGORY_CONFIG_NO_BOT).map((cat) => {
                 const score = selectedScore.breakdown[cat.key] || 0;
                 const pct = Math.round((score / cat.max) * 100);
                 const reason = selectedScore.reasons?.[cat.key] || "";

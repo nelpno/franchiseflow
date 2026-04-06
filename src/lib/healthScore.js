@@ -95,6 +95,43 @@ function calcOrdersScore(franchise, ordersData) {
   return { score, detail, daysSince, lastOrderDate: mostRecent };
 }
 
+function calcBotScore(franchise, botConversations, conversationMessages, botSales) {
+  const evoId = franchise.evolution_instance_id;
+  const convos = botConversations.filter((c) => c.franchise_id === evoId);
+
+  if (convos.length === 0) return { score: 0, detail: "Sem dados do bot", hasData: false, autonomyRate: 0 };
+
+  // Autonomy: conversations without human intervention (10pts max, target 40%)
+  const humanMsgsByConvo = {};
+  conversationMessages.forEach((m) => {
+    if (m.franchise_id === evoId && m.conversation_id) {
+      humanMsgsByConvo[m.conversation_id] = (humanMsgsByConvo[m.conversation_id] || 0) + 1;
+    }
+  });
+  const autonomousCount = convos.filter((c) => !humanMsgsByConvo[c.id]).length;
+  const autonomyRate = convos.length > 0 ? autonomousCount / convos.length : 0;
+  const autonomyPts = Math.min(10, Math.round((autonomyRate / 0.40) * 10));
+
+  // Quality score avg (5pts max, target 7.0)
+  const scored = convos.filter((c) => parseFloat(c.quality_score) > 0);
+  const avgQuality = scored.length > 0
+    ? scored.reduce((sum, c) => sum + (parseFloat(c.quality_score) || 0), 0) / scored.length
+    : 0;
+  const qualityPts = Math.min(5, Math.round((avgQuality / 7.0) * 5));
+
+  // Bot conversion rate (5pts max, target 15%)
+  const franchiseBotSales = botSales.filter((s) => s.franchise_id === evoId && s.source === "bot");
+  const conversionRate = convos.length > 0 ? franchiseBotSales.length / convos.length : 0;
+  const conversionPts = Math.min(5, Math.round((conversionRate / 0.15) * 5));
+
+  const rawScore = autonomyPts + qualityPts + conversionPts; // max 20
+  const score = Math.round((rawScore / 20) * 100); // normalize to 0-100
+
+  const detail = `Autonomia ${Math.round(autonomyRate * 100)}% · Score ${avgQuality.toFixed(1)}`;
+
+  return { score, detail, hasData: true, autonomyRate };
+}
+
 function calcSetupScore(franchise, onboardingData, configData) {
   const evoId = franchise.evolution_instance_id;
   const checklist = onboardingData.find((c) => c.franchise_id === evoId);
@@ -141,30 +178,40 @@ export function calculateFranchiseHealth(franchise, data) {
     orders = [],
     onboarding = [],
     configs = [],
+    botConversations = [],
+    conversationMessages = [],
+    botSales = [],
   } = data;
 
   const vendas = calcSalesScore(franchise, sales);
   const estoque = calcInventoryScore(franchise, inventory);
   const reposicao = calcOrdersScore(franchise, orders);
   const setup = calcSetupScore(franchise, onboarding, configs);
+  const bot = calcBotScore(franchise, botConversations, conversationMessages, botSales);
 
   const isNew = franchise.created_at &&
     differenceInDays(new Date(), new Date(franchise.created_at)) < 14;
 
+  const hasBotData = bot.hasData;
+
   const weights = isNew
-    ? { vendas: 0.25, estoque: 0.15, reposicao: 0.20, setup: 0.40 }
-    : { vendas: 0.35, estoque: 0.25, reposicao: 0.20, setup: 0.20 };
+    ? { vendas: 0.25, estoque: 0.15, reposicao: 0.20, setup: 0.40, bot: 0 }
+    : hasBotData
+      ? { vendas: 0.30, estoque: 0.20, reposicao: 0.15, setup: 0.15, bot: 0.20 }
+      : { vendas: 0.375, estoque: 0.25, reposicao: 0.1875, setup: 0.1875, bot: 0 };
 
   let total = Math.round(
     vendas.score * weights.vendas +
     estoque.score * weights.estoque +
     reposicao.score * weights.reposicao +
-    setup.score * weights.setup
+    setup.score * weights.setup +
+    bot.score * weights.bot
   );
 
-  // Penalty: any dimension at 0 pulls total down
-  const dimensions = [vendas, estoque, reposicao, setup];
-  const hasZero = dimensions.some((d) => d.score === 0);
+  // Penalty: any active dimension at 0 pulls total down
+  const activeDimensions = [vendas, estoque, reposicao, setup];
+  if (hasBotData) activeDimensions.push(bot);
+  const hasZero = activeDimensions.some((d) => d.score === 0);
   if (hasZero) total -= 10;
 
   total = Math.max(0, Math.min(100, total));
@@ -180,12 +227,13 @@ export function calculateFranchiseHealth(franchise, data) {
   if (estoque.score < 50 && estoque.zeroCount > 0) problems.push(estoque.detail);
   if (reposicao.score < 50 && reposicao.daysSince !== null) problems.push(reposicao.detail);
   if (setup.score < 50 && !setup.onboardingComplete) problems.push(setup.detail);
+  if (hasBotData && bot.score < 50) problems.push(bot.detail);
 
   return {
     total,
     status,
     isNew,
-    dimensions: { vendas, estoque, reposicao, setup },
+    dimensions: { vendas, estoque, reposicao, setup, bot },
     weights,
     problems,
   };

@@ -86,7 +86,7 @@ function AlertGroup({ level, icon, label, items, type }) {
   );
 }
 
-export default function AlertsPanel({ franchises, allSales, inventoryByFranchise, purchaseOrders, configMap = {} }) {
+export default function AlertsPanel({ franchises, allSales, inventoryByFranchise, purchaseOrders, configMap = {}, botConversations = [], conversationMessages = [], contacts = [] }) {
   const navigate = useNavigate();
 
   const alertGroups = useMemo(() => {
@@ -172,18 +172,63 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
       }
     }
 
-    return { noSalesCritical, noSalesWarning, zeroStock, lowStock, noReorder };
-  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, configMap]);
+    // --- Bot coaching alerts ---
+    const botInactive = [];
+    const excessiveIntervention = [];
+    const staleLeads = [];
+    const sevenDaysAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  const redCount = alertGroups.noSalesCritical.length;
+    for (const franchise of franchises) {
+      const evoId = franchise.evolution_instance_id;
+      const config = configMap[evoId];
+      const fName = getFranchiseDisplayName(franchise, config);
+
+      // Bot inactive: 0 conversations in 7 days
+      const recentConvos = (botConversations || []).filter(
+        (c) => c.franchise_id === evoId && new Date(c.started_at || c.created_at) >= sevenDaysAgoDate
+      );
+      if (recentConvos.length === 0 && (botConversations || []).some((c) => c.franchise_id === evoId)) {
+        botInactive.push({ name: fName });
+      }
+
+      // Excessive human intervention: avg human msgs > 3 per conversation
+      if (recentConvos.length > 0) {
+        const humanMsgs = (conversationMessages || []).filter(
+          (m) => m.franchise_id === evoId && m.conversation_id && recentConvos.some((c) => c.id === m.conversation_id)
+        );
+        const avgHuman = humanMsgs.length / recentConvos.length;
+        if (avgHuman > 3) {
+          excessiveIntervention.push({ name: fName, count: Math.round(avgHuman) });
+        }
+      }
+
+      // Stale leads: > 5 contacts in em_negociacao for > 7 days
+      const staleCount = (contacts || []).filter(
+        (c) => c.franchise_id === evoId &&
+          c.status === "em_negociacao" &&
+          c.updated_at &&
+          new Date(c.updated_at) < sevenDaysAgoDate
+      ).length;
+      if (staleCount > 5) {
+        staleLeads.push({ name: fName, count: staleCount });
+      }
+    }
+
+    return { noSalesCritical, noSalesWarning, zeroStock, lowStock, noReorder, botInactive, excessiveIntervention, staleLeads };
+  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, configMap, botConversations, conversationMessages, contacts]);
+
+  const redCount = alertGroups.noSalesCritical.length + alertGroups.botInactive.length;
   const orangeCount = alertGroups.noSalesWarning.length + alertGroups.zeroStock.length;
-  const yellowCount = alertGroups.lowStock.length + alertGroups.noReorder.length;
+  const yellowCount = alertGroups.lowStock.length + alertGroups.noReorder.length + alertGroups.excessiveIntervention.length + alertGroups.staleLeads.length;
   const totalGroups =
     (alertGroups.noSalesCritical.length > 0 ? 1 : 0) +
     (alertGroups.noSalesWarning.length > 0 ? 1 : 0) +
     (alertGroups.zeroStock.length > 0 ? 1 : 0) +
     (alertGroups.lowStock.length > 0 ? 1 : 0) +
-    (alertGroups.noReorder.length > 0 ? 1 : 0);
+    (alertGroups.noReorder.length > 0 ? 1 : 0) +
+    (alertGroups.botInactive.length > 0 ? 1 : 0) +
+    (alertGroups.excessiveIntervention.length > 0 ? 1 : 0) +
+    (alertGroups.staleLeads.length > 0 ? 1 : 0);
 
   return (
     <section className="bg-white rounded-2xl p-5 shadow-sm border border-[#291715]/5">
@@ -267,6 +312,33 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
               label="sem reposição há 45+ dias"
               items={alertGroups.noReorder}
               type="noReorder"
+            />
+          )}
+          {alertGroups.botInactive.length > 0 && (
+            <AlertGroup
+              level="red"
+              icon="smart_toy"
+              label="bot inativo há 7+ dias"
+              items={alertGroups.botInactive}
+              type="botInactive"
+            />
+          )}
+          {alertGroups.excessiveIntervention.length > 0 && (
+            <AlertGroup
+              level="yellow"
+              icon="support_agent"
+              label="intervenção manual excessiva (>3 msgs/conversa)"
+              items={alertGroups.excessiveIntervention}
+              type="excessiveIntervention"
+            />
+          )}
+          {alertGroups.staleLeads.length > 0 && (
+            <AlertGroup
+              level="yellow"
+              icon="person_search"
+              label="leads parados em negociação há 7+ dias"
+              items={alertGroups.staleLeads}
+              type="staleLeads"
             />
           )}
 
