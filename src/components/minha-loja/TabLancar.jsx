@@ -33,6 +33,12 @@ const PERIOD_FILTERS = [
   { value: "all", label: "Todas" },
 ];
 
+const CONFIRMATION_FILTERS = [
+  { value: "all", label: "Todas" },
+  { value: "pending", label: "Pendentes" },
+  { value: "confirmed", label: "Confirmadas" },
+];
+
 const SOURCE_CONFIG = {
   manual: { label: "Manual", icon: "edit", className: "bg-[#4a3d3d]/10 text-[#4a3d3d]" },
   bot: { label: "Bot", icon: "smart_toy", className: "bg-[#775a19]/10 text-[#775a19]" },
@@ -107,6 +113,10 @@ export default function TabLancar({
   // Filters
   const [period, setPeriod] = useState("month");
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirmationFilter, setConfirmationFilter] = useState("all");
+  const [togglingIds, setTogglingIds] = useState(new Set());
+  const [isConfirmingAll, setIsConfirmingAll] = useState(false);
+  const [showConfirmAllDialog, setShowConfirmAllDialog] = useState(false);
 
   // Contacts map for quick lookup
   const contactsMap = useMemo(() => {
@@ -143,6 +153,10 @@ export default function TabLancar({
           }
         }
 
+        // Confirmation filter
+        if (confirmationFilter === "pending" && s.payment_confirmed) return false;
+        if (confirmationFilter === "confirmed" && !s.payment_confirmed) return false;
+
         return true;
       })
       .sort((a, b) => {
@@ -150,7 +164,7 @@ export default function TabLancar({
         const dateB = b.sale_date || b.created_at || "";
         return dateB.localeCompare(dateA);
       });
-  }, [sales, period, searchTerm, contactsMap]);
+  }, [sales, period, searchTerm, confirmationFilter, contactsMap]);
 
   // Load sale items for expanded view
   const handleToggleExpand = async (saleId) => {
@@ -197,6 +211,68 @@ export default function TabLancar({
       toast.error("Erro ao excluir venda.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Toggle payment confirmation
+  const handleToggleConfirmation = async (e, sale) => {
+    e.stopPropagation();
+    const newValue = !sale.payment_confirmed;
+
+    setTogglingIds((prev) => new Set(prev).add(sale.id));
+    try {
+      await Sale.update(sale.id, {
+        payment_confirmed: newValue,
+        confirmed_at: newValue ? new Date().toISOString() : null,
+      });
+      toast.success(newValue ? "Pagamento confirmado!" : "Confirmação removida.");
+      onRefresh();
+    } catch (err) {
+      console.error("Erro ao confirmar pagamento:", err);
+      toast.error("Erro ao atualizar confirmação.");
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(sale.id);
+        return next;
+      });
+    }
+  };
+
+  // Confirm all visible pending sales (batched in groups of 10)
+  const handleConfirmAllVisible = async () => {
+    const pendingSales = filteredSales.filter((s) => !s.payment_confirmed);
+    if (pendingSales.length === 0) return;
+
+    setIsConfirmingAll(true);
+    setShowConfirmAllDialog(false);
+    const now = new Date().toISOString();
+    let succeeded = 0;
+    let failed = 0;
+    try {
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < pendingSales.length; i += BATCH_SIZE) {
+        const batch = pendingSales.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map((s) =>
+            Sale.update(s.id, { payment_confirmed: true, confirmed_at: now })
+          )
+        );
+        succeeded += results.filter((r) => r.status === "fulfilled").length;
+        failed += results.filter((r) => r.status === "rejected").length;
+      }
+      if (failed > 0) {
+        toast.error(`${failed} venda(s) não foram confirmadas.`);
+      }
+      if (succeeded > 0) {
+        toast.success(`${succeeded} venda(s) confirmada(s)!`);
+      }
+      onRefresh();
+    } catch (err) {
+      console.error("Erro ao confirmar vendas em lote:", err);
+      toast.error("Erro ao confirmar vendas.");
+    } finally {
+      setIsConfirmingAll(false);
     }
   };
 
@@ -298,10 +374,38 @@ export default function TabLancar({
     );
   };
 
+  // Total pending count (ignores confirmation filter — used for badge)
+  const totalPendingCount = useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+
+    return sales.filter((s) => {
+      if (s.payment_confirmed) return false;
+      const saleDate = s.sale_date || s.created_at?.substring(0, 10) || "";
+      if (period === "today" && saleDate !== todayStr) return false;
+      if (period === "week" && saleDate < weekStart) return false;
+      if (period === "month" && saleDate < monthStart) return false;
+      return true;
+    }).length;
+  }, [sales, period]);
+
   // Summary for the filtered period
   const periodStats = useMemo(() => {
-    const total = filteredSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
-    return { count: filteredSales.length, total };
+    const calcTotal = (s) =>
+      (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0);
+
+    const pending = filteredSales.filter((s) => !s.payment_confirmed);
+    const confirmed = filteredSales.filter((s) => s.payment_confirmed);
+
+    return {
+      count: filteredSales.length,
+      total: filteredSales.reduce((sum, s) => sum + calcTotal(s), 0),
+      pendingCount: pending.length,
+      pendingTotal: pending.reduce((sum, s) => sum + calcTotal(s), 0),
+      confirmedCount: confirmed.length,
+      confirmedTotal: confirmed.reduce((sum, s) => sum + calcTotal(s), 0),
+    };
   }, [filteredSales]);
 
   return (
@@ -349,12 +453,70 @@ export default function TabLancar({
         </div>
       </div>
 
+      {/* Confirmation filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex gap-1 bg-white rounded-xl border border-[#291715]/5 p-1">
+          {CONFIRMATION_FILTERS.map((cf) => (
+            <button
+              key={cf.value}
+              onClick={() => setConfirmationFilter(cf.value)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                confirmationFilter === cf.value
+                  ? "bg-[#4a3d3d] text-white"
+                  : "text-[#4a3d3d] hover:bg-[#fbf9fa]"
+              }`}
+            >
+              {cf.label}
+              {cf.value === "pending" && totalPendingCount > 0 && (
+                <span className="ml-1.5 bg-[#f59e0b]/20 text-[#92400e] rounded-full px-1.5 py-0.5 text-[10px] font-bold">
+                  {totalPendingCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Confirm all visible button */}
+        {periodStats.pendingCount > 0 && confirmationFilter !== "confirmed" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowConfirmAllDialog(true)}
+            disabled={isConfirmingAll}
+            className="gap-1.5 text-[#16a34a] border-[#16a34a]/30 hover:bg-[#16a34a]/5"
+          >
+            {isConfirmingAll ? (
+              <>
+                <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
+                Confirmando...
+              </>
+            ) : (
+              <>
+                <MaterialIcon icon="done_all" size={14} />
+                <span className="hidden sm:inline">Confirmar todas</span>
+                <span className="sm:hidden">Todas</span>
+                <span className="font-mono-numbers">({periodStats.pendingCount})</span>
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
       {/* Period summary */}
       {filteredSales.length > 0 && (
-        <div className="flex items-center gap-4 text-sm text-[#4a3d3d]">
-          <span>
-            <strong className="text-[#1b1c1d] font-mono-numbers">{periodStats.count}</strong>{" "}
-            {periodStats.count === 1 ? "venda" : "vendas"}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#4a3d3d]">
+          <span className="flex items-center gap-1">
+            <MaterialIcon icon="schedule" size={14} className="text-[#f59e0b]" />
+            <strong className="text-[#1b1c1d] font-mono-numbers">{periodStats.pendingCount}</strong>
+            {" "}pendente{periodStats.pendingCount !== 1 ? "s" : ""}
+            {" "}<span className="font-mono-numbers">({formatCurrency(periodStats.pendingTotal)})</span>
+          </span>
+          <span className="text-[#291715]/20">|</span>
+          <span className="flex items-center gap-1">
+            <MaterialIcon icon="check_circle" size={14} className="text-[#16a34a]" />
+            <strong className="text-[#1b1c1d] font-mono-numbers">{periodStats.confirmedCount}</strong>
+            {" "}recebida{periodStats.confirmedCount !== 1 ? "s" : ""}
+            {" "}<span className="font-mono-numbers">({formatCurrency(periodStats.confirmedTotal)})</span>
           </span>
           <span className="text-[#291715]/20">|</span>
           <span>
@@ -393,7 +555,11 @@ export default function TabLancar({
             return (
               <Card
                 key={sale.id}
-                className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden"
+                className={`bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden border-l-[3px] ${
+                  sale.payment_confirmed
+                    ? "border-l-[#16a34a]"
+                    : "border-l-[#f59e0b]"
+                }`}
               >
                 <CardContent className="p-0">
                   {/* Main row */}
@@ -444,6 +610,30 @@ export default function TabLancar({
                         </p>
                       )}
                     </div>
+
+                    {/* Confirmation toggle chip */}
+                    <button
+                      onClick={(e) => handleToggleConfirmation(e, sale)}
+                      disabled={togglingIds.has(sale.id)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium shrink-0 min-h-[40px] transition-colors ${
+                        sale.payment_confirmed
+                          ? "bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20"
+                          : "bg-[#fef3c7]/50 text-[#92400e] border-[#f59e0b]/30 hover:bg-[#16a34a]/5 hover:text-[#16a34a] hover:border-[#16a34a]/20"
+                      }`}
+                      title={sale.payment_confirmed ? "Pagamento recebido" : "Marcar como recebido"}
+                    >
+                      {togglingIds.has(sale.id) ? (
+                        <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+                      ) : (
+                        <MaterialIcon
+                          icon={sale.payment_confirmed ? "check_circle" : "radio_button_unchecked"}
+                          size={16}
+                        />
+                      )}
+                      <span className="hidden sm:inline">
+                        {sale.payment_confirmed ? "Recebido" : "Pendente"}
+                      </span>
+                    </button>
 
                     {/* Expand icon */}
                     <MaterialIcon
@@ -678,6 +868,39 @@ export default function TabLancar({
           />
         </div>
       )}
+
+      {/* Confirm all dialog */}
+      <Dialog open={showConfirmAllDialog} onOpenChange={setShowConfirmAllDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-plus-jakarta">Confirmar recebimento?</DialogTitle>
+            <DialogDescription className="text-[#4a3d3d]">
+              Marcar{" "}
+              <strong>{periodStats.pendingCount} venda{periodStats.pendingCount !== 1 ? "s" : ""}</strong>{" "}
+              como recebida{periodStats.pendingCount !== 1 ? "s" : ""}?
+              <br />
+              <span className="font-mono-numbers">
+                Total: <strong>{formatCurrency(periodStats.pendingTotal)}</strong>
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmAllDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmAllVisible}
+              className="bg-[#16a34a] hover:bg-[#15803d] text-white gap-1.5"
+            >
+              <MaterialIcon icon="done_all" size={16} />
+              Confirmar todas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deletingSale} onOpenChange={() => setDeletingSale(null)}>
