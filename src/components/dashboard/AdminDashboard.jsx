@@ -66,7 +66,7 @@ export default function AdminDashboard() {
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
-        BotConversation.list('-started_at', 2000, { columns: 'id, franchise_id, started_at, created_at, quality_score, outcome', signal }),
+        BotConversation.list('-started_at', 2000, { columns: 'id, franchise_id, started_at, quality_score, outcome', signal }),
         ConversationMessage.filter({ direction: 'human' }, '-created_at', 2000, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal }),
         Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at', signal, fetchAll: true }),
       ]);
