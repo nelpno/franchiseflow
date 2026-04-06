@@ -154,7 +154,8 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - RLS `bot_conversations`: SELECT/INSERT/UPDATE usa `is_admin_or_manager()`, DELETE usa `is_admin()`
 - RPC: `get_unprocessed_conversations(p_limit)` — busca conversas com mensagens para classificar
 - Entity: `BotConversation` em `src/entities/all.js`
-- **V3/V4 captura**: Log Outbound enriquecido (model_used, response_time_ms, metadata.segment, whatsapp_message_id). Log Inbound com message_type dinâmico. `Upsert BotConv Started` paralelo ao Log Inbound (continueOnFail=true)
+- **V3/V4 captura**: Log Outbound enriquecido (model_used, response_time_ms, metadata.segment). Log Inbound com message_type dinâmico. `Upsert BotConv Started` paralelo ao Log Inbound (continueOnFail=true)
+- **REGRA Log Outbound `whatsapp_message_id`**: DEVE ser `null` para mensagens `out` (bot não tem WA ID próprio). NUNCA reutilizar o `message_id` do inbound — unique index `idx_conv_msg_wa_id` causa ON CONFLICT silencioso e PERDE a mensagem `in` (incidente 05/04 — ~30% msgs perdidas)
 - **Workflow Analyzer**: `Bot Conversation Analyzer` (ID: `jh1ro9klxhbEvWgl`) — cron 30min, Gemini 2.5 Flash via credencial `ezQN27UjYZVHyDEf`, classifica conversas encerradas (>30min sem msg)
   - Parse JSON: strip markdown fences + extrai `{` a `}` (fix 05/04 — Gemini retornava JSON wrappado)
   - Prompt v4: guia de intent (NUNCA "outro" como default), sentiment (NÃO neutro como padrão), topics com lista de produtos Maxi Massas

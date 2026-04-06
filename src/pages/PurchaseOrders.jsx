@@ -475,7 +475,7 @@ export default function PurchaseOrders() {
           supabase.rpc('notify_franchise_users', {
             p_franchise_id: fid, p_title: msg.title, p_message: msg.message,
             p_type: msg.type, p_icon: msg.icon, p_link: '/Gestao?tab=reposicao',
-          }).catch(() => {});
+          }).then(() => {}, () => {});
         });
       }
 
