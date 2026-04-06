@@ -99,6 +99,17 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `sale_items.cost_price` é snapshot do momento da venda. `sale_price` padrão = `cost_price * 2`
 - `sale_date` é DATE only — usar `created_at` para timestamp completo
 
+### Dashboard Franqueado (Coach-First)
+- **Ordem**: Saudação → Seletor (Hoje/Semana/Mês) → Stats → Meta do Dia → SaúdeDoNegócioCard → PriorityAction → RankingStreak → MiniRevenueChart → MarketingPaymentCard → SmartActions ("Outras Ações")
+- `SaudeDoNegocioCard`: Score Ring (ProgressRing com `label`) + badge status + frase coaching + "Ver diagnóstico" → DiagnosticoSheet
+- `PriorityAction`: 7 cenários priorizados (estoque→leads→frete→reposição→marketing→bot→tudo ok), inline compacto
+- `DiagnosticoSheet`: Sheet com barras 5 dimensões + seção bot (abre BotCoachSheet) + problemas
+- `SmartActions`: renomeado "Outras Ações", aceita props `botReport` e `excludeType`, cap 4 items
+- **Removidos do dashboard**: BotPerformanceCard (absorvido), QuickAccessCards (absorvido), PeriodComparisonCard (redundante)
+- `healthResult` calculado via `calculateFranchiseHealth()` no parent — bot data como arrays vazios (lazy no drill-down)
+- Period selector: `today` / `week` (seg-dom via startOfWeek) / `month` (startOfMonth/endOfMonth)
+- `ProgressRing` suporta prop `label` (string) para renderizar número no centro em vez de ícone
+
 ### Pedido de Compra / Reposição
 - `purchase_orders` + `purchase_order_items` com trigger auto-incremento ao marcar "entregue"
 - `purchase_order_items` FK é `order_id` (NÃO `purchase_order_id`)
@@ -111,6 +122,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Timeline logística no dialog**: data do pedido → previsão → entrega + tempo de atendimento. Indica "(atrasado)" se entrega ultrapassou previsão
 - **Stats cards filtrados por mês**: Pendentes, Em Rota, Entregues, Tempo Médio de entrega
 - **Franquias ordenadas alfabeticamente** no dropdown do Meu Vendedor (localeCompare pt-BR)
+- **Draft localStorage**: `PurchaseOrderForm` salva `quantities` + `notes` automaticamente em `reposicao_draft_{franchiseId}`. Restaura ao reabrir, banner "Rascunho restaurado" com opção limpar. Expira em 24h. Limpa após envio com sucesso
 
 ### Investimento Marketing
 - `marketing_payments`: 1 registro por franquia/mês. `franchise_id` = evolution_instance_id, `reference_month` = "2026-04"
@@ -537,6 +549,7 @@ npm run lint      # ESLint
   - Estoque franqueado (admin) ✅ | Toggle frete grátis + janela entrega ✅
   - Meta CAPI ✅ | Conversation logging ✅ | Microsoft Clarity analytics ✅
   - Bot Intelligence ✅ (classificação LLM + dashboard admin + widget franqueado + relatório semanal)
+  - Dashboard Coach-First ✅ (Health Score franqueado + Ação Prioritária + Diagnóstico + draft reposição)
   - Swipe tutorial | Busca global admin | Calendário Marketing | Docs PDF
   - Convite equipe interna | Permissões dono vs funcionário
 
