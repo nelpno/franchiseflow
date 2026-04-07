@@ -33,8 +33,8 @@ export default function FinanceiroSummaryCard({ allSales, configMap }) {
       entries.sort((a, b) => b[1] - a[1]);
       const topId = entries[0][0];
       const bottomId = entries[entries.length - 1][0];
-      topFranchise = { name: configMap[topId] || topId, value: entries[0][1] };
-      bottomFranchise = { name: configMap[bottomId] || bottomId, value: entries[entries.length - 1][1] };
+      topFranchise = { name: configMap[topId]?.franchise_name || topId, value: entries[0][1] };
+      bottomFranchise = { name: configMap[bottomId]?.franchise_name || bottomId, value: entries[entries.length - 1][1] };
     }
 
     // Valor médio por venda
