@@ -62,7 +62,7 @@ export default function AdminDashboard() {
         fetchFranchises(),
         DailySummary.list("-date", 2000, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
-        Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date', signal }),
+        Sale.list('-sale_date', 2000, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date, source', signal }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
@@ -188,6 +188,8 @@ export default function AdminDashboard() {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
 
+    const isBotSource = (s) => s.source === 'whatsapp' || s.source === 'facebook';
+
     if (period === "today") {
       const salesCount = todaySales.length;
       const prevSalesCount = yesterdaySales.length;
@@ -200,7 +202,9 @@ export default function AdminDashboard() {
       const prevLeads = botLeadsForRange(yesterdayStr, yesterdayStr);
       const conversion = leads > 0 ? Math.round((salesCount / leads) * 100) : 0;
       const prevConversion = prevLeads > 0 ? Math.round((prevSalesCount / prevLeads) * 100) : 0;
-      return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
+      const botPercent = salesCount > 0 ? Math.round(todaySales.filter(isBotSource).length / salesCount * 100) : 0;
+      const prevBotPercent = prevSalesCount > 0 ? Math.round(yesterdaySales.filter(isBotSource).length / prevSalesCount * 100) : 0;
+      return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion, botPercent, prevBotPercent };
     }
 
     const days = period === "7d" ? 7 : 30;
@@ -222,8 +226,10 @@ export default function AdminDashboard() {
     const prevLeads = botLeadsForRange(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
     const conversion = leads > 0 ? Math.round((salesCount / leads) * 100) : 0;
     const prevConversion = prevLeads > 0 ? Math.round((prevSalesCount / prevLeads) * 100) : 0;
+    const botPercent = salesCount > 0 ? Math.round(currentSales.filter(isBotSource).length / salesCount * 100) : 0;
+    const prevBotPercent = prevSalesCount > 0 ? Math.round(prevSales.filter(isBotSource).length / prevSalesCount * 100) : 0;
 
-    return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
+    return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion, botPercent, prevBotPercent };
   }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botLeadsForRange]);
 
   // Live today totals for real-time chart data
@@ -247,9 +253,12 @@ export default function AdminDashboard() {
       const rtRevenue = daySalesArr.reduce(
         (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
       );
+      const botSalesDay = daySalesArr.filter(s => s.source === 'whatsapp' || s.source === 'facebook').length;
+      const botPct = rtSales > 0 ? Math.round((botSalesDay / rtSales) * 100) : 0;
       last6.push({
         sales: Math.max(cronSales, rtSales),
         revenue: Math.max(cronRevenue, rtRevenue),
+        botPercent: botPct,
       });
     }
     return last6;
@@ -261,7 +270,8 @@ export default function AdminDashboard() {
     return (
       <div className="p-4 md:p-8 space-y-6 bg-[#fbf9fa]">
         <Skeleton className="h-14 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
@@ -329,6 +339,18 @@ export default function AdminDashboard() {
       sparkKey: "sales",
       sparkColor: "#775a19",
     },
+    {
+      title: "VENDAS BOT",
+      value: `${stats.botPercent}%`,
+      previousValue: stats.prevBotPercent,
+      materialIcon: "smart_toy",
+      trend: trendFor(stats.botPercent, stats.prevBotPercent),
+      iconBg: "bg-[#705d00]/10",
+      iconColor: "text-[#705d00]",
+      trendColor: "text-[#a80012]",
+      sparkKey: "botPercent",
+      sparkColor: "#705d00",
+    },
   ];
 
   return (
@@ -336,7 +358,7 @@ export default function AdminDashboard() {
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statsCards.map((card) => {
           // Icon is now MaterialIcon
           const numericValue = typeof card.value === "string"

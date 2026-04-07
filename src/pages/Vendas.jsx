@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
@@ -44,7 +44,6 @@ export default function Vendas() {
         Franchise.list(null, null, { columns: 'id, evolution_instance_id, name, city, owner_name' }),
         Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at' }),
         InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
-        Contact.list('-created_at', 200, { columns: 'id, nome, telefone, status, franchise_id, endereco, bairro' }),
       ]);
       if (!mountedRef.current) return;
 
@@ -55,7 +54,6 @@ export default function Vendas() {
       setFranchises(franchisesData);
       setSales(getValue(results[1]));
       setInventoryItems(getValue(results[2]));
-      setContacts(getValue(results[3]));
 
       const failed = results.slice(1).filter(r => r.status === "rejected");
       if (failed.length > 0) {
@@ -78,18 +76,35 @@ export default function Vendas() {
     }
   };
 
+  // Load contacts scoped to franchise (scales independently of total contact count)
+  const loadFranchiseContacts = useCallback(async (evoId) => {
+    if (!evoId) return;
+    try {
+      const data = await Contact.filter(
+        { franchise_id: evoId },
+        '-created_at',
+        null,
+        { columns: 'id, nome, telefone, status, franchise_id, endereco, bairro' }
+      );
+      if (mountedRef.current) setContacts(data);
+    } catch (err) {
+      console.error("Erro ao carregar contatos:", err);
+      if (mountedRef.current) toast.error("Erro ao carregar contatos.");
+    }
+  }, []);
+
   const handleRefreshSales = async () => {
     try {
       const refreshResults = await Promise.allSettled([
         Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at' }),
-        Contact.list('-created_at', 200, { columns: 'id, nome, telefone, status, franchise_id, endereco, bairro' }),
         InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
       ]);
       if (!mountedRef.current) return;
       const getVal = (r) => r.status === "fulfilled" ? r.value : [];
       setSales(getVal(refreshResults[0]));
-      setContacts(getVal(refreshResults[1]));
-      setInventoryItems(getVal(refreshResults[2]));
+      setInventoryItems(getVal(refreshResults[1]));
+      // Refresh contacts for current franchise
+      if (franchiseId) loadFranchiseContacts(franchiseId);
     } catch (error) {
       console.error("Erro ao recarregar vendas:", error);
     }
@@ -106,6 +121,11 @@ export default function Vendas() {
   }, [franchises, currentUser, selectedFranchise]);
 
   const franchiseId = primaryFranchise?.evolution_instance_id;
+
+  // Load contacts per franchise (not global) — scales regardless of total contact count
+  useEffect(() => {
+    if (franchiseId) loadFranchiseContacts(franchiseId);
+  }, [franchiseId, loadFranchiseContacts]);
 
   const franchiseSales = useMemo(() => {
     if (!franchiseId) return [];

@@ -73,6 +73,7 @@ const navigationItems = [
     url: createPageUrl("Tutoriais"),
     materialIcon: "play_circle",
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Relatórios",
@@ -80,6 +81,7 @@ const navigationItems = [
     materialIcon: "bar_chart",
     adminOnly: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Financeiro",
@@ -87,6 +89,7 @@ const navigationItems = [
     materialIcon: "account_balance",
     adminOnly: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Configurações",
@@ -94,6 +97,7 @@ const navigationItems = [
     materialIcon: "support_agent",
     adminOnly: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Onboarding",
@@ -101,6 +105,7 @@ const navigationItems = [
     materialIcon: "school",
     showOnboarding: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Acompanhamento",
@@ -108,6 +113,7 @@ const navigationItems = [
     materialIcon: "visibility",
     adminOnly: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Pedidos",
@@ -115,6 +121,7 @@ const navigationItems = [
     materialIcon: "local_shipping",
     adminOnly: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Inteligência Bot",
@@ -122,6 +129,7 @@ const navigationItems = [
     materialIcon: "psychology",
     adminOnly: true,
     adminSection: "Gestão",
+    adminSidebarHidden: true,
   },
   {
     title: "Franqueados",
@@ -272,6 +280,8 @@ export default function Layout({ children, currentPageName }) {
 
   const filteredNavigationItems = navigationItems
     .filter((item) => {
+      // Hide items from admin sidebar (routes still work via URL)
+      if (isAdmin && item.adminSidebarHidden) return false;
       if (item.adminOnly) return isAdmin;
       if (item.franchiseeOnly) return !isAdmin;
       if (item.showOnboarding) {
