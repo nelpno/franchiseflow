@@ -27,6 +27,7 @@ Importar sempre de `@/entities/all` — NÃO usar supabase.from() diretamente na
 - **EXCEÇÃO `marketing_files`**: NÃO usa entity adapter — supabase-js trava em TODAS operações nesta tabela. Marketing.jsx usa `fetch()` direto à REST API (`directList`, `directInsert`, `directDelete`) com token do localStorage e `AbortSignal.timeout(15s)`
 - Storage bucket: `marketing-assets` (público). NUNCA `marketing-files` (não existe)
 - Storage bucket: `marketing-comprovantes` (público, 5MB max, JPG/PNG/PDF) — comprovantes de pagamento marketing
+- Storage bucket: `catalog-images/produtos/` (público) — fotos otimizadas de produtos para bot WhatsApp (JPEG 1200px, 100-500KB)
 
 ### Autenticação (src/lib/AuthContext.jsx)
 Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supabase signInWithPassword.
@@ -223,6 +224,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Pedido_Checkout1** também recebe `delivery_schedule_text` e `pickup_hours_text` para validar horários no checkout
 - `valor_total` do $fromAI() pode vir 0 — calcular sum(qty * price) + frete como fallback
 - `inventory_items.product_name` (NÃO `name`). Match Items: best-score fuzzy (palavras >2 chars)
+- **Sofioli**: produto presente em TODAS as franquias (4 Queijos, Brócolis, Frango, Presunto — 700g). Piratininga tem variantes extras (Costela 500g, Espinafre com Ricota 500g). Formato "trouxinha" torcida
 - n8n API URL: `https://teste.dynamicagents.tech/api/v1` (env `N8N_API_URL`) — NÃO confundir com webhook base
 - **ATENÇÃO**: `N8N_API_URL` no `.env` é apenas `https://teste.dynamicagents.tech` (sem `/api/v1`) — ao usar via fetch, concatenar `/api/v1` manualmente
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`. Ao fazer PUT com settings do GET, filtrar campos antes de enviar
@@ -290,7 +292,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Memoria_Lead1**: salva dados do cliente no CRM (nome, endereço, preferências)
 - **preparo_faq1**: FAQ de modo de preparo, ingredientes, porções
 - Padrão LLM sub-agentes: Gemini Flash (primary, mais barato) + gpt-4o-mini (fallback)
-- Tools do GerenteGeral1: CalculaFrete1, Estoque1, Memoria_Lead1, preparo_faq1, Pedido_Checkout1, EnviarCatalogo1, avisa_franqueado
+- **EnviarFotoProduto1**: envia foto(s) de produto via WuzAPI. Sub-workflow `CfxmJHVejlVg6OO7` recebe `product_query` (nome do produto) + phone + server_url + api_key. Busca por keywords na tabela `product_photos` → Redis dedup (TTL 4h) + rate limit (5/hora) → WuzAPI `/chat/send/image`. Máx 2 fotos por chamada
+- Tools do GerenteGeral1: CalculaFrete1, Estoque1, Memoria_Lead1, preparo_faq1, Pedido_Checkout1, EnviarCatalogo1, EnviarFotoProduto1, avisa_franqueado
+- `product_photos` table: catálogo master de fotos (NÃO per-franchise). `id` TEXT (human-readable), `public_url` pré-computada, `maps_to_products` TEXT[], `keywords` TEXT[] para fuzzy match. RLS: SELECT público, write admin-only
 - GetDistance1 está DENTRO de CalculaFrete1 (NÃO no GerenteGeral1) — sub-workflow `q4ACGWuR3WFQjBfg` (DistanceService)
 - Frete no prompt vem de `delivery_schedule_text` (por grupo de dias) — NÃO mais de `delivery_fee_rules` ou `shipping_rules_costs` inline
 
