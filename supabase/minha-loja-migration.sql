@@ -14,10 +14,12 @@ ALTER TABLE sales ADD COLUMN IF NOT EXISTS delivery_method TEXT DEFAULT 'retirad
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2);
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS net_value NUMERIC(10,2);
 
--- 3. sales: expand source CHECK constraint
+-- 3. sales: source = 'bot' (vendedor automático) ou 'manual' (lançamento humano)
 ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_source_check;
+ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_check;
+ALTER TABLE sales ALTER COLUMN source SET DEFAULT 'manual';
 ALTER TABLE sales ADD CONSTRAINT sales_source_check
-  CHECK (source IN ('whatsapp', 'instagram', 'facebook', 'phone_call', 'in_person', 'website', 'other', 'manual', 'bot'));
+  CHECK (source IN ('bot', 'manual'));
 
 -- 4. sale_items table
 CREATE TABLE IF NOT EXISTS public.sale_items (

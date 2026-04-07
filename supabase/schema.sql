@@ -60,7 +60,7 @@ CREATE TABLE public.sales (
   customer_name TEXT,
   value NUMERIC(10,2) DEFAULT 0,
   sale_date DATE NOT NULL,
-  source TEXT DEFAULT 'whatsapp' CHECK (source IN ('whatsapp', 'instagram', 'facebook', 'phone_call', 'in_person', 'website', 'other')),
+  source TEXT DEFAULT 'manual' CHECK (source IN ('bot', 'manual')),
   lead_id UUID,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()

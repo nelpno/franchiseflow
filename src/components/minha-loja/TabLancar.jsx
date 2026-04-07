@@ -42,7 +42,6 @@ const CONFIRMATION_FILTERS = [
 const SOURCE_CONFIG = {
   manual: { label: "Manual", icon: "edit", className: "bg-[#4a3d3d]/10 text-[#4a3d3d]" },
   bot: { label: "Bot", icon: "smart_toy", className: "bg-[#775a19]/10 text-[#775a19]" },
-  whatsapp: { label: "WhatsApp", icon: "chat", className: "bg-[#b91c1c]/10 text-[#b91c1c]" },
 };
 
 function getPaymentIcon(method) {
