@@ -1,3 +1,4 @@
+<!-- Last Updated: 2026-04-06 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 ## Sobre
@@ -251,10 +252,10 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **EnviaPedidoFechado `Create Sale`**: grava `customer_name` (do Start.nomecliente) e `contact_phone` (telefone_db). Campos adicionados 05/04
 - **EnviaPedidoFechado Dedup Redis**: Redis GET → `IF Nao Duplicado?` → Redis SET (TTL 5min). Chave: `sale_dedup_{tel}_{instance}_{valor}`. Redis nodes com `continueOnFail` (Redis down não bloqueia venda)
 - **EnviaPedidoFechado ordem**: `Prepare Sale Data` dispara em PARALELO: (1) `WhatsApp Franqueado` (alerta) e (2) `Redis GET Dedup → IF → Create Sale → Items + PIX`. Alerta é enviado ANTES da venda ser criada — se Create Sale falhar, franqueado recebe alerta de venda fantasma
-- **PIX Copia e Cola automático** (06/04/2026): Branch paralelo após `Create Sale` (NÃO após Prepare Sale Data — evita envio duplicado em dedup). 6 nós: `Busca Dados PIX` (Supabase REST) → `Gera PIX Copia e Cola` (Code, JS puro BR Code EMVCo/BACEN) → `IF Pix Valido?` → `Envia PIX Texto` (WuzAPI text) → `Envia PIX QR Code` (WuzAPI image). Só dispara se `payment_method === 'pix'` E `pix_key_data` não é null. Todos nós com `continueOnFail: true`. Bot continua informando chave Pix textualmente — Copia e Cola é complementar (cliente usa o que preferir)
+- **PIX Copia e Cola automático** (06/04/2026): Branch paralelo após `Create Sale` (NÃO após Prepare Sale Data — evita envio duplicado em dedup). 5 nós: `Busca Dados PIX` (Supabase REST) → `Gera PIX Copia e Cola` (Code, JS puro BR Code EMVCo/BACEN) → `IF Pix Valido?` → `Envia PIX Texto` (intro curto) → `Envia PIX Codigo` (código BR Code isolado). Só dispara se `payment_method === 'pix'` E `pix_key_data` não é null. Todos nós com `continueOnFail: true`. Bot continua informando chave Pix textualmente — Copia e Cola é complementar
+  - **Formato 2 mensagens**: Msg 1 = "*Pix Copia e Cola* 👇 Toque e segure para copiar", Msg 2 = APENAS o código BR Code puro (cliente faz long-press → Copiar → código inteiro copiado com 1 toque)
   - Payload PIX: CRC16-CCITT em JS puro (polynomial 0x1021), TLV encoding, suporta phone/cpf/cnpj/email/random
-  - QR Code: API pública `api.qrserver.com` (PNG 300x300)
-  - WuzAPI campos: imagem usa `Phone`/`Image`/`Caption` (maiúsculo), texto usa `phone`/`Body`
+  - QR Code removido (código isolado é suficiente para copiar)
   - **NUNCA mover branch PIX para antes do Create Sale** — causa envio duplicado quando Redis dedup bloqueia segunda execução
 - **V4 Prepara Contexto Completo**: Code node que pré-computa TODOS os dados dinâmicos (payment, delivery, frete, social, horários). systemMessage do GerenteGeral referencia campos pré-computados — ZERO IIFEs inline. Vantagem: elimina risco de corrupção por `$` em expressões n8n
 
