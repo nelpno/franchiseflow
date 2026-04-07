@@ -132,43 +132,73 @@ function calcBotScore(franchise, botConversations, conversationMessages, botSale
   return { score, detail, hasData: true, autonomyRate };
 }
 
-function calcSetupScore(franchise, onboardingData, configData) {
+export const SETUP_SIGNAL_LABELS = {
+  whatsapp: "WhatsApp",
+  pix: "PIX",
+  delivery: "Entrega ou retirada",
+  inventory: "Estoque com preços",
+  orders: "Primeiro pedido",
+  sales: "Primeira venda",
+  bot: "Vendedor Digital",
+};
+
+function calcSetupScore(franchise, configData, extraData = {}) {
   const evoId = franchise.evolution_instance_id;
-  const checklist = onboardingData.find((c) => c.franchise_id === evoId);
   const config = configData.find(
     (c) => c.franchise_evolution_instance_id === evoId
   );
+  const { sales = [], inventory = [], orders = [], botConversations = [] } = extraData;
 
-  // Onboarding: 0-70 pts (items is JSONB map {itemId: boolean})
-  let onboardingPct = 0;
-  if (checklist) {
-    const items = checklist.items || {};
-    const values = Object.values(items);
-    const completedCount = values.filter(Boolean).length;
-    const totalItems = values.length || 27;
-    onboardingPct = Math.min(100, Math.round((completedCount / totalItems) * 100));
+  const franchiseSales = sales.filter(
+    (s) => s.franchise_id === franchise.id || s.franchise_id === evoId
+  );
+  const franchiseInventory = inventory.filter((i) => i.franchise_id === evoId);
+  const franchiseOrders = orders.filter(
+    (po) => po.franchise_id === franchise.id || po.franchise_id === evoId
+  );
+
+  const now = new Date();
+  const fourteenDaysAgo = subDays(now, 14);
+  const recentBotConvos = botConversations.filter((c) => {
+    if (c.franchise_id !== evoId) return false;
+    const d = c.started_at || c.created_at;
+    return d && new Date(d) >= fourteenDaysAgo;
+  });
+
+  const signals = {
+    whatsapp: !!(config && evoId),
+    pix: !!(config?.pix_key_data),
+    delivery: !!(config?.has_delivery || config?.has_pickup),
+    inventory: franchiseInventory.some((i) => parseFloat(i.sale_price) > 0),
+    orders: franchiseOrders.length > 0,
+    sales: franchiseSales.length > 0,
+    bot: recentBotConvos.length > 0,
+  };
+
+  const SIGNAL_POINTS = { whatsapp: 20, pix: 15, delivery: 10, inventory: 15, orders: 15, sales: 15, bot: 10 };
+
+  let score = 0;
+  const missingItems = [];
+  for (const [key, pts] of Object.entries(SIGNAL_POINTS)) {
+    if (signals[key]) {
+      score += pts;
+    } else {
+      missingItems.push(SETUP_SIGNAL_LABELS[key]);
+    }
   }
-  const onboardingPts = Math.round((onboardingPct / 100) * 70);
+  score = Math.min(100, score);
 
-  // WhatsApp: +30 pts if config exists with evolution instance
-  const hasWhatsApp = !!(config && evoId);
-  const whatsappPts = hasWhatsApp ? 30 : 0;
-
-  const score = Math.min(100, onboardingPts + whatsappPts);
-
-  // Only show onboarding info if not yet completed
-  const onboardingComplete = onboardingPct >= 100;
+  const hasWhatsApp = signals.whatsapp;
   let detail;
-  if (onboardingComplete) {
-    detail = hasWhatsApp ? "Setup completo ✅" : "WhatsApp ❌";
-  } else if (!checklist) {
-    // No onboarding record at all — don't mention it
-    detail = hasWhatsApp ? "WhatsApp ✅" : "WhatsApp ❌";
+  if (score >= 90) {
+    detail = "Operação completa ✅";
+  } else if (score >= 50) {
+    detail = `Quase pronto — falta: ${missingItems.slice(0, 2).join(", ")}`;
   } else {
-    detail = `Onboarding ${onboardingPct}%${hasWhatsApp ? " · WhatsApp ✅" : " · WhatsApp ❌"}`;
+    detail = `Configure: ${missingItems.slice(0, 3).join(", ")}`;
   }
 
-  return { score, detail, onboardingPct, hasWhatsApp, onboardingComplete };
+  return { score, detail, hasWhatsApp, signals, missingItems };
 }
 
 // --- Main score calculator ---
@@ -188,7 +218,7 @@ export function calculateFranchiseHealth(franchise, data) {
   const vendas = calcSalesScore(franchise, sales);
   const estoque = calcInventoryScore(franchise, inventory);
   const reposicao = calcOrdersScore(franchise, orders);
-  const setup = calcSetupScore(franchise, onboarding, configs);
+  const setup = calcSetupScore(franchise, configs, { sales, inventory, orders, botConversations });
   const bot = calcBotScore(franchise, botConversations, conversationMessages, botSales);
 
   const isNew = franchise.created_at &&
@@ -228,10 +258,11 @@ export function calculateFranchiseHealth(franchise, data) {
   if (vendas.score < 50 && vendas.daysSince !== null) problems.push(vendas.detail);
   if (estoque.score < 50 && estoque.zeroCount > 0) problems.push(estoque.detail);
   if (reposicao.score < 50 && reposicao.daysSince !== null) problems.push(reposicao.detail);
-  if (setup.score < 50 && !setup.onboardingComplete) {
-    problems.push(setup.onboardingPct > 0
-      ? `Onboarding ${setup.onboardingPct}% — complete a configuração`
-      : "Complete a configuração da sua franquia");
+  if (setup.score < 50) {
+    const missing = setup.missingItems || [];
+    problems.push(missing.length > 0
+      ? `Configure: ${missing.slice(0, 2).join(", ")}`
+      : "Complete a configuração da franquia");
   }
   if (hasBotData && bot.score < 50) problems.push(bot.detail);
 

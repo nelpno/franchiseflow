@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import ProgressRing from "@/components/onboarding/ProgressRing";
-import { STATUS_COLORS, STATUS_LABELS } from "@/lib/healthScore";
+import { STATUS_COLORS, STATUS_LABELS, SETUP_SIGNAL_LABELS } from "@/lib/healthScore";
 import BotCoachSheet from "./BotCoachSheet";
 
 const DIMENSION_CONFIG = {
@@ -88,6 +88,30 @@ export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franch
               <DimensionBar key={key} name={key} dim={dim} />
             ))}
           </div>
+
+          {/* Setup signals checklist */}
+          {healthResult.dimensions.setup?.signals && (
+            <div className="border-t border-[#e9e8e9] pt-4 mb-6">
+              <h3 className="text-sm font-semibold text-[#1b1c1d] mb-3 flex items-center gap-2">
+                <MaterialIcon icon="checklist" size={18} />
+                Configuração Operacional
+              </h3>
+              <div className="space-y-2">
+                {Object.entries(healthResult.dimensions.setup.signals).map(([key, done]) => (
+                  <div key={key} className="flex items-center gap-2.5">
+                    <MaterialIcon
+                      icon={done ? "check_circle" : "radio_button_unchecked"}
+                      size={18}
+                      style={{ color: done ? "#16a34a" : "#d1d5db" }}
+                    />
+                    <span className={`text-sm ${done ? "text-[#4a3d3d]" : "text-[#7a6d6d]"}`}>
+                      {SETUP_SIGNAL_LABELS[key] || key}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Bot section */}
           <div className="border-t border-[#e9e8e9] pt-4 mb-6">
