@@ -168,7 +168,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **CUIDADO**: PUT na API n8n pode desativar workflows — sempre verificar `active` e reativar após updates
 
 ### Integração Vendedor Genérico (n8n)
-- V4 (`aRBzPABwrjhWCPvq`): PRODUÇÃO ATUAL (desde 05/04/2026). 97 nós. Buffer debounce 10s, string JSON (não LIST), zero IIFEs no GerenteGeral, Prepara Contexto V4.1 pré-computa tudo
+- V4 (`aRBzPABwrjhWCPvq`): PRODUÇÃO ATUAL (desde 05/04/2026). 107 nós. Buffer debounce 10s, string JSON (não LIST), zero IIFEs no GerenteGeral, Prepara Contexto V4.1 pré-computa tudo
 - V3 (`XqWZyLl1AHlnJvdj`) DESATIVADO rollback | V2 (`w7loLOXUmRR3AzuO`) / V1 (`PALRV1RqD3opHMzk`) ARQUIVADOS
 - Bot respeita `has_pickup`/`has_delivery` — regras condicionais no GerenteGeral1 e Pedido_Checkout1
 - systemMessage fica em `node.parameters.options.systemMessage`. Campo "Hoje": DEVE usar `setLocale('pt-BR')` (sem locale, Luxon retorna inglês)
@@ -379,6 +379,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - `unit_address` é campo COMPUTADO no save (NÃO editar diretamente). Distance Service (CalculaFrete1) lê `unit_address` da view
 - Prompt do bot usa `unit_address` SEM `| city/neighborhood` (removido — já está dentro do unit_address)
 - **Horário de retirada**: `pickup_schedule` JSONB + `has_custom_pickup_hours` BOOLEAN. Formato: `[{days, open, close}]` (mesmo do OperatingHoursEditor). Quando `has_custom_pickup_hours=false`, retirada segue horário de entrega
+- **Retirada agendada**: `pickup_requires_scheduling` BOOLEAN DEFAULT true — controla se bot exige agendamento. `true` = programada (home-based), `false` = walk-in (garagem/espaço). View `vw_dadosunidade` expõe com `COALESCE(true)`. Prompt do bot usa 6 condicionais `!== false` (null = true = seguro)
 - `pickup_hours_text`: campo computado na view `vw_dadosunidade` — texto legível de horários de retirada para o bot
 - Horário de retirada fica no Step 2 (Operação) do wizard, NÃO no Step 3. Step 3 = apenas entrega
 - `payment_delivery`/`payment_pickup` são `TEXT[]`, NÃO JSONB

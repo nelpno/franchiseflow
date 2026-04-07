@@ -34,6 +34,7 @@ export const BLOCKS = [
       { key: "3-1", label: "Freezer funcionando na temperatura adequada (-18°C ou menos)", role: "franchisee" },
       { key: "3-2", label: "Espaço organizado por categoria no freezer", role: "franchisee" },
       { key: "3-3", label: "Sacolas e embalagens prontas para entrega e retirada", role: "franchisee" },
+      { key: "3-4", label: "Uniformes encomendados", role: "franchisee" },
     ],
   },
   {

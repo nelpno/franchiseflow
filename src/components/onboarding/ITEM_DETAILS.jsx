@@ -34,8 +34,11 @@ export const ITEM_DETAILS = {
     text: "Organize por categoria: Massas | Molhos | Outros.\n\nNo app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\nUse o sistema FIFO: Primeiro que Entra, Primeiro que Sai (produtos mais antigos na frente).",
   },
   "3-3": {
-    text: "Use sacolas Boca de Palhaço para boa apresentação e segurança dos produtos.\n\n- 30x40 — pacote com cerca de 350 unidades\n- 35x45 — pacote com cerca de 265 unidades\n\nFornecedor: Rodrigo — D'Momentus Uniformes\nWhatsApp: (18) 99610-9903\n\nDica: coloque um panfleto ou cartão de visita na sacola — gera indicações!",
+    text: "Use sacolas Boca de Palhaço para boa apresentação e segurança dos produtos.\n\nTamanhos recomendados:\n• 30×40 — pacote com cerca de 350 unidades\n• 35×45 — pacote com cerca de 265 unidades\n\nVocê encontra em papelarias, lojas de embalagens ou pela internet.\n\nDica: coloque um panfleto ou cartão de visita na sacola — gera indicações!",
     links: [{ label: "Artes da sacola (Google Drive)", url: "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9?usp=drive_link" }],
+  },
+  "3-4": {
+    text: "Os uniformes são fornecidos diretamente pelo franqueador.\n\nInforme ao franqueador a quantidade de uniformes necessários (camisetas, aventais, etc.) para que ele providencie a encomenda.",
   },
 
   // === MISSÃO 4: Configure o WhatsApp ===
