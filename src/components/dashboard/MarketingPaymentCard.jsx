@@ -68,7 +68,7 @@ export default function MarketingPaymentCard() {
 
   return (
     <Card
-      className="mb-4 border-0 shadow-sm cursor-pointer active:scale-[0.98] transition-transform"
+      className="mb-4 border-0 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.98] transition-all"
       onClick={() => navigate("/Marketing")}
     >
       <CardContent className="p-4">

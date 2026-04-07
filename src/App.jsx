@@ -33,10 +33,9 @@ function AdminRoute({ children }) {
 }
 
 const PageFallback = () => (
-  <div className="fixed inset-0 flex items-center justify-center">
-    <span className="material-symbols-outlined text-4xl text-[#b91c1c] animate-spin">
-      progress_activity
-    </span>
+  <div className="p-4 md:p-8 space-y-4 animate-pulse">
+    <div className="h-8 w-48 bg-[#b91c1c]/10 rounded-md" />
+    <div className="h-64 bg-[#b91c1c]/10 rounded-xl" />
   </div>
 );
 

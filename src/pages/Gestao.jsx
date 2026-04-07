@@ -7,6 +7,7 @@ import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
 import TabResultado from "@/components/minha-loja/TabResultado";
@@ -133,9 +134,14 @@ export default function Gestao() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-3 text-[#4a3d3d]">Carregando...</span>
+      <div className="bg-[#fbf9fa] p-4 md:p-8 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     );
   }
@@ -198,7 +204,7 @@ export default function Gestao() {
                 value={tab.value}
                 className="gap-1 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-2 md:px-4 flex-1 md:flex-none text-xs md:text-sm"
               >
-                <MaterialIcon icon={tab.icon} size={16} className="hidden md:inline-block" />
+                <MaterialIcon icon={tab.icon} size={14} />
                 <span className="hidden md:inline">{tab.label}</span>
                 <span className="md:hidden">{tab.shortLabel}</span>
               </TabsTrigger>

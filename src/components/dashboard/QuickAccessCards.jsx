@@ -9,7 +9,7 @@ export default function QuickAccessCards({ lowStockCount, pendingActionsCount })
     <section className="grid grid-cols-2 gap-4 mb-6">
       {/* Estoque Card */}
       <div
-        className="bg-white p-5 rounded-xl shadow-sm border border-[#cac0c0]/10 flex flex-col justify-between cursor-pointer group"
+        className="bg-white p-5 rounded-xl shadow-sm border border-[#cac0c0]/10 flex flex-col justify-between cursor-pointer group hover:shadow-md active:scale-[0.98] transition-all"
         onClick={() => navigate("/Gestao?tab=estoque")}
       >
         <div>
@@ -36,7 +36,7 @@ export default function QuickAccessCards({ lowStockCount, pendingActionsCount })
 
       {/* Meus Clientes Card */}
       <div
-        className="bg-white p-5 rounded-xl shadow-sm border border-[#cac0c0]/10 flex flex-col justify-between cursor-pointer group"
+        className="bg-white p-5 rounded-xl shadow-sm border border-[#cac0c0]/10 flex flex-col justify-between cursor-pointer group hover:shadow-md active:scale-[0.98] transition-all"
         onClick={() => navigate(createPageUrl("MyContacts"))}
       >
         <div>

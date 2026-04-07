@@ -19,7 +19,7 @@ export default function SaudeDoNegocioCard({ healthResult, franchise, botReport 
   return (
     <>
       <div
-        className="mb-4 rounded-xl border p-4 cursor-pointer hover:shadow-sm transition-shadow"
+        className="mb-4 rounded-xl border p-4 cursor-pointer hover:shadow-md active:scale-[0.98] transition-all"
         style={{
           background: `linear-gradient(135deg, ${statusColors.bg}, #ffffff)`,
           borderColor: statusColors.border,
