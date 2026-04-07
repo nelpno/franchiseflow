@@ -169,6 +169,23 @@ export default function AdminDashboard() {
       .reduce((sum, s) => sum + (s.unique_contacts || 0), 0);
   }, [summaries]);
 
+  // Helper: bot conversion rate from bot_conversations outcome for a date range
+  // Conversations with outcome=null (not yet processed by cron) stay in the denominator
+  // to avoid inflating the rate — only 'ongoing' are excluded (still in progress)
+  const botConversionForRange = useCallback((startDate, endDate) => {
+    let converted = 0, ongoing = 0, total = 0;
+    for (const c of botConversations) {
+      const d = c.started_at?.slice(0, 10);
+      if (d >= startDate && d <= endDate) {
+        total++;
+        if (c.outcome === 'converted') converted++;
+        else if (c.outcome === 'ongoing') ongoing++;
+      }
+    }
+    const denominator = total - ongoing;
+    return denominator > 0 ? Math.round((converted / denominator) * 100) : 0;
+  }, [botConversations]);
+
   const stats = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
@@ -181,8 +198,8 @@ export default function AdminDashboard() {
       // Use live todayContacts count (DailyUniqueContact), summaries for yesterday
       const contacts = Math.max(todayContacts.length, contactsFromSummaries(todayStr, todayStr));
       const prevContacts = contactsFromSummaries(yesterdayStr, yesterdayStr);
-      const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
-      const prevConversion = prevContacts > 0 ? Math.round((prevSalesCount / prevContacts) * 100) : 0;
+      const conversion = botConversionForRange(todayStr, todayStr);
+      const prevConversion = botConversionForRange(yesterdayStr, yesterdayStr);
       return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
     }
 
@@ -201,11 +218,11 @@ export default function AdminDashboard() {
     let contacts = contactsFromSummaries(cutoff, todayStr);
     if (todayContacts.length > 0) contacts = Math.max(contacts, contactsFromSummaries(cutoff, format(subDays(new Date(), 1), "yyyy-MM-dd")) + todayContacts.length);
     const prevContacts = contactsFromSummaries(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
-    const conversion = contacts > 0 ? Math.round((salesCount / contacts) * 100) : 0;
-    const prevConversion = prevContacts > 0 ? Math.round((prevSalesCount / prevContacts) * 100) : 0;
+    const conversion = botConversionForRange(cutoff, todayStr);
+    const prevConversion = botConversionForRange(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
 
     return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
-  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries]);
+  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botConversionForRange]);
 
   // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>

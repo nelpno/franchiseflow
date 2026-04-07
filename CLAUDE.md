@@ -353,7 +353,6 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - AdminHeader fixo (`md:fixed md:left-[260px]`) — ajustar se mudar sidebar width
 - Wizard: 6 passos visuais, Revisão NÃO conta (X/5). Upload catálogo JPG only
 - `personal_phone_for_summary` input: máscara `(XX) XXXXX-XXXX` com `type="tel" inputMode="numeric"`, salva apenas 11 dígitos puros via `.replace(/\D/g, '').slice(0, 11)`
-- **BUG CONHECIDO** (baixa prioridade, cosmético): KPI "Conversão" no AdminDashboard usa `salesCount / contacts * 100` — permite >100% quando cliente compra múltiplas vezes
 - Avatar header: apenas MOBILE. Botão "REGISTRAR VENDA": `hidden md:flex`
 
 ---
