@@ -240,32 +240,6 @@ export default function AdminDashboard() {
     [todaySales]
   );
 
-  // Generate mini sparkline data from recent summaries + real-time fallback
-  const sparklineData = useMemo(() => {
-    const last6 = [];
-    for (let i = 5; i >= 0; i--) {
-      const dateStr = format(subDays(new Date(), i), "yyyy-MM-dd");
-      // Cron data
-      const daySummaries = summaries.filter((s) => s.date === dateStr);
-      const cronSales = daySummaries.reduce((s, r) => s + (r.sales_count || 0), 0);
-      const cronRevenue = daySummaries.reduce((s, r) => s + (parseFloat(r.sales_value) || 0), 0);
-      // Real-time fallback from allSales
-      const daySalesArr = allSales.filter((s) => s.sale_date === dateStr);
-      const rtSales = daySalesArr.length;
-      const rtRevenue = daySalesArr.reduce(
-        (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
-      );
-      const botSalesDay = daySalesArr.filter(s => s.source === 'whatsapp' || s.source === 'facebook').length;
-      const botPct = rtSales > 0 ? Math.round((botSalesDay / rtSales) * 100) : 0;
-      last6.push({
-        sales: Math.max(cronSales, rtSales),
-        revenue: Math.max(cronRevenue, rtRevenue),
-        botPercent: botPct,
-      });
-    }
-    return last6;
-  }, [summaries, allSales]);
-
   const chartDays = period === "30d" ? 30 : 7;
 
   if (isLoading) {
@@ -313,8 +287,6 @@ export default function AdminDashboard() {
       iconBg: "bg-[#a80012]/10",
       iconColor: "text-[#a80012]",
       trendColor: "text-[#a80012]",
-      sparkKey: "sales",
-      sparkColor: "#a80012",
     },
     {
       title: "FATURAMENTO",
@@ -325,9 +297,6 @@ export default function AdminDashboard() {
       iconBg: "bg-[#775a19]/10",
       iconColor: "text-[#775a19]",
       trendColor: "text-[#a80012]",
-      sparkKey: "revenue",
-      sparkColor: "#775a19",
-      isValue: true,
     },
     {
       title: "CONVERSÃO",
@@ -338,8 +307,6 @@ export default function AdminDashboard() {
       iconBg: "bg-[#775a19]/10",
       iconColor: "text-[#775a19]",
       trendColor: "text-[#a80012]",
-      sparkKey: "sales",
-      sparkColor: "#775a19",
     },
     {
       title: "VENDAS BOT",
@@ -350,8 +317,6 @@ export default function AdminDashboard() {
       iconBg: "bg-[#705d00]/10",
       iconColor: "text-[#705d00]",
       trendColor: "text-[#a80012]",
-      sparkKey: "botPercent",
-      sparkColor: "#705d00",
     },
   ];
 
@@ -383,9 +348,6 @@ export default function AdminDashboard() {
             trendTextColor = isDown ? "text-[#ba1a1a]" : "text-[#a80012]";
           }
 
-          const sparkValues = sparklineData.map((d) => d[card.sparkKey]);
-          const maxSpark = Math.max(...sparkValues, 1);
-
           return (
             <div
               key={card.title}
@@ -416,26 +378,6 @@ export default function AdminDashboard() {
                 <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight font-mono-numbers text-[#1b1c1d]">
                   {card.value}
                 </h3>
-              </div>
-
-              {/* Mini sparkline bars */}
-              <div className="h-8 flex items-end gap-1">
-                {sparkValues.map((v, idx) => {
-                  const h = Math.max((v / maxSpark) * 100, 10);
-                  const isLast = idx === sparkValues.length - 1;
-                  return (
-                    <div
-                      key={idx}
-                      className="w-full rounded-sm"
-                      style={{
-                        height: `${h}%`,
-                        backgroundColor: isLast
-                          ? card.sparkColor
-                          : `${card.sparkColor}1A`,
-                      }}
-                    />
-                  );
-                })}
               </div>
             </div>
           );
