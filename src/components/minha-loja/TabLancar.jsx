@@ -16,7 +16,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
 import SaleReceipt from "./SaleReceipt";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
-import { generateReceiptImage, shareImage, printImage } from "@/lib/shareUtils";
+import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
 import { toast } from "sonner";
 import { format, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -346,8 +346,7 @@ export default function TabLancar({
         return;
       }
 
-      const blob = await generateReceiptImage(receiptRef.current);
-      await printImage(blob);
+      await printReceipt(receiptRef.current);
     } catch (err) {
       console.error("Erro ao imprimir:", err);
       toast.error("Erro ao imprimir comprovante.");

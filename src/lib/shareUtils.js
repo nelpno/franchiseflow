@@ -107,3 +107,67 @@ export async function printImage(blob) {
   };
   doc.body.appendChild(img);
 }
+
+/**
+ * Converts all <img> src attributes in a cloned DOM tree to data URIs.
+ * Prevents cross-origin/loading issues when injecting into an isolated iframe.
+ */
+async function convertImagesToDataUri(container) {
+  const images = container.querySelectorAll("img");
+  for (const img of images) {
+    if (img.src.startsWith("data:")) continue;
+    try {
+      const response = await fetch(img.src);
+      const blob = await response.blob();
+      const dataUri = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+      img.src = dataUri;
+    } catch {
+      // Keep original src if conversion fails
+    }
+  }
+}
+
+/**
+ * Prints a receipt by cloning the DOM element and printing native HTML/CSS.
+ * Uses @page { size: 80mm auto } for thermal printer compatibility.
+ * Unlike printImage(), this preserves crisp text instead of rasterizing to PNG.
+ * @param {HTMLElement} element - The rendered receipt DOM element
+ */
+export async function printReceipt(element) {
+  const clone = element.cloneNode(true);
+  await convertImagesToDataUri(clone);
+
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:450px;height:600px;";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(`<!DOCTYPE html><html><head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      @page { size: 80mm auto; margin: 2mm; }
+      @media print {
+        html, body { margin: 0; padding: 0; width: 80mm; }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
+      body { margin: 0; padding: 0; background: #fff; }
+    </style>
+  </head><body></body></html>`);
+  doc.close();
+
+  doc.body.appendChild(clone);
+
+  await Promise.race([doc.fonts.ready, new Promise((r) => setTimeout(r, 3000))]);
+
+  iframe.contentWindow.focus();
+  iframe.contentWindow.print();
+
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 1000);
+}
