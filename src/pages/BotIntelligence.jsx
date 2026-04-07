@@ -472,9 +472,9 @@ export default function BotIntelligence() {
 
       // Fetch conversations + messages + sales in parallel
       const [allConvsRes, msgsRes, salesRes] = await Promise.allSettled([
-        BotConversation.list("-started_at", 2000),
-        ConversationMessage.list("-created_at", 5000, { columns: "id,conversation_id,direction,franchise_id" }),
-        Sale.filter({ source: "bot" }, "-sale_date", 2000, { columns: "id,franchise_id,value,delivery_fee,sale_date" }),
+        BotConversation.list("-started_at", null, { fetchAll: true }),
+        ConversationMessage.list("-created_at", null, { columns: "id,conversation_id,direction,franchise_id", fetchAll: true }),
+        Sale.filter({ source: "bot" }, "-sale_date", null, { columns: "id,franchise_id,value,delivery_fee,sale_date", fetchAll: true }),
       ]);
       if (!mountedRef.current) return;
 
