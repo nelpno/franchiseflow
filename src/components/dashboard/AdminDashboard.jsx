@@ -66,7 +66,7 @@ export default function AdminDashboard() {
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
-        BotConversation.list('-started_at', 2000, { columns: 'id, franchise_id, started_at, quality_score, outcome', signal }),
+        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, quality_score, outcome', signal, fetchAll: true }),
         ConversationMessage.filter({ direction: 'human' }, '-created_at', 2000, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal }),
         Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at', signal, fetchAll: true }),
       ]);
@@ -169,21 +169,19 @@ export default function AdminDashboard() {
       .reduce((sum, s) => sum + (s.unique_contacts || 0), 0);
   }, [summaries]);
 
-  // Helper: bot conversion rate from bot_conversations outcome for a date range
-  // Conversations with outcome=null (not yet processed by cron) stay in the denominator
-  // to avoid inflating the rate — only 'ongoing' are excluded (still in progress)
-  const botConversionForRange = useCallback((startDate, endDate) => {
-    let converted = 0, ongoing = 0, total = 0;
+  // Helper: conversion rate = total sales / concluded bot conversations for a date range
+  // Uses all sales (bot + manual) as numerator since leads come from bot conversations
+  // Only 'ongoing' excluded from denominator (still in progress)
+  const botLeadsForRange = useCallback((startDate, endDate) => {
+    let ongoing = 0, total = 0;
     for (const c of botConversations) {
       const d = c.started_at?.slice(0, 10);
       if (d >= startDate && d <= endDate) {
         total++;
-        if (c.outcome === 'converted') converted++;
-        else if (c.outcome === 'ongoing') ongoing++;
+        if (c.outcome === 'ongoing') ongoing++;
       }
     }
-    const denominator = total - ongoing;
-    return denominator > 0 ? Math.round((converted / denominator) * 100) : 0;
+    return total - ongoing;
   }, [botConversations]);
 
   const stats = useMemo(() => {
@@ -198,8 +196,10 @@ export default function AdminDashboard() {
       // Use live todayContacts count (DailyUniqueContact), summaries for yesterday
       const contacts = Math.max(todayContacts.length, contactsFromSummaries(todayStr, todayStr));
       const prevContacts = contactsFromSummaries(yesterdayStr, yesterdayStr);
-      const conversion = botConversionForRange(todayStr, todayStr);
-      const prevConversion = botConversionForRange(yesterdayStr, yesterdayStr);
+      const leads = botLeadsForRange(todayStr, todayStr);
+      const prevLeads = botLeadsForRange(yesterdayStr, yesterdayStr);
+      const conversion = leads > 0 ? Math.round((salesCount / leads) * 100) : 0;
+      const prevConversion = prevLeads > 0 ? Math.round((prevSalesCount / prevLeads) * 100) : 0;
       return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
     }
 
@@ -218,11 +218,13 @@ export default function AdminDashboard() {
     let contacts = contactsFromSummaries(cutoff, todayStr);
     if (todayContacts.length > 0) contacts = Math.max(contacts, contactsFromSummaries(cutoff, format(subDays(new Date(), 1), "yyyy-MM-dd")) + todayContacts.length);
     const prevContacts = contactsFromSummaries(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
-    const conversion = botConversionForRange(cutoff, todayStr);
-    const prevConversion = botConversionForRange(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
+    const leads = botLeadsForRange(cutoff, todayStr);
+    const prevLeads = botLeadsForRange(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
+    const conversion = leads > 0 ? Math.round((salesCount / leads) * 100) : 0;
+    const prevConversion = prevLeads > 0 ? Math.round((prevSalesCount / prevLeads) * 100) : 0;
 
     return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion };
-  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botConversionForRange]);
+  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botLeadsForRange]);
 
   // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>
