@@ -34,7 +34,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
       }
     });
 
-    const isBotSource = (s) => s.source === 'whatsapp' || s.source === 'facebook';
+    const isBotSource = (s) => s.source === 'bot' || s.source === 'whatsapp' || s.source === 'facebook';
     const saleRevenue = (s) => (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0);
 
     if (period === "today") {

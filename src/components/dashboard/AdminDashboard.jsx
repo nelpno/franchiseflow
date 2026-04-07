@@ -15,7 +15,7 @@ import BotSummaryCard from "./BotSummaryCard";
 import FinanceiroSummaryCard from "./FinanceiroSummaryCard";
 import { buildConfigMap } from "@/lib/franchiseUtils";
 
-const isBotSource = (s) => s.source === 'whatsapp' || s.source === 'facebook';
+const isBotSource = (s) => s.source === 'bot' || s.source === 'whatsapp' || s.source === 'facebook';
 
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
