@@ -31,25 +31,17 @@ Importar sempre de `@/entities/all` — NÃO usar supabase.from() diretamente na
 - Storage bucket: `catalog-images/produtos/` (público) — fotos otimizadas de produtos para bot WhatsApp (JPEG 1200px, 100-500KB)
 
 ### Autenticação (src/lib/AuthContext.jsx)
-Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supabase signInWithPassword.
-- AuthContext usa getSession() + onAuthStateChange(). Timeout de 5s como safety net
-- `AuthContext.Provider` value memoizado com `useMemo` (20+ consumers)
+Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supabase signInWithPassword. Apenas email/senha (Google REMOVIDO).
+- `AuthContext.Provider` value memoizado com `useMemo` (20+ consumers). `logout()` e `navigateToLogin()` são `useCallback` — sem isso, `useMemo` é inútil
 - `logout()` limpa state ANTES do `await signOut()` — UI reage instantaneamente
-- Login com Google REMOVIDO — apenas email/senha
-- Rota `/set-password`: detecta `type=invite`/`type=recovery` no hash OU search params (PKCE). Redireciona para `/login` quando não autenticado
-- Detecção de convite usa `user_metadata.password_set` (PKCE não passa `type=invite`). SetPassword marca `password_set: true` via `updateUser()`
-- `password_setup_type` usa `sessionStorage` (NÃO localStorage)
-- Login.jsx: NUNCA `window.location.href` após signIn — `onAuthStateChange('SIGNED_IN')` + App.jsx `Navigate` cuida do redirect (evita race condition reload vs sessão)
-- Login.jsx tem "Primeiro acesso? Defina sua senha aqui" como rede de segurança
-- Login.jsx e SetPassword.jsx compartilham template visual — manter consistência
-- `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (NÃO seta `isAuthenticated=true` com dados vazios)
 - supabaseClient.js: lock auth usa mutex async in-memory (promise chaining + timeout 5s). NUNCA reverter para bypass `fn()` direto — causa race condition logout→login
-- `onAuthStateChange('SIGNED_IN')`: DEVE setar `setIsLoading(true)` ANTES de `loadUserProfile`. Safety timeout 10s via `loginSafetyTimerRef`
-- `onAuthStateChange('SIGNED_OUT')`: guard `lastSignedInTimeRef` (3s) ignora evento stale. NUNCA chamar `getSession()` dentro do handler (risco de event loop)
-- Login/SetPassword: `setIsLoading(false)` OBRIGATÓRIO no caminho de sucesso — NUNCA depender de unmount para resetar loading state
-- `ProfileRetryScreen` em App.jsx: retry + "Voltar ao login" como escape. `retryProfile` busca sessão fresca via `getSession()`
-- Safety timeout auth: 8s → mostra retry UI (NÃO redirect silencioso para login)
-- `logout()` e `navigateToLogin()` são `useCallback` — sem isso, `useMemo` do contextValue é inútil (20+ consumers)
+- Rota `/set-password`: detecta `type=invite`/`type=recovery` no hash OU search params (PKCE). `password_setup_type` usa `sessionStorage` (NÃO localStorage)
+- Detecção de convite usa `user_metadata.password_set` (PKCE não passa `type=invite`). SetPassword marca `password_set: true` via `updateUser()`
+- Login.jsx: NUNCA `window.location.href` ap��s signIn — `onAuthStateChange('SIGNED_IN')` + App.jsx `Navigate` cuida do redirect
+- `onAuthStateChange('SIGNED_IN')`: DEVE setar `setIsLoading(true)` ANTES de `loadUserProfile`. Safety timeout 10s
+- `onAuthStateChange('SIGNED_OUT')`: guard `lastSignedInTimeRef` (3s) ignora evento stale. NUNCA chamar `getSession()` dentro do handler
+- Login/SetPassword: `setIsLoading(false)` OBRIGATÓRIO no caminho de sucesso — NUNCA depender de unmount para resetar loading
+- `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI. Safety timeout 8s → retry UI (NÃO redirect silencioso)
 
 ### Row Level Security
 - Admin vê tudo; franqueado vê apenas suas franquias (managed_franchise_ids)
@@ -95,30 +87,19 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Faturamento bruto = `value + delivery_fee` em TODOS os cálculos de revenue. TabResultado mostra linhas separadas
 - Linhas financeiras com valor zero ficam ocultas
 - Edição de venda = deletar sale_items antigos + reinserir novos (triggers cuidam do estoque)
-- `SaleReceipt.jsx` + `shareUtils.js` (dynamic import): `shareImage` (Web Share API mobile / print desktop), `printImage` (iframe → `window.print()`), `generateReceiptImage` (html2canvas → blob)
-- `TabLancar.jsx`: `shareData`/`receiptRef` são shared state entre share e print — desabilitar ambos botões enquanto qualquer operação estiver em andamento
-- Botões de ação vendas (Compartilhar/Imprimir/Editar/Excluir): `<span className="hidden sm:inline">` para labels, icon-only no mobile
+- `SaleReceipt.jsx` + `shareUtils.js` (dynamic import): Web Share API mobile / print desktop. `shareData`/`receiptRef` shared state — desabilitar botões enquanto operação em andamento
 - `sale_items.cost_price` é snapshot do momento da venda. `sale_price` padrão = `cost_price * 2`
 - `sale_date` é DATE only — usar `created_at` para timestamp completo
-- **Conferência de pagamentos**: `payment_confirmed` (bool, default false) + `confirmed_at` (timestamptz) na tabela sales
-  - Chip toggle "Pendente"/"Recebido" no card collapsed (amber/verde) com borda esquerda colorida
-  - Filtro Todas/Pendentes/Confirmadas + resumo split (pendentes R$ | recebidas R$)
-  - "Confirmar todas" em lote (batching grupos de 10, dialog confirmação)
-  - `totalPendingCount` calculado separado do `periodStats` (badge independe do filtro ativo)
+- **Conferência de pagamentos**: `payment_confirmed` (bool, default false) + `confirmed_at` (timestamptz). Toggle, filtro, confirmação em lote (grupos de 10)
   - `Vendas.jsx` columns DEVE incluir `payment_confirmed, confirmed_at` — sem eles o card não atualiza visualmente
-  - Index: `idx_sales_payment_confirmed (franchise_id, payment_confirmed)`
-  - Migration: `supabase/add-payment-confirmation.sql`
+  - `totalPendingCount` calculado separado do `periodStats` (badge independe do filtro ativo)
 
 ### Dashboard Franqueado (Coach-First)
-- **Ordem**: Saudação → Seletor (Hoje/Semana/Mês) → Stats → Meta do Dia → SaúdeDoNegócioCard → PriorityAction → RankingStreak → MiniRevenueChart → MarketingPaymentCard → SmartActions ("Outras Ações")
-- `SaudeDoNegocioCard`: Score Ring (ProgressRing com `label`) + badge status + frase coaching + "Ver diagnóstico" → DiagnosticoSheet
-- `PriorityAction`: 7 cenários priorizados (estoque→leads→frete→reposição→marketing→bot→tudo ok), inline compacto
-- `DiagnosticoSheet`: Sheet com barras 5 dimensões + seção bot (abre BotCoachSheet) + problemas
-- `SmartActions`: renomeado "Outras Ações", aceita props `botReport` e `excludeType`, cap 4 items
-- **Removidos do dashboard**: BotPerformanceCard (absorvido), QuickAccessCards (absorvido), PeriodComparisonCard (redundante)
-- `healthResult` calculado via `calculateFranchiseHealth()` no parent — bot data como arrays vazios (lazy no drill-down)
-- Period selector: `today` / `week` (seg-dom via startOfWeek) / `month` (startOfMonth/endOfMonth)
-- `ProgressRing` suporta prop `label` (string) para renderizar número no centro em vez de ícone
+- **Ordem**: Saudação → Seletor → Stats → Meta → SaúdeDoNegócioCard → PriorityAction → RankingStreak → MiniRevenueChart → MarketingPaymentCard → SmartActions
+- `SaudeDoNegocioCard`: Score Ring + badge + coaching → `DiagnosticoSheet` (5 dimensões + bot + problemas)
+- `PriorityAction`: 7 cenários priorizados (estoque→leads→frete→reposição→marketing→bot→tudo ok)
+- `healthResult` calculado via `calculateFranchiseHealth()` no parent — bot data lazy no drill-down
+- Period selector: `today` / `week` (seg-dom) / `month`. `ProgressRing` suporta prop `label`
 
 ### Pedido de Compra / Reposição
 - `purchase_orders` + `purchase_order_items` com trigger auto-incremento ao marcar "entregue"
@@ -126,13 +107,10 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - CHECK constraints usam português (`pendente`, `confirmado`, `em_rota`, `entregue`, `cancelado`)
 - PL/pgSQL: `WHERE evolution_instance_id = NEW.franchise_id` (NÃO `WHERE id = NEW.franchise_id`)
 - `notify_franchise_users(p_franchise_id UUID)` recebe UUID — resolver com subquery
-- `delivered_at` TIMESTAMPTZ: salvo automaticamente ao marcar "entregue" (individual ou lote)
-- **Filtro por mês**: seletor chevron no topo. Pedidos pendentes/confirmados/em_rota aparecem SEMPRE (independente do mês) para não serem esquecidos. Mês filtra apenas entregues/cancelados
-- **Alteração de status em lote**: selecionar múltiplos → dropdown "Alterar para..." → Confirmar/Em Rota/Entregue. Dialog de confirmação antes de executar
-- **Timeline logística no dialog**: data do pedido → previsão → entrega + tempo de atendimento. Indica "(atrasado)" se entrega ultrapassou previsão
-- **Stats cards filtrados por mês**: Pendentes, Em Rota, Entregues, Tempo Médio de entrega
-- **Franquias ordenadas alfabeticamente** no dropdown do Meu Vendedor (localeCompare pt-BR)
-- **Draft localStorage**: `PurchaseOrderForm` salva `quantities` + `notes` automaticamente em `reposicao_draft_{franchiseId}`. Restaura ao reabrir, banner "Rascunho restaurado" com opção limpar. Expira em 24h. Limpa após envio com sucesso
+- `delivered_at` TIMESTAMPTZ: salvo automaticamente ao marcar "entregue"
+- Filtro por mês: pendentes/confirmados/em_rota aparecem SEMPRE; mês filtra apenas entregues/cancelados
+- Alteração de status em lote + timeline logística no dialog
+- **Draft localStorage**: `reposicao_draft_{franchiseId}`, expira 24h, limpa após envio
 
 ### Investimento Marketing
 - `marketing_payments`: 1 registro por franquia/mês. `franchise_id` = evolution_instance_id, `reference_month` = "2026-04"
@@ -142,11 +120,9 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - CHECK: `amount >= 200` (mínimo obrigatório)
 - `status`: 'pending' | 'confirmed' | 'rejected'. Franqueado só pode UPDATE se `status = 'rejected'`
 - `MARKETING_TAX_RATE = 0.13` em `franchiseUtils.js`. Líquido campanha = valor × 0.87
-- **Franqueado**: `MarketingPaymentCard` no FranchiseeDashboard (após RankingStreak). Upload comprovante para bucket `marketing-comprovantes`
-- **Admin**: Aba "Investimento" em Marketing.jsx (via Tabs). `MarketingPaymentsAdmin` mostra resumo (arrecadado/líquido/depositado/saldo) + tabela todas franquias + lista depósitos Meta
-- Marketing.jsx usa `activeTab` state controlado por `Tabs.onValueChange`. Conteúdo de materiais renderizado fora do `<Tabs>` via `{activeTab === "materiais" && (...)}`
-- `MetaDepositDialog`: dialog simples para registrar depósito (valor, data, notas)
-- Componentes: `src/components/dashboard/MarketingPaymentCard.jsx`, `src/components/marketing/MarketingPaymentsAdmin.jsx`, `src/components/marketing/MetaDepositDialog.jsx`
+- **Franqueado**: `MarketingPaymentCard` no dashboard. Upload comprovante para bucket `marketing-comprovantes`
+- **Admin**: Aba "Investimento" em Marketing.jsx. `MarketingPaymentsAdmin` (resumo + tabela + depósitos Meta). `MetaDepositDialog` para registrar depósitos
+- Marketing.jsx usa `activeTab` state controlado por `Tabs.onValueChange`
 
 ### Auto-vinculação User↔Franchise
 - Trigger `handle_new_user()` em auth.users (NÃO trigger separado em profiles)
@@ -162,8 +138,7 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - `franchise_id` = evolution_instance_id (TEXT). `contact_phone` = 11 dígitos (sem 55)
 - FK `conversation_id` → `bot_conversations(id)` ON DELETE SET NULL (auto-vinculado pela RPC)
 - RPC `log_conversation_message()`: SECURITY DEFINER, dedup LID via ON CONFLICT, trunca content 10K chars
-- Sub-workflow n8n `LogConversationMessage` (`9XQ5Jkccus2vtkOE`): 5 nós (trigger + validate + IF + HTTP RPC + done), todos continueOnFail=true
-- Pontos de logging no V3: Log Inbound (paralelo ao GerenteGeral1, após Customer Context), Log Outbound (paralelo ao Wait5, após Enviar Mensagem), Log Human (após Gera Timeout1 no branch outcoming)
+- Sub-workflow n8n `LogConversationMessage` (`9XQ5Jkccus2vtkOE`): 5 nós, todos continueOnFail=true
 - Entity: `ConversationMessage` em `src/entities/all.js` (sem UI nesta fase)
 - Migration: `supabase/conversation-messages.sql`
 - Volumetria: ~1.500 rows/dia, ~550K/ano (~300MB). Sem particionamento até 1M+
@@ -181,31 +156,24 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Workflow Analyzer**: `Bot Conversation Analyzer` (ID: `jh1ro9klxhbEvWgl`) — cron 30min, Gemini 2.5 Flash via credencial `ezQN27UjYZVHyDEf`, classifica conversas encerradas (>30min sem msg)
   - Parse JSON: strip markdown fences + extrai `{` a `}` (fix 05/04 — Gemini retornava JSON wrappado)
   - Prompt v4: guia de intent (NUNCA "outro" como default), sentiment (NÃO neutro como padrão), topics com lista de produtos Maxi Massas
-- **Workflow Weekly Report**: `Weekly Bot Report` (ID: `JSzGEHQBo6Jmxhi3`) — INATIVO/OBSOLETO (substituído pelo Bot Coach Report)
 - **Bot Coach Report** (`gDTZPdrsVLhUk031`): 25 nós, cron dia 1 e 16 às 8h. RPC `get_franchise_report_data` → Gemini 2.5 Flash (chainLlm, texto puro) → Save `bot_reports` → WuzAPI admin_nelson. Wait Anti-Spam 5-15s entre envios
   - `bot_reports`: relatório quinzenal por franquia. Entity `BotReport`. RLS: admin/manager SELECT, franqueado vê os seus, admin DELETE
   - WhatsApp: resumo curto (~300 chars, gerado por Code node). Dashboard: relatório completo (~1800 chars) no BotCoachSheet
   - Instância WuzAPI: `admin_nelson` (send-only, token `e72e83eb-...`). NUNCA configurar inbound nessa instância
   - RPC `get_franchise_report_data(p_franchise_id, p_start_date, p_end_date)`: retorna 9 datasets em 1 chamada (SECURITY DEFINER)
-- **EnviaPedidoFechado V2** (`RnF1Jh6nDUj0IRHI`): nó `Mark Bot Converted` (HTTP Request → `upsert_bot_conversation` com `p_status='converted'`) adicionado paralelo ao Create Sale (fix 05/04 — funil nunca marcava conversão)
-- **Página admin**: `/BotIntelligence` — 6 KPIs (2 rows grid-cols-3): Autonomia, Vendas Bot, Dropoff 1ª Msg, Total Conversas, Taxa Conversão, Score Médio. Funil, insights, ranking com autonomia/vendas/dropoff por franquia + drill-down
-- **Widget franqueado**: `BotPerformanceCard` — grid-cols-3 (Atendimentos, Vendas Bot com receita real, Autonomia com benchmark vs média rede 40%). Dica inteligente baseada em autonomia vs rede. Oculto se < 5 conversas/mês
+- **EnviaPedidoFechado**: nó `Mark Bot Converted` (`upsert_bot_conversation` com `p_status='converted'`) paralelo ao Create Sale
+- **Página admin**: `/BotIntelligence` — 6 KPIs, funil, insights, ranking por franquia + drill-down
+- **Widget franqueado**: `BotPerformanceCard` — Atendimentos, Vendas Bot, Autonomia (benchmark vs rede 40%). Oculto se < 5 conversas/mês
 - **Custo**: ~R$ 5/mês (Gemini 2.5 Flash-Lite, ~150 conversas/dia)
 - **CUIDADO**: PUT na API n8n pode desativar workflows — sempre verificar `active` e reativar após updates
-- Migration: `supabase/migration-bot-intelligence.sql`
-- Spec: `docs/superpowers/specs/2026-04-04-bot-intelligence-design.md`
 
 ### Integração Vendedor Genérico (n8n)
 - V4 (`aRBzPABwrjhWCPvq`): PRODUÇÃO ATUAL (desde 05/04/2026). 97 nós. Buffer debounce 10s, string JSON (não LIST), zero IIFEs no GerenteGeral, Prepara Contexto V4.1 pré-computa tudo
-- V3 (`XqWZyLl1AHlnJvdj`): DESATIVADO (rollback disponível). RabbitMQ trigger, queue `zuckzapgo.events`, 100% Supabase
-- V2 (`w7loLOXUmRR3AzuO`): ARQUIVADO (substituído pelo V3)
-- V1 (`PALRV1RqD3opHMzk`): DESATIVADO (Base44 legado)
+- V3 (`XqWZyLl1AHlnJvdj`) DESATIVADO rollback | V2 (`w7loLOXUmRR3AzuO`) / V1 (`PALRV1RqD3opHMzk`) ARQUIVADOS
 - Bot respeita `has_pickup`/`has_delivery` — regras condicionais no GerenteGeral1 e Pedido_Checkout1
-- systemMessage fica em `node.parameters.options.systemMessage` (GerenteGeral1 e sub-agentes)
-- Campo "Hoje" no systemMessage: `$now.setZone('America/Sao_Paulo').setLocale('pt-BR').toFormat(...)` — DEVE usar `setLocale('pt-BR')` para dia da semana em português (sem locale, Luxon retorna inglês e o LLM confunde com schedule em português)
-- `bot_personality` removido do prompt (hardcoded "profissional") — UI de personalidade foi removida
+- systemMessage fica em `node.parameters.options.systemMessage`. Campo "Hoje": DEVE usar `setLocale('pt-BR')` (sem locale, Luxon retorna inglês)
 - Regras fortes no prompt usam prefixo `>>>` (ex: `>>> IMPORTANTE: Esta unidade NAO aceita retirada`)
-- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 16 nós (12 originais + 3 dedup Redis + Mark Bot Converted). V1 (`ORNRLkFLnMcIQ9Ke`) MORTO
+- Sub-workflow EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI` — 16 nós (12 originais + 3 dedup Redis + Mark Bot Converted)
 - **REGRA REDIS n8n**: n8n Redis node v1 NÃO suporta LRANGE. RPUSH cria LIST mas GET lê STRING (WRONGTYPE error). Para buffer de msgs: usar GET→Append(Code)→SET com string JSON array, NUNCA RPUSH+GET
 - **REGRA REDIS n8n OUTPUT**: Redis GET node retorna resultado em `$json.propertyName` (NÃO `$json.value`). Em IFs, usar `={{ $json.propertyName }}` — `$json.value` é undefined e fallback `$json` vira `[object Object]` (nunca empty). Incidente 05/04: 20+ vendas perdidas
 - Credencial Supabase: `mIVPcJBNcDCx21LR`, key `supabaseApi` — DEVE ser service_role
@@ -230,8 +198,6 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **ATENÇÃO**: `N8N_API_URL` no `.env` é apenas `https://teste.dynamicagents.tech` (sem `/api/v1`) — ao usar via fetch, concatenar `/api/v1` manualmente
 - n8n API PUT settings: apenas `executionOrder`, `callerPolicy` — outros (`availableInMCP`, `binaryMode`, etc) causam 400 `must NOT have additional properties`. Ao fazer PUT com settings do GET, filtrar campos antes de enviar
 - **NUNCA `...item.json` em Code nodes n8n** — copia payload inteiro (13+ MB com WhatsApp). Output explícito: `{ json: { _processado: {...} } }`. Downstream acessa trigger via `$('NomeTrigger').item.json`
-- **n8n sizing (2026-04-01)**: Editor 1×1core/2GB, Webhook 2×1.5core/3GB, Worker 3×1.5core/3GB (concurrency=5). Binary data em filesystem, auto-prune 7 dias
-- **N8N_MIGRATE_FS_STORAGE_PATH=true** causa EBUSY crash com volume montado — NÃO usar enquanto serviços rodam
 - **redis:7-alpine** crasha no Swarm — manter `redis:latest` com `--appendonly yes --maxmemory 512mb --maxmemory-policy volatile-lru`
 - n8n API PUT body DEVE incluir `name` do workflow — sem ele retorna 400 `must have required property 'name'`
 - n8n editor aberto SOBRESCREVE ao executar — fechar aba antes de testar
@@ -240,52 +206,33 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - **Regex em systemMessage n8n**: NUNCA `[^.]*` — expressões `{{ }}` contêm pontos. Usar `.*?` (lazy)
 - n8n `neverError: true` retorna erros com HTTP 200 — checar `data.code >= 400`
 - RPCs bot: `get_contact_by_phone()`, `upsert_bot_contact()`, `update_contact_address()`
-- **V3 NÃO usa `upsert_bot_contact` RPC** — fluxo: GET_USER1 (lookup) → IF_USER1 → CREATE_USER1 (PushName) ou Edit Fields3. `upsert_bot_contact` existe mas só é chamada externamente
 - **Normalização telefone LID**: `numero_real` node DEVE strip 55 (como `extractPhone()`). `Normaliza1.chat_id_whatsapp` re-adiciona 55 para envio WhatsApp
 - **`AtualizaNome`**: Supabase Update direto (NÃO usa RPC). `$fromAI()` decide o nome — pode sobrescrever nomes editados manualmente. Prompt DEVE restringir a "SOMENTE quando cliente explicitamente reclamou"
 - **REGRA CRÍTICA `AtualizaNome`**: Filtro DEVE ser por `id` (UUID via `Edit Fields3.contact_id`), NUNCA por `franchise_id + telefone`. Filtro por telefone vazio causa mass update em TODOS os contatos da franquia (incidente 02/04/2026 — 98 contatos corrompidos em Ribeirão Preto)
 - **REGRA GERAL n8n Supabase UPDATE**: SEMPRE filtrar por `id` (UUID) em nós que fazem UPDATE. NUNCA filtrar apenas por `franchise_id + telefone` — se telefone vier vazio/undefined, n8n omite o filtro e o UPDATE atinge todas as rows
-- **`memoriaLead` sub-workflow** (`xJocFaDvztxeBHvQ`): APENAS Redis (NÃO toca Supabase). Merge de memória via gpt-4o-mini. Chave: `chat_id + "_memfranq"`
-- **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → `Customer Context` code gera contexto por segmento (novo/lead/vip/cliente)
-- **EnviaPedidoFechado `Prepare Sale Data`**: strip 55, dedup via Redis (key `sale_dedup_{tel}_{instance}_{valor}`, TTL 5min), payment default `pix` (18 aliases), itens validados
-- **EnviaPedidoFechado `Match Items`**: SEMPRE usar `sale_price` do inventário (fonte de verdade), NUNCA preço do LLM. Log itens não matched
-- **EnviaPedidoFechado `Create Sale`**: grava `customer_name` (do Start.nomecliente) e `contact_phone` (telefone_db). Campos adicionados 05/04
-- **EnviaPedidoFechado Dedup Redis**: Redis GET → `IF Nao Duplicado?` → Redis SET (TTL 5min). Chave: `sale_dedup_{tel}_{instance}_{valor}`. Redis nodes com `continueOnFail` (Redis down não bloqueia venda)
-- **EnviaPedidoFechado ordem**: `Prepare Sale Data` dispara em PARALELO: (1) `WhatsApp Franqueado` (alerta) e (2) `Redis GET Dedup → IF → Create Sale → Items + PIX`. Alerta é enviado ANTES da venda ser criada — se Create Sale falhar, franqueado recebe alerta de venda fantasma
-- **PIX Copia e Cola automático** (06/04/2026): Branch paralelo após `Create Sale` (NÃO após Prepare Sale Data — evita envio duplicado em dedup). 5 nós: `Busca Dados PIX` (Supabase REST) → `Gera PIX Copia e Cola` (Code, JS puro BR Code EMVCo/BACEN) → `IF Pix Valido?` → `Envia PIX Texto` (intro curto) → `Envia PIX Codigo` (código BR Code isolado). Só dispara se `payment_method === 'pix'` E `pix_key_data` não é null. Todos nós com `continueOnFail: true`. Bot continua informando chave Pix textualmente — Copia e Cola é complementar
-  - **Formato 2 mensagens**: Msg 1 = "*Pix Copia e Cola* 👇 Toque e segure para copiar", Msg 2 = APENAS o código BR Code puro (cliente faz long-press → Copiar → código inteiro copiado com 1 toque)
-  - Payload PIX: CRC16-CCITT em JS puro (polynomial 0x1021), TLV encoding, suporta phone/cpf/cnpj/email/random
-  - QR Code removido (código isolado é suficiente para copiar)
+- **`memoriaLead` sub-workflow** (`xJocFaDvztxeBHvQ`): APENAS Redis (NÃO toca Supabase). Merge de memória via gpt-4o-mini
+- **`Customer Intelligence`**: RPC `get_customer_intelligence(p_phone, p_franchise_id)` → contexto por segmento (novo/lead/vip/cliente)
+- **EnviaPedidoFechado**: dedup Redis (key `sale_dedup_{tel}_{instance}_{valor}`, TTL 5min, continueOnFail). Match Items SEMPRE usa `sale_price` do inventário (NUNCA preço do LLM). Alerta WhatsApp dispara em PARALELO ao Create Sale (alerta pode chegar antes da venda existir)
+- **PIX Copia e Cola automático**: Branch paralelo após `Create Sale` (só se `payment_method === 'pix'` E `pix_key_data` não null). 2 msgs: intro + BR Code puro para long-press copiar. CRC16-CCITT JS puro, TLV encoding. Todos nós `continueOnFail: true`
   - **NUNCA mover branch PIX para antes do Create Sale** — causa envio duplicado quando Redis dedup bloqueia segunda execução
 - **V4 Prepara Contexto Completo**: Code node que pré-computa TODOS os dados dinâmicos (payment, delivery, frete, social, horários). systemMessage do GerenteGeral referencia campos pré-computados — ZERO IIFEs inline. Vantagem: elimina risco de corrupção por `$` em expressões n8n
 
-#### Meta CAPI (Conversions API) — implementado 2026-04-02, fix 2026-04-03
+#### Meta CAPI (Conversions API)
 - **Objetivo**: fechar loop atribuição Meta Ads → WhatsApp bot → compra
-- **Pixel**: `5852647818195435` (Pixel de FRANQUIAS) — fallback quando franquia não tem `meta_dataset_id`
-- **WABA dataset_id**: preferido sobre pixel. Cada franquia pode ter `meta_dataset_id` + `whatsapp_business_account_id` em `franchise_configurations`
+- **Pixel**: `5852647818195435` (fallback). Preferir `meta_dataset_id` da franchise_configurations
 - **Env vars n8n** (stack Portainer ID 4): `META_PIXEL_ID` (fallback), `META_CAPI_ACCESS_TOKEN`
 - **3 eventos**: `LeadSubmitted` (novo contato com referral), `ViewContent` (catálogo enviado), `Purchase` (checkout fechado)
-- **Path real ctwaClid**: `contextInfo.externalAdReply.ctwaClid` (fallback: `contextInfo.ctwaClid`). Extração no "Code in JavaScript" do V3
-- **externalAdReply** em: `...contextInfo.externalAdReply` — campos: `sourceID` (ad_id), `sourceURL`, `sourceType`, `sourceApp`, `mediaURL`
-- **First-touch**: ctwa salvo na criação (CREATE_USER1) E atualizado em contatos existentes (Update CTWA Existente)
+- **Path real ctwaClid**: `contextInfo.externalAdReply.ctwaClid` (fallback: `contextInfo.ctwaClid`)
+- **First-touch**: ctwa salvo na criação E atualizado em contatos existentes
 - **has_meta_referral**: baseado APENAS em `!!ctwa_clid_val` — NUNCA `extAdReply` (objeto truthy causa falso positivo)
-- **REGRA: NUNCA `require('crypto')` em Code nodes n8n** — sandbox Task Runner bloqueia módulos Node.js. Usar apenas `ctwa_clid` para atribuição (identificador primário Meta para CTWA)
-- **REGRA: NUNCA usar Code node para Prepare CAPI no V3** — Code nodes usam task runner com pool limitado. Lead CAPI usa expressão inline no HTTP Request
-- **user_data CAPI**: `ctwa_clid` + `page_id` (condicional) + `whatsapp_business_account_id` (condicional). `ph` (phone hash) removido — `require('crypto')` bloqueado pelo sandbox
-- **CAPI URL**: `https://graph.facebook.com/v21.0/{dataset_id}/events` — usa `meta_dataset_id` da franchise_configurations com fallback `$env.META_PIXEL_ID`
-- **continueOnFail=true** OBRIGATÓRIO em TODOS os nodes CAPI (Code + HTTP + Supabase) — nunca bloqueia checkout/bot
-- **Workflows modificados**:
-  - V3 (`XqWZyLl1AHlnJvdj`): Code JS extrai ctwa → CREATE_USER1 salva 9 campos → IF Has Referral → Lead CAPI (HTTP inline com dataset_id da dadosunidade, SEM Code node Prepare)
-  - EnviaPedidoFechado (`RnF1Jh6nDUj0IRHI`): após Create Sale → IF Has CTWA → Prepare CAPI Data (Code, busca meta_dataset_id+waba_id, continueOnFail) → Meta CAPI Purchase (URL com dataset_id || pixel fallback) → Mark CAPI Sent
-  - EnviarCatalogo1 (`3Q53jOqD6cS5yWt4`): após Send Catalog Image → [paralelo] Lookup Contact CAPI → IF Has CTWA Catalog → TRUE: Prepare ViewContent → ViewContent CAPI | FALSE: No CAPI Response (Set node). Branch CAPI é paralelo ao Set Catalog Flag → Success Response. TODOS os caminhos DEVEM terminar com nó que produz output (fix 04/04 — sem isso, `executeWorkflowTrigger` retorna "did not return a response")
+- **REGRA: NUNCA `require('crypto')` em Code nodes n8n** — sandbox Task Runner bloqueia módulos Node.js
+- **CAPI URL**: `https://graph.facebook.com/v21.0/{dataset_id}/events` com fallback `$env.META_PIXEL_ID`
+- **continueOnFail=true** OBRIGATÓRIO em TODOS os nodes CAPI — nunca bloqueia checkout/bot
 - **Colunas** `contacts`: `ctwa_clid`, `meta_ad_id`, `meta_referral_source_url/type/body/at`, `meta_source_app`, `meta_media_url`, `meta_conversion_delay_seconds`
 - **Colunas** `sales`: `capi_sent` (bool), `capi_event_id` (text)
-- **Migrations**: `supabase/migration-meta-capi-tracking.sql`, `supabase/migration-meta-capi-extra-fields.sql`
-- **INCIDENTE 03/04**: Code node "Prepare Lead CAPI" sem continueOnFail travava execuções por 300s (task runner timeout). Fix: eliminado Code node, payload inline no HTTP Request
-- **INCIDENTE 04/04**: EnviarCatalogo1 retornava "did not return a response" — branch FALSE do IF Has CTWA Catalog não tinha nó conectado. Fix: adicionado "No CAPI Response" Set node
-- **REGRA sub-workflows**: TODOS os caminhos de execução em sub-workflows chamados via `executeWorkflowTrigger` DEVEM terminar com nó que produz output. Branches paralelos com IF sem nó na saída FALSE causam "did not return a response"
+- **REGRA sub-workflows**: TODOS os caminhos de execução em sub-workflows chamados via `executeWorkflowTrigger` DEVEM terminar com nó que produz output. IF sem nó na saída FALSE causa "did not return a response"
 
-#### Sub-agentes do Vendedor V3
+#### Sub-agentes do Vendedor
 - **GerenteGeral1**: orquestrador principal. LLMs: Gemini Flash (primary) + GPT-5.2 (fallback)
 - **CalculaFrete1**: calcula frete via GetDistance1 + tabela de regras. Isolado do GerenteGeral para evitar que o LLM invente valores de frete
 - **Pedido_Checkout1**: fecha pedido, calcula total, dispara checkout. Taxa de frete deve vir calculada pelo CalculaFrete1 antes
@@ -300,7 +247,6 @@ Supabase Auth com roles: admin, franchisee, manager. Login via `/login` com Supa
 - Frete no prompt vem de `delivery_schedule_text` (por grupo de dias) — NÃO mais de `delivery_fee_rules` ou `shipping_rules_costs` inline
 
 - `social_media_links`: JSONB `{instagram, facebook, whatsapp_channel}` — NUNCA concatenar como string (resulta `[object Object]`). Formatar campo a campo
-- **Teste Redis via n8n API**: criar workflow temporário com webhook trigger + nós Redis + responseMode lastNode → chamar webhook → verificar resposta → deletar workflow
 
 ### n8n Loops & Sub-workflows
 - **SplitInBatches v3**: output 0 = **Done**, output 1 = **Loop** (INVERTIDO vs v1/v2). TODOS os workflows ativos usam v3 com `{"options":{}}`
@@ -387,7 +333,6 @@ SUPABASE_SERVICE_ROLE_KEY=          # Service role key (bypasses RLS)
 SUPABASE_MANAGEMENT_TOKEN=          # sbp_ token para Management API
 VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
 N8N_API_KEY=                        # Pode não estar no shell — ler do .env
-N8N_VENDEDOR_V2_WORKFLOW_ID=w7loLOXUmRR3AzuO  # ARQUIVADO
 N8N_VENDEDOR_V3_WORKFLOW_ID=XqWZyLl1AHlnJvdj  # DESATIVADO (rollback)
 N8N_VENDEDOR_V4_WORKFLOW_ID=aRBzPABwrjhWCPvq  # PRODUÇÃO ATUAL
 N8N_WHATSAPP_WEBHOOK=a9c45ef7-36f7-4a64-ad9e-edadb69a31af
@@ -408,7 +353,7 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - AdminHeader fixo (`md:fixed md:left-[260px]`) — ajustar se mudar sidebar width
 - Wizard: 6 passos visuais, Revisão NÃO conta (X/5). Upload catálogo JPG only
 - `personal_phone_for_summary` input: máscara `(XX) XXXXX-XXXX` com `type="tel" inputMode="numeric"`, salva apenas 11 dígitos puros via `.replace(/\D/g, '').slice(0, 11)`
-- **BUG CONHECIDO**: KPI "Conversão" no AdminDashboard usa `salesCount / contacts * 100` — permite >100% quando cliente compra múltiplas vezes. Pendente revisão da fórmula
+- **BUG CONHECIDO** (baixa prioridade, cosmético): KPI "Conversão" no AdminDashboard usa `salesCount / contacts * 100` — permite >100% quando cliente compra múltiplas vezes
 - Avatar header: apenas MOBILE. Botão "REGISTRAR VENDA": `hidden md:flex`
 
 ---
@@ -508,17 +453,11 @@ ZUCKZAPGO_ADMIN_TOKEN=              # Admin token
 - Projeto: `w6o3hwtbya` — https://clarity.microsoft.com
 - Script no `index.html`, identify por user ID + role no `AuthContext.jsx`
 - Segmentação: role (admin/franchisee/manager) via `clarity("set", "role", ...)`
-- Dados: heatmaps, gravações de sessão, rage clicks, dead clicks, scroll depth
-- Revisão quinzenal dos dados para priorizar melhorias de UX
-- **Data Export API**: `GET https://www.clarity.ms/export-data/api/v1/project-live-insights`
-  - Auth: `Authorization: Bearer $CLARITY_DATA_EXPORT_TOKEN` (token no `.env`)
-  - Params: `numOfDays` (1-3), `dimension1`/`dimension2`/`dimension3` (Device, URL, Source, OS, Browser, Country/Region, Medium, Campaign, Channel)
-  - Métricas: Traffic, EngagementTime, DeadClickCount, RageClickCount, QuickbackClick, ExcessiveScroll, ScriptErrorCount, ErrorClickCount, ScrollDepth, PopularPages
-  - Limites: 10 req/dia, max 1000 rows, max 3 dimensões, dados últimos 1-3 dias, UTC
-  - **Client API**: `window.clarity("set", key, value)` para custom tags, `window.clarity("event", name)` para eventos, `window.clarity("identify", id)` para identificação
+- Dados: heatmaps, gravações, rage clicks, scroll depth. Revisão quinzenal
+- Data Export API e Client API: ver `memory/reference_clarity_analytics.md`
 
 ### Features Removidas (NÃO recriar)
-Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist (inativa), ReviewSummary campos Personalidade/Boas-vindas, `catalog_distributions` tabela removida
+Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist (inativa), ReviewSummary campos Personalidade/Boas-vindas, `catalog_distributions` tabela removida, BotPerformanceCard/QuickAccessCards/PeriodComparisonCard (absorvidos no dashboard coach-first), Weekly Bot Report workflow (`JSzGEHQBo6Jmxhi3`, substituído pelo Bot Coach Report), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`)
 
 ### Meta-regras
 - NUNCA alterar `franchise_configurations` sem verificar compatibilidade com vendedor genérico
@@ -588,6 +527,5 @@ npm run lint      # ESLint
 
 ## Docs de Referência
 - `docs/superpowers/specs/` — Specs de design (FASE 5, Minha Loja, Pedido Compra, Onboarding)
-- `docs/vendedor-generico-workflow-v2.json` — Workflow n8n vendedor V2
 - `docs/criar-usuario-zuckzapgo-workflow.json` — Workflow conexão WhatsApp
 - `docs/stitch-html/` — HTMLs originais do Google Stitch

@@ -21,6 +21,16 @@ dist-ssr
 # Claude Code (credenciais e worktrees)
 .claude/
 
+# Temp/misc
+temp/
+*.ogg
+*.tmp.txt
+plan_content.tmp.txt
+
+# Claude Code gerados
+.playwright-mcp/
+.superpowers/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
