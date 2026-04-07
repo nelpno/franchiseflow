@@ -115,6 +115,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
     ...(hasDelivery ? [{ label: "Pgto entrega", value: paymentLabels(formData.payment_delivery), warning: !formData.payment_delivery?.length }] : []),
     { label: "Retirada", value: hasPickup ? "Sim" : "Não" },
     ...(hasPickup ? [{ label: "Pgto retirada", value: paymentLabels(formData.payment_pickup), warning: !formData.payment_pickup?.length }] : []),
+    ...(hasPickup ? [{ label: "Requer agendamento", value: formData.pickup_requires_scheduling !== false ? "Sim" : "Não" }] : []),
     ...(hasPickup && formData.has_custom_pickup_hours && formData.pickup_schedule?.length > 0
       ? [{ label: "Horário retirada", value: formData.pickup_schedule.map(r => `${scheduleLabel(r.days)}: ${r.open}-${r.close}`).join(' | ') }]
       : hasPickup && !hasDelivery && formData.pickup_schedule?.length > 0

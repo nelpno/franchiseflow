@@ -41,6 +41,7 @@ const initialFormData = {
   // New wizard fields (may not exist in DB yet)
   has_delivery: true,
   has_pickup: false,
+  pickup_requires_scheduling: true,
   delivery_method: '',
   payment_delivery: [],
   payment_pickup: [],
@@ -217,6 +218,7 @@ function FranchiseSettingsContent() {
       cep: config.cep || '',
       pickup_schedule: config.pickup_schedule || [],
       has_custom_pickup_hours: config.has_custom_pickup_hours ?? false,
+      pickup_requires_scheduling: config.pickup_requires_scheduling ?? true,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
     };
@@ -705,6 +707,20 @@ function FranchiseSettingsContent() {
                 checked={formData.has_pickup ?? false}
                 onChange={(val) => handleInputChange('has_pickup', val)}
               />
+              {(formData.has_pickup ?? false) && (
+                <div className="ml-4 mt-2 mb-3">
+                  <ToggleCard
+                    icon="calendar_clock"
+                    label="Somente retirada agendada"
+                    description="O bot vai pedir pro cliente combinar dia e horário antes de vir buscar."
+                    checked={formData.pickup_requires_scheduling ?? true}
+                    onChange={(val) => handleInputChange('pickup_requires_scheduling', val)}
+                  />
+                  <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
+                    Desative se você tem um espaço onde o cliente pode chegar e comprar sem precisar agendar.
+                  </p>
+                </div>
+              )}
               {(formData.has_pickup ?? false) && (
                 <>
                   <div>

@@ -259,6 +259,9 @@ SELECT
   COALESCE(fc.whatsapp_business_account_id, '') AS whatsapp_business_account_id,
   COALESCE(fc.meta_dataset_id, '') AS meta_dataset_id,
 
+  -- === Retirada agendada ===
+  COALESCE(fc.pickup_requires_scheduling, true) AS pickup_requires_scheduling,
+
   -- === Metadata ===
   fc.updated_at
 
