@@ -141,6 +141,11 @@ export async function printReceipt(element) {
   const clone = element.cloneNode(true);
   await convertImagesToDataUri(clone);
 
+  // Override fixed pixel width so content adapts to any paper size
+  clone.style.width = "100%";
+  clone.style.maxWidth = "100%";
+  clone.style.boxSizing = "border-box";
+
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:450px;height:600px;";
   document.body.appendChild(iframe);
@@ -150,9 +155,9 @@ export async function printReceipt(element) {
   doc.write(`<!DOCTYPE html><html><head>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-      @page { size: 80mm auto; margin: 2mm; }
+      @page { size: auto; margin: 2mm; }
       @media print {
-        html, body { margin: 0; padding: 0; width: 80mm; }
+        html, body { margin: 0; padding: 0; width: 100%; }
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       }
       body { margin: 0; padding: 0; background: #fff; }
