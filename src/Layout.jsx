@@ -70,10 +70,10 @@ const navigationItems = [
   },
   {
     title: "Tutoriais",
+    adminLabel: "Ajuda",
     url: createPageUrl("Tutoriais"),
-    materialIcon: "play_circle",
-    adminSection: "Gestão",
-    adminSidebarHidden: true,
+    materialIcon: "help_outline",
+    adminSection: "Administração",
   },
   {
     title: "Relatórios",
@@ -94,10 +94,9 @@ const navigationItems = [
   {
     title: "Configurações",
     url: createPageUrl("FranchiseSettings"),
-    materialIcon: "support_agent",
+    materialIcon: "settings",
     adminOnly: true,
-    adminSection: "Gestão",
-    adminSidebarHidden: true,
+    adminSection: "Administração",
   },
   {
     title: "Onboarding",

@@ -11,7 +11,11 @@ import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
 import FranchiseHealthScore from "./FranchiseHealthScore";
 import DailyRevenueChart from "./DailyRevenueChart";
+import BotSummaryCard from "./BotSummaryCard";
+import FinanceiroSummaryCard from "./FinanceiroSummaryCard";
 import { buildConfigMap } from "@/lib/franchiseUtils";
+
+const isBotSource = (s) => s.source === 'whatsapp' || s.source === 'facebook';
 
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
@@ -187,8 +191,6 @@ export default function AdminDashboard() {
   const stats = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
-
-    const isBotSource = (s) => s.source === 'whatsapp' || s.source === 'facebook';
 
     if (period === "today") {
       const salesCount = todaySales.length;
@@ -471,6 +473,12 @@ export default function AdminDashboard() {
         conversationMessages={conversationMessages}
         botSales={allSales}
       />
+
+      {/* Mini-cards de drill-down */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        <BotSummaryCard botConversations={botConversations} />
+        <FinanceiroSummaryCard allSales={allSales} configMap={configMap} />
+      </div>
 
       {/* Chart — Faturamento por dia usando dados reais de vendas */}
       <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} />

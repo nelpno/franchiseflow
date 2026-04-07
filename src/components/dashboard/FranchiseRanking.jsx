@@ -24,19 +24,27 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
   const rankedFranchises = useMemo(() => {
     const revenueByEvo = {};
 
+    const botRevenueByEvo = {};
+
     // Initialize all franchises with 0
     franchises.forEach((f) => {
       if (f.evolution_instance_id) {
         revenueByEvo[f.evolution_instance_id] = 0;
+        botRevenueByEvo[f.evolution_instance_id] = 0;
       }
     });
+
+    const isBotSource = (s) => s.source === 'whatsapp' || s.source === 'facebook';
+    const saleRevenue = (s) => (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0);
 
     if (period === "today") {
       // Use LIVE todaySales data (not daily_summaries which doesn't exist for today)
       todaySales.forEach((s) => {
         const evoId = s.franchise_id;
         if (evoId in revenueByEvo) {
-          revenueByEvo[evoId] += (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0);
+          const rev = saleRevenue(s);
+          revenueByEvo[evoId] += rev;
+          if (isBotSource(s)) botRevenueByEvo[evoId] += rev;
         }
       });
     } else {
@@ -45,6 +53,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
       const todayStr = format(new Date(), "yyyy-MM-dd");
 
       // Summaries for past days (today's summary doesn't exist until 02:00 BRT)
+      // Note: summaries don't have source breakdown, only todaySales does
       summaries.forEach((s) => {
         if (s.date >= cutoff && s.date < todayStr) {
           const evoId = s.franchise_id;
@@ -58,7 +67,9 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
       todaySales.forEach((s) => {
         const evoId = s.franchise_id;
         if (evoId in revenueByEvo) {
-          revenueByEvo[evoId] += (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0);
+          const rev = saleRevenue(s);
+          revenueByEvo[evoId] += rev;
+          if (isBotSource(s)) botRevenueByEvo[evoId] += rev;
         }
       });
     }
@@ -68,11 +79,13 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
       .map(([evoId, revenue]) => {
         const f = evoMap[evoId];
         const config = configMap[evoId];
+        const botRevenue = botRevenueByEvo[evoId] || 0;
         return {
           id: f?.id || evoId,
           evoId,
           name: f ? getFranchiseDisplayName(f, config) : evoId,
           revenue,
+          botPercent: revenue > 0 ? Math.round((botRevenue / revenue) * 100) : 0,
         };
       })
       .sort((a, b) => b.revenue - a.revenue);
@@ -161,16 +174,26 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                       {formatBRL(f.revenue)}
                     </span>
                   </div>
-                  <div className="h-2 w-full bg-[#291715]/5 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full bg-[#a80012] rounded-full ${opacityClass}`}
-                      style={{
-                        width: `${pct}%`,
-                        ...(isFirst
-                          ? { boxShadow: "0 0 8px rgba(168, 0, 18, 0.4)" }
-                          : {}),
-                      }}
-                    />
+                  <div className="h-2 w-full bg-[#291715]/5 rounded-full overflow-hidden flex" title={`${f.botPercent}% bot · ${100 - f.botPercent}% manual`}>
+                    {f.botPercent > 0 && (
+                      <div
+                        className={`h-full bg-[#705d00] ${f.botPercent >= 100 ? 'rounded-full' : 'rounded-l-full'} ${opacityClass}`}
+                        style={{
+                          width: `${(pct * f.botPercent) / 100}%`,
+                        }}
+                      />
+                    )}
+                    {f.botPercent < 100 && (
+                      <div
+                        className={`h-full bg-[#a80012] ${f.botPercent <= 0 ? 'rounded-full' : 'rounded-r-full'} ${opacityClass}`}
+                        style={{
+                          width: `${(pct * (100 - f.botPercent)) / 100}%`,
+                          ...(isFirst && f.botPercent <= 0
+                            ? { boxShadow: "0 0 8px rgba(168, 0, 18, 0.4)" }
+                            : {}),
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
