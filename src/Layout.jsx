@@ -120,7 +120,6 @@ const navigationItems = [
     materialIcon: "local_shipping",
     adminOnly: true,
     adminSection: "Gestão",
-    adminSidebarHidden: true,
   },
   {
     title: "Inteligência Bot",
