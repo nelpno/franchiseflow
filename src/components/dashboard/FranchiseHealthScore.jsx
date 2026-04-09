@@ -111,19 +111,12 @@ function calculateHealthScore({
     const autonomyRate = autonomousCount / botConvos.length;
     const autonomyPts = Math.min(10, Math.round((autonomyRate / 0.40) * 10));
 
-    // Quality (5pts max, target 7.0)
-    const scored = botConvos.filter((c) => parseFloat(c.quality_score) > 0);
-    const avgQuality = scored.length > 0
-      ? scored.reduce((sum, c) => sum + (parseFloat(c.quality_score) || 0), 0) / scored.length
-      : 0;
-    const qualityPts = Math.min(5, Math.round((avgQuality / 7.0) * 5));
-
-    // Conversion (5pts max, target 15%)
+    // Conversion (10pts max, target 15%)
     const franchiseBotSales = botSales.filter((s) => s.franchise_id === evoId && s.source === "bot");
     const conversionRate = franchiseBotSales.length / botConvos.length;
-    const conversionPts = Math.min(5, Math.round((conversionRate / 0.15) * 5));
+    const conversionPts = Math.min(10, Math.round((conversionRate / 0.15) * 10));
 
-    botScore = autonomyPts + qualityPts + conversionPts;
+    botScore = autonomyPts + conversionPts;
   }
 
   // --- Detail reasons ---

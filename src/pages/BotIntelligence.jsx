@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { BotConversation, ConversationMessage, Sale, Franchise, FranchiseConfiguration, BotReport } from "@/entities/all";
+import { BotConversation, ConversationMessage, Sale, Franchise, FranchiseConfiguration } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises } from "@/lib/franchiseUtils";
 import { formatBRL } from "@/lib/formatBRL";
@@ -19,7 +19,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -60,25 +59,6 @@ const ABANDON_REASON_LABELS = {
   outro: "Outro",
 };
 
-const INTENT_LABELS = {
-  compra: "Comprar",
-  duvida_produto: "Dúvida produto",
-  duvida_entrega: "Dúvida entrega",
-  reclamacao: "Reclamação",
-  preparo_faq: "Modo de preparo",
-  preco: "Preço",
-  catalogo: "Catálogo",
-  saudacao: "Saudação",
-  outro: "Outro",
-};
-
-const SENTIMENT_LABELS = {
-  positivo: "Positivo",
-  neutro: "Neutro",
-  negativo: "Negativo",
-  frustrado: "Frustrado",
-};
-
 const STATUS_LABELS = {
   started: "Iniciadas",
   catalog_sent: "Catálogo Enviado",
@@ -107,14 +87,6 @@ const OUTCOME_LABELS = {
   informational: "Informativa",
   ongoing: "Em andamento",
 };
-
-// --- Score color helper ---
-function scoreColor(score) {
-  if (score === null || score === undefined) return "#7a6d6d";
-  if (score >= 8) return "#16a34a";
-  if (score >= 5) return "#d4af37";
-  return "#dc2626";
-}
 
 // --- Skeleton ---
 function Skeleton({ className = "" }) {
@@ -161,230 +133,6 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-// --- Tier helpers ---
-const TIER_CONFIG = {
-  beginner: { label: "Iniciante", color: "#dc2626", bg: "#fef2f2" },
-  intermediate: { label: "Intermediário", color: "#d4af37", bg: "#fffbeb" },
-  advanced: { label: "Avançado", color: "#16a34a", bg: "#f0fdf4" },
-};
-
-function TierBadge({ tier }) {
-  const cfg = TIER_CONFIG[tier] || TIER_CONFIG.beginner;
-  return (
-    <span
-      className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
-      style={{ color: cfg.color, backgroundColor: cfg.bg, border: `1px solid ${cfg.color}30` }}
-    >
-      {cfg.label}
-    </span>
-  );
-}
-
-// --- Coaching Tab ---
-function CoachingTab({ botReports, reportsLoading, franchises, configs }) {
-  // Group by franchise — latest per franchise
-  const latestByFranchise = useMemo(() => {
-    const map = {};
-    for (const r of botReports) {
-      const fid = r.franchise_id;
-      if (!map[fid] || new Date(r.created_at) > new Date(map[fid].created_at)) {
-        map[fid] = r;
-      }
-    }
-    return Object.values(map).sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
-  }, [botReports]);
-
-  // Network insights
-  const networkInsights = useMemo(() => {
-    if (!latestByFranchise.length) return null;
-    const total = latestByFranchise.length;
-
-    // Tier distribution
-    const tierCounts = { beginner: 0, intermediate: 0, advanced: 0 };
-    for (const r of latestByFranchise) {
-      const tier = r.metrics?.profile_tier || r.profile_tier || "beginner";
-      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
-    }
-    const beginnerPct = total ? Math.round((tierCounts.beginner / total) * 100) : 0;
-
-    // Most common abandon reason
-    const abandonCounts = {};
-    for (const r of latestByFranchise) {
-      const reasons = r.metrics?.abandon_reasons || r.metrics?.conversion?.abandon_reasons || {};
-      for (const [reason, count] of Object.entries(reasons)) {
-        abandonCounts[reason] = (abandonCounts[reason] || 0) + (parseFloat(count) || 0);
-      }
-    }
-    const topAbandon = Object.entries(abandonCounts).sort((a, b) => b[1] - a[1])[0];
-
-    // Most common stock miss
-    const stockMissCounts = {};
-    for (const r of latestByFranchise) {
-      const misses = r.metrics?.operational?.stock_misses || [];
-      for (const miss of misses) {
-        if (miss.product) {
-          stockMissCounts[miss.product] = (stockMissCounts[miss.product] || 0) + (parseFloat(miss.times_mentioned) || 1);
-        }
-      }
-    }
-    const topStockMiss = Object.entries(stockMissCounts).sort((a, b) => b[1] - a[1])[0];
-
-    return { total, tierCounts, beginnerPct, topAbandon, topStockMiss };
-  }, [latestByFranchise]);
-
-  const getFranchiseName = (franchiseId) => {
-    const cfg = configs.find(
-      (c) => c.franchise_evolution_instance_id === franchiseId
-    );
-    const fr = franchises.find((f) => f.id === cfg?.franchise_id);
-    return fr?.name || cfg?.franchise_name || franchiseId;
-  };
-
-  if (reportsLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
-    );
-  }
-
-  if (!latestByFranchise.length) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <MaterialIcon icon="school" className="text-5xl text-[#e9e8e9]" />
-        <p className="text-base font-semibold text-[#4a3d3d]">
-          Nenhum relatório gerado ainda
-        </p>
-        <p className="text-sm text-[#7a6d6d] text-center max-w-xs">
-          O primeiro relatório será enviado no dia 1º ou 15º do mês.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Network Insights */}
-      {networkInsights && (
-        <Card className="border border-[#e9e8e9] shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold font-plus-jakarta" style={{ color: "#1b1c1d" }}>
-              <div className="flex items-center gap-2">
-                <MaterialIcon icon="insights" className="text-base" style={{ color: "#d4af37" }} />
-                Panorama da Rede
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-[#fbf9fa] rounded-lg p-3 border border-[#e9e8e9]">
-                <p className="text-xs text-[#7a6d6d] mb-1">Tier Iniciante</p>
-                <p className="text-lg font-bold text-[#1b1c1d]">
-                  {networkInsights.beginnerPct}%
-                  <span className="text-xs font-normal text-[#7a6d6d] ml-1">
-                    das franquias ({networkInsights.tierCounts.beginner}/{networkInsights.total})
-                  </span>
-                </p>
-              </div>
-              <div className="bg-[#fbf9fa] rounded-lg p-3 border border-[#e9e8e9]">
-                <p className="text-xs text-[#7a6d6d] mb-1">Abandono mais comum</p>
-                <p className="text-lg font-bold text-[#1b1c1d] capitalize">
-                  {networkInsights.topAbandon
-                    ? `${networkInsights.topAbandon[0]} (${networkInsights.topAbandon[1]}x)`
-                    : "—"}
-                </p>
-              </div>
-              <div className="bg-[#fbf9fa] rounded-lg p-3 border border-[#e9e8e9]">
-                <p className="text-xs text-[#7a6d6d] mb-1">Stock miss frequente</p>
-                <p className="text-lg font-bold text-[#1b1c1d] capitalize">
-                  {networkInsights.topStockMiss
-                    ? `${networkInsights.topStockMiss[0]} (${networkInsights.topStockMiss[1]}x)`
-                    : "—"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Reports table */}
-      <Card className="border border-[#e9e8e9] shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold font-plus-jakarta" style={{ color: "#1b1c1d" }}>
-            Relatórios por Franquia
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-[#e9e8e9]">
-                  <TableHead className="text-xs text-[#7a6d6d] font-medium">Franquia</TableHead>
-                  <TableHead className="text-xs text-[#7a6d6d] font-medium">Tier</TableHead>
-                  <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Autonomia</TableHead>
-                  <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Data</TableHead>
-                  <TableHead className="text-xs text-[#7a6d6d] font-medium text-center">Enviado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {latestByFranchise.map((report) => {
-                  const tier = report.metrics?.profile_tier || report.profile_tier || "beginner";
-                  const autonomy = parseFloat(report.metrics?.autonomy_rate ?? report.metrics?.operational?.autonomy_rate ?? 0);
-                  const prevAutonomy = parseFloat(report.metrics?.prev_autonomy_rate ?? 0);
-                  const trend = autonomy > prevAutonomy ? "up" : autonomy < prevAutonomy ? "down" : "flat";
-                  return (
-                    <TableRow key={report.id} className="border-[#e9e8e9] hover:bg-[#fbf9fa] transition-colors">
-                      <TableCell className="text-sm font-medium text-[#1b1c1d]">
-                        {getFranchiseName(report.franchise_id)}
-                      </TableCell>
-                      <TableCell>
-                        <TierBadge tier={tier} />
-                      </TableCell>
-                      <TableCell className="text-sm text-right">
-                        <span
-                          className="font-medium"
-                          style={{
-                            color: autonomy >= 60 ? "#16a34a" : autonomy >= 30 ? "#d4af37" : "#dc2626",
-                          }}
-                        >
-                          {autonomy.toFixed(1)}%
-                        </span>
-                        {trend !== "flat" && (
-                          <MaterialIcon
-                            icon={trend === "up" ? "arrow_upward" : "arrow_downward"}
-                            className="text-xs ml-1 inline"
-                            style={{ color: trend === "up" ? "#16a34a" : "#dc2626" }}
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-right text-[#7a6d6d]">
-                        {report.created_at
-                          ? format(new Date(report.created_at), "dd/MM/yyyy", { locale: ptBR })
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {report.sent_at ? (
-                          <MaterialIcon icon="check_circle" className="text-base" style={{ color: "#16a34a" }} />
-                        ) : (
-                          <MaterialIcon icon="schedule" className="text-base" style={{ color: "#7a6d6d" }} />
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 // --- Main component ---
 export default function BotIntelligence() {
   const { user } = useAuth();
@@ -402,13 +150,6 @@ export default function BotIntelligence() {
   const [msgCountMap, setMsgCountMap] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-
-  // Tab
-  const [activeTab, setActiveTab] = useState("visao-geral");
-
-  // Coaching tab data
-  const [botReports, setBotReports] = useState([]);
-  const [reportsLoading, setReportsLoading] = useState(false);
 
   // Drill-down sheet
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -463,7 +204,6 @@ export default function BotIntelligence() {
       // Filter by franchise if selected
       let filterParams = {};
       if (selectedFranchiseId !== "todas") {
-        // Find the evo_id from the selected franchise UUID
         const cfg = configs.find(
           (c) => c.franchise_id === selectedFranchiseId || c.franchise_evolution_instance_id === selectedFranchiseId
         );
@@ -472,7 +212,10 @@ export default function BotIntelligence() {
 
       // Fetch conversations + messages + sales in parallel
       const [allConvsRes, msgsRes, salesRes] = await Promise.allSettled([
-        BotConversation.list("-started_at", null, { fetchAll: true }),
+        BotConversation.list("-started_at", null, {
+          columns: 'id, franchise_id, started_at, outcome, llm_abandon_reason, status, cart_value, converted_at, messages_count',
+          fetchAll: true,
+        }),
         ConversationMessage.list("-created_at", null, { columns: "id,conversation_id,direction,franchise_id", fetchAll: true }),
         Sale.filter({ source: "bot" }, "-sale_date", null, { columns: "id,franchise_id,value,delivery_fee,sale_date", fetchAll: true }),
       ]);
@@ -510,7 +253,7 @@ export default function BotIntelligence() {
         bsMap[s.franchise_id].revenue += parseFloat(s.value || 0) + parseFloat(s.delivery_fee || 0);
       }
 
-      // Filter conversations within month (all, not just processed)
+      // Filter conversations within month
       const monthlyAll = allConvs.filter((c) => {
         const started = c.started_at || c.created_at;
         if (!started) return false;
@@ -547,41 +290,14 @@ export default function BotIntelligence() {
     if (configs.length > 0 || selectedFranchiseId === "todas") loadData();
   }, [loadData]);
 
-  // Load bot reports when coaching tab is active
-  useEffect(() => {
-    if (activeTab !== "coaching") return;
-    let cancelled = false;
-    setReportsLoading(true);
-    BotReport.list("-created_at", 100)
-      .then((data) => {
-        if (!cancelled) setBotReports(data || []);
-      })
-      .catch(() => {
-        if (!cancelled) setBotReports([]);
-      })
-      .finally(() => {
-        if (!cancelled) setReportsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [activeTab]);
-
   // --- Computed analytics ---
   const analytics = useMemo(() => {
     if (!allConversations.length && !conversations.length) return null;
 
-    // Use ALL conversations (not just processed) for operational metrics
     const totalAll = allConversations.length;
     const totalProcessed = conversations.length;
 
-    // Autonomia: conversations without any human message
-    let autonomousCount = 0;
-    for (const c of allConversations) {
-      const info = humanMsgMap[c.id];
-      if (!info || !info.human) autonomousCount++;
-    }
-    const autonomyRate = totalAll ? ((autonomousCount / totalAll) * 100).toFixed(1) : "0.0";
-
-    // Dropoff: conversations with ≤1 message
+    // Dropoff: conversations with <=1 message
     let dropoffCount = 0;
     for (const c of allConversations) {
       const cnt = msgCountMap[c.id] || 0;
@@ -595,7 +311,6 @@ export default function BotIntelligence() {
     const scopeIds = selectedFranchiseId !== "todas" ? null : undefined;
     for (const [fid, data] of Object.entries(botSalesMap)) {
       if (scopeIds === null) {
-        // franchise filter active — check if any allConversations match
         if (!allConversations.some((c) => c.franchise_id === fid)) continue;
       }
       totalBotSales += data.count;
@@ -605,15 +320,7 @@ export default function BotIntelligence() {
     // From processed conversations (LLM-classified)
     const total = totalProcessed;
     const converted = conversations.filter((c) => c.outcome === "converted").length;
-    const escalated = conversations.filter((c) => c.outcome === "escalated").length;
-    const scores = conversations
-      .map((c) => c.quality_score)
-      .filter((s) => s !== null && s !== undefined);
-    const avgScore = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
     const conversionRate = total ? ((converted / total) * 100).toFixed(1) : "0.0";
-    const humanResolutionRate = total
-      ? (((total - escalated) / total) * 100).toFixed(1)
-      : "0.0";
 
     // Funnel
     const funnelData = FUNNEL_STATUSES.map((s) => ({
@@ -639,38 +346,7 @@ export default function BotIntelligence() {
         count,
       }));
 
-    // Intents
-    const intentMap = {};
-    conversations.forEach((c) => {
-      if (c.intent) {
-        const key = c.intent;
-        intentMap[key] = (intentMap[key] || 0) + 1;
-      }
-    });
-    const intentData = Object.entries(intentMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([key, count]) => ({
-        key,
-        label: INTENT_LABELS[key] || key,
-        count,
-      }));
-
-    // Topics
-    const topicMap = {};
-    conversations.forEach((c) => {
-      if (Array.isArray(c.topics)) {
-        c.topics.forEach((t) => {
-          topicMap[t] = (topicMap[t] || 0) + 1;
-        });
-      }
-    });
-    const topicsData = Object.entries(topicMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([topic, count]) => ({ topic, count }));
-
-    // Ranking by franchise — use ALL conversations for operational metrics
+    // Ranking by franchise
     const franchiseMap = {};
     allConversations.forEach((c) => {
       const fid = c.franchise_id;
@@ -681,16 +357,11 @@ export default function BotIntelligence() {
           totalProcessed: 0,
           converted: 0,
           escalated: 0,
-          autonomous: 0,
           dropoff1msg: 0,
-          scores: [],
           abandonReasons: {},
         };
       }
       franchiseMap[fid].totalAll++;
-      // Autonomy
-      const info = humanMsgMap[c.id];
-      if (!info || !info.human) franchiseMap[fid].autonomous++;
       // Dropoff
       const cnt = msgCountMap[c.id] || 0;
       if (cnt <= 1) franchiseMap[fid].dropoff1msg++;
@@ -702,8 +373,6 @@ export default function BotIntelligence() {
       franchiseMap[fid].totalProcessed++;
       if (c.outcome === "converted") franchiseMap[fid].converted++;
       if (c.outcome === "escalated") franchiseMap[fid].escalated++;
-      if (c.quality_score !== null && c.quality_score !== undefined)
-        franchiseMap[fid].scores.push(c.quality_score);
       if (c.llm_abandon_reason) {
         const r = c.llm_abandon_reason;
         franchiseMap[fid].abandonReasons[r] = (franchiseMap[fid].abandonReasons[r] || 0) + 1;
@@ -712,10 +381,6 @@ export default function BotIntelligence() {
 
     const rankingData = Object.values(franchiseMap)
       .map((f) => {
-        const avgS =
-          f.scores.length
-            ? f.scores.reduce((a, b) => a + b, 0) / f.scores.length
-            : null;
         const topAbandon = Object.entries(f.abandonReasons).sort((a, b) => b[1] - a[1])[0];
         const cfg = configs.find(
           (c) => c.franchise_evolution_instance_id === f.franchise_id
@@ -727,41 +392,28 @@ export default function BotIntelligence() {
         return {
           ...f,
           name: fr?.name || cfg?.franchise_name || f.franchise_id,
-          avgScore: avgS,
-          autonomyRate: f.totalAll ? ((f.autonomous / f.totalAll) * 100).toFixed(1) : "0.0",
           dropoffRate: f.totalAll ? ((f.dropoff1msg / f.totalAll) * 100).toFixed(1) : "0.0",
           botSales: bs.count,
           botRevenue: bs.revenue,
           conversionRate: f.totalAll ? ((bs.count / f.totalAll) * 100).toFixed(1) : "0.0",
-          humanRate: f.totalAll
-            ? (((f.totalAll - f.escalated) / f.totalAll) * 100).toFixed(1)
-            : "0.0",
           topAbandon: topAbandon
             ? ABANDON_REASON_LABELS[topAbandon[0]] || topAbandon[0]
             : "—",
         };
       })
-      .sort((a, b) => parseFloat(b.autonomyRate) - parseFloat(a.autonomyRate));
+      .sort((a, b) => parseFloat(b.conversionRate) - parseFloat(a.conversionRate));
 
     return {
-      total,
       totalAll,
-      converted,
-      escalated,
-      avgScore,
-      conversionRate,
-      humanResolutionRate,
-      autonomyRate,
-      dropoffRate,
       totalBotSales,
       totalBotRevenue,
+      conversionRate,
+      dropoffRate,
       funnelData,
       abandonData,
-      intentData,
-      topicsData,
       rankingData,
     };
-  }, [conversations, allConversations, configs, franchises, humanMsgMap, msgCountMap, botSalesMap, selectedFranchiseId]);
+  }, [conversations, allConversations, configs, franchises, msgCountMap, botSalesMap, selectedFranchiseId]);
 
   // --- Open drill-down sheet ---
   function openSheet(row) {
@@ -794,7 +446,7 @@ export default function BotIntelligence() {
             Inteligência do Bot
           </h1>
           <p className="text-sm mt-0.5" style={{ color: "#7a6d6d" }}>
-            Análise de conversas classificadas pelo sistema
+            Diagnóstico de performance do vendedor digital
           </p>
         </div>
 
@@ -840,18 +492,6 @@ export default function BotIntelligence() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-[#fbf9fa] border border-[#e9e8e9]">
-          <TabsTrigger value="visao-geral" className="text-sm data-[state=active]:bg-white data-[state=active]:text-[#b91c1c]">
-            Visão Geral
-          </TabsTrigger>
-          <TabsTrigger value="coaching" className="text-sm data-[state=active]:bg-white data-[state=active]:text-[#b91c1c]">
-            Coaching
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="visao-geral" className="space-y-6 mt-4">
       {/* Error state */}
       {loadError && (
         <Card className="border-[#dc2626]/20 bg-[#dc2626]/5">
@@ -884,40 +524,14 @@ export default function BotIntelligence() {
       {/* Content */}
       {(isLoading || analytics) && (
         <>
-          {/* Section 1 — KPIs (2 rows) */}
+          {/* KPIs — 3 cards */}
           <div className="grid grid-cols-3 gap-4">
-            <KpiCard
-              icon="precision_manufacturing"
-              label="Taxa de Autonomia"
-              value={isLoading ? "—" : `${analytics?.autonomyRate}`}
-              suffix="%"
-              color="#16a34a"
-              loading={isLoading}
-            />
             <KpiCard
               icon="shopping_bag"
               label="Vendas via Bot"
               value={isLoading ? "—" : `${analytics?.totalBotSales || 0}`}
               suffix={!isLoading && analytics?.totalBotRevenue ? ` (${formatBRL(analytics.totalBotRevenue)})` : ""}
               color="#b91c1c"
-              loading={isLoading}
-            />
-            <KpiCard
-              icon="person_off"
-              label="Dropoff 1ª Msg"
-              value={isLoading ? "—" : `${analytics?.dropoffRate}`}
-              suffix="%"
-              color="#dc2626"
-              loading={isLoading}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <KpiCard
-              icon="forum"
-              label="Total Conversas"
-              value={isLoading ? "—" : `${analytics?.totalAll || 0}`}
-              suffix={!isLoading && analytics?.total ? ` (${analytics.total} classif.)` : ""}
-              color="#1b1c1d"
               loading={isLoading}
             />
             <KpiCard
@@ -929,67 +543,62 @@ export default function BotIntelligence() {
               loading={isLoading}
             />
             <KpiCard
-              icon="star"
-              label="Score Médio"
-              value={
-                isLoading
-                  ? "—"
-                  : analytics?.avgScore !== null && analytics?.avgScore !== undefined
-                  ? analytics.avgScore.toFixed(1)
-                  : "—"
-              }
-              color="#d4af37"
+              icon="person_off"
+              label="Dropoff 1ª Msg"
+              value={isLoading ? "—" : `${analytics?.dropoffRate}`}
+              suffix="%"
+              color="#dc2626"
               loading={isLoading}
             />
           </div>
 
-          {/* Section 2 — Funil */}
-          <Card className="border border-[#e9e8e9] shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle
-                className="text-base font-semibold font-plus-jakarta"
-                style={{ color: "#1b1c1d" }}
-              >
-                Funil de Conversas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-48 w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart
-                    data={analytics?.funnelData}
-                    layout="vertical"
-                    margin={{ top: 4, right: 24, left: 20, bottom: 4 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e9e8e9" />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#7a6d6d" }} />
-                    <YAxis
-                      type="category"
-                      dataKey="label"
-                      width={120}
-                      tick={{ fontSize: 11, fill: "#4a3d3d" }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                      {analytics?.funnelData.map((entry, index) => (
-                        <Cell
-                          key={entry.status}
-                          fill={FUNNEL_COLORS[index % FUNNEL_COLORS.length]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+          {/* Diagnóstico — Funil + Por que abandonam side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {/* Funil — wider (3/5) */}
+            <Card className="border border-[#e9e8e9] shadow-sm md:col-span-3">
+              <CardHeader className="pb-2">
+                <CardTitle
+                  className="text-base font-semibold font-plus-jakarta"
+                  style={{ color: "#1b1c1d" }}
+                >
+                  Funil de Conversas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <Skeleton className="h-48 w-full" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart
+                      data={analytics?.funnelData}
+                      layout="vertical"
+                      margin={{ top: 4, right: 24, left: 20, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e9e8e9" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: "#7a6d6d" }} />
+                      <YAxis
+                        type="category"
+                        dataKey="label"
+                        width={120}
+                        tick={{ fontSize: 11, fill: "#4a3d3d" }}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                        {analytics?.funnelData.map((entry, index) => (
+                          <Cell
+                            key={entry.status}
+                            fill={FUNNEL_COLORS[index % FUNNEL_COLORS.length]}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Section 3 — Insights */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Abandon reasons */}
-            <Card className="border border-[#e9e8e9] shadow-sm">
+            {/* Abandon reasons — narrower (2/5) */}
+            <Card className="border border-[#e9e8e9] shadow-sm md:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle
                   className="text-sm font-semibold font-plus-jakarta"
@@ -1027,91 +636,9 @@ export default function BotIntelligence() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Top intents */}
-            <Card className="border border-[#e9e8e9] shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle
-                  className="text-sm font-semibold font-plus-jakarta"
-                  style={{ color: "#1b1c1d" }}
-                >
-                  O que mais buscam
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <Skeleton className="h-36 w-full" />
-                ) : analytics?.intentData.length ? (
-                  <div className="space-y-2 pt-1">
-                    {analytics.intentData.map((item, idx) => {
-                      const maxCount = analytics.intentData[0]?.count || 1;
-                      const pct = Math.round((item.count / maxCount) * 100);
-                      return (
-                        <div key={item.key} className="flex items-center gap-2">
-                          <span className="text-xs text-[#7a6d6d] w-4 shrink-0">{idx + 1}</span>
-                          <span className="text-xs text-[#4a3d3d] w-28 shrink-0 truncate">
-                            {item.label}
-                          </span>
-                          <div className="flex-1 bg-[#e9e8e9] rounded-full h-2">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{ width: `${pct}%`, backgroundColor: "#d4af37" }}
-                            />
-                          </div>
-                          <span className="text-xs font-medium text-[#1b1c1d] w-8 text-right shrink-0">
-                            {item.count}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-[#7a6d6d] py-8 text-center">
-                    Nenhuma intenção registrada
-                  </p>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Topics */}
-          {!isLoading && analytics?.topicsData.length > 0 && (
-            <Card className="border border-[#e9e8e9] shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle
-                  className="text-sm font-semibold font-plus-jakarta"
-                  style={{ color: "#1b1c1d" }}
-                >
-                  Tópicos mais mencionados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {analytics.topicsData.map((t, idx) => (
-                    <div key={t.topic} className="flex items-center gap-3 py-1">
-                      <span
-                        className="text-xs font-bold w-5 text-center shrink-0"
-                        style={{ color: "#b91c1c" }}
-                      >
-                        {idx + 1}
-                      </span>
-                      <span className="text-sm text-[#4a3d3d] flex-1 truncate capitalize">
-                        {t.topic}
-                      </span>
-                      <span
-                        className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: "#fbf9fa", color: "#7a6d6d", border: "1px solid #e9e8e9" }}
-                      >
-                        {t.count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Section 4 — Ranking */}
+          {/* Ranking */}
           <Card className="border border-[#e9e8e9] shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle
@@ -1135,10 +662,9 @@ export default function BotIntelligence() {
                       <TableRow className="border-[#e9e8e9]">
                         <TableHead className="text-xs text-[#7a6d6d] font-medium">Franquia</TableHead>
                         <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Conversas</TableHead>
-                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Autonomia</TableHead>
                         <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Vendas Bot</TableHead>
+                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Conversão</TableHead>
                         <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Dropoff</TableHead>
-                        <TableHead className="text-xs text-[#7a6d6d] font-medium text-right">Score</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1154,26 +680,26 @@ export default function BotIntelligence() {
                           <TableCell className="text-sm text-right text-[#4a3d3d]">
                             {row.totalAll}
                           </TableCell>
-                          <TableCell className="text-sm text-right font-medium">
-                            <span
-                              style={{
-                                color:
-                                  parseFloat(row.autonomyRate) >= 60
-                                    ? "#16a34a"
-                                    : parseFloat(row.autonomyRate) >= 30
-                                    ? "#d4af37"
-                                    : "#dc2626",
-                              }}
-                            >
-                              {row.autonomyRate}%
-                            </span>
-                          </TableCell>
                           <TableCell className="text-sm text-right text-[#4a3d3d]">
                             {row.botSales > 0 ? (
                               <span className="font-medium">{row.botSales}</span>
                             ) : (
                               <span className="text-[#7a6d6d]">0</span>
                             )}
+                          </TableCell>
+                          <TableCell className="text-sm text-right font-medium">
+                            <span
+                              style={{
+                                color:
+                                  parseFloat(row.conversionRate) >= 20
+                                    ? "#16a34a"
+                                    : parseFloat(row.conversionRate) >= 10
+                                    ? "#d4af37"
+                                    : "#dc2626",
+                              }}
+                            >
+                              {row.conversionRate}%
+                            </span>
                           </TableCell>
                           <TableCell className="text-sm text-right">
                             <span
@@ -1189,11 +715,6 @@ export default function BotIntelligence() {
                               {row.dropoffRate}%
                             </span>
                           </TableCell>
-                          <TableCell className="text-sm text-right font-bold">
-                            <span style={{ color: scoreColor(row.avgScore) }}>
-                              {row.avgScore !== null ? row.avgScore.toFixed(1) : "—"}
-                            </span>
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1206,21 +727,19 @@ export default function BotIntelligence() {
               )}
             </CardContent>
           </Card>
+
+          {/* Coach placeholder */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MaterialIcon icon="smart_toy" className="text-[#b91c1c]" />
+              <h3 className="font-semibold">Coach</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              O Coach Diário roda às 20h e os insights aparecerão aqui.
+            </p>
+          </Card>
         </>
       )}
-
-        </TabsContent>
-
-        {/* Coaching Tab */}
-        <TabsContent value="coaching" className="space-y-6 mt-4">
-          <CoachingTab
-            botReports={botReports}
-            reportsLoading={reportsLoading}
-            franchises={franchises}
-            configs={configs}
-          />
-        </TabsContent>
-      </Tabs>
 
       {/* Drill-down Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -1254,19 +773,6 @@ export default function BotIntelligence() {
                           : "—"}
                       </span>
                       <div className="flex items-center gap-2">
-                        {/* Score badge */}
-                        {c.quality_score !== null && c.quality_score !== undefined && (
-                          <span
-                            className="text-xs font-bold px-2 py-0.5 rounded-full"
-                            style={{
-                              color: scoreColor(c.quality_score),
-                              backgroundColor: `${scoreColor(c.quality_score)}15`,
-                              border: `1px solid ${scoreColor(c.quality_score)}30`,
-                            }}
-                          >
-                            ★ {c.quality_score.toFixed(1)}
-                          </span>
-                        )}
                         {/* Outcome badge */}
                         <span
                           className="text-xs px-2 py-0.5 rounded-full"
@@ -1294,7 +800,7 @@ export default function BotIntelligence() {
                       </div>
                     </div>
 
-                    {/* Summary or topics */}
+                    {/* Summary */}
                     {c.summary && (
                       <p className="text-xs text-[#4a3d3d] leading-relaxed">
                         {c.summary}
@@ -1302,16 +808,6 @@ export default function BotIntelligence() {
                     )}
 
                     <div className="flex flex-wrap gap-1 pt-0.5">
-                      {c.intent && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#b91c1c]/10 text-[#b91c1c]">
-                          {INTENT_LABELS[c.intent] || c.intent}
-                        </span>
-                      )}
-                      {c.sentiment && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#d4af37]/10 text-[#775a19]">
-                          {SENTIMENT_LABELS[c.sentiment] || c.sentiment}
-                        </span>
-                      )}
                       {c.outcome === "escalated" && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#f59e0b]/10 text-[#d97706]">
                           Escalado

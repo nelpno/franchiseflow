@@ -112,22 +112,15 @@ function calcBotScore(franchise, botConversations, conversationMessages, botSale
   const autonomyRate = convos.length > 0 ? autonomousCount / convos.length : 0;
   const autonomyPts = Math.min(10, Math.round((autonomyRate / 0.40) * 10));
 
-  // Quality score avg (5pts max, target 7.0)
-  const scored = convos.filter((c) => parseFloat(c.quality_score) > 0);
-  const avgQuality = scored.length > 0
-    ? scored.reduce((sum, c) => sum + (parseFloat(c.quality_score) || 0), 0) / scored.length
-    : 0;
-  const qualityPts = Math.min(5, Math.round((avgQuality / 7.0) * 5));
+  // Conversion rate (5pts max, target 10%)
+  const converted = convos.filter(c => c.outcome === 'converted').length;
+  const conversionRate = convos.length > 0 ? converted / convos.length : 0;
+  const conversionPts = Math.min(5, Math.round(conversionRate * 50));
 
-  // Bot conversion rate (5pts max, target 15%)
-  const franchiseBotSales = botSales.filter((s) => s.franchise_id === evoId && s.source === "bot");
-  const conversionRate = convos.length > 0 ? franchiseBotSales.length / convos.length : 0;
-  const conversionPts = Math.min(5, Math.round((conversionRate / 0.15) * 5));
+  const rawScore = autonomyPts + conversionPts; // max 15
+  const score = Math.round((rawScore / 15) * 100); // normalize to 0-100
 
-  const rawScore = autonomyPts + qualityPts + conversionPts; // max 20
-  const score = Math.round((rawScore / 20) * 100); // normalize to 0-100
-
-  const detail = `Autonomia ${Math.round(autonomyRate * 100)}% · Score ${avgQuality.toFixed(1)}`;
+  const detail = `Autonomia ${Math.round(autonomyRate * 100)}% · Conversão ${Math.round(conversionRate * 100)}%`;
 
   return { score, detail, hasData: true, autonomyRate };
 }

@@ -16,13 +16,7 @@ export default function BotSummaryCard({ botConversations }) {
     const conversionRate = concluded > 0 ? Math.round((converted / concluded) * 100) : 0;
     const abandonRate = concluded > 0 ? Math.round((abandoned / concluded) * 100) : 0;
 
-    // Average quality score (1-5 scale)
-    const withScore = botConversations.filter(c => c.quality_score > 0);
-    const avgQuality = withScore.length > 0
-      ? (withScore.reduce((sum, c) => sum + c.quality_score, 0) / withScore.length).toFixed(1)
-      : null;
-
-    return { total, concluded, converted, conversionRate, abandonRate, avgQuality };
+    return { total, concluded, converted, conversionRate, abandonRate };
   }, [botConversations]);
 
   if (!metrics) {
@@ -48,7 +42,7 @@ export default function BotSummaryCard({ botConversations }) {
         </Link>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Conversão</p>
           <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{metrics.conversionRate}%</p>
@@ -56,13 +50,6 @@ export default function BotSummaryCard({ botConversations }) {
         <div>
           <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Abandono</p>
           <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{metrics.abandonRate}%</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Qualidade</p>
-          <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">
-            {metrics.avgQuality ?? "—"}
-            {metrics.avgQuality && <span className="text-xs font-normal text-[#4a3d3d]/60">/10</span>}
-          </p>
         </div>
       </div>
 

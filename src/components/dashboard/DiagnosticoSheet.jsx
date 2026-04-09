@@ -1,24 +1,19 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import ProgressRing from "@/components/onboarding/ProgressRing";
 import { STATUS_COLORS, STATUS_LABELS, SETUP_SIGNAL_LABELS } from "@/lib/healthScore";
-import BotCoachSheet from "./BotCoachSheet";
 
 const DIMENSION_CONFIG = {
   vendas: { label: "Vendas", icon: "point_of_sale" },
   estoque: { label: "Estoque", icon: "inventory_2" },
   reposicao: { label: "Reposição", icon: "local_shipping" },
   setup: { label: "Configuração", icon: "settings" },
-  bot: { label: "Vendedor Digital", icon: "smart_toy" },
 };
 
 function DimensionBar({ name, dim }) {
   const cfg = DIMENSION_CONFIG[name];
   if (!cfg) return null;
-  if (name === "bot" && !dim.hasData) return null;
 
   const score = Math.round(dim.score);
   const color = score >= 70 ? "#16a34a" : score >= 40 ? "#d97706" : "#dc2626";
@@ -38,19 +33,16 @@ function DimensionBar({ name, dim }) {
   );
 }
 
-export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franchise, botReport }) {
+export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franchise }) {
   const navigate = useNavigate();
-  const [botSheetOpen, setBotSheetOpen] = useState(false);
 
   if (!healthResult) return null;
 
   const statusColors = STATUS_COLORS[healthResult.status] || STATUS_COLORS.nova;
   const statusLabel = STATUS_LABELS[healthResult.status] || "Nova";
-  const evoId = franchise?.evolution_instance_id;
 
   return (
-    <>
-      <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader className="mb-6">
             <SheetTitle className="text-[#1b1c1d]">
@@ -113,87 +105,6 @@ export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franch
             </div>
           )}
 
-          {/* Bot section */}
-          <div className="border-t border-[#e9e8e9] pt-4 mb-6">
-            <h3 className="text-sm font-semibold text-[#1b1c1d] mb-2 flex items-center gap-2">
-              <MaterialIcon icon="smart_toy" size={18} />
-              Vendedor Digital
-            </h3>
-            {botReport ? (
-              <div className="space-y-3">
-                {botReport.metrics?.autonomy_rate != null && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#4a3d3d]">Autonomia</span>
-                    <span className="font-semibold" style={{
-                      color: botReport.metrics.autonomy_rate >= 60 ? "#16a34a" : botReport.metrics.autonomy_rate >= 30 ? "#d97706" : "#dc2626"
-                    }}>
-                      {Math.round(botReport.metrics.autonomy_rate)}%
-                    </span>
-                  </div>
-                )}
-                {botReport.metrics?.total_conversations != null && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#4a3d3d]">Atendimentos no período</span>
-                    <span className="font-semibold text-[#1b1c1d]">{botReport.metrics.total_conversations}</span>
-                  </div>
-                )}
-                {botReport.metrics?.conversion_rate != null && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#4a3d3d]">Taxa de conversão</span>
-                    <span className="font-semibold text-[#1b1c1d]">{Math.round(botReport.metrics.conversion_rate)}%</span>
-                  </div>
-                )}
-                {botReport.report_text && (
-                  <div className="p-3 rounded-lg bg-[#f8fafc] border border-[#e9e8e9]">
-                    <p className="text-xs font-semibold text-[#7a6d6d] mb-1">Análise do Coach</p>
-                    <div className="relative max-h-[72px] overflow-hidden">
-                      <p className="text-sm text-[#4a3d3d] leading-relaxed whitespace-pre-line">{botReport.report_text}</p>
-                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#f8fafc] to-transparent" />
-                    </div>
-                    <button
-                      onClick={() => setBotSheetOpen(true)}
-                      className="text-xs text-[#b91c1c] font-medium mt-1 hover:underline"
-                    >
-                      Ler relatório completo →
-                    </button>
-                  </div>
-                )}
-                <button
-                  onClick={() => setBotSheetOpen(true)}
-                  className="text-sm text-[#b91c1c] font-medium hover:underline"
-                >
-                  Ver histórico completo →
-                </button>
-              </div>
-            ) : evoId ? (
-              <div>
-                <p className="text-sm text-[#4a3d3d] mb-2">
-                  Aguardando primeiro relatório do bot. Dados aparecem após o relatório quinzenal.
-                </p>
-                <button
-                  onClick={() => setBotSheetOpen(true)}
-                  className="text-sm text-[#b91c1c] font-medium hover:underline"
-                >
-                  Ver detalhes →
-                </button>
-              </div>
-            ) : (
-              <div>
-                <p className="text-sm text-[#4a3d3d] mb-3">
-                  Franquias com vendedor digital vendem em média 40% mais. Ative o seu!
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => { onClose(false); navigate("/FranchiseSettings"); }}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
-                >
-                  <MaterialIcon icon="smart_toy" size={16} className="mr-1" />
-                  Configurar Vendedor
-                </Button>
-              </div>
-            )}
-          </div>
-
           {/* Problems */}
           {healthResult.problems?.length > 0 && (
             <div className="border-t border-[#e9e8e9] pt-4">
@@ -209,15 +120,6 @@ export default function DiagnosticoSheet({ isOpen, onClose, healthResult, franch
             </div>
           )}
         </SheetContent>
-      </Sheet>
-
-      {evoId && (
-        <BotCoachSheet
-          franchiseId={evoId}
-          isOpen={botSheetOpen}
-          onClose={() => setBotSheetOpen(false)}
-        />
-      )}
-    </>
+    </Sheet>
   );
 }

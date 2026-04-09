@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { BotConversation, ConversationMessage, Sale, BotReport } from "@/entities/all";
+import { BotConversation, ConversationMessage, Sale } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatBRL } from "@/lib/formatBRL";
-import BotCoachSheet from "./BotCoachSheet";
 
 const MIN_CONVERSATIONS = 5;
 
@@ -54,7 +53,6 @@ export default function BotPerformanceCard() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sheetOpen, setSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!evoId) {
@@ -67,12 +65,11 @@ export default function BotPerformanceCard() {
       const prevMonthStart = format(startOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
       const prevMonthEnd = format(startOfMonth(now), "yyyy-MM-dd"); // exclusive
 
-      // Fetch conversations, messages, bot sales, and latest BotReport in parallel
-      const [convsRes, msgsRes, salesRes, reportRes] = await Promise.allSettled([
+      // Fetch conversations, messages, and bot sales in parallel
+      const [convsRes, msgsRes, salesRes] = await Promise.allSettled([
         BotConversation.filter({ franchise_id: evoId }, "-started_at", 500),
         ConversationMessage.filter({ franchise_id: evoId }, "-created_at", 2000, { columns: "id,conversation_id,direction" }),
         Sale.filter({ franchise_id: evoId, source: "bot" }, "-sale_date", 400, { columns: "id,value,delivery_fee,sale_date" }),
-        BotReport.filter({ franchise_id: evoId }, "-report_period_end", 1),
       ]);
 
       if (!mountedRef.current) return;
@@ -80,7 +77,6 @@ export default function BotPerformanceCard() {
       const conversations = convsRes.status === "fulfilled" ? convsRes.value : [];
       const msgs = msgsRes.status === "fulfilled" ? msgsRes.value : [];
       const botSales = salesRes.status === "fulfilled" ? salesRes.value : [];
-      const latestReport = reportRes.status === "fulfilled" && reportRes.value.length > 0 ? reportRes.value[0] : null;
 
       // Filter to current month
       const monthly = conversations.filter(
@@ -158,17 +154,11 @@ export default function BotPerformanceCard() {
       }
       const topAbandon = topNFromMap(abandonMap, 1)[0] || null;
 
-      // Smart tip: prefer BotReport action_items, fallback to static tips
       let tip = null;
-      if (latestReport?.action_items && Array.isArray(latestReport.action_items) && latestReport.action_items.length > 0) {
-        tip = latestReport.action_items[0].message || latestReport.action_items[0].text || null;
-      }
-      if (!tip) {
-        if (autonomyRate < networkAvg) {
-          tip = "franquias que deixam o bot atender primeiro vendem mais. Tente não responder nos primeiros segundos!";
-        } else if (topAbandon) {
-          tip = ABANDON_TIPS[topAbandon];
-        }
+      if (autonomyRate < networkAvg) {
+        tip = "franquias que deixam o bot atender primeiro vendem mais. Tente não responder nos primeiros segundos!";
+      } else if (topAbandon) {
+        tip = ABANDON_TIPS[topAbandon];
       }
 
       setData({
@@ -216,7 +206,6 @@ export default function BotPerformanceCard() {
   const autonomyVsAvg = autonomyRate >= networkAvg ? "acima" : "abaixo";
 
   return (
-    <>
     <Card className="mb-4 border-0 shadow-sm">
       <CardContent className="p-4">
         {/* Header */}
@@ -303,18 +292,7 @@ export default function BotPerformanceCard() {
           </div>
         )}
 
-        {/* Ver detalhes */}
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-[#b91c1c] hover:text-[#a80012] transition-colors min-h-[40px]"
-        >
-          <MaterialIcon icon="insights" size={16} />
-          Ver detalhes
-        </button>
       </CardContent>
     </Card>
-
-    <BotCoachSheet franchiseId={evoId} isOpen={sheetOpen} onClose={() => setSheetOpen(false)} />
-    </>
   );
 }

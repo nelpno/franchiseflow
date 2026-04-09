@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, BotReport, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
-import { calculateFranchiseHealth } from "@/lib/healthScore";
-import { generateBotCoachActions } from "@/lib/smartActions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -18,7 +16,6 @@ import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
 import SmartActions from "./SmartActions";
 import MarketingPaymentCard from "./MarketingPaymentCard";
-import SaudeDoNegocioCard from "./SaudeDoNegocioCard";
 import PriorityAction from "./PriorityAction";
 import { generateSmartActions } from "@/lib/smartActions";
 
@@ -39,7 +36,6 @@ export default function FranchiseeDashboard() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [onboardingChecklist, setOnboardingChecklist] = useState(null);
   const [franchiseConfig, setFranchiseConfig] = useState(null);
-  const [latestBotReport, setLatestBotReport] = useState(null);
   const [marketingPayment, setMarketingPayment] = useState(null);
   const [period, setPeriod] = useState("today");
 
@@ -99,10 +95,8 @@ export default function FranchiseeDashboard() {
           : Promise.resolve([]),                          // [7] onboarding (health: setup)
         evoId ? FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, { signal })
           : Promise.resolve([]),                          // [8] config (health: setup/whatsapp)
-        evoId ? BotReport.filter({ franchise_id: evoId }, "-report_period_end", 1, { signal })
-          : Promise.resolve([]),                          // [9] bot report (coaching tips)
         evoId ? MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 1, { signal })
-          : Promise.resolve([]),                          // [10] marketing payment (priority action)
+          : Promise.resolve([]),                          // [9] marketing payment (priority action)
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -113,7 +107,7 @@ export default function FranchiseeDashboard() {
       const inventoryData = getValue(2);
       const contactsData = getValue(4);
 
-      const queryNames = ["vendas","resumos","estoque","checklist","contatos","ranking","pedidos","onboarding","config","bot_report","marketing"];
+      const queryNames = ["vendas","resumos","estoque","checklist","contatos","ranking","pedidos","onboarding","config","marketing"];
       const failedQueries = results
         .map((r, i) => r.status === "rejected" ? queryNames[i] : null)
         .filter(Boolean);
@@ -128,12 +122,10 @@ export default function FranchiseeDashboard() {
       setContacts(contactsData);
       setInventory(inventoryData);
 
-      // New queries for health score + coaching
       setPurchaseOrders(getValue(6));
       setOnboardingChecklist(getValue(7)?.[0] || null);
       setFranchiseConfig(getValue(8)?.[0] || null);
-      setLatestBotReport(getValue(9)?.[0] || null);
-      setMarketingPayment(getValue(10)?.[0] || null);
+      setMarketingPayment(getValue(9)?.[0] || null);
 
 
 
@@ -247,28 +239,6 @@ export default function FranchiseeDashboard() {
     return Math.round((totalRevenue / recentDays.length) * 1.10);
   }, [summaries, evoId]);
 
-  // Health Score — uses all available data (bot data excluded from main load → 4-dimension score)
-  const healthResult = useMemo(() => {
-    if (!franchise) return null;
-    const botSales = allSales.filter(s => s.source === 'bot');
-    return calculateFranchiseHealth(franchise, {
-      sales: allSales,
-      inventory,
-      orders: purchaseOrders,
-      onboarding: onboardingChecklist ? [onboardingChecklist] : [],
-      configs: franchiseConfig ? [franchiseConfig] : [],
-      botConversations: [],
-      conversationMessages: [],
-      botSales,
-    });
-  }, [franchise, allSales, inventory, purchaseOrders, onboardingChecklist, franchiseConfig]);
-
-  // Coach actions from bot report
-  const coachActions = useMemo(
-    () => generateBotCoachActions(latestBotReport, 5),
-    [latestBotReport]
-  );
-
   // Bot is active if franchise has a config with evolution_instance_id
   const botActive = !!(franchiseConfig && evoId);
 
@@ -280,16 +250,13 @@ export default function FranchiseeDashboard() {
 
   // Which priority type is active (to exclude from SmartActions "Outras Ações")
   const activePriorityType = useMemo(() => {
-    if (!healthResult) return null;
-    const d = healthResult.dimensions;
-    if (d.estoque?.zeroCount > 0) return 'repor_estoque';
+    const lowStock = inventory.some(i => (i.quantity || 0) === 0);
+    if (lowStock) return 'repor_estoque';
     if (actions.some(a => a.type === 'responder')) return 'responder';
-    if (coachActions.some(a => a.type === 'revisar_frete')) return 'revisar_frete';
-    if (d.reposicao?.daysSince >= 30) return 'reposicao';
     if (!marketingPayment || marketingPayment.status === 'rejected') return 'marketing';
     if (!botActive) return 'bot_inativo';
     return null;
-  }, [healthResult, actions, coachActions, marketingPayment, botActive]);
+  }, [inventory, actions, marketingPayment, botActive]);
 
   if (isLoading) {
     return (
@@ -379,12 +346,8 @@ export default function FranchiseeDashboard() {
 
       <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
 
-      {healthResult && <SaudeDoNegocioCard healthResult={healthResult} franchise={franchise} botReport={latestBotReport} />}
-
       <PriorityAction
-        healthResult={healthResult}
         smartActions={actions}
-        coachActions={coachActions}
         marketingPayment={marketingPayment}
         botActive={botActive}
       />
@@ -400,7 +363,7 @@ export default function FranchiseeDashboard() {
 
       <MarketingPaymentCard />
 
-      <SmartActions contacts={contacts} franchiseId={evoId} botReport={latestBotReport} excludeType={activePriorityType} botActive={botActive} />
+      <SmartActions contacts={contacts} franchiseId={evoId} excludeType={activePriorityType} botActive={botActive} />
 
       {/* CTA — hidden on mobile (FAB "Vender" in bottom nav handles it) */}
       <div className="hidden md:flex fixed bottom-10 right-10 z-50">
