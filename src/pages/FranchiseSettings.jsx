@@ -790,7 +790,7 @@ function FranchiseSettingsContent() {
                 <p className="text-[11px] text-[#4a3d3d]/70 mb-3">
                   Defina a taxa (%) cobrada pela operadora em cada forma de pagamento. Usado no cálculo automático de vendas.
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {PAYMENT_METHODS.map((pm) => (
                     <div key={pm.value}>
                       <label className="text-xs font-medium text-[#4a3d3d] flex items-center gap-1 mb-1">
