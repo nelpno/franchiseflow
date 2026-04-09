@@ -90,12 +90,17 @@ export default function TabLancar({
   initialPhone = null,
 }) {
   const [showFormDialog, setShowFormDialog] = useState(autoOpenForm);
+  // Persist initial contact params in state so they survive URL param clearing
+  const [savedContactId, setSavedContactId] = useState(initialContactId);
+  const [savedPhone, setSavedPhone] = useState(initialPhone);
 
   // React to autoOpenForm changes (e.g. FAB clicked while already on Vendas)
   useEffect(() => {
     if (autoOpenForm) {
       setEditingSale(null);
       setShowFormDialog(true);
+      if (initialContactId) setSavedContactId(initialContactId);
+      if (initialPhone) setSavedPhone(initialPhone);
       onFormOpened?.();
     }
   }, [autoOpenForm]);
@@ -833,7 +838,10 @@ export default function TabLancar({
       )}
 
       {/* Sale Form Dialog */}
-      <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
+      <Dialog open={showFormDialog} onOpenChange={(open) => {
+        setShowFormDialog(open);
+        if (!open) { setSavedContactId(null); setSavedPhone(null); }
+      }}>
         <DialogContent className="max-w-2xl w-[95vw] max-h-[85dvh] overflow-y-auto overscroll-contain">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">
@@ -848,8 +856,8 @@ export default function TabLancar({
             currentUser={currentUser}
             onSave={handleFormSave}
             onCancel={() => setShowFormDialog(false)}
-            initialContactId={!editingSale ? initialContactId : null}
-            initialPhone={!editingSale ? initialPhone : null}
+            initialContactId={!editingSale ? savedContactId : null}
+            initialPhone={!editingSale ? savedPhone : null}
           />
         </DialogContent>
       </Dialog>
