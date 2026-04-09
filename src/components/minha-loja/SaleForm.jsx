@@ -1152,19 +1152,19 @@ export default function SaleForm({
 
       {/* Payment method */}
       <MobileSection id="payment" label="Pagamento" icon="payments" summary={paymentSummary}>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {PAYMENT_METHODS.map((pm) => (
             <button
               key={pm.value}
               type="button"
               onClick={() => setPaymentMethod(pm.value)}
-              className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
+              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-colors text-xs ${
                 paymentMethod === pm.value
                   ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
                   : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
               }`}
             >
-              <MaterialIcon icon={pm.icon} size={18} />
+              <MaterialIcon icon={pm.icon} size={16} />
               {pm.label}
             </button>
           ))}
