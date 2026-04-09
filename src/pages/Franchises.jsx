@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Franchise, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
@@ -139,6 +140,7 @@ export default function Franchises() {
 
   // --- Franchise CRUD ---
 
+  const navigate = useNavigate();
   const isStaff = currentUser?.role === "admin" || currentUser?.role === "manager";
 
   const handleCreateFranchise = async (franchiseData, franchiseeEmail) => {
@@ -754,6 +756,18 @@ export default function Franchises() {
                           <MaterialIcon icon="mail" size={14} className="mr-1" />
                           Convidar
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-8 rounded-lg border-[#291715]/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/Onboarding?franchise=${franchise.evolution_instance_id}`);
+                          }}
+                        >
+                          <MaterialIcon icon="checklist" size={14} className="mr-1" />
+                          Onboarding
+                        </Button>
                         {currentUser?.role === "admin" && (
                           <Button
                             variant="ghost"
@@ -1255,6 +1269,38 @@ export default function Franchises() {
                       </div>
                     );
                   })()}
+                </div>
+
+                {/* Onboarding */}
+                <div className="space-y-3 pt-4 border-t border-[#291715]/5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-[#4a3d3d] uppercase tracking-wider">
+                      Onboarding
+                    </h3>
+                    <span className="text-sm font-semibold text-[#4a3d3d]">
+                      {onboardingMap[selectedFranchise.evolution_instance_id] ?? 0}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{
+                        width: `${onboardingMap[selectedFranchise.evolution_instance_id] ?? 0}%`,
+                        backgroundColor: (onboardingMap[selectedFranchise.evolution_instance_id] ?? 0) === 100 ? '#16a34a' : '#b91c1c',
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-xl border-[#291715]/10"
+                    onClick={() => {
+                      setSelectedFranchise(null);
+                      navigate(`/Onboarding?franchise=${selectedFranchise.evolution_instance_id}`);
+                    }}
+                  >
+                    <MaterialIcon icon="checklist" size={16} className="mr-2" />
+                    Ver Onboarding
+                  </Button>
                 </div>
 
                 {/* Actions */}

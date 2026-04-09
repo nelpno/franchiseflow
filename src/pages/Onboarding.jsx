@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Franchise, User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ const BLOCK_CELEBRATION = [
 ];
 
 export default function Onboarding() {
+  const [searchParams] = useSearchParams();
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
   const [selectedFranchise, setSelectedFranchise] = useState(null);
@@ -106,6 +108,16 @@ export default function Onboarding() {
         const allOb = await OnboardingChecklist.list();
         if (!mountedRef.current) return;
         setAllChecklists(allOb);
+
+        // Pre-select franchise from URL query param ?franchise=evo_id
+        const urlFranchiseId = searchParams.get("franchise");
+        if (urlFranchiseId) {
+          const match = enriched.find(f => f.evolution_instance_id === urlFranchiseId);
+          if (match) {
+            setSelectedFranchise(match);
+            await loadFranchiseChecklist(match);
+          }
+        }
       } else {
         const ids = user.managed_franchise_ids || [];
         const myFranchises = enriched.filter(f =>
