@@ -62,6 +62,7 @@
 - `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval
 - Error handling: `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout
 - Rotas: `createPageUrl("PageName")` → `"/PageName"` (capitalizado)
+- Navegação programática: `useNavigate()` + `useSearchParams()` de `react-router-dom`. Query params para pré-seleção (ex: `/Onboarding?franchise=evo_id`)
 - Toast: sonner (importar de `"sonner"`, NÃO shadcn legado). NUNCA alert()/window.confirm()
 
 ### Integração n8n / Bot
@@ -113,7 +114,7 @@
 - Manager: mesma visão admin mas SEM delete. Checagens: `role === "admin" || role === "manager"` visão, `role === "admin"` delete
 - Terminologia: "Estoque" (NÃO "Inventário"), "Valor Médio" (NÃO "Ticket Médio"), NÃO "Líquido"
 - Wizard: 6 passos visuais, Revisão NÃO conta (X/5). Upload catálogo JPG only
-- Sidebar admin: 5 itens visíveis. Páginas ocultas via `adminSidebarHidden` acessíveis por URL
+- Sidebar admin: 6 itens visíveis (incluindo Onboarding em Administração). Páginas ocultas via `adminSidebarHidden` acessíveis por URL. Remover a flag + definir `adminSection` = visível na sidebar
 
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist, ReviewSummary campos Personalidade/Boas-vindas, catalog_distributions, BotPerformanceCard/QuickAccessCards/PeriodComparisonCard, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin
