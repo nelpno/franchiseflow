@@ -103,8 +103,7 @@ const navigationItems = [
     url: createPageUrl("Onboarding"),
     materialIcon: "school",
     showOnboarding: true,
-    adminSection: "Gestão",
-    adminSidebarHidden: true,
+    adminSection: "Administração",
   },
   {
     title: "Acompanhamento",

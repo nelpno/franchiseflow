@@ -756,18 +756,6 @@ export default function Franchises() {
                           <MaterialIcon icon="mail" size={14} className="mr-1" />
                           Convidar
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-8 rounded-lg border-[#291715]/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/Onboarding?franchise=${franchise.evolution_instance_id}`);
-                          }}
-                        >
-                          <MaterialIcon icon="checklist" size={14} className="mr-1" />
-                          Onboarding
-                        </Button>
                         {currentUser?.role === "admin" && (
                           <Button
                             variant="ghost"
