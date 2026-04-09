@@ -213,7 +213,7 @@ export default function BotIntelligence() {
       // Fetch conversations + messages + sales in parallel
       const [allConvsRes, msgsRes, salesRes] = await Promise.allSettled([
         BotConversation.list("-started_at", null, {
-          columns: 'id, franchise_id, started_at, outcome, llm_abandon_reason, status, cart_value, converted_at, messages_count',
+          columns: 'id, franchise_id, started_at, outcome, llm_abandon_reason, status, cart_value, converted_at, messages_count, updated_at',
           fetchAll: true,
         }),
         ConversationMessage.list("-created_at", null, { columns: "id,conversation_id,direction,franchise_id", fetchAll: true }),
@@ -261,9 +261,6 @@ export default function BotIntelligence() {
         return d >= new Date(start) && d <= new Date(end);
       });
 
-      // Processed only for LLM-based analytics
-      const processed = monthlyAll.filter((c) => c.processed_at);
-
       // Apply franchise filter
       const applyFilter = (list) =>
         selectedFranchiseId !== "todas" && filterParams.franchise_id
@@ -271,8 +268,9 @@ export default function BotIntelligence() {
           : list;
 
       if (!mountedRef.current) return;
-      setAllConversations(applyFilter(monthlyAll));
-      setConversations(applyFilter(processed));
+      const filtered = applyFilter(monthlyAll);
+      setAllConversations(filtered);
+      setConversations(filtered);
       setHumanMsgMap(hmMap);
       setMsgCountMap(mcMap);
       setBotSalesMap(bsMap);
@@ -317,16 +315,16 @@ export default function BotIntelligence() {
       totalBotRevenue += data.revenue;
     }
 
-    // From processed conversations (LLM-classified)
-    const total = totalProcessed;
-    const converted = conversations.filter((c) => c.outcome === "converted").length;
+    // Conversion: use status OR outcome (historical LLM data)
+    const total = totalAll;
+    const converted = allConversations.filter((c) => c.status === "converted" || c.outcome === "converted").length;
     const conversionRate = total ? ((converted / total) * 100).toFixed(1) : "0.0";
 
-    // Funnel
+    // Funnel (uses status column — works without Analyzer)
     const funnelData = FUNNEL_STATUSES.map((s) => ({
       status: s,
       label: STATUS_LABELS[s],
-      count: conversations.filter((c) => c.status === s).length,
+      count: allConversations.filter((c) => c.status === s).length,
     }));
 
     // Abandon reasons
@@ -366,13 +364,13 @@ export default function BotIntelligence() {
       const cnt = msgCountMap[c.id] || 0;
       if (cnt <= 1) franchiseMap[fid].dropoff1msg++;
     });
-    // Add LLM data from processed conversations
-    conversations.forEach((c) => {
+    // Add classification data (status-based + LLM fallback)
+    allConversations.forEach((c) => {
       const fid = c.franchise_id;
       if (!franchiseMap[fid]) return;
       franchiseMap[fid].totalProcessed++;
-      if (c.outcome === "converted") franchiseMap[fid].converted++;
-      if (c.outcome === "escalated") franchiseMap[fid].escalated++;
+      if (c.status === "converted" || c.outcome === "converted") franchiseMap[fid].converted++;
+      if (c.status === "escalated" || c.outcome === "escalated") franchiseMap[fid].escalated++;
       if (c.llm_abandon_reason) {
         const r = c.llm_abandon_reason;
         franchiseMap[fid].abandonReasons[r] = (franchiseMap[fid].abandonReasons[r] || 0) + 1;
@@ -418,7 +416,7 @@ export default function BotIntelligence() {
   // --- Open drill-down sheet ---
   function openSheet(row) {
     setSheetFranchise(row);
-    const last10 = conversations
+    const last10 = allConversations
       .filter((c) => c.franchise_id === row.franchise_id)
       .sort((a, b) => new Date(b.started_at || b.created_at) - new Date(a.started_at || a.created_at))
       .slice(0, 10);
@@ -773,30 +771,25 @@ export default function BotIntelligence() {
                           : "—"}
                       </span>
                       <div className="flex items-center gap-2">
-                        {/* Outcome badge */}
-                        <span
-                          className="text-xs px-2 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor:
-                              c.outcome === "converted"
-                                ? "#16a34a20"
-                                : c.outcome === "abandoned"
-                                ? "#dc262620"
-                                : c.outcome === "escalated"
-                                ? "#d4af3720"
-                                : "#e9e8e9",
-                            color:
-                              c.outcome === "converted"
-                                ? "#16a34a"
-                                : c.outcome === "abandoned"
-                                ? "#dc2626"
-                                : c.outcome === "escalated"
-                                ? "#775a19"
-                                : "#7a6d6d",
-                          }}
-                        >
-                          {OUTCOME_LABELS[c.outcome] || c.outcome || STATUS_LABELS[c.status] || c.status}
-                        </span>
+                        {/* Outcome/Status badge */}
+                        {(() => {
+                          const label = c.outcome ? (OUTCOME_LABELS[c.outcome] || c.outcome) : (STATUS_LABELS[c.status] || c.status);
+                          const resolved = c.outcome || c.status;
+                          const isConverted = resolved === "converted";
+                          const isAbandoned = resolved === "abandoned";
+                          const isEscalated = resolved === "escalated";
+                          return (
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full"
+                              style={{
+                                backgroundColor: isConverted ? "#16a34a20" : isAbandoned ? "#dc262620" : isEscalated ? "#d4af3720" : "#e9e8e9",
+                                color: isConverted ? "#16a34a" : isAbandoned ? "#dc2626" : isEscalated ? "#775a19" : "#7a6d6d",
+                              }}
+                            >
+                              {label}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
 
@@ -808,7 +801,7 @@ export default function BotIntelligence() {
                     )}
 
                     <div className="flex flex-wrap gap-1 pt-0.5">
-                      {c.outcome === "escalated" && (
+                      {(c.status === "escalated" || c.outcome === "escalated") && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#f59e0b]/10 text-[#d97706]">
                           Escalado
                         </span>

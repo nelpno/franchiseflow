@@ -70,7 +70,7 @@ export default function AdminDashboard() {
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
-        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome', signal, fetchAll: true }),
+        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true }),
         ConversationMessage.filter({ direction: 'human' }, '-created_at', 2000, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal }),
         Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at', signal, fetchAll: true }),
       ]);
@@ -178,11 +178,18 @@ export default function AdminDashboard() {
   // Only 'ongoing' excluded from denominator (still in progress)
   const botLeadsForRange = useCallback((startDate, endDate) => {
     let ongoing = 0, total = 0;
+    const now = Date.now();
+    const cutoff24h = now - 24 * 60 * 60 * 1000;
     for (const c of botConversations) {
       const d = c.started_at?.slice(0, 10);
       if (d >= startDate && d <= endDate) {
         total++;
-        if (c.outcome === 'ongoing') ongoing++;
+        // Ongoing: use outcome if available (historical), else derive from status + age
+        const isOngoing = c.outcome
+          ? c.outcome === 'ongoing'
+          : ['started', 'catalog_sent', 'items_discussed', 'checkout_started'].includes(c.status)
+            && new Date(c.updated_at).getTime() >= cutoff24h;
+        if (isOngoing) ongoing++;
       }
     }
     return total - ongoing;

@@ -8,10 +8,22 @@ export default function BotSummaryCard({ botConversations }) {
     if (!botConversations?.length) return null;
 
     const total = botConversations.length;
-    const ongoing = botConversations.filter(c => c.outcome === 'ongoing').length;
+    const now = Date.now();
+    const cutoff24h = now - 24 * 60 * 60 * 1000;
+    const activeStatuses = ['started', 'catalog_sent', 'items_discussed', 'checkout_started'];
+
+    const ongoing = botConversations.filter(c => {
+      if (c.outcome) return c.outcome === 'ongoing';
+      return activeStatuses.includes(c.status) && new Date(c.updated_at).getTime() >= cutoff24h;
+    }).length;
     const concluded = total - ongoing;
-    const converted = botConversations.filter(c => c.outcome === 'converted').length;
-    const abandoned = botConversations.filter(c => c.outcome === 'abandoned').length;
+
+    const converted = botConversations.filter(c =>
+      c.status === 'converted' || c.outcome === 'converted'
+    ).length;
+    const abandoned = botConversations.filter(c =>
+      c.status === 'abandoned' || c.outcome === 'abandoned'
+    ).length;
 
     const conversionRate = concluded > 0 ? Math.round((converted / concluded) * 100) : 0;
     const abandonRate = concluded > 0 ? Math.round((abandoned / concluded) * 100) : 0;

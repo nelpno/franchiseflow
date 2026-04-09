@@ -106,7 +106,7 @@ export default function BotPerformanceCard() {
         (acc, s) => acc + parseFloat(s.value || 0) + parseFloat(s.delivery_fee || 0), 0
       );
 
-      const escalated = monthly.filter((c) => c.outcome === "escalated").length;
+      const escalated = monthly.filter((c) => c.status === "escalated" || c.outcome === "escalated").length;
 
       // Autonomy: conversations without any human message
       const humanConvIds = new Set();
