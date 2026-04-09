@@ -84,6 +84,7 @@ export default function TabEstoque({
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStockLevel, setFilterStockLevel] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [showHidden, setShowHidden] = useState(false);
   const editInputRef = useRef(null);
   const editingCellRef = useRef(null);
 
@@ -126,7 +127,11 @@ export default function TabEstoque({
 
   // --- Filtering ---
 
+  const hiddenItems = useMemo(() => items.filter((i) => i.active === false), [items]);
+
   const filteredItems = useMemo(() => items.filter((item) => {
+    if (item.active === false) return false; // hidden items shown separately
+
     const itemCategory = item.category || getCategoryFromName(item.product_name);
     const matchesSearch =
       !searchTerm ||
@@ -365,6 +370,23 @@ export default function TabEstoque({
     } catch (error) {
       console.error("Erro ao deletar:", error);
       toast.error("Erro ao remover produto.");
+    }
+  };
+
+  // --- Toggle active (ocultar/mostrar SKU) ---
+
+  const handleToggleActive = async (item) => {
+    const newActive = item.active === false ? true : false;
+    try {
+      await InventoryItem.update(item.id, { active: newActive });
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, active: newActive } : i))
+      );
+      toast.success(newActive ? "Produto reativado." : "Produto oculto — não aparece para o bot nem na reposição.");
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error("Erro ao ocultar/mostrar:", error);
+      toast.error("Erro ao alterar visibilidade.");
     }
   };
 
@@ -1047,6 +1069,15 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-8 w-8 text-[#4a3d3d] hover:text-[#775a19]"
+                                    onClick={() => handleToggleActive(item)}
+                                    title="Ocultar produto — não aparece para o bot nem na reposição"
+                                  >
+                                    <MaterialIcon icon="visibility_off" size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8 text-[#cac0c0] hover:text-[#b91c1c]"
                                     onClick={() => setDeleteConfirmId(item.id)}
                                   >
@@ -1065,6 +1096,55 @@ export default function TabEstoque({
             </CardContent>
           </Card>
         </>
+      )}
+
+      {/* Hidden items section */}
+      {hiddenItems.length > 0 && (
+        <div className="border border-[#cac0c0]/30 rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setShowHidden(!showHidden)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-[#fbf9fa] hover:bg-[#f5f3f4] transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              <MaterialIcon icon="visibility_off" size={18} className="text-[#4a3d3d]/60" />
+              <span className="text-sm font-semibold text-[#4a3d3d]">
+                {hiddenItems.length} produto{hiddenItems.length > 1 ? "s" : ""} oculto{hiddenItems.length > 1 ? "s" : ""}
+              </span>
+              <span className="text-xs text-[#4a3d3d]/60">
+                — não aparecem para o bot nem na reposição
+              </span>
+            </div>
+            <MaterialIcon icon={showHidden ? "expand_less" : "expand_more"} size={20} className="text-[#4a3d3d]/60" />
+          </button>
+          {showHidden && (
+            <div className="p-3 space-y-2 border-t border-[#cac0c0]/20">
+              {hiddenItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-[#cac0c0]/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-[#4a3d3d]/60 line-through">
+                      {item.product_name}
+                    </span>
+                    <span className="text-xs text-[#4a3d3d]/40">
+                      {item.quantity ?? 0} {item.unit}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1 text-xs text-[#16a34a] hover:text-[#16a34a] hover:bg-[#16a34a]/10"
+                    onClick={() => handleToggleActive(item)}
+                  >
+                    <MaterialIcon icon="visibility" size={14} />
+                    Reativar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Add/Edit product dialog */}

@@ -16,7 +16,7 @@ function calcSalesScore(franchise, salesData) {
     (s) => s.franchise_id === franchise.id || s.franchise_id === franchise.evolution_instance_id
   );
 
-  if (franchiseSales.length === 0) return { score: 0, detail: "Nenhuma venda registrada", daysSince: null };
+  if (franchiseSales.length === 0) return { score: 0, detail: "Nenhuma venda registrada", daysSince: null, noData: true };
 
   const mostRecentDate = franchiseSales.reduce((latest, s) => {
     const d = s.sale_date || s.created_at?.substring(0, 10) || "";
@@ -38,15 +38,15 @@ function calcSalesScore(franchise, salesData) {
     ? "Vendeu hoje"
     : `Última venda há ${daysSince} dia${daysSince > 1 ? "s" : ""}`;
 
-  return { score, detail, daysSince };
+  return { score, detail, daysSince, noData: false };
 }
 
 function calcInventoryScore(franchise, inventoryData) {
   const items = inventoryData.filter(
-    (i) => i.franchise_id === franchise.evolution_instance_id
+    (i) => i.franchise_id === franchise.evolution_instance_id && i.active !== false
   );
 
-  if (items.length === 0) return { score: 0, detail: "Sem itens cadastrados", zeroCount: 0, zeroNames: "" };
+  if (items.length === 0) return { score: 0, detail: "Sem itens cadastrados", zeroCount: 0, zeroNames: "", noData: true };
 
   const zeroItems = items.filter((i) => (i.quantity || 0) === 0);
   const zeroCount = zeroItems.length;
@@ -65,7 +65,7 @@ function calcInventoryScore(franchise, inventoryData) {
 
   const zeroNames = zeroItems.slice(0, 4).map((i) => i.product_name || i.name).join(", ");
 
-  return { score, detail, zeroCount, zeroNames };
+  return { score, detail, zeroCount, zeroNames, noData: false };
 }
 
 function calcOrdersScore(franchise, ordersData) {
@@ -73,7 +73,7 @@ function calcOrdersScore(franchise, ordersData) {
     (po) => po.franchise_id === franchise.id || po.franchise_id === franchise.evolution_instance_id
   );
 
-  if (orders.length === 0) return { score: 0, detail: "Nunca fez pedido", daysSince: null, lastOrderDate: null };
+  if (orders.length === 0) return { score: 0, detail: "Nunca fez pedido", daysSince: null, lastOrderDate: null, noData: true };
 
   const mostRecent = orders.reduce((latest, po) => {
     const d = po.ordered_at || po.created_at?.substring(0, 10) || "";
@@ -92,14 +92,14 @@ function calcOrdersScore(franchise, ordersData) {
 
   const detail = `Último pedido há ${daysSince} dia${daysSince > 1 ? "s" : ""}`;
 
-  return { score, detail, daysSince, lastOrderDate: mostRecent };
+  return { score, detail, daysSince, lastOrderDate: mostRecent, noData: false };
 }
 
 function calcBotScore(franchise, botConversations, conversationMessages, botSales) {
   const evoId = franchise.evolution_instance_id;
   const convos = botConversations.filter((c) => c.franchise_id === evoId);
 
-  if (convos.length === 0) return { score: 0, detail: "Sem dados do bot", hasData: false, autonomyRate: 0 };
+  if (convos.length === 0) return { score: 0, detail: "Sem dados do bot", hasData: false, autonomyRate: 0, noData: true };
 
   // Autonomy: conversations without human intervention (10pts max, target 40%)
   const humanMsgsByConvo = {};
@@ -122,7 +122,7 @@ function calcBotScore(franchise, botConversations, conversationMessages, botSale
 
   const detail = `Autonomia ${Math.round(autonomyRate * 100)}% · Conversão ${Math.round(conversionRate * 100)}%`;
 
-  return { score, detail, hasData: true, autonomyRate };
+  return { score, detail, hasData: true, autonomyRate, noData: false };
 }
 
 export const SETUP_SIGNAL_LABELS = {
@@ -233,11 +233,11 @@ export function calculateFranchiseHealth(franchise, data) {
     bot.score * weights.bot
   );
 
-  // Penalty: any active dimension at 0 pulls total down
+  // Penalty only for dimensions with real data that scored 0 (not missing data)
   const activeDimensions = [vendas, estoque, reposicao, setup];
   if (hasBotData) activeDimensions.push(bot);
-  const hasZero = activeDimensions.some((d) => d.score === 0);
-  if (hasZero) total -= 10;
+  const hasRealZero = activeDimensions.some((d) => d.score === 0 && !d.noData);
+  if (hasRealZero) total -= 5;
 
   total = Math.max(0, Math.min(100, total));
 

@@ -56,6 +56,7 @@ const initialFormData = {
   charges_delivery_fee: true,
   delivery_schedule: [],
   catalog_image_url: '',
+  payment_fees: null,
   bot_personality: '',
   facebook_page_id: '',
 };
@@ -221,6 +222,7 @@ function FranchiseSettingsContent() {
       pickup_requires_scheduling: config.pickup_requires_scheduling ?? true,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
+      payment_fees: config.payment_fees || null,
     };
 
     // Restore draft from localStorage only for franchisees (admin edits directly, no drafts)
@@ -778,6 +780,44 @@ function FranchiseSettingsContent() {
                   )}
                 </>
               )}
+
+              {/* Payment fees per method */}
+              <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
+                <h4 className="text-xs font-bold text-[#3d4a42] mb-3 flex items-center gap-1.5">
+                  <MaterialIcon icon="percent" size={14} />
+                  Taxa por Forma de Pagamento
+                </h4>
+                <p className="text-[11px] text-[#4a3d3d]/70 mb-3">
+                  Defina a taxa (%) cobrada pela operadora em cada forma de pagamento. Usado no cálculo automático de vendas.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {PAYMENT_METHODS.map((pm) => (
+                    <div key={pm.value}>
+                      <label className="text-xs font-medium text-[#4a3d3d] flex items-center gap-1 mb-1">
+                        <MaterialIcon icon={pm.icon} size={14} />
+                        {pm.label}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="0"
+                          className="w-full bg-[#e9e8e9] border-none rounded-xl px-3 py-2 pr-8 text-sm text-right font-mono"
+                          value={formData.payment_fees?.[pm.value] ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                            const updated = { ...(formData.payment_fees || {}), [pm.value]: val };
+                            handleInputChange('payment_fees', updated);
+                          }}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4a3d3d]/50">%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Shared payment data */}
               <div className="border-t border-[#bccac0]/10 pt-4 mt-2">

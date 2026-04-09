@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { SaleItem, Contact, AuditLog } from "@/entities/all";
+import { SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -400,6 +400,7 @@ export default function SaleForm({
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [cardFeePercent, setCardFeePercent] = useState(3.5);
+  const [paymentFees, setPaymentFees] = useState(null); // JSONB from franchise_configurations
 
   // Delivery
   const [deliveryMethod, setDeliveryMethod] = useState("retirada");
@@ -525,6 +526,24 @@ export default function SaleForm({
     }
   }, [isEditing, contacts, initialContactId, initialPhone]);
 
+  // ---- Load payment_fees from franchise config ----
+  useEffect(() => {
+    if (!franchiseId) return;
+    FranchiseConfiguration.filter({ franchise_evolution_instance_id: franchiseId })
+      .then((configs) => {
+        const fees = configs?.[0]?.payment_fees;
+        if (fees && typeof fees === "object") setPaymentFees(fees);
+      })
+      .catch(() => {}); // silent — fallback to manual input
+  }, [franchiseId]);
+
+  // Auto-set fee when payment method changes (if config has fees)
+  useEffect(() => {
+    if (!paymentFees) return;
+    const fee = paymentFees[paymentMethod];
+    if (fee != null) setCardFeePercent(parseFloat(fee) || 0);
+  }, [paymentMethod, paymentFees]);
+
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
     () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate }),
@@ -568,9 +587,15 @@ export default function SaleForm({
   }, [discountInput, discountType, subtotal]);
 
   const cardFeeAmount = useMemo(() => {
+    // With payment_fees config: apply fee for any method that has a non-zero fee
+    if (paymentFees) {
+      if (!cardFeePercent || cardFeePercent <= 0) return 0;
+      return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
+    }
+    // Legacy: only card_machine and payment_link have fees
     if (paymentMethod !== "card_machine" && paymentMethod !== "payment_link") return 0;
     return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
-  }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent]);
+  }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent, paymentFees]);
 
   const netValue = subtotal - discountAmount - cardFeeAmount + effectiveDeliveryFee;
 
@@ -744,8 +769,8 @@ export default function SaleForm({
         contact_id: resolvedContactId || null,
         source: isEditing ? (sale.source || "manual") : "manual",
         payment_method: paymentMethod,
-        card_fee_percent: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeePercent : null,
-        card_fee_amount: (paymentMethod === "card_machine" || paymentMethod === "payment_link") ? cardFeeAmount : null,
+        card_fee_percent: (paymentFees ? cardFeePercent > 0 : (paymentMethod === "card_machine" || paymentMethod === "payment_link")) ? cardFeePercent : null,
+        card_fee_amount: (paymentFees ? cardFeePercent > 0 : (paymentMethod === "card_machine" || paymentMethod === "payment_link")) ? cardFeeAmount : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
         discount_amount: discountAmount || 0,
@@ -1144,7 +1169,7 @@ export default function SaleForm({
           ))}
         </div>
 
-        {(paymentMethod === "card_machine" || paymentMethod === "payment_link") && (
+        {(paymentFees ? cardFeePercent > 0 : (paymentMethod === "card_machine" || paymentMethod === "payment_link")) && (
           <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
             <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
             <Input

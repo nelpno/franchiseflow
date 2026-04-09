@@ -74,7 +74,7 @@ export default function TabReposicao({
 
   const suggestions = useMemo(() => {
     const items = (inventoryItems || []).filter(
-      (item) => item.cost_price && parseFloat(item.cost_price) > 0
+      (item) => item.active !== false && item.cost_price && parseFloat(item.cost_price) > 0
     );
     return items
       .map((item) => {
@@ -128,6 +128,7 @@ export default function TabReposicao({
   const criticalItems = useMemo(() => {
     return (inventoryItems || [])
       .filter(item => {
+        if (item.active === false) return false;
         const qty = item.quantity || 0;
         const min = item.min_stock || 0;
         return min > 0 && qty < min;

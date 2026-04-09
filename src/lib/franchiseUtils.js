@@ -45,7 +45,7 @@ export function findFranchise(franchises, franchiseId) {
 export const PAYMENT_METHODS = [
   { value: "pix", label: "PIX", icon: "qr_code_2" },
   { value: "payment_link", label: "Link de Pagamento", icon: "link" },
-  { value: "card_machine", label: "Máquina de Cartão", icon: "credit_card" },
+  { value: "card_machine", label: "Cartão (maquininha/aproximação)", icon: "credit_card" },
   { value: "cash", label: "Dinheiro", icon: "payments" },
 ];
 

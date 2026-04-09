@@ -17,6 +17,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
+import { formatBRL } from "@/lib/formatBRL";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -559,6 +560,50 @@ export default function MyContacts() {
         sortValue={sortBy}
         onSortChange={setSortBy}
       />
+
+      {/* Export CSV */}
+      {filteredContacts.length > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-[#4a3d3d]/70">
+            {filteredContacts.length} cliente{filteredContacts.length !== 1 ? "s" : ""}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-8 rounded-xl border-[#291715]/10"
+            onClick={() => {
+              const headers = ["Nome", "Telefone", "Status", "Origem", "Total Compras", "Valor Total", "Último Contato", "Endereço", "Bairro"];
+              const escape = (v) => {
+                const s = String(v ?? "");
+                return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+              };
+              const rows = filteredContacts.map((c) => [
+                escape(c.nome || c.customer_name || ""),
+                escape(c.telefone ? formatPhone(c.telefone) : ""),
+                escape(c.status || ""),
+                escape(c.source || "manual"),
+                c.total_purchases ?? 0,
+                (parseFloat(c.total_spent) || 0).toFixed(2).replace(".", ","),
+                c.last_contact_at ? c.last_contact_at.substring(0, 10).split("-").reverse().join("/") : "",
+                escape(c.endereco || ""),
+                escape(c.bairro || ""),
+              ].join(","));
+              const csv = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `clientes_${new Date().toISOString().split("T")[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`${filteredContacts.length} clientes exportados`);
+            }}
+          >
+            <MaterialIcon icon="download" size={14} />
+            Exportar CSV
+          </Button>
+        </div>
+      )}
 
       {/* Contact Cards Grid */}
       {filteredContacts.length === 0 ? (

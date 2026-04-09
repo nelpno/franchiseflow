@@ -59,7 +59,7 @@ function calculateHealthScore({
 
   // --- Inventory (25 pts) ---
   let inventoryScore = 0;
-  const items = inventoryItems || [];
+  const items = (inventoryItems || []).filter((i) => i.active !== false);
   if (items.length > 0) {
     const itemsWithMinStock = items.filter((i) => (i.min_stock || 0) > 0);
     if (itemsWithMinStock.length > 0) {
@@ -142,6 +142,7 @@ function calculateHealthScore({
   if (items.length > 0) {
     const itemsWithMinStock = items.filter((i) => (i.min_stock || 0) > 0);
     const lowStock = itemsWithMinStock.filter((i) => (i.quantity || 0) < (i.min_stock || 0));
+    // items already filtered by active !== false above
     if (lowStock.length > 0) {
       inventoryReason = `${lowStock.length} de ${itemsWithMinStock.length} produtos com estoque baixo`;
     } else if (itemsWithMinStock.length > 0) {
@@ -194,11 +195,14 @@ function calculateHealthScore({
   let effectiveContactsScore = contactsScore;
 
   if (!hasBotData) {
-    // Redistribute 20 bot pts: +5 sales, +5 inventory, +5 orders, +5 contacts
-    effectiveSalesScore = Math.round((salesScore / 30) * 35);
-    effectiveInventoryScore = Math.round((inventoryScore / 20) * 25);
-    effectiveOrdersScore = Math.round((ordersScore / 15) * 20);
-    effectiveContactsScore = Math.round((contactsScore / 15) * 20);
+    // Redistribute proportionally: scale each score from with-bot max to no-bot max
+    // With bot: sales=35, inv=25, orders=20, contacts=15, bot=20 (but scores cap at these)
+    // No bot:   sales=35, inv=25, orders=20, contacts=20
+    // Only contacts max changes (15→20), others stay the same
+    effectiveSalesScore = salesScore;
+    effectiveInventoryScore = inventoryScore;
+    effectiveOrdersScore = ordersScore;
+    effectiveContactsScore = contactsScore > 0 ? Math.round((contactsScore / 15) * 20) : 0;
     effectiveBotScore = 0;
   }
 

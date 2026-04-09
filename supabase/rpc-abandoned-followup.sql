@@ -1,6 +1,6 @@
 -- RPC: get_abandoned_for_followup
 -- Busca conversas abandonadas elegiveis para followup automatico
--- 5 filtros de seguranca anti-banimento
+-- 6 filtros de seguranca anti-banimento
 -- Usado pelo Bot Conversation Analyzer workflow
 
 CREATE OR REPLACE FUNCTION get_abandoned_for_followup(
@@ -64,6 +64,16 @@ BEGIN
         AND bc2.followup_sent_at IS NOT NULL
         AND bc2.followup_sent_at > NOW() - (p_cooldown_days || ' days')::INTERVAL
     )
+    -- Filtro 6: NAO enviar followup para quem ja comprou recentemente (48h)
+    AND NOT EXISTS (
+      SELECT 1 FROM sales s
+      JOIN contacts ct
+        ON ct.id = s.contact_id
+        AND ct.franchise_id = s.franchise_id
+      WHERE ct.telefone = bc.contact_phone
+        AND s.franchise_id = bc.franchise_id
+        AND s.created_at > NOW() - INTERVAL '48 hours'
+    )
     -- Seguranca: tem WhatsApp instance configurada
     AND fc.whatsapp_instance_id IS NOT NULL
     -- Seguranca: tem telefone valido
@@ -78,4 +88,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_abandoned_for_followup TO service_role;
 
 COMMENT ON FUNCTION get_abandoned_for_followup IS
-'Busca conversas abandonadas elegiveis para followup. 5 filtros anti-banimento: abandoned + 0 followups + sem humano + janela 30min-2h + cooldown 7 dias.';
+'Busca conversas abandonadas elegiveis para followup. 6 filtros anti-banimento: abandoned + 0 followups + sem humano + janela 30min-2h + cooldown 7 dias + sem venda 48h.';
