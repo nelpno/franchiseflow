@@ -44,11 +44,15 @@ export function findFranchise(franchises, franchiseId) {
  */
 export const PAYMENT_METHODS = [
   { value: "pix", label: "PIX", icon: "qr_code_2" },
-  { value: "payment_link", label: "Link de Pagamento", icon: "link" },
-  { value: "card_machine", label: "Maquininha", icon: "credit_card" },
+  { value: "credit", label: "Crédito", icon: "credit_card" },
+  { value: "debit", label: "Débito", icon: "credit_card" },
   { value: "nfc", label: "Aproximação/NFC", icon: "contactless" },
+  { value: "payment_link", label: "Link de Pagamento", icon: "link" },
   { value: "cash", label: "Dinheiro", icon: "payments" },
 ];
+
+// Legacy mapping: old "card_machine" maps to credit+debit for backward compat
+export const LEGACY_PAYMENT_MAP = { card_machine: ["credit", "debit"] };
 
 /**
  * Labels para métodos de entrega.

@@ -592,8 +592,9 @@ export default function SaleForm({
       if (!cardFeePercent || cardFeePercent <= 0) return 0;
       return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
     }
-    // Legacy: only card_machine and payment_link have fees
-    if (paymentMethod !== "card_machine" && paymentMethod !== "payment_link") return 0;
+    // Legacy: card methods and payment_link have fees
+    const feeableMethods = ["card_machine", "credit", "debit", "nfc", "payment_link"];
+    if (!feeableMethods.includes(paymentMethod)) return 0;
     return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
   }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent, paymentFees]);
 
@@ -769,8 +770,8 @@ export default function SaleForm({
         contact_id: resolvedContactId || null,
         source: isEditing ? (sale.source || "manual") : "manual",
         payment_method: paymentMethod,
-        card_fee_percent: (paymentFees ? cardFeePercent > 0 : (paymentMethod === "card_machine" || paymentMethod === "payment_link")) ? cardFeePercent : null,
-        card_fee_amount: (paymentFees ? cardFeePercent > 0 : (paymentMethod === "card_machine" || paymentMethod === "payment_link")) ? cardFeeAmount : null,
+        card_fee_percent: (paymentFees ? cardFeePercent > 0 : ["card_machine", "credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeePercent : null,
+        card_fee_amount: (paymentFees ? cardFeePercent > 0 : ["card_machine", "credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeeAmount : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
         discount_amount: discountAmount || 0,
@@ -1169,7 +1170,7 @@ export default function SaleForm({
           ))}
         </div>
 
-        {(paymentFees ? cardFeePercent > 0 : (paymentMethod === "card_machine" || paymentMethod === "payment_link")) && (
+        {(paymentFees ? cardFeePercent > 0 : ["card_machine", "credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) && (
           <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
             <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
             <Input
