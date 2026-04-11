@@ -769,11 +769,13 @@ function FranchiseSettingsContent() {
                         onChange={(val) => {
                           handleInputChange('pickup_schedule', val);
                           handleInputChange('has_custom_pickup_hours', true);
-                          // Sync legacy fields for bot compatibility
-                          const summary = val.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
-                          handleInputChange('opening_hours', summary);
-                          handleInputChange('working_days', [...new Set(val.flatMap(r => r.days))].join(','));
                           handleInputChange('operating_hours', val);
+                          // Só atualiza opening_hours se NÃO tem delivery (pickup-only = horário geral)
+                          if (!formData.has_delivery) {
+                            const summary = val.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
+                            handleInputChange('opening_hours', summary);
+                            handleInputChange('working_days', [...new Set(val.flatMap(r => r.days))].join(','));
+                          }
                         }}
                       />
                     </div>
