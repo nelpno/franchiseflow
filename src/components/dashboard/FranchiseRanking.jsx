@@ -123,13 +123,15 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
   if (isLoading || rankedFranchises.length === 0) return null;
 
   const totalRevenue = rankedFranchises.reduce((sum, f) => sum + f.revenue, 0);
-  const goalPercent = Math.min(Math.round((totalRevenue / dailyGoal) * 100), 100);
-  const remaining = Math.max(dailyGoal - totalRevenue, 0);
+  const goalPercent = Math.round((totalRevenue / dailyGoal) * 100);
+  const goalPercentCapped = Math.min(goalPercent, 100);
+  const remaining = dailyGoal - totalRevenue;
+  const exceeded = remaining <= 0;
 
   // SVG donut math
   const radius = 58;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (goalPercent / 100) * circumference;
+  const strokeDashoffset = circumference - (goalPercentCapped / 100) * circumference;
 
   const showMeta = period === "today";
 
@@ -277,21 +279,32 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold font-mono-numbers text-[#1b1c1d]">
+                  <span className={`text-2xl font-bold font-mono-numbers ${exceeded ? "text-[#2e7d32]" : "text-[#1b1c1d]"}`}>
                     {goalPercent}%
                   </span>
-                  <span className="text-xs uppercase font-bold text-[#1b1c1d]/70 font-plus-jakarta">
+                  <span className={`text-xs uppercase font-bold font-plus-jakarta ${exceeded ? "text-[#2e7d32]/70" : "text-[#1b1c1d]/70"}`}>
                     Atingido
                   </span>
                 </div>
               </div>
             </div>
             <p className="text-xs text-center text-[#1b1c1d]/70 font-medium">
-              Faltam{" "}
-              <span className="text-[#a80012] font-bold">
-                {formatBRL(remaining)}
-              </span>{" "}
-              para bater a meta global
+              {exceeded ? (
+                <>
+                  Meta batida!{" "}
+                  <span className="text-[#2e7d32] font-bold">
+                    +{formatBRL(totalRevenue - dailyGoal)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Faltam{" "}
+                  <span className="text-[#a80012] font-bold">
+                    {formatBRL(remaining)}
+                  </span>{" "}
+                  para bater a meta global
+                </>
+              )}
             </p>
           </div>
         </div>

@@ -235,8 +235,15 @@ export default function FranchiseeDashboard() {
       return d >= thirtyDaysAgo && d < now;
     });
     if (recentDays.length < 7) return null;
-    const totalRevenue = recentDays.reduce((sum, s) => sum + (parseFloat(s.sales_value) || 0), 0);
-    return Math.round((totalRevenue / recentDays.length) * 1.10);
+    // Group by date to get unique days (avoid dividing by rows)
+    const byDate = {};
+    recentDays.forEach((s) => {
+      byDate[s.date] = (byDate[s.date] || 0) + (parseFloat(s.sales_value) || 0);
+    });
+    const dailyTotals = Object.values(byDate);
+    if (dailyTotals.length < 7) return null;
+    const avg = dailyTotals.reduce((a, b) => a + b, 0) / dailyTotals.length;
+    return Math.round(avg * 1.10);
   }, [summaries, evoId]);
 
   // Bot is active if franchise has a config with evolution_instance_id

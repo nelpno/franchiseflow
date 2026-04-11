@@ -338,11 +338,9 @@ export default function AdminDashboard() {
           const numericValue = typeof card.value === "string"
             ? parseFloat(card.value.replace(/[^0-9,.-]+/g, "").replace(",", "."))
             : card.value;
-          let percentageChange = 0;
+          let percentageChange = null;
           if (card.previousValue > 0) {
             percentageChange = ((numericValue - card.previousValue) / card.previousValue) * 100;
-          } else if (numericValue > 0) {
-            percentageChange = 100;
           }
           const isUp = card.trend === "up";
           const isDown = card.trend === "down";
@@ -365,7 +363,7 @@ export default function AdminDashboard() {
                 <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl ${card.iconBg} ${card.iconColor} flex items-center justify-center`}>
                   <MaterialIcon icon={card.materialIcon} size={20} className="md:!text-[24px]" />
                 </div>
-                {card.trend && (
+                {card.trend && percentageChange !== null && (
                   <div className={`flex items-center gap-1 text-sm font-bold ${trendTextColor}`}>
                     {isUp ? (
                       <MaterialIcon icon="trending_up" size={14} />
