@@ -33,6 +33,10 @@ BEGIN
       observacoes = p_sale_data->>'observacoes'
     WHERE id = p_sale_id;
 
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Venda % não encontrada ou sem permissão', p_sale_id;
+    END IF;
+
     -- Delete old items (stock_revert trigger fires)
     DELETE FROM sale_items WHERE sale_id = p_sale_id;
     v_sale_id := p_sale_id;

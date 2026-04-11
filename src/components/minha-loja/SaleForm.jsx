@@ -735,8 +735,8 @@ export default function SaleForm({
       const normalized = normalizePhone(contactSearch);
       const newContact = await Contact.create({
         franchise_id: franchiseId,
-        telefone: isPhone ? normalized : "",
-        nome: newContactName.trim() || (isPhone ? "" : contactSearch),
+        telefone: isPhone ? normalized : null,
+        nome: newContactName.trim() || (isPhone ? null : contactSearch) || null,
         status: "cliente",
         source: "manual",
       });
