@@ -1158,13 +1158,31 @@ export default function PurchaseOrders() {
                     })}
                   </div>
 
-                  {/* Total */}
+                  {/* Total dos Itens */}
                   <div className="flex items-center justify-between pt-3 border-t border-[#cac0c0]/30">
                     <span className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Total dos Itens</span>
                     <span className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
                       {formatBRL(recalculateTotal())}
                     </span>
                   </div>
+
+                  {/* Frete + Total do Pedido */}
+                  {(parseFloat(editedFreight) || 0) > 0 && (
+                    <>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-sm text-[#4a3d3d]">Frete</span>
+                        <span className="text-sm text-[#4a3d3d]">
+                          {formatBRL(parseFloat(editedFreight))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-[#cac0c0]/30">
+                        <span className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Total do Pedido</span>
+                        <span className="text-lg font-bold text-[#b91c1c] font-plus-jakarta">
+                          {formatBRL(recalculateTotal() + parseFloat(editedFreight))}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
