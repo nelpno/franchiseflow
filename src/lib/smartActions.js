@@ -30,7 +30,9 @@ const ACTION_RULES = [
     test: (contact) =>
       ["cliente", "recorrente"].includes(contact.status) &&
       contact.last_purchase_at &&
-      differenceInDays(new Date(), new Date(contact.last_purchase_at)) >= 14,
+      differenceInDays(new Date(), new Date(contact.last_purchase_at)) >= 14 &&
+      (!contact.last_contact_at ||
+        differenceInDays(new Date(), new Date(contact.last_contact_at)) >= 7),
     message: (contact) => {
       const days = differenceInDays(
         new Date(),

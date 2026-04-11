@@ -29,7 +29,8 @@ BEGIN
       discount_type = p_sale_data->>'discount_type',
       discount_input = (p_sale_data->>'discount_input')::numeric,
       net_value = (p_sale_data->>'net_value')::numeric,
-      sale_date = (p_sale_data->>'sale_date')::date
+      sale_date = (p_sale_data->>'sale_date')::date,
+      observacoes = p_sale_data->>'observacoes'
     WHERE id = p_sale_id;
 
     -- Delete old items (stock_revert trigger fires)
@@ -39,7 +40,7 @@ BEGIN
     -- Create mode
     INSERT INTO sales (franchise_id, value, contact_id, source, payment_method,
       card_fee_percent, card_fee_amount, delivery_method, delivery_fee,
-      discount_amount, discount_type, discount_input, net_value, sale_date)
+      discount_amount, discount_type, discount_input, net_value, sale_date, observacoes)
     VALUES (
       p_sale_data->>'franchise_id',
       (p_sale_data->>'value')::numeric,
@@ -55,7 +56,8 @@ BEGIN
       p_sale_data->>'discount_type',
       (p_sale_data->>'discount_input')::numeric,
       (p_sale_data->>'net_value')::numeric,
-      (p_sale_data->>'sale_date')::date
+      (p_sale_data->>'sale_date')::date,
+      p_sale_data->>'observacoes'
     )
     RETURNING id INTO v_sale_id;
   END IF;

@@ -259,6 +259,18 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         </span>
       </div>
 
+      {sale.observacoes && (
+        <>
+          <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
+          <div style={{ fontSize: 12 }}>
+            <span style={{ color: "#666", fontWeight: 600 }}>Obs.</span>
+            <div style={{ marginTop: 2, color: "#1b1c1d", whiteSpace: "pre-wrap" }}>
+              {sale.observacoes}
+            </div>
+          </div>
+        </>
+      )}
+
       <div style={{ borderTop: dashedBorder, margin: "10px 0" }} />
 
       {/* Footer */}

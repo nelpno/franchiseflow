@@ -399,7 +399,7 @@ export default function SaleForm({
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("pix");
-  const [cardFeePercent, setCardFeePercent] = useState(3.5);
+  const [cardFeePercent, setCardFeePercent] = useState(0);
   const [paymentFees, setPaymentFees] = useState(null); // JSONB from franchise_configurations
 
   // Delivery
@@ -412,6 +412,9 @@ export default function SaleForm({
 
   // Sale date
   const [saleDate, setSaleDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+
+  // Observations
+  const [observacoes, setObservacoes] = useState("");
 
   // Sale items rows
   const [items, setItems] = useState([
@@ -428,12 +431,13 @@ export default function SaleForm({
     if (!sale) return;
 
     setPaymentMethod(sale.payment_method || "pix");
-    setCardFeePercent(sale.card_fee_percent ?? 3.5);
+    setCardFeePercent(sale.card_fee_percent ?? 0);
     setDeliveryMethod(sale.delivery_method || "retirada");
     setDeliveryFee(sale.delivery_fee ?? 0);
     setDiscountType(sale.discount_type || "fixed");
     setDiscountInput(sale.discount_input ?? 0);
     if (sale.sale_date) setSaleDate(sale.sale_date);
+    setObservacoes(sale.observacoes || "");
     setContactId(sale.contact_id || null);
 
     // Set contact search display
@@ -485,6 +489,7 @@ export default function SaleForm({
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
     if (draft.saleDate) setSaleDate(draft.saleDate);
+    if (draft.observacoes) setObservacoes(draft.observacoes);
 
     toast.info("Rascunho recuperado", {
       action: {
@@ -495,11 +500,12 @@ export default function SaleForm({
           setContactId(null);
           setContactSearch("");
           setPaymentMethod("pix");
-          setCardFeePercent(3.5);
+          setCardFeePercent(0);
           setDeliveryMethod("retirada");
           setDeliveryFee(0);
           setDiscountType("fixed");
           setDiscountInput(0);
+          setObservacoes("");
           toast.success("Rascunho descartado");
         },
       },
@@ -546,8 +552,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes]
   );
 
   useEffect(() => {
@@ -779,6 +785,7 @@ export default function SaleForm({
         discount_input: discountInput > 0 ? discountInput : null,
         net_value: netValue,
         sale_date: saleDate,
+        observacoes: observacoes || null,
       };
 
       const itemsData = items
@@ -1246,6 +1253,21 @@ export default function SaleForm({
         />
       </div>
 
+      {/* Observações */}
+      <div className="p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
+        <div className="flex items-center gap-2 mb-2">
+          <MaterialIcon icon="notes" size={18} className="text-[#7a6d6d]" />
+          <Label className="text-sm text-[#4a3d3d]">Observações</Label>
+        </div>
+        <textarea
+          value={observacoes}
+          onChange={(e) => setObservacoes(e.target.value)}
+          placeholder="Ex: Entregar sábado até às 12h, deixar na portaria..."
+          rows={2}
+          className="w-full text-sm rounded-lg border border-[#291715]/10 bg-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#b91c1c]/20 focus:border-[#b91c1c]/30"
+        />
+      </div>
+
       {/* Summary */}
       <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 space-y-2">
         <div className="flex justify-between text-sm">
@@ -1266,9 +1288,9 @@ export default function SaleForm({
           </div>
         )}
 
-        {(paymentMethod === "card_machine" || paymentMethod === "payment_link") && cardFeeAmount > 0 && (
+        {cardFeeAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#4a3d3d]">Taxa {paymentMethod === "payment_link" ? "link" : "cartão"} ({cardFeePercent}%)</span>
+            <span className="text-[#4a3d3d]">Taxa {paymentMethod === "payment_link" ? "link" : paymentMethod === "pix" ? "PIX" : paymentMethod === "cash" ? "dinheiro" : "cartão"} ({cardFeePercent}%)</span>
             <span className="font-medium text-[#b91c1c] font-mono-numbers">
               - {formatCurrency(cardFeeAmount)}
             </span>
