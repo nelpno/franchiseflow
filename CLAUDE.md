@@ -80,10 +80,14 @@
 - `systemMessage` em `node.parameters.options.systemMessage`. Luxon: `setLocale('pt-BR')`
 - Credencial Supabase: `mIVPcJBNcDCx21LR` (service_role) | OpenAI: `fIhzSXiiBXB3ad6Y`
 - n8n API: `https://teste.dynamicagents.tech` + `/api/v1` (concatenar). PUT settings: filtrar campos extras
+- SmartActions "reativar": checa `last_purchase_at >= 14d` AND `last_contact_at >= 7d`. Clicar "Feito" atualiza `last_contact_at` → suprime por 7 dias
 
 ### Vendas & Financeiro
 - Faturamento bruto = `value + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir)
 - `card_fee_amount` sobre `subtotal + effectiveDeliveryFee` — label dinâmica
+- `cardFeePercent` default é `0` (NÃO 3.5). O useEffect seta o valor correto do `paymentFees` config ao carregar
+- Exibição de taxa no summary: condição é `cardFeeAmount > 0` (qualquer método), label dinâmico por `paymentMethod`
+- `sales.observacoes` TEXT — campo livre para instruções de entrega/obs do franqueado. Aparece no comprovante (SaleReceipt)
 - `payment_confirmed` + `confirmed_at` para conferência. Columns DEVE incluir ambos
 - `sale_date` é DATE only — `created_at` para timestamp. Edição = deletar items + reinserir
 - Markup estoque: `(sale - cost) / cost` (NÃO margem sobre receita)
