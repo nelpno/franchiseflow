@@ -66,6 +66,12 @@
 - Rotas: `createPageUrl("PageName")` → `"/PageName"` (capitalizado)
 - Navegação programática: `useNavigate()` + `useSearchParams()` de `react-router-dom`. Query params para pré-seleção (ex: `/Onboarding?franchise=evo_id`)
 - Toast: sonner (importar de `"sonner"`, NÃO shadcn legado). NUNCA alert()/window.confirm()
+- Clickable card pattern: `cursor-pointer hover:shadow-md active:scale-[0.98] transition-all` (QuickAccessCards.jsx)
+- Clickable text pattern: `cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors`
+- Cards navegáveis: usar `Link` condicional (não `onClick+navigate`) para a11y (Tab+Enter, right-click). Ex: StatsCard `href` prop
+- TabEstoque inline edit: NUNCA onClick na `<TableRow>` (conflita com handleCellClick em quantity/min_stock/sale_price). Apenas `product_name` clicável
+- Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
+- Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
 
 ### Integração n8n / Bot
 - V4 produção: `aRBzPABwrjhWCPvq` | V3 `XqWZyLl1AHlnJvdj` DESATIVADO
