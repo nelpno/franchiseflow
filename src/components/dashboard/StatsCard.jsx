@@ -2,11 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
-function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isValue = false, href }) {
-  // Extract numeric value from formatted string like "R$ 123.45"
-  const numericValue = typeof value === 'string'
-    ? parseFloat(value.replace(/[^0-9,.-]+/g, "").replace(",", "."))
-    : value;
+function StatsCard({ title, value, rawValue, previousValue, icon: Icon, trend, color, isValue = false, href }) {
+  const numericValue = rawValue != null ? rawValue
+    : typeof value === 'string'
+      ? parseFloat(value.replace(/[^0-9,.-]+/g, "").replace(",", "."))
+      : value;
 
   const getTrendDisplay = () => {
     if (!trend) return null;

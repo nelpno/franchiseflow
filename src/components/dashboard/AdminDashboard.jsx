@@ -288,6 +288,7 @@ export default function AdminDashboard() {
     {
       title: "VENDAS",
       value: stats.salesCount,
+      rawValue: stats.salesCount,
       previousValue: stats.prevSalesCount,
       materialIcon: "shopping_bag",
       trend: trendFor(stats.salesCount, stats.prevSalesCount),
@@ -298,6 +299,7 @@ export default function AdminDashboard() {
     {
       title: "FATURAMENTO",
       value: formatBRLInteger(stats.revenue),
+      rawValue: stats.revenue,
       previousValue: stats.prevRevenue,
       materialIcon: "payments",
       trend: trendFor(stats.revenue, stats.prevRevenue),
@@ -308,6 +310,7 @@ export default function AdminDashboard() {
     {
       title: "CONVERSÃO",
       value: `${stats.conversion}%`,
+      rawValue: stats.conversion,
       previousValue: stats.prevConversion,
       materialIcon: "trending_up",
       trend: trendFor(stats.conversion, stats.prevConversion),
@@ -318,6 +321,7 @@ export default function AdminDashboard() {
     {
       title: "VENDAS BOT",
       value: `${stats.botPercent}%`,
+      rawValue: stats.botPercent,
       previousValue: stats.prevBotPercent,
       materialIcon: "smart_toy",
       trend: trendFor(stats.botPercent, stats.prevBotPercent),
@@ -335,9 +339,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statsCards.map((card) => {
           // Icon is now MaterialIcon
-          const numericValue = typeof card.value === "string"
-            ? parseFloat(card.value.replace(/[^0-9,.-]+/g, "").replace(",", "."))
-            : card.value;
+          const numericValue = card.rawValue;
           let percentageChange = null;
           if (card.previousValue > 0) {
             percentageChange = ((numericValue - card.previousValue) / card.previousValue) * 100;

@@ -334,6 +334,7 @@ export default function FranchiseeDashboard() {
         <StatsCard
           title={period === "today" ? "Vendas Hoje" : "Vendas"}
           value={stats.salesCount}
+          rawValue={stats.salesCount}
           previousValue={stats.prevSalesCount}
           trend={stats.salesCount > stats.prevSalesCount ? 'up' : stats.salesCount < stats.prevSalesCount ? 'down' : null}
           href="/Vendas"
@@ -341,6 +342,7 @@ export default function FranchiseeDashboard() {
         <StatsCard
           title="Faturamento"
           value={formatBRLInteger(stats.revenue)}
+          rawValue={stats.revenue}
           previousValue={stats.prevRevenue}
           trend={stats.revenue > stats.prevRevenue ? 'up' : stats.revenue < stats.prevRevenue ? 'down' : null}
           href="/Gestao?tab=resultado"
@@ -348,6 +350,7 @@ export default function FranchiseeDashboard() {
         <StatsCard
           title="Valor Médio"
           value={formatBRLInteger(stats.avgTicket)}
+          rawValue={stats.avgTicket}
           previousValue={stats.prevAvgTicket}
           trend={stats.avgTicket > stats.prevAvgTicket ? 'up' : stats.avgTicket < stats.prevAvgTicket ? 'down' : null}
           href="/Vendas"
