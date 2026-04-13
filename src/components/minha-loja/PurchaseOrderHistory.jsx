@@ -1,20 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
+import { PurchaseOrder } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { formatBRL } from "@/lib/formatBRL";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const formatBRL = (value) => {
-  if (value === null || value === undefined || value === "") return "—";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-};
 
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
@@ -29,7 +23,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [orderItems, setOrderItems] = useState({});
-  const [loadingItems, setLoadingItems] = useState({});
   const [cancellingId, setCancellingId] = useState(null);
   const [confirmCancelId, setConfirmCancelId] = useState(null);
 
@@ -46,6 +39,22 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
         "-ordered_at"
       );
       setOrders(data);
+
+      // Carregar items de todos os pedidos de uma vez
+      if (data.length > 0) {
+        const orderIds = data.map(o => o.id);
+        const { data: allItems } = await supabase
+          .from('purchase_order_items')
+          .select('*')
+          .in('order_id', orderIds);
+
+        const grouped = {};
+        for (const item of (allItems || [])) {
+          if (!grouped[item.order_id]) grouped[item.order_id] = [];
+          grouped[item.order_id].push(item);
+        }
+        setOrderItems(grouped);
+      }
     } catch (error) {
       console.error("Erro ao carregar pedidos:", error);
     } finally {
@@ -53,26 +62,8 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
     }
   };
 
-  const toggleExpand = async (orderId) => {
-    if (expandedOrderId === orderId) {
-      setExpandedOrderId(null);
-      return;
-    }
-
-    setExpandedOrderId(orderId);
-
-    // Load items if not cached
-    if (!orderItems[orderId]) {
-      setLoadingItems((prev) => ({ ...prev, [orderId]: true }));
-      try {
-        const items = await PurchaseOrderItem.filter({ order_id: orderId });
-        setOrderItems((prev) => ({ ...prev, [orderId]: items }));
-      } catch (error) {
-        console.error("Erro ao carregar itens do pedido:", error);
-      } finally {
-        setLoadingItems((prev) => ({ ...prev, [orderId]: false }));
-      }
-    }
+  const toggleExpand = (orderId) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
   const handleCancelOrder = async (orderId) => {
@@ -132,7 +123,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
       {orders.map((order) => {
         const isExpanded = expandedOrderId === order.id;
         const items = orderItems[order.id] || [];
-        const isLoadingItems = loadingItems[order.id];
 
         return (
           <Card
@@ -162,6 +152,11 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                     <span className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
                       {formatBRL(order.total_amount)}
                     </span>
+                    {items.length > 0 && (
+                      <span className="text-xs text-[#4a3d3d]">
+                        {items.length} {items.length === 1 ? "produto" : "produtos"} · {items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)} un.
+                      </span>
+                    )}
 
                     {order.estimated_delivery && (
                       <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
@@ -205,15 +200,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
               {/* Expanded items */}
               {isExpanded && (
                 <div className="border-t border-[#cac0c0]/20 px-4 pb-4">
-                  {isLoadingItems ? (
-                    <div className="flex items-center justify-center py-4">
-                      <MaterialIcon
-                        icon="progress_activity"
-                        size={18}
-                        className="animate-spin text-[#cac0c0]"
-                      />
-                    </div>
-                  ) : items.length === 0 ? (
+                  {items.length === 0 ? (
                     <p className="text-xs text-[#4a3d3d] py-3">Nenhum item encontrado.</p>
                   ) : (
                     <div className="space-y-2 pt-3">
