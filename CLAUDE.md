@@ -26,7 +26,7 @@
 - `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (8s timeout)
 
 ### Supabase & Schema
-- API: importar de `@/entities/all` — NUNCA `supabase.from()` direto. Timeouts: leitura 15s, escrita 30s
+- API: importar de `@/entities/all` — NUNCA `supabase.from()` direto. Timeouts: leitura 15s, escrita 30s. Exceção: batch queries com `.in()` (entity adapter não suporta)
 - `marketing_files`: NÃO usa entity adapter (trava) — `fetch()` direto à REST API com `AbortSignal.timeout(15s)`
 - Campos numéricos podem vir string — SEMPRE `parseFloat(s.value) || 0`, NUNCA `s.value || 0`
 - `buildConfigMap()` retorna objetos — acessar `.franchise_name`, nunca renderizar direto
