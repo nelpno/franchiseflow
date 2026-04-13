@@ -578,8 +578,8 @@ export default function TabEstoque({
   const totalProducts = filteredItems.length;
 
   const faturamentoPotencial = useMemo(() =>
-    filteredItems.reduce((sum, i) => sum + (i.quantity || 0) * (i.sale_price || 0), 0),
-    [filteredItems]
+    items.filter(i => i.active !== false).reduce((sum, i) => sum + (i.quantity || 0) * (i.sale_price || 0), 0),
+    [items]
   );
 
   // --- Render ---

@@ -30,7 +30,7 @@ function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isVa
   };
 
   const Wrapper = href ? Link : 'div';
-  const wrapperProps = href ? { to: href } : {};
+  const wrapperProps = href ? { to: href, "aria-label": `Ver detalhes de ${title}` } : {};
   const baseClasses = "bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-[#cac0c0]/10";
   const clickClasses = href ? " cursor-pointer hover:shadow-md active:scale-[0.98] transition-all" : "";
 
