@@ -1,7 +1,8 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
-function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isValue = false }) {
+function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isValue = false, href }) {
   // Extract numeric value from formatted string like "R$ 123.45"
   const numericValue = typeof value === 'string'
     ? parseFloat(value.replace(/[^0-9,.-]+/g, "").replace(",", "."))
@@ -28,8 +29,13 @@ function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isVa
     );
   };
 
+  const Wrapper = href ? Link : 'div';
+  const wrapperProps = href ? { to: href } : {};
+  const baseClasses = "bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-[#cac0c0]/10";
+  const clickClasses = href ? " cursor-pointer hover:shadow-md active:scale-[0.98] transition-all" : "";
+
   return (
-    <div className="bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-[#cac0c0]/10">
+    <Wrapper {...wrapperProps} className={baseClasses + clickClasses}>
       <p className="text-xs text-[#4a3d3d] font-medium mb-1 truncate">{title}</p>
       <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
         <span className="text-base sm:text-2xl font-extrabold tracking-tight text-[#1d1b1b]">
@@ -37,7 +43,7 @@ function StatsCard({ title, value, previousValue, icon: Icon, trend, color, isVa
         </span>
         {getTrendDisplay()}
       </div>
-    </div>
+    </Wrapper>
   );
 }
 

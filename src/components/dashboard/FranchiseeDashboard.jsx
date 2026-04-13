@@ -336,18 +336,21 @@ export default function FranchiseeDashboard() {
           value={stats.salesCount}
           previousValue={stats.prevSalesCount}
           trend={stats.salesCount > stats.prevSalesCount ? 'up' : stats.salesCount < stats.prevSalesCount ? 'down' : null}
+          href="/Vendas"
         />
         <StatsCard
           title="Faturamento"
           value={formatBRLInteger(stats.revenue)}
           previousValue={stats.prevRevenue}
           trend={stats.revenue > stats.prevRevenue ? 'up' : stats.revenue < stats.prevRevenue ? 'down' : null}
+          href="/Gestao?tab=resultado"
         />
         <StatsCard
           title="Valor Médio"
           value={formatBRLInteger(stats.avgTicket)}
           previousValue={stats.prevAvgTicket}
           trend={stats.avgTicket > stats.prevAvgTicket ? 'up' : stats.avgTicket < stats.prevAvgTicket ? 'down' : null}
+          href="/Vendas"
         />
       </section>
 
