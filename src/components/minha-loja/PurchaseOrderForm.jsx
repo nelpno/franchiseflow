@@ -199,6 +199,15 @@ export default function PurchaseOrderForm({
     return standardProducts.reduce((sum, item) => sum + getLineTotal(item), 0);
   }, [standardProducts, quantities]);
 
+  const totalItems = useMemo(() =>
+    standardProducts.filter((item) => (quantities[item.id] || 0) > 0).length,
+    [standardProducts, quantities]
+  );
+  const totalUnits = useMemo(() =>
+    Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0),
+    [quantities]
+  );
+
   const hasAnyQty = standardProducts.some((item) => (quantities[item.id] || 0) > 0);
 
   const handleSubmit = async () => {
@@ -243,7 +252,7 @@ export default function PurchaseOrderForm({
       try {
         await supabase.rpc('notify_admins', {
           p_title: 'Novo pedido de reposição',
-          p_message: `Pedido de ${formatBRL(grandTotal)} — ${itemsToCreate.length} produtos`,
+          p_message: `Pedido de ${formatBRL(grandTotal)} — ${itemsToCreate.length} produtos (${itemsToCreate.reduce((s, i) => s + i.quantity, 0)} un.)`,
           p_type: 'info',
           p_icon: 'local_shipping',
           p_link: '/PurchaseOrders',
@@ -510,6 +519,11 @@ export default function PurchaseOrderForm({
           <p className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">
             {formatBRL(grandTotal)}
           </p>
+          {totalItems > 0 && (
+            <span className="text-xs text-[#4a3d3d]">
+              {totalItems} {totalItems === 1 ? "produto" : "produtos"} · {totalUnits} un.
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

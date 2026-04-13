@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatBRL } from "@/lib/formatBRL";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales = [], period = "today" }) {
   const { chartData, title } = useMemo(() => {
@@ -102,42 +104,51 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
   return (
     <section className="mb-6 bg-white rounded-xl p-6 shadow-sm border border-[#cac0c0]/10">
       <h3 className="text-sm font-semibold text-[#4a3d3d] mb-6">{title}</h3>
-      <div className="flex items-end justify-between gap-1 mb-4" style={{ height: "128px" }}>
-        {chartData.map((entry, index) => {
-          const heightPercent = maxValue > 0 ? (entry.valor / maxValue) * 100 : 0;
-          const barHeight = Math.max((heightPercent / 100) * 100, 4);
-          return (
-            <div key={index} className="flex flex-col items-center flex-1 h-full justify-end gap-1">
-              {showValueLabels && (
-                <span className="text-xs text-[#4a3d3d] font-mono-numbers">
-                  {entry.valor > 0 ? `R$ ${Math.round(entry.valor)}` : ""}
+      <TooltipProvider delayDuration={100}>
+        <div className="flex items-end justify-between gap-1 mb-4" style={{ height: "128px" }}>
+          {chartData.map((entry, index) => {
+            const heightPercent = maxValue > 0 ? (entry.valor / maxValue) * 100 : 0;
+            const barHeight = Math.max((heightPercent / 100) * 100, 4);
+            return (
+              <div key={index} className="flex flex-col items-center flex-1 h-full justify-end gap-1">
+                {showValueLabels && (
+                  <span className="text-xs text-[#4a3d3d] font-mono-numbers">
+                    {entry.valor > 0 ? `R$ ${Math.round(entry.valor)}` : ""}
+                  </span>
+                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={`w-full max-w-[32px] rounded-t-lg transition-all duration-300 cursor-pointer ${
+                        entry.isToday ? "bg-[#b91c1c]" : "bg-[#ffdad6]"
+                      }`}
+                      style={{ height: `${barHeight}px` }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <span className="font-mono-numbers">{formatBRL(entry.valor)}</span>
+                  </TooltipContent>
+                </Tooltip>
+                <span
+                  className={`text-xs ${
+                    entry.isToday
+                      ? "text-[#b91c1c] font-bold"
+                      : "text-[#4a3d3d] font-medium"
+                  }`}
+                >
+                  {entry.day}
                 </span>
-              )}
-              <div
-                className={`w-full max-w-[32px] rounded-t-lg transition-all duration-300 ${
-                  entry.isToday ? "bg-[#b91c1c]" : "bg-[#ffdad6]"
-                }`}
-                style={{ height: `${barHeight}px` }}
-              />
-              <span
-                className={`text-xs ${
-                  entry.isToday
-                    ? "text-[#b91c1c] font-bold"
-                    : "text-[#4a3d3d] font-medium"
-                }`}
-              >
-                {entry.day}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      </TooltipProvider>
       <div className="flex justify-between items-center pt-4 border-t border-[#cac0c0]/10">
         <span className="text-xs text-[#4a3d3d] font-medium">
-          Média: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(average)}
+          Média: {formatBRL(average)}
         </span>
         <span className="text-xs text-[#4a3d3d] font-medium font-mono-numbers">
-          Total: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)}
+          Total: {formatBRL(total)}
         </span>
       </div>
     </section>

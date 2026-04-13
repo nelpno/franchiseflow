@@ -1,7 +1,9 @@
 import React, { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
 export default function RankingStreak({ ranking, summaries, franchiseId, dailyGoal }) {
+  const navigate = useNavigate();
   const streak = useMemo(() => {
     if (!summaries || !dailyGoal || dailyGoal <= 0) return 0;
 
@@ -29,7 +31,12 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
             {ranking.position}º de {ranking.total_franchises} franquias
           </span>
         ) : (
-          <span className="text-xs font-semibold text-[#4a3d3d]">Ranking aparece após sua primeira venda</span>
+          <button
+            onClick={() => navigate("/Vendas?action=nova-venda")}
+            className="text-xs font-semibold text-[#b91c1c] hover:underline cursor-pointer"
+          >
+            Registre sua primeira venda →
+          </button>
         )}
       </div>
 

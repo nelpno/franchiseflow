@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { InventoryItem } from "@/entities/all";
+import { formatBRL } from "@/lib/formatBRL";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -576,6 +577,11 @@ export default function TabEstoque({
 
   const totalProducts = filteredItems.length;
 
+  const faturamentoPotencial = useMemo(() =>
+    filteredItems.reduce((sum, i) => sum + (i.quantity || 0) * (i.sale_price || 0), 0),
+    [filteredItems]
+  );
+
   // --- Render ---
 
   return (
@@ -588,6 +594,11 @@ export default function TabEstoque({
             {lowStockCount > 0 && (
               <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[10px] font-bold ml-2">
                 {lowStockCount} baixo
+              </Badge>
+            )}
+            {faturamentoPotencial > 0 && (
+              <Badge className="bg-[#d4af37]/10 text-[#775a19] rounded-full px-2 py-0.5 text-[10px] font-bold ml-2">
+                Potencial {formatBRL(faturamentoPotencial)}
               </Badge>
             )}
           </div>
@@ -703,7 +714,10 @@ export default function TabEstoque({
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-[#1b1c1d] truncate">
+                            <h4
+                              className="font-medium text-[#1b1c1d] truncate cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors"
+                              onClick={() => handleOpenEditDialog(item)}
+                            >
                               {item.product_name}
                             </h4>
                             <p className="text-xs text-[#4a3d3d]">
@@ -935,7 +949,13 @@ export default function TabEstoque({
                               }
                             >
                               <TableCell className="font-medium text-[#1b1c1d]">
-                                {item.product_name}
+                                <span
+                                  className="cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors"
+                                  onClick={() => handleOpenEditDialog(item)}
+                                  title="Clique para editar"
+                                >
+                                  {item.product_name}
+                                </span>
                               </TableCell>
 
                               <TableCell className="text-sm text-[#4a3d3d]">

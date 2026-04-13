@@ -1,21 +1,23 @@
-<!-- Last Updated: 2026-04-08 -->
+<!-- Last Updated: 2026-04-13 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
 
 ## Stack & Deploy
-- React 18 + Vite 6 + Tailwind 3 + shadcn/ui + Supabase Cloud
+- React 18 + Vite 6 + Tailwind 3 + shadcn/ui + Supabase Cloud + @tanstack/react-query 5
 - Stack Portainer ID 39 | Service ID `2zb27nndn5sg8zweyie6wscpc`
 - GitHub: `nelpno/franchiseflow.git`
 - Deploy: `git push` → force update serviço Docker (incrementar ForceUpdate no TaskTemplate). Stack update sozinho NÃO recria container
 - 502 por ~2min durante rebuild é normal. ctx_execute com JS para HTTP Portainer (NÃO shell+jq)
 - `npm run build` pode completar sem output visível (Windows). Verificar timestamp de `dist/index.html`
 - Vite build VPS: `NODE_OPTIONS=--max-old-space-size=4096`
+- Vite prod: `console.log`/`debugger` stripados (`esbuild.drop`). Manual chunks: recharts, export (jspdf/xlsx), vendor, ui, supabase, dates. CSS via lightningcss
+- Deps notáveis não-óbvias: `@hello-pangea/dnd` (drag-drop), `html2canvas` + `jspdf` (export PDF), `xlsx` (export Excel)
 
 ## Gotchas Críticos
 
 ### Auth (AuthContext.jsx)
-- supabaseClient.js: mutex async in-memory (NUNCA bypass `fn()` direto — race condition)
+- Race conditions: `lastAuthUserRef` + `lastSignedInTimeRef` + safety timeouts (8s init, 10s login). NÃO há mutex
 - `onAuthStateChange('SIGNED_IN')`: setar `setIsLoading(true)` ANTES de `loadUserProfile`. Safety timeout 10s
 - `onAuthStateChange('SIGNED_OUT')`: guard `lastSignedInTimeRef` (3s). NUNCA `getSession()` dentro do handler
 - Login/SetPassword: `setIsLoading(false)` OBRIGATÓRIO no caminho de sucesso
@@ -82,11 +84,18 @@
 - n8n API: `https://teste.dynamicagents.tech` + `/api/v1` (concatenar). PUT settings: filtrar campos extras
 - SmartActions "reativar": checa `last_purchase_at >= 14d` AND `last_contact_at >= 7d`. Clicar "Feito" atualiza `last_contact_at` → suprime por 7 dias
 
+### KPI Cards & Daily Goal (fixes 11/04/2026)
+- KPI percentage: `percentageChange = null` quando `previousValue <= 0` — badge NÃO renderiza com null (evita +100% fake)
+- Daily goal (admin FranchiseRanking): avg 30 dias por data única + 10%. Fallback 7000 se <7 dias. SVG cap `Math.min(goalPercent, 100)`, texto mostra % real
+- Daily goal (franchisee): mesmo cálculo mas filtra por `evoId`. Retorna `null` se <7 dias — `DailyGoalProgress` esconde-se
+- Meta batida: mensagem verde "Meta batida! +R$ X" quando `remaining <= 0`
+
 ### Vendas & Financeiro
 - Faturamento bruto = `value + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir)
 - `card_fee_amount` sobre `subtotal + effectiveDeliveryFee` — label dinâmica
 - `cardFeePercent` default é `0` (NÃO 3.5). O useEffect seta o valor correto do `paymentFees` config ao carregar
 - Exibição de taxa no summary: condição é `cardFeeAmount > 0` (qualquer método), label dinâmico por `paymentMethod`
+- 6 métodos de pagamento: Dinheiro, Pix, Crédito, Débito, NFC, Outro. Taxas via tabela `payment_fees` por franquia
 - `sales.observacoes` TEXT — campo livre para instruções de entrega/obs do franqueado. Aparece no comprovante (SaleReceipt)
 - `payment_confirmed` + `confirmed_at` para conferência. Columns DEVE incluir ambos
 - `sale_date` é DATE only — `created_at` para timestamp. Edição = deletar items + reinserir
@@ -105,8 +114,8 @@
 - Supabase 23505 (duplicate) = conta já existe em auth.users
 
 ### Health Score
-- 4 dimensões: vendas 35, estoque 25, reposição 20, setup/WhatsApp 20
-- DOIS sistemas: `healthScore.js` + `FranchiseHealthScore.jsx` — atualizar AMBOS
+- 5 dimensões: vendas, estoque, reposição, setup, bot. Pesos variam com `hasBotData`
+- DOIS sistemas: `healthScore.js` (`calculateFranchiseHealth()`) + `FranchiseHealthScore.jsx` — atualizar AMBOS
 
 ### Marketing
 - `marketing_payments`: 1 por franquia/mês. UNIQUE `(franchise_id, reference_month)`. CHECK `amount >= 200`
@@ -114,14 +123,15 @@
 - `MARKETING_TAX_RATE = 0.13` em `franchiseUtils.js`. Líquido = valor × 0.87
 
 ### UX
-- Franqueado: sidebar 6 itens + bottom nav 5 slots (FAB Vender centro)
+- Franqueado: sidebar 8 itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu Vendedor, Tutoriais, Onboarding condicional) + bottom nav 5 slots (FAB Vender centro)
+- Admin: 6 itens visíveis na sidebar + 4 ocultos (`adminSidebarHidden`: Relatórios, Financeiro, Acompanhamento, Inteligência Bot) acessíveis por URL
 - Manager: mesma visão admin mas SEM delete. Checagens: `role === "admin" || role === "manager"` visão, `role === "admin"` delete
 - Terminologia: "Estoque" (NÃO "Inventário"), "Valor Médio" (NÃO "Ticket Médio"), NÃO "Líquido"
-- Wizard: 6 passos visuais, Revisão NÃO conta (X/5). Upload catálogo JPG only
-- Sidebar admin: 6 itens visíveis (incluindo Onboarding em Administração). Páginas ocultas via `adminSidebarHidden` acessíveis por URL. Remover a flag + definir `adminSection` = visível na sidebar
+- Onboarding: 9 blocos (8 numerados + gate de liberação). `TOTAL_ITEMS` computado dinamicamente. Acessível via sidebar, franchise cards e detail sheet
+- Sidebar admin: remover `adminSidebarHidden` + definir `adminSection` = visível na sidebar
 
 ## Features Removidas (NÃO recriar)
-Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, Daily Checklist, ReviewSummary campos Personalidade/Boas-vindas, catalog_distributions, BotPerformanceCard/QuickAccessCards/PeriodComparisonCard, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin
+Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx
 
 ## Meta-regras
 - NUNCA alterar `franchise_configurations` sem verificar compatibilidade com vendedor genérico
