@@ -46,7 +46,7 @@
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` TEXT + `working_days` TEXT
 - `payment_delivery`/`payment_pickup` são TEXT[], NÃO JSONB
 - `unit_address` é computado no save (NÃO editar direto)
-- `onboarding_checklists` NÃO tem total_items, started_at, user_id
+- `onboarding_checklists` NÃO tem total_items, started_at, user_id. TEM `approved_at` (timestamptz) e `approved_by` (text)
 - `franchises` NÃO tem owner_email (email fica em franchise_invites)
 
 **RLS específico:**

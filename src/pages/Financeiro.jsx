@@ -42,11 +42,13 @@ export default function Financeiro() {
 
       const results = await Promise.allSettled([
         Franchise.list(),
-        Sale.list("-sale_date", 3000, {
+        Sale.list("-sale_date", null, {
           columns: "id, franchise_id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, payment_method, created_at",
+          fetchAll: true,
         }),
-        Expense.list("-expense_date", 2000, {
+        Expense.list("-expense_date", null, {
           columns: "id, franchise_id, expense_date, amount",
+          fetchAll: true,
         }),
         InventoryItem.list("franchise_id", null, {
           columns: "id, franchise_id, product_name, cost_price, sale_price, quantity, min_stock",
