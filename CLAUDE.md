@@ -140,6 +140,19 @@
 - Onboarding: 9 blocos (8 numerados + gate de liberação). `TOTAL_ITEMS` computado dinamicamente. Acessível via sidebar, franchise cards e detail sheet
 - Sidebar admin: remover `adminSidebarHidden` + definir `adminSection` = visível na sidebar
 
+### ASAAS Billing (Cobrança Recorrente)
+- Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: register, register-batch, subscribe, subscribe-batch, check-payment, webhook
+- Tabela: `system_subscriptions` (franchise_id UNIQUE, asaas_customer_id, asaas_subscription_id, current_payment_status, pix_payload, etc.)
+- Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `neighborhood`
+- ASAAS API: `https://api.asaas.com` + `/v3/...`, header `access_token` (secret no Supabase)
+- `billingType: UNDEFINED` = franqueado escolhe boleto ou PIX
+- Paywall: `SubscriptionPaywall.jsx` — bloqueia APENAS `current_payment_status === 'OVERDUE'`, admin/manager isentos
+- Hook: `useSubscriptionStatus.js` — cache 24h (PAID) / 5min (OVERDUE), botão "Já paguei" via `supabase.functions.invoke`
+- Admin: tab Mensalidades em `Financeiro.jsx` → `AsaasSetupPanel.jsx` (edição CPF inline, badges, revisão assinaturas)
+- FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP. `onSubmit` recebe 3o arg `addressExtras` (cep, street_address)
+- ClickSign API: token como query param `?access_token=`, NÃO Bearer. Endpoint: `app.clicksign.com/api/v3/envelopes`
+- Webhook ASAAS: registrar apontando para `https://sulgicnqqopyhulglakd.supabase.co/functions/v1/asaas-billing` com `{ "action": "webhook", ...evento }`
+
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx
 
