@@ -170,14 +170,18 @@ function createEntity(tableName) {
     },
 
     async delete(id) {
-      const { error } = await withTimeout(
+      const { data, error } = await withTimeout(
         supabase
           .from(tableName)
           .delete()
-          .eq('id', id),
+          .eq('id', id)
+          .select('id'),
         30000 // 30s — consistente com create/update
       );
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Sem permissão para excluir este registro.');
+      }
     }
   };
 }
@@ -230,6 +234,12 @@ export async function getFranchiseRanking(date, franchiseId, { signal } = {}) {
   const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
   if (error) throw error;
   return data;
+}
+
+export async function getStandardProductCatalog() {
+  const { data, error } = await supabase.rpc('get_standard_product_catalog');
+  if (error) throw error;
+  return data || [];
 }
 
 export async function addDefaultProduct({ name, category, unit, costPrice, minStock }) {

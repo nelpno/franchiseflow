@@ -78,7 +78,7 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
       const realtimeRevenue = daySales.reduce(
         (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
       );
-      const revenue = Math.max(cronRevenue, realtimeRevenue);
+      const revenue = daySales.length > 0 ? realtimeRevenue : cronRevenue;
 
       // Label: day-of-month for month view, weekday abbreviation for others
       const label = period === "month" ? format(date, "dd") : capitalizedLabel;

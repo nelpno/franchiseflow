@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { InventoryItem } from "@/entities/all";
+import { InventoryItem, getStandardProductCatalog } from "@/entities/all";
 import { formatBRL } from "@/lib/formatBRL";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,8 +86,11 @@ export default function TabEstoque({
   const [filterStockLevel, setFilterStockLevel] = useState("all");
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [showHidden, setShowHidden] = useState(false);
+  const [standardCatalog, setStandardCatalog] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const editInputRef = useRef(null);
   const editingCellRef = useRef(null);
+  const suggestionsRef = useRef(null);
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
 
@@ -95,6 +98,15 @@ export default function TabEstoque({
   useEffect(() => {
     setItems(inventoryItems || []);
   }, [inventoryItems]);
+
+  // Fetch standard product catalog (once)
+  useEffect(() => {
+    let cancelled = false;
+    getStandardProductCatalog()
+      .then((data) => { if (!cancelled) setStandardCatalog(data); })
+      .catch(() => {}); // silent — autocomplete is optional
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (editInputRef.current) {
@@ -267,11 +279,45 @@ export default function TabEstoque({
     }
   };
 
+  // --- Standard product suggestions ---
+
+  const existingNames = useMemo(
+    () => new Set(items.map((i) => i.product_name?.toLowerCase())),
+    [items]
+  );
+
+  const filteredSuggestions = useMemo(() => {
+    const term = formData.product_name?.toLowerCase().trim();
+    if (!term || term.length < 2 || editingItem) return [];
+    return standardCatalog.filter(
+      (p) =>
+        p.product_name.toLowerCase().includes(term) &&
+        !existingNames.has(p.product_name.toLowerCase())
+    );
+  }, [formData.product_name, standardCatalog, existingNames, editingItem]);
+
+  const [selectedFromCatalog, setSelectedFromCatalog] = useState(false);
+
+  const handleSelectStandard = (product) => {
+    setFormData((prev) => ({
+      ...prev,
+      product_name: product.product_name,
+      category: product.category || getCategoryFromName(product.product_name),
+      unit: product.unit || "un",
+      cost_price: product.cost_price ? String(product.cost_price) : "",
+      sale_price: product.sale_price ? String(product.sale_price) : "",
+    }));
+    setShowSuggestions(false);
+    setSelectedFromCatalog(true);
+  };
+
   // --- Add product ---
 
   const handleOpenAddDialog = () => {
     setEditingItem(null);
     setFormData({ ...EMPTY_FORM });
+    setShowSuggestions(false);
+    setSelectedFromCatalog(false);
     setShowAddDialog(true);
   };
 
@@ -337,7 +383,7 @@ export default function TabEstoque({
       } else {
         const newItem = await InventoryItem.create({
           ...payload,
-          created_by_franchisee: !isAdmin,
+          created_by_franchisee: isAdmin ? false : !selectedFromCatalog,
         });
         setItems((prev) => [newItem, ...prev]);
         toast.success("Produto adicionado ao estoque.");
@@ -370,7 +416,11 @@ export default function TabEstoque({
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Erro ao deletar:", error);
-      toast.error("Erro ao remover produto.");
+      if (error?.message?.includes("permissão")) {
+        toast.error("Sem permissão para excluir este produto.");
+      } else {
+        toast.error("Erro ao remover produto.");
+      }
     }
   };
 
@@ -732,6 +782,15 @@ export default function TabEstoque({
                               onClick={() => handleOpenEditDialog(item)}
                             >
                               <MaterialIcon icon="edit" size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-[#4a3d3d] hover:text-[#775a19]"
+                              onClick={() => handleToggleActive(item)}
+                              title={item.active === false ? "Reativar produto" : "Ocultar produto"}
+                            >
+                              <MaterialIcon icon={item.active === false ? "visibility" : "visibility_off"} size={14} />
                             </Button>
                             <Button
                               variant="ghost"
@@ -1178,21 +1237,48 @@ export default function TabEstoque({
           </DialogHeader>
 
           <form onSubmit={handleSubmitProduct} className="space-y-4">
-            {/* Product name */}
-            <div className="space-y-2">
+            {/* Product name with autocomplete */}
+            <div className="space-y-2 relative">
               <Label className="text-[#1b1c1d]">Nome do Produto *</Label>
               <Input
                 value={formData.product_name}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData((prev) => ({
                     ...prev,
                     product_name: e.target.value,
-                  }))
-                }
+                  }));
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="Ex: Lasanha Bolonhesa 500g"
                 required
+                autoComplete="off"
                 className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
               />
+              {showSuggestions && filteredSuggestions.length > 0 && !editingItem && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute z-50 w-full mt-1 bg-white border border-[#cac0c0]/30 rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                >
+                  <p className="px-3 py-1.5 text-[10px] uppercase tracking-widest text-[#4a3d3d]/60 font-plus-jakarta border-b border-[#cac0c0]/10">
+                    Produtos padrão da rede
+                  </p>
+                  {filteredSuggestions.slice(0, 8).map((p) => (
+                    <button
+                      key={p.product_name}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-[#b91c1c]/5 transition-colors text-sm text-[#1b1c1d] flex justify-between items-center"
+                      onClick={() => handleSelectStandard(p)}
+                    >
+                      <span className="truncate">{p.product_name}</span>
+                      <span className="text-xs text-[#4a3d3d]/60 ml-2 shrink-0">
+                        {p.sale_price ? formatBRL(p.sale_price) : ""}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Category */}

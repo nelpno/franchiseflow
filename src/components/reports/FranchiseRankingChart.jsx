@@ -22,7 +22,7 @@ export default function FranchiseRankingChart({ sales, franchises, isLoading, co
   const getData = () => {
     return franchises.map(f => {
       const fSales = sales.filter(s => s.franchise_id === f.evolution_instance_id);
-      const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const config = configMap[f.evolution_instance_id];
       return {
         name: getFranchiseDisplayName(f, config),

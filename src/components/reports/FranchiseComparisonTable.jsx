@@ -28,7 +28,7 @@ export default function FranchiseComparisonTable({ sales, contacts, summaries, f
     const rows = franchises.map(f => {
       const fSales = sales.filter(s => s.franchise_id === f.evolution_instance_id);
       const fContacts = contacts.filter(c => c.franchise_id === f.evolution_instance_id);
-      const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const revenue = fSales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const salesCount = fSales.length;
       const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
       const contactsCount = fContacts.length;

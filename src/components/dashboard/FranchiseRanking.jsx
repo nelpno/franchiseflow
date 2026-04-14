@@ -35,7 +35,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
     });
 
     const isBotSource = (s) => s.source === 'bot';
-    const saleRevenue = (s) => (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0);
+    const saleRevenue = (s) => (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0);
 
     if (period === "today") {
       // Use LIVE todaySales data (not daily_summaries which doesn't exist for today)
