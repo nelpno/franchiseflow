@@ -1,4 +1,4 @@
-<!-- Last Updated: 2026-04-13 -->
+<!-- Last Updated: 2026-04-14 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
@@ -27,6 +27,8 @@
 
 ### Supabase & Schema
 - API: importar de `@/entities/all` — NUNCA `supabase.from()` direto. Timeouts: leitura 15s, escrita 30s. Exceção: batch queries com `.in()` (entity adapter não suporta)
+- `Entity.delete()` usa `.select('id')` — detecta RLS silencioso (0 rows = throw "Sem permissão"). Nunca remover o `.select('id')` do delete
+- `getStandardProductCatalog()` RPC (SECURITY DEFINER): retorna 28 produtos padrão cross-franchise para autocomplete no TabEstoque. Catálogo: grafia "Mussarela" (NÃO "Muçarela"), formato "Rondelli X - 700g Rolo"
 - `marketing_files`: NÃO usa entity adapter (trava) — `fetch()` direto à REST API com `AbortSignal.timeout(15s)`
 - Campos numéricos podem vir string — SEMPRE `parseFloat(s.value) || 0`, NUNCA `s.value || 0`
 - `buildConfigMap()` retorna objetos — acessar `.franchise_name`, nunca renderizar direto
@@ -70,6 +72,8 @@
 - Clickable text pattern: `cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors`
 - Cards navegáveis: usar `Link` condicional (não `onClick+navigate`) para a11y (Tab+Enter, right-click). Ex: StatsCard `href` prop
 - TabEstoque inline edit: NUNCA onClick na `<TableRow>` (conflita com handleCellClick em quantity/min_stock/sale_price). Apenas `product_name` clicável
+- TabEstoque card view (mobile): DEVE ter 3 botões (edit, ocultar, delete) — manter paridade com table view (desktop)
+- TabEstoque adicionar produto: autocomplete mostra produtos padrão da rede (RPC `get_standard_product_catalog`). Seleção preenche campos e marca `created_by_franchisee: false`
 - Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
 - Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
 
@@ -97,7 +101,7 @@
 - Meta batida: mensagem verde "Meta batida! +R$ X" quando `remaining <= 0`
 
 ### Vendas & Financeiro
-- Faturamento bruto = `value + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir)
+- Faturamento = `value - discount_amount + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir). `discount_amount` DEVE ser subtraído em TODOS os cálculos de receita
 - `card_fee_amount` sobre `subtotal + effectiveDeliveryFee` — label dinâmica
 - `cardFeePercent` default é `0` (NÃO 3.5). O useEffect seta o valor correto do `paymentFees` config ao carregar
 - Exibição de taxa no summary: condição é `cardFeeAmount > 0` (qualquer método), label dinâmico por `paymentMethod`
