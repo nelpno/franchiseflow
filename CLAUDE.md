@@ -59,8 +59,8 @@
 - `mountedRef` + cleanup obrigatório. `setIsLoading(false)` antes de early return
 - Listas Supabase: SEMPRE sort explícito no frontend (ordem muda após updates)
 - Inline edit mobile: `onClick={e => e.stopPropagation()}` + `inputMode="numeric"`. `active:` (NÃO `hover:`)
-- Queries: SEMPRE `limit` explícito (sem limite = timeout). Reports: limits altos (Sale/Contact 2000)
-- AdminDashboard: 9 queries paralelas `Promise.allSettled` — TODAS com `limit`. Auto-retry na query de franquias
+- Queries: tabelas que crescem (Sale, Expense, DailySummary, ConversationMessage) DEVEM usar `fetchAll: true` (pagina internamente de 1000 em 1000). Tabelas pequenas/fixas podem usar `limit` numérico
+- AdminDashboard: 10 queries paralelas `Promise.allSettled` — maioria com `fetchAll: true`. Auto-retry na query de franquias
 - Loading: `<Skeleton>` shadcn (NÃO spinner). PageFallback relativo (NUNCA `fixed inset-0`)
 - NUNCA `new Date().toISOString().split("T")[0]` — usar `format(new Date(), "yyyy-MM-dd")`
 - `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval
