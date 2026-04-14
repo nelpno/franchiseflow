@@ -223,6 +223,7 @@ export const MarketingPayment = createEntity('marketing_payments');
 export const MarketingMetaDeposit = createEntity('marketing_meta_deposits');
 export const ConversationMessage = createEntity('conversation_messages');
 export const BotConversation = createEntity('bot_conversations');
+export const SystemSubscription = createEntity('system_subscriptions');
 
 // RPC helpers
 export async function getFranchiseRanking(date, franchiseId, { signal } = {}) {

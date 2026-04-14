@@ -9,8 +9,10 @@ import { ptBR } from "date-fns/locale";
 import { calculatePnL, isInMonth, groupByFranchiseAndMonth } from "@/lib/financialCalcs";
 import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
+import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
 
 export default function Financeiro() {
+  const [activeTab, setActiveTab] = useState("financeiro"); // "financeiro" | "mensalidades"
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [franchises, setFranchises] = useState([]);
   const [allSales, setAllSales] = useState([]);
@@ -305,6 +307,32 @@ export default function Financeiro() {
           </p>
         </div>
 
+        {/* Tab selector */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+          {[
+            { key: "financeiro", label: "Resultado", icon: "account_balance" },
+            { key: "mensalidades", label: "Mensalidades", icon: "autorenew" },
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? "bg-white text-[#1b1c1d] shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <MaterialIcon icon={tab.icon} size={16} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === "mensalidades" ? (
+        <AsaasSetupPanel />
+      ) : (
+      <>
         {/* Month selector */}
         <div className="flex items-center gap-2">
           <Button
@@ -328,7 +356,6 @@ export default function Financeiro() {
             <MaterialIcon icon="chevron_right" size={20} />
           </Button>
         </div>
-      </div>
 
       {/* KPI Cards */}
       <FinanceiroKpiCards aggregated={aggregated} worstFranchise={worstFranchise} />
@@ -344,6 +371,8 @@ export default function Financeiro() {
       <p className="text-xs text-[#7a6d6d] text-center">
         {franchiseData.length} franquias &middot; Dados de {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
       </p>
+      </>
+      )}
     </div>
   );
 }

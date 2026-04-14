@@ -4,6 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+function formatCpfCnpj(value) {
+  const digits = (value || "").replace(/\D/g, "");
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function formatCep(value) {
+  const digits = (value || "").replace(/\D/g, "");
+  return digits.replace(/(\d{5})(\d{1,3})/, "$1-$2");
+}
+
 // 7c — Auto-sugerir nome "Maxi Massas - Cidade"
 function suggestFranchiseName(city) {
   if (!city) return '';
@@ -18,8 +38,17 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
     owner_name: '',
     city: '',
     status: 'active',
-    franchisee_email: ''
+    franchisee_email: '',
+    cpf_cnpj: '',
   });
+  const [addressData, setAddressData] = useState({
+    cep: '',
+    street_address: '',
+    address_number: '',
+    neighborhood: '',
+    state_uf: '',
+  });
+  const [cepLoading, setCepLoading] = useState(false);
 
   // 7b — Cidade autocomplete via IBGE
   const [municipalities, setMunicipalities] = useState([]);
@@ -100,12 +129,42 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
     }
   }, [showCitySuggestions, citySuggestions, highlightedIndex, handleCitySelect]);
 
+  const handleCepChange = useCallback(async (value) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    setAddressData(prev => ({ ...prev, cep: digits }));
+    if (digits.length === 8) {
+      setCepLoading(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setAddressData(prev => ({
+            ...prev,
+            street_address: data.logradouro || prev.street_address,
+            neighborhood: data.bairro || prev.neighborhood,
+            state_uf: data.uf || prev.state_uf,
+          }));
+        }
+      } catch { /* falha silenciosa */ }
+      finally { setCepLoading(false); }
+    }
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Não enviamos evolution_instance_id — o trigger do banco gera automaticamente
-    // Também não enviamos franchisee_email como campo da franquia — será usado para o convite
-    const { franchisee_email, ...franchiseData } = formData;
-    onSubmit(franchiseData, franchisee_email);
+    const { franchisee_email, cpf_cnpj, ...rest } = formData;
+    const franchiseData = {
+      ...rest,
+      cpf_cnpj: cpf_cnpj.replace(/\D/g, "") || null,
+      state_uf: addressData.state_uf || null,
+      address_number: addressData.address_number || null,
+      neighborhood: addressData.neighborhood || null,
+    };
+    // addressData extras (cep, street_address) go to franchise_configurations via trigger
+    onSubmit(franchiseData, franchisee_email, {
+      cep: addressData.cep || null,
+      street_address: addressData.street_address || null,
+    });
   };
 
   const handleInputChange = (field, value) => {
@@ -223,6 +282,85 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                     Receberá um convite para acessar o dashboard. Pode convidar depois.
                   </p>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cpf_cnpj" className="text-sm font-semibold text-[#4a3d3d]">
+                    <MaterialIcon icon="badge" size={16} className="inline mr-1" />
+                    CPF/CNPJ
+                  </Label>
+                  <Input
+                    id="cpf_cnpj"
+                    placeholder="000.000.000-00"
+                    value={formatCpfCnpj(formData.cpf_cnpj)}
+                    onChange={(e) => handleInputChange('cpf_cnpj', e.target.value.replace(/\D/g, "").slice(0, 14))}
+                  />
+                  <p className="text-xs text-[#4a3d3d]">
+                    Usado para cobrança e emissão de notas fiscais.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Endereço */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Endereço</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cep" className="text-sm font-semibold text-[#4a3d3d]">
+                    <MaterialIcon icon="pin_drop" size={16} className="inline mr-1" />
+                    CEP
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="cep"
+                      placeholder="00000-000"
+                      value={formatCep(addressData.cep)}
+                      onChange={(e) => handleCepChange(e.target.value)}
+                    />
+                    {cepLoading && (
+                      <MaterialIcon icon="sync" size={16} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400" />
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="street" className="text-sm font-semibold text-[#4a3d3d]">Rua</Label>
+                  <Input
+                    id="street"
+                    placeholder="Logradouro"
+                    value={addressData.street_address}
+                    onChange={(e) => setAddressData(prev => ({ ...prev, street_address: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="number" className="text-sm font-semibold text-[#4a3d3d]">Número</Label>
+                  <Input
+                    id="number"
+                    placeholder="123"
+                    value={addressData.address_number}
+                    onChange={(e) => setAddressData(prev => ({ ...prev, address_number: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="neighborhood" className="text-sm font-semibold text-[#4a3d3d]">Bairro</Label>
+                  <Input
+                    id="neighborhood"
+                    placeholder="Bairro"
+                    value={addressData.neighborhood}
+                    onChange={(e) => setAddressData(prev => ({ ...prev, neighborhood: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state_uf" className="text-sm font-semibold text-[#4a3d3d]">UF</Label>
+                  <Input
+                    id="state_uf"
+                    placeholder="SP"
+                    maxLength={2}
+                    value={addressData.state_uf}
+                    onChange={(e) => setAddressData(prev => ({ ...prev, state_uf: e.target.value.toUpperCase() }))}
+                  />
+                </div>
               </div>
             </div>
 
@@ -233,6 +371,7 @@ export default function FranchiseForm({ onSubmit, onCancel, isSubmitting = false
                 <li>✓ Configurações da unidade criadas automaticamente</li>
                 <li>✓ Estoque populado com os 28 produtos padrão</li>
                 <li>✓ ID do vendedor automático gerado</li>
+                {formData.cpf_cnpj && <li>✓ Cadastro ASAAS + assinatura mensal criados</li>}
                 {formData.franchisee_email && <li>✓ Convite enviado para {formData.franchisee_email}</li>}
               </ul>
             </div>

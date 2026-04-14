@@ -3,6 +3,7 @@ import { Link, useLocation, Navigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import NotificationBell from "@/components/ui/NotificationBell";
+import SubscriptionPaywall from "@/components/shared/SubscriptionPaywall";
 import logoImg from "@/assets/logo-maxi-massas-optimized.png";
 import {
   Sidebar,
@@ -334,6 +335,8 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <SidebarProvider>
+      {/* Paywall: blocks franchisees with overdue subscription */}
+      <SubscriptionPaywall />
       {/* Stitch-matched sidebar styles */}
       <style>{`
         [data-sidebar="menu-button"][data-active="true"] {

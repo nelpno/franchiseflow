@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Franchise, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
+import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
 import { format } from "date-fns";
@@ -143,7 +143,7 @@ export default function Franchises() {
   const navigate = useNavigate();
   const isStaff = currentUser?.role === "admin" || currentUser?.role === "manager";
 
-  const handleCreateFranchise = async (franchiseData, franchiseeEmail) => {
+  const handleCreateFranchise = async (franchiseData, franchiseeEmail, addressExtras) => {
     if (!isStaff) {
       toast.error("Apenas a equipe pode criar novas franquias.");
       return;
@@ -155,6 +155,22 @@ export default function Franchises() {
         ...franchiseData,
         name: franchiseData.name || `MaxiMassas ${franchiseData.city}`,
       });
+
+      // Etapa 1b: Atualizar franchise_configurations com endereço (cep, street_address)
+      if (addressExtras?.cep || addressExtras?.street_address) {
+        try {
+          const configs = await FranchiseConfiguration.filter({ franchise_evolution_instance_id: newFranchise.evolution_instance_id });
+          if (configs[0]) {
+            await FranchiseConfiguration.update(configs[0].id, {
+              cep: addressExtras.cep || null,
+              street_address: addressExtras.street_address || null,
+            });
+          }
+        } catch (addrErr) {
+          console.error("Erro ao salvar endereço:", addrErr);
+          // Não bloqueia — endereço pode ser editado depois
+        }
+      }
 
       // Franquia criada — fechar form e atualizar lista imediatamente
       setShowForm(false);
