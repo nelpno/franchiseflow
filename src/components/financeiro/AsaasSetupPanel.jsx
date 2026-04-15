@@ -88,7 +88,20 @@ export default function AsaasSetupPanel() {
   const [creatingAsaas, setCreatingAsaas] = useState({});
   const [creatingAll, setCreatingAll] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [revealedCpfs, setRevealedCpfs] = useState({});
   const mountedRef = useRef(true);
+
+  function maskCpfCnpj(value, franchiseId) {
+    if (!value) return "—";
+    if (revealedCpfs[franchiseId]) return formatCpfCnpj(value);
+    const digits = value.replace(/\D/g, "");
+    if (digits.length <= 11) return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`;
+    return `**.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-**`;
+  }
+
+  function toggleCpfReveal(franchiseId) {
+    setRevealedCpfs(prev => ({ ...prev, [franchiseId]: !prev[franchiseId] }));
+  }
 
   const loadData = useCallback(async () => {
     try {
@@ -226,7 +239,18 @@ export default function AsaasSetupPanel() {
                 <CardContent className="p-3 flex items-center justify-between">
                   <div>
                     <p className="font-medium text-sm">{f.name}</p>
-                    <p className="text-xs text-gray-500">{f.owner_name} — {formatCpfCnpj(f.cpf_cnpj)}</p>
+                    <p className="text-xs text-gray-500 inline-flex items-center gap-1">
+                      {f.owner_name} —{" "}
+                      {maskCpfCnpj(f.cpf_cnpj, f.evolution_instance_id || f.id)}
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
+                        className="text-[#4a3d3d]/40 hover:text-[#4a3d3d]/70 transition-colors"
+                        title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
+                      >
+                        <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} />
+                      </button>
+                    </p>
                     <p className="text-xs text-gray-400">{config?.street_address || f.city}</p>
                   </div>
                   <span className="text-sm font-medium text-gray-700">R$ 150,00</span>
@@ -348,12 +372,22 @@ export default function AsaasSetupPanel() {
                   </td>
                   <td className="py-3">
                     {f.cpf_cnpj && !isEditingThis ? (
-                      <button
-                        onClick={() => setEditingCpf(prev => ({ ...prev, [f.id]: f.cpf_cnpj }))}
-                        className="text-sm hover:underline cursor-pointer"
-                      >
-                        {formatCpfCnpj(f.cpf_cnpj)}
-                      </button>
+                      <span className="inline-flex items-center gap-1">
+                        <button
+                          onClick={() => setEditingCpf(prev => ({ ...prev, [f.id]: f.cpf_cnpj }))}
+                          className="text-sm hover:underline cursor-pointer"
+                        >
+                          {maskCpfCnpj(f.cpf_cnpj, f.evolution_instance_id || f.id)}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
+                          className="text-[#4a3d3d]/40 hover:text-[#4a3d3d]/70 transition-colors"
+                          title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
+                        >
+                          <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} />
+                        </button>
+                      </span>
                     ) : (
                       <div className="flex items-center gap-1">
                         <Input

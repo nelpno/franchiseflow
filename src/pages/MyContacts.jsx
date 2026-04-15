@@ -18,6 +18,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { formatBRL } from "@/lib/formatBRL";
+import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -578,15 +579,15 @@ export default function MyContacts() {
                 return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
               };
               const rows = filteredContacts.map((c) => [
-                escape(c.nome || c.customer_name || ""),
+                escape(sanitizeCSVCell(c.nome || c.customer_name || "")),
                 escape(c.telefone ? formatPhone(c.telefone) : ""),
-                escape(c.status || ""),
-                escape(c.source || "manual"),
+                escape(sanitizeCSVCell(c.status || "")),
+                escape(sanitizeCSVCell(c.source || "manual")),
                 c.total_purchases ?? 0,
                 (parseFloat(c.total_spent) || 0).toFixed(2).replace(".", ","),
                 c.last_contact_at ? c.last_contact_at.substring(0, 10).split("-").reverse().join("/") : "",
-                escape(c.endereco || ""),
-                escape(c.bairro || ""),
+                escape(sanitizeCSVCell(c.endereco || "")),
+                escape(sanitizeCSVCell(c.bairro || "")),
               ].join(","));
               const csv = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
               const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -194,16 +195,16 @@ export default function Franchises() {
         toast.success(`Email de primeiro acesso enviado para ${franchiseeEmail}`);
       } catch (inviteError) {
         console.error("Erro ao enviar convite:", inviteError);
-        toast.error(`Convite não enviado: ${inviteError?.message || "erro desconhecido"}. Reenvie manualmente.`);
+        toast.error(`Convite não enviado: ${safeErrorMessage(inviteError, "erro desconhecido")}. Reenvie manualmente.`);
       }
     } catch (error) {
       console.error("Erro ao criar franquia:", error);
       setIsSubmitting(false);
-      const msg = error?.message || error?.details || "Erro desconhecido";
-      if (msg.includes("Tempo limite")) {
+      const msg = safeErrorMessage(error, "Erro ao criar franquia.");
+      if (error?.message?.includes("Tempo limite")) {
         toast.error("Tempo limite excedido ao criar franquia. A franquia pode ter sido criada — atualize a página para verificar.");
       } else {
-        toast.error(`Erro ao criar franquia: ${msg}`);
+        toast.error(msg);
       }
       loadData(true); // Recarrega mesmo em caso de erro (franquia pode ter sido criada server-side)
     }

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { format, subMonths, addMonths, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calculatePnL, isInMonth, groupByFranchiseAndMonth } from "@/lib/financialCalcs";
+import { safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
 import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
@@ -70,7 +71,7 @@ export default function Financeiro() {
         .map((r, i) => (r.status === "rejected" ? ["franquias", "vendas", "despesas", "estoque"][i] : null))
         .filter(Boolean);
       if (failedQueries.length > 0) {
-        toast.error(`Dados parciais: ${failedQueries.join(", ")} nao carregaram`);
+        toast.error(safeFailedQueriesMessage(failedQueries));
       }
 
       if (!mountedRef.current) return;

@@ -120,8 +120,9 @@ function createEntity(tableName) {
         }
       }
       if (term && searchColumns.length > 0) {
+        const safeTerm = term.replace(/%/g, '\\%').replace(/_/g, '\\_');
         const orConditions = searchColumns
-          .map(col => `${col}.ilike.%${term}%`)
+          .map(col => `${col}.ilike.%${safeTerm}%`)
           .join(',');
         query = query.or(orConditions);
       }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { InventoryItem, getStandardProductCatalog } from "@/entities/all";
 import { formatBRL } from "@/lib/formatBRL";
+import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -464,10 +465,10 @@ export default function TabEstoque({
     const rows = filteredItems.map((item) => {
       const giro = giroByItem[item.id] || 0;
       return [
-        item.product_name,
-        item.category || getCategoryFromName(item.product_name),
+        sanitizeCSVCell(item.product_name),
+        sanitizeCSVCell(item.category || getCategoryFromName(item.product_name)),
         item.quantity,
-        item.unit,
+        sanitizeCSVCell(item.unit),
         item.min_stock,
         item.cost_price ?? "",
         item.sale_price ?? "",

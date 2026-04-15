@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1245,7 +1246,7 @@ export default function PurchaseOrders() {
                         toast.success("Ficha de separacao gerada!");
                       } catch (err) {
                         console.error("Erro ao gerar ficha:", err);
-                        toast.error(`Erro: ${err?.message || String(err)}`);
+                        toast.error(safeErrorMessage(err, "Erro ao gerar ficha de separação."));
                       }
                     }}
                     disabled={loadingItems || orderItems.length === 0}

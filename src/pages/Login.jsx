@@ -3,6 +3,7 @@ import { supabase } from '@/api/supabaseClient';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -48,9 +49,7 @@ export default function Login() {
         startLockout();
         toast.error('Muitas tentativas. Aguarde 60 segundos.');
       } else {
-        toast.error(error.message === 'Invalid login credentials'
-          ? 'Email ou senha incorretos'
-          : 'Erro ao fazer login: ' + error.message);
+        toast.error(safeErrorMessage(error, "Erro ao fazer login."));
       }
       setIsLoading(false);
     } finally {
@@ -73,7 +72,7 @@ export default function Login() {
       toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
       setIsResetMode(false);
     } catch (error) {
-      toast.error('Erro ao enviar email: ' + error.message);
+      toast.error(safeErrorMessage(error, "Erro ao enviar email de recuperação."));
     } finally {
       setIsLoading(false);
     }

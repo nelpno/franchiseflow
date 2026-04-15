@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { format } from "date-fns";
+import { sanitizeCSVCell } from "@/lib/csvSanitize";
 
 export default function ExportButton({ summaries, franchises, startDate, endDate }) {
   const exportToCSV = () => {
@@ -18,9 +19,9 @@ export default function ExportButton({ summaries, franchises, startDate, endDate
     const rows = summaries.map(summary => {
       const franchise = franchises.find(f => f.evolution_instance_id === summary.franchise_id);
       return [
-        summary.date,
-        franchise?.owner_name || 'N/A',
-        franchise?.city || 'N/A',
+        sanitizeCSVCell(summary.date),
+        sanitizeCSVCell(franchise?.owner_name || 'N/A'),
+        sanitizeCSVCell(franchise?.city || 'N/A'),
         summary.unique_contacts || 0,
         summary.sales_count || 0,
         `"R$ ${(parseFloat(summary.sales_value) || 0).toFixed(2).replace('.', ',')}"`,

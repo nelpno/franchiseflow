@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import { safeHref } from "@/lib/safeHref";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatBRL";
 import { format, parseISO } from "date-fns";
@@ -104,7 +105,7 @@ export default function SubscriptionPaywall() {
           {/* Boleto */}
           {current_payment_url && (
             <a
-              href={current_payment_url}
+              href={safeHref(current_payment_url)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors active:scale-[0.98]"

@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -324,14 +325,8 @@ function FranchiseSettingsContent() {
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      const msg = error?.message || "Erro desconhecido";
-      if (msg.includes("Tempo limite")) {
-        toast.error("Tempo limite excedido. Verifique sua conexão e tente novamente.", { duration: 6000 });
-      } else if (msg.includes("column") || msg.includes("schema")) {
-        toast.error("Erro de schema: um campo pode não existir no banco. Contate o suporte.");
-      } else {
-        toast.error(`Falha ao salvar: ${msg}`);
-      }
+      const msg = safeErrorMessage(error, "Falha ao salvar configurações.");
+      toast.error(msg, error?.message?.includes("Tempo limite") ? { duration: 6000 } : undefined);
     } finally {
       clearTimeout(slowTimer);
       setIsSubmitting(false);
@@ -345,7 +340,12 @@ function FranchiseSettingsContent() {
       if (currentUser?.role !== 'admin') {
         const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
         try {
-          localStorage.setItem(draftKey, JSON.stringify({ data: updated, step: currentStep, savedAt: Date.now() }));
+          const draftData = { ...updated };
+          delete draftData.pix_key;
+          delete draftData.cpf_cnpj;
+          delete draftData.asaas_customer_id;
+          delete draftData.asaas_subscription_id;
+          localStorage.setItem(draftKey, JSON.stringify({ data: draftData, step: currentStep, savedAt: Date.now() }));
         } catch { /* quota exceeded — ignore */ }
       }
       return updated;

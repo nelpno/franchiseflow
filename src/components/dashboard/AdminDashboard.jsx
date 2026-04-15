@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRLInteger } from "@/lib/formatters";
+import { safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import AdminHeader from "./AdminHeader";
 import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
@@ -100,7 +101,7 @@ export default function AdminDashboard() {
         .filter(Boolean);
       if (failedQueries.length > 0) {
         console.warn("Queries parcialmente falharam:", failedQueries);
-        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+        toast.error(safeFailedQueriesMessage(failedQueries));
       }
 
       setFranchises(franchiseData);

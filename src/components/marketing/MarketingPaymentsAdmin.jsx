@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment, MarketingMetaDeposit } from "@/entities/all";
+import { safeHref } from "@/lib/safeHref";
 import { format, addMonths, parseISO } from "date-fns";
 import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { ptBR } from "date-fns/locale";
@@ -389,7 +390,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                       )}
                       {p?.proof_url && (
                         <a
-                          href={p.proof_url}
+                          href={safeHref(p.proof_url)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center justify-center h-7 w-7 rounded-md text-[#7a6d6d] hover:bg-[#e9e8e9]"

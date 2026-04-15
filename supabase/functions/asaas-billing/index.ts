@@ -2,10 +2,51 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ASAAS_API_KEY = Deno.env.get("ASAAS_API_KEY")!;
 const ASAAS_BASE_URL = Deno.env.get("ASAAS_BASE_URL") || "https://api.asaas.com";
+const ASAAS_WEBHOOK_TOKEN = Deno.env.get("ASAAS_WEBHOOK_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+// --- Auth helpers ---
+
+type UserRole = "admin" | "manager" | "franchisee";
+
+async function getUserFromRequest(req: Request): Promise<{ id: string; role: UserRole; managed: string[] } | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+
+  // Create a client with anon key but use the user's JWT for auth
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: { user }, error } = await userClient.auth.getUser();
+  if (error || !user) return null;
+
+  // Get profile with role
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, managed_franchise_ids")
+    .eq("id", user.id)
+    .single();
+
+  return {
+    id: user.id,
+    role: (profile?.role || "franchisee") as UserRole,
+    managed: profile?.managed_franchise_ids || [],
+  };
+}
+
+function isAdminOrManager(user: { role: UserRole }): boolean {
+  return user.role === "admin" || user.role === "manager";
+}
+
+function canAccessFranchise(user: { role: UserRole; managed: string[] }, franchiseId: string): boolean {
+  if (isAdminOrManager(user)) return true;
+  return user.managed.includes(franchiseId);
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -323,9 +364,55 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+
   try {
     const body = await req.json();
     const { action } = body;
+
+    // --- Webhook: validate by shared secret (ASAAS calls without JWT) ---
+    if (action === "webhook") {
+      if (!ASAAS_WEBHOOK_TOKEN) {
+        // Fail-closed: reject if token not configured
+        console.error("ASAAS_WEBHOOK_TOKEN not configured — rejecting webhook");
+        return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+          status: 503, headers: jsonHeaders,
+        });
+      }
+      const incomingToken = body.access_token || req.headers.get("asaas-access-token") || "";
+      if (incomingToken !== ASAAS_WEBHOOK_TOKEN) {
+        return new Response(JSON.stringify({ error: "Unauthorized webhook" }), {
+          status: 401, headers: jsonHeaders,
+        });
+      }
+      const result = await handleWebhook(body);
+      return new Response(JSON.stringify(result), { headers: jsonHeaders });
+    }
+
+    // --- All other actions: require authenticated user ---
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Autenticação necessária" }), {
+        status: 401, headers: jsonHeaders,
+      });
+    }
+
+    // Admin-only actions: register, register-batch, subscribe, subscribe-batch
+    const adminActions = ["register", "register-batch", "subscribe", "subscribe-batch"];
+    if (adminActions.includes(action) && !isAdminOrManager(user)) {
+      return new Response(JSON.stringify({ error: "Apenas administradores podem executar esta ação" }), {
+        status: 403, headers: jsonHeaders,
+      });
+    }
+
+    // check-payment: user must own the franchise
+    if (action === "check-payment" && body.franchise_id) {
+      if (!canAccessFranchise(user, body.franchise_id)) {
+        return new Response(JSON.stringify({ error: "Sem permissão para esta franquia" }), {
+          status: 403, headers: jsonHeaders,
+        });
+      }
+    }
 
     let result;
     switch (action) {
@@ -344,23 +431,19 @@ Deno.serve(async (req) => {
       case "check-payment":
         result = await checkPayment(body.franchise_id);
         break;
-      case "webhook":
-        result = await handleWebhook(body);
-        break;
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: jsonHeaders,
         });
     }
 
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify(result), { headers: jsonHeaders });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const message = (err as Error).message;
+    // Never expose internal ASAAS error details to non-admin callers
+    const safeMessage = message.includes("ASAAS") ? "Erro no sistema de cobrança" : message;
+    return new Response(JSON.stringify({ error: safeMessage }), {
+      status: 500, headers: jsonHeaders,
     });
   }
 });

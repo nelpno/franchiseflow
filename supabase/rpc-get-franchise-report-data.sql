@@ -9,6 +9,14 @@ AS $fn$
 DECLARE
   result JSON;
 BEGIN
+  -- Security: caller must own this franchise or be admin/manager
+  IF NOT (
+    is_admin_or_manager()
+    OR p_franchise_id = ANY(managed_franchise_ids())
+  ) THEN
+    RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501';
+  END IF;
+
   SELECT json_build_object(
     'botConversations', COALESCE((
       SELECT json_agg(row_to_json(t)) FROM (

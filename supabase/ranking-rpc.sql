@@ -11,6 +11,14 @@ as $$
 declare
   result json;
 begin
+  -- Security: caller must own this franchise or be admin/manager
+  if not (
+    is_admin_or_manager()
+    or p_franchise_id = any(managed_franchise_ids())
+  ) then
+    raise exception 'Acesso negado' using errcode = '42501';
+  end if;
+
   select json_build_object(
     'position', sub.position,
     'total_franchises', sub.total

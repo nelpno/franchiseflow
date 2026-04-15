@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 export default function SetPassword() {
   const [password, setPassword] = useState('');
@@ -44,7 +45,7 @@ export default function SetPassword() {
       sessionStorage.removeItem('password_setup_type');
       navigate(isRecovery ? '/' : '/OnboardingWelcome');
     } catch (error) {
-      toast.error('Erro ao definir senha: ' + error.message);
+      toast.error(safeErrorMessage(error, "Erro ao definir senha."));
     } finally {
       setIsLoading(false);
     }

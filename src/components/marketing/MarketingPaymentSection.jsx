@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment } from "@/entities/all";
+import { safeHref } from "@/lib/safeHref";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { format, addMonths, parseISO } from "date-fns";
@@ -213,7 +214,7 @@ export default function MarketingPaymentSection() {
               <div className="flex items-center gap-3">
                 {currentPayment.proof_url && (
                   <a
-                    href={currentPayment.proof_url}
+                    href={safeHref(currentPayment.proof_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs text-[#b91c1c] hover:underline"
