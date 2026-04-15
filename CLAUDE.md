@@ -54,6 +54,12 @@
 - profiles SELECT: `is_admin_or_manager() OR id = auth.uid()` — NUNCA `is_admin()` sozinha (recursão infinita)
 - Tabelas novas: DELETE policy com `is_admin()` obrigatória (sem ela, delete retorna sucesso mas 0 rows)
 - `sale_items` RLS: subquery `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
+- `activity_log` NÃO existe no banco (referenciada em schema.sql mas nunca criada)
+
+**Security helpers (usar em código novo):**
+- Toast errors: NUNCA `error.message` ou `error.details` direto — usar `safeErrorMessage(error, "fallback")` de `@/lib/safeErrorMessage`
+- CSV export: SEMPRE `sanitizeCSVCell()` em campos de texto — previne formula injection no Excel (`@/lib/csvSanitize`)
+- href dinâmico: `safeHref(url)` rejeita `javascript:` e protocolos perigosos (`@/lib/safeHref`)
 
 ### Frontend Patterns
 - `mountedRef` + cleanup obrigatório. `setIsLoading(false)` antes de early return
@@ -151,7 +157,10 @@
 - Admin: tab Mensalidades em `Financeiro.jsx` → `AsaasSetupPanel.jsx` (edição CPF inline, badges, revisão assinaturas)
 - FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP. `onSubmit` recebe 3o arg `addressExtras` (cep, street_address)
 - ClickSign API: token como query param `?access_token=`, NÃO Bearer. Endpoint: `app.clicksign.com/api/v3/envelopes`
-- Webhook ASAAS: registrar apontando para `https://sulgicnqqopyhulglakd.supabase.co/functions/v1/asaas-billing` com `{ "action": "webhook", ...evento }`
+- Webhook ASAAS: registrar apontando para `https://sulgicnqqopyhulglakd.supabase.co/functions/v1/asaas-billing` com `{ "action": "webhook", "access_token": "ASAAS_WEBHOOK_TOKEN", ...evento }`
+- Edge Function auth (15/04/2026): JWT obrigatório para todas as actions (admin para billing, owner para check-payment). Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
+- Edge Function deploy: `SUPABASE_ACCESS_TOKEN=sbp_... npx supabase functions deploy asaas-billing --project-ref sulgicnqqopyhulglakd`
+- RPCs `get_franchise_ranking` e `get_franchise_report_data`: guards `is_admin_or_manager() OR managed_franchise_ids()` — SECURITY DEFINER com ownership check
 
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx
