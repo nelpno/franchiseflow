@@ -15,8 +15,10 @@ import DailyGoalProgress from "./DailyGoalProgress";
 import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
 import SmartActions from "./SmartActions";
-import MarketingPaymentCard from "./MarketingPaymentCard";
+import FinancialObligationsCard from "./FinancialObligationsCard";
 import PriorityAction from "./PriorityAction";
+import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { generateSmartActions } from "@/lib/smartActions";
 
 export default function FranchiseeDashboard() {
@@ -38,6 +40,8 @@ export default function FranchiseeDashboard() {
   const [franchiseConfig, setFranchiseConfig] = useState(null);
   const [marketingPayment, setMarketingPayment] = useState(null);
   const [period, setPeriod] = useState("today");
+  const { subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
+  const [prioritySheetOpen, setPrioritySheetOpen] = useState(false);
 
   // Computed inside loadData to stay fresh after midnight
   const getToday = () => format(new Date(), "yyyy-MM-dd");
@@ -363,6 +367,8 @@ export default function FranchiseeDashboard() {
         smartActions={actions}
         marketingPayment={marketingPayment}
         botActive={botActive}
+        subscription={subscription}
+        onOpenPaymentSheet={() => setPrioritySheetOpen(true)}
       />
 
       <RankingStreak
@@ -374,7 +380,15 @@ export default function FranchiseeDashboard() {
 
       <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} allSales={allSales} period={period} />
 
-      <MarketingPaymentCard />
+      <FinancialObligationsCard marketingPayment={marketingPayment} />
+
+      <SubscriptionPaymentSheet
+        open={prioritySheetOpen}
+        onOpenChange={setPrioritySheetOpen}
+        subscription={subscription}
+        checkPaymentNow={checkPaymentNow}
+        isChecking={isChecking}
+      />
 
       <SmartActions contacts={contacts} franchiseId={evoId} excludeType={activePriorityType} botActive={botActive} />
 

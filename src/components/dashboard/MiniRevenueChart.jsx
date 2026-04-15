@@ -67,18 +67,11 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
       const dayFull = format(date, "EEEE", { locale: ptBR });
       const capitalizedLabel = shortLabels[dayFull] || dayFull.slice(0, 3);
 
-      // Revenue from daily_summaries (cron)
-      const daySummaries = summaries.filter(
-        (s) => s.date === dateStr && (!franchiseId || s.franchise_id === franchiseId)
-      );
-      const cronRevenue = daySummaries.reduce((sum, s) => sum + (parseFloat(s.sales_value) || 0), 0);
-
-      // Revenue from allSales (real-time fallback)
+      // Revenue from allSales (real-time, fetchAll: true)
       const daySales = allSales.filter((s) => s.sale_date === dateStr);
-      const realtimeRevenue = daySales.reduce(
+      const revenue = daySales.reduce(
         (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
       );
-      const revenue = daySales.length > 0 ? realtimeRevenue : cronRevenue;
 
       // Label: day-of-month for month view, weekday abbreviation for others
       const label = period === "month" ? format(date, "dd") : capitalizedLabel;

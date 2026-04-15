@@ -3,6 +3,19 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const SCENARIOS = [
   {
+    key: "equipe_digital",
+    check: ({ subscription }) =>
+      subscription?.current_payment_status === "OVERDUE",
+    render: () => ({
+      icon: "warning",
+      title: "Sua Equipe Digital em atraso",
+      subtitle: "Regularize para evitar bloqueio do sistema",
+      cta: "Regularizar",
+      onPress: true,
+      colors: { bg: "#fef2f2", border: "#fecaca", button: "#b91c1c" },
+    }),
+  },
+  {
     key: "estoque",
     check: ({ healthResult }) => healthResult?.dimensions?.estoque?.zeroCount > 0,
     render: ({ healthResult }) => {
@@ -91,10 +104,10 @@ const SCENARIOS = [
   },
 ];
 
-export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, botActive }) {
+export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, botActive, subscription, onOpenPaymentSheet }) {
   const navigate = useNavigate();
 
-  const ctx = { healthResult, smartActions, coachActions, marketingPayment, botActive };
+  const ctx = { healthResult, smartActions, coachActions, marketingPayment, botActive, subscription };
   const activeScenario = SCENARIOS.find(s => s.check(ctx));
 
   if (!activeScenario) {
@@ -132,7 +145,7 @@ export default function PriorityAction({ healthResult, smartActions, coachAction
         <p className="text-[11px] text-[#7a6d6d] mt-0.5 truncate">{data.subtitle}</p>
       </div>
       <button
-        onClick={() => navigate(data.navigateTo)}
+        onClick={() => data.onPress ? onOpenPaymentSheet?.() : navigate(data.navigateTo)}
         className="px-3 py-1.5 rounded-lg text-white text-xs font-medium shrink-0 active:scale-95 transition-transform"
         style={{ backgroundColor: data.colors.button }}
       >
