@@ -152,8 +152,7 @@ async function createSubscription(franchiseId: string) {
 
   // Calculate next due date (day 5 of next month)
   const now = new Date();
-  const nextMonth = now.getDate() >= 5 ? now.getMonth() + 2 : now.getMonth() + 1;
-  const nextDue = new Date(now.getFullYear(), nextMonth, 5);
+  const nextDue = new Date(now.getFullYear(), now.getMonth() + 1, 5);
   const nextDueStr = nextDue.toISOString().split("T")[0];
 
   // Create subscription in ASAAS

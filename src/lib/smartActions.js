@@ -51,7 +51,9 @@ const ACTION_RULES = [
     test: (contact) =>
       contact.status === "em_negociacao" &&
       contact.updated_at &&
-      differenceInDays(new Date(), new Date(contact.updated_at)) >= 7,
+      differenceInDays(new Date(), new Date(contact.updated_at)) >= 7 &&
+      (!contact.last_contact_at ||
+        differenceInDays(new Date(), new Date(contact.last_contact_at)) >= 7),
     message: (contact) => {
       const days = differenceInDays(
         new Date(),
@@ -69,7 +71,9 @@ const ACTION_RULES = [
     bgColor: "#f0fdf4",
     test: (contact) =>
       (contact.purchase_count || 0) >= 5 &&
-      ["cliente", "recorrente"].includes(contact.status),
+      ["cliente", "recorrente"].includes(contact.status) &&
+      (!contact.last_contact_at ||
+        differenceInDays(new Date(), new Date(contact.last_contact_at)) >= 7),
     message: (contact) =>
       `${contact.nome || contact.telefone} j\u00e1 comprou ${contact.purchase_count}x \u2014 agrade\u00e7a!`,
     priority: 4,
@@ -83,7 +87,9 @@ const ACTION_RULES = [
     test: (contact) =>
       contact.status === "perdido" &&
       contact.updated_at &&
-      differenceInDays(new Date(), new Date(contact.updated_at)) >= 30,
+      differenceInDays(new Date(), new Date(contact.updated_at)) >= 30 &&
+      (!contact.last_contact_at ||
+        differenceInDays(new Date(), new Date(contact.last_contact_at)) >= 7),
     message: (contact) => {
       const days = differenceInDays(
         new Date(),
