@@ -370,8 +370,9 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // --- Webhook: validate by shared secret (ASAAS calls without JWT) ---
-    if (action === "webhook") {
+    // --- Webhook: detect ASAAS format (has "event" + "payment" fields) or explicit action ---
+    const isAsaasWebhook = !action && body.event && body.payment;
+    if (action === "webhook" || isAsaasWebhook) {
       if (!ASAAS_WEBHOOK_TOKEN) {
         // Fail-closed: reject if token not configured
         console.error("ASAAS_WEBHOOK_TOKEN not configured — rejecting webhook");
@@ -379,7 +380,8 @@ Deno.serve(async (req) => {
           status: 503, headers: jsonHeaders,
         });
       }
-      const incomingToken = body.access_token || req.headers.get("asaas-access-token") || "";
+      const urlToken = new URL(req.url).searchParams.get("asaas_token") || "";
+      const incomingToken = body.access_token || req.headers.get("asaas-access-token") || urlToken || "";
       if (incomingToken !== ASAAS_WEBHOOK_TOKEN) {
         return new Response(JSON.stringify({ error: "Unauthorized webhook" }), {
           status: 401, headers: jsonHeaders,
@@ -390,15 +392,27 @@ Deno.serve(async (req) => {
     }
 
     // --- All other actions: require authenticated user ---
-    const user = await getUserFromRequest(req);
+    // Service role key bypass: decode JWT and check role claim
+    let isServiceRole = false;
+    try {
+      const token = (req.headers.get("Authorization") || "").replace("Bearer ", "");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        isServiceRole = payload.role === "service_role";
+      }
+    } catch { /* not a valid JWT */ }
+
+    const user = isServiceRole
+      ? { id: "service_role", role: "admin" as UserRole, managed: [] }
+      : await getUserFromRequest(req);
     if (!user) {
       return new Response(JSON.stringify({ error: "Autenticação necessária" }), {
         status: 401, headers: jsonHeaders,
       });
     }
 
-    // Admin-only actions: register, register-batch, subscribe, subscribe-batch
-    const adminActions = ["register", "register-batch", "subscribe", "subscribe-batch"];
+    // Admin-only actions
+    const adminActions = ["register", "register-batch", "subscribe", "subscribe-batch", "register-webhook"];
     if (adminActions.includes(action) && !isAdminOrManager(user)) {
       return new Response(JSON.stringify({ error: "Apenas administradores podem executar esta ação" }), {
         status: 403, headers: jsonHeaders,
@@ -431,6 +445,44 @@ Deno.serve(async (req) => {
       case "check-payment":
         result = await checkPayment(body.franchise_id);
         break;
+      case "register-webhook": {
+        // Register webhook in ASAAS pointing to this Edge Function
+        const webhookUrl = `${SUPABASE_URL}/functions/v1/asaas-billing`;
+        // Check existing webhooks
+        const existing = await asaasRequest("/v3/webhooks");
+        const alreadyRegistered = (existing.data || []).find(
+          (w: Record<string, unknown>) => (w.url as string)?.includes("asaas-billing")
+        );
+        if (alreadyRegistered) {
+          result = { message: "Webhook já registrado", webhook: alreadyRegistered };
+          break;
+        }
+        // Create new webhook
+        const webhook = await asaasRequest("/v3/webhooks", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "FranchiseFlow Billing",
+            url: webhookUrl,
+            email: "nelpno@gmail.com",
+            apiVersion: 3,
+            enabled: true,
+            interrupted: false,
+            authToken: ASAAS_WEBHOOK_TOKEN,
+            sendType: "NON_SEQUENTIALLY",
+            events: [
+              "PAYMENT_CONFIRMED",
+              "PAYMENT_RECEIVED",
+              "PAYMENT_OVERDUE",
+              "PAYMENT_REFUNDED",
+              "PAYMENT_DELETED",
+              "PAYMENT_UPDATED",
+              "PAYMENT_CREATED",
+            ],
+          }),
+        });
+        result = { message: "Webhook registrado com sucesso", webhook };
+        break;
+      }
       default:
         return new Response(JSON.stringify({ error: "Unknown action" }), {
           status: 400, headers: jsonHeaders,

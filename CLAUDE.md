@@ -147,7 +147,7 @@
 - Sidebar admin: remover `adminSidebarHidden` + definir `adminSection` = visível na sidebar
 
 ### ASAAS Billing (Cobrança Recorrente)
-- Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: register, register-batch, subscribe, subscribe-batch, check-payment, webhook
+- Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: register, register-batch, subscribe, subscribe-batch, check-payment, register-webhook, webhook
 - Tabela: `system_subscriptions` (franchise_id UNIQUE, asaas_customer_id, asaas_subscription_id, current_payment_status, pix_payload, etc.)
 - Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `neighborhood`
 - ASAAS API: `https://api.asaas.com` + `/v3/...`, header `access_token` (secret no Supabase)
@@ -157,9 +157,11 @@
 - Admin: tab Mensalidades em `Financeiro.jsx` → `AsaasSetupPanel.jsx` (edição CPF inline, badges, revisão assinaturas)
 - FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP. `onSubmit` recebe 3o arg `addressExtras` (cep, street_address)
 - ClickSign API: token como query param `?access_token=`, NÃO Bearer. Endpoint: `app.clicksign.com/api/v3/envelopes`
-- Webhook ASAAS: registrar apontando para `https://sulgicnqqopyhulglakd.supabase.co/functions/v1/asaas-billing` com `{ "action": "webhook", "access_token": "ASAAS_WEBHOOK_TOKEN", ...evento }`
-- Edge Function auth (15/04/2026): JWT obrigatório para todas as actions (admin para billing, owner para check-payment). Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
-- Edge Function deploy: `SUPABASE_ACCESS_TOKEN=sbp_... npx supabase functions deploy asaas-billing --project-ref sulgicnqqopyhulglakd`
+- **Webhook ASAAS** (15/04/2026): registrado via action `register-webhook`, ID `c6485ea9`. Detecta formato nativo ASAAS (sem `action`, com `event` + `payment`). Token via body `access_token`, header `asaas-access-token`, ou query `?asaas_token=`. 7 eventos: PAYMENT_CREATED/UPDATED/DELETED/REFUNDED/OVERDUE/RECEIVED/CONFIRMED
+- **Edge Function auth**: `verify_jwt: false` (auth manual no código). Service role bypass via JWT `role` claim. Admin para billing actions, owner para check-payment. Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
+- Edge Function deploy: `SUPABASE_ACCESS_TOKEN=sbp_... npx supabase functions deploy asaas-billing --no-verify-jwt --project-ref sulgicnqqopyhulglakd`
+- **Estado assinaturas** (15/04/2026): 11 franquias registradas no ASAAS (10 com CPF original + 1 teste Araraquara). 1 assinatura ativa (Araraquara teste). 37 franquias sem CPF pendentes
+- **Franqueado não tem UI de mensalidade** — só vê paywall quando OVERDUE. Falta card na home para pagar proativamente (PIX/boleto antes de vencer)
 - RPCs `get_franchise_ranking` e `get_franchise_report_data`: guards `is_admin_or_manager() OR managed_franchise_ids()` — SECURITY DEFINER com ownership check
 
 ## Features Removidas (NÃO recriar)
