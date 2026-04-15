@@ -99,6 +99,7 @@
 - Credencial Supabase: `mIVPcJBNcDCx21LR` (service_role) | OpenAI: `fIhzSXiiBXB3ad6Y`
 - n8n API: `https://teste.dynamicagents.tech` + `/api/v1` (concatenar). PUT settings: filtrar campos extras
 - SmartActions "reativar": checa `last_purchase_at >= 14d` AND `last_contact_at >= 7d`. Clicar "Feito" atualiza `last_contact_at` → suprime por 7 dias
+- SmartActions: TODAS as regras em `smartActions.js` DEVEM ter guard `last_contact_at >= 7 dias` para "Feito" persistir entre reloads. Sem o guard, `dismissedIds` (state local) some no refresh
 
 ### KPI Cards & Daily Goal (fixes 11/04/2026)
 - KPI percentage: `percentageChange = null` quando `previousValue <= 0` — badge NÃO renderiza com null (evita +100% fake)
@@ -115,6 +116,8 @@
 - `sales.observacoes` TEXT — campo livre para instruções de entrega/obs do franqueado. Aparece no comprovante (SaleReceipt)
 - `payment_confirmed` + `confirmed_at` para conferência. Columns DEVE incluir ambos
 - `sale_date` é DATE only — `created_at` para timestamp. Edição = deletar items + reinserir
+- MiniRevenueChart: SEMPRE usar `realtimeRevenue` de `allSales` (fetchAll: true). NUNCA fallback para `cronRevenue` de `daily_summaries` — cron não recalcula quando `sale_date` muda, causando vendas fantasma no gráfico
+- Período "Semana" (StatsCards): `startOfWeek(now, { weekStartsOn: 1 })` — começa na **segunda-feira**, vai até hoje
 - Markup estoque: `(sale - cost) / cost` (NÃO margem sobre receita)
 - `formatBRL` de `lib/formatBRL.js` — NUNCA `new Intl.NumberFormat` inline
 - P&L: `calculatePnL()` em `financialCalcs.js` (shared TabResultado + Financeiro)
@@ -161,7 +164,9 @@
 - **Edge Function auth**: `verify_jwt: false` (auth manual no código). Service role bypass via JWT `role` claim. Admin para billing actions, owner para check-payment. Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
 - Edge Function deploy: `SUPABASE_ACCESS_TOKEN=sbp_... npx supabase functions deploy asaas-billing --no-verify-jwt --project-ref sulgicnqqopyhulglakd`
 - **Estado assinaturas** (15/04/2026): 11 franquias registradas no ASAAS (10 com CPF original + 1 teste Araraquara). 1 assinatura ativa (Araraquara teste). 37 franquias sem CPF pendentes
-- **Franqueado não tem UI de mensalidade** — só vê paywall quando OVERDUE. Falta card na home para pagar proativamente (PIX/boleto antes de vencer)
+- **Cobrança "Sua Equipe Digital"** (15/04/2026): `FinancialObligationsCard` substituiu `MarketingPaymentCard` na home — card unificado com linha subscription (ASAAS) + linha marketing. Nome UI: "Sua Equipe Digital" (NÃO "Mensalidade"). `SubscriptionPaymentSheet` (Sheet bottom): PIX QR + copiar código + boleto + "Já paguei"
+- PriorityAction: cenário `equipe_digital` dispara APENAS para OVERDUE (PENDING tratado pelo card). Suporta `onPress` callback (além de `navigateTo`) via flag `data.onPress`
+- ASAAS subscribe `nextDueDate`: SEMPRE `getMonth() + 1` (mês seguinte). NUNCA condicional `getDate() >= 5 ? +2 : +1` (0-indexed pulava 2 meses). Fix 15/04/2026
 - RPCs `get_franchise_ranking` e `get_franchise_report_data`: guards `is_admin_or_manager() OR managed_franchise_ids()` — SECURITY DEFINER com ownership check
 
 ## Features Removidas (NÃO recriar)
