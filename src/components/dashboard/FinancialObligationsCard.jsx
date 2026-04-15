@@ -85,7 +85,10 @@ export default function FinancialObligationsCard({ marketingPayment }) {
     <Card className="mb-4 border-0 shadow-sm">
       <CardContent className="p-0">
         {showSubscriptionRow && (
-          <div className="p-4 flex items-center gap-3">
+          <div
+            className={`p-4 flex items-center gap-3 ${!isPaidStatus ? "cursor-pointer" : ""}`}
+            onClick={!isPaidStatus ? () => setSheetOpen(true) : undefined}
+          >
             <div
               className={`w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0 ${subIconBg}`}
             >
