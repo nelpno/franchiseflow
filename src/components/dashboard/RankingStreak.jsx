@@ -32,7 +32,7 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
           </span>
         ) : todaySalesCount > 0 ? (
           <span className="text-xs font-semibold text-[#1d1b1b]/70">
-            Ranking atualiza após 02h
+            Ranking sai no fim do dia
           </span>
         ) : (
           <button
