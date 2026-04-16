@@ -43,3 +43,6 @@ plan_content.tmp.txt
 *.sw?
 
 .env
+# Supabase scratch/backup (runtime artifacts, contem dados de clientes)
+supabase/.temp/
+supabase/scripts/backups/

@@ -165,7 +165,10 @@ export default function MyContacts() {
     try {
       setLoading(true);
       setLoadError(null);
-      const data = await Contact.list("-created_at", 200, { signal: controller.signal });
+      const data = await Contact.list("-created_at", null, {
+        fetchAll: true,
+        signal: controller.signal,
+      });
       if (!mountedRef.current) return;
       setContacts(data);
     } catch (error) {
