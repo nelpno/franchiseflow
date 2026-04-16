@@ -51,10 +51,21 @@
 
 **RLS específico:**
 - `managed_franchise_ids` contém AMBOS UUID e evolution_instance_id (28 policies dependem)
-- profiles SELECT: `is_admin_or_manager() OR id = auth.uid()` — NUNCA `is_admin()` sozinha (recursão infinita)
+- profiles SELECT: `is_admin_or_manager() OR id = (select auth.uid())` — NUNCA `is_admin()` sozinha (recursão infinita)
 - Tabelas novas: DELETE policy com `is_admin()` obrigatória (sem ela, delete retorna sucesso mas 0 rows)
 - `sale_items` RLS: subquery `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
 - `activity_log` NÃO existe no banco (referenciada em schema.sql mas nunca criada)
+- Policies `notifications` e `audit_logs`: criadas via Dashboard (NÃO estão em SQL files). Consultar `pg_policies` antes de alterar
+- `get_unprocessed_conversations(integer)`: RPC existe no banco mas NÃO nos SQL files
+
+**Database Linter Compliance (fix 15/04/2026):**
+- Funções SECURITY DEFINER: SEMPRE incluir `SET search_path = 'public'`
+- RLS policies com `auth.uid()`: SEMPRE usar `(select auth.uid())` (initplan perf)
+- NUNCA criar policy `FOR ALL` + policies específicas na mesma tabela (overlap = multiple_permissive)
+- NUNCA criar policy `USING(true)` para role padrão — service_role já bypassa RLS
+- Storage buckets públicos: NÃO precisam de SELECT policy em `storage.objects` (URLs públicas funcionam sem)
+- FKs novas: SEMPRE criar índice correspondente (`CREATE INDEX IF NOT EXISTS`)
+- Extensões: usar schema `extensions` (NÃO `public`)
 
 **Security helpers (usar em código novo):**
 - Toast errors: NUNCA `error.message` ou `error.details` direto — usar `safeErrorMessage(error, "fallback")` de `@/lib/safeErrorMessage`
@@ -95,6 +106,7 @@
 - **DEDUP LID**: filtro `!info.Type` descarta placeholder sem Type (duplicatas WhatsApp)
 - **Log Outbound**: `whatsapp_message_id` DEVE ser null para msgs `out` (unique index perde msg `in`)
 - View `vw_dadosunidade`: SECURITY INVOKER. JSONB nativo (cast ::text quebra sub-campos). SQL: `supabase/fix-vw-dadosunidade-v2-scale.sql`
+- **order_cutoff** (15/04/2026): campo opcional por faixa em `delivery_schedule` JSONB. Franquias com janela fixa (ex: 18-21h) configuram cutoff (ex: 17:00) — pedidos após esse horário vão pro próximo dia. UI: radio buttons no wizard passo 3. `delivery_schedule_text` inclui texto explícito. Customer Context V4: `hasCutoff` troca `tempo_entrega` de "40min" para "faixa de horário"
 - `systemMessage` em `node.parameters.options.systemMessage`. Luxon: `setLocale('pt-BR')`
 - Credencial Supabase: `mIVPcJBNcDCx21LR` (service_role) | OpenAI: `fIhzSXiiBXB3ad6Y`
 - n8n API: `https://teste.dynamicagents.tech` + `/api/v1` (concatenar). PUT settings: filtrar campos extras
