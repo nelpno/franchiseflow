@@ -376,7 +376,6 @@ export default function FranchiseeDashboard() {
         summaries={summaries}
         franchiseId={evoId}
         dailyGoal={dailyGoal}
-        todaySalesCount={todaySales.length}
       />
 
       <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} allSales={allSales} period={period} />

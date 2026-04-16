@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
-export default function RankingStreak({ ranking, summaries, franchiseId, dailyGoal, todaySalesCount = 0 }) {
+export default function RankingStreak({ ranking, summaries, franchiseId, dailyGoal }) {
   const navigate = useNavigate();
   const streak = useMemo(() => {
     if (!summaries || !dailyGoal || dailyGoal <= 0) return 0;
@@ -29,10 +29,6 @@ export default function RankingStreak({ ranking, summaries, franchiseId, dailyGo
         {ranking?.position ? (
           <span className="text-xs font-semibold text-[#1d1b1b]">
             {ranking.position}º de {ranking.total_franchises} franquias
-          </span>
-        ) : todaySalesCount > 0 ? (
-          <span className="text-xs font-semibold text-[#1d1b1b]/70">
-            Ranking sai no fim do dia
           </span>
         ) : (
           <button

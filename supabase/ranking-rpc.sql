@@ -20,17 +20,24 @@ begin
     raise exception 'Acesso negado' using errcode = '42501';
   end if;
 
+  -- Tempo real: agrega direto de sales (faturamento = value + delivery_fee - discount_amount)
   select json_build_object(
     'position', sub.position,
     'total_franchises', sub.total
   ) into result
   from (
     select
-      ds.franchise_id,
-      rank() over (order by coalesce(ds.sales_value, 0) desc) as position,
+      agg.franchise_id,
+      rank() over (order by agg.total desc) as position,
       count(*) over () as total
-    from daily_summaries ds
-    where ds.date = p_date
+    from (
+      select
+        s.franchise_id,
+        sum(coalesce(s.value, 0) + coalesce(s.delivery_fee, 0) - coalesce(s.discount_amount, 0)) as total
+      from sales s
+      where s.sale_date = p_date
+      group by s.franchise_id
+    ) agg
   ) sub
   where sub.franchise_id = p_franchise_id;
 
