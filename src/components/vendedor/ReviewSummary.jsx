@@ -99,8 +99,9 @@ export default function ReviewSummary({ formData, onGoToStep }) {
       const label = scheduleLabel(range.days);
       const time = `${range.delivery_start || "?"} às ${range.delivery_end || "?"}`;
       const fee = range.charges_fee === false ? "Frete grátis" : feeRulesText(range.fee_rules);
+      const cutoff = range.order_cutoff ? ` | Pedidos até ${range.order_cutoff}` : "";
       return [
-        { label: label || `Faixa ${i + 1}`, value: `${time}${fee ? ` — ${fee}` : ""}` },
+        { label: label || `Faixa ${i + 1}`, value: `${time}${fee ? ` — ${fee}` : ""}${cutoff}` },
       ];
     });
   };

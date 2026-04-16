@@ -105,7 +105,13 @@ SELECT
               ), '')
             END
           ELSE ''
-        END,
+        END
+        || CASE
+             WHEN NULLIF(grp->>'order_cutoff', '') IS NOT NULL
+             THEN ' | Pedidos devem ser feitos ate ' || (grp->>'order_cutoff')
+                  || ', apos esse horario a entrega sera no proximo dia disponivel desta faixa'
+             ELSE ''
+           END,
         ' | '
       )
       FROM jsonb_array_elements(fc.delivery_schedule) AS grp

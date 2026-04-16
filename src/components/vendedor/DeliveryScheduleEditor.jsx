@@ -98,7 +98,10 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
         const label = generateLabel(r.days);
         const time = `${r.delivery_start || "?"}-${r.delivery_end || "?"}`;
         const fee = formatFeeRulesSummary(r.charges_fee, r.fee_rules);
-        return `${label}: ${time}${fee ? `, ${fee}` : ""}`;
+        const cutoff = r.order_cutoff
+          ? `, pedidos até ${r.order_cutoff} (após, entrega no próximo dia)`
+          : "";
+        return `${label}: ${time}${fee ? `, ${fee}` : ""}${cutoff}`;
       })
       .join(" | ");
   };
@@ -202,6 +205,63 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
               <span className="text-sm font-semibold text-emerald-700">Entrega grátis nessa faixa</span>
             </div>
           )}
+
+          {/* Horário limite para pedidos */}
+          <div className="space-y-2 mt-2 p-3 rounded-xl bg-[#fbf9fa]">
+            <p className="text-xs font-semibold text-[#3d4a42]">
+              Quando você aceita pedidos para essa faixa?
+            </p>
+
+            <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/60 transition-colors">
+              <input
+                type="radio"
+                name={`cutoff-${index}`}
+                checked={!range.order_cutoff}
+                onChange={() => updateRange(index, "order_cutoff", "")}
+                className="mt-0.5 accent-[#b91c1c]"
+              />
+              <div>
+                <span className="text-sm font-medium text-[#3d4a42]">Pedido chegou, eu entrego</span>
+                <p className="text-[10px] text-[#3d4a42]/50">Aceito pedidos a qualquer hora dentro do horário da faixa</p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/60 transition-colors">
+              <input
+                type="radio"
+                name={`cutoff-${index}`}
+                checked={!!range.order_cutoff}
+                onChange={() => updateRange(index, "order_cutoff", range.delivery_start || "17:00")}
+                className="mt-0.5 accent-[#b91c1c]"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-[#3d4a42]">Só entrego pedidos feitos até um horário</span>
+                {range.order_cutoff && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-xs text-[#4a3d3d]/60">Pedidos até:</span>
+                    <select
+                      className={inputClass}
+                      value={range.order_cutoff}
+                      onChange={(e) => updateRange(index, "order_cutoff", e.target.value)}
+                    >
+                      {timeOptions.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {range.order_cutoff && (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
+                <MaterialIcon icon="info" size={14} className="text-amber-600 shrink-0" />
+                <p className="text-[10px] text-amber-800">
+                  Pedidos após {range.order_cutoff} serão entregues no próximo dia disponível desta faixa
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       ))}
 
