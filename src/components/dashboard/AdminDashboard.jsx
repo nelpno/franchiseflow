@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [configMap, setConfigMap] = useState({});
   const [botConversations, setBotConversations] = useState([]);
+  const [botLeadsDaily, setBotLeadsDaily] = useState([]);
   const [humanMsgCounts, setHumanMsgCounts] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loadError, setLoadError] = useState(null);
@@ -66,13 +67,14 @@ export default function AdminDashboard() {
         }
       };
 
-      // ═══ WAVE 1: Stats + Ranking (7 requests — aparece em ~1s) ═══
+      // ═══ WAVE 1: Stats + Ranking (6 queries — aparece em ~1s) ═══
       const wave1 = await Promise.allSettled([
         fetchFranchises(),
         DailySummary.list("-date", null, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal, fetchAll: true, gte: { date: cutoff90d } }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
+        supabase.rpc('get_bot_leads_daily', { p_since: cutoff90d }).abortSignal(signal),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -92,8 +94,12 @@ export default function AdminDashboard() {
         return;
       }
 
+      // Bot leads daily RPC (Wave 1[5])
+      const botLeadsRpc = wave1[5].status === "fulfilled" ? wave1[5].value : { data: [] };
+      const botLeadsDailyData = botLeadsRpc?.data || [];
+
       const w1Failed = wave1
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","configs"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","configs","botLeadsDaily"][i] : null)
         .filter(Boolean);
       if (w1Failed.length > 0) {
         console.warn("Wave 1 parcialmente falhou:", w1Failed);
@@ -110,6 +116,7 @@ export default function AdminDashboard() {
       setYesterdaySales(yesterdaySaleData);
       setAllSales(allSaleData);
       setConfigMap(cMap);
+      setBotLeadsDaily(botLeadsDailyData);
       setIsLoading(false);
       hasLoadedOnceRef.current = true;
 
@@ -201,23 +208,18 @@ export default function AdminDashboard() {
   }, [summaries]);
 
   // Helper: conversion rate = total sales / concluded bot conversations for a date range
+  // Uses server-side RPC aggregates (get_bot_leads_daily) instead of iterating all rows
   const botLeadsForRange = useCallback((startDate, endDate) => {
-    let ongoing = 0, total = 0;
-    const now = Date.now();
-    const cutoff24h = now - 24 * 60 * 60 * 1000;
-    for (const c of botConversations) {
-      const d = c.started_at?.slice(0, 10);
+    let total = 0, ongoing = 0;
+    for (const row of botLeadsDaily) {
+      const d = row.day;
       if (d >= startDate && d <= endDate) {
-        total++;
-        const isOngoing = c.outcome
-          ? c.outcome === 'ongoing'
-          : ['started', 'catalog_sent', 'items_discussed', 'checkout_started'].includes(c.status)
-            && new Date(c.updated_at).getTime() >= cutoff24h;
-        if (isOngoing) ongoing++;
+        total += Number(row.total_count) || 0;
+        ongoing += Number(row.ongoing_count) || 0;
       }
     }
     return total - ongoing;
-  }, [botConversations]);
+  }, [botLeadsDaily]);
 
   const stats = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -261,7 +263,7 @@ export default function AdminDashboard() {
     const prevBotPercent = prevSalesCount > 0 ? Math.round(prevSales.filter(isBotSource).length / prevSalesCount * 100) : 0;
 
     return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion, botPercent, prevBotPercent };
-  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botLeadsForRange]);
+  }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botLeadsForRange, botLeadsDaily]);
 
   const liveTodayRevenue = useMemo(() =>
     todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
