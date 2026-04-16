@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, BotConversation, ConversationMessage, Contact } from "@/entities/all";
-import { format, subDays } from "date-fns";
+import { format, subDays, subMonths } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
@@ -52,6 +52,8 @@ export default function AdminDashboard() {
     try {
       const today = getToday();
       const yesterday = getYesterday();
+      // 90 dias cobre período máximo (30d + 30d comparação) + margem para health score (60d)
+      const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
 
       // Franchise é crítica — retry automático em caso de timeout
       const fetchFranchises = async () => {
@@ -65,14 +67,14 @@ export default function AdminDashboard() {
 
       const results = await Promise.allSettled([
         fetchFranchises(),
-        DailySummary.list("-date", null, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal, fetchAll: true }),
+        DailySummary.list("-date", null, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal, fetchAll: true, gte: { date: cutoff90d } }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
-        Sale.list('-sale_date', null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date, source', signal, fetchAll: true }),
+        Sale.list('-sale_date', null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
-        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true }),
-        ConversationMessage.filter({ direction: 'human' }, '-created_at', null, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal, fetchAll: true }),
+        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true, gte: { started_at: cutoff90d } }),
+        ConversationMessage.filter({ direction: 'human' }, '-created_at', null, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal, fetchAll: true, gte: { created_at: cutoff90d } }),
         Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at', signal, fetchAll: true }),
       ]);
 

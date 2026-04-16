@@ -27,7 +27,12 @@ function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
 
 function createEntity(tableName) {
   return {
-    async list(orderBy, limit, { columns, signal, fetchAll } = {}) {
+    async list(orderBy, limit, { columns, signal, fetchAll, gte, lte } = {}) {
+      const applyRangeFilters = (q) => {
+        if (gte) for (const [col, val] of Object.entries(gte)) q = q.gte(col, val);
+        if (lte) for (const [col, val] of Object.entries(lte)) q = q.lte(col, val);
+        return q;
+      };
       if (fetchAll) {
         // Paginate past Supabase max_rows (1000) limit
         const pageSize = 1000;
@@ -36,6 +41,7 @@ function createEntity(tableName) {
         while (true) {
           let query = supabase.from(tableName).select(columns || '*');
           if (signal) query = query.abortSignal(signal);
+          query = applyRangeFilters(query);
           const order = parseOrderBy(orderBy);
           if (order) query = query.order(order.column, { ascending: order.ascending });
           query = query.range(from, from + pageSize - 1);
@@ -50,6 +56,7 @@ function createEntity(tableName) {
       }
       let query = supabase.from(tableName).select(columns || '*');
       if (signal) query = query.abortSignal(signal);
+      query = applyRangeFilters(query);
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);
@@ -58,7 +65,18 @@ function createEntity(tableName) {
       return data || [];
     },
 
-    async filter(criteria, orderBy, limit, { columns, signal, fetchAll } = {}) {
+    async filter(criteria, orderBy, limit, { columns, signal, fetchAll, gte, lte } = {}) {
+      const applyFilters = (q) => {
+        if (criteria) {
+          for (const [key, value] of Object.entries(criteria)) {
+            if (Array.isArray(value)) { q = q.in(key, value); }
+            else { q = q.eq(key, value); }
+          }
+        }
+        if (gte) for (const [col, val] of Object.entries(gte)) q = q.gte(col, val);
+        if (lte) for (const [col, val] of Object.entries(lte)) q = q.lte(col, val);
+        return q;
+      };
       if (fetchAll) {
         // Paginate past Supabase max_rows (1000) limit
         const pageSize = 1000;
@@ -67,15 +85,7 @@ function createEntity(tableName) {
         while (true) {
           let query = supabase.from(tableName).select(columns || '*');
           if (signal) query = query.abortSignal(signal);
-          if (criteria) {
-            for (const [key, value] of Object.entries(criteria)) {
-              if (Array.isArray(value)) {
-                query = query.in(key, value);
-              } else {
-                query = query.eq(key, value);
-              }
-            }
-          }
+          query = applyFilters(query);
           const order = parseOrderBy(orderBy);
           if (order) query = query.order(order.column, { ascending: order.ascending });
           query = query.range(from, from + pageSize - 1);
@@ -90,15 +100,7 @@ function createEntity(tableName) {
       }
       let query = supabase.from(tableName).select(columns || '*');
       if (signal) query = query.abortSignal(signal);
-      if (criteria) {
-        for (const [key, value] of Object.entries(criteria)) {
-          if (Array.isArray(value)) {
-            query = query.in(key, value);
-          } else {
-            query = query.eq(key, value);
-          }
-        }
-      }
+      query = applyFilters(query);
       const order = parseOrderBy(orderBy);
       if (order) query = query.order(order.column, { ascending: order.ascending });
       if (limit) query = query.limit(limit);

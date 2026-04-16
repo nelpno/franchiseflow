@@ -203,3 +203,4 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 ## Supabase Management API
 - Project ref: `sulgicnqqopyhulglakd`
 - SQL: `POST .../projects/{ref}/database/query` com `Authorization: Bearer {sbp_token}`
+- Executar SQL via API com context-mode: `ctx_execute` com `fetch()` JavaScript (curl bloqueado pelo context-mode hook)
