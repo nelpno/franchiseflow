@@ -40,13 +40,9 @@ CREATE POLICY "coach_actions_service" ON coach_actions FOR ALL
   USING (true)
   WITH CHECK (true);
 
--- Admin/manager vê tudo
-CREATE POLICY "coach_actions_admin_select" ON coach_actions FOR SELECT
-  USING (is_admin_or_manager());
-
--- Franqueado vê só as suas
-CREATE POLICY "coach_actions_franchisee_select" ON coach_actions FOR SELECT
-  USING (franchise_id = ANY(managed_franchise_ids()));
+-- Admin/manager vê tudo, franqueado vê só as suas
+CREATE POLICY "coach_actions_select" ON coach_actions FOR SELECT
+  USING (is_admin_or_manager() OR franchise_id = ANY(managed_franchise_ids()));
 
 -- Admin pode atualizar (marcar acknowledged, effective)
 CREATE POLICY "coach_actions_admin_update" ON coach_actions FOR UPDATE

@@ -26,9 +26,9 @@ ALTER TABLE bot_conversations ENABLE ROW LEVEL SECURITY;
 
 -- Admin ve tudo, franqueado ve so as suas
 CREATE POLICY "bot_conv_select" ON bot_conversations FOR SELECT USING (
-  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  EXISTS (SELECT 1 FROM profiles WHERE id = (select auth.uid()) AND role = 'admin')
   OR franchise_id = ANY(
-    SELECT unnest(managed_franchise_ids) FROM profiles WHERE id = auth.uid()
+    SELECT unnest(managed_franchise_ids) FROM profiles WHERE id = (select auth.uid())
   )
 );
 

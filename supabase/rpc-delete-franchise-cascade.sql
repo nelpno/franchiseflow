@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION delete_franchise_cascade(
 ) RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = 'public'
 AS $$
 DECLARE
   v_sale_ids UUID[];

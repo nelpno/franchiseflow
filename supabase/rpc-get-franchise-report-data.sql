@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION get_franchise_report_data(
   p_end_date DATE DEFAULT CURRENT_DATE
 ) RETURNS JSON
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = 'public'
 AS $fn$
 DECLARE
   result JSON;

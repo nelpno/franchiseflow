@@ -8,7 +8,7 @@ RETURNS BOOLEAN AS $$
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role IN ('admin', 'manager')
   );
-$$ LANGUAGE sql SECURITY DEFINER STABLE;
+$$ LANGUAGE sql SECURITY DEFINER STABLE SET search_path = 'public';
 
 -- ═══════════════════════════════════════════════════════════════
 -- SALES

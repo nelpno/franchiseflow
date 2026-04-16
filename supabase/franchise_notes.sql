@@ -17,7 +17,7 @@ CREATE POLICY "Admin and manager can read notes"
   USING (
     EXISTS (
       SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
+      WHERE profiles.id = (select auth.uid())
       AND profiles.role IN ('admin', 'manager')
     )
   );
@@ -25,14 +25,14 @@ CREATE POLICY "Admin and manager can read notes"
 CREATE POLICY "Admin and manager can insert notes"
   ON franchise_notes FOR INSERT
   WITH CHECK (
-    auth.uid() = user_id
+    (select auth.uid()) = user_id
     AND EXISTS (
       SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
+      WHERE profiles.id = (select auth.uid())
       AND profiles.role IN ('admin', 'manager')
     )
   );
 
 CREATE POLICY "Author can delete own notes"
   ON franchise_notes FOR DELETE
-  USING (auth.uid() = user_id);
+  USING ((select auth.uid()) = user_id);

@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION save_sale_with_items(
 ) RETURNS UUID
 LANGUAGE plpgsql
 SECURITY INVOKER
+SET search_path = 'public'
 AS $$
 DECLARE
   v_sale_id UUID;

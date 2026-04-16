@@ -7,6 +7,7 @@ create or replace function get_franchise_ranking(p_date date, p_franchise_id tex
 returns json
 language plpgsql
 security definer
+set search_path = 'public'
 as $$
 declare
   result json;

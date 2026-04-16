@@ -26,11 +26,8 @@ CREATE INDEX idx_bot_reports_period ON bot_reports(report_period_end);
 -- RLS
 ALTER TABLE bot_reports ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admin e manager veem todos" ON bot_reports
-  FOR SELECT USING (is_admin_or_manager());
-
-CREATE POLICY "Franqueado ve os seus" ON bot_reports
-  FOR SELECT USING (franchise_id = ANY(managed_franchise_ids()));
+CREATE POLICY "bot_reports_select" ON bot_reports
+  FOR SELECT USING (is_admin_or_manager() OR franchise_id = ANY(managed_franchise_ids()));
 
 CREATE POLICY "Admin deleta" ON bot_reports
   FOR DELETE USING (is_admin());

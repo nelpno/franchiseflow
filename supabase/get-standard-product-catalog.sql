@@ -7,6 +7,7 @@ RETURNS TABLE(product_name text, category text, unit text, cost_price numeric, s
 LANGUAGE sql
 SECURITY DEFINER
 STABLE
+SET search_path = 'public'
 AS $$
   SELECT DISTINCT ON (ii.product_name)
     ii.product_name, ii.category, ii.unit, ii.cost_price, ii.sale_price

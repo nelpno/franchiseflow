@@ -297,10 +297,11 @@ CREATE POLICY "franchises_delete" ON franchises FOR DELETE USING (is_admin());
 
 -- PROFILES
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (
-  is_admin() OR id = auth.uid()
+  is_admin() OR id = (select auth.uid())
 );
-CREATE POLICY "profiles_update_self" ON profiles FOR UPDATE USING (id = auth.uid());
-CREATE POLICY "profiles_update_admin" ON profiles FOR UPDATE USING (is_admin());
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (
+  is_admin() OR id = (select auth.uid())
+);
 
 -- SALES
 CREATE POLICY "sales_select" ON sales FOR SELECT USING (
@@ -448,7 +449,7 @@ RETURNS void AS $$
     sales_value = EXCLUDED.sales_value,
     conversion_rate = EXCLUDED.conversion_rate,
     updated_at = now();
-$$ LANGUAGE sql;
+$$ LANGUAGE sql SET search_path = 'public';
 
 -- ============================================
 -- UPDATED_AT TRIGGER (auto-update timestamp)
