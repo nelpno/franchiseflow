@@ -196,7 +196,8 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
         const humanMsgs = (conversationMessages || []).filter(
           (m) => m.franchise_id === evoId && m.conversation_id && recentConvos.some((c) => c.id === m.conversation_id)
         );
-        const avgHuman = humanMsgs.length / recentConvos.length;
+        const totalHumanMsgs = humanMsgs.reduce((sum, m) => sum + (m._count || 1), 0);
+        const avgHuman = totalHumanMsgs / recentConvos.length;
         if (avgHuman > 3) {
           excessiveIntervention.push({ name: fName, count: Math.round(avgHuman) });
         }

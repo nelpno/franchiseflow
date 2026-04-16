@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, BotConversation, ConversationMessage, Contact } from "@/entities/all";
-import { format, subDays, subMonths } from "date-fns";
+import { supabase } from "@/api/supabaseClient";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, BotConversation, Contact } from "@/entities/all";
+import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ const isBotSource = (s) => s.source === 'bot';
 
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingWave2, setIsLoadingWave2] = useState(true);
   const [period, setPeriod] = useState("today");
   const [franchises, setFranchises] = useState([]);
   const [summaries, setSummaries] = useState([]);
@@ -31,7 +33,7 @@ export default function AdminDashboard() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [configMap, setConfigMap] = useState({});
   const [botConversations, setBotConversations] = useState([]);
-  const [conversationMessages, setConversationMessages] = useState([]);
+  const [humanMsgCounts, setHumanMsgCounts] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
@@ -52,7 +54,6 @@ export default function AdminDashboard() {
     try {
       const today = getToday();
       const yesterday = getYesterday();
-      // 90 dias cobre período máximo (30d + 30d comparação) + margem para health score (60d)
       const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
 
       // Franchise é crítica — retry automático em caso de timeout
@@ -65,46 +66,42 @@ export default function AdminDashboard() {
         }
       };
 
-      const results = await Promise.allSettled([
+      // ═══ WAVE 1: Stats + Ranking (7 requests — aparece em ~1s) ═══
+      const wave1 = await Promise.allSettled([
         fetchFranchises(),
         DailySummary.list("-date", null, { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal, fetchAll: true, gte: { date: cutoff90d } }),
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } }),
-        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
-        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
-        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true, gte: { started_at: cutoff90d } }),
-        ConversationMessage.filter({ direction: 'human' }, '-created_at', null, { columns: 'id, franchise_id, conversation_id, direction, created_at', signal, fetchAll: true, gte: { created_at: cutoff90d } }),
-        Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at', signal, fetchAll: true }),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
 
       const getValue = (r) => r.status === "fulfilled" ? r.value : [];
-      const franchiseData = getValue(results[0]);
-      const summaryData = getValue(results[1]);
-      const todayContactData = getValue(results[2]);
-      const allSaleData = getValue(results[3]);
+      const franchiseData = getValue(wave1[0]);
+      const summaryData = getValue(wave1[1]);
+      const todayContactData = getValue(wave1[2]);
+      const allSaleData = getValue(wave1[3]);
       const todaySaleData = allSaleData.filter(s => s.sale_date === today);
       const yesterdaySaleData = allSaleData.filter(s => s.sale_date === yesterday);
-      const purchaseOrderData = getValue(results[4]);
 
-      // Franchises is critical — if it failed, show error state
-      if (results[0].status === "rejected") {
-        const reason = results[0].reason?.message || "Erro desconhecido";
+      if (wave1[0].status === "rejected") {
+        const reason = wave1[0].reason?.message || "Erro desconhecido";
         setLoadError(`Erro ao carregar franquias: ${reason}`);
         toast.error(`Erro ao carregar franquias: ${reason}`);
         return;
       }
 
-      // Log non-critical failures without blocking the dashboard
-      const failedQueries = results
-        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","purchaseOrders","estoque","configs","botConversations","conversationMessages","contacts"][i] : null)
+      const w1Failed = wave1
+        .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","configs"][i] : null)
         .filter(Boolean);
-      if (failedQueries.length > 0) {
-        console.warn("Queries parcialmente falharam:", failedQueries);
-        toast.error(safeFailedQueriesMessage(failedQueries));
+      if (w1Failed.length > 0) {
+        console.warn("Wave 1 parcialmente falhou:", w1Failed);
+        toast.error(safeFailedQueriesMessage(w1Failed));
       }
+
+      const configData = getValue(wave1[4]);
+      const cMap = buildConfigMap(configData);
 
       setFranchises(franchiseData);
       setSummaries(summaryData);
@@ -112,19 +109,44 @@ export default function AdminDashboard() {
       setTodaySales(todaySaleData);
       setYesterdaySales(yesterdaySaleData);
       setAllSales(allSaleData);
-      setPurchaseOrders(purchaseOrderData);
+      setConfigMap(cMap);
+      setIsLoading(false);
+      hasLoadedOnceRef.current = true;
 
-      // Inventory já veio paralelo no Promise.allSettled (index 5)
-      const allInventory = getValue(results[5]);
+      // ═══ WAVE 2: Alertas + Health Score (background, ~27 requests → ~20 com RPC) ═══
+      const wave2 = await Promise.allSettled([
+        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true, gte: { started_at: cutoff90d } }),
+        supabase.rpc('get_human_message_counts', { p_since: cutoff90d }).abortSignal(signal),
+        Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at, last_contact_at, last_purchase_at, purchase_count, nome, telefone, created_at', signal, fetchAll: true }),
+        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
+        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
+      ]);
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal.aborted) return;
 
-      // Group inventory by franchise UUID (using evoId → franchise.id mapping)
+      const w2Failed = wave2
+        .map((r, i) => r.status === "rejected" ? ["botConversations","humanMsgCounts","contacts","estoque","purchaseOrders"][i] : null)
+        .filter(Boolean);
+      if (w2Failed.length > 0) {
+        console.warn("Wave 2 parcialmente falhou:", w2Failed);
+        toast.error(safeFailedQueriesMessage(w2Failed));
+      }
+
+      // RPC returns { data, error } directly from supabase.rpc()
+      const rpcResult = wave2[1].status === "fulfilled" ? wave2[1].value : { data: [] };
+      const msgCountsData = rpcResult?.data || [];
+
+      setBotConversations(getValue(wave2[0]));
+      setHumanMsgCounts(msgCountsData);
+      setContacts(getValue(wave2[2]));
+      setPurchaseOrders(getValue(wave2[4]));
+
+      // Group inventory by franchise UUID
+      const allInventory = getValue(wave2[3]);
       const evoToId = {};
       franchiseData.forEach((f) => {
         if (f.evolution_instance_id) evoToId[f.evolution_instance_id] = f.id;
       });
-
       const inventoryMap = {};
       allInventory.forEach((item) => {
         const fUuid = evoToId[item.franchise_id];
@@ -133,17 +155,8 @@ export default function AdminDashboard() {
           inventoryMap[fUuid].push(item);
         }
       });
-
       setInventoryByFranchise(inventoryMap);
-
-      // Build configMap for standardized franchise display names
-      const configData = getValue(results[6]);
-      setConfigMap(buildConfigMap(configData));
-
-      // Bot data for health score & alerts
-      setBotConversations(getValue(results[7]));
-      setConversationMessages(getValue(results[8]));
-      setContacts(getValue(results[9]));
+      setIsLoadingWave2(false);
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
@@ -153,6 +166,7 @@ export default function AdminDashboard() {
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
+        setIsLoadingWave2(false);
         hasLoadedOnceRef.current = true;
       }
     }
@@ -169,6 +183,16 @@ export default function AdminDashboard() {
 
   useVisibilityPolling(loadData, 300000);
 
+  // Build conversationMessages-compatible array from RPC counts for child components
+  const conversationMessages = useMemo(() => {
+    return humanMsgCounts.map(row => ({
+      conversation_id: row.conversation_id,
+      franchise_id: row.franchise_id,
+      direction: 'human',
+      _count: row.msg_count,
+    }));
+  }, [humanMsgCounts]);
+
   // Helper: sum unique_contacts from summaries for a date range
   const contactsFromSummaries = useCallback((startDate, endDate) => {
     return summaries
@@ -177,8 +201,6 @@ export default function AdminDashboard() {
   }, [summaries]);
 
   // Helper: conversion rate = total sales / concluded bot conversations for a date range
-  // Uses all sales (bot + manual) as numerator since leads come from bot conversations
-  // Only 'ongoing' excluded from denominator (still in progress)
   const botLeadsForRange = useCallback((startDate, endDate) => {
     let ongoing = 0, total = 0;
     const now = Date.now();
@@ -187,7 +209,6 @@ export default function AdminDashboard() {
       const d = c.started_at?.slice(0, 10);
       if (d >= startDate && d <= endDate) {
         total++;
-        // Ongoing: use outcome if available (historical), else derive from status + age
         const isOngoing = c.outcome
           ? c.outcome === 'ongoing'
           : ['started', 'catalog_sent', 'items_discussed', 'checkout_started'].includes(c.status)
@@ -207,7 +228,6 @@ export default function AdminDashboard() {
       const prevSalesCount = yesterdaySales.length;
       const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
       const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
-      // Use live todayContacts count (DailyUniqueContact), summaries for yesterday
       const contacts = Math.max(todayContacts.length, contactsFromSummaries(todayStr, todayStr));
       const prevContacts = contactsFromSummaries(yesterdayStr, yesterdayStr);
       const leads = botLeadsForRange(todayStr, todayStr);
@@ -230,7 +250,6 @@ export default function AdminDashboard() {
     const prevSalesCount = prevSales.length;
     const revenue = currentSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
     const prevRevenue = prevSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
-    // Contacts from DailySummary aggregated data
     let contacts = contactsFromSummaries(cutoff, todayStr);
     if (todayContacts.length > 0) contacts = Math.max(contacts, contactsFromSummaries(cutoff, format(subDays(new Date(), 1), "yyyy-MM-dd")) + todayContacts.length);
     const prevContacts = contactsFromSummaries(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
@@ -244,7 +263,6 @@ export default function AdminDashboard() {
     return { salesCount, prevSalesCount, revenue, prevRevenue, conversion, prevConversion, botPercent, prevBotPercent };
   }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botLeadsForRange]);
 
-  // Live today totals for real-time chart data
   const liveTodayRevenue = useMemo(() =>
     todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
     [todaySales]
@@ -286,7 +304,6 @@ export default function AdminDashboard() {
   const trendFor = (current, previous) =>
     current > previous ? 'up' : current < previous ? 'down' : null;
 
-  // Stats card configs matching Stitch design (3 cards: vendas, faturamento, conversão)
   const statsCards = [
     {
       title: "VENDAS",
@@ -341,7 +358,6 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statsCards.map((card) => {
-          // Icon is now MaterialIcon
           const numericValue = card.rawValue;
           let percentageChange = null;
           if (card.previousValue > 0) {
@@ -350,7 +366,6 @@ export default function AdminDashboard() {
           const isUp = card.trend === "up";
           const isDown = card.trend === "down";
 
-          // Determine trend text color
           let trendTextColor;
           if (card.trendColor) {
             trendTextColor = card.trendColor;
@@ -394,16 +409,44 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      <AlertsPanel
-        franchises={franchises}
-        allSales={allSales}
-        inventoryByFranchise={inventoryByFranchise}
-        purchaseOrders={purchaseOrders}
-        configMap={configMap}
-        botConversations={botConversations}
-        conversationMessages={conversationMessages}
-        contacts={contacts}
-      />
+      {/* Wave 2 sections — skeleton while loading */}
+      {isLoadingWave2 ? (
+        <div className="space-y-6">
+          <Skeleton className="h-48 rounded-2xl" />
+          <Skeleton className="h-64 rounded-2xl" />
+        </div>
+      ) : (
+        <>
+          <AlertsPanel
+            franchises={franchises}
+            allSales={allSales}
+            inventoryByFranchise={inventoryByFranchise}
+            purchaseOrders={purchaseOrders}
+            configMap={configMap}
+            botConversations={botConversations}
+            conversationMessages={conversationMessages}
+            contacts={contacts}
+          />
+
+          <FranchiseHealthScore
+            franchises={franchises}
+            allSales={allSales}
+            inventoryByFranchise={inventoryByFranchise}
+            purchaseOrders={purchaseOrders}
+            todayContacts={todayContacts}
+            configMap={configMap}
+            botConversations={botConversations}
+            conversationMessages={conversationMessages}
+            botSales={allSales}
+          />
+
+          {/* Mini-cards de drill-down */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <BotSummaryCard botConversations={botConversations} />
+            <FinanceiroSummaryCard allSales={allSales} configMap={configMap} />
+          </div>
+        </>
+      )}
 
       <FranchiseRanking
         franchises={franchises}
@@ -413,24 +456,6 @@ export default function AdminDashboard() {
         isLoading={isLoading}
         configMap={configMap}
       />
-
-      <FranchiseHealthScore
-        franchises={franchises}
-        allSales={allSales}
-        inventoryByFranchise={inventoryByFranchise}
-        purchaseOrders={purchaseOrders}
-        todayContacts={todayContacts}
-        configMap={configMap}
-        botConversations={botConversations}
-        conversationMessages={conversationMessages}
-        botSales={allSales}
-      />
-
-      {/* Mini-cards de drill-down */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        <BotSummaryCard botConversations={botConversations} />
-        <FinanceiroSummaryCard allSales={allSales} configMap={configMap} />
-      </div>
 
       {/* Chart — Faturamento por dia usando dados reais de vendas */}
       <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} />

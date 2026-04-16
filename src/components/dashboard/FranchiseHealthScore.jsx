@@ -104,7 +104,7 @@ function calculateHealthScore({
     const humanMsgsByConvo = {};
     conversationMessages.forEach((m) => {
       if (m.franchise_id === evoId && m.conversation_id) {
-        humanMsgsByConvo[m.conversation_id] = (humanMsgsByConvo[m.conversation_id] || 0) + 1;
+        humanMsgsByConvo[m.conversation_id] = (humanMsgsByConvo[m.conversation_id] || 0) + (m._count || 1);
       }
     });
     const autonomousCount = botConvos.filter((c) => !humanMsgsByConvo[c.id]).length;
