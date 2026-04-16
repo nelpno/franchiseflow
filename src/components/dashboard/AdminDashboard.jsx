@@ -16,6 +16,27 @@ import DailyRevenueChart from "./DailyRevenueChart";
 import BotSummaryCard from "./BotSummaryCard";
 import FinanceiroSummaryCard from "./FinanceiroSummaryCard";
 import { buildConfigMap } from "@/lib/franchiseUtils";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+
+function CollapsibleSection({ title, icon, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl shadow-sm border border-[#291715]/5 hover:bg-[#fbf9fa] transition-colors cursor-pointer">
+          <div className="flex items-center gap-2.5">
+            <MaterialIcon icon={icon} size={20} className="text-[#1b1c1d]/50" />
+            <span className="text-sm font-bold font-plus-jakarta tracking-tight text-[#1b1c1d]/70 uppercase">{title}</span>
+          </div>
+          <MaterialIcon icon={open ? "expand_less" : "expand_more"} size={20} className="text-[#1b1c1d]/40" />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 
 const isBotSource = (s) => s.source === 'bot';
 
@@ -411,43 +432,17 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Wave 2 sections — skeleton while loading */}
+      {/* Mini-cards de drill-down */}
       {isLoadingWave2 ? (
-        <div className="space-y-6">
-          <Skeleton className="h-48 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <Skeleton className="h-32 rounded-2xl" />
+          <Skeleton className="h-32 rounded-2xl" />
         </div>
       ) : (
-        <>
-          <AlertsPanel
-            franchises={franchises}
-            allSales={allSales}
-            inventoryByFranchise={inventoryByFranchise}
-            purchaseOrders={purchaseOrders}
-            configMap={configMap}
-            botConversations={botConversations}
-            conversationMessages={conversationMessages}
-            contacts={contacts}
-          />
-
-          <FranchiseHealthScore
-            franchises={franchises}
-            allSales={allSales}
-            inventoryByFranchise={inventoryByFranchise}
-            purchaseOrders={purchaseOrders}
-            todayContacts={todayContacts}
-            configMap={configMap}
-            botConversations={botConversations}
-            conversationMessages={conversationMessages}
-            botSales={allSales}
-          />
-
-          {/* Mini-cards de drill-down */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <BotSummaryCard botConversations={botConversations} />
-            <FinanceiroSummaryCard allSales={allSales} configMap={configMap} />
-          </div>
-        </>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <BotSummaryCard botConversations={botConversations} />
+          <FinanceiroSummaryCard allSales={allSales} configMap={configMap} />
+        </div>
       )}
 
       <FranchiseRanking
@@ -461,6 +456,43 @@ export default function AdminDashboard() {
 
       {/* Chart — Faturamento por dia usando dados reais de vendas */}
       <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} />
+
+      {/* Alertas — colapsado por padrão */}
+      {isLoadingWave2 ? (
+        <Skeleton className="h-12 rounded-2xl" />
+      ) : (
+        <CollapsibleSection title="Alertas" icon="warning" defaultOpen={false}>
+          <AlertsPanel
+            franchises={franchises}
+            allSales={allSales}
+            inventoryByFranchise={inventoryByFranchise}
+            purchaseOrders={purchaseOrders}
+            configMap={configMap}
+            botConversations={botConversations}
+            conversationMessages={conversationMessages}
+            contacts={contacts}
+          />
+        </CollapsibleSection>
+      )}
+
+      {/* Health Score — final */}
+      {isLoadingWave2 ? (
+        <Skeleton className="h-12 rounded-2xl" />
+      ) : (
+        <CollapsibleSection title="Saúde das Franquias" icon="monitor_heart" defaultOpen={false}>
+          <FranchiseHealthScore
+            franchises={franchises}
+            allSales={allSales}
+            inventoryByFranchise={inventoryByFranchise}
+            purchaseOrders={purchaseOrders}
+            todayContacts={todayContacts}
+            configMap={configMap}
+            botConversations={botConversations}
+            conversationMessages={conversationMessages}
+            botSales={allSales}
+          />
+        </CollapsibleSection>
+      )}
     </div>
   );
 }

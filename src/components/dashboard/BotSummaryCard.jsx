@@ -2,33 +2,40 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { createPageUrl } from "@/utils";
+import { startOfMonth, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function BotSummaryCard({ botConversations }) {
   const metrics = useMemo(() => {
     if (!botConversations?.length) return null;
 
-    const total = botConversations.length;
+    const monthStart = startOfMonth(new Date()).toISOString();
+    const monthConversations = botConversations.filter(c => c.started_at >= monthStart);
+    if (!monthConversations.length) return null;
+
+    const total = monthConversations.length;
     const now = Date.now();
     const cutoff24h = now - 24 * 60 * 60 * 1000;
     const activeStatuses = ['started', 'catalog_sent', 'items_discussed', 'checkout_started'];
 
-    const ongoing = botConversations.filter(c => {
+    const ongoing = monthConversations.filter(c => {
       if (c.outcome) return c.outcome === 'ongoing';
       return activeStatuses.includes(c.status) && new Date(c.updated_at).getTime() >= cutoff24h;
     }).length;
     const concluded = total - ongoing;
 
-    const converted = botConversations.filter(c =>
+    const converted = monthConversations.filter(c =>
       c.status === 'converted' || c.outcome === 'converted'
     ).length;
-    const abandoned = botConversations.filter(c =>
+    const abandoned = monthConversations.filter(c =>
       c.status === 'abandoned' || c.outcome === 'abandoned'
     ).length;
 
     const conversionRate = concluded > 0 ? Math.round((converted / concluded) * 100) : 0;
     const abandonRate = concluded > 0 ? Math.round((abandoned / concluded) * 100) : 0;
 
-    return { total, concluded, converted, conversionRate, abandonRate };
+    const monthLabel = format(new Date(), "MMM/yy", { locale: ptBR });
+    return { total, concluded, converted, conversionRate, abandonRate, monthLabel };
   }, [botConversations]);
 
   if (!metrics) {
@@ -66,7 +73,8 @@ export default function BotSummaryCard({ botConversations }) {
       </div>
 
       <p className="text-xs text-[#4a3d3d]/70">
-        {metrics.concluded} conversas concluídas · {metrics.converted} convertidas
+        {metrics.concluded} concluídas · {metrics.converted} convertidas
+        <span className="ml-1.5 text-[#4a3d3d]/40">({metrics.monthLabel})</span>
       </p>
     </div>
   );
