@@ -57,6 +57,8 @@
 - `activity_log` NÃO existe no banco (referenciada em schema.sql mas nunca criada)
 - Policies `notifications` e `audit_logs`: criadas via Dashboard (NÃO estão em SQL files). Consultar `pg_policies` antes de alterar
 - `get_unprocessed_conversations(integer)`: RPC existe no banco mas NÃO nos SQL files
+- `get_franchise_ranking(date, franchise_id)` RPC: soma TEMPO REAL de `sales` (NÃO `daily_summaries`). `total_franchises` = só franquias com venda na data (não total ativas). Usada apenas por FranchiseeDashboard — admin tem ranking client-side próprio em `FranchiseRanking.jsx`. Fix 16/04: antes lia `daily_summaries` que é populado só pelo cron 02h
+- `aggregate_daily_data()` cron: roda `0 5 * * *` UTC (02h BRT) com default `target_date = ontem`. **NUNCA** popula `daily_summaries.date = hoje`. Qualquer query/RPC que dependa de `daily_summaries` para o dia atual retorna vazio até 02h BRT do dia seguinte
 
 **Database Linter Compliance (fix 15/04/2026):**
 - Funções SECURITY DEFINER: SEMPRE incluir `SET search_path = 'public'`
@@ -78,6 +80,8 @@
 - Inline edit mobile: `onClick={e => e.stopPropagation()}` + `inputMode="numeric"`. `active:` (NÃO `hover:`)
 - Queries: tabelas que crescem (Sale, Expense, DailySummary, ConversationMessage) DEVEM usar `fetchAll: true` (pagina internamente de 1000 em 1000). Tabelas pequenas/fixas podem usar `limit` numérico
 - AdminDashboard: 10 queries paralelas `Promise.allSettled` — maioria com `fetchAll: true`. Auto-retry na query de franquias
+- AdminDashboard layout order: Stats → Mini-cards (Bot+Financeiro) → Ranking → Gráfico → Alertas (colapsado) → Health Score (colapsado). `CollapsibleSection` local usa Radix Collapsible
+- BotSummaryCard: SEMPRE filtrar `startOfMonth` (mês atual). Dados do parent vêm com 90 dias — NÃO usar sem filtro
 - Loading: `<Skeleton>` shadcn (NÃO spinner). PageFallback relativo (NUNCA `fixed inset-0`)
 - NUNCA `new Date().toISOString().split("T")[0]` — usar `format(new Date(), "yyyy-MM-dd")`
 - `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval
@@ -93,6 +97,7 @@
 - TabEstoque adicionar produto: autocomplete mostra produtos padrão da rede (RPC `get_standard_product_catalog`). Seleção preenche campos e marca `created_by_franchisee: false`
 - Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
 - Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
+- Mensagens de UI com horário: usar "às 02h" (preposição = ponto no tempo), NUNCA "após 02h" (interpretado como "a cada 2 horas")
 
 ### Integração n8n / Bot
 - V4 produção: `aRBzPABwrjhWCPvq` | V3 `XqWZyLl1AHlnJvdj` DESATIVADO
