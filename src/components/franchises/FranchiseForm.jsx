@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,86 +61,9 @@ export default function FranchiseForm({
     state_uf: initialData?.state_uf || '',
   });
   const [cepLoading, setCepLoading] = useState(false);
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(!!initialData?.name);
 
-  // 7b — Cidade autocomplete via IBGE
-  const [municipalities, setMunicipalities] = useState([]);
-  const [citySuggestions, setCitySuggestions] = useState([]);
-  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
-  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const cityInputRef = useRef(null);
-  const suggestionsRef = useRef(null);
-
-  // Fetch municípios do IBGE (uma vez, cache no state)
-  useEffect(() => {
-    fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios?orderBy=nome')
-      .then(r => r.json())
-      .then(data => {
-        const mapped = data.map(m => ({
-          name: m.nome,
-          uf: m.microrregiao?.mesorregiao?.UF?.sigla || '',
-          label: `${m.nome} - ${m.microrregiao?.mesorregiao?.UF?.sigla || ''}`
-        }));
-        setMunicipalities(mapped);
-      })
-      .catch(() => {}); // falha silenciosa — campo continua como texto livre
-  }, []);
-
-  // Fechar dropdown ao clicar fora
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target) &&
-          cityInputRef.current && !cityInputRef.current.contains(e.target)) {
-        setShowCitySuggestions(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleCityChange = useCallback((value) => {
-    setFormData(prev => ({ ...prev, city: value }));
-    setHighlightedIndex(-1);
-    if (value.length >= 2 && municipalities.length > 0) {
-      const lower = value.toLowerCase();
-      const filtered = municipalities
-        .filter(m => m.name.toLowerCase().includes(lower) || m.label.toLowerCase().includes(lower))
-        .slice(0, 8);
-      setCitySuggestions(filtered);
-      setShowCitySuggestions(filtered.length > 0);
-    } else {
-      setCitySuggestions([]);
-      setShowCitySuggestions(false);
-    }
-  }, [municipalities]);
-
-  const handleCitySelect = useCallback((city) => {
-    setFormData(prev => {
-      const updated = { ...prev, city: city.label };
-      if (!nameManuallyEdited || !prev.name) {
-        updated.name = suggestFranchiseName(city.label);
-      }
-      return updated;
-    });
-    setShowCitySuggestions(false);
-  }, [nameManuallyEdited]);
-
-  const handleCityKeyDown = useCallback((e) => {
-    if (!showCitySuggestions || citySuggestions.length === 0) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlightedIndex(prev => (prev + 1) % citySuggestions.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightedIndex(prev => (prev <= 0 ? citySuggestions.length - 1 : prev - 1));
-    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
-      e.preventDefault();
-      handleCitySelect(citySuggestions[highlightedIndex]);
-    } else if (e.key === 'Escape') {
-      setShowCitySuggestions(false);
-    }
-  }, [showCitySuggestions, citySuggestions, highlightedIndex, handleCitySelect]);
-
+  // CEP → ViaCEP auto-preenche rua, bairro, UF, cidade. Também sugere nome da franquia.
   const handleCepChange = useCallback(async (value) => {
     const digits = value.replace(/\D/g, "").slice(0, 8);
     setAddressData(prev => ({ ...prev, cep: digits }));
@@ -156,11 +79,19 @@ export default function FranchiseForm({
             neighborhood: data.bairro || prev.neighborhood,
             state_uf: data.uf || prev.state_uf,
           }));
+          const cityLabel = data.localidade && data.uf ? `${data.localidade} - ${data.uf}` : (data.localidade || '');
+          if (cityLabel) {
+            setFormData(prev => ({
+              ...prev,
+              city: prev.city || cityLabel,
+              name: (!nameManuallyEdited && !prev.name) ? suggestFranchiseName(cityLabel) : prev.name,
+            }));
+          }
         }
       } catch { /* falha silenciosa */ }
       finally { setCepLoading(false); }
     }
-  }, []);
+  }, [nameManuallyEdited]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -233,11 +164,10 @@ export default function FranchiseForm({
 
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Dados da Unidade — ocultos em modo fiscal-only */}
+            {/* Dados da Unidade — só Nome (cidade agora vem do CEP, bloco de endereço). Oculto em fiscal-only. */}
             {!isFiscalOnly && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Dados da Unidade</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Dados da Unidade</h3>
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-semibold text-[#4a3d3d]">
                     <MaterialIcon icon="apartment" size={16} className="inline mr-1" />
@@ -250,43 +180,9 @@ export default function FranchiseForm({
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
                   />
-                </div>
-
-                <div className="space-y-2 relative">
-                  <Label htmlFor="city" className="text-sm font-semibold text-[#4a3d3d]">
-                    <MaterialIcon icon="location_on" size={16} className="inline mr-1" />
-                    Cidade *
-                  </Label>
-                  <Input
-                    id="city"
-                    ref={cityInputRef}
-                    placeholder="Digite para buscar... Ex: Sorocaba"
-                    value={formData.city}
-                    onChange={(e) => handleCityChange(e.target.value)}
-                    onKeyDown={handleCityKeyDown}
-                    onFocus={() => formData.city.length >= 2 && citySuggestions.length > 0 && setShowCitySuggestions(true)}
-                    autoComplete="off"
-                    required
-                  />
-                  {showCitySuggestions && (
-                    <div ref={suggestionsRef} className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {citySuggestions.map((city, i) => (
-                        <button
-                          key={`${city.name}-${city.uf}-${i}`}
-                          type="button"
-                          className={`w-full text-left px-3 py-2 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl ${i === highlightedIndex ? 'bg-[#b91c1c]/10 text-[#b91c1c]' : 'hover:bg-[#fbf9fa]'}`}
-                          onClick={() => handleCitySelect(city)}
-                          onMouseEnter={() => setHighlightedIndex(i)}
-                        >
-                          <MaterialIcon icon="location_on" size={14} className="inline mr-1 text-[#b91c1c]" />
-                          {city.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <p className="text-xs text-[#4a3d3d]">Sugerido automaticamente pelo CEP — editável.</p>
                 </div>
               </div>
-            </div>
             )}
 
             {/* Dados do Franqueado (nome + email + CPF) */}
@@ -418,18 +314,16 @@ export default function FranchiseForm({
                     required={fiscalRequired}
                   />
                 </div>
-                {isFiscalOnly && (
-                  <div className="space-y-2">
-                    <Label htmlFor="city_fiscal" className="text-sm font-semibold text-[#4a3d3d]">Cidade *</Label>
-                    <Input
-                      id="city_fiscal"
-                      placeholder="Cidade"
-                      value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      required
-                    />
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="city_fiscal" className="text-sm font-semibold text-[#4a3d3d]">Cidade {fiscalRequired && "*"}</Label>
+                  <Input
+                    id="city_fiscal"
+                    placeholder="Preenchido pelo CEP"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    required={fiscalRequired}
+                  />
+                </div>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Franchise, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
+import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
@@ -63,6 +63,10 @@ export default function Franchises() {
 
   // Detail sheet
   const [selectedFranchise, setSelectedFranchise] = useState(null);
+
+  // Edit fiscal data dialog
+  const [editingFiscal, setEditingFiscal] = useState(null); // { franchise, config } | null
+  const [isSavingFiscal, setIsSavingFiscal] = useState(false);
 
   // Delete franchise confirmation
   const [deletingFranchise, setDeletingFranchise] = useState(null);
@@ -206,6 +210,48 @@ export default function Franchises() {
         toast.error(msg);
       }
       loadData(true); // Recarrega mesmo em caso de erro (franquia pode ter sido criada server-side)
+    }
+  };
+
+  // Abrir edição de dados fiscais: carrega config (cep, street_address) e abre dialog
+  const openEditFiscal = async (franchise) => {
+    try {
+      const configs = await FranchiseConfiguration.filter({
+        franchise_evolution_instance_id: franchise.evolution_instance_id,
+      });
+      setEditingFiscal({ franchise, config: configs[0] || null });
+    } catch (error) {
+      console.error("Erro ao carregar config:", error);
+      toast.error("Erro ao carregar dados da franquia.");
+    }
+  };
+
+  const handleSaveFiscal = async (franchiseData, _email, addressExtras) => {
+    if (!editingFiscal) return;
+    setIsSavingFiscal(true);
+    try {
+      await saveFiscalData(
+        editingFiscal.franchise.id,
+        editingFiscal.franchise.evolution_instance_id,
+        {
+          billing_email: franchiseData.billing_email,
+          cpf_cnpj: franchiseData.cpf_cnpj,
+          address_number: franchiseData.address_number,
+          neighborhood: franchiseData.neighborhood,
+          state_uf: franchiseData.state_uf,
+          city: franchiseData.city,
+          cep: addressExtras?.cep,
+          street_address: addressExtras?.street_address,
+        }
+      );
+      toast.success("Dados fiscais atualizados!");
+      setEditingFiscal(null);
+      loadData(true);
+    } catch (error) {
+      console.error("Erro ao salvar dados fiscais:", error);
+      toast.error(safeErrorMessage(error, "Erro ao salvar dados fiscais."));
+    } finally {
+      setIsSavingFiscal(false);
     }
   };
 
@@ -826,6 +872,54 @@ export default function Franchises() {
           />
         )}
 
+        {/* Edit Fiscal Data Dialog */}
+        <Dialog
+          open={!!editingFiscal}
+          onOpenChange={(open) => {
+            if (!open && !isSavingFiscal) setEditingFiscal(null);
+          }}
+        >
+          <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+            {editingFiscal && (() => {
+              const f = editingFiscal.franchise;
+              const c = editingFiscal.config;
+              return (
+                <div>
+                  <DialogHeader className="sr-only">
+                    <DialogTitle>Editar dados fiscais de {getDisplayName(f)}</DialogTitle>
+                  </DialogHeader>
+                  <div className="px-5 pt-4 pb-3 bg-amber-50 border-b border-amber-200 flex items-start gap-2">
+                    <MaterialIcon icon="info" size={18} className="text-amber-700 mt-0.5 shrink-0" />
+                    <div className="text-xs text-amber-800">
+                      <p className="font-semibold">ASAAS não é sincronizado automaticamente.</p>
+                      <p>Se esta franquia já tem assinatura ativa, após salvar vá em <strong>Financeiro → Mensalidades</strong> e clique em <strong>Criar</strong> novamente para atualizar os dados na cobrança.</p>
+                    </div>
+                  </div>
+                  <FranchiseForm
+                    mode="fiscal-only"
+                    initialData={{
+                      name: f.name,
+                      owner_name: f.owner_name,
+                      city: f.city,
+                      status: f.status,
+                      billing_email: f.billing_email,
+                      cpf_cnpj: f.cpf_cnpj,
+                      cep: c?.cep,
+                      street_address: c?.street_address,
+                      address_number: f.address_number,
+                      neighborhood: f.neighborhood,
+                      state_uf: f.state_uf,
+                    }}
+                    onSubmit={handleSaveFiscal}
+                    onCancel={isSavingFiscal ? undefined : () => setEditingFiscal(null)}
+                    isSubmitting={isSavingFiscal}
+                  />
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+
         {/* Edit Staff Role Dialog */}
         <Dialog
           open={!!editingStaffRole}
@@ -1310,6 +1404,16 @@ export default function Franchises() {
                 {/* Actions */}
                 {currentUser?.role === "admin" && (
                   <div className="space-y-3 pt-4 border-t border-[#291715]/5">
+                    <Button
+                      className="w-full bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl"
+                      onClick={() => {
+                        setSelectedFranchise(null);
+                        openEditFiscal(selectedFranchise);
+                      }}
+                    >
+                      <MaterialIcon icon="receipt_long" size={16} className="mr-2" />
+                      Editar dados fiscais
+                    </Button>
                     <Button
                       className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
                       onClick={() => {
