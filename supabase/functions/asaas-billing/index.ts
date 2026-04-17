@@ -74,10 +74,10 @@ async function asaasRequest(path: string, options: RequestInit = {}) {
 // --- Actions ---
 
 async function registerCustomer(franchiseId: string) {
-  // Get franchise data
+  // Get franchise data (inclui billing_email — fonte primária do email de cobrança)
   const { data: franchise, error: fErr } = await supabase
     .from("franchises")
-    .select("id, name, owner_name, cpf_cnpj, city, phone_number, state_uf, address_number, neighborhood, evolution_instance_id")
+    .select("id, name, owner_name, cpf_cnpj, city, phone_number, state_uf, address_number, neighborhood, evolution_instance_id, billing_email")
     .eq("evolution_instance_id", franchiseId)
     .single();
   if (fErr || !franchise) throw new Error("Franquia não encontrada");
@@ -90,14 +90,24 @@ async function registerCustomer(franchiseId: string) {
     .eq("franchise_evolution_instance_id", franchiseId)
     .single();
 
-  // Get email from profiles via franchise_invites
-  const { data: invite } = await supabase
-    .from("franchise_invites")
-    .select("email")
-    .eq("franchise_id", franchiseId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  // Email de cobrança: billing_email é fonte primária; fallback para último invite válido
+  let billingEmail: string | null = franchise.billing_email || null;
+  if (!billingEmail) {
+    const { data: invite } = await supabase
+      .from("franchise_invites")
+      .select("email")
+      .eq("franchise_id", franchiseId)
+      .order("invited_at", { ascending: false })
+      .limit(1)
+      .single();
+    billingEmail = invite?.email || null;
+    if (billingEmail) {
+      console.warn(`[asaas-billing] Usando email de franchise_invites (fallback) para ${franchiseId} — billing_email vazio`);
+    }
+  }
+  if (!billingEmail) {
+    throw new Error("MISSING_BILLING_EMAIL: email de cobrança não preenchido");
+  }
 
   // Check if customer already exists in ASAAS
   const existing = await asaasRequest(`/v3/customers?cpfCnpj=${franchise.cpf_cnpj}`);
@@ -105,6 +115,18 @@ async function registerCustomer(franchiseId: string) {
 
   if (existing.data?.length > 0) {
     customerId = existing.data[0].id;
+    // Sincroniza email em ASAAS se divergir (garante NFe com email atualizado)
+    const current = existing.data[0];
+    if (current.email !== billingEmail) {
+      try {
+        await asaasRequest(`/v3/customers/${customerId}`, {
+          method: "POST",
+          body: JSON.stringify({ email: billingEmail }),
+        });
+      } catch (syncErr) {
+        console.warn(`[asaas-billing] Falha ao sincronizar email ASAAS: ${(syncErr as Error).message}`);
+      }
+    }
   } else {
     // Create new customer
     const customer = await asaasRequest("/v3/customers", {
@@ -112,7 +134,7 @@ async function registerCustomer(franchiseId: string) {
       body: JSON.stringify({
         name: franchise.owner_name || franchise.name,
         cpfCnpj: franchise.cpf_cnpj,
-        email: invite?.email || null,
+        email: billingEmail,
         phone: franchise.phone_number || null,
         address: config?.street_address || null,
         addressNumber: franchise.address_number || null,

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
+import { Franchise, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { saveFiscalData } from "@/lib/saveFiscalData";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,25 +153,23 @@ export default function Franchises() {
     setIsSubmitting(true);
     try {
       // Etapa 1: Criar franquia (triggers populam config + 28 produtos — pode demorar)
+      // billing_email e endereço de franchise_configurations gravados no passo 1b via saveFiscalData
+      const { billing_email, ...franchiseCore } = franchiseData;
       const newFranchise = await Franchise.create({
-        ...franchiseData,
-        name: franchiseData.name || `MaxiMassas ${franchiseData.city}`,
+        ...franchiseCore,
+        name: franchiseCore.name || `MaxiMassas ${franchiseCore.city}`,
       });
 
-      // Etapa 1b: Atualizar franchise_configurations com endereço (cep, street_address)
-      if (addressExtras?.cep || addressExtras?.street_address) {
-        try {
-          const configs = await FranchiseConfiguration.filter({ franchise_evolution_instance_id: newFranchise.evolution_instance_id });
-          if (configs[0]) {
-            await FranchiseConfiguration.update(configs[0].id, {
-              cep: addressExtras.cep || null,
-              street_address: addressExtras.street_address || null,
-            });
-          }
-        } catch (addrErr) {
-          console.error("Erro ao salvar endereço:", addrErr);
-          // Não bloqueia — endereço pode ser editado depois
-        }
+      // Etapa 1b: Persistir billing_email (franchises) + cep/street (franchise_configurations)
+      try {
+        await saveFiscalData(newFranchise.id, newFranchise.evolution_instance_id, {
+          billing_email,
+          cep: addressExtras?.cep,
+          street_address: addressExtras?.street_address,
+        });
+      } catch (addrErr) {
+        console.error("Erro ao salvar dados fiscais:", addrErr);
+        // Não bloqueia — franqueado completa depois via onboarding ou AsaasSetupPanel
       }
 
       // Franquia criada — fechar form e atualizar lista imediatamente

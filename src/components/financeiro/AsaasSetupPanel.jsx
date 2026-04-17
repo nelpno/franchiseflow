@@ -7,6 +7,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/api/supabaseClient";
+import { missingFiscalFields } from "@/lib/saveFiscalData";
 
 function formatCpfCnpj(value) {
   const digits = (value || "").replace(/\D/g, "");
@@ -85,6 +86,8 @@ export default function AsaasSetupPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingCpf, setEditingCpf] = useState({});
   const [savingCpf, setSavingCpf] = useState({});
+  const [editingEmail, setEditingEmail] = useState({});
+  const [savingEmail, setSavingEmail] = useState({});
   const [creatingAsaas, setCreatingAsaas] = useState({});
   const [creatingAll, setCreatingAll] = useState(false);
   const [showReview, setShowReview] = useState(false);
@@ -106,7 +109,7 @@ export default function AsaasSetupPanel() {
   const loadData = useCallback(async () => {
     try {
       const [fRes, cRes, sRes] = await Promise.allSettled([
-        Franchise.list("name", null, { columns: "id,name,owner_name,city,phone_number,evolution_instance_id,cpf_cnpj,state_uf,address_number,neighborhood,status" }),
+        Franchise.list("name", null, { columns: "id,name,owner_name,city,phone_number,evolution_instance_id,cpf_cnpj,state_uf,address_number,neighborhood,status,billing_email" }),
         FranchiseConfiguration.list(null, null, { columns: "franchise_evolution_instance_id,street_address,cep,franchise_name" }),
         SystemSubscription.list(null, null, { columns: "*" }),
       ]);
@@ -131,6 +134,26 @@ export default function AsaasSetupPanel() {
   const getSub = (evoId) => subscriptions.find(s => s.franchise_id === evoId);
 
   const activeFranchises = franchises.filter(f => f.status === "active");
+
+  const handleSaveEmail = async (franchise) => {
+    const email = (editingEmail[franchise.id] || "").trim();
+    if (!email) return;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      toast.error("Email inválido");
+      return;
+    }
+    setSavingEmail(prev => ({ ...prev, [franchise.id]: true }));
+    try {
+      await Franchise.update(franchise.id, { billing_email: email });
+      setFranchises(prev => prev.map(f => f.id === franchise.id ? { ...f, billing_email: email } : f));
+      setEditingEmail(prev => { const n = { ...prev }; delete n[franchise.id]; return n; });
+      toast.success(`Email salvo para ${franchise.name}`);
+    } catch (err) {
+      toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setSavingEmail(prev => ({ ...prev, [franchise.id]: false }));
+    }
+  };
 
   const handleSaveCpf = async (franchise) => {
     const cpf = editingCpf[franchise.id];
@@ -188,12 +211,16 @@ export default function AsaasSetupPanel() {
     }
   };
 
+  // Helper: franquia tem todos os campos necessários para ASAAS?
+  const getMissing = (f) => missingFiscalFields(f, getConfig(f.evolution_instance_id));
+  const isFiscalComplete = (f) => getMissing(f).length === 0;
+
   // Stats
   const totalActive = activeFranchises.length;
-  const withCpf = activeFranchises.filter(f => f.cpf_cnpj).length;
+  const fiscalComplete = activeFranchises.filter(isFiscalComplete).length;
   const registered = activeFranchises.filter(f => getSub(f.evolution_instance_id)?.asaas_customer_id).length;
   const withSubscription = activeFranchises.filter(f => getSub(f.evolution_instance_id)?.asaas_subscription_id).length;
-  const pendingRegister = activeFranchises.filter(f => f.cpf_cnpj && !getSub(f.evolution_instance_id)?.asaas_customer_id);
+  const pendingRegister = activeFranchises.filter(f => isFiscalComplete(f) && !getSub(f.evolution_instance_id)?.asaas_customer_id);
 
   if (isLoading) {
     return (
@@ -291,7 +318,7 @@ export default function AsaasSetupPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Franquias ativas", value: totalActive, icon: "store", color: "#1b1c1d" },
-          { label: "Com CPF/CNPJ", value: `${withCpf}/${totalActive}`, icon: "badge", color: withCpf === totalActive ? "#16a34a" : "#d4af37" },
+          { label: "Dados fiscais completos", value: `${fiscalComplete}/${totalActive}`, icon: "fact_check", color: fiscalComplete === totalActive ? "#16a34a" : "#d4af37" },
           { label: "No ASAAS", value: `${registered}/${totalActive}`, icon: "cloud_done", color: registered === totalActive ? "#16a34a" : "#d4af37" },
           { label: "Com assinatura", value: `${withSubscription}/${totalActive}`, icon: "autorenew", color: withSubscription === totalActive ? "#16a34a" : "#d4af37" },
         ].map(stat => (
@@ -352,6 +379,7 @@ export default function AsaasSetupPanel() {
             <tr className="border-b text-left text-gray-500">
               <th className="pb-2 font-medium">Franquia</th>
               <th className="pb-2 font-medium">CPF/CNPJ</th>
+              <th className="pb-2 font-medium">Email cobrança</th>
               <th className="pb-2 font-medium">Endereço</th>
               <th className="pb-2 font-medium">ASAAS</th>
               <th className="pb-2 font-medium">Assinatura</th>
@@ -422,6 +450,46 @@ export default function AsaasSetupPanel() {
                     )}
                   </td>
                   <td className="py-3">
+                    {f.billing_email && !(f.id in editingEmail) ? (
+                      <button
+                        onClick={() => setEditingEmail(prev => ({ ...prev, [f.id]: f.billing_email }))}
+                        className="text-xs hover:underline cursor-pointer max-w-[180px] truncate text-left"
+                        title={f.billing_email}
+                      >
+                        {f.billing_email}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="email"
+                          value={editingEmail[f.id] || ""}
+                          onChange={e => setEditingEmail(prev => ({ ...prev, [f.id]: e.target.value }))}
+                          placeholder="email@exemplo.com"
+                          className="h-8 w-52 text-xs"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleSaveEmail(f)}
+                          disabled={savingEmail[f.id]}
+                          className="h-8 w-8 p-0"
+                        >
+                          <MaterialIcon icon={savingEmail[f.id] ? "sync" : "check"} size={16} className={savingEmail[f.id] ? "animate-spin" : "text-[#16a34a]"} />
+                        </Button>
+                        {f.billing_email && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingEmail(prev => { const n = { ...prev }; delete n[f.id]; return n; })}
+                            className="h-8 w-8 p-0"
+                          >
+                            <MaterialIcon icon="close" size={16} className="text-gray-400" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3">
                     <p className="text-xs text-gray-600 max-w-[200px] truncate">
                       {config?.street_address || "—"}
                       {f.address_number ? `, ${f.address_number}` : ""}
@@ -435,21 +503,36 @@ export default function AsaasSetupPanel() {
                     <SubscriptionBadge sub={sub} />
                   </td>
                   <td className="py-3">
-                    {f.cpf_cnpj && !sub?.asaas_customer_id && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleCreateAsaas(f)}
-                        disabled={creatingAsaas[f.evolution_instance_id]}
-                        className="h-7 text-xs"
-                      >
-                        {creatingAsaas[f.evolution_instance_id] ? (
-                          <MaterialIcon icon="sync" size={14} className="animate-spin" />
-                        ) : (
-                          "Criar"
-                        )}
-                      </Button>
-                    )}
+                    {(() => {
+                      if (sub?.asaas_customer_id) return null;
+                      const missing = getMissing(f);
+                      if (missing.length > 0) {
+                        return (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs text-[#d4af37]"
+                            title={`Faltam: ${missing.join(", ")}`}
+                          >
+                            <MaterialIcon icon="warning" size={14} />
+                            Faltam {missing.length} campo{missing.length > 1 ? "s" : ""}
+                          </span>
+                        );
+                      }
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCreateAsaas(f)}
+                          disabled={creatingAsaas[f.evolution_instance_id]}
+                          className="h-7 text-xs"
+                        >
+                          {creatingAsaas[f.evolution_instance_id] ? (
+                            <MaterialIcon icon="sync" size={14} className="animate-spin" />
+                          ) : (
+                            "Criar"
+                          )}
+                        </Button>
+                      );
+                    })()}
                   </td>
                 </tr>
               );

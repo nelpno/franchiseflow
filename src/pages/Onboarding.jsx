@@ -11,6 +11,8 @@ import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARD
 import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
 import GateBlock from "@/components/onboarding/GateBlock";
 import ProgressRing from "@/components/onboarding/ProgressRing";
+import FiscalDataGate from "@/components/onboarding/FiscalDataGate";
+import { missingFiscalFields } from "@/lib/saveFiscalData";
 
 const ALL_BLOCK_KEYS = [
   ...BLOCKS.flatMap(b => b.items.map(i => i.key)),
@@ -68,6 +70,7 @@ export default function Onboarding() {
   const [loadError, setLoadError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [allChecklists, setAllChecklists] = useState([]);
+  const [configsByEvoId, setConfigsByEvoId] = useState({});
   const [celebrated, setCelebrated] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
@@ -97,7 +100,12 @@ export default function Onboarding() {
 
       // Enrich franchises with franchise_name from configs
       const configMap = {};
-      configs.forEach(c => { if (c.franchise_name) configMap[c.franchise_evolution_instance_id] = c.franchise_name; });
+      const fullConfigMap = {};
+      configs.forEach(c => {
+        if (c.franchise_name) configMap[c.franchise_evolution_instance_id] = c.franchise_name;
+        fullConfigMap[c.franchise_evolution_instance_id] = c;
+      });
+      setConfigsByEvoId(fullConfigMap);
       const enriched = allFranchises.map(f => ({
         ...f,
         franchise_name: configMap[f.evolution_instance_id] || null,
@@ -625,8 +633,25 @@ export default function Onboarding() {
           </Card>
         )}
 
+        {/* Gate fiscal — franqueado precisa completar dados antes de acessar missões */}
+        {!isAdmin && selectedFranchise && (() => {
+          const config = configsByEvoId[selectedFranchise.evolution_instance_id];
+          const missing = missingFiscalFields(selectedFranchise, config);
+          if (missing.length === 0) return null;
+          return (
+            <FiscalDataGate
+              franchise={selectedFranchise}
+              onReady={() => loadData()}
+            />
+          );
+        })()}
+
         {/* No checklist yet (franchisee) */}
-        {!isAdmin && franchises.length > 0 && !checklist && !isLoading && (
+        {!isAdmin && franchises.length > 0 && !checklist && !isLoading
+          && missingFiscalFields(
+              selectedFranchise || franchises[0],
+              configsByEvoId[(selectedFranchise || franchises[0])?.evolution_instance_id]
+            ).length === 0 && (
           <Card className="mb-6 text-center border-2 border-dashed border-[#d4af37]/40 bg-[#d4af37]/5">
             <CardContent className="p-8">
               <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-[#d4af37]" />
@@ -653,8 +678,11 @@ export default function Onboarding() {
           </Card>
         )}
 
-        {/* Checklist content */}
-        {checklist && (
+        {/* Checklist content — franqueado só vê após passar pelo gate fiscal */}
+        {checklist && (isAdmin || missingFiscalFields(
+          selectedFranchise || franchises[0],
+          configsByEvoId[(selectedFranchise || franchises[0])?.evolution_instance_id]
+        ).length === 0) && (
           <>
             {/* Franchise info + overall progress */}
             <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-[#291715]/5">
