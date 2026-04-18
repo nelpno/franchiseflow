@@ -1,4 +1,4 @@
-<!-- Last Updated: 2026-04-14 -->
+<!-- Last Updated: 2026-04-18 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
@@ -47,10 +47,11 @@
 - `payment_delivery`/`payment_pickup` são TEXT[], NÃO JSONB
 - `unit_address` é computado no save (NÃO editar direto)
 - `onboarding_checklists` NÃO tem total_items, started_at, user_id. TEM `approved_at` (timestamptz) e `approved_by` (text)
-- `franchises` NÃO tem owner_email (email fica em franchise_invites)
+- `franchises.billing_email` (desde 17/04/2026): fonte primária de email para ASAAS + NFe. Fallback legacy: `franchise_invites.email` (edge function tenta se `billing_email IS NULL`). CHECK `billing_email_format` valida regex. NÃO há `owner_email`
 
 **RLS específico:**
 - `managed_franchise_ids` contém AMBOS UUID e evolution_instance_id (28 policies dependem)
+- `franchises_update` policy (fix 17/04/2026): `is_admin_or_manager() OR evolution_instance_id = ANY (managed_franchise_ids())` — franqueado edita dados fiscais da própria franquia via gate onboarding. Antes era só admin/manager
 - profiles SELECT: `is_admin_or_manager() OR id = (select auth.uid())` — NUNCA `is_admin()` sozinha (recursão infinita)
 - Tabelas novas: DELETE policy com `is_admin()` obrigatória (sem ela, delete retorna sucesso mas 0 rows)
 - `sale_items` RLS: subquery `sale_id IN (SELECT id FROM sales WHERE franchise_id = ANY(managed_franchise_ids()))`
@@ -179,20 +180,31 @@
 - Sidebar admin: remover `adminSidebarHidden` + definir `adminSection` = visível na sidebar
 
 ### ASAAS Billing (Cobrança Recorrente)
-- Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: register, register-batch, subscribe, subscribe-batch, check-payment, register-webhook, webhook
-- Tabela: `system_subscriptions` (franchise_id UNIQUE, asaas_customer_id, asaas_subscription_id, current_payment_status, pix_payload, etc.)
-- Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `neighborhood`
+- Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: `register`, `register-batch`, `subscribe-batch` (accept `value` opcional), `cancel-subscription`, `update-subscription-value`, `check-payment`, `register-webhook`, `webhook`. Action `subscribe` (single) removida 18/04
+- Tabela: `system_subscriptions` (franchise_id UNIQUE, asaas_customer_id, asaas_subscription_id, subscription_status, current_payment_*, pix_payload, pix_qr_code_url, last_synced_at)
+- Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `neighborhood`, `billing_email`
 - ASAAS API: `https://api.asaas.com` + `/v3/...`, header `access_token` (secret no Supabase)
 - `billingType: UNDEFINED` = franqueado escolhe boleto ou PIX
 - Paywall: `SubscriptionPaywall.jsx` — bloqueia APENAS `current_payment_status === 'OVERDUE'`, admin/manager isentos
 - Hook: `useSubscriptionStatus.js` — cache 24h (PAID) / 5min (OVERDUE), botão "Já paguei" via `supabase.functions.invoke`
-- Admin: tab Mensalidades em `Financeiro.jsx` → `AsaasSetupPanel.jsx` (edição CPF inline, badges, revisão assinaturas)
-- FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP. `onSubmit` recebe 3o arg `addressExtras` (cep, street_address)
+- Admin: tab Mensalidades em `Financeiro.jsx` → `AsaasSetupPanel.jsx` (input Mensalidade R$ + edit inline CPF/email, badges, botão Atualizar valor de todos, botão Cancelar por linha, revisão assinaturas)
+- FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP (cidade também — IBGE autocomplete removido 17/04). Prop `mode` = `"create"` (admin) ou `"fiscal-only"` (gate onboarding + edição). `onSubmit` recebe 3o arg `addressExtras` (cep, street_address). Passar `billing_email` em `franchiseData`
+- Helper `@/lib/saveFiscalData.js`: grava fiscal fields em `franchises` + `franchise_configurations` atomicamente. `missingFiscalFields(franchise, config)` retorna array de campos faltantes para gate/badges
+- Gate onboarding: `components/onboarding/FiscalDataGate.jsx` — bloqueia franqueado sem email+CPF+endereço completos antes das 8 missões. Sem gate se admin (não-isAdmin check). Completar → unblocks
+- Editar dados fiscais existentes (admin): botão no detail sheet de `Franchises.jsx` → Dialog com `FranchiseForm mode="fiscal-only"` + aviso ASAAS não sincroniza automaticamente (precisa clicar "Criar" de novo em Mensalidades se customer já existe)
 - ClickSign API: token como query param `?access_token=`, NÃO Bearer. Endpoint: `app.clicksign.com/api/v3/envelopes`
 - **Webhook ASAAS** (15/04/2026): registrado via action `register-webhook`, ID `c6485ea9`. Detecta formato nativo ASAAS (sem `action`, com `event` + `payment`). Token via body `access_token`, header `asaas-access-token`, ou query `?asaas_token=`. 7 eventos: PAYMENT_CREATED/UPDATED/DELETED/REFUNDED/OVERDUE/RECEIVED/CONFIRMED
 - **Edge Function auth**: `verify_jwt: false` (auth manual no código). Service role bypass via JWT `role` claim. Admin para billing actions, owner para check-payment. Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
 - Edge Function deploy: `SUPABASE_ACCESS_TOKEN=sbp_... npx supabase functions deploy asaas-billing --no-verify-jwt --project-ref sulgicnqqopyhulglakd`
-- **Estado assinaturas** (15/04/2026): 11 franquias registradas no ASAAS (10 com CPF original + 1 teste Araraquara). 1 assinatura ativa (Araraquara teste). 37 franquias sem CPF pendentes
+- **`asaasRequest` fix 18/04/2026**: trata 204 No Content (DELETE retorna sem body) — antes causava SyntaxError em `res.json()` mesmo com sucesso no ASAAS. `if (res.status === 204) return {}` + `text()` + `JSON.parse(text)` tolera body vazio
+- **Cancel + Update valor (18/04/2026)**:
+  - `cancel-subscription`: DELETE `/v3/subscriptions/{id}` + DELETE payments PENDING da sub + update banco (limpa `asaas_subscription_id`, `current_payment_*`, `pix_*`; mantém `asaas_customer_id` para recriar fácil). Status → `subscription_status='CANCELLED'` + `current_payment_status='CANCELLED'`. 404 do ASAAS tolerado (sub já cancelada manual). NÃO desativa franquia (`franchises.status` intacto)
+  - `update-subscription-value { franchise_ids | all_active, new_value, apply_to_current }`: valida 5 ≤ value ≤ 5000. POST `/v3/subscriptions/{id}` com `{value}` atualiza próximos ciclos. `apply_to_current: true` → POST `/v3/payments/{current_id}` com `{value}` + refetch PIX (QR novo). Retorna `{total, updated, results[]}`
+  - `subscribe-batch` aceita `value` opcional (default 150). UI passa `monthlyValue` do input
+  - `createSubscription(franchiseId, value=150)` aceita valor — crítico: sem isso, recriar sub após mudar valor voltaria a R$ 150 hardcoded
+- **`SubscriptionBadge` states** (`AsaasSetupPanel`): "Aguardando criar" (amarelo, customer sem sub), "Pendente" (amarelo), "Pago" (verde), "Vencido" (vermelho), "Cancelada" (cinza block)
+- **Email sync no register**: se customer já existe no ASAAS (match por cpfCnpj) e `billing_email` local divergir → POST `/v3/customers/{id}` atualiza email (NFe fica correto). Outros campos (endereço/CPF/nome) NÃO sincronizam automático — admin precisa clicar "Criar" novamente OU recriar customer se precisar ampliar
+- **Estado assinaturas** (18/04/2026): 11 franquias com customer ASAAS (10 aguardando criar sub + 1 teste Araraquara ativa). 36 franquias sem CPF pendentes
 - **Cobrança "Sua Equipe Digital"** (15/04/2026): `FinancialObligationsCard` substituiu `MarketingPaymentCard` na home — card unificado com linha subscription (ASAAS) + linha marketing. Nome UI: "Sua Equipe Digital" (NÃO "Mensalidade"). `SubscriptionPaymentSheet` (Sheet bottom): PIX QR + copiar código + boleto + "Já paguei"
 - PriorityAction: cenário `equipe_digital` dispara APENAS para OVERDUE (PENDING tratado pelo card). Suporta `onPress` callback (além de `navigateTo`) via flag `data.onPress`
 - ASAAS subscribe `nextDueDate`: SEMPRE `getMonth() + 1` (mês seguinte). NUNCA condicional `getDate() >= 5 ? +2 : +1` (0-indexed pulava 2 meses). Fix 15/04/2026
