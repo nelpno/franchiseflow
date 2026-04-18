@@ -3,6 +3,8 @@ import { Franchise, FranchiseConfiguration, SystemSubscription } from "@/entitie
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -52,6 +54,15 @@ function StatusBadge({ status, asaasId, cpfCnpj }) {
 function SubscriptionBadge({ sub }) {
   if (!sub) return <span className="text-xs text-gray-400">—</span>;
   const status = sub.current_payment_status;
+  // Customer cadastrado mas assinatura ainda não criada
+  if (sub.asaas_customer_id && !sub.asaas_subscription_id && status !== "CANCELLED") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#d4af37]">
+        <MaterialIcon icon="hourglass_empty" size={14} />
+        Aguardando criar
+      </span>
+    );
+  }
   if (status === "PAID" || status === "RECEIVED" || status === "CONFIRMED") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#16a34a]/10 text-[#16a34a]">
@@ -76,6 +87,14 @@ function SubscriptionBadge({ sub }) {
       </span>
     );
   }
+  if (status === "CANCELLED") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+        <MaterialIcon icon="block" size={14} />
+        Cancelada
+      </span>
+    );
+  }
   return <span className="text-xs text-gray-400">{status || "—"}</span>;
 }
 
@@ -88,6 +107,14 @@ export default function AsaasSetupPanel() {
   const [savingCpf, setSavingCpf] = useState({});
   const [editingEmail, setEditingEmail] = useState({});
   const [savingEmail, setSavingEmail] = useState({});
+  // Cancelamento
+  const [cancellingSub, setCancellingSub] = useState(null); // franchise object | null
+  const [isCancelling, setIsCancelling] = useState(false);
+  // Atualizar valor
+  const [monthlyValue, setMonthlyValue] = useState(150);
+  const [showValueDialog, setShowValueDialog] = useState(false);
+  const [applyToCurrent, setApplyToCurrent] = useState(false);
+  const [isUpdatingValue, setIsUpdatingValue] = useState(false);
   const [creatingAsaas, setCreatingAsaas] = useState({});
   const [creatingAll, setCreatingAll] = useState(false);
   const [showReview, setShowReview] = useState(false);
@@ -198,16 +225,63 @@ export default function AsaasSetupPanel() {
     setCreatingAll(true);
     try {
       const { error } = await supabase.functions.invoke("asaas-billing", {
-        body: { action: "subscribe-batch" },
+        body: { action: "subscribe-batch", value: monthlyValue },
       });
       if (error) throw error;
-      toast.success("Assinaturas criadas com sucesso!");
+      toast.success(`Assinaturas criadas a R$ ${monthlyValue.toFixed(2)}!`);
       setShowReview(false);
       setTimeout(() => loadData(), 5000);
     } catch (err) {
       toast.error("Erro ao criar assinaturas: " + err.message);
     } finally {
       setCreatingAll(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!cancellingSub) return;
+    setIsCancelling(true);
+    try {
+      const { error } = await supabase.functions.invoke("asaas-billing", {
+        body: { action: "cancel-subscription", franchise_id: cancellingSub.evolution_instance_id },
+      });
+      if (error) throw error;
+      toast.success(`Assinatura de ${cancellingSub.name} cancelada`);
+      setCancellingSub(null);
+      setTimeout(() => loadData(), 2000);
+    } catch (err) {
+      toast.error("Erro ao cancelar: " + err.message);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleUpdateValue = async () => {
+    if (!Number.isFinite(monthlyValue) || monthlyValue < 5 || monthlyValue > 5000) {
+      toast.error("Valor deve estar entre R$ 5 e R$ 5.000");
+      return;
+    }
+    setIsUpdatingValue(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("asaas-billing", {
+        body: {
+          action: "update-subscription-value",
+          all_active: true,
+          new_value: monthlyValue,
+          apply_to_current: applyToCurrent,
+        },
+      });
+      if (error) throw error;
+      const updated = data?.updated ?? 0;
+      const total = data?.total ?? 0;
+      toast.success(`${updated}/${total} assinaturas atualizadas para R$ ${monthlyValue.toFixed(2)}`);
+      setShowValueDialog(false);
+      setApplyToCurrent(false);
+      setTimeout(() => loadData(), 3000);
+    } catch (err) {
+      toast.error("Erro ao atualizar valor: " + err.message);
+    } finally {
+      setIsUpdatingValue(false);
     }
   };
 
@@ -221,6 +295,10 @@ export default function AsaasSetupPanel() {
   const registered = activeFranchises.filter(f => getSub(f.evolution_instance_id)?.asaas_customer_id).length;
   const withSubscription = activeFranchises.filter(f => getSub(f.evolution_instance_id)?.asaas_subscription_id).length;
   const pendingRegister = activeFranchises.filter(f => isFiscalComplete(f) && !getSub(f.evolution_instance_id)?.asaas_customer_id);
+  const hasAnyActiveSub = activeFranchises.some(f => {
+    const s = getSub(f.evolution_instance_id);
+    return s?.asaas_subscription_id && s?.subscription_status !== "CANCELLED";
+  });
 
   if (isLoading) {
     return (
@@ -333,7 +411,33 @@ export default function AsaasSetupPanel() {
       </div>
 
       {/* Action buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex items-end gap-2 mr-auto">
+          <div>
+            <label className="text-xs font-medium text-gray-500 block mb-1">Mensalidade (R$)</label>
+            <Input
+              type="number"
+              min="5"
+              max="5000"
+              step="0.01"
+              value={monthlyValue}
+              onChange={e => setMonthlyValue(parseFloat(e.target.value) || 0)}
+              className="h-9 w-32 text-sm"
+            />
+          </div>
+          {hasAnyActiveSub && (
+            <Button
+              onClick={() => setShowValueDialog(true)}
+              variant="outline"
+              size="sm"
+              className="h-9"
+              title="Aplicar esse valor em todas as assinaturas ativas"
+            >
+              <MaterialIcon icon="price_change" size={16} className="mr-1" />
+              Atualizar valor de todos
+            </Button>
+          )}
+        </div>
         {pendingRegister.length > 0 && (
           <Button
             onClick={async () => {
@@ -504,7 +608,24 @@ export default function AsaasSetupPanel() {
                   </td>
                   <td className="py-3">
                     {(() => {
+                      // Se tem sub ativa → botão Cancelar (cinza)
+                      if (sub?.asaas_subscription_id) {
+                        return (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setCancellingSub(f)}
+                            className="h-7 text-xs text-gray-500 hover:text-[#dc2626] hover:bg-[#dc2626]/5"
+                            title="Cancelar assinatura"
+                          >
+                            <MaterialIcon icon="block" size={14} className="mr-1" />
+                            Cancelar
+                          </Button>
+                        );
+                      }
+                      // Customer criado mas sem sub → nenhum botão individual (subscribe-batch cria)
                       if (sub?.asaas_customer_id) return null;
+                      // Sem customer: verifica campos fiscais
                       const missing = getMissing(f);
                       if (missing.length > 0) {
                         return (
@@ -540,6 +661,119 @@ export default function AsaasSetupPanel() {
           </tbody>
         </table>
       </div>
+
+      {/* Dialog: cancelar assinatura */}
+      <Dialog
+        open={!!cancellingSub}
+        onOpenChange={(open) => { if (!open && !isCancelling) setCancellingSub(null); }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#dc2626]">
+              <MaterialIcon icon="block" size={20} />
+              Cancelar assinatura
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3 text-sm text-[#4a3d3d]">
+            <p>
+              Confirmar cancelamento da assinatura de{" "}
+              <strong>{cancellingSub?.name}</strong>?
+            </p>
+            <ul className="space-y-1 text-xs list-disc list-inside bg-gray-50 p-3 rounded-lg">
+              <li>Cobrança recorrente mensal será encerrada no ASAAS</li>
+              <li>Fatura pendente do mês também será cancelada</li>
+              <li>Cliente ASAAS será mantido (permite recriar assinatura depois)</li>
+              <li className="font-semibold text-[#b91c1c]">A franquia NÃO será desativada</li>
+            </ul>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setCancellingSub(null)}
+              disabled={isCancelling}
+              className="rounded-xl"
+            >
+              Voltar
+            </Button>
+            <Button
+              onClick={handleCancelSubscription}
+              disabled={isCancelling}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl"
+            >
+              {isCancelling ? (
+                <>
+                  <MaterialIcon icon="sync" size={16} className="animate-spin mr-2" />
+                  Cancelando...
+                </>
+              ) : (
+                "Sim, cancelar"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: atualizar valor da mensalidade */}
+      <Dialog
+        open={showValueDialog}
+        onOpenChange={(open) => {
+          if (!open && !isUpdatingValue) {
+            setShowValueDialog(false);
+            setApplyToCurrent(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
+              <MaterialIcon icon="price_change" size={20} />
+              Atualizar valor da mensalidade
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-4 text-sm text-[#4a3d3d]">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+              Serão atualizadas <strong>{withSubscription}</strong> franquias com assinatura ativa para <strong>R$ {monthlyValue.toFixed(2)}</strong>.
+            </div>
+            <label className="flex items-start gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={applyToCurrent}
+                onCheckedChange={(v) => setApplyToCurrent(!!v)}
+                className="mt-0.5"
+              />
+              <span className="text-xs">
+                <strong className="block">Aplicar também à fatura pendente do mês atual</strong>
+                <span className="text-[#4a3d3d]/70">
+                  Refaz fatura + gera PIX novo. Se desmarcado, só próximos ciclos usam o novo valor.
+                </span>
+              </span>
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => { setShowValueDialog(false); setApplyToCurrent(false); }}
+              disabled={isUpdatingValue}
+              className="rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleUpdateValue}
+              disabled={isUpdatingValue}
+              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+            >
+              {isUpdatingValue ? (
+                <>
+                  <MaterialIcon icon="sync" size={16} className="animate-spin mr-2" />
+                  Atualizando...
+                </>
+              ) : (
+                "Confirmar atualização"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

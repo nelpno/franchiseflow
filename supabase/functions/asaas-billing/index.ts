@@ -64,7 +64,10 @@ async function asaasRequest(path: string, options: RequestInit = {}) {
       ...((options.headers as Record<string, string>) || {}),
     },
   });
-  const data = await res.json();
+  // DELETE costuma retornar 204 sem body; text() seguido de JSON.parse tolera body vazio
+  if (res.status === 204) return {};
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
   if (!res.ok) {
     throw new Error(data?.errors?.[0]?.description || `ASAAS error ${res.status}`);
   }
@@ -161,7 +164,11 @@ async function registerCustomer(franchiseId: string) {
   return { customerId, franchise: franchise.name };
 }
 
-async function createSubscription(franchiseId: string) {
+async function createSubscription(franchiseId: string, value: number = 150) {
+  if (!Number.isFinite(value) || value < 5 || value > 5000) {
+    throw new Error("Valor inválido (deve estar entre R$ 5 e R$ 5.000)");
+  }
+
   // Get subscription record
   const { data: sub, error } = await supabase
     .from("system_subscriptions")
@@ -183,7 +190,7 @@ async function createSubscription(franchiseId: string) {
     body: JSON.stringify({
       customer: sub.asaas_customer_id,
       billingType: "UNDEFINED",
-      value: 150.0,
+      value: value,
       nextDueDate: nextDueStr,
       cycle: "MONTHLY",
       description: "Mensalidade Maxi Massas",
@@ -339,24 +346,166 @@ async function registerBatch(franchiseIds: string[]) {
   return results;
 }
 
-async function subscribeBatch() {
-  // Find all with customer but no subscription
+async function subscribeBatch(value: number = 150) {
+  // Find all with customer but no subscription (ignora já-canceladas que não serão recriadas em lote)
   const { data: subs } = await supabase
     .from("system_subscriptions")
-    .select("franchise_id")
+    .select("franchise_id, subscription_status")
     .not("asaas_customer_id", "is", null)
     .is("asaas_subscription_id", null);
 
   const results = [];
   for (const sub of subs || []) {
     try {
-      const res = await createSubscription(sub.franchise_id);
+      const res = await createSubscription(sub.franchise_id, value);
       results.push({ franchise_id: sub.franchise_id, success: true, ...res });
     } catch (err) {
       results.push({ franchise_id: sub.franchise_id, success: false, error: (err as Error).message });
     }
   }
   return results;
+}
+
+async function cancelSubscription(franchiseId: string) {
+  const { data: sub } = await supabase
+    .from("system_subscriptions")
+    .select("asaas_subscription_id")
+    .eq("franchise_id", franchiseId)
+    .single();
+  if (!sub?.asaas_subscription_id) throw new Error("Franquia não tem assinatura ativa");
+  const subId = sub.asaas_subscription_id;
+
+  // DELETE subscription no ASAAS — 404 tolerado (pode ter sido cancelada manualmente)
+  try {
+    await asaasRequest(`/v3/subscriptions/${subId}`, { method: "DELETE" });
+  } catch (err) {
+    const msg = String((err as Error).message || "");
+    if (!/404|not\s*found|não\s*encontrad/i.test(msg)) throw err;
+  }
+
+  // Cancela faturas PENDING restantes (ASAAS não faz automático)
+  try {
+    const payments = await asaasRequest(`/v3/subscriptions/${subId}/payments?status=PENDING`);
+    for (const pay of (payments as { data?: Array<{ id: string }> }).data || []) {
+      try {
+        await asaasRequest(`/v3/payments/${pay.id}`, { method: "DELETE" });
+      } catch { /* segue cancelando os próximos */ }
+    }
+  } catch { /* sub já removida — não conseguimos listar payments */ }
+
+  // Atualiza banco: limpa subscription e payment, MANTÉM customer para facilitar recriar
+  await supabase
+    .from("system_subscriptions")
+    .update({
+      asaas_subscription_id: null,
+      subscription_status: "CANCELLED",
+      current_payment_id: null,
+      current_payment_status: "CANCELLED",
+      current_payment_due_date: null,
+      current_payment_value: null,
+      current_payment_url: null,
+      pix_payload: null,
+      pix_qr_code_url: null,
+      last_synced_at: new Date().toISOString(),
+    })
+    .eq("franchise_id", franchiseId);
+
+  return { cancelled: true, subscription_id: subId };
+}
+
+async function updateSubscriptionValue({
+  franchiseIds,
+  allActive,
+  newValue,
+  applyToCurrent,
+}: {
+  franchiseIds?: string[];
+  allActive?: boolean;
+  newValue: number;
+  applyToCurrent: boolean;
+}) {
+  if (!Number.isFinite(newValue) || newValue < 5 || newValue > 5000) {
+    throw new Error("Valor inválido (deve estar entre R$ 5 e R$ 5.000)");
+  }
+
+  let targets: string[] = [];
+  if (allActive) {
+    const { data } = await supabase
+      .from("system_subscriptions")
+      .select("franchise_id")
+      .not("asaas_subscription_id", "is", null)
+      .neq("subscription_status", "CANCELLED");
+    targets = (data || []).map((r) => r.franchise_id);
+  } else if (franchiseIds?.length) {
+    targets = franchiseIds;
+  } else {
+    throw new Error("Informe franchise_ids ou all_active=true");
+  }
+
+  const results: Array<{ franchise_id: string; success: boolean; error?: string }> = [];
+
+  for (const fid of targets) {
+    try {
+      const { data: sub } = await supabase
+        .from("system_subscriptions")
+        .select("asaas_subscription_id, current_payment_id")
+        .eq("franchise_id", fid)
+        .single();
+
+      if (!sub?.asaas_subscription_id) {
+        results.push({ franchise_id: fid, success: false, error: "Sem assinatura ativa" });
+        continue;
+      }
+
+      // Atualiza subscription ASAAS (vale para próximos ciclos)
+      await asaasRequest(`/v3/subscriptions/${sub.asaas_subscription_id}`, {
+        method: "POST",
+        body: JSON.stringify({ value: newValue }),
+      });
+
+      const patch: Record<string, unknown> = { last_synced_at: new Date().toISOString() };
+
+      // Opcionalmente aplica ao payment do ciclo atual (refaz fatura + PIX)
+      if (applyToCurrent && sub.current_payment_id) {
+        try {
+          const updated = await asaasRequest(`/v3/payments/${sub.current_payment_id}`, {
+            method: "POST",
+            body: JSON.stringify({ value: newValue }),
+          }) as { value?: number; bankSlipUrl?: string; invoiceUrl?: string };
+          patch.current_payment_value = updated.value ?? newValue;
+          patch.current_payment_url = updated.bankSlipUrl || updated.invoiceUrl || null;
+
+          // Recarrega PIX porque o valor mudou = QR novo
+          try {
+            const pix = await asaasRequest(`/v3/payments/${sub.current_payment_id}/pixQrCode`) as {
+              payload?: string; encodedImage?: string;
+            };
+            patch.pix_payload = pix.payload || null;
+            patch.pix_qr_code_url = pix.encodedImage
+              ? `data:image/png;base64,${pix.encodedImage}`
+              : null;
+          } catch { /* PIX pode demorar alguns segundos */ }
+        } catch (payErr) {
+          console.warn(`[asaas-billing] Falha ao atualizar payment de ${fid}: ${(payErr as Error).message}`);
+        }
+      }
+
+      await supabase
+        .from("system_subscriptions")
+        .update(patch)
+        .eq("franchise_id", fid);
+
+      results.push({ franchise_id: fid, success: true });
+    } catch (err) {
+      results.push({ franchise_id: fid, success: false, error: (err as Error).message });
+    }
+  }
+
+  return {
+    total: targets.length,
+    updated: results.filter((r) => r.success).length,
+    results,
+  };
 }
 
 // --- Status mapping (same as fiscal bot) ---
@@ -433,7 +582,14 @@ Deno.serve(async (req) => {
     }
 
     // Admin-only actions
-    const adminActions = ["register", "register-batch", "subscribe", "subscribe-batch", "register-webhook"];
+    const adminActions = [
+      "register",
+      "register-batch",
+      "subscribe-batch",
+      "register-webhook",
+      "cancel-subscription",
+      "update-subscription-value",
+    ];
     if (adminActions.includes(action) && !isAdminOrManager(user)) {
       return new Response(JSON.stringify({ error: "Apenas administradores podem executar esta ação" }), {
         status: 403, headers: jsonHeaders,
@@ -457,11 +613,19 @@ Deno.serve(async (req) => {
       case "register-batch":
         result = await registerBatch(body.franchise_ids);
         break;
-      case "subscribe":
-        result = await createSubscription(body.franchise_id);
-        break;
       case "subscribe-batch":
-        result = await subscribeBatch();
+        result = await subscribeBatch(body.value);
+        break;
+      case "cancel-subscription":
+        result = await cancelSubscription(body.franchise_id);
+        break;
+      case "update-subscription-value":
+        result = await updateSubscriptionValue({
+          franchiseIds: body.franchise_ids,
+          allActive: body.all_active,
+          newValue: body.new_value,
+          applyToCurrent: !!body.apply_to_current,
+        });
         break;
       case "check-payment":
         result = await checkPayment(body.franchise_id);
