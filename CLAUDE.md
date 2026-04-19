@@ -101,6 +101,7 @@
 - Error handling: `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout
 - Rotas: `createPageUrl("PageName")` → `"/PageName"` (capitalizado)
 - Navegação programática: `useNavigate()` + `useSearchParams()` de `react-router-dom`. Query params para pré-seleção (ex: `/Onboarding?franchise=evo_id`)
+- Abrir detail sheet por URL: `/Franchises?id=<evolution_instance_id>&openSheet=1` → `useSearchParams` + `useEffect` em `Franchises.jsx` abre sheet da franquia match e limpa params com `setSearchParams({}, {replace:true})`. Padrão usado pela tabela de `Reports.jsx`
 - Toast: sonner (importar de `"sonner"`, NÃO shadcn legado). NUNCA alert()/window.confirm()
 - Clickable card pattern: `cursor-pointer hover:shadow-md active:scale-[0.98] transition-all` (QuickAccessCards.jsx)
 - Clickable text pattern: `cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors`
@@ -173,7 +174,7 @@
 
 ### UX
 - Franqueado: sidebar 8 itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu Vendedor, Tutoriais, Onboarding condicional) + bottom nav 5 slots (FAB Vender centro)
-- Admin: 6 itens visíveis na sidebar + 4 ocultos (`adminSidebarHidden`: Relatórios, Financeiro, Acompanhamento, Inteligência Bot) acessíveis por URL
+- Admin: 7 itens visíveis na sidebar + 3 ocultos (`adminSidebarHidden`: Financeiro, Acompanhamento, Inteligência Bot) acessíveis por URL
 - Manager: mesma visão admin mas SEM delete. Checagens: `role === "admin" || role === "manager"` visão, `role === "admin"` delete
 - Terminologia: "Estoque" (NÃO "Inventário"), "Valor Médio" (NÃO "Ticket Médio"), NÃO "Líquido"
 - Onboarding: 9 blocos (8 numerados + gate de liberação). `TOTAL_ITEMS` computado dinamicamente. Acessível via sidebar, franchise cards e detail sheet
