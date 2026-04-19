@@ -41,18 +41,19 @@ Uma única página com tabela comparativa entre franquias, 8 colunas acionáveis
 - Empty state: "Sem vendas no período selecionado"
 - Erro: reaproveita padrão ErrorBoundary + botão retry
 
-### Colunas (8)
+### Colunas (7)
+
+> **Revisão adversarial 2026-04-19:** cortadas Margem % e Δ% vs. período anterior. Margem % dependia de `inventory_items.cost` (raramente preenchido → coluna "—" na maioria) e exigia as 2 queries mais pesadas (SaleItem + InventoryItem). Δ% dobrava payload de Sale sem agregar valor na visão comparativa (ordenação já identifica fora-da-curva). Ambos candidatos a follow-up com RPC dedicada.
 
 | # | Coluna | Cálculo |
 |---|---|---|
 | 1 | Franquia | `franchise_configurations.franchise_name` (fallback `franchises.name`) |
-| 2 | Receita (período) | `Σ (value - discount_amount + delivery_fee)` em `sales` do período, com Δ% vs. período anterior de mesma duração (seta verde se ≥0, vermelha se <0) |
+| 2 | Receita (período) | `Σ (value - discount_amount + delivery_fee)` em `sales` do período |
 | 3 | Nº pedidos | `count(sales)` no período |
 | 4 | Ticket médio | Receita / Nº pedidos (— se pedidos=0) |
-| 5 | Margem % | `(receita_real − CMV) / receita_real` onde CMV = `Σ (sale_items.quantity × inventory_items.cost)` — usa `inventory_items.cost` da franquia. Mostra "—" quando nenhum item tem custo cadastrado |
-| 6 | Conversão bot % | `count(bot_conversations where outcome='converted') / count(bot_conversations total)` no período. Mostra "—" quando 0 conversas (franquia sem bot) |
-| 7 | Clientes novos | `count(contacts where created_at ∈ período AND franchise_id = evo_id)` |
-| 8 | Assinatura | badge: Pago (verde) / Vencido (vermelho) / Aguardando (amarelo) / Cancelada (cinza) — vem de `system_subscriptions.current_payment_status` |
+| 5 | Conversão bot % | `count(bot_conversations where outcome='converted') / count(bot_conversations total)` no período. Mostra "—" quando 0 conversas (franquia sem bot) |
+| 6 | Clientes novos | `count(contacts where created_at ∈ período AND franchise_id = evo_id)` |
+| 7 | Assinatura | badge: Pago (verde) / Vencido (vermelho) / Aguardando (amarelo) / Cancelada (cinza) — vem de `system_subscriptions.current_payment_status` |
 
 Regras:
 - Receita usa cálculo realtime de `sales` (NUNCA `daily_summaries` — cron só roda 02h BRT). Padrão já estabelecido no MiniRevenueChart.
@@ -61,16 +62,14 @@ Regras:
 
 ### Dados
 
-Queries paralelas em `Promise.allSettled` seguindo padrão `AdminDashboard.jsx`:
+Queries paralelas em `Promise.allSettled` seguindo padrão `AdminDashboard.jsx`. **Todas via entity adapter existente** (`@/entities/all`) — sem query direta Supabase:
 
 1. `Franchise.list()` — franquias ativas
-2. `FranchiseConfiguration.list()` — para nome amigável
-3. `Sale.list()` com `fetchAll: true` filtrado por `sale_date ∈ [startDate, endDate]` — range dobrado para calcular Δ% (inclui período anterior de mesma duração)
-4. `SaleItem.list()` com `fetchAll: true` para CMV (filtrar por sale_id dos sales do período)
-5. `Contact.list()` com `fetchAll: true` filtrado por `created_at ∈ período`
-6. `InventoryItem.list()` — cost por produto (toda a rede; agregação client-side)
-7. `bot_conversations` — query direta Supabase, filtrada por `started_at ∈ período`, campos mínimos (`franchise_id`, `outcome`)
-8. `system_subscriptions` — snapshot atual (não filtra por período)
+2. `FranchiseConfiguration.list({ columns: 'franchise_evolution_instance_id, franchise_name' })` — nome amigável
+3. `Sale.list()` com `fetchAll: true` filtrado por `sale_date ∈ [startDate, endDate]`
+4. `Contact.list()` com `fetchAll: true` filtrado por `created_at ∈ período`
+5. `BotConversation.list()` (view `vw_bot_conversations`, exclui `manual_sale` e `duplicate_stale`) filtrado por `started_at ∈ período`, campos mínimos (`franchise_id`, `outcome`)
+6. `SystemSubscription.list({ columns: 'franchise_id,current_payment_status,subscription_status' })` — snapshot atual, sem filtro de período
 
 Cálculos client-side (30 franquias × ~30 dias = volume baixo, sem precisão crítica para otimização server-side).
 
@@ -82,17 +81,19 @@ Cálculos client-side (30 franquias × ~30 dias = volume baixo, sem precisão cr
 
 ## Componentes a criar / modificar
 
+**Refatorar (NÃO reescrever — revisão 2026-04-19):**
+- `src/pages/Reports.jsx` — manter shell de carregamento (Promise.allSettled, abort controller, mountedRef, filtros de período) das linhas 54–148 do arquivo atual. Substituir corpo (KpiCards + gráficos) pela tabela nova.
+
 **Novo:**
-- `src/pages/Reports.jsx` — reescrever (substitui o antigo; move os componentes obsoletos para remoção)
-- `src/components/reports/FranchiseReportTable.jsx` — tabela ordenável
+- `src/components/reports/FranchiseReportTable.jsx` — tabela ordenável (linha clicável → detail sheet da franquia)
 - `src/components/reports/FranchiseReportToolbar.jsx` — período + busca + export
 
 **Modificar:**
 - `src/Layout.jsx` — remover `Reports` de `adminSidebarHidden`, adicionar na seção visível (ícone `assessment`)
 - `src/pages.config.js` — idem se aplicável
-- `src/pages/Franchises.jsx` — se não suporta, adicionar abertura do detail sheet via `?id=...&openSheet=1` (gatilho mínimo)
+- `src/pages/Franchises.jsx` — **adicionar suporte a query param `?id={evolution_instance_id}&openSheet=1` (feature nova, não é "ajuste mínimo")**: `useSearchParams` + `useEffect` que, se `openSheet=1` e `id` bate numa franquia carregada, abre o detail sheet dela. Limpar query param depois de abrir pra permitir reabrir.
 
-**Remover (obsoletos do Reports antigo):**
+**Remover (após grep confirmar que não são importados em outro lugar):**
 - `src/components/reports/KpiCards.jsx`
 - `src/components/reports/SalesRevenueChart.jsx`
 - `src/components/reports/PaymentMethodChart.jsx`
@@ -100,16 +101,14 @@ Cálculos client-side (30 franquias × ~30 dias = volume baixo, sem precisão cr
 - `src/components/reports/FranchiseComparisonTable.jsx`
 - `src/components/reports/ExportButton.jsx`
 
-Remoções só após confirmar que não são importados em nenhum outro lugar (grep antes de apagar).
-
 ## Riscos e mitigações
 
 | Risco | Mitigação |
 |---|---|
 | Query pesada em franquias com muitas vendas | `fetchAll:true` já pagina 1000-em-1000; testes mostraram <2s em AdminDashboard (mesmo volume) |
-| `bot_conversations` sem índice eficiente | Usar RPC existente ou criar `get_bot_conversion_by_franchise(start, end)` se queries diretas forem lentas (decisão adiada para fase de implementação) |
-| Δ% distorcido com período custom curto | Sempre comparar com janela de mesma duração anterior; se período anterior = 0 pedidos, esconder seta |
+| `BotConversation.list` lento se rede crescer | Entity `vw_bot_conversations` tem index em `started_at`; se virar gargalo, migrar para RPC `get_bot_conversion_by_franchise(start, end)` em follow-up |
 | Mobile: tabela larga difícil de ler | Coluna Franquia sticky + scroll horizontal suave; evitar card view (perde densidade) |
+| Query param `openSheet` pode reabrir sheet indevidamente em navegação voltar | Limpar query param com `setSearchParams({}, { replace: true })` após abrir |
 
 ## Critérios de aceite
 
@@ -132,3 +131,5 @@ Remoções só após confirmar que não são importados em nenhum outro lugar (g
 - Persistir filtros do usuário entre sessões
 - Exportar PDF
 - Comparação período personalizado (vs. ano anterior etc.)
+- Coluna Margem % (requer `inventory_items.cost` preenchido em massa + RPC server-side para não puxar SaleItem inteiro)
+- Coluna Δ% vs. período anterior (pode virar tooltip ou coluna opcional via toggle)

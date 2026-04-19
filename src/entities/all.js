@@ -225,7 +225,9 @@ export const FranchiseNote = createEntity('franchise_notes');
 export const MarketingPayment = createEntity('marketing_payments');
 export const MarketingMetaDeposit = createEntity('marketing_meta_deposits');
 export const ConversationMessage = createEntity('conversation_messages');
-export const BotConversation = createEntity('bot_conversations');
+// Usa view vw_bot_conversations: exclui manual_sale e duplicate_stale do funil do bot (fix SAVE-1, 2026-04-19).
+// Para write/raw: usar supabase.from('bot_conversations') diretamente.
+export const BotConversation = createEntity('vw_bot_conversations');
 export const SystemSubscription = createEntity('system_subscriptions');
 
 // RPC helpers

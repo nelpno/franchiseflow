@@ -158,12 +158,23 @@ AS $$ SELECT extensions.unaccent($1); $$;
 
 
 -- ╔══════════════════════════════════════════════════════════════════════════╗
--- ║ FASE 6: public_bucket_allows_listing — drop SELECT policies           ║
--- ║ URLs públicas funcionam sem SELECT policy em storage.objects           ║
+-- ║ FASE 6: public_bucket_allows_listing                                    ║
+-- ║ NÃO dropar SELECT policies — upsert da Storage API requer SELECT na    ║
+-- ║ tabela storage.objects para verificar existência do arquivo.            ║
+-- ║ Sem ela, upsert: true falha com 403 row-level security.                 ║
+-- ║ URLs públicas (leitura) funcionam sem policy, mas upload de substituição║
+-- ║ NÃO. Reaplicado em 16/04/2026.                                          ║
 -- ╚══════════════════════════════════════════════════════════════════════════╝
 
 DROP POLICY IF EXISTS "catalog_images_select" ON storage.objects;
+CREATE POLICY "catalog_images_select" ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'catalog-images'::text AND auth.uid() IS NOT NULL);
+
 DROP POLICY IF EXISTS "public_read_comprovantes" ON storage.objects;
+CREATE POLICY "public_read_comprovantes" ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'marketing-comprovantes'::text AND auth.uid() IS NOT NULL);
 
 
 -- ╔══════════════════════════════════════════════════════════════════════════╗
