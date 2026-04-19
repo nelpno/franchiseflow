@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
@@ -147,6 +147,23 @@ export default function Franchises() {
   // --- Franchise CRUD ---
 
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Abre o detail sheet via query param ?id=<evolution_instance_id>&openSheet=1
+  useEffect(() => {
+    const id = searchParams.get("id");
+    const openSheet = searchParams.get("openSheet");
+    if (!id || openSheet !== "1") return;
+    if (!franchises || franchises.length === 0) return;
+    const match = franchises.find(
+      (f) => f.evolution_instance_id === id || f.id === id
+    );
+    if (match) {
+      setSelectedFranchise(match);
+      setSearchParams({}, { replace: true });
+    }
+  }, [franchises, searchParams, setSearchParams]);
+
   const isStaff = currentUser?.role === "admin" || currentUser?.role === "manager";
 
   const handleCreateFranchise = async (franchiseData, franchiseeEmail, addressExtras) => {
