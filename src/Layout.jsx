@@ -82,7 +82,6 @@ const navigationItems = [
     materialIcon: "bar_chart",
     adminOnly: true,
     adminSection: "Gestão",
-    adminSidebarHidden: true,
   },
   {
     title: "Financeiro",
