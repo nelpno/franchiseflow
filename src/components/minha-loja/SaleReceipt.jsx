@@ -50,14 +50,51 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
   return (
     <div
       ref={ref}
+      className="receipt"
       style={{
-        width: 400,
+        width: "100%",
+        maxWidth: 400,
         fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif",
         backgroundColor: "#ffffff",
         padding: "20px 16px",
         color: "#1b1c1d",
       }}
     >
+      <style>{`
+        @media print {
+          .receipt {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 2mm !important;
+            font-family: 'Courier New', 'Consolas', ui-monospace, monospace !important;
+            font-weight: 700 !important;
+            font-size: 11pt !important;
+            line-height: 1.3 !important;
+            color: #000 !important;
+            background: #fff !important;
+            -webkit-font-smoothing: none;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .receipt * {
+            color: #000 !important;
+            background-color: transparent !important;
+            border-color: #000 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+          }
+          .receipt img {
+            max-width: 40mm !important;
+            height: auto !important;
+          }
+          .receipt table {
+            table-layout: fixed;
+            width: 100%;
+          }
+        }
+      `}</style>
       {/* Header — logo + nome + subtítulo */}
       <div style={{ textAlign: "center", marginBottom: 12 }}>
         <img

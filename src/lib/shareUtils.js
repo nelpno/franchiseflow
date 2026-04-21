@@ -155,7 +155,7 @@ export async function printReceipt(element) {
   doc.write(`<!DOCTYPE html><html><head>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <style>
-      @page { size: auto; margin: 2mm; }
+      @page { size: auto; margin: 0; }
       @media print {
         html, body { margin: 0; padding: 0; width: 100%; }
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
