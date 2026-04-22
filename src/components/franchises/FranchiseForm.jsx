@@ -131,10 +131,10 @@ export default function FranchiseForm({
 
   const wrapperClass = isFiscalOnly
     ? "w-full"
-    : "fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50";
+    : "fixed inset-0 bg-black/50 flex items-start justify-center p-4 z-50 overflow-y-auto";
   const cardClass = isFiscalOnly
     ? "w-full bg-white rounded-2xl shadow-sm border border-[#291715]/5"
-    : "w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-[#291715]/5";
+    : "w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-[#291715]/5 my-auto";
 
   return (
     <div className={wrapperClass}>
