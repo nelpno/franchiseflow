@@ -11,9 +11,11 @@ import { safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
 import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
+import TabResultado from "@/components/minha-loja/TabResultado";
+import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
 export default function Financeiro() {
-  const [activeTab, setActiveTab] = useState("financeiro"); // "financeiro" | "mensalidades"
+  const [activeTab, setActiveTab] = useState("financeiro"); // "financeiro" | "mensalidades" | "porunidade"
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [franchises, setFranchises] = useState([]);
   const [allSales, setAllSales] = useState([]);
@@ -22,6 +24,8 @@ export default function Financeiro() {
   const [allSaleItems, setAllSaleItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedFranchiseId, setSelectedFranchiseId] = useState("");
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export default function Financeiro() {
         setLoading(false);
         return;
       }
+      setCurrentUser(user);
 
       // Janela 18m: cobre 12m úteis + buffer comparativo M-1 (mês -13 ainda dentro do range).
       const cutoff18m = format(subMonths(new Date(), 18), "yyyy-MM-dd");
@@ -316,6 +321,7 @@ export default function Financeiro() {
         <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
           {[
             { key: "financeiro", label: "Resultado", icon: "account_balance" },
+            { key: "porunidade", label: "Por Unidade", icon: "store" },
             { key: "mensalidades", label: "Mensalidades", icon: "autorenew" },
           ].map(tab => (
             <button
@@ -336,6 +342,36 @@ export default function Financeiro() {
 
       {activeTab === "mensalidades" ? (
         <AsaasSetupPanel />
+      ) : activeTab === "porunidade" ? (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-[#291715]/5 p-4 flex items-center gap-3">
+            <MaterialIcon icon="store" size={20} className="text-[#1b1c1d]/60 shrink-0" />
+            <select
+              value={selectedFranchiseId}
+              onChange={(e) => setSelectedFranchiseId(e.target.value)}
+              className="flex-1 bg-transparent text-sm font-semibold text-[#1b1c1d] outline-none cursor-pointer"
+            >
+              <option value="">Selecione uma unidade…</option>
+              {franchises
+                .filter((f) => f.evolution_instance_id)
+                .slice()
+                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                .map((f) => (
+                  <option key={f.id} value={f.evolution_instance_id}>
+                    {getFranchiseDisplayName(f)}
+                  </option>
+                ))}
+            </select>
+          </div>
+          {selectedFranchiseId ? (
+            <TabResultado franchiseId={selectedFranchiseId} currentUser={currentUser} />
+          ) : (
+            <div className="bg-white rounded-2xl border border-[#291715]/5 p-12 text-center">
+              <MaterialIcon icon="info" size={32} className="text-[#1b1c1d]/30 mx-auto mb-3" />
+              <p className="text-sm text-[#4a3d3d]">Escolha uma unidade acima para ver o resultado igual à visão do franqueado.</p>
+            </div>
+          )}
+        </div>
       ) : (
       <>
         {/* Month selector */}
