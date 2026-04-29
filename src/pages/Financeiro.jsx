@@ -12,7 +12,6 @@ import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
 import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
 import TabResultado from "@/components/minha-loja/TabResultado";
-import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("financeiro"); // "financeiro" | "mensalidades" | "porunidade"
@@ -356,11 +355,14 @@ export default function Financeiro() {
                 .filter((f) => f.evolution_instance_id)
                 .slice()
                 .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                .map((f) => (
-                  <option key={f.id} value={f.evolution_instance_id}>
-                    {getFranchiseDisplayName(f)}
-                  </option>
-                ))}
+                .map((f) => {
+                  const local = f.city ? ` — ${f.city}${f.state_uf ? "/" + f.state_uf : ""}` : "";
+                  return (
+                    <option key={f.id} value={f.evolution_instance_id}>
+                      {(f.name || "Franquia") + local}
+                    </option>
+                  );
+                })}
             </select>
           </div>
           {selectedFranchiseId ? (
