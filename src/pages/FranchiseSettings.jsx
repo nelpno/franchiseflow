@@ -309,6 +309,11 @@ function FranchiseSettingsContent() {
         : ''
     };
 
+    // Safety net: nunca persistir maquininha/dinheiro em entrega third_party
+    if (finalData.delivery_method === 'third_party' && Array.isArray(finalData.payment_delivery)) {
+      finalData.payment_delivery = finalData.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash');
+    }
+
     try {
       if (editingConfig) {
         await FranchiseConfiguration.update(editingConfig.id, finalData);
@@ -336,6 +341,10 @@ function FranchiseSettingsContent() {
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
+      // Cleanup: third_party nao aceita maquininha nem dinheiro na entrega
+      if (field === 'delivery_method' && value === 'third_party' && Array.isArray(updated.payment_delivery)) {
+        updated.payment_delivery = updated.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash');
+      }
       // Auto-save draft to localStorage only for franchisees (admin edits directly)
       if (currentUser?.role !== 'admin') {
         const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
