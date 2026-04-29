@@ -54,18 +54,23 @@ function ReportsContent() {
         }),
         Sale.list("-sale_date", null, {
           fetchAll: true,
-          filter: `sale_date=gte.${startDate}&sale_date=lte.${endDate}`,
+          columns: "franchise_id, value, discount_amount, delivery_fee",
+          gte: { sale_date: startDate },
+          lte: { sale_date: endDate },
           signal,
         }),
         Contact.list("-created_at", null, {
           fetchAll: true,
-          filter: `created_at=gte.${startDate}T00:00:00&created_at=lte.${endDate}T23:59:59.999`,
+          columns: "franchise_id",
+          gte: { created_at: `${startDate}T00:00:00` },
+          lte: { created_at: `${endDate}T23:59:59.999` },
           signal,
         }),
         BotConversation.list("-started_at", null, {
           fetchAll: true,
-          columns: "franchise_id, outcome, started_at",
-          filter: `started_at=gte.${startDate}T00:00:00&started_at=lte.${endDate}T23:59:59.999`,
+          columns: "franchise_id, outcome",
+          gte: { started_at: `${startDate}T00:00:00` },
+          lte: { started_at: `${endDate}T23:59:59.999` },
           signal,
         }),
         SystemSubscription.list(null, null, {

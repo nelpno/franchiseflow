@@ -8,18 +8,28 @@ import { useEffect, useRef, useCallback } from "react";
  * @param {number} intervalMs - Polling interval in milliseconds
  * @param {boolean} enabled - Whether polling is active (default: true)
  */
+const VISIBILITY_THROTTLE_MS = 60000;
+
 export function useVisibilityPolling(callback, intervalMs, enabled = true) {
   const intervalRef = useRef(null);
   const callbackRef = useRef(callback);
   const activeRef = useRef(false);
+  // Initialized to mount time so an alt-tab right after mount doesn't re-fire
+  // (consumers run their own initial load before this hook subscribes).
+  const lastRunRef = useRef(Date.now());
   callbackRef.current = callback;
+
+  const runCallback = useCallback(() => {
+    lastRunRef.current = Date.now();
+    callbackRef.current();
+  }, []);
 
   const startPolling = useCallback(() => {
     if (intervalRef.current) return;
     intervalRef.current = setInterval(() => {
-      if (activeRef.current) callbackRef.current();
+      if (activeRef.current) runCallback();
     }, intervalMs);
-  }, [intervalMs]);
+  }, [intervalMs, runCallback]);
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
@@ -40,12 +50,12 @@ export function useVisibilityPolling(callback, intervalMs, enabled = true) {
       if (document.hidden) {
         stopPolling();
       } else if (activeRef.current) {
-        callbackRef.current();
+        const since = Date.now() - lastRunRef.current;
+        if (since > VISIBILITY_THROTTLE_MS) runCallback();
         startPolling();
       }
     };
 
-    // Initial call + start polling
     startPolling();
 
     document.addEventListener("visibilitychange", handleVisibility);
@@ -55,5 +65,5 @@ export function useVisibilityPolling(callback, intervalMs, enabled = true) {
       stopPolling();
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [enabled, startPolling, stopPolling]);
+  }, [enabled, startPolling, stopPolling, runCallback]);
 }
