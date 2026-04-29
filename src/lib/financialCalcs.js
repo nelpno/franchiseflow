@@ -10,6 +10,18 @@ export function isInMonth(dateStr, monthDate) {
 }
 
 /**
+ * Valor efetivamente recebido em uma venda (faturamento por venda).
+ * Fórmula canônica do projeto: value - discount_amount + delivery_fee.
+ * Coerção numérica obrigatória (campos podem vir como string do Supabase).
+ */
+export function getSaleNetValue(sale) {
+  const value = parseFloat(sale?.value) || 0;
+  const discount = parseFloat(sale?.discount_amount) || 0;
+  const fee = parseFloat(sale?.delivery_fee) || 0;
+  return value - discount + fee;
+}
+
+/**
  * Calculates P&L for a set of sales, sale items, and expenses.
  *
  * **Non-breaking refactor (1A.2)**: campos legacy (lucro, custoProdutos, outrasDespesas)

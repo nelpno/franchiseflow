@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { User, Franchise, InventoryItem, SaleItem } from "@/entities/all";
+import { User, Franchise, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
@@ -29,6 +29,7 @@ export default function Gestao() {
   const [franchises, setFranchises] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [saleItems, setSaleItems] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
@@ -132,6 +133,32 @@ export default function Gestao() {
     return inventoryItems.filter((i) => i.franchise_id === franchiseId);
   }, [inventoryItems, franchiseId]);
 
+  // Load contacts scoped to franchise (mesmo padrão de Vendas.jsx)
+  // Necessário para resolver nome do cliente no export do TabResultado
+  const loadFranchiseContacts = useCallback(async (evoId) => {
+    if (!evoId) return;
+    try {
+      const data = await Contact.filter(
+        { franchise_id: evoId },
+        '-created_at',
+        null,
+        { columns: 'id, nome, franchise_id' }
+      );
+      if (mountedRef.current) setContacts(data);
+    } catch (err) {
+      console.error("Erro ao carregar contatos:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (franchiseId) loadFranchiseContacts(franchiseId);
+  }, [franchiseId, loadFranchiseContacts]);
+
+  const franchiseContacts = useMemo(() => {
+    if (!franchiseId) return [];
+    return contacts.filter((c) => c.franchise_id === franchiseId);
+  }, [contacts, franchiseId]);
+
   if (loading) {
     return (
       <div className="bg-[#fbf9fa] p-4 md:p-8 space-y-6">
@@ -215,6 +242,7 @@ export default function Gestao() {
             <TabResultado
               franchiseId={franchiseId}
               currentUser={currentUser}
+              contacts={franchiseContacts}
             />
           </TabsContent>
 

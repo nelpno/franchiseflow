@@ -14,7 +14,6 @@ import LancarCompraSheet from "@/components/minha-loja/LancarCompraSheet";
 import ExportButtons from "@/components/shared/ExportButtons";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import {
   format,
   subMonths,
@@ -42,6 +41,7 @@ import {
   getTopProducts,
 } from "@/lib/financialCalcs";
 import { getCategoryMeta } from "@/lib/expenseCategories";
+import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 
 // --------------------------------------------------------------- helpers
 const formatBRL = (v) =>
@@ -640,7 +640,7 @@ function EvolucaoCard({ evolucao }) {
 }
 
 // --------------------------------------------------------------- main TabResultado
-export default function TabResultado({ franchiseId, currentUser }) {
+export default function TabResultado({ franchiseId, currentUser, contacts = [] }) {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [sales, setSales] = useState([]);
@@ -705,6 +705,13 @@ export default function TabResultado({ franchiseId, currentUser }) {
   }, [franchiseId]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Lookup de contatos para resolver nome do cliente no export
+  const contactsMap = useMemo(() => {
+    const map = {};
+    (contacts || []).forEach((c) => { map[c.id] = c; });
+    return map;
+  }, [contacts]);
 
   // Filtros do mês selecionado
   const monthSales = useMemo(() => sales.filter(s => isInMonth(s.sale_date || s.created_at, selectedMonth)), [sales, selectedMonth]);
@@ -835,19 +842,12 @@ export default function TabResultado({ franchiseId, currentUser }) {
   const monthLabel = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
   const isCurrentMonth = isSameMonth(selectedMonth, new Date());
 
-  // Export columns
-  const exportColumns = useMemo(() => [
-    { key: "sale_date", header: "Data", format: (v) => v ? format(parseISO(v.substring(0, 10)), "dd/MM/yyyy") : "—" },
-    { key: "value", header: "Valor (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
-    { key: "payment_method", header: "Pagamento", format: (v) => PAYMENT_METHODS.find(p => p.value === v)?.label || v || "—" },
-    { key: "net_value", header: "Valor Líquido (R$)", format: (v) => (parseFloat(v) || 0).toFixed(2) },
-  ], []);
-  const exportData = useMemo(() => monthSales.map(s => ({
-    sale_date: s.sale_date || s.created_at,
-    value: s.value,
-    payment_method: s.payment_method || "—",
-    net_value: s.net_value || s.value,
-  })), [monthSales]);
+  // Export columns/data — fonte única em src/lib/salesExport.js
+  const exportColumns = SALES_EXPORT_COLUMNS;
+  const exportData = useMemo(
+    () => buildSalesExportRows(monthSales, contactsMap, { includeTotalsRow: true }),
+    [monthSales, contactsMap]
+  );
 
   const hasData = monthSales.length > 0 || monthExpenses.length > 0;
 

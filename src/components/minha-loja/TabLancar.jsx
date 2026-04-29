@@ -15,8 +15,11 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
 import SaleReceipt from "./SaleReceipt";
+import ExportButtons from "@/components/shared/ExportButtons";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
+import { getSaleNetValue } from "@/lib/financialCalcs";
+import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { toast } from "sonner";
 import { format, startOfWeek, startOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -395,21 +398,35 @@ export default function TabLancar({
 
   // Summary for the filtered period
   const periodStats = useMemo(() => {
-    const calcTotal = (s) =>
-      (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0);
-
     const pending = filteredSales.filter((s) => !s.payment_confirmed);
     const confirmed = filteredSales.filter((s) => s.payment_confirmed);
 
     return {
       count: filteredSales.length,
-      total: filteredSales.reduce((sum, s) => sum + calcTotal(s), 0),
+      total: filteredSales.reduce((sum, s) => sum + getSaleNetValue(s), 0),
       pendingCount: pending.length,
-      pendingTotal: pending.reduce((sum, s) => sum + calcTotal(s), 0),
+      pendingTotal: pending.reduce((sum, s) => sum + getSaleNetValue(s), 0),
       confirmedCount: confirmed.length,
-      confirmedTotal: confirmed.reduce((sum, s) => sum + calcTotal(s), 0),
+      confirmedTotal: confirmed.reduce((sum, s) => sum + getSaleNetValue(s), 0),
     };
   }, [filteredSales]);
+
+  // Export config — period label slug + filename
+  const exportConfig = useMemo(() => {
+    const periodLabel = PERIOD_FILTERS.find((p) => p.value === period)?.label || "vendas";
+    const slug = (s) =>
+      String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+    const today = format(new Date(), "yyyy-MM-dd");
+    const filename = `vendas_${slug(franchiseName) || "franquia"}_${slug(periodLabel)}_${today}`;
+    const title = `Vendas — ${franchiseName || ""} (${periodLabel})`;
+    const data = buildSalesExportRows(filteredSales, contactsMap, { includeTotalsRow: true });
+    return { filename, title, data };
+  }, [filteredSales, contactsMap, period, franchiseName]);
 
   return (
     <div className="space-y-4">
@@ -503,6 +520,16 @@ export default function TabLancar({
             )}
           </Button>
         )}
+
+        {/* Export (Excel + PDF) */}
+        <div className="ml-auto">
+          <ExportButtons
+            data={exportConfig.data}
+            columns={SALES_EXPORT_COLUMNS}
+            filename={exportConfig.filename}
+            title={exportConfig.title}
+          />
+        </div>
       </div>
 
       {/* Period summary */}

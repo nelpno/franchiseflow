@@ -9,6 +9,7 @@ import {
   getEstadoFinanceiro,
   isInMonth,
   getTopProducts,
+  getSaleNetValue,
 } from "./financialCalcs.js";
 
 let pass = 0;
@@ -225,6 +226,32 @@ test("getTopProducts ordena por quantity desc", () => {
   assert.equal(top[0].name, "B");
   assert.equal(top[0].quantity, 5);
   assert.equal(top[0].revenue, 50);
+});
+
+// ─── getSaleNetValue ────────────────────────────────────────────────────────
+console.log("\n💰 getSaleNetValue — valor recebido por venda");
+
+test("calcula value - desconto + frete", () => {
+  assert.equal(getSaleNetValue({ value: 100, discount_amount: 10, delivery_fee: 8 }), 98);
+});
+
+test("aceita campos como string (vindo do Supabase)", () => {
+  assert.equal(getSaleNetValue({ value: "113.40", discount_amount: "0", delivery_fee: "8.00" }), 121.4);
+});
+
+test("campos ausentes/null viram 0 (sem NaN)", () => {
+  assert.equal(getSaleNetValue({}), 0);
+  assert.equal(getSaleNetValue({ value: null, discount_amount: undefined, delivery_fee: null }), 0);
+});
+
+test("sale null/undefined retorna 0", () => {
+  assert.equal(getSaleNetValue(null), 0);
+  assert.equal(getSaleNetValue(undefined), 0);
+});
+
+test("regressão: caso real do Ricardo (118,50 com frete 7)", () => {
+  // Venda exibida no dashboard como R$ 118,50 saía 111,50 no export sem o frete
+  assert.equal(getSaleNetValue({ value: 111.5, discount_amount: 0, delivery_fee: 7 }), 118.5);
 });
 
 // ─── Resultado ──────────────────────────────────────────────────────────────

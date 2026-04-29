@@ -55,6 +55,15 @@ export const PAYMENT_METHODS = [
 export const LEGACY_PAYMENT_MAP = { card_machine: ["credit", "debit"] };
 
 /**
+ * Returns the human-readable label for a payment_method value.
+ * Falls back to "—" when the value is unknown or empty.
+ */
+export function getPaymentMethodLabel(value) {
+  if (!value) return "—";
+  return PAYMENT_METHODS.find((m) => m.value === value)?.label || value;
+}
+
+/**
  * Labels para métodos de entrega.
  */
 export const DELIVERY_METHODS = [
