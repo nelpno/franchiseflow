@@ -122,6 +122,8 @@
 - Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
 - Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
 - Mensagens de UI com horário: usar "às 02h" (preposição = ponto no tempo), NUNCA "após 02h" (interpretado como "a cada 2 horas")
+- `getFranchiseDisplayName(f)` SEM passar `config` (segundo arg) cai em fallback `f.city`. Para dropdown/seleção sem config carregado, usar diretamente `f.name + ' — ' + f.city + '/' + f.state_uf`
+- `TabResultado.jsx:643` aceita prop `franchiseId` — fetcha sales/expenses/inventory/auditLogs da franquia. Reusável em admin (ex: /Financeiro tab "Por Unidade" passa franchiseId selecionado pra mostrar visão idêntica do franqueado, com poder de editar)
 
 ### Integração n8n / Bot
 - V4 produção: `aRBzPABwrjhWCPvq` | V3 `XqWZyLl1AHlnJvdj` DESATIVADO
@@ -185,12 +187,11 @@
 - `EXPENSE_CATEGORIES` em [src/lib/expenseCategories.js](src/lib/expenseCategories.js) — array com `{value, label PT-BR, icon Material, color, help}`. Use em ExpenseForm, "Onde foi o dinheiro", LancarCompraSheet
 - `getCategoryMeta(value)` retorna meta da categoria com fallback `outros`
 
-**`calculatePnL()` refactor non-breaking** ([src/lib/financialCalcs.js](src/lib/financialCalcs.js)):
-- **Legacy intacto** (admin Financeiro/Reports/FranchiseFinanceTable etc continuam usando): `lucro`, `custoProdutos`, `outrasDespesas`, `margem`
-- **Campos novos** (TabResultado novo usa): `lucroCaixa`, `lucroCompetencia`, `gastosCompraProduto`, `gastosOperacionais`, `margemCaixa`, `margemCompetencia`
-- `lucroCaixa = totalRecebido - taxasCartao - outrasDespesas` (caixa puro, INCLUI compra_produto)
-- `lucroCompetencia = totalRecebido - custoProdutos - taxasCartao - gastosOperacionais` (sem dupla contagem)
-- 22 testes em [src/lib/financialCalcs.test.mjs](src/lib/financialCalcs.test.mjs) — rodar com `node src/lib/financialCalcs.test.mjs`
+**`calculatePnL()` — só caixa puro** ([src/lib/financialCalcs.js](src/lib/financialCalcs.js), simplificado 29/04 commit `d2ec8bf`):
+- Retorna apenas: `vendas`, `freteCobrado`, `totalDescontos`, `totalRecebido`, `taxasCartao`, `outrasDespesas`, `lucroCaixa`, `margemCaixa`, `salesCount`
+- `lucroCaixa = totalRecebido - taxasCartao - outrasDespesas` — admin e franqueado VEEM O MESMO NÚMERO. NÃO existe mais `lucro`, `lucroCompetencia`, `custoProdutos`, `gastosCompraProduto`, `gastosOperacionais`
+- Param `_saleItems` mantido por compat de assinatura (3 args nas chamadas), mas ignorado
+- 24 testes em [src/lib/financialCalcs.test.mjs](src/lib/financialCalcs.test.mjs) — rodar com `node src/lib/financialCalcs.test.mjs`
 
 **Utils novos no mesmo arquivo:**
 - `calcularEstoqueResumo(inventoryItems)` → `{custoTotal, vendaPotencial, qtdProdutosAtivos, markupMedioPct}` — fallback client-side do RPC
@@ -324,7 +325,7 @@
 - RPCs `get_franchise_ranking` e `get_franchise_report_data`: guards `is_admin_or_manager() OR managed_franchise_ids()` — SECURITY DEFINER com ownership check
 
 ## Features Removidas (NÃO recriar)
-Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx
+Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx, FranchiseHealthScore (do AdminDashboard apenas — substituído por LastPurchaseOrderCard 29/04; componente mantido em Acompanhamento/BotIntelligence/FranchiseHealthDetail)
 
 ## Meta-regras
 - NUNCA alterar `franchise_configurations` sem verificar compatibilidade com vendedor genérico
@@ -347,3 +348,4 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - Project ref: `sulgicnqqopyhulglakd`
 - SQL: `POST .../projects/{ref}/database/query` com `Authorization: Bearer {sbp_token}`
 - Executar SQL via API com context-mode: `ctx_execute` com `fetch()` JavaScript (curl bloqueado pelo context-mode hook)
+- **EXPLAIN de SQL function STABLE** mostra só `Function Scan` opaco (a função inlinea no plano externo mas não aparece). Para ver o plano real, copiar o body da função (`pg_get_functiondef`) e rodar `EXPLAIN ANALYZE` direto na query SQL inline
