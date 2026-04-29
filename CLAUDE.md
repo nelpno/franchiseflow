@@ -152,6 +152,7 @@
 - 6 métodos de pagamento: Dinheiro, Pix, Crédito, Débito, NFC, Outro. Taxas via tabela `payment_fees` por franquia
 - `sales.observacoes` TEXT — campo livre para instruções de entrega/obs do franqueado. Aparece no comprovante (SaleReceipt)
 - `payment_confirmed` + `confirmed_at` para conferência. Columns DEVE incluir ambos
+- **Confirmar venda dispara CAPI** (29/04/2026): `payment_confirmed:false→true` em TabLancar dispara `fireCapiOnConfirm` (fire-and-forget, helpers no topo do arquivo). Edits nessa região DEVEM preservar a chamada — sem ela, atribuição Meta para vendas manuais quebra de novo. Bulk confirm usa `fireCapiBatch` (throttle 5x). Delete de venda `capi_sent=true` mostra confirm dialog
 - `sale_date` é DATE only — `created_at` para timestamp. Edição = deletar items + reinserir
 - MiniRevenueChart: SEMPRE usar `realtimeRevenue` de `allSales` (fetchAll: true). NUNCA fallback para `cronRevenue` de `daily_summaries` — cron não recalcula quando `sale_date` muda, causando vendas fantasma no gráfico
 - Período "Semana" (StatsCards): `startOfWeek(now, { weekStartsOn: 1 })` — começa na **segunda-feira**, vai até hoje
@@ -323,6 +324,7 @@ Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login G
 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY
 SUPABASE_MANAGEMENT_TOKEN (sbp_, pode expirar — fallback service_role via PostgREST)
 VITE_N8N_WEBHOOK_BASE=https://webhook.dynamicagents.tech/webhook
+VITE_CAPI_MANUAL_TOKEN (uuid v4, par com CAPI_MANUAL_WEBHOOK_TOKEN no n8n stack 4)
 N8N_API_KEY / N8N_VENDEDOR_V4_WORKFLOW_ID=aRBzPABwrjhWCPvq
 N8N_WHATSAPP_WEBHOOK=a9c45ef7-36f7-4a64-ad9e-edadb69a31af
 ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
