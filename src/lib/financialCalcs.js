@@ -22,77 +22,35 @@ export function getSaleNetValue(sale) {
 }
 
 /**
- * Calculates P&L for a set of sales, sale items, and expenses.
+ * Calculates P&L for a set of sales and expenses (visão de caixa puro).
  *
- * **Non-breaking refactor (1A.2)**: campos legacy (lucro, custoProdutos, outrasDespesas)
- * mantidos exatamente como antes — admin Financeiro/Reports continuam funcionando.
- * Campos novos (lucroCaixa, lucroCompetencia, gastosCompraProduto, gastosOperacionais)
- * são adicionados para o TabResultado novo (visão didática "caixa puro").
+ * Receita - Taxas de cartão - Todas as despesas. Compra de produto entra no mês
+ * em que foi paga (NÃO usa CMV — admin e franqueado veem o mesmo número).
  *
- * Returns:
- *   Legacy:  vendas, freteCobrado, totalDescontos, totalRecebido,
- *            custoProdutos, taxasCartao, outrasDespesas, lucro, margem, salesCount
- *   Novos:   gastosCompraProduto, gastosOperacionais,
- *            lucroCaixa  — visão de caixa puro (Receita - Taxas - Todas Despesas)
- *            lucroCompetencia  — sem dupla contagem (Receita - CMV - Taxas - Despesas operacionais)
+ * Param `_saleItems` mantido por compat de chamadas existentes; ignorado.
  */
-export function calculatePnL(sales, saleItems, expenses) {
+export function calculatePnL(sales, _saleItems, expenses) {
   const vendas = sales.reduce((sum, s) => sum + (parseFloat(s.value) || 0), 0);
   const freteCobrado = sales.reduce((sum, s) => sum + (parseFloat(s.delivery_fee) || 0), 0);
   const totalDescontos = sales.reduce((sum, s) => sum + (parseFloat(s.discount_amount) || 0), 0);
   const totalRecebido = vendas + freteCobrado - totalDescontos;
 
-  const custoProdutos = saleItems.reduce(
-    (sum, si) => sum + (parseFloat(si.quantity) || 0) * (parseFloat(si.cost_price) || 0),
-    0
-  );
-
   const taxasCartao = sales.reduce((sum, s) => sum + (parseFloat(s.card_fee_amount) || 0), 0);
   const outrasDespesas = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
-  // Legacy lucro (mantém comportamento atual — admin depende disso)
-  const lucro = totalRecebido - custoProdutos - taxasCartao - outrasDespesas;
-  const margem = totalRecebido > 0 ? (lucro / totalRecebido) * 100 : 0;
-
-  // Novos campos categorizados (1A.1+ — só funcionam com expenses contendo `category`)
-  const gastosCompraProduto = expenses.reduce(
-    (sum, e) => sum + (e.category === "compra_produto" ? parseFloat(e.amount) || 0 : 0),
-    0
-  );
-  const gastosOperacionais = outrasDespesas - gastosCompraProduto;
-
-  // lucroCaixa: visão didática para a Dona Maria
-  // Receita - Taxas - TODAS as despesas (compra de produto entra no mês em que pagou)
-  // NÃO usa CMV — não confunde franqueada
   const lucroCaixa = totalRecebido - taxasCartao - outrasDespesas;
   const margemCaixa = totalRecebido > 0 ? (lucroCaixa / totalRecebido) * 100 : 0;
 
-  // lucroCompetencia: para análise admin SEM dupla contagem
-  // Receita - CMV (custo das vendas) - Taxas - Despesas operacionais (sem compra_produto)
-  const lucroCompetencia =
-    totalRecebido - custoProdutos - taxasCartao - gastosOperacionais;
-  const margemCompetencia =
-    totalRecebido > 0 ? (lucroCompetencia / totalRecebido) * 100 : 0;
-
   return {
-    // Legacy (não-breaking)
     vendas,
     freteCobrado,
     totalDescontos,
     totalRecebido,
-    custoProdutos,
     taxasCartao,
     outrasDespesas,
-    lucro,
-    margem,
-    salesCount: sales.length,
-    // Novos (1A.2)
-    gastosCompraProduto,
-    gastosOperacionais,
     lucroCaixa,
     margemCaixa,
-    lucroCompetencia,
-    margemCompetencia,
+    salesCount: sales.length,
   };
 }
 

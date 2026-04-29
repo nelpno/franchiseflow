@@ -33,91 +33,50 @@ const sales = [
 // totalRecebido = 1000 + 50 + 2000 + 100 - 50 = 3100
 // taxasCartao = 105
 
-const saleItems = [
-  { quantity: 5, cost_price: 18, unit_price: 30, product_name: "Lasanha" },
-  { quantity: 3, cost_price: 15, unit_price: 25, product_name: "Nhoque" },
-];
-// custoProdutos = 5*18 + 3*15 = 90 + 45 = 135
-
-// Cenário 1: expenses sem categoria (legacy)
-const expensesLegacy = [
+const expenses = [
+  { amount: 500 },
   { amount: 200 },
+  { amount: 100 },
   { amount: 150 },
 ];
-// outrasDespesas = 350
-
-// Cenário 2: expenses categorizadas (1A.1+)
-const expensesCategorized = [
-  { amount: 500, category: "compra_produto" },  // compra de fornecedor
-  { amount: 200, category: "aluguel" },
-  { amount: 100, category: "energia" },
-  { amount: 150, category: "marketing" },
-];
 // outrasDespesas = 950
-// gastosCompraProduto = 500
-// gastosOperacionais = 450
 
-// ─── calculatePnL: legacy mantido ───────────────────────────────────────────
-console.log("\n📊 calculatePnL — legacy mantido (não-breaking)");
+// ─── calculatePnL ───────────────────────────────────────────────────────────
+console.log("\n📊 calculatePnL — caixa puro");
 
-test("retorna todos os campos legacy", () => {
-  const r = calculatePnL(sales, saleItems, expensesLegacy);
+test("retorna todos os campos esperados", () => {
+  const r = calculatePnL(sales, null, expenses);
   assert.equal(r.vendas, 3000);
   assert.equal(r.freteCobrado, 150);
   assert.equal(r.totalDescontos, 50);
   assert.equal(r.totalRecebido, 3100);
-  assert.equal(r.custoProdutos, 135);
   assert.equal(r.taxasCartao, 105);
-  assert.equal(r.outrasDespesas, 350);
-  assert.equal(r.lucro, 3100 - 135 - 105 - 350);  // 2510
+  assert.equal(r.outrasDespesas, 950);
   assert.equal(r.salesCount, 2);
-  assert.equal(Math.round(r.margem * 10) / 10, 81);
 });
 
-test("expenses sem 'category' não quebra (default 0 para gastosCompraProduto)", () => {
-  const r = calculatePnL(sales, saleItems, expensesLegacy);
-  assert.equal(r.gastosCompraProduto, 0);
-  assert.equal(r.gastosOperacionais, 350);
-});
-
-// ─── calculatePnL: campos novos categorizados ───────────────────────────────
-console.log("\n📊 calculatePnL — campos novos (1A.2)");
-
-test("gastosCompraProduto soma só category=compra_produto", () => {
-  const r = calculatePnL(sales, saleItems, expensesCategorized);
-  assert.equal(r.gastosCompraProduto, 500);
-});
-
-test("gastosOperacionais = todas - compra_produto", () => {
-  const r = calculatePnL(sales, saleItems, expensesCategorized);
-  assert.equal(r.gastosOperacionais, 450);
-});
-
-test("lucroCaixa = receita - taxas - todas as despesas (caixa puro)", () => {
-  const r = calculatePnL(sales, saleItems, expensesCategorized);
+test("lucroCaixa = receita - taxas - todas as despesas", () => {
+  const r = calculatePnL(sales, null, expenses);
   // 3100 - 105 - 950 = 2045
   assert.equal(r.lucroCaixa, 2045);
 });
 
-test("lucroCompetencia = receita - CMV - taxas - operacionais (sem dupla contagem)", () => {
-  const r = calculatePnL(sales, saleItems, expensesCategorized);
-  // 3100 - 135 - 105 - 450 = 2410
-  assert.equal(r.lucroCompetencia, 2410);
+test("margemCaixa = lucroCaixa / totalRecebido * 100", () => {
+  const r = calculatePnL(sales, null, expenses);
+  // 2045 / 3100 ≈ 65.97%
+  assert.equal(Math.round(r.margemCaixa * 100) / 100, 65.97);
 });
 
-test("relação matemática: lucroCaixa - lucroCompetencia = gastosCompraProduto - custoProdutos", () => {
-  const r = calculatePnL(sales, saleItems, expensesCategorized);
-  // 2045 - 2410 = -365
-  // 500 - 135 = 365 → diferença oposta (caixa pagou compra mas competência só usou CMV vendido)
-  assert.equal(r.lucroCaixa - r.lucroCompetencia, -(r.gastosCompraProduto - r.custoProdutos));
-});
-
-test("totalRecebido = 0 → margem = 0 (sem div/0)", () => {
-  const r = calculatePnL([], [], []);
+test("totalRecebido = 0 → margemCaixa = 0 (sem div/0)", () => {
+  const r = calculatePnL([], null, []);
   assert.equal(r.totalRecebido, 0);
-  assert.equal(r.margem, 0);
   assert.equal(r.margemCaixa, 0);
-  assert.equal(r.margemCompetencia, 0);
+});
+
+test("ignora _saleItems (compat de assinatura)", () => {
+  const r1 = calculatePnL(sales, null, expenses);
+  const r2 = calculatePnL(sales, [{ quantity: 99, cost_price: 999 }], expenses);
+  assert.equal(r1.lucroCaixa, r2.lucroCaixa);
 });
 
 // ─── calcularEstoqueResumo ──────────────────────────────────────────────────
