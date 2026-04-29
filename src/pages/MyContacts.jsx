@@ -166,7 +166,7 @@ export default function MyContacts() {
       setLoadError(null);
       const data = await Contact.list("-created_at", null, {
         fetchAll: true,
-        columns: 'id, franchise_id, nome, telefone, contact_phone, customer_name, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas',
+        columns: 'id, franchise_id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas',
         signal: controller.signal,
       });
       if (!mountedRef.current) return;

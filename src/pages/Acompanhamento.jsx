@@ -81,7 +81,7 @@ export default function Acompanhamento() {
             gte: { date: cutoff90d },
           }),
           FranchiseNote.list("-created_at", null, {
-            columns: 'id, franchise_id, content, created_at',
+            columns: 'id, franchise_id, note, created_at',
             fetchAll: true,
             gte: { created_at: cutoff90dIso },
           }),

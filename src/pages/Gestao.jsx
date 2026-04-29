@@ -22,7 +22,7 @@ const TAB_MAP = {
 
 // Columns enxuto compartilhado entre loadData e handleRefreshInventory para evitar
 // inconsistência de schema no estado inventoryItems (refresh puxava SELECT * antes).
-const INVENTORY_COLUMNS = 'id, franchise_id, product_name, quantity, min_stock, cost_price, sale_price, hidden_at, category, updated_at, created_by_franchisee, active';
+const INVENTORY_COLUMNS = 'id, franchise_id, product_name, quantity, min_stock, cost_price, sale_price, category, updated_at, created_by_franchisee, active';
 
 export default function Gestao() {
   const [searchParams, setSearchParams] = useSearchParams();
