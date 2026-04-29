@@ -28,8 +28,7 @@ function calculateHealthScore({
   inventoryItems,
   purchaseOrders,
   todayContacts,
-  botConversations = [],
-  conversationMessages = [],
+  botSummary = [],
   botSales = [],
 }) {
   const today = new Date();
@@ -95,25 +94,22 @@ function calculateHealthScore({
   }
 
   // --- Bot (20 pts) ---
+  // Consome agregados do RPC get_bot_conversation_summary (per-franchise per-day).
+  // Soma 90d para esta franquia.
   let botScore = 0;
   let hasBotData = false;
-  const botConvos = botConversations.filter((c) => c.franchise_id === evoId);
-  if (botConvos.length > 0) {
+  const franchiseSummary = botSummary.filter((s) => s.franchise_id === evoId);
+  const totalConvos = franchiseSummary.reduce((sum, s) => sum + Number(s.total || 0), 0);
+  const totalAutonomous = franchiseSummary.reduce((sum, s) => sum + Number(s.autonomous || 0), 0);
+  if (totalConvos > 0) {
     hasBotData = true;
     // Autonomy (10pts max, target 40%)
-    const humanMsgsByConvo = {};
-    conversationMessages.forEach((m) => {
-      if (m.franchise_id === evoId && m.conversation_id) {
-        humanMsgsByConvo[m.conversation_id] = (humanMsgsByConvo[m.conversation_id] || 0) + (m._count || 1);
-      }
-    });
-    const autonomousCount = botConvos.filter((c) => !humanMsgsByConvo[c.id]).length;
-    const autonomyRate = autonomousCount / botConvos.length;
+    const autonomyRate = totalAutonomous / totalConvos;
     const autonomyPts = Math.min(10, Math.round((autonomyRate / 0.40) * 10));
 
     // Conversion (10pts max, target 15%)
     const franchiseBotSales = botSales.filter((s) => s.franchise_id === evoId && s.source === "bot");
-    const conversionRate = franchiseBotSales.length / botConvos.length;
+    const conversionRate = franchiseBotSales.length / totalConvos;
     const conversionPts = Math.min(10, Math.round((conversionRate / 0.15) * 10));
 
     botScore = autonomyPts + conversionPts;
@@ -176,15 +172,8 @@ function calculateHealthScore({
 
   let botReason = "Sem dados do bot";
   if (hasBotData) {
-    const humanMsgsByConvo2 = {};
-    conversationMessages.forEach((m) => {
-      if (m.franchise_id === evoId && m.conversation_id) {
-        humanMsgsByConvo2[m.conversation_id] = true;
-      }
-    });
-    const autoCount = botConvos.filter((c) => !humanMsgsByConvo2[c.id]).length;
-    const autoRate = Math.round((autoCount / botConvos.length) * 100);
-    botReason = `${botConvos.length} conversas, ${autoRate}% autonomia`;
+    const autoRate = Math.round((totalAutonomous / totalConvos) * 100);
+    botReason = `${totalConvos} conversas, ${autoRate}% autonomia`;
   }
 
   // If no bot data, redistribute bot points proportionally
@@ -262,8 +251,7 @@ export default function FranchiseHealthScore({
   purchaseOrders,
   todayContacts,
   configMap = {},
-  botConversations = [],
-  conversationMessages = [],
+  botSummary = [],
   botSales = [],
 }) {
   const navigate = useNavigate();
@@ -279,8 +267,7 @@ export default function FranchiseHealthScore({
           inventoryItems: inventoryByFranchise[f.id] || [],
           purchaseOrders,
           todayContacts,
-          botConversations,
-          conversationMessages,
+          botSummary,
           botSales,
         });
         return {
@@ -289,7 +276,7 @@ export default function FranchiseHealthScore({
         };
       })
       .sort((a, b) => a.total - b.total); // worst first for attention
-  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, todayContacts, botConversations, conversationMessages, botSales]);
+  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, todayContacts, botSummary, botSales]);
 
   if (scores.length === 0) return null;
 

@@ -5,38 +5,31 @@ import { createPageUrl } from "@/utils";
 import { startOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export default function BotSummaryCard({ botConversations }) {
+/**
+ * Performance Bot mensal — consome agregados do RPC get_bot_conversation_summary.
+ * Shape: Array<{day: string|Date, total, converted, abandoned, ongoing, ...}>
+ */
+export default function BotSummaryCard({ botSummary }) {
   const metrics = useMemo(() => {
-    if (!botConversations?.length) return null;
+    if (!botSummary?.length) return null;
 
-    const monthStart = startOfMonth(new Date()).toISOString();
-    const monthConversations = botConversations.filter(c => c.started_at >= monthStart);
-    if (!monthConversations.length) return null;
+    const monthStartStr = format(startOfMonth(new Date()), "yyyy-MM-dd");
+    // String(s.day) defensivo: supabase pode retornar `day` como string YYYY-MM-DD ou Date.
+    const monthData = botSummary.filter((s) => String(s.day) >= monthStartStr);
+    if (!monthData.length) return null;
 
-    const total = monthConversations.length;
-    const now = Date.now();
-    const cutoff24h = now - 24 * 60 * 60 * 1000;
-    const activeStatuses = ['started', 'catalog_sent', 'items_discussed', 'checkout_started'];
-
-    const ongoing = monthConversations.filter(c => {
-      if (c.outcome) return c.outcome === 'ongoing';
-      return activeStatuses.includes(c.status) && new Date(c.updated_at).getTime() >= cutoff24h;
-    }).length;
+    const total = monthData.reduce((sum, s) => sum + Number(s.total || 0), 0);
+    const ongoing = monthData.reduce((sum, s) => sum + Number(s.ongoing || 0), 0);
+    const converted = monthData.reduce((sum, s) => sum + Number(s.converted || 0), 0);
+    const abandoned = monthData.reduce((sum, s) => sum + Number(s.abandoned || 0), 0);
     const concluded = total - ongoing;
-
-    const converted = monthConversations.filter(c =>
-      c.status === 'converted' || c.outcome === 'converted'
-    ).length;
-    const abandoned = monthConversations.filter(c =>
-      c.status === 'abandoned' || c.outcome === 'abandoned'
-    ).length;
 
     const conversionRate = concluded > 0 ? Math.round((converted / concluded) * 100) : 0;
     const abandonRate = concluded > 0 ? Math.round((abandoned / concluded) * 100) : 0;
 
     const monthLabel = format(new Date(), "MMM/yy", { locale: ptBR });
     return { total, concluded, converted, conversionRate, abandonRate, monthLabel };
-  }, [botConversations]);
+  }, [botSummary]);
 
   if (!metrics) {
     return (

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { differenceInDays, parseISO } from "date-fns";
+import { differenceInDays, parseISO, format } from "date-fns";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
@@ -86,7 +86,7 @@ function AlertGroup({ level, icon, label, items, type }) {
   );
 }
 
-export default function AlertsPanel({ franchises, allSales, inventoryByFranchise, purchaseOrders, configMap = {}, botConversations = [], conversationMessages = [], contacts = [] }) {
+export default function AlertsPanel({ franchises, allSales, inventoryByFranchise, purchaseOrders, configMap = {}, botSummary = [], conversationMessages = [], contacts = [] }) {
   const navigate = useNavigate();
 
   const alertGroups = useMemo(() => {
@@ -177,29 +177,37 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
     const excessiveIntervention = [];
     const staleLeads = [];
     const sevenDaysAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgoStr = format(sevenDaysAgoDate, "yyyy-MM-dd");
 
     for (const franchise of franchises) {
       const evoId = franchise.evolution_instance_id;
       const config = configMap[evoId];
       const fName = getFranchiseDisplayName(franchise, config);
 
-      // Bot inactive: 0 conversations in 7 days
-      const recentConvos = (botConversations || []).filter(
-        (c) => c.franchise_id === evoId && new Date(c.started_at || c.created_at) >= sevenDaysAgoDate
-      );
-      if (recentConvos.length === 0 && (botConversations || []).some((c) => c.franchise_id === evoId)) {
+      // Filter botSummary aggregates por franquia
+      const franchiseSummary = (botSummary || []).filter((s) => s.franchise_id === evoId);
+      const recent7dSummary = franchiseSummary.filter((s) => String(s.day) >= sevenDaysAgoStr);
+      const recentConvosCount = recent7dSummary.reduce((sum, s) => sum + Number(s.total || 0), 0);
+      const hadBotEver = franchiseSummary.length > 0;
+
+      // Bot inactive: 0 conversations in 7 days mas teve bot algum dia
+      if (recentConvosCount === 0 && hadBotEver) {
         botInactive.push({ name: fName });
       }
 
-      // Excessive human intervention: avg human msgs > 3 per conversation
-      if (recentConvos.length > 0) {
-        const humanMsgs = (conversationMessages || []).filter(
-          (m) => m.franchise_id === evoId && m.conversation_id && recentConvos.some((c) => c.id === m.conversation_id)
-        );
-        const totalHumanMsgs = humanMsgs.reduce((sum, m) => sum + (m._count || 1), 0);
-        const avgHuman = totalHumanMsgs / recentConvos.length;
-        if (avgHuman > 3) {
-          excessiveIntervention.push({ name: fName, count: Math.round(avgHuman) });
+      // Excessive human intervention: avg msgs humanas > 3 por conversa (90d window).
+      // humanMsgCounts não tem started_at — usa janela 90d em vez de 7d (alert menos
+      // responsivo mas estatisticamente correto).
+      if (hadBotEver) {
+        const totalConvs90d = franchiseSummary.reduce((sum, s) => sum + Number(s.total || 0), 0);
+        const totalHumanMsgs90d = (conversationMessages || [])
+          .filter((m) => m.franchise_id === evoId)
+          .reduce((sum, m) => sum + Number(m._count || 0), 0);
+        if (totalConvs90d > 0) {
+          const avgHuman = totalHumanMsgs90d / totalConvs90d;
+          if (avgHuman > 3) {
+            excessiveIntervention.push({ name: fName, count: Math.round(avgHuman) });
+          }
         }
       }
 
@@ -216,7 +224,7 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
     }
 
     return { noSalesCritical, noSalesWarning, zeroStock, lowStock, noReorder, botInactive, excessiveIntervention, staleLeads };
-  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, configMap, botConversations, conversationMessages, contacts]);
+  }, [franchises, allSales, inventoryByFranchise, purchaseOrders, configMap, botSummary, conversationMessages, contacts]);
 
   const redCount = alertGroups.noSalesCritical.length + alertGroups.botInactive.length;
   const orangeCount = alertGroups.noSalesWarning.length + alertGroups.zeroStock.length;

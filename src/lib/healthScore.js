@@ -95,26 +95,25 @@ function calcOrdersScore(franchise, ordersData) {
   return { score, detail, daysSince, lastOrderDate: mostRecent, noData: false };
 }
 
-function calcBotScore(franchise, botConversations, conversationMessages, botSales) {
+/**
+ * Score do bot via agregados (RPC get_bot_conversation_summary).
+ * Consome botSummary: Array<{franchise_id, day, total, converted, autonomous, ...}>
+ */
+function calcBotScore(franchise, botSummary) {
   const evoId = franchise.evolution_instance_id;
-  const convos = botConversations.filter((c) => c.franchise_id === evoId);
+  const summary = (botSummary || []).filter((s) => s.franchise_id === evoId);
+  const total = summary.reduce((sum, s) => sum + Number(s.total || 0), 0);
 
-  if (convos.length === 0) return { score: 0, detail: "Sem dados do bot", hasData: false, autonomyRate: 0, noData: true };
+  if (total === 0) return { score: 0, detail: "Sem dados do bot", hasData: false, autonomyRate: 0, noData: true };
 
-  // Autonomy: conversations without human intervention (10pts max, target 40%)
-  const humanMsgsByConvo = {};
-  conversationMessages.forEach((m) => {
-    if (m.franchise_id === evoId && m.conversation_id) {
-      humanMsgsByConvo[m.conversation_id] = (humanMsgsByConvo[m.conversation_id] || 0) + 1;
-    }
-  });
-  const autonomousCount = convos.filter((c) => !humanMsgsByConvo[c.id]).length;
-  const autonomyRate = convos.length > 0 ? autonomousCount / convos.length : 0;
+  // Autonomy: conversas sem intervenção humana (10pts max, target 40%)
+  const autonomous = summary.reduce((sum, s) => sum + Number(s.autonomous || 0), 0);
+  const autonomyRate = autonomous / total;
   const autonomyPts = Math.min(10, Math.round((autonomyRate / 0.40) * 10));
 
   // Conversion rate (5pts max, target 10%)
-  const converted = convos.filter(c => c.outcome === 'converted').length;
-  const conversionRate = convos.length > 0 ? converted / convos.length : 0;
+  const converted = summary.reduce((sum, s) => sum + Number(s.converted || 0), 0);
+  const conversionRate = converted / total;
   const conversionPts = Math.min(5, Math.round(conversionRate * 50));
 
   const rawScore = autonomyPts + conversionPts; // max 15
@@ -140,7 +139,7 @@ function calcSetupScore(franchise, configData, extraData = {}) {
   const config = configData.find(
     (c) => c.franchise_evolution_instance_id === evoId
   );
-  const { sales = [], inventory = [], orders = [], botConversations = [] } = extraData;
+  const { sales = [], inventory = [], orders = [], botSummary = [] } = extraData;
 
   const franchiseSales = sales.filter(
     (s) => s.franchise_id === franchise.id || s.franchise_id === evoId
@@ -150,13 +149,11 @@ function calcSetupScore(franchise, configData, extraData = {}) {
     (po) => po.franchise_id === franchise.id || po.franchise_id === evoId
   );
 
-  const now = new Date();
-  const fourteenDaysAgo = subDays(now, 14);
-  const recentBotConvos = botConversations.filter((c) => {
-    if (c.franchise_id !== evoId) return false;
-    const d = c.started_at || c.created_at;
-    return d && new Date(d) >= fourteenDaysAgo;
-  });
+  const fourteenDaysAgoStr = format(subDays(new Date(), 14), "yyyy-MM-dd");
+  // Agregado: soma total de conversas dos últimos 14d para esta franquia
+  const recentBotCount = (botSummary || [])
+    .filter((s) => s.franchise_id === evoId && String(s.day) >= fourteenDaysAgoStr)
+    .reduce((sum, s) => sum + Number(s.total || 0), 0);
 
   const signals = {
     whatsapp: !!(config && evoId),
@@ -165,7 +162,7 @@ function calcSetupScore(franchise, configData, extraData = {}) {
     inventory: franchiseInventory.some((i) => parseFloat(i.sale_price) > 0),
     orders: franchiseOrders.length > 0,
     sales: franchiseSales.length > 0,
-    bot: recentBotConvos.length > 0,
+    bot: recentBotCount > 0,
   };
 
   const SIGNAL_POINTS = { whatsapp: 20, pix: 15, delivery: 10, inventory: 15, orders: 15, sales: 15, bot: 10 };
@@ -201,18 +198,15 @@ export function calculateFranchiseHealth(franchise, data) {
     sales = [],
     inventory = [],
     orders = [],
-    onboarding = [],
     configs = [],
-    botConversations = [],
-    conversationMessages = [],
-    botSales = [],
+    botSummary = [],
   } = data;
 
   const vendas = calcSalesScore(franchise, sales);
   const estoque = calcInventoryScore(franchise, inventory);
   const reposicao = calcOrdersScore(franchise, orders);
-  const setup = calcSetupScore(franchise, configs, { sales, inventory, orders, botConversations });
-  const bot = calcBotScore(franchise, botConversations, conversationMessages, botSales);
+  const setup = calcSetupScore(franchise, configs, { sales, inventory, orders, botSummary });
+  const bot = calcBotScore(franchise, botSummary);
 
   const isNew = franchise.created_at &&
     differenceInDays(new Date(), new Date(franchise.created_at)) < 14;

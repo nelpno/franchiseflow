@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { supabase } from "@/api/supabaseClient";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, BotConversation, Contact } from "@/entities/all";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, Contact } from "@/entities/all";
 import { format, subDays } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -63,7 +63,10 @@ export default function AdminDashboard() {
   const [yesterdaySales, setYesterdaySales] = useState([]);
   const [allSales, setAllSales] = useState([]);
   const [configMap, setConfigMap] = useState({});
-  const [botConversations, setBotConversations] = useState([]);
+  // botSummary: agregados per-franchise per-day vindos do RPC get_bot_conversation_summary.
+  // Substitui o array bruto botConversations (28k rows) por ~880 rows agregados.
+  // Shape: Array<{franchise_id, day, total, converted, abandoned, ongoing, autonomous, with_human_msgs}>
+  const [botSummary, setBotSummary] = useState([]);
   const [botLeadsDaily, setBotLeadsDaily] = useState([]);
   const [humanMsgCounts, setHumanMsgCounts] = useState([]);
   const [loadError, setLoadError] = useState(null);
@@ -166,29 +169,31 @@ export default function AdminDashboard() {
       setIsLoading(false);
       hasLoadedOnceRef.current = true;
 
-      // ═══ WAVE 2 enxuta: Bot stats (alimenta BotSummaryCard visível) ═══
+      // ═══ WAVE 2 enxuta: Bot aggregates (alimenta BotSummaryCard visível) ═══
       // Contact + InventoryItem + PurchaseOrder agora são lazy (loadCollapsedData)
+      // BotConversation array bruto (28k rows / 20s pagination) substituído por
+      // RPC get_bot_conversation_summary (~880 rows agregados / 1 round-trip).
       const wave2 = await Promise.allSettled([
-        BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true, gte: { started_at: cutoff90d } }),
+        supabase.rpc('get_bot_conversation_summary', { p_since: cutoff90d }).abortSignal(signal),
         supabase.rpc('get_human_message_counts', { p_since: cutoff90d }).abortSignal(signal),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
 
       const w2Failed = wave2
-        .map((r, i) => r.status === "rejected" ? ["botConversations","humanMsgCounts"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["botSummary","humanMsgCounts"][i] : null)
         .filter(Boolean);
       if (w2Failed.length > 0) {
         console.warn("Wave 2 parcialmente falhou:", w2Failed);
         toast.error(safeFailedQueriesMessage(w2Failed));
       }
 
-      // RPC returns { data, error } directly from supabase.rpc()
-      const rpcResult = wave2[1].status === "fulfilled" ? wave2[1].value : { data: [] };
-      const msgCountsData = rpcResult?.data || [];
+      // Both RPCs return { data, error } directly from supabase.rpc()
+      const botSummaryRpc = wave2[0].status === "fulfilled" ? wave2[0].value : { data: [] };
+      const humanMsgsRpc = wave2[1].status === "fulfilled" ? wave2[1].value : { data: [] };
 
-      setBotConversations(getValue(wave2[0]));
-      setHumanMsgCounts(msgCountsData);
+      setBotSummary(botSummaryRpc?.data || []);
+      setHumanMsgCounts(humanMsgsRpc?.data || []);
       setIsLoadingWave2(false);
 
       // Polling-driven refresh do lazy data: se admin já expandiu seções colapsadas,
@@ -227,7 +232,8 @@ export default function AdminDashboard() {
   // - { force: false } (default): cold-load via onFirstExpand. No-op se já carregou.
   // - { force: true }: polling-driven refresh. Mantém dados antigos visíveis durante refetch.
   const loadCollapsedData = useCallback(async ({ force = false } = {}) => {
-    if (!force && hasFetchedCollapsed) return;
+    // Usa ref síncrono (vs state stale do React) para guard idempotente.
+    if (!force && hasFetchedCollapsedRef.current) return;
     // Guard síncrono: bloqueia 2 chamadas concorrentes (cold-load + force ou 2× force).
     if (lazyFetchingRef.current) return;
     lazyFetchingRef.current = true;
@@ -540,7 +546,7 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <BotSummaryCard botConversations={botConversations} />
+          <BotSummaryCard botSummary={botSummary} />
           <FinanceiroSummaryCard allSales={allSales} configMap={configMap} />
         </div>
       )}
@@ -583,7 +589,7 @@ export default function AdminDashboard() {
             inventoryByFranchise={collapsedData.inventoryByFranchise}
             purchaseOrders={collapsedData.purchaseOrders}
             configMap={configMap}
-            botConversations={botConversations}
+            botSummary={botSummary}
             conversationMessages={conversationMessages}
             contacts={collapsedData.contacts}
           />
@@ -617,8 +623,7 @@ export default function AdminDashboard() {
             purchaseOrders={collapsedData.purchaseOrders}
             todayContacts={todayContacts}
             configMap={configMap}
-            botConversations={botConversations}
-            conversationMessages={conversationMessages}
+            botSummary={botSummary}
             botSales={allSales}
           />
         )}
