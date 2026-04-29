@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
+import { format, subDays } from "date-fns";
 import { User, Franchise, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
@@ -18,6 +19,10 @@ const TAB_MAP = {
   estoque: "estoque",
   reposicao: "reposicao",
 };
+
+// Columns enxuto compartilhado entre loadData e handleRefreshInventory para evitar
+// inconsistência de schema no estado inventoryItems (refresh puxava SELECT * antes).
+const INVENTORY_COLUMNS = 'id, franchise_id, product_name, quantity, min_stock, cost_price, sale_price, hidden_at, category, updated_at, created_by_franchisee, active';
 
 export default function Gestao() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -77,9 +82,22 @@ export default function Gestao() {
       setFranchises(franchisesData);
 
       // Dados de tabs — carregam em paralelo, falha não bloqueia a página
+      // Janela 90d em SaleItem (TabResultado/TabReposicao analisam mês atual; 90d é folga 3×).
+      // InventoryItem mantém fetchAll (estoque atual, sem janela temporal).
+      const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
+      const cutoff90dIso = `${cutoff90d}T00:00:00.000Z`;
       const [inventoryResult, saleItemsResult] = await Promise.allSettled([
-        InventoryItem.list("-updated_at", null, { signal }),
-        SaleItem.list(null, null, { signal }),
+        InventoryItem.list("-updated_at", null, {
+          columns: INVENTORY_COLUMNS,
+          fetchAll: true,
+          signal,
+        }),
+        SaleItem.list("-created_at", null, {
+          columns: 'id, sale_id, quantity, unit_price, cost_price, product_name, created_at',
+          fetchAll: true,
+          gte: { created_at: cutoff90dIso },
+          signal,
+        }),
       ]);
       if (!mountedRef.current || signal.aborted) return;
 
@@ -111,7 +129,10 @@ export default function Gestao() {
 
   const handleRefreshInventory = async () => {
     try {
-      const data = await InventoryItem.list("-updated_at");
+      const data = await InventoryItem.list("-updated_at", null, {
+        columns: INVENTORY_COLUMNS,
+        fetchAll: true,
+      });
       setInventoryItems(data);
     } catch (error) {
       console.error("Erro ao recarregar estoque:", error);

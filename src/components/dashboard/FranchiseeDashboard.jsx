@@ -3,7 +3,7 @@ import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
 import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
+import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -76,11 +76,13 @@ export default function FranchiseeDashboard() {
 
       const today = getToday();
       const yesterday = getYesterday();
+      // Janela 90d: cobre period max "month" (30d) com folga 3×. healthScore + stats não precisam de mais.
+      const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
         evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", null,
-          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source', signal, fetchAll: true })
-          : Promise.resolve([]),                          // [0] ALL recent sales (+ source for bot filter)
+          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } })
+          : Promise.resolve([]),                          // [0] sales últimos 90d (+ source for bot filter)
         evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30,
           { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal })
           : Promise.resolve([]),                          // [1] summaries (MiniRevenueChart, dailyGoal)

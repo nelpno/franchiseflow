@@ -5,7 +5,7 @@ import {
   Franchise, User, Sale, InventoryItem, PurchaseOrder,
   OnboardingChecklist, FranchiseConfiguration, DailyChecklist, FranchiseNote
 } from "@/entities/all";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { calculateFranchiseHealth, STATUS_COLORS, STATUS_LABELS } from "@/lib/healthScore";
+import { calculateFranchiseHealth, STATUS_COLORS } from "@/lib/healthScore";
 import HealthScoreBar from "@/components/acompanhamento/HealthScoreBar";
 import FranchiseHealthDetail from "@/components/acompanhamento/FranchiseHealthDetail";
 
@@ -54,15 +54,37 @@ export default function Acompanhamento() {
         return;
       }
 
+      // Janela 90d: cobre healthScore.calcSalesScore (thresholds 0-5d) + detail "Última venda há X dias" com folga.
+      const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
+      const cutoff90dIso = `${cutoff90d}T00:00:00.000Z`;
       const results = await Promise.allSettled([
           Franchise.list(),
-          Sale.list("-created_at", 1000),
-          InventoryItem.list("franchise_id", null, { fetchAll: true }),
-          PurchaseOrder.list("-ordered_at", 500),
-          OnboardingChecklist.list("franchise_id", 200),
-          FranchiseConfiguration.list("franchise_evolution_instance_id", 200),
-          DailyChecklist.list("-date", 500),
-          FranchiseNote.list("-created_at", 500),
+          Sale.list("-created_at", null, {
+            columns: 'id, franchise_id, sale_date, created_at',
+            fetchAll: true,
+            gte: { sale_date: cutoff90d },
+          }),
+          InventoryItem.list("franchise_id", null, {
+            columns: 'id, franchise_id, product_name, quantity, min_stock, active, updated_at',
+            fetchAll: true,
+          }),
+          PurchaseOrder.list("-ordered_at", null, {
+            columns: 'id, franchise_id, status, ordered_at, delivered_at',
+            fetchAll: true,
+            gte: { ordered_at: cutoff90dIso },
+          }),
+          OnboardingChecklist.list("franchise_id", null, { fetchAll: true }),
+          FranchiseConfiguration.list("franchise_evolution_instance_id", null, { fetchAll: true }),
+          DailyChecklist.list("-date", null, {
+            columns: 'id, franchise_id, date',
+            fetchAll: true,
+            gte: { date: cutoff90d },
+          }),
+          FranchiseNote.list("-created_at", null, {
+            columns: 'id, franchise_id, content, created_at',
+            fetchAll: true,
+            gte: { created_at: cutoff90dIso },
+          }),
         ]);
 
       if (!mountedRef.current) return;

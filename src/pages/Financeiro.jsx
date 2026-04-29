@@ -43,15 +43,19 @@ export default function Financeiro() {
         return;
       }
 
+      // Janela 18m: cobre 12m úteis + buffer comparativo M-1 (mês -13 ainda dentro do range).
+      const cutoff18m = format(subMonths(new Date(), 18), "yyyy-MM-dd");
       const results = await Promise.allSettled([
         Franchise.list(),
         Sale.list("-sale_date", null, {
           columns: "id, franchise_id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, payment_method, created_at",
           fetchAll: true,
+          gte: { sale_date: cutoff18m },
         }),
         Expense.list("-expense_date", null, {
           columns: "id, franchise_id, expense_date, amount",
           fetchAll: true,
+          gte: { expense_date: cutoff18m },
         }),
         InventoryItem.list("franchise_id", null, {
           columns: "id, franchise_id, product_name, cost_price, sale_price, quantity, min_stock",

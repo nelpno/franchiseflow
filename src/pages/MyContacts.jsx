@@ -17,7 +17,6 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
-import { formatBRL } from "@/lib/formatBRL";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -167,6 +166,7 @@ export default function MyContacts() {
       setLoadError(null);
       const data = await Contact.list("-created_at", null, {
         fetchAll: true,
+        columns: 'id, franchise_id, nome, telefone, contact_phone, customer_name, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas',
         signal: controller.signal,
       });
       if (!mountedRef.current) return;
