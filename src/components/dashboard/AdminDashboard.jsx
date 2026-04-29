@@ -11,7 +11,7 @@ import { safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import AdminHeader from "./AdminHeader";
 import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
-import FranchiseHealthScore from "./FranchiseHealthScore";
+import LastPurchaseOrderCard from "./LastPurchaseOrderCard";
 import DailyRevenueChart from "./DailyRevenueChart";
 import BotSummaryCard from "./BotSummaryCard";
 import FinanceiroSummaryCard from "./FinanceiroSummaryCard";
@@ -598,8 +598,8 @@ export default function AdminDashboard() {
 
       {/* Saúde das Franquias — lazy-load: mesmo dataset compartilhado com Alertas */}
       <CollapsibleSection
-        title="Saúde das Franquias"
-        icon="monitor_heart"
+        title="Última Reposição"
+        icon="local_shipping"
         defaultOpen={false}
         onFirstExpand={() => loadCollapsedData()}
       >
@@ -607,7 +607,7 @@ export default function AdminDashboard() {
           <Skeleton className="h-64 rounded-2xl" />
         ) : collapsedData.error ? (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-800 flex items-center justify-between gap-3">
-            <span>Erro ao carregar saúde: {collapsedData.error}</span>
+            <span>Erro ao carregar pedidos: {collapsedData.error}</span>
             <button
               onClick={() => loadCollapsedData()}
               className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 shrink-0"
@@ -616,15 +616,10 @@ export default function AdminDashboard() {
             </button>
           </div>
         ) : (
-          <FranchiseHealthScore
+          <LastPurchaseOrderCard
             franchises={franchises}
-            allSales={allSales}
-            inventoryByFranchise={collapsedData.inventoryByFranchise}
             purchaseOrders={collapsedData.purchaseOrders}
-            todayContacts={todayContacts}
             configMap={configMap}
-            botSummary={botSummary}
-            botSales={allSales}
           />
         )}
       </CollapsibleSection>
