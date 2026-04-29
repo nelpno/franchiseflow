@@ -275,11 +275,13 @@ export default function TabReposicao({
 
       {/* Purchase Order Dialog */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d]">
-              <MaterialIcon icon="local_shipping" size={20} className="text-[#d4af37]" />
-              {initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d] min-w-0">
+              <MaterialIcon icon="local_shipping" size={20} className="text-[#d4af37] shrink-0" />
+              <span className="truncate">
+                {initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
+              </span>
             </DialogTitle>
           </DialogHeader>
           <PurchaseOrderForm
