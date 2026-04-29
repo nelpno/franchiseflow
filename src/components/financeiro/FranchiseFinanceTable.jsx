@@ -54,12 +54,12 @@ export default function FranchiseFinanceTable({
       let va, vb;
       switch (sortBy) {
         case "margem":
-          va = a.pnl.margem;
-          vb = b.pnl.margem;
+          va = a.pnl.margemCaixa;
+          vb = b.pnl.margemCaixa;
           break;
         case "lucro":
-          va = a.pnl.lucro;
-          vb = b.pnl.lucro;
+          va = a.pnl.lucroCaixa;
+          vb = b.pnl.lucroCaixa;
           break;
         case "faturamento":
           va = a.pnl.totalRecebido;
@@ -70,8 +70,8 @@ export default function FranchiseFinanceTable({
             ? (a.name || "").localeCompare(b.name || "", "pt-BR")
             : (b.name || "").localeCompare(a.name || "", "pt-BR");
         default:
-          va = a.pnl.margem;
-          vb = b.pnl.margem;
+          va = a.pnl.margemCaixa;
+          vb = b.pnl.margemCaixa;
       }
       return sortAsc ? va - vb : vb - va;
     });
@@ -166,17 +166,17 @@ export default function FranchiseFinanceTable({
                     <div className="text-right">
                       <p className="text-xs text-[#7a6d6d]">Custos</p>
                       <p className="text-sm font-medium text-[#4a3d3d]">
-                        {formatBRLCompact(f.pnl.custoProdutos + f.pnl.taxasCartao + f.pnl.outrasDespesas)}
+                        {formatBRLCompact(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-[#7a6d6d]">Lucro</p>
-                      <p className={`text-sm font-bold ${f.pnl.lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-                        {formatBRLCompact(f.pnl.lucro)}
+                      <p className={`text-sm font-bold ${f.pnl.lucroCaixa >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                        {formatBRLCompact(f.pnl.lucroCaixa)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <MarginBadge margem={f.pnl.margem} />
+                      <MarginBadge margem={f.pnl.margemCaixa} />
                     </div>
                     <MaterialIcon
                       icon={isExpanded ? "expand_less" : "expand_more"}
@@ -193,7 +193,7 @@ export default function FranchiseFinanceTable({
                         <p className="text-xs text-[#7a6d6d]">{f.city}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <MarginBadge margem={f.pnl.margem} />
+                        <MarginBadge margem={f.pnl.margemCaixa} />
                         <MaterialIcon
                           icon={isExpanded ? "expand_less" : "expand_more"}
                           size={20}
@@ -209,13 +209,13 @@ export default function FranchiseFinanceTable({
                       <div>
                         <p className="text-[10px] text-[#7a6d6d]">Custos</p>
                         <p className="text-xs font-medium text-[#4a3d3d]">
-                          {formatBRLCompact(f.pnl.custoProdutos + f.pnl.taxasCartao + f.pnl.outrasDespesas)}
+                          {formatBRLCompact(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
                         </p>
                       </div>
                       <div>
                         <p className="text-[10px] text-[#7a6d6d]">Lucro</p>
-                        <p className={`text-xs font-bold ${f.pnl.lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-                          {formatBRLCompact(f.pnl.lucro)}
+                        <p className={`text-xs font-bold ${f.pnl.lucroCaixa >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                          {formatBRLCompact(f.pnl.lucroCaixa)}
                         </p>
                       </div>
                     </div>

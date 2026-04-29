@@ -229,7 +229,7 @@ export default function Financeiro() {
       );
 
       totalRecebidoAll += pnl.totalRecebido;
-      lucroAll += pnl.lucro;
+      lucroAll += pnl.lucroCaixa;
 
       data.push({
         franchiseId: evoId,
@@ -248,9 +248,9 @@ export default function Financeiro() {
     // Worst franchise by margin (only those with sales)
     const withSales = data.filter((d) => d.pnl.salesCount > 0);
     const worst = withSales.length > 0
-      ? withSales.reduce((min, d) => (d.pnl.margem < min.pnl.margem ? d : min))
+      ? withSales.reduce((min, d) => (d.pnl.margemCaixa < min.pnl.margemCaixa ? d : min))
       : null;
-    const worstInfo = worst ? { name: worst.name, margem: worst.pnl.margem } : null;
+    const worstInfo = worst ? { name: worst.name, margem: worst.pnl.margemCaixa } : null;
 
     // Inventory grouped by franchise
     const invByFranchise = {};

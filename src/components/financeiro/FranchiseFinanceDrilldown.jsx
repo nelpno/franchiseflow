@@ -56,14 +56,13 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
           <PnlRow label="Descontos" value={-pnl.totalDescontos} color="#dc2626" />
           <div className="border-t border-[#e9e8e9] my-1" />
           <PnlRow label="Total Recebido" value={pnl.totalRecebido} bold />
-          <PnlRow label="(-) Custo produtos" value={-pnl.custoProdutos} color="#dc2626" />
           <PnlRow label="(-) Taxas cartao" value={-pnl.taxasCartao} color="#dc2626" />
-          <PnlRow label="(-) Outras despesas" value={-pnl.outrasDespesas} color="#dc2626" />
+          <PnlRow label="(-) Despesas" value={-pnl.outrasDespesas} color="#dc2626" />
           <div className="border-t border-[#e9e8e9] my-1" />
           <PnlRow
-            label="Lucro Estimado"
-            value={pnl.lucro}
-            color={pnl.lucro >= 0 ? "#16a34a" : "#dc2626"}
+            label="Lucro do Mes"
+            value={pnl.lucroCaixa}
+            color={pnl.lucroCaixa >= 0 ? "#16a34a" : "#dc2626"}
             bold
           />
         </div>
