@@ -79,6 +79,38 @@ function formatTimeSafe(dateString) {
   }
 }
 
+// CAPI Manual Sale: dispara Purchase Meta ao confirmar venda manual.
+// Workflow n8n SendCapiOnSaleManual idempotente (skipa se capi_sent=true).
+// Fire-and-forget: falha silenciosa pra nao bloquear UI.
+async function fireCapiOnConfirm(saleId) {
+  try {
+    const base = import.meta.env.VITE_N8N_WEBHOOK_BASE;
+    const token = import.meta.env.VITE_CAPI_MANUAL_TOKEN;
+    if (!base || !token || !saleId) return;
+    await fetch(`${base}/send-capi-on-sale-manual`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ sale_id: saleId }),
+    });
+  } catch {
+    /* fail silent */
+  }
+}
+
+// Throttle helper para bulk confirm: chunks de 5 com 200ms gap.
+async function fireCapiBatch(saleIds, batchSize = 5, gapMs = 200) {
+  for (let i = 0; i < saleIds.length; i += batchSize) {
+    const chunk = saleIds.slice(i, i + batchSize);
+    await Promise.all(chunk.map((id) => fireCapiOnConfirm(id)));
+    if (i + batchSize < saleIds.length) {
+      await new Promise((r) => setTimeout(r, gapMs));
+    }
+  }
+}
+
 export default function TabLancar({
   franchiseId,
   franchiseName,
@@ -207,6 +239,13 @@ export default function TabLancar({
   // Delete sale
   const handleConfirmDelete = async () => {
     if (!deletingSale) return;
+    // Aviso quando venda ja enviou CAPI: deletar deixa Purchase fantasma no Meta
+    if (deletingSale.capi_sent) {
+      const ok = window.confirm(
+        "Esta venda ja enviou conversao para o Meta Ads. Deletar agora deixa um registro fantasma na atribuicao do anuncio. Continuar mesmo assim?"
+      );
+      if (!ok) return;
+    }
     setIsDeleting(true);
     try {
       await Sale.delete(deletingSale.id);
@@ -233,6 +272,8 @@ export default function TabLancar({
         confirmed_at: newValue ? new Date().toISOString() : null,
       });
       toast.success(newValue ? "Pagamento confirmado!" : "Confirmação removida.");
+      // Dispara CAPI Purchase apenas na flip false -> true
+      if (newValue) fireCapiOnConfirm(sale.id);
       onRefresh();
     } catch (err) {
       console.error("Erro ao confirmar pagamento:", err);
@@ -258,6 +299,7 @@ export default function TabLancar({
     let failed = 0;
     try {
       const BATCH_SIZE = 10;
+      const succeededIds = [];
       for (let i = 0; i < pendingSales.length; i += BATCH_SIZE) {
         const batch = pendingSales.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
@@ -265,8 +307,14 @@ export default function TabLancar({
             Sale.update(s.id, { payment_confirmed: true, confirmed_at: now })
           )
         );
-        succeeded += results.filter((r) => r.status === "fulfilled").length;
-        failed += results.filter((r) => r.status === "rejected").length;
+        results.forEach((r, idx) => {
+          if (r.status === "fulfilled") {
+            succeeded += 1;
+            succeededIds.push(batch[idx].id);
+          } else {
+            failed += 1;
+          }
+        });
       }
       if (failed > 0) {
         toast.error(`${failed} venda(s) não foram confirmadas.`);
@@ -274,6 +322,8 @@ export default function TabLancar({
       if (succeeded > 0) {
         toast.success(`${succeeded} venda(s) confirmada(s)!`);
       }
+      // Dispara CAPI em batch (throttle 5x para nao floodar Meta)
+      if (succeededIds.length > 0) fireCapiBatch(succeededIds);
       onRefresh();
     } catch (err) {
       console.error("Erro ao confirmar vendas em lote:", err);

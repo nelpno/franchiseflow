@@ -254,6 +254,7 @@
 - Campos `contacts`: `meta_click_id`, `meta_fbclid`, `meta_ad_id`, `meta_adset_id`, `meta_campaign_id`
 - `franchise_configurations`: `meta_pixel_id`, `meta_access_token`, `meta_dataset_id`, `whatsapp_business_account_id`
 - Pixel produção: `5852647818195435`
+- **CAPI em vendas manuais** (29/04/2026): TabLancar dispara `fireCapiOnConfirm(saleId)` (fire-and-forget) na flip `payment_confirmed: false→true` — single toggle e bulk confirm (throttle 5x). Webhook n8n `SendCapiOnSaleManual` (`xNBgSwQ6QduaS6jT`, URL `/webhook/send-capi-on-sale-manual`). Auth via `VITE_CAPI_MANUAL_TOKEN` (Bearer) ↔ `CAPI_MANUAL_WEBHOOK_TOKEN` no n8n env. Idempotente (skipa se `capi_sent=true`). Skipa também se `contact_id=null` ou franquia sem WABA. `event_id = purchase_manual_<sale_id>` distingue do bot. Delete de venda c/ `capi_sent=true` mostra confirm dialog avisando registro fantasma no Meta
 
 ### Convites
 - Franqueado: `inviteFranchisee()` via webhook n8n (NÃO `resetPasswordForEmail` — email duplicado)
