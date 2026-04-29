@@ -476,6 +476,7 @@ function EvolucaoCard({ evolucao }) {
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     const item = payload[0].payload;
+    const margem = item.margemPct || 0;
     return (
       <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg px-3 py-2 text-xs">
         <p className="font-bold text-[#1b1c1d] capitalize mb-1">{label}</p>
@@ -488,7 +489,17 @@ function EvolucaoCard({ evolucao }) {
             <span className={`font-mono-numbers font-medium ${item.lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
               {formatBRL(item.lucro)}
             </span>
+            {item.receita > 0 && (
+              <span className={`ml-1.5 text-[10px] ${margem >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                ({margem >= 0 ? "+" : ""}{margem.toFixed(1)}% margem)
+              </span>
+            )}
           </p>
+          {item.mediaMovel != null && (
+            <p className="text-[#4a3d3d] text-[10px] pt-1 mt-1 border-t border-[#291715]/5">
+              Média 3m: <span className="font-mono-numbers font-medium">{formatBRL(item.mediaMovel)}</span>
+            </p>
+          )}
         </div>
       </div>
     );
@@ -583,6 +594,19 @@ function EvolucaoCard({ evolucao }) {
                   <Line
                     yAxisId="right"
                     type="monotone"
+                    dataKey="mediaMovel"
+                    name="Média 3m"
+                    stroke="#b91c1c"
+                    strokeOpacity={0.35}
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
+                    dot={false}
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
                     dataKey="lucro"
                     name="Lucro"
                     stroke="#b91c1c"
@@ -594,14 +618,18 @@ function EvolucaoCard({ evolucao }) {
               </ResponsiveContainer>
             </div>
 
-            <div className="flex items-center justify-center gap-5 mt-2 text-xs text-[#4a3d3d]">
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-[#4a3d3d] flex-wrap">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded bg-[#1b1c1d]/30" />
-                <span>Receita <span className="text-[#1b1c1d]/60">(esquerda)</span></span>
+                <span>Receita <span className="text-[#1b1c1d]/60">(esq)</span></span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-0.5 bg-[#b91c1c]" />
-                <span>Lucro <span className="text-[#b91c1c]/70">(direita)</span></span>
+                <span>Lucro <span className="text-[#b91c1c]/70">(dir)</span></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-[#b91c1c]/35" style={{ borderTop: "1.5px dashed #b91c1c", height: 0, opacity: 0.6 }} />
+                <span className="text-[#4a3d3d]/70">Média 3 meses</span>
               </div>
             </div>
           </>
@@ -737,7 +765,7 @@ export default function TabResultado({ franchiseId, currentUser }) {
     return inventoryItems.filter(i => i.active !== false && (parseFloat(i.quantity) || 0) > 0 && !soldItemIds.has(i.id)).length;
   }, [sales, saleItems, inventoryItems]);
 
-  // Evolução 6 meses
+  // Evolução 6 meses: Receita (barras) + Lucro (linha) + Média móvel 3m (linha tracejada)
   const evolucaoData = useMemo(() => {
     const data = [];
     for (let i = 5; i >= 0; i--) {
@@ -748,14 +776,25 @@ export default function TabResultado({ franchiseId, currentUser }) {
       const mSaleItems = saleItems.filter(si => mSaleIds.has(si.sale_id));
       const mExpenses = expenses.filter(e => isInMonth(e.expense_date || e.created_at, d));
       const monthPnL = calculatePnL(mSales, mSaleItems, mExpenses);
+      const margemPct = monthPnL.totalRecebido > 0
+        ? (monthPnL.lucroCaixa / monthPnL.totalRecebido) * 100
+        : 0;
       data.push({
         mes: monthKey,
         receita: monthPnL.totalRecebido,
         lucro: monthPnL.lucroCaixa,
+        margemPct,
         isCurrent: i === 0,
       });
     }
-    // Só mostra evolução se tiver pelo menos 2 meses com dados
+
+    // Média móvel 3 meses do lucro (tendência suavizada)
+    for (let i = 0; i < data.length; i++) {
+      const window = data.slice(Math.max(0, i - 2), i + 1);
+      const avg = window.reduce((s, d) => s + d.lucro, 0) / window.length;
+      data[i].mediaMovel = window.length >= 2 ? avg : null;
+    }
+
     const hasData = data.filter(d => d.receita > 0).length;
     return hasData >= 2 ? data : [];
   }, [sales, saleItems, expenses, selectedMonth]);
