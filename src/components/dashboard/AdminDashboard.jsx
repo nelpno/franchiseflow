@@ -18,10 +18,22 @@ import FinanceiroSummaryCard from "./FinanceiroSummaryCard";
 import { buildConfigMap } from "@/lib/franchiseUtils";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
-function CollapsibleSection({ title, icon, defaultOpen = false, children }) {
+function CollapsibleSection({ title, icon, defaultOpen = false, onFirstExpand, children }) {
   const [open, setOpen] = useState(defaultOpen);
+  // Idempotente: dispara onFirstExpand apenas na 1ª transição closed→open.
+  // Inicia true se defaultOpen=true (não deve chamar callback se já abre montado).
+  const hasExpandedRef = useRef(defaultOpen);
+
+  const handleOpenChange = useCallback((newOpen) => {
+    setOpen(newOpen);
+    if (newOpen && !hasExpandedRef.current) {
+      hasExpandedRef.current = true;
+      onFirstExpand?.();
+    }
+  }, [onFirstExpand]);
+
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={open} onOpenChange={handleOpenChange}>
       <CollapsibleTrigger asChild>
         <button className="w-full flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl shadow-sm border border-[#291715]/5 hover:bg-[#fbf9fa] transition-colors cursor-pointer">
           <div className="flex items-center gap-2.5">
@@ -50,17 +62,30 @@ export default function AdminDashboard() {
   const [todaySales, setTodaySales] = useState([]);
   const [yesterdaySales, setYesterdaySales] = useState([]);
   const [allSales, setAllSales] = useState([]);
-  const [inventoryByFranchise, setInventoryByFranchise] = useState({});
-  const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [configMap, setConfigMap] = useState({});
   const [botConversations, setBotConversations] = useState([]);
   const [botLeadsDaily, setBotLeadsDaily] = useState([]);
   const [humanMsgCounts, setHumanMsgCounts] = useState([]);
-  const [contacts, setContacts] = useState([]);
   const [loadError, setLoadError] = useState(null);
+  // Lazy state: 3 datasets pesados (~2.1 MB) carregados sob demanda quando usuário
+  // expande Alertas ou Saúde das Franquias. Polling refresh quando hasFetchedCollapsed=true.
+  const [collapsedData, setCollapsedData] = useState({
+    contacts: [],
+    inventoryByFranchise: {},
+    purchaseOrders: [],
+    isLoading: false,
+    error: null,
+  });
+  const [hasFetchedCollapsed, setHasFetchedCollapsed] = useState(false);
   const mountedRef = useRef(true);
   const abortControllerRef = useRef(null);
+  const lazyAbortRef = useRef(null);
   const hasLoadedOnceRef = useRef(false);
+  const hasFetchedCollapsedRef = useRef(false);
+  const loadCollapsedDataRef = useRef(null);
+  // Guard síncrono de concorrência: previne 2 chamadas force:true em paralelo
+  // (collapsedData.isLoading só é setado em cold-load, não cobre force-refresh).
+  const lazyFetchingRef = useRef(false);
 
   const getToday = () => format(new Date(), "yyyy-MM-dd");
   const getYesterday = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
@@ -141,19 +166,17 @@ export default function AdminDashboard() {
       setIsLoading(false);
       hasLoadedOnceRef.current = true;
 
-      // ═══ WAVE 2: Alertas + Health Score (background, ~27 requests → ~20 com RPC) ═══
+      // ═══ WAVE 2 enxuta: Bot stats (alimenta BotSummaryCard visível) ═══
+      // Contact + InventoryItem + PurchaseOrder agora são lazy (loadCollapsedData)
       const wave2 = await Promise.allSettled([
         BotConversation.list('-started_at', null, { columns: 'id, franchise_id, started_at, outcome, status, updated_at', signal, fetchAll: true, gte: { started_at: cutoff90d } }),
         supabase.rpc('get_human_message_counts', { p_since: cutoff90d }).abortSignal(signal),
-        Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at, last_contact_at, last_purchase_at, purchase_count, nome, telefone, created_at', signal, fetchAll: true }),
-        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
-        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
 
       const w2Failed = wave2
-        .map((r, i) => r.status === "rejected" ? ["botConversations","humanMsgCounts","contacts","estoque","purchaseOrders"][i] : null)
+        .map((r, i) => r.status === "rejected" ? ["botConversations","humanMsgCounts"][i] : null)
         .filter(Boolean);
       if (w2Failed.length > 0) {
         console.warn("Wave 2 parcialmente falhou:", w2Failed);
@@ -166,25 +189,13 @@ export default function AdminDashboard() {
 
       setBotConversations(getValue(wave2[0]));
       setHumanMsgCounts(msgCountsData);
-      setContacts(getValue(wave2[2]));
-      setPurchaseOrders(getValue(wave2[4]));
-
-      // Group inventory by franchise UUID
-      const allInventory = getValue(wave2[3]);
-      const evoToId = {};
-      franchiseData.forEach((f) => {
-        if (f.evolution_instance_id) evoToId[f.evolution_instance_id] = f.id;
-      });
-      const inventoryMap = {};
-      allInventory.forEach((item) => {
-        const fUuid = evoToId[item.franchise_id];
-        if (fUuid) {
-          if (!inventoryMap[fUuid]) inventoryMap[fUuid] = [];
-          inventoryMap[fUuid].push(item);
-        }
-      });
-      setInventoryByFranchise(inventoryMap);
       setIsLoadingWave2(false);
+
+      // Polling-driven refresh do lazy data: se admin já expandiu seções colapsadas,
+      // refresca em paralelo pra evitar inconsistência (sales novos vs alerts velhos).
+      if (hasFetchedCollapsedRef.current) {
+        loadCollapsedDataRef.current?.({ force: true }).catch(() => {});
+      }
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
@@ -206,10 +217,99 @@ export default function AdminDashboard() {
     return () => {
       mountedRef.current = false;
       abortControllerRef.current?.abort();
+      lazyAbortRef.current?.abort();
     };
   }, [loadData]);
 
   useVisibilityPolling(loadData, 300000);
+
+  // Lazy fetch: dados pesados de Alertas + Health Score sob demanda.
+  // - { force: false } (default): cold-load via onFirstExpand. No-op se já carregou.
+  // - { force: true }: polling-driven refresh. Mantém dados antigos visíveis durante refetch.
+  const loadCollapsedData = useCallback(async ({ force = false } = {}) => {
+    if (!force && hasFetchedCollapsed) return;
+    // Guard síncrono: bloqueia 2 chamadas concorrentes (cold-load + force ou 2× force).
+    if (lazyFetchingRef.current) return;
+    lazyFetchingRef.current = true;
+
+    lazyAbortRef.current?.abort();
+    const controller = new AbortController();
+    lazyAbortRef.current = controller;
+    const { signal } = controller;
+
+    // Cold-load: skeleton. Refresh: mantém dados visíveis (sem flash).
+    if (!force) {
+      setCollapsedData(prev => ({ ...prev, isLoading: true, error: null }));
+    }
+
+    try {
+      const results = await Promise.allSettled([
+        Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at, last_contact_at, last_purchase_at, purchase_count, nome, telefone, created_at', signal, fetchAll: true }),
+        InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
+        PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
+      ]);
+      if (!mountedRef.current || signal.aborted) return;
+
+      const failed = results
+        .map((r, i) => r.status === 'rejected' ? ['contacts', 'estoque', 'purchaseOrders'][i] : null)
+        .filter(Boolean);
+
+      // Tudo falhou em cold-load → erro com retry
+      if (failed.length === results.length && !force) {
+        throw new Error(safeFailedQueriesMessage(failed));
+      }
+
+      const contactsData = results[0].status === 'fulfilled' ? results[0].value : (force ? collapsedData.contacts : []);
+      const allInventory = results[1].status === 'fulfilled' ? results[1].value : null;
+      const purchaseData = results[2].status === 'fulfilled' ? results[2].value : (force ? collapsedData.purchaseOrders : []);
+
+      // Build inventoryMap (mesmo código que estava em loadData)
+      let inventoryMap = collapsedData.inventoryByFranchise;
+      if (allInventory !== null) {
+        const evoToId = {};
+        franchises.forEach((f) => {
+          if (f.evolution_instance_id) evoToId[f.evolution_instance_id] = f.id;
+        });
+        inventoryMap = {};
+        allInventory.forEach((item) => {
+          const fUuid = evoToId[item.franchise_id];
+          if (fUuid) {
+            if (!inventoryMap[fUuid]) inventoryMap[fUuid] = [];
+            inventoryMap[fUuid].push(item);
+          }
+        });
+      }
+
+      setCollapsedData({
+        contacts: contactsData,
+        inventoryByFranchise: inventoryMap,
+        purchaseOrders: purchaseData,
+        isLoading: false,
+        error: null,
+      });
+      if (!hasFetchedCollapsed) setHasFetchedCollapsed(true);
+
+      if (failed.length > 0) {
+        console.warn("Lazy data parcialmente falhou:", failed);
+        if (!force) toast.error(safeFailedQueriesMessage(failed));
+      }
+    } catch (err) {
+      if (signal.aborted || !mountedRef.current) return;
+      if (err?.name === 'AbortError') return;
+      console.error("Erro no loadCollapsedData:", err);
+      // Refresh-fail é silencioso (mantém dados antigos). Cold-load mostra erro com retry.
+      if (!force) {
+        setCollapsedData(prev => ({ ...prev, isLoading: false, error: err?.message || "Erro desconhecido" }));
+      }
+    } finally {
+      lazyFetchingRef.current = false;
+    }
+  }, [hasFetchedCollapsed, collapsedData.contacts, collapsedData.inventoryByFranchise, collapsedData.purchaseOrders, franchises]);
+
+  // Sincroniza refs para uso em loadData (que não pode depender de hasFetchedCollapsed/loadCollapsedData
+  // sem virar instável e re-disparar polling/effects). Padrão "stable callback via ref".
+  useEffect(() => { hasFetchedCollapsedRef.current = hasFetchedCollapsed; }, [hasFetchedCollapsed]);
+  useEffect(() => { loadCollapsedDataRef.current = loadCollapsedData; }, [loadCollapsedData]);
 
   // Build conversationMessages-compatible array from RPC counts for child components
   const conversationMessages = useMemo(() => {
@@ -457,42 +557,72 @@ export default function AdminDashboard() {
       {/* Chart — Faturamento por dia usando dados reais de vendas */}
       <DailyRevenueChart allSales={allSales} isLoading={isLoading} days={chartDays} />
 
-      {/* Alertas — colapsado por padrão */}
-      {isLoadingWave2 ? (
-        <Skeleton className="h-12 rounded-2xl" />
-      ) : (
-        <CollapsibleSection title="Alertas" icon="warning" defaultOpen={false}>
+      {/* Alertas — lazy-load: dados pesados (contacts/inventory/PO) só ao expandir */}
+      <CollapsibleSection
+        title="Alertas"
+        icon="warning"
+        defaultOpen={false}
+        onFirstExpand={() => loadCollapsedData()}
+      >
+        {collapsedData.isLoading || (!hasFetchedCollapsed && !collapsedData.error) ? (
+          <Skeleton className="h-64 rounded-2xl" />
+        ) : collapsedData.error ? (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>Erro ao carregar alertas: {collapsedData.error}</span>
+            <button
+              onClick={() => loadCollapsedData()}
+              className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 shrink-0"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
           <AlertsPanel
             franchises={franchises}
             allSales={allSales}
-            inventoryByFranchise={inventoryByFranchise}
-            purchaseOrders={purchaseOrders}
+            inventoryByFranchise={collapsedData.inventoryByFranchise}
+            purchaseOrders={collapsedData.purchaseOrders}
             configMap={configMap}
             botConversations={botConversations}
             conversationMessages={conversationMessages}
-            contacts={contacts}
+            contacts={collapsedData.contacts}
           />
-        </CollapsibleSection>
-      )}
+        )}
+      </CollapsibleSection>
 
-      {/* Health Score — final */}
-      {isLoadingWave2 ? (
-        <Skeleton className="h-12 rounded-2xl" />
-      ) : (
-        <CollapsibleSection title="Saúde das Franquias" icon="monitor_heart" defaultOpen={false}>
+      {/* Saúde das Franquias — lazy-load: mesmo dataset compartilhado com Alertas */}
+      <CollapsibleSection
+        title="Saúde das Franquias"
+        icon="monitor_heart"
+        defaultOpen={false}
+        onFirstExpand={() => loadCollapsedData()}
+      >
+        {collapsedData.isLoading || (!hasFetchedCollapsed && !collapsedData.error) ? (
+          <Skeleton className="h-64 rounded-2xl" />
+        ) : collapsedData.error ? (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>Erro ao carregar saúde: {collapsedData.error}</span>
+            <button
+              onClick={() => loadCollapsedData()}
+              className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 shrink-0"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
           <FranchiseHealthScore
             franchises={franchises}
             allSales={allSales}
-            inventoryByFranchise={inventoryByFranchise}
-            purchaseOrders={purchaseOrders}
+            inventoryByFranchise={collapsedData.inventoryByFranchise}
+            purchaseOrders={collapsedData.purchaseOrders}
             todayContacts={todayContacts}
             configMap={configMap}
             botConversations={botConversations}
             conversationMessages={conversationMessages}
             botSales={allSales}
           />
-        </CollapsibleSection>
-      )}
+        )}
+      </CollapsibleSection>
     </div>
   );
 }
