@@ -34,6 +34,8 @@
 - `buildConfigMap()` retorna objetos — acessar `.franchise_name`, nunca renderizar direto
 - Antes de `Entity.update()`, remover campos read-only (`id`, `created_at`, `updated_at`, `franchise`, `whatsapp_status`)
 - Storage buckets: `marketing-assets` (público), `marketing-comprovantes` (público, 5MB, JPG/PNG/PDF), `catalog-images/produtos/` (público)
+- **Pre-flight OBRIGATÓRIO antes de `columns` enxuto**: rodar `SELECT column_name FROM information_schema.columns WHERE table_name='X'` e validar TODA coluna listada. Hotfix 9e24482 (29/04/2026) teve 4 colunas inventadas (`contact_phone`, `customer_name`, `franchise_notes.content`, `inventory_items.hidden_at`) que retornaram 400 e quebraram telas (MyContacts/Acompanhamento/Gestao)
+- **Entity adapter `Sale.list/Contact.list/etc` IGNORA chave `filter:`** — só honra `{columns, signal, fetchAll, gte, lte}`. String PostgREST (ex: `filter: "sale_date=gte.X"`) é silenciosamente descartada. Bug Reports.jsx corrigido em 5ad5166 (29/04). Padrão correto: `gte: { sale_date: cutoff }, lte: { sale_date: end }`
 
 **Nomes de colunas que diferem do esperado:**
 - `inventory_items.quantity` (NÃO current_stock), `.product_name` (NÃO name)
@@ -96,7 +98,12 @@
 - Queries: tabelas que crescem (Sale, Expense, DailySummary, ConversationMessage) DEVEM usar `fetchAll: true` (pagina internamente de 1000 em 1000). Tabelas pequenas/fixas podem usar `limit` numérico
 - AdminDashboard: 10 queries paralelas `Promise.allSettled` — maioria com `fetchAll: true`. Auto-retry na query de franquias
 - AdminDashboard layout order: Stats → Mini-cards (Bot+Financeiro) → Ranking → Gráfico → Alertas (colapsado) → Health Score (colapsado). `CollapsibleSection` local usa Radix Collapsible
-- BotSummaryCard: SEMPRE filtrar `startOfMonth` (mês atual). Dados do parent vêm com 90 dias — NÃO usar sem filtro
+- BotSummaryCard: SEMPRE filtrar `startOfMonth` (mês atual). Após refactor d1828d3, consome `botSummary` aggregates (per-franchise per-day) do RPC `get_bot_conversation_summary` em vez do array bruto de conversas
+- **`fetchAll: true` em tabela > 5k rows = pagination serial × 1000 × ~700ms**. `bot_conversations` (28k) = ~20s. Solução real: RPC server-side aggregate (commit d1828d3 — `get_bot_conversation_summary` cortou cold-load 22.7s → 8.5s)
+- **TIMESTAMPTZ em filtro `gte`/`lte`** precisa formato `${cutoff}T00:00:00.000Z` (boundary issue ~3h offset BRT). Colunas DATE aceitam só `YYYY-MM-DD`
+- **`limit N` em queries 1-row-por-franquia** vira teto silencioso quando rede crescer > N. Trocar por `fetchAll: true` para tabelas pequenas (Onboarding, FranchiseConfiguration etc)
+- **Padrão lazy-load Wave 2** (commit 7983f77): `CollapsibleSection({onFirstExpand})` idempotente via `useRef(defaultOpen)` + `lazyAbortRef` (separado do `abortControllerRef`) + `lazyFetchingRef` síncrono + polling refresh `loadCollapsedDataRef.current?.({force: true})` se `hasFetchedCollapsedRef.current`. Implementado em `AdminDashboard.jsx`
+- **Throttle 60s em `useVisibilityPolling`** (commit 5ad5166): previne burst ao voltar à aba. `lastRunRef = useRef(Date.now())` evita re-fire imediato após cold-load
 - Loading: `<Skeleton>` shadcn (NÃO spinner). PageFallback relativo (NUNCA `fixed inset-0`)
 - NUNCA `new Date().toISOString().split("T")[0]` — usar `format(new Date(), "yyyy-MM-dd")`
 - **Postgres DATE (sem hora)**: SEMPRE usar `formatDateOnly(value)` ou `parseDateOnly(value)` de [src/lib/dateOnly.js](src/lib/dateOnly.js). `new Date("2026-04-30")` interpreta como UTC midnight → em BRT (UTC-3) volta 1 dia → mostra 29/04. Aplicado a `purchase_orders.estimated_delivery`, `sales.sale_date`, `expenses.expense_date`, `marketing_payments.reference_month`. Exceção: TIMESTAMPTZ (`ordered_at`, `delivered_at`, `created_at`) usa `new Date()` normal
@@ -134,6 +141,10 @@
 - n8n API: `https://teste.dynamicagents.tech` + `/api/v1` (concatenar). PUT settings: filtrar campos extras
 - SmartActions "reativar": checa `last_purchase_at >= 14d` AND `last_contact_at >= 7d`. Clicar "Feito" atualiza `last_contact_at` → suprime por 7 dias
 - SmartActions: TODAS as regras em `smartActions.js` DEVEM ter guard `last_contact_at >= 7 dias` para "Feito" persistir entre reloads. Sem o guard, `dismissedIds` (state local) some no refresh
+- **RPC `get_bot_conversation_summary(p_since timestamptz)`** (criada 29/04/2026, commit d1828d3): retorna agregados per-franchise per-day `{franchise_id, day, total, converted, abandoned, ongoing, autonomous, with_human_msgs}`. Substitui `BotConversation.list 90d fetchAll: true` (28k rows → 880 agregados, 100× mais rápido). `SECURITY DEFINER` + `is_admin_or_manager()` guard + `STABLE` + `REVOKE FROM PUBLIC` + `GRANT TO authenticated`. `FROM vw_bot_conversations` (auto-sync com filtros da view). Migration: [supabase/get-bot-conversation-summary.sql](supabase/get-bot-conversation-summary.sql). Consumers admin: BotSummaryCard, AlertsPanel, FranchiseHealthScore, healthScore.js. **Out of scope (mantém query própria)**: Reports.jsx, BotIntelligence.jsx (drill-down de conversa individual), BotPerformanceCard.jsx (franchisee)
+- **`vw_bot_conversations` view** exclui `status IN ('manual_sale','duplicate_stale')` automaticamente — RPCs novos sobre bot conversations devem `FROM` a view (não a tabela) para auto-sync
+- **`bot_conversations.outcome` valores reais (90d)**: `escalated` 21.4k, `ongoing` 5k, `abandoned` 998, `converted` 886, NULL 74, `informational` 16. **`informational` é distinto de `ongoing`** — BotSummaryCard NÃO conta como ongoing
+- **`bot_conversations.status` valores reais**: `escalated`, `abandoned`, `converted`, `started`, `manual_sale`, `duplicate_stale`. **`catalog_sent`/`items_discussed`/`checkout_started` NÃO existem** — filter "ongoing por status" usa só `'started'`
 
 ### KPI Cards & Daily Goal (fixes 11/04/2026)
 - KPI percentage: `percentageChange = null` quando `previousValue <= 0` — badge NÃO renderiza com null (evita +100% fake)
@@ -264,7 +275,9 @@
 
 ### Health Score
 - 5 dimensões: vendas, estoque, reposição, setup, bot. Pesos variam com `hasBotData`
-- DOIS sistemas: `healthScore.js` (`calculateFranchiseHealth()`) + `FranchiseHealthScore.jsx` — atualizar AMBOS
+- DOIS sistemas: `healthScore.js` (`calculateFranchiseHealth()`) + `FranchiseHealthScore.jsx` (calculateHealthScore LOCAL inline). `healthScore.js` é dead-ish (não importado em produção hoje, mantido por consistência). Atualizar AMBOS quando refatorar
+- Após refactor d1828d3 (29/04/2026), ambos consomem `botSummary` aggregates do RPC `get_bot_conversation_summary` (não mais array bruto de conversas)
+- **BUG conhecido (backlog)**: `CATEGORY_CONFIG_WITH_BOT` em [FranchiseHealthScore.jsx:232-238](src/components/dashboard/FranchiseHealthScore.jsx#L232-L238) tem `max` divergentes dos scores reais (`30/20/15/15` vs `35/25/20/15`) — barras > 100% para franquias com bot ativo. Identificado no code review do d1828d3, fix trivial pendente
 
 ### Marketing
 - `marketing_payments`: 1 por franquia/mês. UNIQUE `(franchise_id, reference_month)`. CHECK `amount >= 200`
