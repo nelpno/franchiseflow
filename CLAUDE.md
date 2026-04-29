@@ -89,6 +89,8 @@
 
 ### Frontend Patterns
 - `mountedRef` + cleanup obrigatório. `setIsLoading(false)` antes de early return
+- `ExportButtons` (shared/): retorna `null` se `data` vazio (sem disable manual). NÃO sanitiza — chamador deve pré-sanitizar com `sanitizeCSVCell`. Sem prop `summaryRow` — para linha de totais, append no array antes de passar
+- `TabResultado` aceita prop `contacts` (default `[]`) para resolver nome do cliente no export. Gestao.jsx carrega via `Contact.filter({ franchise_id })` no mesmo padrão de Vendas.jsx
 - Listas Supabase: SEMPRE sort explícito no frontend (ordem muda após updates)
 - Inline edit mobile: `onClick={e => e.stopPropagation()}` + `inputMode="numeric"`. `active:` (NÃO `hover:`)
 - Queries: tabelas que crescem (Sale, Expense, DailySummary, ConversationMessage) DEVEM usar `fetchAll: true` (pagina internamente de 1000 em 1000). Tabelas pequenas/fixas podem usar `limit` numérico
@@ -97,6 +99,7 @@
 - BotSummaryCard: SEMPRE filtrar `startOfMonth` (mês atual). Dados do parent vêm com 90 dias — NÃO usar sem filtro
 - Loading: `<Skeleton>` shadcn (NÃO spinner). PageFallback relativo (NUNCA `fixed inset-0`)
 - NUNCA `new Date().toISOString().split("T")[0]` — usar `format(new Date(), "yyyy-MM-dd")`
+- **Postgres DATE (sem hora)**: SEMPRE usar `formatDateOnly(value)` ou `parseDateOnly(value)` de [src/lib/dateOnly.js](src/lib/dateOnly.js). `new Date("2026-04-30")` interpreta como UTC midnight → em BRT (UTC-3) volta 1 dia → mostra 29/04. Aplicado a `purchase_orders.estimated_delivery`, `sales.sale_date`, `expenses.expense_date`, `marketing_payments.reference_month`. Exceção: TIMESTAMPTZ (`ordered_at`, `delivered_at`, `created_at`) usa `new Date()` normal
 - `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval
 - Error handling: `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout
 - Rotas: `createPageUrl("PageName")` → `"/PageName"` (capitalizado)
@@ -140,6 +143,9 @@
 
 ### Vendas & Financeiro
 - Faturamento = `value - discount_amount + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir). `discount_amount` DEVE ser subtraído em TODOS os cálculos de receita
+- Valor recebido por venda: SEMPRE `getSaleNetValue(sale)` de `lib/financialCalcs.js` (mesma fórmula). NUNCA `s.net_value || s.value` — `net_value` pode ser null em vendas antigas (bug Ricardo Tatuapé 28/04: R$ 118,50 saía 111,50 sem o frete)
+- Export de vendas: `SALES_EXPORT_COLUMNS` + `buildSalesExportRows(sales, contactsMap, { includeTotalsRow })` em `lib/salesExport.js` — fonte única usada por TabLancar (tela Vendas) e TabResultado (Gestão > Resultado). Adicionar coluna nova = editar só esse arquivo
+- Label de método de pagamento: `getPaymentMethodLabel(value)` de `franchiseUtils.js` (não fazer `PAYMENT_METHODS.find(...)` inline)
 - `card_fee_amount` sobre `subtotal + effectiveDeliveryFee` — label dinâmica
 - `cardFeePercent` default é `0` (NÃO 3.5). O useEffect seta o valor correto do `paymentFees` config ao carregar
 - Exibição de taxa no summary: condição é `cardFeeAmount > 0` (qualquer método), label dinâmico por `paymentMethod`

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { formatDateOnly } from "@/lib/dateOnly";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1073,7 +1074,7 @@ export default function PurchaseOrders() {
                     <span className="flex items-center gap-1.5 text-[#4a3d3d]">
                       <MaterialIcon icon="event" size={14} className="text-[#2563eb]" />
                       <span className="font-medium">Previsão:</span>
-                      {format(new Date(selectedOrder.estimated_delivery), "dd/MM/yyyy", { locale: ptBR })}
+                      {formatDateOnly(selectedOrder.estimated_delivery)}
                     </span>
                   )}
                   {selectedOrder.delivered_at && (

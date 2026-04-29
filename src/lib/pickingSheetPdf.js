@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseDateOnly } from "./dateOnly";
 
 const GROUP_ORDER = [
   "Canelone", "Conchiglione", "Massa", "Nhoque",
@@ -47,7 +48,10 @@ function fmtBRL(v) {
 
 function fmtDate(d) {
   if (!d) return "---";
-  try { return format(new Date(d), "dd/MM/yyyy", { locale: ptBR }); }
+  // estimated_delivery (DATE) precisa de parseDateOnly para evitar shift UTC.
+  // ordered_at (TIMESTAMPTZ) cai no fallback new Date().
+  const dt = parseDateOnly(d) || new Date(d);
+  try { return format(dt, "dd/MM/yyyy", { locale: ptBR }); }
   catch { return String(d); }
 }
 

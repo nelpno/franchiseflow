@@ -9,6 +9,7 @@ import { formatBRL } from "@/lib/formatBRL";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatDateOnly } from "@/lib/dateOnly";
 
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
@@ -161,10 +162,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                     {order.estimated_delivery && (
                       <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
                         <MaterialIcon icon="calendar_today" size={12} />
-                        Previsao:{" "}
-                        {format(new Date(order.estimated_delivery), "dd/MM/yyyy", {
-                          locale: ptBR,
-                        })}
+                        Previsao: {formatDateOnly(order.estimated_delivery)}
                       </span>
                     )}
 
