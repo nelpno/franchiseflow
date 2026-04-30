@@ -421,18 +421,18 @@ export default function PurchaseOrderForm({
                   }`}
                 >
                   <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-[#1b1c1d] truncate">
                       {item.product_name}
                     </h4>
-                    <p className="text-xs text-[#4a3d3d]">
+                    <p className="text-xs text-[#4a3d3d] truncate">
                       Custo: {formatBRL(item.cost_price)} · Estoque: {item.quantity ?? 0}
                     </p>
                   </div>
                   {suggestion !== null && (
                     <Badge
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold ml-2 ${
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                         hasSug
                           ? "bg-[#d4af37]/10 text-[#775a19]"
                           : "bg-[#e9e8e9] text-[#4a3d3d]"
