@@ -52,7 +52,13 @@ SELECT
   'Maxi Massas Marketing',
   'Marketing - ' || COALESCE(mp.reference_month, 'mês não informado'),
   mp.amount,
-  COALESCE(mp.updated_at::date, CURRENT_DATE),
+  -- expense_date = primeiro dia do reference_month (mês a que o marketing se refere),
+  -- com fallback pra updated_at quando reference_month NULL/inválido. Mesma regra do trigger.
+  COALESCE(
+    (CASE WHEN mp.reference_month ~ '^\d{4}-\d{2}$' THEN (mp.reference_month || '-01')::date END),
+    mp.updated_at::date,
+    CURRENT_DATE
+  ),
   'marketing_payment',
   mp.id,
   mp.created_by

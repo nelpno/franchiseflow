@@ -214,6 +214,8 @@
 
 **Triggers SQL:** todos `BEFORE UPDATE` (permite setar flag de idempotência sem recursão), `SECURITY DEFINER` + `SET search_path='public'` (linter compliance). Arquivos: `supabase/po-expense-trigger.sql`, `marketing-expense-trigger.sql`, `asaas-subscription-expense-trigger.sql`. Não conflitam com triggers existentes (`on_purchase_order_delivered` continua subindo estoque).
 
+**Marketing — competência por `reference_month` (fix 30/04/2026):** trigger `tr_mkt_generate_expense` deriva `expense_date = (reference_month || '-01')::date` (fallback `updated_at`/`CURRENT_DATE` se reference_month NULL/inválido). Despesa cai no mês a que o marketing se refere, **não** na data em que o admin confirmou. Antes usava `updated_at::date` → pagamento ref maio confirmado em 30/04 caía no DRE de abril. Backfill realinhou 27 despesas (3 abril→maio, 24 normalizadas para dia 1 do próprio mês). Mesma regra replicada em `supabase/scripts/backfill-historical-expenses.sql` para re-runs.
+
 **RPCs novas:**
 - `get_inventory_value_summary(p_franchise_id)` — agregado de estoque (custo + venda potencial + markup) para card "Em Estoque"
 - `record_external_purchase(franchise_id, type, unit_cost, qty, supplier?, expense_date?, inventory_item_id?, description?)` — atomic: cria expense + opcionalmente sobe estoque com **custo médio ponderado** (proteção div/0). `SECURITY DEFINER` valida `is_admin_or_manager() OR p_franchise_id = ANY(managed_franchise_ids())`. Tipos: `produto` (sobe estoque), `embalagem`/`insumo` (só expense)
@@ -302,7 +304,7 @@
 ### ASAAS Billing (Cobrança Recorrente)
 - Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: `register`, `register-batch`, `subscribe-batch` (accept `value` opcional), `cancel-subscription`, `update-subscription-value`, `check-payment`, `register-webhook`, `webhook`. Action `subscribe` (single) removida 18/04
 - Tabela: `system_subscriptions` (franchise_id UNIQUE, asaas_customer_id, asaas_subscription_id, subscription_status, current_payment_*, pix_payload, pix_qr_code_url, last_synced_at)
-- Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `neighborhood`, `billing_email`
+- Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `address_complement`, `neighborhood`, `billing_email`. `address_complement` é OPCIONAL (não bloqueia gate, fora de `missingFiscalFields`). Para alterar campos de endereço: tocar em FranchiseForm (state+input+submit), saveFiscalData (FRANCHISE_FIELDS), AsaasSetupPanel (columns enxuto + display), Franchises.jsx (handleSaveFiscal + initialData), FiscalDataGate (initialData + handleSubmit), asaas-billing edge (select + payload — ASAAS usa `complement`)
 - ASAAS API: `https://api.asaas.com` + `/v3/...`, header `access_token` (secret no Supabase)
 - `billingType: UNDEFINED` = franqueado escolhe boleto ou PIX
 - Paywall: `SubscriptionPaywall.jsx` — bloqueia APENAS `current_payment_status === 'OVERDUE'`, admin/manager isentos

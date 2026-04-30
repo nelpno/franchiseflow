@@ -1,5 +1,7 @@
 -- 1A.1 Migration: marketing_payments idempotency + trigger gera expense ao confirmar
 -- Status reais: pending/confirmed/rejected. Sem campo payment_date — usa updated_at.
+-- expense_date = primeiro dia do reference_month (yyyy-MM) — despesa cai no mês a que o marketing se refere,
+-- não na data em que o admin confirmou. Fallback: updated_at / CURRENT_DATE quando reference_month NULL.
 
 BEGIN;
 
@@ -14,10 +16,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = 'public'
 AS $func$
+DECLARE
+  v_expense_date DATE;
 BEGIN
   IF NEW.status = 'confirmed'
      AND (OLD.status IS NULL OR OLD.status <> 'confirmed')
      AND NEW.expense_generated_at IS NULL THEN
+
+    BEGIN
+      v_expense_date := (NEW.reference_month || '-01')::date;
+    EXCEPTION WHEN OTHERS THEN
+      v_expense_date := NULL;
+    END;
 
     INSERT INTO public.expenses (
       franchise_id, category, supplier, description,
@@ -26,7 +36,7 @@ BEGIN
       NEW.franchise_id, 'marketing', 'Maxi Massas Marketing',
       'Marketing - ' || COALESCE(NEW.reference_month, 'mês não informado'),
       NEW.amount,
-      COALESCE(NEW.updated_at::date, CURRENT_DATE),
+      COALESCE(v_expense_date, NEW.updated_at::date, CURRENT_DATE),
       'marketing_payment', NEW.id, NEW.created_by
     );
 
