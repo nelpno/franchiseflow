@@ -665,7 +665,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
           { franchise_id: franchiseId },
           null,
           null,
-          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, contact_id, source, payment_method, net_value, created_at' }
+          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at' }
         ),
         Expense.filter({ franchise_id: franchiseId }),
         InventoryItem.filter(
