@@ -9,7 +9,9 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/api/supabaseClient";
-import { missingFiscalFields } from "@/lib/saveFiscalData";
+import { missingFiscalFields, saveFiscalData } from "@/lib/saveFiscalData";
+import FranchiseForm from "@/components/franchises/FranchiseForm";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 function formatCpfCnpj(value) {
   const digits = (value || "").replace(/\D/g, "");
@@ -24,6 +26,11 @@ function formatCpfCnpj(value) {
     .replace(/(\d{3})(\d)/, "$1.$2")
     .replace(/(\d{3})(\d)/, "$1/$2")
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
+function displayFranchiseName(name) {
+  if (!name) return "—";
+  return /^maxi\s+massas/i.test(name) ? name : `Maxi Massas ${name}`;
 }
 
 function StatusBadge({ status, asaasId, cpfCnpj }) {
@@ -119,6 +126,9 @@ export default function AsaasSetupPanel() {
   const [creatingAll, setCreatingAll] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [revealedCpfs, setRevealedCpfs] = useState({});
+  // Editar dados fiscais inline
+  const [editingFiscal, setEditingFiscal] = useState(null);
+  const [isSavingFiscal, setIsSavingFiscal] = useState(false);
   const mountedRef = useRef(true);
 
   function maskCpfCnpj(value, franchiseId) {
@@ -137,7 +147,7 @@ export default function AsaasSetupPanel() {
     try {
       const [fRes, cRes, sRes] = await Promise.allSettled([
         Franchise.list("name", null, { columns: "id,name,owner_name,city,phone_number,evolution_instance_id,cpf_cnpj,state_uf,address_number,address_complement,neighborhood,status,billing_email" }),
-        FranchiseConfiguration.list(null, null, { columns: "franchise_evolution_instance_id,street_address,cep,franchise_name" }),
+        FranchiseConfiguration.list(null, null, { columns: "franchise_evolution_instance_id,street_address,cep,franchise_name,neighborhood,city" }),
         SystemSubscription.list(null, null, { columns: "*" }),
       ]);
       if (!mountedRef.current) return;
@@ -285,6 +295,35 @@ export default function AsaasSetupPanel() {
     }
   };
 
+  const handleSaveFiscal = async (franchiseData, _email, addressExtras) => {
+    if (!editingFiscal) return;
+    setIsSavingFiscal(true);
+    try {
+      await saveFiscalData(
+        editingFiscal.franchise.id,
+        editingFiscal.franchise.evolution_instance_id,
+        {
+          billing_email: franchiseData.billing_email,
+          cpf_cnpj: franchiseData.cpf_cnpj,
+          address_number: franchiseData.address_number,
+          address_complement: franchiseData.address_complement,
+          neighborhood: franchiseData.neighborhood,
+          state_uf: franchiseData.state_uf,
+          city: franchiseData.city,
+          cep: addressExtras?.cep,
+          street_address: addressExtras?.street_address,
+        }
+      );
+      toast.success("Dados fiscais atualizados!");
+      setEditingFiscal(null);
+      loadData();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Erro ao salvar dados fiscais."));
+    } finally {
+      setIsSavingFiscal(false);
+    }
+  };
+
   // Helper: franquia tem todos os campos necessários para ASAAS?
   const getMissing = (f) => missingFiscalFields(f, getConfig(f.evolution_instance_id));
   const isFiscalComplete = (f) => getMissing(f).length === 0;
@@ -343,7 +382,7 @@ export default function AsaasSetupPanel() {
               <Card key={f.id} className="bg-white">
                 <CardContent className="p-3 flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-sm">{f.name}</p>
+                    <p className="font-medium text-sm">{displayFranchiseName(f.name)}</p>
                     <p className="text-xs text-gray-500 inline-flex items-center gap-1">
                       {f.owner_name} —{" "}
                       {maskCpfCnpj(f.cpf_cnpj, f.evolution_instance_id || f.id)}
@@ -499,7 +538,7 @@ export default function AsaasSetupPanel() {
               return (
                 <tr key={f.id} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="py-3">
-                    <p className="font-medium">{f.name}</p>
+                    <p className="font-medium">{displayFranchiseName(f.name)}</p>
                     <p className="text-xs text-gray-500">{f.owner_name}</p>
                   </td>
                   <td className="py-3">
@@ -630,13 +669,15 @@ export default function AsaasSetupPanel() {
                       const missing = getMissing(f);
                       if (missing.length > 0) {
                         return (
-                          <span
-                            className="inline-flex items-center gap-1 text-xs text-[#d4af37]"
-                            title={`Faltam: ${missing.join(", ")}`}
+                          <button
+                            type="button"
+                            onClick={() => setEditingFiscal({ franchise: f, config: getConfig(f.evolution_instance_id) })}
+                            className="inline-flex items-center gap-1 text-xs text-[#d4af37] hover:text-[#b91c1c] hover:underline cursor-pointer"
+                            title={`Faltam: ${missing.join(", ")}. Clique para preencher.`}
                           >
                             <MaterialIcon icon="warning" size={14} />
                             Faltam {missing.length} campo{missing.length > 1 ? "s" : ""}
-                          </span>
+                          </button>
                         );
                       }
                       return (
@@ -773,6 +814,53 @@ export default function AsaasSetupPanel() {
               )}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: editar dados fiscais (preenche campos faltantes para ASAAS) */}
+      <Dialog
+        open={!!editingFiscal}
+        onOpenChange={(open) => { if (!open && !isSavingFiscal) setEditingFiscal(null); }}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+          {editingFiscal && (() => {
+            const f = editingFiscal.franchise;
+            const c = editingFiscal.config;
+            return (
+              <div>
+                <DialogHeader className="sr-only">
+                  <DialogTitle>Editar dados fiscais de {displayFranchiseName(f.name)}</DialogTitle>
+                </DialogHeader>
+                <div className="px-5 pt-4 pb-3 bg-amber-50 border-b border-amber-200 flex items-start gap-2">
+                  <MaterialIcon icon="info" size={18} className="text-amber-700 mt-0.5 shrink-0" />
+                  <div className="text-xs text-amber-800">
+                    <p className="font-semibold">Após salvar, clique em "Criar" na linha para cadastrar no ASAAS.</p>
+                    <p>Se a franquia já tem assinatura ativa, recadastre depois para sincronizar os novos dados na cobrança.</p>
+                  </div>
+                </div>
+                <FranchiseForm
+                  mode="fiscal-only"
+                  initialData={{
+                    name: f.name,
+                    owner_name: f.owner_name,
+                    city: f.city || c?.city || "",
+                    status: f.status,
+                    billing_email: f.billing_email,
+                    cpf_cnpj: f.cpf_cnpj,
+                    cep: c?.cep,
+                    street_address: c?.street_address,
+                    address_number: f.address_number,
+                    address_complement: f.address_complement,
+                    neighborhood: f.neighborhood || c?.neighborhood || "",
+                    state_uf: f.state_uf,
+                  }}
+                  onSubmit={handleSaveFiscal}
+                  onCancel={isSavingFiscal ? undefined : () => setEditingFiscal(null)}
+                  isSubmitting={isSavingFiscal}
+                />
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
