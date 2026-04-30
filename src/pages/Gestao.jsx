@@ -93,7 +93,7 @@ export default function Gestao() {
           signal,
         }),
         SaleItem.list("-created_at", null, {
-          columns: 'id, sale_id, quantity, unit_price, cost_price, product_name, created_at',
+          columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name, created_at',
           fetchAll: true,
           gte: { created_at: cutoff90dIso },
           signal,
