@@ -648,38 +648,42 @@ export default function AsaasSetupPanel() {
                   </td>
                   <td className="py-3">
                     {(() => {
-                      // Se tem sub ativa → botão Cancelar (cinza)
+                      const missing = getMissing(f);
+                      const missingBtn = missing.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingFiscal({ franchise: f, config: getConfig(f.evolution_instance_id) })}
+                          className="inline-flex items-center gap-1 text-xs text-[#d4af37] hover:text-[#b91c1c] hover:underline cursor-pointer"
+                          title={`Faltam: ${missing.join(", ")}. Clique para preencher.`}
+                        >
+                          <MaterialIcon icon="warning" size={14} />
+                          Faltam {missing.length} campo{missing.length > 1 ? "s" : ""}
+                        </button>
+                      ) : null;
+
+                      // Tem sub ativa → Cancelar + warning de campos faltantes (NFe precisa)
                       if (sub?.asaas_subscription_id) {
                         return (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setCancellingSub(f)}
-                            className="h-7 text-xs text-gray-500 hover:text-[#dc2626] hover:bg-[#dc2626]/5"
-                            title="Cancelar assinatura"
-                          >
-                            <MaterialIcon icon="block" size={14} className="mr-1" />
-                            Cancelar
-                          </Button>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setCancellingSub(f)}
+                              className="h-7 text-xs text-gray-500 hover:text-[#dc2626] hover:bg-[#dc2626]/5"
+                              title="Cancelar assinatura"
+                            >
+                              <MaterialIcon icon="block" size={14} className="mr-1" />
+                              Cancelar
+                            </Button>
+                            {missingBtn}
+                          </div>
                         );
                       }
-                      // Customer criado mas sem sub → nenhum botão individual (subscribe-batch cria)
-                      if (sub?.asaas_customer_id) return null;
-                      // Sem customer: verifica campos fiscais
-                      const missing = getMissing(f);
-                      if (missing.length > 0) {
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => setEditingFiscal({ franchise: f, config: getConfig(f.evolution_instance_id) })}
-                            className="inline-flex items-center gap-1 text-xs text-[#d4af37] hover:text-[#b91c1c] hover:underline cursor-pointer"
-                            title={`Faltam: ${missing.join(", ")}. Clique para preencher.`}
-                          >
-                            <MaterialIcon icon="warning" size={14} />
-                            Faltam {missing.length} campo{missing.length > 1 ? "s" : ""}
-                          </button>
-                        );
-                      }
+                      // Customer sem sub → só warning (subscribe-batch cria a sub)
+                      if (sub?.asaas_customer_id) return missingBtn;
+                      // Sem customer e tem campos faltantes → warning para preencher
+                      if (missing.length > 0) return missingBtn;
+                      // Tudo completo, sem customer ainda → Criar
                       return (
                         <Button
                           size="sm"
