@@ -1,4 +1,4 @@
-<!-- Last Updated: 2026-04-29 -->
+<!-- Last Updated: 2026-04-30 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
@@ -122,6 +122,8 @@
 - TabEstoque adicionar produto: autocomplete mostra produtos padrão da rede (RPC `get_standard_product_catalog`). Seleção preenche campos e marca `created_by_franchisee: false`
 - Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
 - **DialogContent/AlertDialogContent (shadcn)** têm `min-w-0 [&>*]:min-w-0 max-w-[calc(100vw-1rem)] sm:max-w-lg overflow-x-hidden` aplicados em [src/components/ui/dialog.jsx](src/components/ui/dialog.jsx) + [alert-dialog.jsx](src/components/ui/alert-dialog.jsx) — **NÃO REMOVER**. Sem essas classes, `display:grid` + filho com `min-content > max-width` (button whitespace-nowrap, fonte custom mais larga) faz o grid track ignorar `max-width` e extrapolar viewport mobile (bug reproduzido em iPhone 14 Pro Max 430px, 29/04/2026)
+- **Override de `max-w-*` em DialogContent shadcn**: `tailwind-merge` v3 NÃO trata `max-w-2xl` (sem prefixo) como conflito de `sm:max-w-lg` (com prefixo) — aplicam em breakpoints diferentes e o default vence em ≥sm. Para alargar dialog no desktop usar **`sm:max-w-2xl`** (com prefixo). Sintoma: dialog "parece" 672px no source mas renderiza 512px. Bug encontrado em TabLancar.jsx:922 e PurchaseOrders.jsx:1043 (fix 30/04/2026, commit 8a8d191)
+- **`[&>*]:min-w-0` afeta apenas filhos DIRETOS** do DialogContent — não descendentes profundos. Colapso de input/dropdown dentro de forms aninhados (ex: ProductSearch dentro de SaleForm) vem do próprio `flex-1 min-w-0` interno do form, não do dialog. Diagnóstico para inputs colapsando: começar pelo `min-w-0` do container imediato antes de culpar o dialog
 - Diagnóstico de overflow horizontal mobile (cole no DevTools console com elemento aberto): `[...document.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > window.innerWidth + 1).map(e => ({tag:e.tagName, cls:(e.className||'').toString().slice(0,80), right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width), vw:window.innerWidth}))`
 - Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
 - Mensagens de UI com horário: usar "às 02h" (preposição = ponto no tempo), NUNCA "após 02h" (interpretado como "a cada 2 horas")
