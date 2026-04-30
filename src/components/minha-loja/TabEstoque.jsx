@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { InventoryItem, getStandardProductCatalog } from "@/entities/all";
-import { formatBRL } from "@/lib/formatBRL";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,8 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import FilterBar from "@/components/shared/FilterBar";
 import { toast } from "sonner";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
+import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import { ptBR } from "date-fns/locale";
 
 const UNIT_OPTIONS = [
@@ -116,28 +116,7 @@ export default function TabEstoque({
     }
   }, [editingCell]);
 
-  // --- Giro de estoque (last 28 days) ---
-
-  const giroByItem = useMemo(() => {
-    const cutoff = subDays(new Date(), 28).toISOString();
-    const recentSaleItems = (saleItems || []).filter(
-      (si) => si.created_at && si.created_at >= cutoff
-    );
-
-    const agg = {};
-    recentSaleItems.forEach((si) => {
-      const key = si.inventory_item_id;
-      if (!key) return;
-      agg[key] = (agg[key] || 0) + (parseFloat(si.quantity) || 0);
-    });
-
-    // Convert 28-day total to weekly rate
-    const result = {};
-    for (const [id, total] of Object.entries(agg)) {
-      result[id] = total / 4; // 4 weeks
-    }
-    return result;
-  }, [saleItems]);
+  const giroByItem = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
   // --- Filtering ---
 
@@ -551,14 +530,8 @@ export default function TabEstoque({
   };
 
   const getSugestaoCompra = (item) => {
-    const giro = giroByItem[item.id] || 0;
-    if (giro <= 0) return null;
-
-    const stock = item.quantity || 0;
-    const idealStock = Math.ceil(giro * 2);
-    const toBuy = idealStock - stock;
-
-    if (toBuy <= 0) return null;
+    const toBuy = suggestionFor(item, giroByItem);
+    if (toBuy === null || toBuy <= 0) return null;
 
     return (
       <Badge className="bg-[#d4af37]/10 text-[#775a19] rounded-full px-2 py-0.5 text-[10px] font-bold">

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { subDays } from "date-fns";
+import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 
 const formatBRL = (value) => {
   if (value === null || value === undefined || value === "") return "—";
@@ -105,34 +105,9 @@ export default function PurchaseOrderForm({
     return groups;
   }, [standardProducts]);
 
-  // Weekly turnover per item (last 28 days / 4)
-  const weeklyTurnover = useMemo(() => {
-    const cutoff = subDays(new Date(), 28).toISOString();
-    const recentSaleItems = (saleItems || []).filter(
-      (si) => si.created_at && si.created_at >= cutoff
-    );
+  const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
-    const agg = {};
-    recentSaleItems.forEach((si) => {
-      const key = si.inventory_item_id;
-      if (!key) return;
-      agg[key] = (agg[key] || 0) + (parseFloat(si.quantity) || 0);
-    });
-
-    const result = {};
-    for (const [id, total] of Object.entries(agg)) {
-      result[id] = total / 4;
-    }
-    return result;
-  }, [saleItems]);
-
-  // Suggestion per item
-  const getSuggestion = (item) => {
-    const wt = weeklyTurnover[item.id];
-    if (!wt || wt <= 0) return null;
-    const qty = item.quantity || 0;
-    return Math.max(0, Math.ceil(wt * 2) - qty);
-  };
+  const getSuggestion = (item) => suggestionFor(item, weeklyTurnover);
 
   // Quantities state: { itemId: qty } — restore from draft > initialQuantities > 0
   const [quantities, setQuantities] = useState(() => {

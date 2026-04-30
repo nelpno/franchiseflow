@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { subDays } from "date-fns";
+import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import PurchaseOrderForm from "./PurchaseOrderForm";
 import PurchaseOrderHistory from "./PurchaseOrderHistory";
 
@@ -53,24 +53,7 @@ export default function TabReposicao({
     return () => controller.abort();
   }, [franchiseId, orderRefreshKey]);
 
-  // Suggestion data (reuse same logic as PurchaseOrderForm)
-  const weeklyTurnover = useMemo(() => {
-    const cutoff = subDays(new Date(), 28).toISOString();
-    const recentSaleItems = (saleItems || []).filter(
-      (si) => si.created_at && si.created_at >= cutoff
-    );
-    const agg = {};
-    recentSaleItems.forEach((si) => {
-      const key = si.inventory_item_id;
-      if (!key) return;
-      agg[key] = (agg[key] || 0) + (parseFloat(si.quantity) || 0);
-    });
-    const result = {};
-    for (const [id, total] of Object.entries(agg)) {
-      result[id] = total / 4;
-    }
-    return result;
-  }, [saleItems]);
+  const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
   const suggestions = useMemo(() => {
     const items = (inventoryItems || []).filter(
@@ -78,16 +61,13 @@ export default function TabReposicao({
     );
     return items
       .map((item) => {
-        const wt = weeklyTurnover[item.id];
-        if (!wt || wt <= 0) return null;
-        const qty = item.quantity || 0;
-        const sug = Math.max(0, Math.ceil(wt * 2) - qty);
-        if (sug <= 0) return null;
+        const sug = suggestionFor(item, weeklyTurnover);
+        if (sug === null || sug <= 0) return null;
         return {
           id: item.id,
           name: item.product_name,
-          stock: qty,
-          weeklyTurnover: wt,
+          stock: parseFloat(item.quantity) || 0,
+          weeklyTurnover: weeklyTurnover[item.id] || 0,
           suggestion: sug,
         };
       })
@@ -95,6 +75,8 @@ export default function TabReposicao({
       .sort((a, b) => b.suggestion - a.suggestion)
       .slice(0, 5);
   }, [inventoryItems, weeklyTurnover]);
+
+  const hasHistory = Object.keys(weeklyTurnover).length > 0;
 
   const handleRepeatLastOrder = async () => {
     if (!lastOrder) return;
@@ -209,6 +191,22 @@ export default function TabReposicao({
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : !hasHistory ? (
+        <Card className="bg-gradient-to-r from-[#1b1c1d]/5 to-[#1b1c1d]/10 rounded-2xl shadow-sm border border-[#1b1c1d]/10">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-2">
+              <MaterialIcon icon="hourglass_empty" size={20} className="text-[#4a3d3d] mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-[#1b1c1d]">
+                  Sem histórico de vendas suficiente.
+                </p>
+                <p className="text-xs text-[#4a3d3d] mt-1">
+                  Registre vendas por alguns dias para começarmos a sugerir reposições baseadas no seu giro.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
