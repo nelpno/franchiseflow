@@ -444,7 +444,7 @@ export default function PurchaseOrderForm({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <Label className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                       Quantidade
                     </Label>

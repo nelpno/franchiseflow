@@ -273,7 +273,7 @@ export default function TabReposicao({
 
       {/* Purchase Order Dialog */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-2xl p-4 sm:p-6">
+        <DialogContent className="w-full max-w-[calc(100vw-1rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d] min-w-0">
               <MaterialIcon icon="local_shipping" size={20} className="text-[#d4af37] shrink-0" />
