@@ -35,6 +35,7 @@
 - Antes de `Entity.update()`, remover campos read-only (`id`, `created_at`, `updated_at`, `franchise`, `whatsapp_status`)
 - Storage buckets: `marketing-assets` (público), `marketing-comprovantes` (público, 5MB, JPG/PNG/PDF), `catalog-images/produtos/` (público)
 - **Pre-flight OBRIGATÓRIO antes de `columns` enxuto**: rodar `SELECT column_name FROM information_schema.columns WHERE table_name='X'` e validar TODA coluna listada. Hotfix 9e24482 (29/04/2026) teve 4 colunas inventadas (`contact_phone`, `customer_name`, `franchise_notes.content`, `inventory_items.hidden_at`) que retornaram 400 e quebraram telas (MyContacts/Acompanhamento/Gestao)
+- **Validação de columns enxuto vai além de `information_schema.columns`**: listar consumidores transitivos (props passadas pra children que agrupam/agregam). Defesa runtime via `console.warn` dev-only no helper centralizado é o que de fato previne — ex: `weeklyTurnoverMap` em [src/lib/stockSuggestion.js](src/lib/stockSuggestion.js) detecta `inventory_item_id` faltando, preveniria a regressão `7955000` de 29/04
 - **Entity adapter `Sale.list/Contact.list/etc` IGNORA chave `filter:`** — só honra `{columns, signal, fetchAll, gte, lte}`. String PostgREST (ex: `filter: "sale_date=gte.X"`) é silenciosamente descartada. Bug Reports.jsx corrigido em 5ad5166 (29/04). Padrão correto: `gte: { sale_date: cutoff }, lte: { sale_date: end }`
 
 **Nomes de colunas que diferem do esperado:**
@@ -120,6 +121,8 @@
 - TabEstoque card view (mobile): DEVE ter 3 botões (edit, ocultar, delete) — manter paridade com table view (desktop)
 - TabEstoque adicionar produto: autocomplete mostra produtos padrão da rede (RPC `get_standard_product_catalog`). Seleção preenche campos e marca `created_by_franchisee: false`
 - Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
+- **DialogContent/AlertDialogContent (shadcn)** têm `min-w-0 [&>*]:min-w-0 max-w-[calc(100vw-1rem)] sm:max-w-lg overflow-x-hidden` aplicados em [src/components/ui/dialog.jsx](src/components/ui/dialog.jsx) + [alert-dialog.jsx](src/components/ui/alert-dialog.jsx) — **NÃO REMOVER**. Sem essas classes, `display:grid` + filho com `min-content > max-width` (button whitespace-nowrap, fonte custom mais larga) faz o grid track ignorar `max-width` e extrapolar viewport mobile (bug reproduzido em iPhone 14 Pro Max 430px, 29/04/2026)
+- Diagnóstico de overflow horizontal mobile (cole no DevTools console com elemento aberto): `[...document.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > window.innerWidth + 1).map(e => ({tag:e.tagName, cls:(e.className||'').toString().slice(0,80), right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width), vw:window.innerWidth}))`
 - Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
 - Mensagens de UI com horário: usar "às 02h" (preposição = ponto no tempo), NUNCA "após 02h" (interpretado como "a cada 2 horas")
 - `getFranchiseDisplayName(f)` SEM passar `config` (segundo arg) cai em fallback `f.city`. Para dropdown/seleção sem config carregado, usar diretamente `f.name + ' — ' + f.city + '/' + f.state_uf`
@@ -170,6 +173,7 @@
 - MiniRevenueChart: SEMPRE usar `realtimeRevenue` de `allSales` (fetchAll: true). NUNCA fallback para `cronRevenue` de `daily_summaries` — cron não recalcula quando `sale_date` muda, causando vendas fantasma no gráfico
 - Período "Semana" (StatsCards): `startOfWeek(now, { weekStartsOn: 1 })` — começa na **segunda-feira**, vai até hoje
 - Markup estoque: `(sale - cost) / cost` (NÃO margem sobre receita)
+- **Giro semanal e sugestão de reposição**: helper único [src/lib/stockSuggestion.js](src/lib/stockSuggestion.js) (`LOOKBACK_DAYS=28`, `WEEKS_OF_COVERAGE=2`, `min_stock` como piso). Consumido por TabEstoque, TabReposicao, PurchaseOrderForm via `weeklyTurnoverMap()` + `suggestionFor()`. Detector dev-only emite `console.warn` se `saleItems` chegar sem `inventory_item_id` — preveniu repetição da regressão silenciosa de columns enxuto
 - `formatBRL` de `lib/formatBRL.js` — NUNCA `new Intl.NumberFormat` inline
 
 ### Módulo Financeiro v2 (1A · refactor 29/04/2026 · commits `3e2dec4`, `9ad09b3`, `22c3b3a`)
