@@ -141,7 +141,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
         <MaterialIcon icon="search" size={18} className="text-[#4a3d3d]/50 mr-2 shrink-0" />
       </div>
       {open && filtered.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full min-w-fit bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
           {filtered.map((p) => (
             <button
               key={p.id}
@@ -177,7 +177,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
         </div>
       )}
       {open && filtered.length === 0 && query && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#4a3d3d]/70">
+        <div className="absolute z-50 mt-1 w-full min-w-fit bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#4a3d3d]/70">
           Nenhum produto encontrado
         </div>
       )}
@@ -1016,7 +1016,7 @@ export default function SaleForm({
           >
             <div className="flex flex-col md:flex-row gap-2">
             {/* Product search */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 sm:min-w-[160px]">
               <ProductSearch
                 products={availableProducts(item.inventory_item_id)}
                 selectedId={item.inventory_item_id}

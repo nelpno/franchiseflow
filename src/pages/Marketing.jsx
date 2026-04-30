@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Franchise } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -224,8 +224,8 @@ function getFilePublicUrl(filePath) {
 function generateMonthOptions() {
   const months = [];
   const now = new Date();
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  for (let i = 2; i >= -6; i--) {
+    const d = addMonths(now, i);
     months.push({
       value: format(d, "yyyy-MM"),
       label: format(d, "MMMM yyyy", { locale: ptBR }),

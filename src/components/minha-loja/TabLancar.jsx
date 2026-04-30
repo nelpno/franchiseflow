@@ -919,7 +919,7 @@ export default function TabLancar({
         setShowFormDialog(open);
         if (!open) { setSavedContactId(null); setSavedPhone(null); }
       }}>
-        <DialogContent className="max-w-2xl w-[95vw] max-h-[85dvh] overflow-y-auto overscroll-contain">
+        <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[85dvh] overflow-y-auto overscroll-contain">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">
               {editingSale ? "Editar Venda" : "Nova Venda"}

@@ -1040,7 +1040,7 @@ export default function PurchaseOrders() {
 
       {/* Order Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
               <MaterialIcon icon="receipt_long" size={20} className="text-[#b91c1c]" />
@@ -1230,7 +1230,7 @@ export default function PurchaseOrders() {
 
             </div>
               {/* Action buttons — outside scroll area */}
-              <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row gap-2 sm:justify-between border-t border-[#cac0c0]/20 pt-3 mt-3">
+              <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:justify-between border-t border-[#cac0c0]/20 pt-3 mt-3">
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
