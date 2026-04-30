@@ -254,6 +254,7 @@ export default function Franchises() {
           billing_email: franchiseData.billing_email,
           cpf_cnpj: franchiseData.cpf_cnpj,
           address_number: franchiseData.address_number,
+          address_complement: franchiseData.address_complement,
           neighborhood: franchiseData.neighborhood,
           state_uf: franchiseData.state_uf,
           city: franchiseData.city,
@@ -924,6 +925,7 @@ export default function Franchises() {
                       cep: c?.cep,
                       street_address: c?.street_address,
                       address_number: f.address_number,
+                      address_complement: f.address_complement,
                       neighborhood: f.neighborhood,
                       state_uf: f.state_uf,
                     }}

@@ -5,6 +5,7 @@ const FRANCHISE_FIELDS = [
   "billing_email",
   "cpf_cnpj",
   "address_number",
+  "address_complement",
   "neighborhood",
   "state_uf",
   "city",

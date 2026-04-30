@@ -52,6 +52,7 @@ export default function FiscalDataGate({ franchise, onReady }) {
     cep: config?.cep,
     street_address: config?.street_address,
     address_number: franchise.address_number,
+    address_complement: franchise.address_complement,
     neighborhood: franchise.neighborhood,
     state_uf: franchise.state_uf,
   };
@@ -63,6 +64,7 @@ export default function FiscalDataGate({ franchise, onReady }) {
         billing_email: franchiseData.billing_email,
         cpf_cnpj: franchiseData.cpf_cnpj,
         address_number: franchiseData.address_number,
+        address_complement: franchiseData.address_complement,
         neighborhood: franchiseData.neighborhood,
         state_uf: franchiseData.state_uf,
         city: franchiseData.city,

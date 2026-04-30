@@ -80,7 +80,7 @@ async function registerCustomer(franchiseId: string) {
   // Get franchise data (inclui billing_email — fonte primária do email de cobrança)
   const { data: franchise, error: fErr } = await supabase
     .from("franchises")
-    .select("id, name, owner_name, cpf_cnpj, city, phone_number, state_uf, address_number, neighborhood, evolution_instance_id, billing_email")
+    .select("id, name, owner_name, cpf_cnpj, city, phone_number, state_uf, address_number, address_complement, neighborhood, evolution_instance_id, billing_email")
     .eq("evolution_instance_id", franchiseId)
     .single();
   if (fErr || !franchise) throw new Error("Franquia não encontrada");
@@ -141,6 +141,7 @@ async function registerCustomer(franchiseId: string) {
         phone: franchise.phone_number || null,
         address: config?.street_address || null,
         addressNumber: franchise.address_number || null,
+        complement: franchise.address_complement || null,
         province: franchise.neighborhood || null,
         postalCode: config?.cep || null,
         city: franchise.city?.replace(/\s*-\s*[A-Z]{2}$/, "") || null,

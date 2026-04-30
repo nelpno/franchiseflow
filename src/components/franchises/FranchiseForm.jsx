@@ -57,6 +57,7 @@ export default function FranchiseForm({
     cep: initialData?.cep || '',
     street_address: initialData?.street_address || '',
     address_number: initialData?.address_number || '',
+    address_complement: initialData?.address_complement || '',
     neighborhood: initialData?.neighborhood || '',
     state_uf: initialData?.state_uf || '',
   });
@@ -114,6 +115,7 @@ export default function FranchiseForm({
       cpf_cnpj: cpf_cnpj.replace(/\D/g, "") || null,
       state_uf: addressData.state_uf || null,
       address_number: addressData.address_number || null,
+      address_complement: addressData.address_complement || null,
       neighborhood: addressData.neighborhood || null,
       billing_email: (franchisee_email || "").trim() || null,
     };
@@ -324,6 +326,15 @@ export default function FranchiseForm({
                     required={fiscalRequired}
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_complement" className="text-sm font-semibold text-[#4a3d3d]">Complemento</Label>
+                <Input
+                  id="address_complement"
+                  placeholder="Apto, bloco, sala, fundos, ponto de referência (opcional)"
+                  value={addressData.address_complement}
+                  onChange={(e) => setAddressData(prev => ({ ...prev, address_complement: e.target.value }))}
+                />
               </div>
             </div>
 

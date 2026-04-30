@@ -136,7 +136,7 @@ export default function AsaasSetupPanel() {
   const loadData = useCallback(async () => {
     try {
       const [fRes, cRes, sRes] = await Promise.allSettled([
-        Franchise.list("name", null, { columns: "id,name,owner_name,city,phone_number,evolution_instance_id,cpf_cnpj,state_uf,address_number,neighborhood,status,billing_email" }),
+        Franchise.list("name", null, { columns: "id,name,owner_name,city,phone_number,evolution_instance_id,cpf_cnpj,state_uf,address_number,address_complement,neighborhood,status,billing_email" }),
         FranchiseConfiguration.list(null, null, { columns: "franchise_evolution_instance_id,street_address,cep,franchise_name" }),
         SystemSubscription.list(null, null, { columns: "*" }),
       ]);
@@ -597,6 +597,7 @@ export default function AsaasSetupPanel() {
                     <p className="text-xs text-gray-600 max-w-[200px] truncate">
                       {config?.street_address || "—"}
                       {f.address_number ? `, ${f.address_number}` : ""}
+                      {f.address_complement ? ` — ${f.address_complement}` : ""}
                     </p>
                     <p className="text-xs text-gray-400">{f.city}{f.state_uf ? ` - ${f.state_uf}` : ""}</p>
                   </td>
