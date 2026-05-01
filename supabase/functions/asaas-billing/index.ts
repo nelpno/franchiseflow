@@ -289,6 +289,31 @@ async function checkPayment(franchiseId: string) {
   return { status, paymentId: pay.id };
 }
 
+async function checkPaymentBatch() {
+  const { data: subs, error } = await supabase
+    .from("system_subscriptions")
+    .select("franchise_id")
+    .not("asaas_subscription_id", "is", null)
+    .neq("subscription_status", "CANCELLED");
+  if (error) throw error;
+
+  const ids = (subs || []).map(s => s.franchise_id as string);
+  const errors: { franchise_id: string; error: string }[] = [];
+  let updated = 0;
+
+  for (const fid of ids) {
+    try {
+      await checkPayment(fid);
+      updated++;
+    } catch (err) {
+      errors.push({ franchise_id: fid, error: (err as Error).message });
+    }
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  return { total: ids.length, updated, errors };
+}
+
 async function handleWebhook(body: Record<string, unknown>) {
   const event = body.event as string;
   const payment = body.payment as Record<string, unknown>;
@@ -590,6 +615,7 @@ Deno.serve(async (req) => {
       "register-webhook",
       "cancel-subscription",
       "update-subscription-value",
+      "check-payment-batch",
     ];
     if (adminActions.includes(action) && !isAdminOrManager(user)) {
       return new Response(JSON.stringify({ error: "Apenas administradores podem executar esta ação" }), {
@@ -630,6 +656,9 @@ Deno.serve(async (req) => {
         break;
       case "check-payment":
         result = await checkPayment(body.franchise_id);
+        break;
+      case "check-payment-batch":
+        result = await checkPaymentBatch();
         break;
       case "register-webhook": {
         // Register webhook in ASAAS pointing to this Edge Function

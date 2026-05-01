@@ -124,6 +124,7 @@ export default function AsaasSetupPanel() {
   const [isUpdatingValue, setIsUpdatingValue] = useState(false);
   const [creatingAsaas, setCreatingAsaas] = useState({});
   const [creatingAll, setCreatingAll] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [revealedCpfs, setRevealedCpfs] = useState({});
   // Editar dados fiscais inline
@@ -509,9 +510,34 @@ export default function AsaasSetupPanel() {
           <MaterialIcon icon="autorenew" size={16} className="mr-1" />
           Criar assinaturas
         </Button>
-        <Button onClick={loadData} variant="ghost" size="sm">
-          <MaterialIcon icon="refresh" size={16} className="mr-1" />
-          Atualizar
+        <Button
+          onClick={async () => {
+            setSyncingAll(true);
+            try {
+              const { data, error } = await supabase.functions.invoke("asaas-billing", {
+                body: { action: "check-payment-batch" },
+              });
+              if (error) throw error;
+              const { total = 0, updated = 0, errors = [] } = data || {};
+              if (errors.length > 0) {
+                toast.warning(`${updated} de ${total} sincronizadas — ${errors.length} com erro`);
+              } else {
+                toast.success(`${updated} de ${total} franquias sincronizadas`);
+              }
+              await loadData();
+            } catch (err) {
+              toast.error(safeErrorMessage(err, "Erro ao sincronizar com ASAAS"));
+            } finally {
+              setSyncingAll(false);
+            }
+          }}
+          variant="outline"
+          size="sm"
+          disabled={syncingAll}
+          title="Consulta o ASAAS e atualiza o status de pagamento de todas as franquias com assinatura ativa"
+        >
+          <MaterialIcon icon={syncingAll ? "sync" : "cloud_sync"} size={16} className={`mr-1 ${syncingAll ? "animate-spin" : ""}`} />
+          {syncingAll ? "Sincronizando..." : "Sincronizar com ASAAS"}
         </Button>
       </div>
 
