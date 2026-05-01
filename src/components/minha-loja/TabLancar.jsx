@@ -21,8 +21,17 @@ import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { toast } from "sonner";
-import { format, startOfWeek, startOfMonth, parseISO } from "date-fns";
+import { format, startOfWeek, startOfMonth, endOfMonth, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const MONTH_OFFSET_MIN = -5;
+
+function formatMonthLabel(offset) {
+  const raw = format(addMonths(new Date(), offset), "MMM/yyyy", { locale: ptBR });
+  // date-fns pt-BR retorna "mai./2026" — remover ponto e capitalizar
+  const cleaned = raw.replace(".", "");
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -151,6 +160,7 @@ export default function TabLancar({
 
   // Filters
   const [period, setPeriod] = useState("month");
+  const [monthOffset, setMonthOffset] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmationFilter, setConfirmationFilter] = useState("all");
   const [togglingIds, setTogglingIds] = useState(new Set());
@@ -170,7 +180,9 @@ export default function TabLancar({
   const filteredSales = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+    const monthRef = addMonths(new Date(), monthOffset);
+    const monthStart = format(startOfMonth(monthRef), "yyyy-MM-dd");
+    const monthEnd = format(endOfMonth(monthRef), "yyyy-MM-dd");
 
     return sales
       .filter((s) => {
@@ -179,7 +191,7 @@ export default function TabLancar({
         // Period filter
         if (period === "today" && saleDate !== todayStr) return false;
         if (period === "week" && saleDate < weekStart) return false;
-        if (period === "month" && saleDate < monthStart) return false;
+        if (period === "month" && (saleDate < monthStart || saleDate > monthEnd)) return false;
 
         // Search filter
         if (searchTerm) {
@@ -203,7 +215,7 @@ export default function TabLancar({
         const dateB = b.sale_date || b.created_at || "";
         return dateB.localeCompare(dateA);
       });
-  }, [sales, period, searchTerm, confirmationFilter, contactsMap]);
+  }, [sales, period, monthOffset, searchTerm, confirmationFilter, contactsMap]);
 
   // Load sale items for expanded view
   const handleToggleExpand = async (saleId) => {
@@ -434,17 +446,19 @@ export default function TabLancar({
   const totalPendingCount = useMemo(() => {
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+    const monthRef = addMonths(new Date(), monthOffset);
+    const monthStart = format(startOfMonth(monthRef), "yyyy-MM-dd");
+    const monthEnd = format(endOfMonth(monthRef), "yyyy-MM-dd");
 
     return sales.filter((s) => {
       if (s.payment_confirmed) return false;
       const saleDate = s.sale_date || s.created_at?.substring(0, 10) || "";
       if (period === "today" && saleDate !== todayStr) return false;
       if (period === "week" && saleDate < weekStart) return false;
-      if (period === "month" && saleDate < monthStart) return false;
+      if (period === "month" && (saleDate < monthStart || saleDate > monthEnd)) return false;
       return true;
     }).length;
-  }, [sales, period]);
+  }, [sales, period, monthOffset]);
 
   // Summary for the filtered period
   const periodStats = useMemo(() => {
@@ -463,7 +477,9 @@ export default function TabLancar({
 
   // Export config — period label slug + filename
   const exportConfig = useMemo(() => {
-    const periodLabel = PERIOD_FILTERS.find((p) => p.value === period)?.label || "vendas";
+    const periodLabel = period === "month"
+      ? formatMonthLabel(monthOffset)
+      : (PERIOD_FILTERS.find((p) => p.value === period)?.label || "vendas");
     const slug = (s) =>
       String(s || "")
         .toLowerCase()
@@ -476,7 +492,7 @@ export default function TabLancar({
     const title = `Vendas — ${franchiseName || ""} (${periodLabel})`;
     const data = buildSalesExportRows(filteredSales, contactsMap, { includeTotalsRow: true });
     return { filename, title, data };
-  }, [filteredSales, contactsMap, period, franchiseName]);
+  }, [filteredSales, contactsMap, period, monthOffset, franchiseName]);
 
   return (
     <div className="space-y-4">
@@ -492,19 +508,72 @@ export default function TabLancar({
 
         {/* Period tabs */}
         <div className="flex gap-1 bg-white rounded-xl border border-[#291715]/5 p-1 overflow-x-auto">
-          {PERIOD_FILTERS.map((pf) => (
-            <button
-              key={pf.value}
-              onClick={() => setPeriod(pf.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                period === pf.value
-                  ? "bg-[#b91c1c] text-white"
-                  : "text-[#4a3d3d] hover:bg-[#fbf9fa]"
-              }`}
-            >
-              {pf.label}
-            </button>
-          ))}
+          {PERIOD_FILTERS.map((pf) => {
+            if (pf.value === "month") {
+              const isActive = period === "month";
+              const monthLabel = formatMonthLabel(monthOffset);
+              const prevDisabled = monthOffset <= MONTH_OFFSET_MIN;
+              const nextDisabled = monthOffset >= 0;
+              return (
+                <div
+                  key="month"
+                  className={`flex items-center rounded-lg whitespace-nowrap transition-colors min-h-[40px] ${
+                    isActive ? "bg-[#b91c1c] text-white" : "text-[#4a3d3d]"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    aria-label="Mês anterior"
+                    onClick={() => {
+                      setPeriod("month");
+                      setMonthOffset((o) => Math.max(MONTH_OFFSET_MIN, o - 1));
+                    }}
+                    disabled={prevDisabled}
+                    className={`flex items-center justify-center min-w-[32px] min-h-[40px] rounded-l-lg transition-opacity ${
+                      prevDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-black/10"
+                    }`}
+                  >
+                    <MaterialIcon icon="chevron_left" size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Filtrar por ${monthLabel}`}
+                    onClick={() => setPeriod("month")}
+                    className="px-2 py-1.5 text-xs font-medium font-mono-numbers tabular-nums hover:bg-black/5 transition-colors min-w-[80px] text-center"
+                  >
+                    {monthLabel}
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Próximo mês"
+                    onClick={() => {
+                      setPeriod("month");
+                      setMonthOffset((o) => Math.min(0, o + 1));
+                    }}
+                    disabled={nextDisabled}
+                    className={`flex items-center justify-center min-w-[32px] min-h-[40px] rounded-r-lg transition-opacity ${
+                      nextDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-black/10"
+                    }`}
+                  >
+                    <MaterialIcon icon="chevron_right" size={18} />
+                  </button>
+                </div>
+              );
+            }
+            return (
+              <button
+                key={pf.value}
+                onClick={() => setPeriod(pf.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                  period === pf.value
+                    ? "bg-[#b91c1c] text-white"
+                    : "text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                }`}
+              >
+                {pf.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search */}

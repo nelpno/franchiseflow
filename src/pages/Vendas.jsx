@@ -7,7 +7,12 @@ import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
+import { format, subMonths } from "date-fns";
 import TabLancar from "@/components/minha-loja/TabLancar";
+
+const SALES_COLUMNS = 'id, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, delivery_method, net_value';
+const SALES_LOOKBACK_MONTHS = 6;
+const getSalesCutoff = () => format(subMonths(new Date(), SALES_LOOKBACK_MONTHS), 'yyyy-MM-dd');
 
 export default function Vendas() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,7 +47,7 @@ export default function Vendas() {
       // 1 round único — user vem do AuthContext (useAuth)
       const results = await Promise.allSettled([
         Franchise.list(null, null, { columns: 'id, evolution_instance_id, name, city, owner_name' }),
-        Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, delivery_method, net_value' }),
+        Sale.list("-created_at", null, { columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() } }),
         InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
       ]);
       if (!mountedRef.current) return;
@@ -96,7 +101,7 @@ export default function Vendas() {
   const handleRefreshSales = async () => {
     try {
       const refreshResults = await Promise.allSettled([
-        Sale.list("-created_at", 500, { columns: 'id, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, delivery_method, net_value' }),
+        Sale.list("-created_at", null, { columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() } }),
         InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
       ]);
       if (!mountedRef.current) return;
