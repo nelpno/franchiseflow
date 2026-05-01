@@ -105,8 +105,10 @@
 - **`limit N` em queries 1-row-por-franquia** vira teto silencioso quando rede crescer > N. Trocar por `fetchAll: true` para tabelas pequenas (Onboarding, FranchiseConfiguration etc)
 - **Padrão lazy-load Wave 2** (commit 7983f77): `CollapsibleSection({onFirstExpand})` idempotente via `useRef(defaultOpen)` + `lazyAbortRef` (separado do `abortControllerRef`) + `lazyFetchingRef` síncrono + polling refresh `loadCollapsedDataRef.current?.({force: true})` se `hasFetchedCollapsedRef.current`. Implementado em `AdminDashboard.jsx`
 - **Throttle 60s em `useVisibilityPolling`** (commit 5ad5166): previne burst ao voltar à aba. `lastRunRef = useRef(Date.now())` evita re-fire imediato após cold-load
+- **`fetchAll: true` em tela com `useVisibilityPolling`**: cada refresh refaz a query inteira. Janela tight obrigatória (`gte: { col: subMonths(today, N) }` com N=3-6). Sem isso, polling 5min × 12 meses × franquia top → banda explode. Padrão Vendas.jsx (01/05): 6 meses + fetchAll, polling 5min compartilha mesma query
 - Loading: `<Skeleton>` shadcn (NÃO spinner). PageFallback relativo (NUNCA `fixed inset-0`)
 - NUNCA `new Date().toISOString().split("T")[0]` — usar `format(new Date(), "yyyy-MM-dd")`
+- **`format(date, "MMM/yyyy", { locale: ptBR })`** retorna `"mai./2026"` (com ponto, minúsculo) — limpar com `.replace(".", "")` + capitalize primeira letra pra "Mai/2026". Helper `formatMonthLabel(offset)` em [TabLancar.jsx](src/components/minha-loja/TabLancar.jsx)
 - **Postgres DATE (sem hora)**: SEMPRE usar `formatDateOnly(value)` ou `parseDateOnly(value)` de [src/lib/dateOnly.js](src/lib/dateOnly.js). `new Date("2026-04-30")` interpreta como UTC midnight → em BRT (UTC-3) volta 1 dia → mostra 29/04. Aplicado a `purchase_orders.estimated_delivery`, `sales.sale_date`, `expenses.expense_date`, `marketing_payments.reference_month`. Exceção: TIMESTAMPTZ (`ordered_at`, `delivered_at`, `created_at`) usa `new Date()` normal
 - `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval
 - Error handling: `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout
@@ -300,6 +302,7 @@
 - Terminologia: "Estoque" (NÃO "Inventário"), "Valor Médio" (NÃO "Ticket Médio"), NÃO "Líquido"
 - Onboarding: 9 blocos (8 numerados + gate de liberação). `TOTAL_ITEMS` computado dinamicamente. Acessível via sidebar, franchise cards e detail sheet
 - Sidebar admin: remover `adminSidebarHidden` + definir `adminSection` = visível na sidebar
+- Filtro de período com seletor de mês `[◀ Mai/2026 ▶]`: pattern oficial em [TabLancar.jsx](src/components/minha-loja/TabLancar.jsx) (Vendas) e [TabResultado.jsx](src/components/minha-loja/TabResultado.jsx) (Gestão > Resultado). State `monthOffset` (0=atual, -N=passado), aria-labels "Mês anterior"/"Próximo mês", touch target ≥40px, setas `disabled` nos limites. Reusar visual em telas novas
 
 ### ASAAS Billing (Cobrança Recorrente)
 - Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: `register`, `register-batch`, `subscribe-batch` (accept `value` opcional), `cancel-subscription`, `update-subscription-value`, `check-payment`, `register-webhook`, `webhook`. Action `subscribe` (single) removida 18/04
