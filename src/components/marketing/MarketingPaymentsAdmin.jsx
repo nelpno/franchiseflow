@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment, MarketingMetaDeposit } from "@/entities/all";
 import { safeHref } from "@/lib/safeHref";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { supabase } from "@/api/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
 import { format, addMonths, parseISO } from "date-fns";
 import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { ptBR } from "date-fns/locale";
@@ -21,6 +24,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,6 +69,8 @@ const STATUS_CONFIG = {
 };
 
 export default function MarketingPaymentsAdmin({ franchises = [] }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const mountedRef = useRef(true);
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState([]);
@@ -67,6 +82,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   const [showDepositDialog, setShowDepositDialog] = useState(false);
   const [rejectDialog, setRejectDialog] = useState(null); // { paymentId }
   const [rejectReason, setRejectReason] = useState("");
+  const [cancelDialog, setCancelDialog] = useState(null); // { payment }
   const [actionLoading, setActionLoading] = useState(null);
   const [configs, setConfigs] = useState([]);
 
@@ -166,6 +182,43 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       await loadData();
     } catch (err) {
       toast.error(`Erro: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancelDialog?.payment) return;
+    const payment = cancelDialog.payment;
+    setActionLoading(payment.id);
+    try {
+      // 1. Apaga o payment primeiro — trigger AFTER DELETE remove a expense vinculada.
+      await MarketingPayment.delete(payment.id);
+
+      // 2. Tenta apagar o comprovante. Falha aqui só deixa arquivo órfão; não bloquear UX.
+      if (payment.proof_url) {
+        try {
+          const marker = "/marketing-comprovantes/";
+          const idx = payment.proof_url.indexOf(marker);
+          if (idx !== -1) {
+            const path = decodeURIComponent(
+              payment.proof_url.slice(idx + marker.length).split("?")[0]
+            );
+            const { error: storageError } = await supabase.storage
+              .from("marketing-comprovantes")
+              .remove([path]);
+            if (storageError) console.warn("Storage remove falhou:", storageError);
+          }
+        } catch (storageErr) {
+          console.warn("Storage remove exception:", storageErr);
+        }
+      }
+
+      toast.success("Pagamento cancelado. Franquia pode lançar novamente.");
+      setCancelDialog(null);
+      await loadData();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Erro ao cancelar pagamento"));
     } finally {
       setActionLoading(null);
     }
@@ -399,6 +452,18 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                           <MaterialIcon icon="visibility" size={18} />
                         </a>
                       )}
+                      {p && isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-[#dc2626] hover:bg-[#dc2626]/10"
+                          onClick={() => setCancelDialog({ payment: p })}
+                          disabled={isLoading}
+                          title="Cancelar pagamento"
+                        >
+                          <MaterialIcon icon="delete_forever" size={18} />
+                        </Button>
+                      )}
                       {!p && (
                         <span className="text-xs text-[#7a6d6d]">—</span>
                       )}
@@ -449,6 +514,31 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!cancelDialog}
+        onOpenChange={(open) => { if (!open && !actionLoading) setCancelDialog(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar pagamento de marketing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação apaga o pagamento, a despesa lançada na DRE e o comprovante.
+              A franquia poderá lançar um novo valor para o mês. Não é possível desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!actionLoading}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={!!actionLoading}
+              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white"
+            >
+              {actionLoading ? "Cancelando..." : "Cancelar pagamento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
