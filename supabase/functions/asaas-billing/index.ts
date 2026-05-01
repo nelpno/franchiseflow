@@ -250,13 +250,24 @@ async function checkPayment(franchiseId: string) {
     .single();
   if (!sub?.asaas_subscription_id) throw new Error("Sem assinatura ativa");
 
-  // Get latest payment from ASAAS
+  // Get last 6 payments (most recent dueDate first). ASAAS auto-creates next-cycle
+  // invoices ahead of time, so picking limit=1 desc returns the FUTURE pending invoice
+  // and masks the current period's paid status.
   const payments = await asaasRequest(
-    `/v3/subscriptions/${sub.asaas_subscription_id}/payments?sort=dueDate&order=desc&limit=1`
+    `/v3/subscriptions/${sub.asaas_subscription_id}/payments?sort=dueDate&order=desc&limit=6`
   );
   if (!payments.data?.length) return { status: "NO_PAYMENTS" };
 
-  const pay = payments.data[0];
+  // deno-lint-ignore no-explicit-any
+  const list: any[] = payments.data;
+  const PAID_SET = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
+  const todayPlus7Ms = Date.now() + 7 * 86400000;
+
+  // Priority: most recent paid invoice. Fallback: most recent invoice already due
+  // (or within 7-day grace for early payment). Last resort: oldest of the window.
+  const paid = list.find(p => PAID_SET.has(p.status));
+  const due = list.find(p => new Date(p.dueDate).getTime() <= todayPlus7Ms);
+  const pay = paid || due || list[list.length - 1];
   const status = mapPaymentStatus(pay.status);
 
   const updateData: Record<string, unknown> = {
@@ -328,6 +339,14 @@ async function handleWebhook(body: Record<string, unknown>) {
   if (!sub) return { ignored: true, reason: "subscription not found" };
 
   const status = mapPaymentStatus(payment.status as string);
+
+  // ASAAS auto-creates next-cycle invoices (PAYMENT_CREATED, status=PENDING) ahead
+  // of time. Applying that event would overwrite the current period's PAID status.
+  // Only update if the event represents an already-due payment (or within 7d grace).
+  const dueMs = new Date(payment.dueDate as string).getTime();
+  if (status === "PENDING" && dueMs > Date.now() + 7 * 86400000) {
+    return { ignored: true, reason: "future pending invoice, current paid status preserved", event };
+  }
 
   const updateData: Record<string, unknown> = {
     current_payment_id: payment.id,
