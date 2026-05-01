@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment } from "@/entities/all";
 import { safeHref } from "@/lib/safeHref";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { format, addMonths, parseISO } from "date-fns";
@@ -161,7 +162,11 @@ export default function MarketingPaymentSection() {
       } catch (_) { /* não bloqueia o fluxo */ }
     } catch (err) {
       console.error("Erro ao registrar pagamento:", err);
-      toast.error(`Erro: ${err.message || "Tente novamente"}`);
+      toast.error(
+        err instanceof TypeError
+          ? "Falha de conexão. Verifique sua internet e tente novamente."
+          : safeErrorMessage(err, "Não foi possível enviar. Tente novamente.")
+      );
     } finally {
       if (mountedRef.current) setSubmitting(false);
     }
