@@ -120,6 +120,7 @@ export default function ExpenseForm({ expense, franchiseId, currentUser, onSave,
             Esta despesa foi gerada automaticamente
             {expense.source === "purchase_order" && " ao receber pedido de reposição"}
             {expense.source === "marketing_payment" && " ao confirmar pagamento de marketing"}
+            {expense.source === "asaas_subscription" && " ao confirmar a mensalidade do Pacote Tecnologia"}
             {expense.source === "external_purchase" && " ao lançar compra externa"}
             . Você pode editar valor e descrição, mas evite mudar a categoria.
           </p>

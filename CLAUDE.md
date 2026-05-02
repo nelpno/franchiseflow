@@ -81,6 +81,7 @@
 - NUNCA criar policy `FOR ALL` + policies específicas na mesma tabela (overlap = multiple_permissive)
 - NUNCA criar policy `USING(true)` para role padrão — service_role já bypassa RLS
 - Storage buckets públicos: leitura via URL pública funciona sem SELECT policy, MAS `upsert: true` da Storage API REQUER SELECT em `storage.objects` para verificar existência (sem ela: 403 row-level security em substituição). Manter SELECT policy em buckets onde franqueado/admin faz upload (catalog-images, marketing-comprovantes). Fix 16/04/2026: linter sugeriu dropar; reaplicado
+- Storage buckets onde admin precisa **apagar** arquivo (não só ler/escrever): policy `FOR DELETE USING (bucket_id='X' AND (SELECT public.is_admin_or_manager()))`. Sem ela, `supabase.storage.from(b).remove([])` falha silenciosamente — arquivo órfão. Aplicado em `marketing-comprovantes` (30/04/2026) quando admin ganhou cancelamento de pagamento
 - Debug 403 em upload Supabase Storage: checar `pg_policies WHERE schemaname='storage' AND tablename='objects'` ANTES de investigar código React/auth (root cause é quase sempre policy faltando ou mudada)
 - FKs novas: SEMPRE criar índice correspondente (`CREATE INDEX IF NOT EXISTS`)
 - Extensões: usar schema `extensions` (NÃO `public`)
@@ -187,7 +188,7 @@
 **`expenses` schema novo** (migration: `supabase/expense-category-migration.sql` + `expense-category-add-pacote-sistema.sql`):
 - `category TEXT NOT NULL DEFAULT 'outros'` (CHECK 11 valores: `compra_produto`, `compra_embalagem`, `compra_insumo`, `aluguel`, `pessoal`, `energia`, `transporte`, `marketing`, `pacote_sistema`, `impostos`, `outros`)
 - `supplier TEXT NULL` — fornecedor texto livre
-- `source TEXT NOT NULL DEFAULT 'manual'` (CHECK 4 valores: `manual`, `purchase_order`, `marketing_payment`, `external_purchase`) — auditoria
+- `source TEXT NOT NULL DEFAULT 'manual'` (CHECK 5 valores: `manual`, `purchase_order`, `marketing_payment`, `external_purchase`, `asaas_subscription`) — auditoria. Migration `expense-source-add-asaas-subscription.sql` (01/05/2026) adicionou `asaas_subscription` + UNIQUE INDEX `uq_expenses_asaas_sub_payment` (source_id, expense_date) WHERE source='asaas_subscription'
 - `source_id UUID NULL` — FK opcional pro registro origem
 - Index: `(franchise_id, category)` + `(source, source_id) WHERE source <> 'manual'`
 
@@ -211,10 +212,12 @@
 |---|---|---|---|
 | Pedido Maxi entregue | `tr_po_generate_expenses` (BEFORE UPDATE OF status) | `compra_produto` + `transporte` | `purchase_orders.expenses_generated_at` |
 | Marketing confirmado | `tr_mkt_generate_expense` (status=`confirmed`) | `marketing` | `marketing_payments.expense_generated_at` |
-| Mensalidade ASAAS | `tr_subscription_payment_expense` (current_payment_status=`RECEIVED`/`CONFIRMED`/`RECEIVED_IN_CASH`) | `pacote_sistema` (R$ 150) | `system_subscriptions.last_paid_payment_id` |
+| Mensalidade ASAAS | `tr_subscription_payment_expense` (BEFORE UPDATE OF current_payment_id, current_payment_status; dispara quando `current_payment_status='PAID'` — edge function normaliza RECEIVED/CONFIRMED/RECEIVED_IN_CASH→PAID via `mapPaymentStatus()`) | `pacote_sistema` (R$ 150, `source='asaas_subscription'`) | `system_subscriptions.last_paid_payment_id` |
 | Compra externa manual | RPC `record_external_purchase()` (sheet `LancarCompraSheet.jsx`) | `compra_produto`/`compra_embalagem`/`compra_insumo` | `source='external_purchase'` |
 
 **Triggers SQL:** todos `BEFORE UPDATE` (permite setar flag de idempotência sem recursão), `SECURITY DEFINER` + `SET search_path='public'` (linter compliance). Arquivos: `supabase/po-expense-trigger.sql`, `marketing-expense-trigger.sql`, `asaas-subscription-expense-trigger.sql`. Não conflitam com triggers existentes (`on_purchase_order_delivered` continua subindo estoque).
+
+**Cleanup ON DELETE (30/04/2026):** apagar uma `marketing_payments` row dispara `tr_mkt_cleanup_expense` (AFTER DELETE) que remove a expense espelho (`source='marketing_payment'`, `source_id=OLD.id`). Padrão a replicar se PO/ASAAS/external precisarem cancelamento — sempre trigger SQL, nunca cleanup em 2 chamadas JS (atomicidade). Pre-flight obrigatório antes de criar trigger novo: `SELECT conname FROM pg_constraint WHERE confrelid='public.expenses'::regclass AND contype='f'` deve retornar vazio. Arquivo: `supabase/marketing-cancel-trigger.sql`.
 
 **Marketing — competência por `reference_month` (fix 30/04/2026):** trigger `tr_mkt_generate_expense` deriva `expense_date = (reference_month || '-01')::date` (fallback `updated_at`/`CURRENT_DATE` se reference_month NULL/inválido). Despesa cai no mês a que o marketing se refere, **não** na data em que o admin confirmou. Antes usava `updated_at::date` → pagamento ref maio confirmado em 30/04 caía no DRE de abril. Backfill realinhou 27 despesas (3 abril→maio, 24 normalizadas para dia 1 do próprio mês). Mesma regra replicada em `supabase/scripts/backfill-historical-expenses.sql` para re-runs.
 
