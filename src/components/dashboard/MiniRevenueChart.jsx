@@ -1,10 +1,17 @@
 import React, { useMemo } from "react";
-import { format, subDays, startOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays } from "date-fns";
+import { format, subDays, startOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatBRL } from "@/lib/formatBRL";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales = [], period = "today" }) {
+function sumNet(sales) {
+  return sales.reduce(
+    (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0),
+    0
+  );
+}
+
+function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales = [], period = "today", monthOffset = 0, customRange = null }) {
   const { chartData, title } = useMemo(() => {
     const now = new Date();
     const shortLabels = {
@@ -13,74 +20,79 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
     };
     const todayStr = format(now, "yyyy-MM-dd");
 
-    // Determine date range based on period
     let days;
     let chartTitle;
 
     if (period === "month") {
-      const mStart = startOfMonth(now);
-      const mEnd = endOfMonth(now);
-      const allDays = eachDayOfInterval({ start: mStart, end: now });
-      // Group by week chunks for month view (too many bars otherwise)
+      const refDate = addMonths(now, monthOffset);
+      const mStart = startOfMonth(refDate);
+      const mEnd = endOfMonth(refDate);
+      const isCurrentMonth = monthOffset === 0;
+      const rangeEnd = isCurrentMonth && now < mEnd ? now : mEnd;
+      const allDays = eachDayOfInterval({ start: mStart, end: rangeEnd });
+      const monthLabelTitle = format(refDate, "MMMM 'de' yyyy", { locale: ptBR });
+      const titleStr = isCurrentMonth ? "Faturamento do mês" : `Faturamento — ${monthLabelTitle}`;
+
       if (allDays.length <= 10) {
-        // Early in the month — show daily
         days = allDays;
-        chartTitle = "Faturamento do mês";
+        chartTitle = titleStr;
       } else {
-        // Aggregate by week-of-month
         const weeks = [];
         let weekStart = mStart;
-        while (weekStart <= now) {
-          const weekEnd = new Date(Math.min(
-            new Date(weekStart.getTime() + 6 * 86400000).getTime(),
-            now.getTime()
-          ));
+        while (weekStart <= rangeEnd) {
+          const candidateEnd = new Date(weekStart.getTime() + 6 * 86400000);
+          const weekEnd = candidateEnd > rangeEnd ? rangeEnd : candidateEnd;
           const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
           const weekDates = weekDays.map(d => format(d, "yyyy-MM-dd"));
-          const weekSales = allSales.filter(s => weekDates.includes(s.sale_date));
-          const revenue = weekSales.reduce(
-            (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
-          );
+          const revenue = sumNet(allSales.filter(s => weekDates.includes(s.sale_date)));
           const label = `${format(weekStart, "dd")}–${format(weekEnd, "dd")}`;
-          const isCurrentWeek = weekDates.includes(todayStr);
+          const isCurrentWeek = isCurrentMonth && weekDates.includes(todayStr);
           weeks.push({ day: label, valor: revenue, isToday: isCurrentWeek });
           weekStart = new Date(weekEnd.getTime() + 86400000);
         }
-        return {
-          chartData: weeks,
-          title: "Faturamento do mês"
-        };
+        return { chartData: weeks, title: titleStr };
       }
+    } else if (period === "custom" && customRange?.start && customRange?.end) {
+      const totalDays = differenceInDays(customRange.end, customRange.start) + 1;
+      chartTitle = `Faturamento — ${format(customRange.start, "dd/MM")} a ${format(customRange.end, "dd/MM")}`;
+
+      if (totalDays > 31) {
+        const weeks = [];
+        let weekStart = customRange.start;
+        while (weekStart <= customRange.end) {
+          const candidateEnd = new Date(weekStart.getTime() + 6 * 86400000);
+          const weekEnd = candidateEnd > customRange.end ? customRange.end : candidateEnd;
+          const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+          const weekDates = weekDays.map(d => format(d, "yyyy-MM-dd"));
+          const revenue = sumNet(allSales.filter(s => weekDates.includes(s.sale_date)));
+          const label = `${format(weekStart, "dd/MM")}`;
+          weeks.push({ day: label, valor: revenue, isToday: weekDates.includes(todayStr) });
+          weekStart = new Date(weekEnd.getTime() + 86400000);
+        }
+        return { chartData: weeks, title: chartTitle };
+      }
+      days = eachDayOfInterval({ start: customRange.start, end: customRange.end });
     } else if (period === "week") {
       const wkStart = startOfWeek(now, { weekStartsOn: 1 });
       days = eachDayOfInterval({ start: wkStart, end: now });
       chartTitle = "Faturamento da semana";
     } else {
-      // "today" — show last 7 days for context
       days = Array.from({ length: 7 }, (_, i) => subDays(now, 6 - i));
       chartTitle = "Faturamento 7 dias";
     }
 
-    // Build bar data from days array
     const barsData = days.map(date => {
       const dateStr = format(date, "yyyy-MM-dd");
       const dayFull = format(date, "EEEE", { locale: ptBR });
       const capitalizedLabel = shortLabels[dayFull] || dayFull.slice(0, 3);
-
-      // Revenue from allSales (real-time, fetchAll: true)
       const daySales = allSales.filter((s) => s.sale_date === dateStr);
-      const revenue = daySales.reduce(
-        (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
-      );
-
-      // Label: day-of-month for month view, weekday abbreviation for others
-      const label = period === "month" ? format(date, "dd") : capitalizedLabel;
-
+      const revenue = sumNet(daySales);
+      const label = (period === "month" || period === "custom") ? format(date, "dd") : capitalizedLabel;
       return { day: label, valor: revenue, isToday: dateStr === todayStr };
     });
 
     return { chartData: barsData, title: chartTitle };
-  }, [summaries, franchiseId, allSales, period]);
+  }, [summaries, franchiseId, allSales, period, monthOffset, customRange?.start, customRange?.end]);
 
   const hasData = chartData.some((d) => d.valor > 0);
   if (!hasData) return null;

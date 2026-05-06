@@ -242,6 +242,17 @@ export async function getFranchiseRanking(date, franchiseId, { signal } = {}) {
   return data;
 }
 
+export async function getFranchiseRankingMonthly(yearMonth, franchiseId, { signal } = {}) {
+  let query = supabase.rpc('get_franchise_ranking_monthly', {
+    p_year_month: yearMonth,
+    p_franchise_id: franchiseId,
+  });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
 export async function getStandardProductCatalog() {
   const { data, error } = await supabase.rpc('get_standard_product_catalog');
   if (error) throw error;

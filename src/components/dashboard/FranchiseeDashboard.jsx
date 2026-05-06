@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays } from "date-fns";
+import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -18,8 +19,17 @@ import SmartActions from "./SmartActions";
 import FinancialObligationsCard from "./FinancialObligationsCard";
 import PriorityAction from "./PriorityAction";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
+import CustomDateRangeSheet from "./CustomDateRangeSheet";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { generateSmartActions } from "@/lib/smartActions";
+
+const MONTH_OFFSET_MIN = -2;
+
+function formatMonthLabel(offset) {
+  const raw = format(addMonths(new Date(), offset), "MMM/yyyy", { locale: ptBR });
+  const cleaned = raw.replace(".", "");
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
 
 export default function FranchiseeDashboard() {
   const { user, selectedFranchise: ctxFranchise } = useAuth();
@@ -40,6 +50,10 @@ export default function FranchiseeDashboard() {
   const [franchiseConfig, setFranchiseConfig] = useState(null);
   const [marketingPayment, setMarketingPayment] = useState(null);
   const [period, setPeriod] = useState("today");
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [customRange, setCustomRange] = useState(null);
+  const [customSheetOpen, setCustomSheetOpen] = useState(false);
+  const [monthlyRanking, setMonthlyRanking] = useState(null);
   const { subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [prioritySheetOpen, setPrioritySheetOpen] = useState(false);
 
@@ -197,27 +211,41 @@ export default function FranchiseeDashboard() {
       return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
     }
 
-    let cutoff, prevCutoff;
+    let cutoff, endCutoff, prevCutoff, prevEndCutoff;
     if (period === "week") {
       const now = new Date();
       const wkStart = startOfWeek(now, { weekStartsOn: 1 });
       const days = differenceInDays(now, wkStart) + 1;
       cutoff = format(wkStart, "yyyy-MM-dd");
+      endCutoff = format(now, "yyyy-MM-dd");
       prevCutoff = format(subDays(wkStart, days), "yyyy-MM-dd");
+      prevEndCutoff = format(subDays(wkStart, 1), "yyyy-MM-dd");
     } else if (period === "month") {
-      const now = new Date();
-      const mStart = startOfMonth(now);
-      const prevMStart = startOfMonth(subDays(mStart, 1));
+      const refDate = addMonths(new Date(), monthOffset);
+      const mStart = startOfMonth(refDate);
+      const mEnd = endOfMonth(refDate);
+      const prevMStart = startOfMonth(subMonths(mStart, 1));
+      const prevMEnd = endOfMonth(subMonths(mStart, 1));
       cutoff = format(mStart, "yyyy-MM-dd");
+      endCutoff = format(mEnd, "yyyy-MM-dd");
       prevCutoff = format(prevMStart, "yyyy-MM-dd");
+      prevEndCutoff = format(prevMEnd, "yyyy-MM-dd");
+    } else if (period === "custom" && customRange?.start && customRange?.end) {
+      const days = differenceInDays(customRange.end, customRange.start) + 1;
+      cutoff = format(customRange.start, "yyyy-MM-dd");
+      endCutoff = format(customRange.end, "yyyy-MM-dd");
+      prevCutoff = format(subDays(customRange.start, days), "yyyy-MM-dd");
+      prevEndCutoff = format(subDays(customRange.start, 1), "yyyy-MM-dd");
     } else {
       const days = 7;
       cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
+      endCutoff = format(new Date(), "yyyy-MM-dd");
       prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
+      prevEndCutoff = format(subDays(new Date(), days), "yyyy-MM-dd");
     }
 
-    const currentSales = allSales.filter((s) => s.sale_date >= cutoff && (period !== "month" || s.sale_date <= format(endOfMonth(new Date()), "yyyy-MM-dd")));
-    const prevSales = allSales.filter((s) => s.sale_date >= prevCutoff && s.sale_date < cutoff);
+    const currentSales = allSales.filter((s) => s.sale_date >= cutoff && s.sale_date <= endCutoff);
+    const prevSales = allSales.filter((s) => s.sale_date >= prevCutoff && s.sale_date <= prevEndCutoff);
 
     const salesCount = currentSales.length;
     const prevSalesCount = prevSales.length;
@@ -227,7 +255,7 @@ export default function FranchiseeDashboard() {
     const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
 
     return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
-  }, [period, allSales, calcRevenue]);
+  }, [period, monthOffset, customRange, allSales, calcRevenue]);
 
   const todayRevenue = calcRevenue(todaySales);
 
@@ -251,6 +279,25 @@ export default function FranchiseeDashboard() {
     const avg = dailyTotals.reduce((a, b) => a + b, 0) / dailyTotals.length;
     return Math.round(avg * 1.10);
   }, [summaries, evoId]);
+
+  // Ranking mensal entre franquias — fora do useVisibilityPolling de propósito.
+  // Só dispara quando filtro muda. AbortController evita race em ◀◀◀ rápido.
+  useEffect(() => {
+    if (!evoId) return;
+    const controller = new AbortController();
+    let yearMonth;
+    if (period === "month") {
+      yearMonth = format(addMonths(new Date(), monthOffset), "yyyy-MM");
+    } else if (period === "custom" && customRange?.start) {
+      yearMonth = format(customRange.start, "yyyy-MM");
+    } else {
+      yearMonth = format(new Date(), "yyyy-MM");
+    }
+    getFranchiseRankingMonthly(yearMonth, evoId, { signal: controller.signal })
+      .then((r) => { if (mountedRef.current) setMonthlyRanking(r); })
+      .catch(() => { /* abort ou erro silencioso — mantém último valor */ });
+    return () => controller.abort();
+  }, [evoId, period, monthOffset, customRange?.start]);
 
   // Bot is active if franchise has a config with evolution_instance_id
   const botActive = !!(franchiseConfig && evoId);
@@ -316,25 +363,96 @@ export default function FranchiseeDashboard() {
         </div>
       </div>
 
-      <div className="flex bg-[#291715]/5 p-1 rounded-xl mb-4">
-        {[
-          { value: "today", label: "Hoje" },
-          { value: "week", label: "Semana" },
-          { value: "month", label: "Mês" },
-        ].map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setPeriod(p.value)}
-            className={`px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 flex-1 rounded-lg ${
-              period === p.value
-                ? "font-bold text-white bg-[#b91c1c] shadow-sm"
-                : "font-medium text-[#1b1c1d]/70"
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+      {(() => {
+        const monthLabel = formatMonthLabel(monthOffset);
+        const prevDisabled = monthOffset <= MONTH_OFFSET_MIN;
+        const nextDisabled = monthOffset >= 0;
+        const isMonthActive = period === "month";
+        const isCustomActive = period === "custom" && !!customRange;
+        const customLabel = isCustomActive
+          ? `${format(customRange.start, "dd/MM")} – ${format(customRange.end, "dd/MM")}`
+          : "Personalizado";
+
+        return (
+          <div className="flex gap-1 bg-[#291715]/5 p-1 rounded-xl mb-4 overflow-x-auto sm:w-fit sm:max-w-full">
+            {["today", "week"].map((value) => (
+              <button
+                key={value}
+                onClick={() => setPeriod(value)}
+                className={`px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 rounded-lg whitespace-nowrap min-h-[40px] ${
+                  period === value
+                    ? "font-bold text-white bg-[#b91c1c] shadow-sm"
+                    : "font-medium text-[#1b1c1d]/70"
+                }`}
+              >
+                {value === "today" ? "Hoje" : "Semana"}
+              </button>
+            ))}
+
+            <div
+              className={`flex items-center rounded-lg whitespace-nowrap transition-colors min-h-[40px] ${
+                isMonthActive ? "bg-[#b91c1c] text-white shadow-sm" : "text-[#1b1c1d]/70"
+              }`}
+            >
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => {
+                  setPeriod("month");
+                  setMonthOffset((o) => Math.max(MONTH_OFFSET_MIN, o - 1));
+                }}
+                disabled={prevDisabled}
+                className={`flex items-center justify-center min-w-[32px] min-h-[40px] rounded-l-lg transition-opacity ${
+                  prevDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-black/10"
+                }`}
+              >
+                <MaterialIcon icon="chevron_left" size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label={`Filtrar por ${monthLabel}`}
+                onClick={() => setPeriod("month")}
+                className="px-2 py-1.5 text-xs font-plus-jakarta font-bold tabular-nums hover:bg-black/5 transition-colors min-w-[80px] text-center"
+              >
+                {monthLabel}
+              </button>
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => {
+                  setPeriod("month");
+                  setMonthOffset((o) => Math.min(0, o + 1));
+                }}
+                disabled={nextDisabled}
+                className={`flex items-center justify-center min-w-[32px] min-h-[40px] rounded-r-lg transition-opacity ${
+                  nextDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-black/10"
+                }`}
+              >
+                <MaterialIcon icon="chevron_right" size={18} />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCustomSheetOpen(true)}
+              className={`px-2 sm:px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 rounded-lg whitespace-nowrap min-h-[40px] flex items-center gap-1 ${
+                isCustomActive
+                  ? "font-bold text-white bg-[#b91c1c] shadow-sm"
+                  : "font-medium text-[#1b1c1d]/70"
+              }`}
+              aria-label="Período personalizado"
+              title="Período personalizado"
+            >
+              <MaterialIcon icon="event" size={16} />
+              {isCustomActive ? (
+                <span className="tabular-nums">{customLabel}</span>
+              ) : (
+                <span className="hidden sm:inline">Personalizado</span>
+              )}
+            </button>
+          </div>
+        );
+      })()}
 
       <section className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatsCard
@@ -363,7 +481,9 @@ export default function FranchiseeDashboard() {
         />
       </section>
 
-      <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
+      {(period === "today" || (period === "month" && monthOffset === 0)) && (
+        <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
+      )}
 
       <PriorityAction
         smartActions={actions}
@@ -375,12 +495,30 @@ export default function FranchiseeDashboard() {
 
       <RankingStreak
         ranking={ranking}
+        monthlyRanking={monthlyRanking}
+        period={period}
+        monthLabel={
+          period === "month"
+            ? formatMonthLabel(monthOffset)
+            : period === "custom" && customRange?.start
+            ? format(customRange.start, "MMM/yyyy", { locale: ptBR }).replace(".", "")
+            : formatMonthLabel(0)
+        }
+        isCurrentMonth={period !== "month" || monthOffset === 0}
         summaries={summaries}
         franchiseId={evoId}
         dailyGoal={dailyGoal}
       />
 
-      <MiniRevenueChart summaries={summaries} franchiseId={evoId} todayRevenue={todayRevenue} allSales={allSales} period={period} />
+      <MiniRevenueChart
+        summaries={summaries}
+        franchiseId={evoId}
+        todayRevenue={todayRevenue}
+        allSales={allSales}
+        period={period}
+        monthOffset={monthOffset}
+        customRange={customRange}
+      />
 
       <FinancialObligationsCard marketingPayment={marketingPayment} />
 
@@ -390,6 +528,20 @@ export default function FranchiseeDashboard() {
         subscription={subscription}
         checkPaymentNow={checkPaymentNow}
         isChecking={isChecking}
+      />
+
+      <CustomDateRangeSheet
+        open={customSheetOpen}
+        onOpenChange={setCustomSheetOpen}
+        currentRange={customRange}
+        onApply={(range) => {
+          setCustomRange(range);
+          setPeriod("custom");
+        }}
+        onClear={() => {
+          setCustomRange(null);
+          setPeriod("today");
+        }}
       />
 
       <SmartActions contacts={contacts} franchiseId={evoId} excludeType={activePriorityType} botActive={botActive} />
