@@ -273,7 +273,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
           className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/30 text-sm font-medium text-[#3d4a42] hover:border-[#b91c1c]/30 hover:text-[#b91c1c] transition-colors flex items-center justify-center gap-2"
         >
           <MaterialIcon icon="add" size={18} />
-          Adicionar faixa de entrega
+          Adicionar dias com horário diferente
         </button>
       )}
 

@@ -142,7 +142,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
         className="flex items-center gap-1.5 text-xs font-semibold text-[#b91c1c] hover:text-[#991b1b] transition-colors mt-1"
       >
         <MaterialIcon icon="add" size={16} />
-        {isModality ? "Adicionar regra" : "Adicionar faixa"}
+        {isModality ? "Adicionar regra" : "Adicionar faixa de km"}
       </button>
     </div>
   );
