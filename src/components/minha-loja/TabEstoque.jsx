@@ -396,7 +396,16 @@ export default function TabEstoque({
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Erro ao deletar:", error);
-      if (error?.message?.includes("permissão")) {
+      const msg = error?.message || "";
+      const code = error?.code || error?.details?.code || "";
+      const isFkViolation =
+        code === "23503" ||
+        /foreign key|violates foreign key|sale_items|purchase_order_items/i.test(msg);
+      if (isFkViolation) {
+        toast.error(
+          "Este produto tem vendas ou pedidos no histórico. Use o botão ocultar (👁️) em vez de excluir."
+        );
+      } else if (msg.includes("permissão")) {
         toast.error("Sem permissão para excluir este produto.");
       } else {
         toast.error("Erro ao remover produto.");
