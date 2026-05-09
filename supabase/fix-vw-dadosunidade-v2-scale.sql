@@ -268,6 +268,11 @@ SELECT
   -- === Retirada agendada ===
   COALESCE(fc.pickup_requires_scheduling, true) AS pickup_requires_scheduling,
 
+  -- === Reserva/agendamento sem pagamento antecipado ===
+  -- TRUE: bot omite RC9 e usa regra positiva que aceita reserva pra data futura + obriga avisa_franqueado
+  -- FALSE (default): bot mantém RC9 que bloqueia reserva sem pagamento integral
+  COALESCE(fc.accepts_reservation_without_payment, false) AS accepts_reservation_without_payment,
+
   -- === Metadata ===
   fc.updated_at
 

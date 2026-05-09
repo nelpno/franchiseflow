@@ -43,6 +43,7 @@ const initialFormData = {
   has_delivery: true,
   has_pickup: false,
   pickup_requires_scheduling: true,
+  accepts_reservation_without_payment: false,
   delivery_method: '',
   payment_delivery: [],
   payment_pickup: [],
@@ -221,6 +222,7 @@ function FranchiseSettingsContent() {
       pickup_schedule: config.pickup_schedule || [],
       has_custom_pickup_hours: config.has_custom_pickup_hours ?? false,
       pickup_requires_scheduling: config.pickup_requires_scheduling ?? true,
+      accepts_reservation_without_payment: config.accepts_reservation_without_payment ?? false,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
       payment_fees: config.payment_fees || null,
@@ -791,6 +793,24 @@ function FranchiseSettingsContent() {
                   )}
                 </>
               )}
+
+              {/* Política de pedidos — regras que valem pra entrega E retirada */}
+              <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
+                <h4 className="text-xs font-bold text-[#3d4a42] mb-3 flex items-center gap-1.5">
+                  <MaterialIcon icon="rule" size={14} />
+                  Política de Pedidos
+                </h4>
+                <ToggleCard
+                  icon="event_available"
+                  label="Aceitar reserva para data futura sem pagamento antecipado?"
+                  description="Vale pra entrega e retirada. Quando ativado, o bot pode aceitar pedidos para outro dia sem cobrar pagamento na hora — e avisa você automaticamente para preparar e confirmar."
+                  checked={formData.accepts_reservation_without_payment ?? false}
+                  onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
+                />
+                <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
+                  Desativado por padrão. Ative apenas se você confia em separar produto antes de receber pagamento — você assume o risco do cliente sumir.
+                </p>
+              </div>
 
               {/* Payment fees per method */}
               <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
