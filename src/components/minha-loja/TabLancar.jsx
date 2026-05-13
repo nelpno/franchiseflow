@@ -731,6 +731,11 @@ export default function TabLancar({
                         <span className="font-medium text-[#1b1c1d] truncate">
                           {getContactName(sale)}
                         </span>
+                        {sale.sale_number ? (
+                          <span className="font-mono text-xs text-[#4a3d3d]/60 shrink-0 tabular-nums">
+                            #{sale.sale_number}
+                          </span>
+                        ) : null}
                         {getSourceBadge(sale.source)}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#4a3d3d] mt-0.5">

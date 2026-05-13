@@ -127,6 +127,20 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         >
           Comprovante de Venda
         </div>
+        {sale.sale_number ? (
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: "0.04em",
+              marginTop: 6,
+            }}
+          >
+            Pedido #{sale.sale_number}
+          </div>
+        ) : null}
       </div>
 
       {/* Separador */}

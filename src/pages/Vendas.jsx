@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
 import TabLancar from "@/components/minha-loja/TabLancar";
 
-const SALES_COLUMNS = 'id, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, delivery_method, net_value';
+const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, delivery_method, net_value';
 const SALES_LOOKBACK_MONTHS = 6;
 const getSalesCutoff = () => format(subMonths(new Date(), SALES_LOOKBACK_MONTHS), 'yyyy-MM-dd');
 

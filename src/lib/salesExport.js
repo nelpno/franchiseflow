@@ -30,6 +30,7 @@ function formatMoney(value) {
  */
 export const SALES_EXPORT_COLUMNS = [
   { key: "sale_date", header: "Data" },
+  { key: "sale_number", header: "Nº Pedido" },
   { key: "customer", header: "Cliente" },
   { key: "payment_method", header: "Pagamento" },
   { key: "value", header: "Valor Bruto (R$)" },
@@ -55,6 +56,7 @@ function buildRow(sale, contactsMap) {
 
   return {
     sale_date: formatDateBR(sale?.sale_date || sale?.created_at),
+    sale_number: sale?.sale_number ? `#${sale.sale_number}` : "",
     customer: resolveCustomerName(sale, contactsMap),
     payment_method: getPaymentMethodLabel(sale?.payment_method),
     value: formatMoney(value),
@@ -80,6 +82,7 @@ function buildTotalsRow(sales) {
   }
   return {
     sale_date: "",
+    sale_number: "",
     customer: "TOTAL",
     payment_method: "",
     value: formatMoney(value),
