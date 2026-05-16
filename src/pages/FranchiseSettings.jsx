@@ -44,6 +44,7 @@ const initialFormData = {
   has_pickup: false,
   pickup_requires_scheduling: true,
   accepts_reservation_without_payment: false,
+  charges_card_fee_to_customer: false,
   delivery_method: '',
   payment_delivery: [],
   payment_pickup: [],
@@ -223,6 +224,7 @@ function FranchiseSettingsContent() {
       has_custom_pickup_hours: config.has_custom_pickup_hours ?? false,
       pickup_requires_scheduling: config.pickup_requires_scheduling ?? true,
       accepts_reservation_without_payment: config.accepts_reservation_without_payment ?? false,
+      charges_card_fee_to_customer: config.charges_card_fee_to_customer ?? false,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
       payment_fees: config.payment_fees || null,
@@ -810,6 +812,18 @@ function FranchiseSettingsContent() {
                 <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
                   Desativado por padrão. Ative apenas se você confia em separar produto antes de receber pagamento — você assume o risco do cliente sumir.
                 </p>
+                <div className="mt-3">
+                  <ToggleCard
+                    icon="request_quote"
+                    label="Repassar taxa de cartão ao cliente?"
+                    description="Quando ativo, a taxa de crédito/débito/link é somada ao total que o cliente paga. Vale para vendas do bot e como padrão no caixa manual (você pode mudar por venda)."
+                    checked={formData.charges_card_fee_to_customer ?? false}
+                    onChange={(val) => handleInputChange('charges_card_fee_to_customer', val)}
+                  />
+                  <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
+                    Desativado por padrão. Ative apenas se quiser que o cliente pague a taxa (em vez da franquia absorver). Cadastre as taxas por método na seção abaixo antes de ativar.
+                  </p>
+                </div>
               </div>
 
               {/* Payment fees per method */}

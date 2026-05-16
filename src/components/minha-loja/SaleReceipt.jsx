@@ -44,8 +44,15 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
   );
   const deliveryFee = parseFloat(sale.delivery_fee) || 0;
   const discountAmount = parseFloat(sale.discount_amount) || 0;
+  const feePassedToCustomer = sale.fee_passed_to_customer === true;
+  const cardFeeAmount = parseFloat(sale.card_fee_amount) || 0;
+  const cardFeePercent = parseFloat(sale.card_fee_percent) || 0;
+  const showCardFeeRow = feePassedToCustomer && cardFeeAmount > 0;
   const totalValue =
-    (parseFloat(sale.value) || 0) - discountAmount + deliveryFee;
+    (parseFloat(sale.value) || 0) -
+    discountAmount +
+    deliveryFee +
+    (showCardFeeRow ? cardFeeAmount : 0);
 
   return (
     <div
@@ -256,6 +263,17 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             </span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>
               −{formatCurrency(discountAmount)}
+            </span>
+          </div>
+        )}
+
+        {showCardFeeRow && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#444" }}>
+              Taxa cartão ({cardFeePercent.toFixed(0)}%)
+            </span>
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+              {formatCurrency(cardFeeAmount)}
             </span>
           </div>
         )}

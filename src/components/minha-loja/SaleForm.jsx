@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { toast } from "sonner";
@@ -401,6 +402,8 @@ export default function SaleForm({
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [cardFeePercent, setCardFeePercent] = useState(0);
   const [paymentFees, setPaymentFees] = useState(null); // JSONB from franchise_configurations
+  const [feePassedToCustomer, setFeePassedToCustomer] = useState(false); // override por venda
+  const [franchiseChargesFee, setFranchiseChargesFee] = useState(false); // default config da franquia
 
   // Delivery
   const [deliveryMethod, setDeliveryMethod] = useState("retirada");
@@ -432,6 +435,8 @@ export default function SaleForm({
 
     setPaymentMethod(sale.payment_method || "pix");
     setCardFeePercent(sale.card_fee_percent ?? 0);
+    // Edit: preserva false explícito do sale via ?? ; só cai pro franchise default se sale=null/undefined
+    setFeePassedToCustomer(sale.fee_passed_to_customer ?? franchiseChargesFee ?? false);
     setDeliveryMethod(sale.delivery_method || "retirada");
     setDeliveryFee(sale.delivery_fee ?? 0);
     setDiscountType(sale.discount_type || "fixed");
@@ -484,6 +489,7 @@ export default function SaleForm({
     if (draft.contactSearch) setContactSearch(draft.contactSearch);
     if (draft.paymentMethod) setPaymentMethod(draft.paymentMethod);
     if (draft.cardFeePercent != null) setCardFeePercent(draft.cardFeePercent);
+    if (draft.feePassedToCustomer != null) setFeePassedToCustomer(draft.feePassedToCustomer);
     if (draft.deliveryMethod) setDeliveryMethod(draft.deliveryMethod);
     if (draft.deliveryFee != null) setDeliveryFee(draft.deliveryFee);
     if (draft.discountType) setDiscountType(draft.discountType);
@@ -501,6 +507,7 @@ export default function SaleForm({
           setContactSearch("");
           setPaymentMethod("pix");
           setCardFeePercent(0);
+          setFeePassedToCustomer(franchiseChargesFee);
           setDeliveryMethod("retirada");
           setDeliveryFee(0);
           setDiscountType("fixed");
@@ -532,16 +539,23 @@ export default function SaleForm({
     }
   }, [isEditing, contacts, initialContactId, initialPhone]);
 
-  // ---- Load payment_fees from franchise config ----
+  // ---- Load payment_fees + charges_card_fee_to_customer from franchise config ----
   useEffect(() => {
     if (!franchiseId) return;
     FranchiseConfiguration.filter({ franchise_evolution_instance_id: franchiseId })
       .then((configs) => {
-        const fees = configs?.[0]?.payment_fees;
+        const cfg = configs?.[0];
+        const fees = cfg?.payment_fees;
         if (fees && typeof fees === "object") setPaymentFees(fees);
+        const charges = cfg?.charges_card_fee_to_customer ?? false;
+        setFranchiseChargesFee(charges);
+        // Sale NOVA: default vem da config. Sale EDIT: useEffect de hydrate já cuidou disso.
+        if (!isEditing) {
+          setFeePassedToCustomer(charges);
+        }
       })
       .catch(() => {}); // silent — fallback to manual input
-  }, [franchiseId]);
+  }, [franchiseId, isEditing]);
 
   // Auto-set fee when payment method changes (if config has fees)
   useEffect(() => {
@@ -552,8 +566,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes]
   );
 
   useEffect(() => {
@@ -593,18 +607,21 @@ export default function SaleForm({
   }, [discountInput, discountType, subtotal]);
 
   const cardFeeAmount = useMemo(() => {
-    // With payment_fees config: apply fee for any method that has a non-zero fee
+    // Base de cálculo da taxa = SÓ produtos (subtotal - desconto), SEM frete.
+    // Uniforme para AMBOS modos (repassar OU absorver).
     if (paymentFees) {
       if (!cardFeePercent || cardFeePercent <= 0) return 0;
-      return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
+      return (subtotal - discountAmount) * (cardFeePercent / 100);
     }
-    // Legacy: card methods and payment_link have fees
-    const feeableMethods = ["card_machine", "credit", "debit", "nfc", "payment_link"];
+    // Legacy: card methods e payment_link tem taxa (card_machine removido da UI)
+    const feeableMethods = ["credit", "debit", "nfc", "payment_link"];
     if (!feeableMethods.includes(paymentMethod)) return 0;
-    return (subtotal - discountAmount + effectiveDeliveryFee) * (cardFeePercent / 100);
-  }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent, paymentFees]);
+    return (subtotal - discountAmount) * (cardFeePercent / 100);
+  }, [subtotal, discountAmount, paymentMethod, cardFeePercent, paymentFees]);
 
-  const netValue = subtotal - discountAmount - cardFeeAmount + effectiveDeliveryFee;
+  const netValue = feePassedToCustomer
+    ? subtotal - discountAmount + cardFeeAmount + effectiveDeliveryFee  // cliente paga taxa
+    : subtotal - discountAmount - cardFeeAmount + effectiveDeliveryFee; // franquia absorve (legacy)
 
   // Item handlers
   const handleAddItem = () => {
@@ -776,8 +793,9 @@ export default function SaleForm({
         contact_id: resolvedContactId || null,
         source: isEditing ? (sale.source || "manual") : "manual",
         payment_method: paymentMethod,
-        card_fee_percent: (paymentFees ? cardFeePercent > 0 : ["card_machine", "credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeePercent : null,
-        card_fee_amount: (paymentFees ? cardFeePercent > 0 : ["card_machine", "credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeeAmount : null,
+        card_fee_percent: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeePercent : null,
+        card_fee_amount: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeeAmount : null,
+        fee_passed_to_customer: cardFeeAmount > 0 ? feePassedToCustomer : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
         discount_amount: discountAmount || 0,
@@ -1177,21 +1195,38 @@ export default function SaleForm({
           ))}
         </div>
 
-        {(paymentFees ? cardFeePercent > 0 : ["card_machine", "credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) && (
-          <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
-            <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              step={0.01}
-              value={cardFeePercent}
-              onChange={(e) => setCardFeePercent(parseFloat(e.target.value) || 0)}
-              className="w-24 bg-white text-right font-mono-numbers"
-            />
-            <span className="text-sm text-[#4a3d3d] font-mono-numbers">
-              = {formatCurrency(cardFeeAmount)}
-            </span>
+        {(paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) && (
+          <div className="mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                value={cardFeePercent}
+                onChange={(e) => setCardFeePercent(parseFloat(e.target.value) || 0)}
+                className="w-24 bg-white text-right font-mono-numbers"
+              />
+              <span className="text-sm text-[#4a3d3d] font-mono-numbers">
+                = {formatCurrency(cardFeeAmount)}
+              </span>
+            </div>
+            <div className="flex items-start justify-between gap-3 pt-2 border-t border-[#291715]/5">
+              <div className="flex flex-col">
+                <Label className="text-sm text-[#4a3d3d] cursor-pointer" htmlFor="fee-passed-toggle">
+                  Cliente paga a taxa
+                </Label>
+                <span className="text-xs text-[#7a6868] mt-0.5">
+                  Quando ativo, soma a taxa no total cobrado do cliente
+                </span>
+              </div>
+              <Switch
+                id="fee-passed-toggle"
+                checked={feePassedToCustomer}
+                onCheckedChange={(val) => setFeePassedToCustomer(val)}
+              />
+            </div>
           </div>
         )}
       </MobileSection>
@@ -1290,9 +1325,12 @@ export default function SaleForm({
 
         {cardFeeAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#4a3d3d]">Taxa {paymentMethod === "payment_link" ? "link" : paymentMethod === "pix" ? "PIX" : paymentMethod === "cash" ? "dinheiro" : "cartão"} ({cardFeePercent}%)</span>
-            <span className="font-medium text-[#b91c1c] font-mono-numbers">
-              - {formatCurrency(cardFeeAmount)}
+            <span className="text-[#4a3d3d]">
+              Taxa {paymentMethod === "payment_link" ? "link" : paymentMethod === "pix" ? "PIX" : paymentMethod === "cash" ? "dinheiro" : "cartão"} ({cardFeePercent}%)
+              {feePassedToCustomer && <span className="text-xs text-[#7a6868] ml-1">(cliente paga)</span>}
+            </span>
+            <span className={`font-medium font-mono-numbers ${feePassedToCustomer ? "text-[#16a34a]" : "text-[#b91c1c]"}`}>
+              {feePassedToCustomer ? "+" : "-"} {formatCurrency(cardFeeAmount)}
             </span>
           </div>
         )}
