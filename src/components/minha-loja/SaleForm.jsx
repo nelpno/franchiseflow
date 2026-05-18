@@ -607,17 +607,18 @@ export default function SaleForm({
   }, [discountInput, discountType, subtotal]);
 
   const cardFeeAmount = useMemo(() => {
-    // Base de cálculo da taxa = SÓ produtos (subtotal - desconto), SEM frete.
-    // Uniforme para AMBOS modos (repassar OU absorver).
+    // Base de cálculo da taxa = (subtotal + frete - desconto). Uniforme para AMBOS modos
+    // (repassar OU absorver) — bot V4 e Pedido_Checkout1 usam a mesma base.
+    const feeBase = subtotal - discountAmount + effectiveDeliveryFee;
     if (paymentFees) {
       if (!cardFeePercent || cardFeePercent <= 0) return 0;
-      return (subtotal - discountAmount) * (cardFeePercent / 100);
+      return feeBase * (cardFeePercent / 100);
     }
     // Legacy: card methods e payment_link tem taxa (card_machine removido da UI)
     const feeableMethods = ["credit", "debit", "nfc", "payment_link"];
     if (!feeableMethods.includes(paymentMethod)) return 0;
-    return (subtotal - discountAmount) * (cardFeePercent / 100);
-  }, [subtotal, discountAmount, paymentMethod, cardFeePercent, paymentFees]);
+    return feeBase * (cardFeePercent / 100);
+  }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent, paymentFees]);
 
   const netValue = feePassedToCustomer
     ? subtotal - discountAmount + cardFeeAmount + effectiveDeliveryFee  // cliente paga taxa
