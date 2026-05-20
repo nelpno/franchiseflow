@@ -44,6 +44,7 @@ function createEntity(tableName) {
           query = applyRangeFilters(query);
           const order = parseOrderBy(orderBy);
           if (order) query = query.order(order.column, { ascending: order.ascending });
+          query = query.order('id', { ascending: true });
           query = query.range(from, from + pageSize - 1);
           const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
           if (error) throw error;
@@ -88,6 +89,7 @@ function createEntity(tableName) {
           query = applyFilters(query);
           const order = parseOrderBy(orderBy);
           if (order) query = query.order(order.column, { ascending: order.ascending });
+          query = query.order('id', { ascending: true });
           query = query.range(from, from + pageSize - 1);
           const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
           if (error) throw error;
