@@ -935,7 +935,7 @@ function FranchiseSettingsContent() {
                     value={formData.min_order_value ?? ''}
                     onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
                     placeholder="45" />
-                  <FieldHint text="Abaixo desse valor, o bot sugere retirada no local." />
+                  <FieldHint text="Valor mínimo do pedido para o bot aceitar entrega. Abaixo disso, o cliente precisa aumentar o pedido ou retirar no local." />
                 </div>
                 <div>
                   <label className={labelClass}>Tempo médio de entrega (minutos)</label>
