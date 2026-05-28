@@ -1088,9 +1088,12 @@ export default function SaleForm({
               />
             </div>
 
-            {/* Line total */}
+            {/* Line total — calculado automaticamente, NÃO é input */}
             <div className="flex items-center justify-between md:w-28">
-              <span className="text-sm font-medium text-[#4a3d3d] font-mono-numbers md:text-right md:w-full">
+              <span
+                className="text-sm font-medium text-[#4a3d3d] font-mono-numbers md:text-right md:w-full px-2 py-1.5 bg-[#f5f3f0] rounded-md cursor-default select-none"
+                title="Subtotal (quantidade × preço unitário)"
+              >
                 {formatCurrency((Number(item.quantity) || 0) * item.unit_price)}
               </span>
               {items.length > 1 && (
@@ -1184,10 +1187,10 @@ export default function SaleForm({
               key={pm.value}
               type="button"
               onClick={() => setPaymentMethod(pm.value)}
-              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border transition-colors text-xs ${
+              className={`flex items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-colors text-xs min-h-[48px] ${
                 paymentMethod === pm.value
-                  ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
-                  : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                  ? "border-[#b91c1c] bg-[#b91c1c]/10 text-[#b91c1c] font-bold shadow-sm"
+                  : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa] hover:border-[#291715]/20"
               }`}
             >
               <MaterialIcon icon={pm.icon} size={16} />

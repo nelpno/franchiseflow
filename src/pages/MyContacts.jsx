@@ -636,7 +636,11 @@ export default function MyContacts() {
             return (
               <div
                 key={contact.id}
-                className="bg-white rounded-2xl border border-[#291715]/5 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+                onClick={(e) => {
+                  if (e.target.closest('button, a')) return;
+                  openEdit(contact);
+                }}
+                className="bg-white rounded-2xl border border-[#291715]/5 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md hover:border-[#b91c1c]/20 transition-all cursor-pointer"
               >
                 {/* Top row: name, phone, badge */}
                 <div className="flex items-start justify-between gap-2">
