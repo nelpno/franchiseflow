@@ -281,7 +281,7 @@ function FranchiseSettingsContent() {
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
-    if (isSubmitting) return; // Prevent double-click
+    if (isSubmitting) return false; // Prevent double-click
     setIsSubmitting(true);
 
     // Show slow-save warning after 8s
@@ -332,10 +332,12 @@ function FranchiseSettingsContent() {
       const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || formData.franchise_evolution_instance_id}`;
       try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
       toast.success("Configurações salvas com sucesso!");
+      return true;
     } catch (error) {
       console.error("Erro ao salvar:", error);
       const msg = safeErrorMessage(error, "Falha ao salvar configurações.");
       toast.error(msg, error?.message?.includes("Tempo limite") ? { duration: 6000 } : undefined);
+      return false;
     } finally {
       clearTimeout(slowTimer);
       setIsSubmitting(false);
@@ -415,8 +417,11 @@ function FranchiseSettingsContent() {
       done.push(3); // Skipped step counts as done
     }
     if (formData.agent_name) done.push(4);
+    // Etapa 5 (Revisão) fica "concluída" visualmente quando todas as anteriores estão ok
+    const requiredSteps = [1, 2, 3, 4].filter(n => !skippedSteps.includes(n));
+    if (requiredSteps.every(n => done.includes(n))) done.push(5);
     return done;
-  }, [formData, hasDelivery, hasPickup]);
+  }, [formData, hasDelivery, hasPickup, skippedSteps]);
 
   const goToStep = (step) => {
     if (skippedSteps.includes(step)) return;
@@ -436,7 +441,11 @@ function FranchiseSettingsContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
+    if (isDirty) {
+      const ok = await handleSubmit();
+      if (!ok) return;
+    }
     let next = currentStep + 1;
     while (next <= 5 && skippedSteps.includes(next)) next++;
     if (next <= 5) goToStep(next);
@@ -657,10 +666,10 @@ function FranchiseSettingsContent() {
               <FieldHint text="O bot usa esse endereço para calcular frete e informar o ponto de retirada." />
               <div>
                 <label className={labelClass}>Ponto de referência para clientes</label>
-                <textarea className={`${inputClass} resize-none`} rows={2} value={formData.address_reference}
+                <textarea className={`${inputClass} resize-none`} rows={2} maxLength={200} value={formData.address_reference}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
                   placeholder="Ex: Próximo à praça, casa com portão azul..." />
-                <FieldHint text="O bot informa essa referência quando o cliente pergunta onde fica sua unidade." />
+                <FieldHint text={`O bot informa essa referência quando o cliente pergunta onde fica sua unidade. (${(formData.address_reference || '').length}/200)`} />
               </div>
               <div>
                 <label className={labelClass}>Seu WhatsApp pessoal (recebe relatório quinzenal)</label>
@@ -668,7 +677,7 @@ function FranchiseSettingsContent() {
                   value={formData.personal_phone_for_summary?.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3').replace(/^(\d{2})(\d{1,5})$/, '($1) $2').replace(/^(\d{1,2})$/, '($1') || ''}
                   onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder="(11) 98765-4321" />
-                <FieldHint text="Formato: DDD + número (11 dígitos). Ex: 11987654321" />
+                <FieldHint text="NÃO é o número que o bot atende clientes (esse fica no card &quot;WhatsApp ativo&quot; no topo). Esse é só pra você receber o relatório quinzenal. Formato: DDD + 9 dígitos." />
               </div>
             </WizardStep>
           )}
@@ -993,10 +1002,10 @@ function FranchiseSettingsContent() {
               </div>
               <div>
                 <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
-                <textarea className={`${inputClass} resize-none`} rows={3} value={formData.promotions_combo}
+                <textarea className={`${inputClass} resize-none`} rows={3} maxLength={400} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
-                <FieldHint text="O bot menciona essas promoções quando o cliente pergunta sobre ofertas." />
+                <FieldHint text={`O bot menciona essas promoções quando o cliente pergunta sobre ofertas. (${(formData.promotions_combo || '').length}/400)`} />
               </div>
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <div>
@@ -1085,10 +1094,12 @@ function FranchiseSettingsContent() {
               <button
                 type="button"
                 onClick={nextStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all"
+                disabled={isSubmitting}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all disabled:opacity-60"
               >
+                {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
                 Próximo
-                <MaterialIcon icon="arrow_forward" size={16} />
+                {!isSubmitting && <MaterialIcon icon="arrow_forward" size={16} />}
               </button>
             ) : (
               <button
