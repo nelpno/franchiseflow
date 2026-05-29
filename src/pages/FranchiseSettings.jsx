@@ -1002,7 +1002,7 @@ function FranchiseSettingsContent() {
               </div>
               <div>
                 <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
-                <textarea className={`${inputClass} resize-none`} rows={3} maxLength={1500} value={formData.promotions_combo}
+                <textarea className={`${inputClass} resize-y min-h-[120px]`} rows={5} maxLength={1500} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
                 <FieldHint text={`O bot menciona essas promoções quando o cliente pergunta sobre ofertas. (${(formData.promotions_combo || '').length}/1500)`} />
