@@ -669,7 +669,7 @@ function FranchiseSettingsContent() {
                 <textarea className={`${inputClass} resize-none`} rows={2} maxLength={400} value={formData.address_reference}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
                   placeholder="Ex: Próximo à praça, casa com portão azul..." />
-                <FieldHint text={`O bot informa essa referência quando o cliente pergunta onde fica sua unidade. (${(formData.address_reference || '').length}/400)`} />
+                <FieldHint text={`SÓ ponto de referência (Ex: "casa azul ao lado do mercado"). NÃO coloque horários, endereço completo nem promoções. (${(formData.address_reference || '').length}/400)`} />
               </div>
               <div>
                 <label className={labelClass}>Seu WhatsApp pessoal (recebe relatório quinzenal)</label>
@@ -1004,8 +1004,18 @@ function FranchiseSettingsContent() {
                 <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
                 <textarea className={`${inputClass} resize-y min-h-[120px]`} rows={5} maxLength={1500} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
-                  placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
-                <FieldHint text={`O bot menciona essas promoções quando o cliente pergunta sobre ofertas. (${(formData.promotions_combo || '').length}/1500)`} />
+                  placeholder="Ex: COMBO 1 (serve 5): 1 nhoque muçarela + 1 canelone brócolis — R$ 74,90&#10;COMBO 2 (serve 8): ... — R$ 99,90&#10;Pagamento via PIX." />
+                <FieldHint text={`Use SÓ para promoções e combos ATIVOS. Avisos de horário, endereço, restrições, cumprimentos vão em outros campos. DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
+                {(() => {
+                  const t = (formData.promotions_combo || '').toLowerCase();
+                  const flag = ['não temos promo', 'nao temos promo', 'no momento não', 'no momento nao', 'sendo elaborado', 'não há', 'nao ha', 'em breve', 'aguardando'].some(p => t.includes(p));
+                  return flag ? (
+                    <p className="text-xs text-amber-700 mt-1 flex items-start gap-1">
+                      <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
+                      <span>Esse texto não é uma promoção — apague o campo (deixe vazio). Texto "não temos promoção" polui o bot e gasta tokens à toa.</span>
+                    </p>
+                  ) : null;
+                })()}
               </div>
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <div>
