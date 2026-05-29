@@ -3,6 +3,7 @@ import { FranchiseConfiguration } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 import { saveFiscalData, missingFiscalFields } from "@/lib/saveFiscalData";
 
@@ -74,7 +75,7 @@ export default function FiscalDataGate({ franchise, onReady }) {
       toast.success("Dados fiscais salvos!");
       onReady?.();
     } catch (err) {
-      toast.error("Erro ao salvar: " + (err?.message || "tente novamente"));
+      toast.error(safeErrorMessage(err, "Erro ao salvar. Tente novamente."));
     } finally {
       setSaving(false);
     }

@@ -19,16 +19,17 @@ export default function SubscriptionPaymentSheet({ open, onOpenChange, subscript
     current_payment_url,
   } = subscription;
 
-  const value = current_payment_value ?? 150;
+  const value = parseFloat(current_payment_value) || 150;
 
   const formattedDueDate = current_payment_due_date
-    ? format(new Date(current_payment_due_date), "dd/MM/yyyy", { locale: ptBR })
+    ? format(new Date(current_payment_due_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
     : null;
 
   const isOverdue = current_payment_status === "OVERDUE";
   const isPending = current_payment_status === "PENDING";
 
   const handleCopyPix = async () => {
+    if (!pix_payload) return;
     try {
       await navigator.clipboard.writeText(pix_payload);
       toast.success("Código PIX copiado!");

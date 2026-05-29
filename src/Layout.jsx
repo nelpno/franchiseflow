@@ -89,7 +89,6 @@ const navigationItems = [
     materialIcon: "account_balance",
     adminOnly: true,
     adminSection: "Gestão",
-    adminSidebarHidden: true,
   },
   {
     title: "Configurações",
@@ -119,14 +118,6 @@ const navigationItems = [
     materialIcon: "local_shipping",
     adminOnly: true,
     adminSection: "Gestão",
-  },
-  {
-    title: "Inteligência Bot",
-    url: createPageUrl("BotIntelligence"),
-    materialIcon: "psychology",
-    adminOnly: true,
-    adminSection: "Gestão",
-    adminSidebarHidden: true,
   },
   {
     title: "Franqueados",

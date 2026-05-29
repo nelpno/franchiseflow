@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MarketingMetaDeposit } from "@/entities/all";
 import { format } from "date-fns";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +46,7 @@ export default function MetaDepositDialog({ open, onOpenChange, referenceMonth, 
       onSaved?.();
     } catch (err) {
       console.error("Erro ao registrar deposito:", err);
-      toast.error(`Erro: ${err.message || "Tente novamente"}`);
+      toast.error(safeErrorMessage(err, "Não foi possível registrar o depósito."));
     } finally {
       setSubmitting(false);
     }

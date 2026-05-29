@@ -52,7 +52,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
       const jspdfModule = await import("jspdf");
       const jsPDF = jspdfModule.default || jspdfModule.jsPDF;
       const autoTableModule = await import("jspdf-autotable");
-      if (autoTableModule.default) autoTableModule.default(jsPDF);
+      const autoTable = autoTableModule.default || autoTableModule.autoTable;
 
       const doc = new jsPDF({ orientation: "landscape" });
 
@@ -75,7 +75,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
         columns.map((col) => (col.format ? col.format(row[col.key]) : row[col.key] ?? ""))
       );
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 38,
         head,
         body,

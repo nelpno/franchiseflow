@@ -113,9 +113,12 @@ export default function MyChecklist() {
 
       const today = new Date();
       const sevenDaysAgo = format(subDays(today, 6), "yyyy-MM-dd");
-      const allChecklists = await DailyChecklist.filter({
-        franchise_id: myFranchise.evolution_instance_id,
-      });
+      const allChecklists = await DailyChecklist.filter(
+        { franchise_id: myFranchise.evolution_instance_id },
+        "-date",
+        null,
+        { gte: { date: sevenDaysAgo } }
+      );
 
       const recentHistory = allChecklists.filter((c) => c.date >= sevenDaysAgo);
       setHistory(recentHistory);

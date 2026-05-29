@@ -10,7 +10,6 @@ import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionMo
 import ErrorBoundary from "../components/ErrorBoundary";
 import WizardStepper from "@/components/vendedor/WizardStepper";
 import WizardStep from "@/components/vendedor/WizardStep";
-import DeliveryFeeEditor from "@/components/vendedor/DeliveryFeeEditor";
 import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor";
 import ReviewSummary from "@/components/vendedor/ReviewSummary";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";

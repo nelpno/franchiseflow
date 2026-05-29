@@ -5,6 +5,7 @@ import { sanitizeCSVCell } from "./csvSanitize.js";
 
 const DELIVERY_LABEL = {
   delivery: "Entrega",
+  retirada: "Retirada",
   pickup: "Retirada",
 };
 

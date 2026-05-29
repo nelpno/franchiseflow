@@ -25,7 +25,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import MarketingPaymentsAdmin from "@/components/marketing/MarketingPaymentsAdmin";
@@ -1251,7 +1251,7 @@ export default function Marketing() {
             if (groupByCampaign) {
               groupLabel = groupKey;
             } else {
-              const monthDate = groupKey !== "sem-mes" ? new Date(groupKey + "-01") : null;
+              const monthDate = groupKey !== "sem-mes" ? new Date(groupKey + "-01T12:00:00") : null;
               groupLabel = monthDate
                 ? format(monthDate, "MMMM yyyy", { locale: ptBR })
                 : "Sem mês definido";

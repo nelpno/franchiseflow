@@ -50,8 +50,13 @@ export default function FinancialObligationsCard({ marketingPayment }) {
     ? formatBRL(subscription.current_payment_value)
     : "R$ 150,00";
 
+  // A edge function normaliza RECEIVED/CONFIRMED/RECEIVED_IN_CASH -> "PAID" (mapPaymentStatus).
+  // Mantemos os crus como defesa caso algum registro antigo não tenha passado pela normalização.
   const isPaidStatus =
-    subStatus === "PAID" || subStatus === "RECEIVED" || subStatus === "CONFIRMED";
+    subStatus === "PAID" ||
+    subStatus === "RECEIVED" ||
+    subStatus === "CONFIRMED" ||
+    subStatus === "RECEIVED_IN_CASH";
 
   const subIconName = isPaidStatus
     ? "check_circle"

@@ -665,14 +665,14 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
           { franchise_id: franchiseId },
           null,
           null,
-          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at' }
+          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at', fetchAll: true }
         ),
-        Expense.filter({ franchise_id: franchiseId }),
+        Expense.filter({ franchise_id: franchiseId }, null, null, { fetchAll: true }),
         InventoryItem.filter(
           { franchise_id: franchiseId },
           null,
           null,
-          { columns: 'id, product_name, quantity, cost_price, sale_price, min_stock, active' }
+          { columns: 'id, product_name, quantity, cost_price, sale_price, min_stock, active', fetchAll: true }
         ),
         AuditLog.filter({ franchise_id: franchiseId }, "-created_at", 20,
           { columns: 'id, action, details, created_at, user_name, entity_type' }),
@@ -685,7 +685,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
       const saleIds = salesData.map(s => s.id);
       const saleItemsData = saleIds.length > 0
         ? await SaleItem.filter({ sale_id: saleIds }, null, null,
-            { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name' })
+            { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name', fetchAll: true })
         : [];
 
       setSales(salesData);

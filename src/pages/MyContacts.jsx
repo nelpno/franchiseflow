@@ -19,7 +19,7 @@ import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const STATUS_CONFIG = {
@@ -210,9 +210,7 @@ export default function MyContacts() {
       result = result.filter(
         (c) =>
           c.nome?.toLowerCase().includes(term) ||
-          c.telefone?.includes(term) ||
-          c.contact_phone?.includes(term) ||
-          c.customer_name?.toLowerCase().includes(term)
+          c.telefone?.includes(term)
       );
     }
 
@@ -390,7 +388,7 @@ export default function MyContacts() {
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
           <p className="text-[#4a3d3d] text-center">{loadError}</p>
-          <Button variant="outline" onClick={() => { loadContacts(); loadInstanceName(); }} className="mt-2">
+          <Button variant="outline" onClick={() => loadContacts()} className="mt-2">
             <MaterialIcon icon="refresh" className="mr-2 text-lg" />
             Tentar novamente
           </Button>
@@ -586,7 +584,7 @@ export default function MyContacts() {
                 escape(c.telefone ? formatPhone(c.telefone) : ""),
                 escape(sanitizeCSVCell(c.status || "")),
                 escape(sanitizeCSVCell(c.source || "manual")),
-                c.total_purchases ?? 0,
+                c.purchase_count ?? 0,
                 (parseFloat(c.total_spent) || 0).toFixed(2).replace(".", ","),
                 c.last_contact_at ? c.last_contact_at.substring(0, 10).split("-").reverse().join("/") : "",
                 escape(sanitizeCSVCell(c.endereco || "")),
@@ -597,7 +595,7 @@ export default function MyContacts() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = `clientes_${new Date().toISOString().split("T")[0]}.csv`;
+              a.download = `clientes_${format(new Date(), "yyyy-MM-dd")}.csv`;
               a.click();
               URL.revokeObjectURL(url);
               toast.success(`${filteredContacts.length} clientes exportados`);

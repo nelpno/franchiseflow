@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { connectWhatsappRobot, checkWhatsappStatus } from "@/api/functions";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 /**
  * Validates that required vendor wizard fields are filled before allowing WhatsApp connection.
@@ -111,7 +112,7 @@ export default function useWhatsAppConnection({ currentUser, updateConfiguration
       } else if (error.response?.status === 403) {
         toast.error("Você não tem permissão para conectar o WhatsApp desta franquia.");
       } else {
-        toast.error(`Falha ao conectar: ${error.message || "Tente novamente."}`);
+        toast.error(safeErrorMessage(error, "Falha ao conectar. Tente novamente."));
       }
       setModalData(null);
     } finally {

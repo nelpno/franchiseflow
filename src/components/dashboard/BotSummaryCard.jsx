@@ -1,7 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { createPageUrl } from "@/utils";
 import { startOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -49,9 +47,6 @@ export default function BotSummaryCard({ botSummary }) {
           </div>
           <h3 className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Performance Bot</h3>
         </div>
-        <Link to={createPageUrl("BotIntelligence")} className="text-xs text-[#a80012] hover:underline font-medium">
-          Ver detalhes
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

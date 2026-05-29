@@ -4,7 +4,7 @@ import { safeHref } from "@/lib/safeHref";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { format, addMonths, parseISO } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
@@ -162,7 +162,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       toast.success("Pagamento confirmado!");
       await loadData();
     } catch (err) {
-      toast.error(`Erro: ${err.message}`);
+      toast.error(safeErrorMessage(err, "Erro ao confirmar pagamento."));
     } finally {
       setActionLoading(null);
     }
@@ -181,7 +181,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       setRejectReason("");
       await loadData();
     } catch (err) {
-      toast.error(`Erro: ${err.message}`);
+      toast.error(safeErrorMessage(err, "Erro ao recusar pagamento."));
     } finally {
       setActionLoading(null);
     }
@@ -336,7 +336,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                     </div>
                   </div>
                   <span className="text-xs text-[#7a6d6d]">
-                    {format(parseISO(d.deposit_date), "dd/MM/yyyy")}
+                    {format(new Date(d.deposit_date + "T12:00:00"), "dd/MM/yyyy")}
                   </span>
                 </div>
               ))}
@@ -384,7 +384,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                       <p className="text-sm font-medium text-[#1b1c1d]">
                         {getFranchiseDisplayName(f)}
                       </p>
-                      <p className="text-xs text-[#7a6d6d]">{f.owner_name || f.city}{f.state ? ` — ${f.state}` : ""}</p>
+                      <p className="text-xs text-[#7a6d6d]">{f.owner_name || f.city}{f.state_uf ? ` — ${f.state_uf}` : ""}</p>
                     </div>
 
                     {/* Valor */}

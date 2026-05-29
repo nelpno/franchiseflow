@@ -3,7 +3,7 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { safeHref } from "@/lib/safeHref";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatBRL";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -22,9 +22,9 @@ export default function SubscriptionPaywall() {
     pix_qr_code_url,
   } = subscription;
 
-  const formattedValue = formatBRL(current_payment_value || 150);
+  const formattedValue = formatBRL(parseFloat(current_payment_value) || 150);
   const formattedDate = current_payment_due_date
-    ? format(parseISO(current_payment_due_date), "dd/MM/yyyy", { locale: ptBR })
+    ? format(new Date(current_payment_due_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
     : "—";
 
   const handleCopyPix = async () => {

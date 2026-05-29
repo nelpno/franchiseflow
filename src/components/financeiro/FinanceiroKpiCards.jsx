@@ -21,7 +21,7 @@ export default function FinanceiroKpiCards({ aggregated, worstFranchise }) {
     },
     {
       label: "Margem Media",
-      value: `${aggregated.margem.toFixed(1)}%`,
+      value: `${(Number(aggregated?.margem) || 0).toFixed(1)}%`,
       icon: "percent",
       color: aggregated.margem >= 40 ? "#16a34a" : aggregated.margem >= 20 ? "#d97706" : "#dc2626",
       bgColor: aggregated.margem >= 40 ? "#f0fdf4" : aggregated.margem >= 20 ? "#fffbeb" : "#fef2f2",

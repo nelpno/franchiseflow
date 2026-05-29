@@ -112,7 +112,7 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
 
       // Franquia operacional = tem pelo menos 1 venda OU editou estoque (qty > 0 em algum item)
       const hasSales = franchiseSales.length > 0;
-      const hasActiveInventory = inventory.some((i) => (i.quantity || 0) > 0);
+      const hasActiveInventory = inventory.some((i) => (parseFloat(i.quantity) || 0) > 0);
       if (!hasSales && !hasActiveInventory) continue;
 
       // --- Sem vendas (usa dados reais, não cron) ---
@@ -133,21 +133,21 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
       }
 
       // --- Estoque inteligente (usa min_stock quando configurado) ---
-      const managedItems = inventory.filter((i) => (i.min_stock || 0) > 0);
+      const managedItems = inventory.filter((i) => (parseFloat(i.min_stock) || 0) > 0);
       const hasMinStockConfig = managedItems.length > 0;
 
       // Se franqueado configurou min_stock: usar itens gerenciados
       // Senão: fallback para todos os itens (evita silenciar alertas)
       const stockCheckItems = hasMinStockConfig ? managedItems : inventory;
 
-      const zeroItems = stockCheckItems.filter((i) => (i.quantity || 0) === 0);
+      const zeroItems = stockCheckItems.filter((i) => (parseFloat(i.quantity) || 0) === 0);
       if (zeroItems.length > 0) {
         zeroStock.push({ name: fName, count: zeroItems.length });
       }
 
       const lowItems = stockCheckItems.filter((i) => {
-        const qty = i.quantity || 0;
-        const minStock = i.min_stock || 3;
+        const qty = parseFloat(i.quantity) || 0;
+        const minStock = parseFloat(i.min_stock) || 3;
         return qty > 0 && qty < minStock;
       });
       if (lowItems.length > 0) {

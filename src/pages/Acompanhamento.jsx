@@ -5,6 +5,7 @@ import {
   Franchise, User, Sale, InventoryItem, PurchaseOrder,
   OnboardingChecklist, FranchiseConfiguration, DailyChecklist, FranchiseNote
 } from "@/entities/all";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { format, subDays } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -132,8 +133,8 @@ export default function Acompanhamento() {
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       if (mountedRef.current) {
-        setLoadError(error.message || "Erro ao carregar dados");
-        toast.error(error.message || "Erro ao carregar dados de acompanhamento");
+        setLoadError(safeErrorMessage(error, "Erro ao carregar dados"));
+        toast.error(safeErrorMessage(error, "Erro ao carregar dados de acompanhamento"));
       }
     }
     if (mountedRef.current) setIsLoading(false);

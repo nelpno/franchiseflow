@@ -9,6 +9,7 @@ import {
 } from "@/entities/all";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { format, subDays } from "date-fns";
 
 import FranchiseReportTable from "../components/reports/FranchiseReportTable";
@@ -99,7 +100,7 @@ function ReportsContent() {
       setRawSubscriptions(subsData);
     } catch (err) {
       if (!signal.aborted && mountedRef.current) {
-        setLoadError(err?.message || "Erro ao carregar dados");
+        setLoadError(safeErrorMessage(err, "Erro ao carregar dados"));
         toast.error("Não foi possível carregar os relatórios");
       }
     } finally {

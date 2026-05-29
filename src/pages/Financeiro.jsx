@@ -90,7 +90,7 @@ export default function Financeiro() {
     } catch (error) {
       console.error("Erro ao carregar financeiro:", error);
       if (mountedRef.current) {
-        setLoadError(error.message || "Erro ao carregar dados");
+        setLoadError(safeErrorMessage(error, "Erro ao carregar dados"));
         toast.error("Erro ao carregar dados financeiros");
       }
     }

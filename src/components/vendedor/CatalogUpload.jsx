@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 /**
  * Upload de imagem do catálogo para Supabase Storage.
@@ -127,7 +128,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       } else if (error.statusCode === 403 || error.message?.includes("policy")) {
         toast.error("Sem permissão para enviar imagem. Contate o suporte.");
       } else {
-        toast.error(`Erro ao enviar imagem: ${error.message || "tente novamente"}`);
+        toast.error(safeErrorMessage(error, "Erro ao enviar imagem. Tente novamente."));
       }
     } finally {
       setIsUploading(false);

@@ -44,7 +44,7 @@ function createEntity(tableName) {
           query = applyRangeFilters(query);
           const order = parseOrderBy(orderBy);
           if (order) query = query.order(order.column, { ascending: order.ascending });
-          query = query.order('id', { ascending: true });
+          if (!order || order.column !== 'id') query = query.order('id', { ascending: true });
           query = query.range(from, from + pageSize - 1);
           const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
           if (error) throw error;
@@ -89,7 +89,7 @@ function createEntity(tableName) {
           query = applyFilters(query);
           const order = parseOrderBy(orderBy);
           if (order) query = query.order(order.column, { ascending: order.ascending });
-          query = query.order('id', { ascending: true });
+          if (!order || order.column !== 'id') query = query.order('id', { ascending: true });
           query = query.range(from, from + pageSize - 1);
           const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
           if (error) throw error;
@@ -111,7 +111,7 @@ function createEntity(tableName) {
       return data || [];
     },
 
-    async search(term, { columns, signal, limit = 20, searchColumns = [], criteria } = {}) {
+    async search(term, { columns, signal, limit = 20, searchColumns = [], criteria, orderColumn = 'created_at' } = {}) {
       let query = supabase.from(tableName).select(columns || '*');
       if (signal) query = query.abortSignal(signal);
       if (criteria) {
@@ -130,7 +130,7 @@ function createEntity(tableName) {
           .join(',');
         query = query.or(orConditions);
       }
-      query = query.order('created_at', { ascending: false });
+      query = query.order(orderColumn, { ascending: false });
       if (limit) query = query.limit(limit);
       const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
       if (error) throw error;
