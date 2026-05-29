@@ -666,10 +666,10 @@ function FranchiseSettingsContent() {
               <FieldHint text="O bot usa esse endereço para calcular frete e informar o ponto de retirada." />
               <div>
                 <label className={labelClass}>Ponto de referência para clientes</label>
-                <textarea className={`${inputClass} resize-none`} rows={2} maxLength={200} value={formData.address_reference}
+                <textarea className={`${inputClass} resize-none`} rows={2} maxLength={400} value={formData.address_reference}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
                   placeholder="Ex: Próximo à praça, casa com portão azul..." />
-                <FieldHint text={`O bot informa essa referência quando o cliente pergunta onde fica sua unidade. (${(formData.address_reference || '').length}/200)`} />
+                <FieldHint text={`O bot informa essa referência quando o cliente pergunta onde fica sua unidade. (${(formData.address_reference || '').length}/400)`} />
               </div>
               <div>
                 <label className={labelClass}>Seu WhatsApp pessoal (recebe relatório quinzenal)</label>
@@ -1002,10 +1002,10 @@ function FranchiseSettingsContent() {
               </div>
               <div>
                 <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
-                <textarea className={`${inputClass} resize-none`} rows={3} maxLength={400} value={formData.promotions_combo}
+                <textarea className={`${inputClass} resize-none`} rows={3} maxLength={1500} value={formData.promotions_combo}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: Leve 3 massas e ganhe 1 molho pomodoro..." />
-                <FieldHint text={`O bot menciona essas promoções quando o cliente pergunta sobre ofertas. (${(formData.promotions_combo || '').length}/400)`} />
+                <FieldHint text={`O bot menciona essas promoções quando o cliente pergunta sobre ofertas. (${(formData.promotions_combo || '').length}/1500)`} />
               </div>
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <div>
