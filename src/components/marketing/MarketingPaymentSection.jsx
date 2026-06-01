@@ -18,6 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/formatBRL";
@@ -56,6 +66,7 @@ export default function MarketingPaymentSection() {
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [showProofReminder, setShowProofReminder] = useState(false);
 
   const monthOptions = getMonthOptions();
 
@@ -98,6 +109,22 @@ export default function MarketingPaymentSection() {
       return;
     }
     setFile(selected);
+  };
+
+  // Comprovante faltando = sem arquivo novo E sem comprovante já anexado (edição)
+  const proofMissing = !file && !(editMode && currentPayment?.proof_url);
+
+  const handleRegisterClick = () => {
+    const numAmount = parseFloat(amount);
+    if (!numAmount || numAmount < MIN_AMOUNT) {
+      toast.error(`Valor minimo: ${formatBRL(MIN_AMOUNT)}`);
+      return;
+    }
+    if (proofMissing) {
+      setShowProofReminder(true);
+      return;
+    }
+    handleSubmit();
   };
 
   const handleSubmit = async () => {
@@ -175,6 +202,7 @@ export default function MarketingPaymentSection() {
   if (loading || !evoId) return null;
 
   return (
+    <>
     <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-4">
@@ -268,6 +296,25 @@ export default function MarketingPaymentSection() {
                 </Button>
               </div>
             )}
+
+            {currentPayment.status === "pending" && (
+              <div className="mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs"
+                  onClick={() => { setEditMode(true); setAmount(String(currentPayment.amount)); setFile(null); }}
+                >
+                  <MaterialIcon icon={currentPayment.proof_url ? "edit" : "attach_file"} size={14} className="mr-1" />
+                  {currentPayment.proof_url ? "Editar / trocar comprovante" : "Anexar comprovante"}
+                </Button>
+                {!currentPayment.proof_url && (
+                  <p className="text-[11px] text-[#d4af37] mt-1.5">
+                    Pagamento sem comprovante — anexe pra agilizar a confirmação.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           /* ─── Formulario ─── */
@@ -287,7 +334,7 @@ export default function MarketingPaymentSection() {
                 />
               </div>
               <div>
-                <Label className="text-xs text-[#4a3d3d]">Comprovante (opcional)</Label>
+                <Label className="text-xs text-[#4a3d3d]">Comprovante do PIX</Label>
                 <label className="flex items-center gap-1.5 h-9 px-3 border border-dashed border-[#cac0c0] rounded-md cursor-pointer hover:bg-[#fbf9fa] text-xs text-[#4a3d3d] mt-0.5">
                   <MaterialIcon icon="attach_file" size={14} />
                   <span className="truncate">{file ? file.name : "Anexar"}</span>
@@ -301,9 +348,14 @@ export default function MarketingPaymentSection() {
               </div>
             </div>
 
+            <p className="text-[11px] text-[#7a6d6d] flex items-start gap-1">
+              <MaterialIcon icon="info" size={13} className="mt-0.5 shrink-0" />
+              Faça o PIX e anexe o comprovante. Se preferir, registre agora e anexe depois.
+            </p>
+
             <div className="flex gap-2">
               <Button
-                onClick={handleSubmit}
+                onClick={handleRegisterClick}
                 disabled={submitting || !amount}
                 className="flex-1 h-9 bg-[#b91c1c] hover:bg-[#991b1b] text-white text-sm font-medium"
               >
@@ -331,5 +383,26 @@ export default function MarketingPaymentSection() {
         )}
       </CardContent>
     </Card>
+
+    <AlertDialog open={showProofReminder} onOpenChange={setShowProofReminder}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Anexar comprovante?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Você ainda não anexou o comprovante do PIX. Anexar agora agiliza a confirmação pelo time — mas você também pode registrar e anexar depois.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Anexar agora</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => { setShowProofReminder(false); handleSubmit(); }}
+            className="bg-[#b91c1c] hover:bg-[#991b1b]"
+          >
+            Registrar sem comprovante
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
