@@ -41,8 +41,12 @@ export default function FranchiseForm({
   isSubmitting = false,
   mode = "create",
   initialData = null,
+  allowNameEdit = false,
 }) {
   const isFiscalOnly = mode === "fiscal-only";
+  // Em fiscal-only o gate do franqueado esconde identidade; allowNameEdit reexibe os nomes
+  // só na edição admin (Franchises → Editar dados), permitindo corrigir nome/dono.
+  const showNameFields = !isFiscalOnly || allowNameEdit;
   const fiscalRequired = mode === "create" || isFiscalOnly;
 
   const [formData, setFormData] = useState({
@@ -166,8 +170,8 @@ export default function FranchiseForm({
 
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Dados da Unidade — só Nome (cidade agora vem do CEP, bloco de endereço). Oculto em fiscal-only. */}
-            {!isFiscalOnly && (
+            {/* Dados da Unidade — só Nome (cidade agora vem do CEP, bloco de endereço). Oculto em fiscal-only, salvo edição admin (allowNameEdit). */}
+            {showNameFields && (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Dados da Unidade</h3>
                 <div className="space-y-2">
@@ -193,7 +197,7 @@ export default function FranchiseForm({
                 {isFiscalOnly ? "Dados de Cobrança" : "Dados do Franqueado"}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {!isFiscalOnly && (
+                {showNameFields && (
                   <div className="space-y-2">
                     <Label htmlFor="owner_name" className="text-sm font-semibold text-[#4a3d3d]">
                       <MaterialIcon icon="person" size={16} className="inline mr-1" />

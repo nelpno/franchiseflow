@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist } from "@/entities/all";
+import { Franchise, FranchiseConfiguration, DailyUniqueContact, User, FranchiseInvite, OnboardingChecklist, SystemSubscription } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { inviteFranchisee, staffInvite } from "@/api/functions";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
@@ -262,7 +262,14 @@ export default function Franchises() {
           street_address: addressExtras?.street_address,
         }
       );
-      toast.success("Dados fiscais atualizados!");
+      // Nome da franquia + nome do franqueado (editáveis só na edição admin via allowNameEdit).
+      const namePatch = {};
+      if (franchiseData.name) namePatch.name = franchiseData.name;
+      if (franchiseData.owner_name) namePatch.owner_name = franchiseData.owner_name;
+      if (Object.keys(namePatch).length > 0) {
+        await Franchise.update(editingFiscal.franchise.id, namePatch);
+      }
+      toast.success("Dados atualizados!");
       setEditingFiscal(null);
       loadData(true);
     } catch (error) {
@@ -277,8 +284,28 @@ export default function Franchises() {
     if (!deletingFranchise) return;
     setIsDeletingFranchise(true);
     try {
+      // Cancela a cobrança ASAAS ANTES de apagar (a assinatura é deletada no cascade do banco,
+      // então não dá pra cancelar depois). Aborta a exclusão se o cancelamento falhar — assim
+      // nunca fica uma assinatura órfã cobrando uma franquia que não existe mais (caso Indaiatuba).
+      const subRows = await SystemSubscription.filter(
+        { franchise_id: deletingFranchise.evolution_instance_id },
+        null,
+        1
+      );
+      if (subRows[0]?.asaas_subscription_id) {
+        const { error: cancelErr } = await supabase.functions.invoke("asaas-billing", {
+          body: { action: "cancel-subscription", franchise_id: deletingFranchise.evolution_instance_id },
+        });
+        if (cancelErr) {
+          toast.error(
+            "Não consegui cancelar a cobrança no ASAAS — a franquia NÃO foi excluída. Cancele a cobrança no ASAAS e tente novamente."
+          );
+          setIsDeletingFranchise(false);
+          return;
+        }
+      }
       await Franchise.deleteCascade(deletingFranchise.id, deletingFranchise.evolution_instance_id);
-      toast.success(`Franquia ${getDisplayName(deletingFranchise)} excluída com sucesso.`);
+      toast.success(`Franquia ${getDisplayName(deletingFranchise)} excluída e cobrança cancelada.`);
       setDeletingFranchise(null);
       setSelectedFranchise(null);
       loadData(true);
@@ -915,6 +942,7 @@ export default function Franchises() {
                   </div>
                   <FranchiseForm
                     mode="fiscal-only"
+                    allowNameEdit
                     initialData={{
                       name: f.name,
                       owner_name: f.owner_name,
