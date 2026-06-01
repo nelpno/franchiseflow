@@ -126,6 +126,15 @@ export default function AsaasSetupPanel() {
   const [creatingAll, setCreatingAll] = useState(false);
   const [syncingAll, setSyncingAll] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  // Franquias removidas da lista de "Criar assinaturas" antes de confirmar (ex: franquias de teste)
+  const [excludedSubIds, setExcludedSubIds] = useState(() => new Set());
+  const toggleExcludeSub = (evoId) =>
+    setExcludedSubIds(prev => {
+      const next = new Set(prev);
+      if (next.has(evoId)) next.delete(evoId);
+      else next.add(evoId);
+      return next;
+    });
   const [revealedCpfs, setRevealedCpfs] = useState({});
   // Editar dados fiscais inline
   const [editingFiscal, setEditingFiscal] = useState(null);
@@ -232,15 +241,20 @@ export default function AsaasSetupPanel() {
     }
   };
 
-  const handleCreateAllSubscriptions = async () => {
+  const handleCreateAllSubscriptions = async (franchiseIds) => {
+    if (!franchiseIds || franchiseIds.length === 0) {
+      toast.error("Selecione ao menos uma franquia para criar assinatura.");
+      return;
+    }
     setCreatingAll(true);
     try {
       const { error } = await supabase.functions.invoke("asaas-billing", {
-        body: { action: "subscribe-batch", value: monthlyValue },
+        body: { action: "subscribe-batch", value: monthlyValue, franchise_ids: franchiseIds },
       });
       if (error) throw error;
-      toast.success(`Assinaturas criadas a R$ ${monthlyValue.toFixed(2)}!`);
+      toast.success(`${franchiseIds.length} assinatura(s) criada(s) a R$ ${monthlyValue.toFixed(2)}!`);
       setShowReview(false);
+      setExcludedSubIds(new Set());
       setTimeout(() => loadData(), 5000);
     } catch (err) {
       toast.error("Erro ao criar assinaturas: " + err.message);
@@ -356,6 +370,10 @@ export default function AsaasSetupPanel() {
       const sub = getSub(f.evolution_instance_id);
       return sub?.asaas_customer_id && !sub?.asaas_subscription_id;
     });
+    const selectedForSubscription = readyForSubscription.filter(
+      f => !excludedSubIds.has(f.evolution_instance_id)
+    );
+    const selectedIds = selectedForSubscription.map(f => f.evolution_instance_id);
 
     return (
       <div className="space-y-6">
@@ -371,7 +389,7 @@ export default function AsaasSetupPanel() {
             <MaterialIcon icon="info" size={20} className="text-amber-600 mt-0.5" />
             <div className="text-sm text-amber-800">
               <p className="font-medium">Revise antes de confirmar</p>
-              <p>Serão criadas {readyForSubscription.length} assinaturas de R$ 150,00/mês com vencimento no dia 5.</p>
+              <p>Serão criadas {selectedForSubscription.length} assinatura(s) de R$ {monthlyValue.toFixed(2).replace(".", ",")}/mês com vencimento no dia 5. Toque no ✕ para tirar alguma da lista (ex: franquias de teste).</p>
             </div>
           </CardContent>
         </Card>
@@ -379,10 +397,11 @@ export default function AsaasSetupPanel() {
         <div className="space-y-2">
           {readyForSubscription.map(f => {
             const config = getConfig(f.evolution_instance_id);
+            const isExcluded = excludedSubIds.has(f.evolution_instance_id);
             return (
-              <Card key={f.id} className="bg-white">
-                <CardContent className="p-3 flex items-center justify-between">
-                  <div>
+              <Card key={f.id} className={`bg-white ${isExcluded ? "opacity-50" : ""}`}>
+                <CardContent className="p-3 flex items-center justify-between gap-2">
+                  <div className={isExcluded ? "line-through" : ""}>
                     <p className="font-medium text-sm">{displayFranchiseName(f.name)}</p>
                     <p className="text-xs text-gray-500 inline-flex items-center gap-1">
                       {f.owner_name} —{" "}
@@ -398,7 +417,17 @@ export default function AsaasSetupPanel() {
                     </p>
                     <p className="text-xs text-gray-400">{config?.street_address || f.city}</p>
                   </div>
-                  <span className="text-sm font-medium text-gray-700">R$ 150,00</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-medium text-gray-700">R$ {monthlyValue.toFixed(2).replace(".", ",")}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleExcludeSub(f.evolution_instance_id)}
+                      className={`p-1 rounded-lg transition-colors ${isExcluded ? "text-[#b91c1c] hover:bg-red-50" : "text-gray-400 hover:bg-gray-100 hover:text-[#b91c1c]"}`}
+                      title={isExcluded ? "Incluir de volta" : "Tirar da lista"}
+                    >
+                      <MaterialIcon icon={isExcluded ? "undo" : "close"} size={18} />
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -407,8 +436,8 @@ export default function AsaasSetupPanel() {
 
         {readyForSubscription.length > 0 ? (
           <Button
-            onClick={handleCreateAllSubscriptions}
-            disabled={creatingAll}
+            onClick={() => handleCreateAllSubscriptions(selectedIds)}
+            disabled={creatingAll || selectedIds.length === 0}
             className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white"
           >
             {creatingAll ? (
@@ -419,7 +448,7 @@ export default function AsaasSetupPanel() {
             ) : (
               <>
                 <MaterialIcon icon="send" size={18} className="mr-2" />
-                Criar {readyForSubscription.length} assinaturas
+                {selectedIds.length > 0 ? `Criar ${selectedIds.length} assinatura(s)` : "Selecione ao menos uma"}
               </>
             )}
           </Button>
@@ -506,7 +535,7 @@ export default function AsaasSetupPanel() {
             {creatingAll ? "Cadastrando..." : `Cadastrar ${pendingRegister.length} pendentes no ASAAS`}
           </Button>
         )}
-        <Button onClick={() => setShowReview(true)} variant="outline" size="sm">
+        <Button onClick={() => { setExcludedSubIds(new Set()); setShowReview(true); }} variant="outline" size="sm">
           <MaterialIcon icon="autorenew" size={16} className="mr-1" />
           Criar assinaturas
         </Button>

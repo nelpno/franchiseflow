@@ -170,7 +170,17 @@ async function createSubscription(franchiseId: string, value: number = 150) {
     throw new Error("Valor inválido (deve estar entre R$ 5 e R$ 5.000)");
   }
 
-  // Get subscription record
+  // Garante que o cliente ASAAS reflete os dados fiscais ATUAIS da franquia antes de cobrar.
+  // Essencial quando a franquia troca de dono (novo CPF/CNPJ): registerCustomer busca pelo
+  // cpf_cnpj atual e cria um cliente novo se o documento não existir, então a assinatura cobra
+  // o novo dono — não o cliente antigo. Não-fatal: se falhar, segue com o cliente já gravado.
+  try {
+    await registerCustomer(franchiseId);
+  } catch (regErr) {
+    console.warn(`[asaas-billing] register-before-create falhou p/ ${franchiseId}: ${(regErr as Error).message}`);
+  }
+
+  // Get subscription record (asaas_customer_id já reflete o dono atual após o register acima)
   const { data: sub, error } = await supabase
     .from("system_subscriptions")
     .select("*")
@@ -180,9 +190,11 @@ async function createSubscription(franchiseId: string, value: number = 150) {
   if (!sub.asaas_customer_id) throw new Error("Cliente ASAAS não encontrado");
   if (sub.asaas_subscription_id) throw new Error("Assinatura já existe");
 
-  // Calculate next due date (day 5 of next month)
+  // Primeiro vencimento: dia 5 do MÊS CORRENTE se ainda não passou do dia 5 (criar em 01/06
+  // → vence 05/06); a partir do dia 6, dia 5 do mês seguinte. Padrão da rede: vencimento dia 5.
   const now = new Date();
-  const nextDue = new Date(now.getFullYear(), now.getMonth() + 1, 5);
+  const dueMonthOffset = now.getDate() <= 5 ? 0 : 1;
+  const nextDue = new Date(now.getFullYear(), now.getMonth() + dueMonthOffset, 5);
   const nextDueStr = nextDue.toISOString().split("T")[0];
 
   // Create subscription in ASAAS
@@ -259,15 +271,24 @@ async function checkPayment(franchiseId: string) {
   if (!payments.data?.length) return { status: "NO_PAYMENTS" };
 
   // deno-lint-ignore no-explicit-any
-  const list: any[] = payments.data;
+  const list: any[] = payments.data; // sorted by dueDate DESC
   const PAID_SET = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
-  const todayPlus7Ms = Date.now() + 7 * 86400000;
+  const nowMs = Date.now();
+  const graceMs = nowMs + 7 * 86400000;
 
-  // Priority: most recent paid invoice. Fallback: most recent invoice already due
-  // (or within 7-day grace for early payment). Last resort: oldest of the window.
+  // Selection priority — the card must reflect the CURRENT billing period and roll
+  // forward each month instead of freezing on the last paid invoice:
+  //   1. Arrears: oldest UNPAID invoice already past its due date → keep it visible
+  //      so the paywall still blocks a delinquent franchise (never hide an overdue bill).
+  //   2. Current period: most recent invoice due-or-within-7d-grace, with its real
+  //      status (PENDING/PAID/OVERDUE). This is what rolls the card to the new month.
+  //   3. Fallbacks: most recent paid invoice, else oldest of the window.
+  const arrears = [...list]
+    .reverse()
+    .find(p => !PAID_SET.has(p.status) && new Date(p.dueDate).getTime() < nowMs);
+  const current = list.find(p => new Date(p.dueDate).getTime() <= graceMs);
   const paid = list.find(p => PAID_SET.has(p.status));
-  const due = list.find(p => new Date(p.dueDate).getTime() <= todayPlus7Ms);
-  const pay = paid || due || list[list.length - 1];
+  const pay = arrears || current || paid || list[list.length - 1];
   const status = mapPaymentStatus(pay.status);
 
   const updateData: Record<string, unknown> = {
@@ -391,13 +412,19 @@ async function registerBatch(franchiseIds: string[]) {
   return results;
 }
 
-async function subscribeBatch(value: number = 150) {
-  // Find all with customer but no subscription (ignora já-canceladas que não serão recriadas em lote)
-  const { data: subs } = await supabase
+async function subscribeBatch(value: number = 150, franchiseIds?: string[]) {
+  // Find all with customer but no subscription. Optionally restrict to a specific subset
+  // (UI "Criar Assinaturas" lets the admin remove rows — e.g. franquias de teste — before
+  // confirming, sending only the kept franchise_ids).
+  let query = supabase
     .from("system_subscriptions")
     .select("franchise_id, subscription_status")
     .not("asaas_customer_id", "is", null)
     .is("asaas_subscription_id", null);
+  if (Array.isArray(franchiseIds) && franchiseIds.length > 0) {
+    query = query.in("franchise_id", franchiseIds);
+  }
+  const { data: subs } = await query;
 
   const results = [];
   for (const sub of subs || []) {
@@ -660,7 +687,7 @@ Deno.serve(async (req) => {
         result = await registerBatch(body.franchise_ids);
         break;
       case "subscribe-batch":
-        result = await subscribeBatch(body.value);
+        result = await subscribeBatch(body.value, body.franchise_ids);
         break;
       case "cancel-subscription":
         result = await cancelSubscription(body.franchise_id);

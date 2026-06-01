@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -18,6 +18,25 @@ export default function FinancialObligationsCard({ marketingPayment }) {
   const navigate = useNavigate();
   const { subscription, isLoading: subLoading, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Auto roll-forward: ASAAS only fires the next invoice's webhook once (far in advance,
+  // so it's ignored as a future-pending event) and there is no periodic re-sync. That
+  // freezes current_payment_* on the last paid invoice — e.g. the card keeps showing
+  // "Maio · Pago" all through June. When we detect a PAID invoice whose due date is in a
+  // past month, trigger a one-off check-payment (owner-authed) so the DB rolls to the
+  // current cycle. Fires at most once per mount; self-limits once the row is current.
+  const rolledForwardRef = useRef(false);
+  useEffect(() => {
+    if (rolledForwardRef.current || !subscription) return;
+    const st = subscription.current_payment_status;
+    const isPaid =
+      st === "PAID" || st === "RECEIVED" || st === "CONFIRMED" || st === "RECEIVED_IN_CASH";
+    const due = subscription.current_payment_due_date;
+    if (!isPaid || !due) return;
+    if (due.slice(0, 7) >= format(new Date(), "yyyy-MM")) return; // already current/future
+    rolledForwardRef.current = true;
+    checkPaymentNow();
+  }, [subscription, checkPaymentNow]);
 
   const targetDate = getMarketingTargetMonth();
   const targetMonth = format(targetDate, "yyyy-MM");
