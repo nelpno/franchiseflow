@@ -8,6 +8,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "aluguel", label: "Aluguel", icon: "home_work", color: "#1e40af", help: "Aluguel do ponto, condomínio" },
   { value: "pessoal", label: "Pessoal", icon: "groups", color: "#0e7490", help: "Salário, comissão, ajudante, uniforme" },
   { value: "energia", label: "Energia / Luz", icon: "bolt", color: "#ca8a04", help: "Conta de luz" },
+  { value: "internet_telefone", label: "Internet / Telefone", icon: "wifi", color: "#0284c7", help: "Internet, telefone fixo e celular" },
   { value: "transporte", label: "Transporte", icon: "local_shipping", color: "#15803d", help: "Frete, motoboy, combustível, Uber" },
   { value: "marketing", label: "Marketing", icon: "campaign", color: "#9333ea", help: "Tráfego pago, panfletos, anúncios, leads" },
   { value: "pacote_sistema", label: "Pacote Tecnologia", icon: "auto_awesome", color: "#dc2626", help: "Mensalidade Maxi Massas (dashboard + robô + tráfego + artes)" },
