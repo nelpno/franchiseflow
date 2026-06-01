@@ -1,4 +1,4 @@
-<!-- Last Updated: 2026-04-30 -->
+<!-- Last Updated: 2026-05-29 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
@@ -8,9 +8,13 @@
 - Stack Portainer ID 39 | Service ID `2zb27nndn5sg8zweyie6wscpc`
 - GitHub: `nelpno/franchiseflow.git`
 - Deploy: `git push` → force update serviço Docker (incrementar ForceUpdate no TaskTemplate). Stack update sozinho NÃO recria container
-- **Verificação real de deploy live** (status 200 NÃO basta — container pode estar servindo bundle antigo durante rolling): comparar hash do bundle JS em `dist/index.html` local (`<script src="/assets/index-XXX.js">`) com `fetch('https://app.maximassas.tech/').text()`. Hashes iguais = deploy live. Script reusável em [.tmp/verify-deploy.mjs](.tmp/verify-deploy.mjs) (também valida `Spec.TaskTemplate.ForceUpdate` e tasks running no Portainer). Validado 28/05/2026 após deploy `2e5769b`
+- **Verificação real de deploy live** (status 200 NÃO basta — container pode estar servindo bundle antigo durante rolling): comparar hash do bundle JS em `dist/index.html` local (`<script src="/assets/index-XXX.js">`) com `fetch('https://app.maximassas.tech/').text()`. Hashes iguais = deploy live. Script reusável em [.tmp/verify-deploy.mjs](.tmp/verify-deploy.mjs) (também valida `Spec.TaskTemplate.ForceUpdate` e tasks running no Portainer). Validado 28/05/2026 após deploy `2e5769b`. **Caveat (01/06/2026):** hash local×prod PODE divergir com código idêntico (build Windows ≠ build VPS — deploy `accc3a9` deu local `u_12l6td` vs prod `NJvDXGmC`). Se o hash de prod MUDOU vs o anterior mas não bate com o local, o deploy OCORREU — confirmar por **CONTEÚDO**: grep de strings únicas das mudanças nos chunks de prod ([.tmp/verify-content.mjs](.tmp/verify-content.mjs)). Lazy pages ficam em chunks próprios (`Franchises-*.js`, `Financeiro-*.js`), não no `index-*.js`
 - 502 por ~2min durante rebuild é normal. ctx_execute com JS para HTTP Portainer (NÃO shell+jq)
 - `npm run build` pode completar sem output visível (Windows). Verificar timestamp de `dist/index.html`
+- **Build verde ≠ app funciona** (incidente 29/05/2026): referência a variável indefinida em object literal — ex: deixar `"X": X` no objeto `PAGES` depois de remover `const X = lazy(...)` — compila/bundle OK mas dá `ReferenceError: X is not defined` em runtime → **tela BRANCA**. Rollup trata como global ref, não erro de build. SÓ smoke test runtime pega. Ao remover uma página de `pages.config.js`: deletar AMBOS o `const X = lazy(...)` E a entrada `"X": X` do `PAGES`
+- **Smoke test runtime (Playwright)**: `npm run dev` no Windows/OneDrive NÃO imprime o banner do Vite (stdout bufferizado em não-TTY) mas o server sobe na `:5173` — navegar Playwright direto, não esperar a URL no log. Login autofilla o admin. Admin NÃO acessa telas `franchiseeOnly` (Vendas/Gestão redirecionam pra `/Dashboard`) — para exercitar `TabResultado`/`ExportButtons`, ir em Financeiro → aba "Por Unidade" → selecionar franquia. Export PDF se confirma pelo evento de download do Playwright
+- **Export PDF — jspdf-autotable v5**: `doc.autoTable()` foi REMOVIDO na v5; usar `const { default: autoTable } = await import("jspdf-autotable"); autoTable(doc, {...})` (padrão correto em `pickingSheetPdf.js` e `ExportButtons.jsx`). O uso antigo NÃO quebra o build — só explode em runtime
+- **`.tmp/` NÃO é gitignored**: no commit usar `git add -u` + paths explícitos de `docs/`; nunca `git add -A` (commitaria scratch de `.tmp/` como deploy.mjs/worklist). Deploy validado 29/05: commit → `git push origin main` → `node .tmp/deploy.mjs` → poll do hash do bundle no live (~70s de 502 → 200 com hash == local)
 - Vite build VPS: `NODE_OPTIONS=--max-old-space-size=4096`
 - Vite prod: `console.log`/`debugger` stripados (`esbuild.drop`). Manual chunks: recharts, export (jspdf/xlsx), vendor, ui, supabase, dates. CSS via lightningcss
 - Deps notáveis não-óbvias: `@hello-pangea/dnd` (drag-drop), `html2canvas` + `jspdf` (export PDF), `xlsx` (export Excel)
@@ -50,6 +54,7 @@
 - `sale_items.unit_price` (NÃO sale_price — `sale_price` existe em inventory_items)
 - `notifications.read` (NÃO is_read)
 - `franchise_configurations.franchise_name` (NÃO store_name)
+- `franchise_configurations` chave de join = `franchise_evolution_instance_id` (NÃO `franchise_id` — coluna não existe). JOIN com `franchises.evolution_instance_id` / `expenses.franchise_id`. Tem também `whatsapp_instance_id`
 - `personal_phone_for_summary`: 11 dígitos puros (view adiciona 55). Normalizar `.replace(/\D/g, '')`
 - `purchase_order_items` FK: `order_id` (NÃO purchase_order_id)
 - `contacts.telefone` nullable — unique parcial. Enviar `null` (NÃO string vazia)
@@ -211,7 +216,8 @@
 **Filosofia:** DRE = caixa puro para o franqueado (didático), com 4 fluxos automatizados que reduzem lançamento manual. Diagnóstico Fase 0: só 20/47 franquias lançavam despesa antes — automação resolveu.
 
 **`expenses` schema novo** (migration: `supabase/expense-category-migration.sql` + `expense-category-add-pacote-sistema.sql`):
-- `category TEXT NOT NULL DEFAULT 'outros'` (CHECK 11 valores: `compra_produto`, `compra_embalagem`, `compra_insumo`, `aluguel`, `pessoal`, `energia`, `transporte`, `marketing`, `pacote_sistema`, `impostos`, `outros`)
+- `category TEXT NOT NULL DEFAULT 'outros'` (CHECK 12 valores: `compra_produto`, `compra_embalagem`, `compra_insumo`, `aluguel`, `pessoal`, `energia`, `internet_telefone`, `transporte`, `marketing`, `pacote_sistema`, `impostos`, `outros`)
+- **Adicionar categoria nova = 3 pontos sincronizados**: array `EXPENSE_CATEGORIES` ([src/lib/expenseCategories.js](src/lib/expenseCategories.js)) + constraint `expenses_category_check` + SQL versionado `supabase/expense-category-add-*.sql`. Ordem: migração no banco PRIMEIRO (DROP+ADD do CHECK é backward-compatible), deploy do front DEPOIS — senão a UI oferece valor que o banco rejeita com CHECK violation. `internet_telefone` adicionada 01/06/2026 (pedido franquia Santos)
 - `supplier TEXT NULL` — fornecedor texto livre
 - `source TEXT NOT NULL DEFAULT 'manual'` (CHECK 5 valores: `manual`, `purchase_order`, `marketing_payment`, `external_purchase`, `asaas_subscription`) — auditoria. Migration `expense-source-add-asaas-subscription.sql` (01/05/2026) adicionou `asaas_subscription` + UNIQUE INDEX `uq_expenses_asaas_sub_payment` (source_id, expense_date) WHERE source='asaas_subscription'
 - `source_id UUID NULL` — FK opcional pro registro origem
@@ -368,8 +374,15 @@
 - **Estado assinaturas** (18/04/2026): 11 franquias com customer ASAAS (10 aguardando criar sub + 1 teste Araraquara ativa). 36 franquias sem CPF pendentes
 - **Cobrança "Sua Equipe Digital"** (15/04/2026): `FinancialObligationsCard` substituiu `MarketingPaymentCard` na home — card unificado com linha subscription (ASAAS) + linha marketing. Nome UI: "Sua Equipe Digital" (NÃO "Mensalidade"). `SubscriptionPaymentSheet` (Sheet bottom): PIX QR + copiar código + boleto + "Já paguei"
 - PriorityAction: cenário `equipe_digital` dispara APENAS para OVERDUE (PENDING tratado pelo card). Suporta `onPress` callback (além de `navigateTo`) via flag `data.onPress`
-- ASAAS subscribe `nextDueDate`: SEMPRE `getMonth() + 1` (mês seguinte). NUNCA condicional `getDate() >= 5 ? +2 : +1` (0-indexed pulava 2 meses). Fix 15/04/2026
+- ASAAS `createSubscription` 1º vencimento (fix 01/06/2026): dia 5 do **MÊS CORRENTE** se `now.getDate() <= 5`, senão mês seguinte — `new Date(y, getMonth() + (day<=5?0:1), 5)`. Antes era sempre mês seguinte (15/04). NUNCA `getDate() >= 5 ? +2 : +1` (0-indexed pulava 2 meses, bug histórico)
 - RPCs `get_franchise_ranking` e `get_franchise_report_data`: guards `is_admin_or_manager() OR managed_franchise_ids()` — SECURITY DEFINER com ownership check
+
+### ASAAS — roll-forward, troca de dono e exclusão (01/06/2026)
+- **Card de mensalidade ("Sua Equipe Digital") congela no mês pago**: `system_subscriptions.current_payment_*` trava na última fatura paga porque (a) o webhook IGNORA `PAYMENT_CREATED`/PENDING com vencimento >7d (guard anti-clobber intencional, [index.ts](supabase/functions/asaas-billing/index.ts) ~L347) e (b) NÃO há cron de re-sync (zero `pg_cron` de subscription). Resultado: card mostra "Maio Pago" em junho. Marketing NÃO sofre (é calendar-driven via `getMarketingTargetMonth`); subscription é data-driven (webhook). **Fix**: `checkPayment` seleciona a fatura do PERÍODO ATUAL — prioridade `arrears` (vencida não-paga, mantém paywall visível) → `current` (mais recente com vencimento ≤ hoje+7d) → `paid`; e [FinancialObligationsCard.jsx](src/components/dashboard/FinancialObligationsCard.jsx) dispara `checkPaymentNow()` sozinho (1× por mount, guard `due.slice(0,7) < yyyy-MM atual`) quando detecta fatura PAGA de mês anterior (roll-forward, owner-authed — não precisa cron). Re-sync em massa pontual: edge `check-payment-batch` (admin)
+- **`createSubscription` re-registra o cliente ASAAS ANTES de criar** (`registerCustomer`): troca de dono (CNPJ novo) → busca por `cpf_cnpj` atual, não acha, cria cliente NOVO → a sub cobra o dono certo. Sem isso usava o `asaas_customer_id` antigo (cobrava o dono anterior). `registerCustomer` quando o CPF JÁ existe só sincroniza EMAIL (não CPF/nome/endereço). Não-fatal (try/catch)
+- **`subscribe-batch` aceita `franchise_ids`** (subconjunto): UI "Criar Assinaturas" ([AsaasSetupPanel.jsx](src/components/financeiro/AsaasSetupPanel.jsx)) tem ✕ por linha pra excluir testes antes de confirmar (estado `excludedSubIds`, manda só `selectedIds`)
+- **Excluir franquia NÃO cancela ASAAS** (`delete_franchise_cascade` RPC é só banco): `handleDeleteFranchise` ([Franchises.jsx](src/pages/Franchises.jsx)) cancela a sub ASAAS (`cancel-subscription`) ANTES do `deleteCascade` (a row some no cascade) e **ABORTA** a exclusão se o cancel falhar — evita cobrança órfã (caso Indaiatuba: franquia excluída mas sub seguia cobrando 05/06)
+- **`FranchiseForm` esconde Nome da Franquia + Nome do Franqueado em `mode="fiscal-only"`**; prop `allowNameEdit` reexibe SÓ na edição admin (Franchises → Editar dados), não no gate de onboarding do franqueado. `saveFiscalData` não persiste name/owner_name — `handleSaveFiscal` faz `Franchise.update` separado
 
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx.
