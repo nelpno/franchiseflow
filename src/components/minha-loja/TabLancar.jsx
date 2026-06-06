@@ -749,6 +749,12 @@ export default function TabLancar({
                           </span>
                         )}
                       </div>
+                      {sale.observacoes?.trim() && (
+                        <div className="flex items-start gap-1 mt-1 text-xs text-[#92400e] bg-[#fef3c7]/50 rounded-md px-2 py-1">
+                          <MaterialIcon icon="sticky_note_2" size={13} className="shrink-0 mt-px text-[#b45309]" />
+                          <span className="line-clamp-2 break-words">{sale.observacoes.trim()}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Values */}
@@ -825,6 +831,19 @@ export default function TabLancar({
                         <p className="text-xs text-[#4a3d3d]">
                           Sem detalhamento de produtos
                         </p>
+                      )}
+
+                      {/* Observação */}
+                      {sale.observacoes?.trim() && (
+                        <div className="border-t border-[#291715]/5 pt-2">
+                          <p className="text-xs font-medium text-[#4a3d3d] uppercase tracking-wider mb-1">
+                            Observação
+                          </p>
+                          <div className="flex items-start gap-1.5 text-sm text-[#92400e] bg-[#fef3c7]/50 rounded-md px-2.5 py-1.5">
+                            <MaterialIcon icon="sticky_note_2" size={15} className="shrink-0 mt-0.5 text-[#b45309]" />
+                            <span className="whitespace-pre-wrap break-words">{sale.observacoes.trim()}</span>
+                          </div>
+                        </div>
                       )}
 
                       {/* Financial breakdown */}
