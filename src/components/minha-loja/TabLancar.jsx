@@ -749,8 +749,8 @@ export default function TabLancar({
                           </span>
                         )}
                       </div>
-                      {sale.observacoes?.trim() && (
-                        <div className="flex items-start gap-1 mt-1 text-xs text-[#92400e] bg-[#fef3c7]/50 rounded-md px-2 py-1">
+                      {!isExpanded && sale.observacoes?.trim() && (
+                        <div className="flex items-start gap-1 mt-1 w-fit max-w-full text-xs text-[#92400e] bg-[#fef3c7]/50 rounded-md px-2 py-1">
                           <MaterialIcon icon="sticky_note_2" size={13} className="shrink-0 mt-px text-[#b45309]" />
                           <span className="line-clamp-2 break-words">{sale.observacoes.trim()}</span>
                         </div>
