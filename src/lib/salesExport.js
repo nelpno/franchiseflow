@@ -33,6 +33,7 @@ export const SALES_EXPORT_COLUMNS = [
   { key: "sale_date", header: "Data" },
   { key: "sale_number", header: "Nº Pedido" },
   { key: "customer", header: "Cliente" },
+  { key: "phone", header: "Telefone" },
   { key: "payment_method", header: "Pagamento" },
   { key: "value", header: "Valor Bruto (R$)" },
   { key: "discount_amount", header: "Desconto (R$)" },
@@ -49,6 +50,12 @@ function resolveCustomerName(sale, contactsMap) {
   return sanitizeCSVCell(raw);
 }
 
+function resolveCustomerPhone(sale, contactsMap) {
+  const contact = sale?.contact_id ? contactsMap?.[sale.contact_id] : null;
+  const raw = contact?.telefone || sale?.customer_phone || "";
+  return sanitizeCSVCell(raw);
+}
+
 function buildRow(sale, contactsMap) {
   const value = parseFloat(sale?.value) || 0;
   const discount = parseFloat(sale?.discount_amount) || 0;
@@ -59,6 +66,7 @@ function buildRow(sale, contactsMap) {
     sale_date: formatDateBR(sale?.sale_date || sale?.created_at),
     sale_number: sale?.sale_number ? `#${sale.sale_number}` : "",
     customer: resolveCustomerName(sale, contactsMap),
+    phone: resolveCustomerPhone(sale, contactsMap),
     payment_method: getPaymentMethodLabel(sale?.payment_method),
     value: formatMoney(value),
     discount_amount: formatMoney(discount),
@@ -85,6 +93,7 @@ function buildTotalsRow(sales) {
     sale_date: "",
     sale_number: "",
     customer: "TOTAL",
+    phone: "",
     payment_method: "",
     value: formatMoney(value),
     discount_amount: formatMoney(discount),

@@ -163,7 +163,7 @@ export default function Gestao() {
         { franchise_id: evoId },
         '-created_at',
         null,
-        { columns: 'id, nome, franchise_id' }
+        { columns: 'id, nome, telefone, franchise_id' }
       );
       if (mountedRef.current) setContacts(data);
     } catch (err) {
