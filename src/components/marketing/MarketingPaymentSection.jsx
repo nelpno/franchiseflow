@@ -114,12 +114,24 @@ export default function MarketingPaymentSection() {
   // Comprovante faltando = sem arquivo novo E sem comprovante já anexado (edição)
   const proofMissing = !file && !(editMode && currentPayment?.proof_url);
 
+  const amountInputRef = useRef(null);
+  const [amountError, setAmountError] = useState(false);
+
   const handleRegisterClick = () => {
     const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount < MIN_AMOUNT) {
-      toast.error(`Valor minimo: ${formatBRL(MIN_AMOUNT)}`);
+    if (!amount || !numAmount) {
+      setAmountError(true);
+      amountInputRef.current?.focus();
+      toast.error("Digite quanto você pagou no PIX");
       return;
     }
+    if (numAmount < MIN_AMOUNT) {
+      setAmountError(true);
+      amountInputRef.current?.focus();
+      toast.error(`Valor mínimo: ${formatBRL(MIN_AMOUNT)}`);
+      return;
+    }
+    setAmountError(false);
     if (proofMissing) {
       setShowProofReminder(true);
       return;
@@ -321,17 +333,23 @@ export default function MarketingPaymentSection() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-[#4a3d3d]">Valor (R$)</Label>
-                <Input
-                  type="number"
-                  min={MIN_AMOUNT}
-                  step="0.01"
-                  placeholder="200,00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="h-9 text-sm border-[#e9e8e9]"
-                  inputMode="decimal"
-                />
+                <Label className="text-xs text-[#4a3d3d]">Valor que você pagou</Label>
+                <div className="relative mt-0.5">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[#7a6d6d]">
+                    R$
+                  </span>
+                  <Input
+                    ref={amountInputRef}
+                    type="number"
+                    min={MIN_AMOUNT}
+                    step="0.01"
+                    placeholder="Digite o valor"
+                    value={amount}
+                    onChange={(e) => { setAmount(e.target.value); if (amountError) setAmountError(false); }}
+                    className={`h-9 text-sm pl-9 ${amountError ? "border-[#dc2626] ring-1 ring-[#dc2626]" : "border-[#e9e8e9]"}`}
+                    inputMode="decimal"
+                  />
+                </div>
               </div>
               <div>
                 <Label className="text-xs text-[#4a3d3d]">Comprovante do PIX</Label>
@@ -356,7 +374,7 @@ export default function MarketingPaymentSection() {
             <div className="flex gap-2">
               <Button
                 onClick={handleRegisterClick}
-                disabled={submitting || !amount}
+                disabled={submitting}
                 className="flex-1 h-9 bg-[#b91c1c] hover:bg-[#991b1b] text-white text-sm font-medium"
               >
                 {submitting ? (
