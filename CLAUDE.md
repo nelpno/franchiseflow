@@ -58,6 +58,7 @@
 - `personal_phone_for_summary`: 11 dígitos puros (view adiciona 55). Normalizar `.replace(/\D/g, '')`
 - `purchase_order_items` FK: `order_id` (NÃO purchase_order_id)
 - `contacts.telefone` nullable — unique parcial. Enviar `null` (NÃO string vazia)
+- `sales.contact_phone` é o telefone denormalizado da venda (NÃO `customer_phone` — coluna inexistente; typo corrigido em salesExport.js 16/06)
 - `operating_hours` JSONB NÃO existe — wizard usa `opening_hours` TEXT + `working_days` TEXT
 - `payment_delivery`/`payment_pickup` são TEXT[], NÃO JSONB
 - `unit_address` é computado no save (NÃO editar direto)
@@ -167,6 +168,8 @@
 - Bot Coach Report: `gDTZPdrsVLhUk031` (cron dia 1/16 8h). Instância WuzAPI `admin_nelson`
 - Franchise invite: `nbLDyd1KoFIeeJEF` | Staff invite: `jeGBs3eCHxc2EwfG`
 - LogConversationMessage: `9XQ5Jkccus2vtkOE` (5 nós, todos continueOnFail)
+- Envia Catálogo Seguro: `3Q53jOqD6cS5yWt4` (sub-workflow do EnviarCatalogo1 no V4; flag Redis `{chat}_catalog_sent_{evo}` = envia 1×/conversa; dispara ViewContent CAPI)
+- **Catálogo do bot: a URL é REMONTADA e ignora o cache-buster do dashboard** (16/06/2026): `CatalogUpload.jsx` grava sempre `catalog-images/{evo}/catalogo.jpg` (nome fixo + `upsert` → SEM acúmulo de versão antiga) e salva a URL com `?t=Date.now()` em `catalog_image_url`. Mas o bot NÃO lê esse campo: o sub-workflow `Envia Catálogo Seguro` (`3Q53jOqD6cS5yWt4`, nó "Send Catalog Image") remonta a URL por path sem `?t=` → catálogo trocado ficava cacheado no CDN Supabase (~1h, `cacheControl` default 3600s) e o bot mandava o ANTIGO. Fix 16/06: `?t={{ $now.toMillis() }}` na URL do nó. **Lição reusável**: cache-buster no upload só protege quem CONSOME a URL salva — se o consumidor reconstrói o path, fura junto
 - **Redis n8n**: NUNCA RPUSH+GET (WRONGTYPE). Usar GET→Append(Code)→SET com string JSON
 - **Redis output**: `$json.propertyName` (NÃO `$json.value` — é undefined, fallback vira `[object Object]`)
 - **DEDUP LID**: filtro `!info.Type` descarta placeholder sem Type (duplicatas WhatsApp)
@@ -196,6 +199,7 @@
 - Faturamento = `value - discount_amount + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir). `discount_amount` DEVE ser subtraído em TODOS os cálculos de receita
 - Valor recebido por venda: SEMPRE `getSaleNetValue(sale)` de `lib/financialCalcs.js` (mesma fórmula). NUNCA `s.net_value || s.value` — `net_value` pode ser null em vendas antigas (bug Ricardo Tatuapé 28/04: R$ 118,50 saía 111,50 sem o frete)
 - Export de vendas: `SALES_EXPORT_COLUMNS` + `buildSalesExportRows(sales, contactsMap, { includeTotalsRow })` em `lib/salesExport.js` — fonte única usada por TabLancar (tela Vendas) e TabResultado (Gestão > Resultado). Adicionar coluna nova = editar só esse arquivo
+- **Nome+telefone do cliente são denormalizados na venda via trigger `trg_sales_fill_customer_snapshot`** (BEFORE INSERT/UPDATE, fix 16/06/2026): a venda guarda `contact_id` (FK) E `customer_name`/`contact_phone` (snapshot). SaleForm (manual) grava SÓ `contact_id`; o bot grava o snapshot. O trigger copia nome+tel do contato quando vier null (`coalesce`, não sobrescreve). **Por quê:** Vendas carrega só os ~1000 contatos mais recentes ([Vendas.jsx:88](src/pages/Vendas.jsx#L88), `Contact.filter` sem fetchAll) — franquia >1000 contatos perdia o nome de vendas ligadas a contato antigo (lista "—", comprovante sem Cliente). Exibição: lista [TabLancar.jsx:429](src/components/minha-loja/TabLancar.jsx#L429)/export [salesExport.js:49](src/lib/salesExport.js#L49)/comprovante [SaleReceipt.jsx:158](src/components/minha-loja/SaleReceipt.jsx#L158) usam `contactsMap[id]?.nome || sale.customer_name`. NÃO trocar por fetchAll de contatos (custo cresce com a base); denormalizar é O(1)/venda. Migration: [supabase/sales-customer-name-denormalize.sql](supabase/sales-customer-name-denormalize.sql)
 - Label de método de pagamento: `getPaymentMethodLabel(value)` de `franchiseUtils.js` (não fazer `PAYMENT_METHODS.find(...)` inline)
 - `card_fee_amount` sobre `subtotal + effectiveDeliveryFee` — label dinâmica
 - `cardFeePercent` default é `0` (NÃO 3.5). O useEffect seta o valor correto do `paymentFees` config ao carregar
@@ -211,107 +215,18 @@
 - **Giro semanal e sugestão de reposição**: helper único [src/lib/stockSuggestion.js](src/lib/stockSuggestion.js) (`LOOKBACK_DAYS=28`, `WEEKS_OF_COVERAGE=2`, `min_stock` como piso). Consumido por TabEstoque, TabReposicao, PurchaseOrderForm via `weeklyTurnoverMap()` + `suggestionFor()`. Detector dev-only emite `console.warn` se `saleItems` chegar sem `inventory_item_id` — preveniu repetição da regressão silenciosa de columns enxuto
 - `formatBRL` de `lib/formatBRL.js` — NUNCA `new Intl.NumberFormat` inline
 
-### Módulo Financeiro v2 (1A · refactor 29/04/2026 · commits `3e2dec4`, `9ad09b3`, `22c3b3a`)
-
-**Filosofia:** DRE = caixa puro para o franqueado (didático), com 4 fluxos automatizados que reduzem lançamento manual. Diagnóstico Fase 0: só 20/47 franquias lançavam despesa antes — automação resolveu.
-
-**`expenses` schema novo** (migration: `supabase/expense-category-migration.sql` + `expense-category-add-pacote-sistema.sql`):
-- `category TEXT NOT NULL DEFAULT 'outros'` (CHECK 12 valores: `compra_produto`, `compra_embalagem`, `compra_insumo`, `aluguel`, `pessoal`, `energia`, `internet_telefone`, `transporte`, `marketing`, `pacote_sistema`, `impostos`, `outros`)
-- **Adicionar categoria nova = 3 pontos sincronizados**: array `EXPENSE_CATEGORIES` ([src/lib/expenseCategories.js](src/lib/expenseCategories.js)) + constraint `expenses_category_check` + SQL versionado `supabase/expense-category-add-*.sql`. Ordem: migração no banco PRIMEIRO (DROP+ADD do CHECK é backward-compatible), deploy do front DEPOIS — senão a UI oferece valor que o banco rejeita com CHECK violation. `internet_telefone` adicionada 01/06/2026 (pedido franquia Santos)
-- `supplier TEXT NULL` — fornecedor texto livre
-- `source TEXT NOT NULL DEFAULT 'manual'` (CHECK 5 valores: `manual`, `purchase_order`, `marketing_payment`, `external_purchase`, `asaas_subscription`) — auditoria. Migration `expense-source-add-asaas-subscription.sql` (01/05/2026) adicionou `asaas_subscription` + UNIQUE INDEX `uq_expenses_asaas_sub_payment` (source_id, expense_date) WHERE source='asaas_subscription'
-- `source_id UUID NULL` — FK opcional pro registro origem
-- Index: `(franchise_id, category)` + `(source, source_id) WHERE source <> 'manual'`
-
-**Constantes/utils reutilizáveis** (sincronizar com CHECK ao adicionar categoria):
-- `EXPENSE_CATEGORIES` em [src/lib/expenseCategories.js](src/lib/expenseCategories.js) — array com `{value, label PT-BR, icon Material, color, help}`. Use em ExpenseForm, "Onde foi o dinheiro", LancarCompraSheet
-- `getCategoryMeta(value)` retorna meta da categoria com fallback `outros`
-
-**`calculatePnL()` — só caixa puro** ([src/lib/financialCalcs.js](src/lib/financialCalcs.js), simplificado 29/04 commit `d2ec8bf`):
-- Retorna apenas: `vendas`, `freteCobrado`, `totalDescontos`, `totalRecebido`, `taxasCartao`, `outrasDespesas`, `lucroCaixa`, `margemCaixa`, `salesCount`
-- `lucroCaixa = totalRecebido - taxasCartao - outrasDespesas` — admin e franqueado VEEM O MESMO NÚMERO. NÃO existe mais `lucro`, `lucroCompetencia`, `custoProdutos`, `gastosCompraProduto`, `gastosOperacionais`
-- Param `_saleItems` mantido por compat de assinatura (3 args nas chamadas), mas ignorado
-- 24 testes em [src/lib/financialCalcs.test.mjs](src/lib/financialCalcs.test.mjs) — rodar com `node src/lib/financialCalcs.test.mjs`
-
-**Utils novos no mesmo arquivo:**
-- `calcularEstoqueResumo(inventoryItems)` → `{custoTotal, vendaPotencial, qtdProdutosAtivos, markupMedioPct}` — fallback client-side do RPC
-- `getEstadoFinanceiro({lucroCaixa, valorEstoqueVenda, mediaMensalReceita})` → `{estado, cor, titulo, mensagem, icone}` para banner contextual (4 estados 🟢🔵🟡🔴)
-
-**4 fluxos automatizados de despesa:**
-
-| Fluxo | Trigger / RPC | Categoria gerada | Idempotência |
-|---|---|---|---|
-| Pedido Maxi entregue | `tr_po_generate_expenses` (BEFORE UPDATE OF status) | `compra_produto` + `transporte` | `purchase_orders.expenses_generated_at` |
-| Marketing confirmado | `tr_mkt_generate_expense` (status=`confirmed`) | `marketing` | `marketing_payments.expense_generated_at` |
-| Mensalidade ASAAS | `tr_subscription_payment_expense` (BEFORE UPDATE OF current_payment_id, current_payment_status; dispara quando `current_payment_status='PAID'` — edge function normaliza RECEIVED/CONFIRMED/RECEIVED_IN_CASH→PAID via `mapPaymentStatus()`) | `pacote_sistema` (R$ 150, `source='asaas_subscription'`) | `system_subscriptions.last_paid_payment_id` |
-| Compra externa manual | RPC `record_external_purchase()` (sheet `LancarCompraSheet.jsx`) | `compra_produto`/`compra_embalagem`/`compra_insumo` | `source='external_purchase'` |
-
-**Triggers SQL:** todos `BEFORE UPDATE` (permite setar flag de idempotência sem recursão), `SECURITY DEFINER` + `SET search_path='public'` (linter compliance). Arquivos: `supabase/po-expense-trigger.sql`, `marketing-expense-trigger.sql`, `asaas-subscription-expense-trigger.sql`. Não conflitam com triggers existentes (`on_purchase_order_delivered` continua subindo estoque).
-
-**Cleanup ON DELETE (30/04/2026):** apagar uma `marketing_payments` row dispara `tr_mkt_cleanup_expense` (AFTER DELETE) que remove a expense espelho (`source='marketing_payment'`, `source_id=OLD.id`). Padrão a replicar se PO/ASAAS/external precisarem cancelamento — sempre trigger SQL, nunca cleanup em 2 chamadas JS (atomicidade). Pre-flight obrigatório antes de criar trigger novo: `SELECT conname FROM pg_constraint WHERE confrelid='public.expenses'::regclass AND contype='f'` deve retornar vazio. Arquivo: `supabase/marketing-cancel-trigger.sql`.
-
-**Regra de `source` em expenses (01/05/2026):** cada origem distinta tem valor próprio (`marketing_payment`, `purchase_order`, `external_purchase`, `asaas_subscription`). NUNCA reusar source de outra origem só porque "o CHECK aceita" — cleanup triggers ON DELETE filtram por `source + source_id`, e source compartilhado entre tabelas distintas materializa risco de cascade-delete cruzado se UUIDs colidirem. Adicionar valor novo ao CHECK é trivial (`ALTER CONSTRAINT`) e sempre vale a pena. Bug pré-existente em `tr_subscription_payment_expense`: usava `'marketing_payment'` para subscription, conflito com cleanup de marketing.
-
-**Idempotência ASAAS — ponto cego (26/05/2026):** trigger `tr_subscription_payment_expense` marca `NEW.last_paid_payment_id := NEW.current_payment_id` **mesmo quando INSERT cai em `ON CONFLICT DO NOTHING`** (ou se a expense for apagada manualmente depois). Se a guard `IS DISTINCT FROM` "queimar" para um payment_id sem expense persistida, o trigger não retenta naquele ciclo — só na próxima virada de `current_payment_id` (ciclo seguinte). Ocorreu em 11 franquias na migração 01-02/05/2026 (Vila Maria + 10) — corrigido por INSERT manual. Forward não há risco recorrente (cada ciclo ASAAS gera payment_id novo). **Diagnóstico canônico**: JOIN `system_subscriptions ss` × `expenses e` com `e.source='asaas_subscription' AND e.source_id=ss.id AND e.expense_date=ss.current_payment_due_date` — `expense_existe=false` em sub PAID = ponto cego.
-
-**`source_id` em expenses auto-geradas** (referência rápida): ASAAS subscription → `system_subscriptions.id` (UUID da row, NÃO franchise_id). Marketing → `marketing_payments.id`. PO → `purchase_orders.id`. External → `expenses.id` (self, source='external_purchase'). Importante pra INSERT manual replicando trigger e pra cleanup ON DELETE futuro.
-
-**Marketing — competência por `reference_month` (fix 30/04/2026):** trigger `tr_mkt_generate_expense` deriva `expense_date = (reference_month || '-01')::date` (fallback `updated_at`/`CURRENT_DATE` se reference_month NULL/inválido). Despesa cai no mês a que o marketing se refere, **não** na data em que o admin confirmou. Antes usava `updated_at::date` → pagamento ref maio confirmado em 30/04 caía no DRE de abril. Backfill realinhou 27 despesas (3 abril→maio, 24 normalizadas para dia 1 do próprio mês). Mesma regra replicada em `supabase/scripts/backfill-historical-expenses.sql` para re-runs.
-
-**RPCs novas:**
-- `get_inventory_value_summary(p_franchise_id)` — agregado de estoque (custo + venda potencial + markup) para card "Em Estoque"
-- `record_external_purchase(franchise_id, type, unit_cost, qty, supplier?, expense_date?, inventory_item_id?, description?)` — atomic: cria expense + opcionalmente sobe estoque com **custo médio ponderado** (proteção div/0). `SECURITY DEFINER` valida `is_admin_or_manager() OR p_franchise_id = ANY(managed_franchise_ids())`. Tipos: `produto` (sobe estoque), `embalagem`/`insumo` (só expense)
-
-**Backfill aplicado (29/04/2026):**
-- Heurística regex em description (89/137 = 65%) — script [supabase/scripts/categorize-existing-expenses.mjs](supabase/scripts/categorize-existing-expenses.mjs) com `--dry-run` default e `--apply`. Importante: padrões mais específicos ANTES de mais genéricos (transporte/embalagem ANTES de compra_produto, senão "Sacolas Maxi" pega "maxi"). Use `normalize()` (NFD strip diacritics) antes de regex porque `\b` em JS não trata acentos
-- Backfill retroativo de POs+Marketing (116 expenses, R$ 159k) — script [supabase/scripts/backfill-historical-expenses.sql](supabase/scripts/backfill-historical-expenses.sql) executado uma vez. Análise prévia confirmou ZERO match com despesas manuais existentes (ver `audit-prepull` no script). Idempotente futuro via `*_generated_at` flags
-
-**TabResultado redesign** ([src/components/minha-loja/TabResultado.jsx](src/components/minha-loja/TabResultado.jsx)):
-- Hero metric: `lucroCaixa` grande + delta `(curr - prev)/abs(prev) * 100` vs mês anterior
-- Banner contextual: 4 estados via `getEstadoFinanceiro` (verde/azul/amarelo/vermelho com cores Tailwind via lookup `BANNER_COLORS`)
-- 3 cards horizontais: `Em Estoque` (com link compacto "X parados há 28+ dias →" para /Gestao?tab=estoque) / `Caixa do mês` (Vendas + Frete + Descontos detalhados) / `Mais Vendidos` (top 3 com markup, "Ver todas" → /Vendas)
-- "Onde foi o dinheiro" — agrupa expenses + taxasCartao por categoria com ícone+barra `style={backgroundColor: ${meta.color}15}`
-- Evolução 6 meses (recharts `ComposedChart` com 2 eixos Y): Receita (barras cinza, esq) + Lucro (linha vermelha, dir) + Média móvel 3m (linha tracejada). Tooltip mostra margem %
-- `mediaMensalReceita` (3-6 meses) usado como input de `getEstadoFinanceiro`. Sem histórico, banner cai em fallback `valorEstoqueVenda > 1000`
-- Empty state com CTA "Lançar despesa"
-- Despesas list mostra **badge "auto"** (`bg-[#d4af37]/15`) quando `source !== 'manual'`
-
-**ExpenseForm** ([src/components/minha-loja/ExpenseForm.jsx](src/components/minha-loja/ExpenseForm.jsx)):
-- Select de categoria PRIMEIRO campo (decisão visual antes da descrição), com texto de ajuda contextual
-- Input supplier opcional (max 120 chars)
-- **Aviso visual** quando editando despesa auto-gerada (`source !== 'manual'`): "Esta despesa foi gerada automaticamente... evite mudar a categoria"
-- CREATE força `source='manual'`. UPDATE NÃO sobrescreve `source` (preserva auto-geradas)
-- Audit log enriquecido com `category` e `supplier`
-
-**LancarCompraSheet** ([src/components/minha-loja/LancarCompraSheet.jsx](src/components/minha-loja/LancarCompraSheet.jsx)):
-- Sheet bottom (responsivo: rounded-t-2xl, sm:max-w-2xl sm:mx-auto)
-- 3 tipos radio buttons (produto/embalagem/insumo) com ícone+cor
-- Item autocomplete só aparece se tipo=produto
-- Mostra "novo custo médio sugerido" calculado client-side antes de submit
-- Submit chama RPC `record_external_purchase` via `@/api/supabaseClient` (atenção ao import path correto)
-- Datalist `recentSuppliers` (top 10 últimos usados)
-
-**Preview rota** [/PreviewResultado](src/pages/PreviewResultado.jsx) — mantido pra histórico/comparação visual com 4 cenários mockados (verde/azul/amarelo/vermelho). Acessível via URL direta (não tem link na sidebar).
-
-**Insights de uso (Clarity 3 dias antes do redesign):**
-- 62% mobile (267 sess) vs 37% PC (158) — confirmou mobile-first
-- /Financeiro engagement 1057s — admin lê muito, NÃO pode quebrar (estratégia non-breaking pague)
-- /FranchiseSettings tem 120 dead clicks + 7 rage — backlog de UX (fora de escopo deste ciclo)
+### Módulo Financeiro v2 (refactor 29/04/2026)
+> 📄 **Detalhes completos: [docs/claude/modulo-financeiro-v2.md](docs/claude/modulo-financeiro-v2.md)** — ler ANTES de mexer em DRE, `expenses`, ASAAS ou triggers de despesa.
+- **Essencial**: DRE = caixa puro. `calculatePnL()` em [financialCalcs.js](src/lib/financialCalcs.js) retorna só `lucroCaixa = totalRecebido − taxasCartao − outrasDespesas` (admin e franqueado veem o MESMO número; não existe mais `lucro`/`custoProdutos`)
+- **Adicionar categoria de despesa = 3 pontos sincronizados**: array `EXPENSE_CATEGORIES` ([expenseCategories.js](src/lib/expenseCategories.js)) + constraint `expenses_category_check` (12 valores) + SQL versionado. Migração no banco PRIMEIRO, deploy do front DEPOIS
+- **`expenses.source` (5 valores)**: cada origem tem valor próprio (`manual`/`purchase_order`/`marketing_payment`/`external_purchase`/`asaas_subscription`). NUNCA reusar source de outra origem — cleanup triggers ON DELETE filtram por `source + source_id`
+- **4 fluxos automáticos de despesa** (triggers SQL `BEFORE UPDATE`, idempotência via flag): PO entregue → `compra_produto`+`transporte`; marketing confirmado → `marketing` (competência por `reference_month`); mensalidade ASAAS PAID → `pacote_sistema`; compra externa → RPC `record_external_purchase`
+- O arquivo shardado tem: schema completo de `expenses`, todos os triggers, RPCs (`get_inventory_value_summary`, `record_external_purchase`), ponto-cego de idempotência ASAAS, backfill, e o redesign do TabResultado/ExpenseForm/LancarCompraSheet
 
 ### Impressão Térmica (Comprovantes) — refactor 21/04/2026 (commit `53751dd`)
-- Arquivos: [SaleReceipt.jsx](src/components/minha-loja/SaleReceipt.jsx) (bloco `<style>` interno) + [shareUtils.js:158](src/lib/shareUtils.js#L158) (`@page`)
-- **Auto-adapt 58/80mm** sem configuração: `@page { size: auto; margin: 0 }` + container com `width: "100%", maxWidth: 400`. Driver da impressora reporta largura; CSS adapta. NUNCA fixar width em px nem `size: 80mm` (quebra 58mm)
-- **`margin: 0` no `@page`** — térmica tem margem física de 2-3mm por lado; margem CSS extra cortava lateral
-- **Contraste obrigatório em `@media print`** (regras com `!important` no `.receipt *`):
-  - `color: #000` em tudo (ZERO cinza — `#666`, `#444`, `#dc2626` somem em raster 1-bit 203dpi)
-  - `font-family: 'Courier New'` monospace + `font-weight: 700` + `font-size: 11pt`
-  - `-webkit-font-smoothing: none` (anti-aliasing vira dither)
-  - `print-color-adjust: exact` + prefix `-webkit-`
-  - `overflow-wrap: anywhere` + `word-break: break-word` para nomes longos
-  - Logo `max-width: 40mm` (cabe em 58mm)
-- Ao adicionar elementos ao SaleReceipt: NUNCA usar cor cinza, font-weight < 700, ou background colorido. O `!important` no `@media print` neutraliza inline styles — mas se vai imprimir, projetar pensando em "preto puro ou branco puro"
-- **Uso prático (Nelson 21/04)**: franqueado imprime com **escala 80%** no dialog do browser e fica ótimo. Se reclamação de "ficou grande", orientar reduzir escala no print dialog — não é bug
-- Se alguma franquia reclamar de impressão ainda apagada após este refactor, **não é CSS** — é densidade do driver (heating time) ou bobina velha. NÃO forçar config na franquia (Nelson: zero configuração)
+> 📄 **Detalhes completos: [docs/claude/impressao-termica.md](docs/claude/impressao-termica.md)** — ler ao mexer em [SaleReceipt.jsx](src/components/minha-loja/SaleReceipt.jsx) ou no fluxo de impressão.
+- **Essencial**: auto-adapta 58/80mm via `@page { size: auto; margin: 0 }` ([shareUtils.js:158](src/lib/shareUtils.js#L158)) — NUNCA fixar width em px nem `size: 80mm` (quebra 58mm). `@media print` força preto puro + `Courier New` + `font-weight:700` (cinza/peso<700/bg colorido somem no raster 1-bit 203dpi)
+- Reclamação de "apagado" pós-refactor = densidade do driver ou bobina velha, **não é CSS** (Nelson: zero config na franquia; orientar escala 80% no print dialog)
 
 ### Meta CAPI
 - Campos `contacts`: `meta_click_id`, `meta_fbclid`, `meta_ad_id`, `meta_adset_id`, `meta_campaign_id`
@@ -414,3 +329,4 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - Executar SQL via API com context-mode: `ctx_execute` com `fetch()` JavaScript (curl bloqueado pelo context-mode hook)
 - **EXPLAIN de SQL function STABLE** mostra só `Function Scan` opaco (a função inlinea no plano externo mas não aparece). Para ver o plano real, copiar o body da função (`pg_get_functiondef`) e rodar `EXPLAIN ANALYZE` direto na query SQL inline
 - **`pg_get_functiondef(p.oid)` falha com `42809: "X" is an aggregate function`** quando `p.prokind='a'`. Ao iterar `pg_proc` (catálogo de funções), filtrar `WHERE p.prokind='f'`. NÃO usar `proisagg` — coluna removida em PG 11+
+- **Conferir backfill/UPDATE em query SEPARADA, nunca no mesmo CTE**: `WITH upd AS (UPDATE...RETURNING) SELECT count(*) FROM t WHERE...` — os SELECTs leem o snapshot PRÉ-update (semântica de CTE data-modifying do Postgres), parecendo que o UPDATE não fez efeito. Rodar a contagem de conferência num `execute_sql` à parte. Pegou no backfill customer_name 16/06 (mostrou "5748 restantes" falso; real ~0)
