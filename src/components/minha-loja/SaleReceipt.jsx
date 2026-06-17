@@ -155,10 +155,10 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
 
       {/* Cliente, Endereço e Data */}
       <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-        {contact?.nome && (
+        {(contact?.nome || sale.customer_name) && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#666" }}>Cliente</span>
-            <span style={{ fontWeight: 600 }}>{contact.nome}</span>
+            <span style={{ fontWeight: 600 }}>{contact?.nome || sale.customer_name}</span>
           </div>
         )}
         {(contact?.endereco || contact?.bairro) && (

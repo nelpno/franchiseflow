@@ -52,7 +52,7 @@ function resolveCustomerName(sale, contactsMap) {
 
 function resolveCustomerPhone(sale, contactsMap) {
   const contact = sale?.contact_id ? contactsMap?.[sale.contact_id] : null;
-  const raw = contact?.telefone || sale?.customer_phone || "";
+  const raw = contact?.telefone || sale?.contact_phone || "";
   return sanitizeCSVCell(raw);
 }
 
