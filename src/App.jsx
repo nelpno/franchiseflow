@@ -23,10 +23,23 @@ const ADMIN_ONLY_PAGES = new Set([
   'Reports', 'Acompanhamento', 'Franchises', 'PurchaseOrders', 'Financeiro'
 ]);
 
+// Páginas liberadas para o papel customer_success (+ admin/manager)
+const CS_PAGES = new Set(['CustomerSuccess']);
+const CS_ROLES = ['customer_success', 'admin', 'manager'];
+
 function AdminRoute({ children }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <PageFallback />;
   if (!user || (user.role !== 'admin' && user.role !== 'manager')) {
+    return <Navigate to="/Dashboard" replace />;
+  }
+  return children;
+}
+
+function CsRoute({ children }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <PageFallback />;
+  if (!user || !CS_ROLES.includes(user.role)) {
     return <Navigate to="/Dashboard" replace />;
   }
   return children;
@@ -68,9 +81,11 @@ const AuthenticatedApp = () => {
               key={path}
               path={`/${path}`}
               element={
-                ADMIN_ONLY_PAGES.has(path)
-                  ? <AdminRoute>{pageElement}</AdminRoute>
-                  : pageElement
+                CS_PAGES.has(path)
+                  ? <CsRoute>{pageElement}</CsRoute>
+                  : ADMIN_ONLY_PAGES.has(path)
+                    ? <AdminRoute>{pageElement}</AdminRoute>
+                    : pageElement
               }
             />
           );

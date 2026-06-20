@@ -113,6 +113,13 @@ const navigationItems = [
     adminSidebarHidden: true,
   },
   {
+    title: "Customer Success",
+    url: createPageUrl("CustomerSuccess"),
+    materialIcon: "monitor_heart",
+    roles: ["customer_success", "admin", "manager"],
+    adminSection: "Gestão",
+  },
+  {
     title: "Pedidos",
     url: createPageUrl("PurchaseOrders"),
     materialIcon: "local_shipping",
@@ -265,9 +272,14 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
+  const isCS = currentUser?.role === "customer_success";
 
   const filteredNavigationItems = navigationItems
     .filter((item) => {
+      // Itens com lista de papéis (ex: Customer Success): só aparecem para esses papéis
+      if (item.roles) return item.roles.includes(currentUser?.role);
+      // Customer Success só vê itens role-gated (acima); nada mais
+      if (isCS) return false;
       // Hide items from admin sidebar (routes still work via URL)
       if (isAdmin && item.adminSidebarHidden) return false;
       if (item.adminOnly) return isAdmin;
@@ -319,7 +331,7 @@ export default function Layout({ children, currentPageName }) {
 
   // Route guard: redirect franchisees who need onboarding welcome
   const isOnboardingPage = location.pathname === "/Onboarding" || location.pathname === "/OnboardingWelcome";
-  if (!isAdmin && onboardingLoaded && needsOnboardingWelcome && !isOnboardingPage) {
+  if (!isAdmin && !isCS && onboardingLoaded && needsOnboardingWelcome && !isOnboardingPage) {
     return <Navigate to="/OnboardingWelcome" replace />;
   }
 
@@ -517,7 +529,7 @@ export default function Layout({ children, currentPageName }) {
           {/* Page content */}
           <div className={`flex-1 min-h-0 overflow-auto ${
             isAdmin && location.pathname === createPageUrl("Dashboard") ? "" : "md:pt-20"
-          } ${!isAdmin ? "pb-20 md:pb-0" : ""}`}>
+          } ${!isAdmin && !isCS ? "pb-20 md:pb-0" : ""}`}>
             <div className="max-w-6xl mx-auto w-full">
               {children}
             </div>
@@ -525,7 +537,7 @@ export default function Layout({ children, currentPageName }) {
         </main>
 
         {/* Mobile bottom nav — franchisee only */}
-        {!isAdmin && (
+        {!isAdmin && !isCS && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-16 flex items-center justify-around px-4 z-40">
             {mobileBottomNav.map((item) => {
               if (item.isFab) {

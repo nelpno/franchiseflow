@@ -245,6 +245,15 @@
 - `healthScore.js` consome `botSummary` aggregates do RPC `get_bot_conversation_summary` (não array bruto de conversas)
 - ~~BUG CATEGORY_CONFIG_WITH_BOT (barras > 100%)~~ — resolvido em 29/05/2026 deletando o componente FranchiseHealthScore.jsx (código morto)
 
+### Customer Success Cockpit (20/06/2026)
+Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem precisa de atenção, por quê, e worklist de ação. Tiers 🔴 crítico / 🟡 atenção / 🏆 destaque / 🟢 saudável / ⚪ dormente.
+- **Frontend**: página [src/pages/CustomerSuccess.jsx](src/pages/CustomerSuccess.jsx) + [components/customer-success/FranchiseDrawer.jsx](src/components/customer-success/FranchiseDrawer.jsx) + `tierConfig.js`. Supressão pós-contato 7d é no front (crítico reabre sozinho).
+- **Papel `customer_success`**: valor TEXT em `profiles.role`. Acesso via `CsRoute`+`CS_PAGES` em App.jsx (NÃO em `ADMIN_ONLY_PAGES`). Em Layout.jsx, CS é "staff": item de menu com `roles:[...]`, vê SÓ o item dele (gates `!isAdmin && !isCS` no bottom-nav/padding/onboarding-redirect). NÃO incluir CS em `is_admin_or_manager()` (abriria ~28 policies/telas).
+- **RPC `get_franchise_health_signals(p_since)`** (SECURITY DEFINER, guard `is_cs_or_admin()`): métricas+`flags`(jsonb)+`tier`+`is_standout` por franquia. Bot calculado direto de `vw_bot_conversations` (NÃO via `get_bot_conversation_summary`, cujo guard `is_admin_or_manager()` excluiria CS). Limiares provisórios (60d) em constantes inline — Celso afina. Trata venda futura (`greatest(0,...)`). SQL versionado em `supabase/cs-cockpit/`.
+- **Tabelas `cs_worklist`(estado)+`cs_worklist_events`(log)**: chave TEXT `evolution_instance_id`, RLS `is_cs_or_admin()` (SELECT/INSERT/UPDATE) + delete só `is_admin()`. NÃO reusar `coach_actions` (CHECK action_type) nem `franchise_notes` (UUID FK + RLS só admin).
+- **Helper `is_cs_or_admin()`** = `role IN ('admin','manager','customer_success')`, dedicado às RPCs/tabelas do cockpit.
+- Calibração inicial 20/06: 15🔴/31🟡/4🟢/6⚪/1🏆. `engagement_low` via `auth.users.last_sign_in_at` (franqueado→franquia por `profiles.managed_franchise_ids`, que contém o evolution_instance_id). Treinamento adiado (sem dado). Spec+plano: `docs/superpowers/` do ecossistema.
+
 ### Marketing
 - `marketing_payments`: 1 por franquia/mês. UNIQUE `(franchise_id, reference_month)`. CHECK `amount >= 200`
 - Últimos 5 dias do mês → reference_month mira mês seguinte (lógica idêntica em Card + Admin)
@@ -254,7 +263,7 @@
 
 ### UX
 - Franqueado: sidebar 8 itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu Vendedor, Tutoriais, Onboarding condicional) + bottom nav 5 slots (FAB Vender centro)
-- Admin: 7 itens visíveis na sidebar + 3 ocultos (`adminSidebarHidden`: Financeiro, Acompanhamento, Inteligência Bot) acessíveis por URL
+- Admin: o sidebar oculta só itens com `adminSidebarHidden: true` — hoje **apenas `Acompanhamento`** ([Layout.jsx:108-113](src/Layout.jsx#L108)), acessível por URL `/Acompanhamento`. Financeiro É visível (seção "Gestão"). A antiga "Inteligência Bot" foi REMOVIDA 29/05/2026 (página + rota + item de menu) — não existe mais; ver "Features Removidas"
 - Manager: mesma visão admin mas SEM delete. Checagens: `role === "admin" || role === "manager"` visão, `role === "admin"` delete
 - Terminologia: "Estoque" (NÃO "Inventário"), "Valor Médio" (NÃO "Ticket Médio"), NÃO "Líquido"
 - Onboarding: 9 blocos (8 numerados + gate de liberação). `TOTAL_ITEMS` computado dinamicamente. Acessível via sidebar, franchise cards e detail sheet
