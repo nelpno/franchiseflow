@@ -122,7 +122,6 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                 <Metric icon="smart_toy" label="Conversão do bot" value={row.bot_conversion_30d != null ? `${row.bot_conversion_30d}%` : "—"} />
                 <Metric icon="credit_card" label="Assinatura R$150" value={row.subscription_overdue ? "Atrasada" : "Em dia"}
                   tone={row.subscription_overdue ? "text-red-600" : "text-green-600"} />
-                <Metric icon="login" label="Acesso ao painel" value={days(row.days_since_login)} />
               </div>
             </div>
 

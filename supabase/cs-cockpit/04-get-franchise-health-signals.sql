@@ -142,7 +142,7 @@ flags_long as (
   union all select fid,'key_stock_zero','med',zeroed||' itens-chave zerados' from metrics where zeroed>=3
   union all select fid,'subscription_overdue','med','Assinatura atrasada' from metrics where overdue
   union all select fid,'marketing_unpaid','low','Marketing sem pagar (2 meses)' from metrics where not mkt_paid and not mkt_paid_prev
-  union all select fid,'engagement_low','low','Sem acessar o painel há '||d_login||'d' from metrics where d_login is not null and d_login>=30
+  -- engagement_low REMOVIDO 20/06: last_sign_in_at mede re-autenticacao, nao uso (sessao persiste). 26/56 >30d = falso-positivo. Sem dado confiavel de atividade no painel hoje.
   union all select fid,'bot_bad','med','Bot: conversão caindo' from metrics where conv30 is not null and convprev is not null and bot_t30>=20 and conv30 < convprev-10
   union all select m.fid,'growth_lagging','low','Crescendo abaixo da rede' from metrics m join growth gr on gr.fid=m.fid cross join net where gr.g is not null and net.med is not null and gr.g<net.med
 ),
