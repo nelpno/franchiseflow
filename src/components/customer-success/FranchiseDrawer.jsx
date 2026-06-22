@@ -36,6 +36,7 @@ function Metric({ icon, label, value, hint, tone }) {
 export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
   const [events, setEvents] = useState([]);
   const [note, setNote] = useState("");
+  const [meetingDate, setMeetingDate] = useState("");
   const [saving, setSaving] = useState(false);
   const open = !!row;
   const fid = row?.franchise_id;
@@ -50,7 +51,7 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
   }, [fid]);
 
   useEffect(() => {
-    if (fid) { setNote(""); loadEvents(); }
+    if (fid) { setNote(""); setMeetingDate(""); loadEvents(); }
   }, [fid, loadEvents]);
 
   const act = async (eventType, statusPatch, successMsg) => {
@@ -72,6 +73,30 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
   };
 
   const nowIso = () => new Date().toISOString();
+
+  const markMeeting = async () => {
+    if (!meetingDate) { toast.error("Escolha a data da reunião primeiro."); return; }
+    if (!fid || saving) return;
+    setSaving(true);
+    try {
+      // T12:00:00 evita o off-by-one de fuso (new Date('YYYY-MM-DD') = UTC)
+      const iso = new Date(`${meetingDate}T12:00:00`).toISOString();
+      const br = meetingDate.split("-").reverse().join("/");
+      const evNote = `📅 ${br}` + (note.trim() ? ` — ${note.trim()}` : "");
+      await addCsWorklistEvent(fid, "meeting", evNote, userId);
+      await upsertCsWorklist(fid, { status: "reuniao_marcada", meeting_at: iso, last_contact_at: nowIso() }, userId);
+      toast.success(`Reunião marcada para ${br}`);
+      setNote(""); setMeetingDate("");
+      await loadEvents();
+      onChanged?.();
+    } catch (e) {
+      console.error("[FranchiseDrawer] markMeeting", e);
+      toast.error("Não foi possível salvar. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const t = row ? (row.is_standout ? "standout" : row.tier) : "healthy";
   const deltaStr = row?.revenue_delta_pct != null
     ? `${row.revenue_delta_pct > 0 ? "+" : ""}${row.revenue_delta_pct}%` : null;
@@ -136,6 +161,11 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                 maxLength={1000}
                 className="w-full text-sm rounded-lg border border-[#291715]/15 p-2.5 focus:outline-none focus:border-[#b91c1c] resize-none"
               />
+              <div className="flex items-center gap-2 mt-2 text-sm">
+                <label className="text-[#8a7e7e]">Data da reunião:</label>
+                <input type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)}
+                  className="rounded-md border border-[#291715]/15 px-2 py-1 text-sm focus:outline-none focus:border-[#b91c1c]" />
+              </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 <Button size="sm" disabled={saving}
                   onClick={() => act("contact", { status: "contatado", last_contact_at: nowIso() }, "Contato registrado")}
@@ -143,7 +173,7 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                   <MaterialIcon icon="call" size={16} /> Registrar contato
                 </Button>
                 <Button size="sm" variant="outline" disabled={saving}
-                  onClick={() => act("meeting", { status: "reuniao_marcada", meeting_at: nowIso(), last_contact_at: nowIso() }, "Reunião marcada")}
+                  onClick={markMeeting}
                   className="gap-1">
                   <MaterialIcon icon="event" size={16} /> Marcar reunião
                 </Button>
@@ -159,6 +189,9 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                   </Button>
                 )}
               </div>
+              <p className="text-[11px] text-[#8a7e7e] mt-2 leading-snug">
+                Os registros ficam só aqui (não vão pro franqueado). <b>Resolver</b> tira a unidade da fila — ela reabre sozinha se um sinal forte voltar.
+              </p>
 
               {/* Histórico */}
               {events.length > 0 && (
@@ -167,7 +200,7 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                     <div key={ev.id} className="text-xs bg-[#fbf9fa] rounded-lg p-2.5">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-[#4a3d3d]">{EVENT_LABEL[ev.event_type] || ev.event_type}</span>
-                        <span className="text-[#8a7e7e]">{new Date(ev.created_at).toLocaleDateString("pt-BR")}</span>
+                        <span className="text-[#8a7e7e]">{new Date(ev.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
                       </div>
                       {ev.note && <p className="text-[#4a3d3d] mt-1 whitespace-pre-wrap">{ev.note}</p>}
                     </div>
