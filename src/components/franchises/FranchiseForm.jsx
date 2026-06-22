@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
 function formatCpfCnpj(value) {
   const digits = (value || "").replace(/\D/g, "");
   if (digits.length <= 11) {
@@ -106,10 +107,12 @@ export default function FranchiseForm({
     if (fiscalRequired) {
       const emailTrim = (franchisee_email || "").trim();
       if (!emailTrim || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailTrim)) {
-        return; // browser já mostra mensagem via required/type=email
+        toast.error("E-mail inválido. Confira o endereço informado.");
+        return;
       }
       const cpfDigits = (cpf_cnpj || "").replace(/\D/g, "");
       if (cpfDigits.length !== 11 && cpfDigits.length !== 14) {
+        toast.error("CPF/CNPJ incompleto. Digite todos os dígitos — CPF tem 11, CNPJ tem 14.");
         return;
       }
     }
