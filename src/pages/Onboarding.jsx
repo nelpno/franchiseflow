@@ -158,10 +158,24 @@ export default function Onboarding() {
       const configs = autoResults[0].status === "fulfilled" ? autoResults[0].value : [];
       const orders = autoResults[1].status === "fulfilled" ? autoResults[1].value : [];
       const inventory = autoResults[2].status === "fulfilled" ? autoResults[2].value : [];
-      // 5-2: Wizard complete if config has required fields
+      // 5-2: "Meu Vendedor" preenchido por completo — espelha a conclusão do
+      // wizard em FranchiseSettings.jsx (completedSteps). PIX é OPCIONAL no
+      // wizard, então NÃO entra aqui (a detecção antiga exigia pix_key_data e
+      // travava franquias que só configuraram o resto). Mantém em sincronia com
+      // os steps: 1) identidade, 2) operação+pagamentos, 3) raio (se entrega),
+      // 4) agente. has_delivery/has_pickup têm os mesmos defaults do form.
       const cfg = configs[0];
-      if (cfg && cfg.unit_address && cfg.pix_key_data && cfg.max_delivery_radius_km != null) {
-        auto["5-2"] = true;
+      if (cfg) {
+        const hasDelivery = cfg.has_delivery ?? true;
+        const hasPickup = cfg.has_pickup ?? false;
+        const step1 = Boolean(cfg.franchise_name && cfg.street_address && cfg.neighborhood && cfg.city);
+        const step2 = (!hasDelivery || (cfg.payment_delivery?.length > 0))
+          && (!hasPickup || (cfg.payment_pickup?.length > 0));
+        const step3 = !hasDelivery || cfg.max_delivery_radius_km != null;
+        const step4 = Boolean(cfg.agent_name);
+        if (step1 && step2 && step3 && step4) {
+          auto["5-2"] = true;
+        }
       }
       // 6-1: Has at least one purchase order
       if (orders.length > 0) {
