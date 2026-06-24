@@ -48,6 +48,7 @@ export const PAYMENT_METHODS = [
   { value: "debit", label: "Débito", icon: "credit_card" },
   { value: "nfc", label: "Aproximação/NFC", icon: "contactless" },
   { value: "payment_link", label: "Link de Pagamento", icon: "link" },
+  { value: "meal_voucher", label: "Vale-refeição (VR/Sodexo)", icon: "restaurant" },
   { value: "cash", label: "Dinheiro", icon: "payments" },
 ];
 

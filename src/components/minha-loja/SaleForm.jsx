@@ -613,8 +613,8 @@ export default function SaleForm({
       if (!cardFeePercent || cardFeePercent <= 0) return 0;
       return feeBase * (cardFeePercent / 100);
     }
-    // Legacy: card methods e payment_link tem taxa (card_machine removido da UI)
-    const feeableMethods = ["credit", "debit", "nfc", "payment_link"];
+    // Legacy: card methods, payment_link e vale-refeição têm taxa (card_machine removido da UI)
+    const feeableMethods = ["credit", "debit", "nfc", "payment_link", "meal_voucher"];
     if (!feeableMethods.includes(paymentMethod)) return 0;
     return feeBase * (cardFeePercent / 100);
   }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent, paymentFees]);
@@ -793,8 +793,8 @@ export default function SaleForm({
         contact_id: resolvedContactId || null,
         source: isEditing ? (sale.source || "manual") : "manual",
         payment_method: paymentMethod,
-        card_fee_percent: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeePercent : null,
-        card_fee_amount: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) ? cardFeeAmount : null,
+        card_fee_percent: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link", "meal_voucher"].includes(paymentMethod)) ? cardFeePercent : null,
+        card_fee_amount: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link", "meal_voucher"].includes(paymentMethod)) ? cardFeeAmount : null,
         fee_passed_to_customer: cardFeeAmount > 0 ? feePassedToCustomer : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
@@ -1198,7 +1198,7 @@ export default function SaleForm({
           ))}
         </div>
 
-        {(paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link"].includes(paymentMethod)) && (
+        {(paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link", "meal_voucher"].includes(paymentMethod)) && (
           <div className="mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
