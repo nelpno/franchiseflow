@@ -34,7 +34,7 @@ function Metric({ icon, label, value, hint, tone }) {
   );
 }
 
-export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
+export default function FranchiseDrawer({ row, userId, isAdmin = false, onClose, onChanged }) {
   const [events, setEvents] = useState([]);
   const [note, setNote] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
@@ -240,7 +240,7 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
               {events.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {events.map((ev) => {
-                    const mine = ev.created_by && ev.created_by === userId;
+                    const canManage = isAdmin || (ev.created_by && ev.created_by === userId);
                     const isEditing = editingId === ev.id;
                     return (
                       <div key={ev.id} className="text-xs bg-[#fbf9fa] rounded-lg p-2.5">
@@ -248,7 +248,7 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                           <span className="font-semibold text-[#4a3d3d]">{EVENT_LABEL[ev.event_type] || ev.event_type}</span>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span className="text-[#8a7e7e]">{new Date(ev.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
-                            {mine && !isEditing && (confirmId === ev.id ? (
+                            {canManage && !isEditing && (confirmId === ev.id ? (
                               <span className="flex items-center gap-1.5">
                                 <span className="text-[#8a7e7e]">Apagar?</span>
                                 <button type="button" onClick={() => removeEvent(ev)} disabled={saving} className="text-[#b91c1c] font-semibold">Sim</button>

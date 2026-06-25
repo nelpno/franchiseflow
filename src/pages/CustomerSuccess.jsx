@@ -207,6 +207,7 @@ export default function CustomerSuccess() {
       <FranchiseDrawer
         row={selected}
         userId={user?.id}
+        isAdmin={user?.role === "admin"}
         onClose={() => setSelected(null)}
         onChanged={load}
       />
