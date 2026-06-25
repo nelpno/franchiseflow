@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatBRL";
 import { marketingLiquid } from "@/lib/franchiseUtils";
-import { addCsWorklistEvent, upsertCsWorklist, getCsWorklistEvents } from "@/entities/all";
+import { addCsWorklistEvent, upsertCsWorklist, getCsWorklistEvents, deleteCsWorklistEvent, updateCsWorklistEventNote } from "@/entities/all";
 import { TIER, SEV } from "@/components/customer-success/tierConfig";
 
 const EVENT_LABEL = {
@@ -39,6 +39,9 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
   const [note, setNote] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [confirmId, setConfirmId] = useState(null);
   const open = !!row;
   const fid = row?.franchise_id;
 
@@ -52,7 +55,7 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
   }, [fid]);
 
   useEffect(() => {
-    if (fid) { setNote(""); setMeetingDate(""); loadEvents(); }
+    if (fid) { setNote(""); setMeetingDate(""); setEditingId(null); setConfirmId(null); loadEvents(); }
   }, [fid, loadEvents]);
 
   const act = async (eventType, statusPatch, successMsg) => {
@@ -93,6 +96,40 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
     } catch (e) {
       console.error("[FranchiseDrawer] markMeeting", e);
       toast.error("Não foi possível salvar. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEdit = (ev) => { setConfirmId(null); setEditingId(ev.id); setEditText(ev.note || ""); };
+
+  const saveEdit = async () => {
+    if (!editingId || saving) return;
+    setSaving(true);
+    try {
+      await updateCsWorklistEventNote(editingId, editText);
+      setEditingId(null); setEditText("");
+      toast.success("Nota atualizada");
+      await loadEvents();
+    } catch (e) {
+      console.error("[FranchiseDrawer] saveEdit", e);
+      toast.error("Não foi possível editar. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeEvent = async (ev) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await deleteCsWorklistEvent(ev.id);
+      setConfirmId(null);
+      toast.success("Registro apagado");
+      await loadEvents();
+    } catch (e) {
+      console.error("[FranchiseDrawer] removeEvent", e);
+      toast.error("Não foi possível apagar. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -202,15 +239,48 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
               {/* Histórico */}
               {events.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  {events.map((ev) => (
-                    <div key={ev.id} className="text-xs bg-[#fbf9fa] rounded-lg p-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-[#4a3d3d]">{EVENT_LABEL[ev.event_type] || ev.event_type}</span>
-                        <span className="text-[#8a7e7e]">{new Date(ev.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                  {events.map((ev) => {
+                    const mine = ev.created_by && ev.created_by === userId;
+                    const isEditing = editingId === ev.id;
+                    return (
+                      <div key={ev.id} className="text-xs bg-[#fbf9fa] rounded-lg p-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-semibold text-[#4a3d3d]">{EVENT_LABEL[ev.event_type] || ev.event_type}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[#8a7e7e]">{new Date(ev.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                            {mine && !isEditing && (confirmId === ev.id ? (
+                              <span className="flex items-center gap-1.5">
+                                <span className="text-[#8a7e7e]">Apagar?</span>
+                                <button type="button" onClick={() => removeEvent(ev)} disabled={saving} className="text-[#b91c1c] font-semibold">Sim</button>
+                                <button type="button" onClick={() => setConfirmId(null)} className="text-[#8a7e7e]">Não</button>
+                              </span>
+                            ) : (
+                              <>
+                                <button type="button" onClick={() => startEdit(ev)} title="Editar nota" className="text-[#8a7e7e] hover:text-[#b91c1c]">
+                                  <MaterialIcon icon="edit" size={14} />
+                                </button>
+                                <button type="button" onClick={() => setConfirmId(ev.id)} title="Apagar registro" className="text-[#8a7e7e] hover:text-[#b91c1c]">
+                                  <MaterialIcon icon="delete" size={14} />
+                                </button>
+                              </>
+                            ))}
+                          </div>
+                        </div>
+                        {isEditing ? (
+                          <div className="mt-1.5">
+                            <textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={2} maxLength={1000}
+                              className="w-full text-xs rounded-md border border-[#291715]/15 p-2 focus:outline-none focus:border-[#b91c1c] resize-none" />
+                            <div className="flex gap-2 mt-1">
+                              <button type="button" onClick={saveEdit} disabled={saving} className="text-[#b91c1c] font-semibold">Salvar</button>
+                              <button type="button" onClick={() => { setEditingId(null); setEditText(""); }} className="text-[#8a7e7e]">Cancelar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          ev.note && <p className="text-[#4a3d3d] mt-1 whitespace-pre-wrap">{ev.note}</p>
+                        )}
                       </div>
-                      {ev.note && <p className="text-[#4a3d3d] mt-1 whitespace-pre-wrap">{ev.note}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

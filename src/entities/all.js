@@ -343,6 +343,28 @@ export async function addCsWorklistEvent(franchiseId, eventType, note, userId) {
   return data;
 }
 
+export async function deleteCsWorklistEvent(eventId) {
+  // .select('id') detecta RLS silencioso (0 rows = sem permissão, não erro)
+  const { data, error } = await withTimeout(
+    supabase.from('cs_worklist_events').delete().eq('id', eventId).select('id'),
+    30000,
+  );
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Sem permissão para apagar este registro.');
+  return true;
+}
+
+export async function updateCsWorklistEventNote(eventId, note) {
+  const trimmed = note?.trim() || null;
+  const { data, error } = await withTimeout(
+    supabase.from('cs_worklist_events').update({ note: trimmed }).eq('id', eventId).select('id'),
+    30000,
+  );
+  if (error) throw error;
+  if (!data || data.length === 0) throw new Error('Sem permissão para editar este registro.');
+  return true;
+}
+
 // User é especial - tem método .me() além dos métodos padrão
 export const User = {
   ...createEntity('profiles'),

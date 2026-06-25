@@ -29,4 +29,9 @@ create policy cs_worklist_del on public.cs_worklist for delete using ((select pu
 
 create policy cs_wevents_sel on public.cs_worklist_events for select using ((select public.is_cs_or_admin()));
 create policy cs_wevents_ins on public.cs_worklist_events for insert with check ((select public.is_cs_or_admin()));
-create policy cs_wevents_del on public.cs_worklist_events for delete using ((select public.is_admin()));
+-- DELETE/UPDATE: autor apaga/edita o próprio registro errado; admin qualquer um (2026-06-24).
+create policy cs_wevents_del on public.cs_worklist_events for delete
+  using ((select public.is_admin()) or created_by = (select auth.uid()));
+create policy cs_wevents_upd on public.cs_worklist_events for update
+  using ((select public.is_admin()) or created_by = (select auth.uid()))
+  with check ((select public.is_admin()) or created_by = (select auth.uid()));
