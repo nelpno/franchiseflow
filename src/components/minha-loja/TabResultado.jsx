@@ -27,6 +27,8 @@ import {
   ComposedChart,
   Bar,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -639,6 +641,110 @@ function EvolucaoCard({ evolucao }) {
   );
 }
 
+// --------------------------------------------------------------- ResumoAnoCard
+function ResumoAnoCard({ resumo }) {
+  // Só faz sentido com 2+ meses de dado no ano (senão é igual ao "Lucro do mês")
+  if (!resumo || resumo.mesesComDado < 2) return null;
+
+  const isPositive = resumo.totalLucro >= 0;
+
+  const AccTooltip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    const it = payload[0].payload;
+    return (
+      <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg px-3 py-2 text-xs">
+        <p className="font-bold text-[#1b1c1d] capitalize mb-1">{it.mes}</p>
+        <p className="text-[#4a3d3d]">
+          Acumulado:{" "}
+          <span className="font-mono-numbers font-medium text-[#16a34a]">{formatBRL(it.acumulado)}</span>
+        </p>
+        <p className="text-[#4a3d3d]">
+          No mês:{" "}
+          <span className={`font-mono-numbers font-medium ${it.lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+            {formatBRL(it.lucro)}
+          </span>
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="bg-gradient-to-br from-[#fbf9fa] to-white rounded-2xl shadow-sm border border-[#d4af37]/25 overflow-hidden">
+      <CardContent className="p-5 md:p-6">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-[#d4af37]/15 rounded-lg">
+              <MaterialIcon icon="savings" size={16} className="text-[#775a19]" />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+              Acumulado em {resumo.year}
+            </h3>
+          </div>
+          <span className="text-[11px] text-[#4a3d3d]/70 capitalize">
+            jan → {resumo.ultimoMes}
+          </span>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs text-[#4a3d3d] uppercase tracking-widest font-plus-jakarta mb-1">
+              Lucro do ano
+            </p>
+            <div className={`text-3xl md:text-4xl font-bold font-mono-numbers tracking-tight ${
+              isPositive ? "text-[#16a34a]" : "text-[#dc2626]"
+            }`}>
+              {formatBRL(resumo.totalLucro)}
+            </div>
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-2.5 text-xs text-[#4a3d3d]">
+              <span className="flex items-center gap-1">
+                <MaterialIcon icon="emoji_events" size={13} className="text-[#d4af37]" />
+                Melhor mês:{" "}
+                <span className="font-semibold text-[#1b1c1d] capitalize">{resumo.melhor.mes}</span>{" "}
+                ({formatBRLCompact(resumo.melhor.lucro)})
+              </span>
+              <span className="flex items-center gap-1">
+                <MaterialIcon icon="check_circle" size={13} className="text-[#16a34a]" />
+                {resumo.mesesAzul}/{resumo.mesesComDado} meses no azul
+              </span>
+              <span className="flex items-center gap-1">
+                <MaterialIcon icon="calculate" size={13} className="text-[#4a3d3d]/60" />
+                Média {formatBRLCompact(resumo.mediaMes)}/mês
+              </span>
+            </div>
+          </div>
+
+          {/* Mini-curva acumulada — sensação de "construindo ao longo do ano" */}
+          <div className="h-24 w-full md:w-64 shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={resumo.cumulativo} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
+                <defs>
+                  <linearGradient id="accFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#16a34a" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="mes" hide />
+                <YAxis hide domain={[(min) => Math.min(0, min), (max) => Math.max(0, max)]} />
+                <Tooltip content={<AccTooltip />} cursor={{ stroke: "#16a34a", strokeOpacity: 0.25 }} />
+                <Area
+                  type="monotone"
+                  dataKey="acumulado"
+                  baseValue={0}
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                  fill="url(#accFill)"
+                  dot={false}
+                  activeDot={{ r: 4, fill: "#15803d" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // --------------------------------------------------------------- main TabResultado
 export default function TabResultado({ franchiseId, currentUser, contacts = [] }) {
   const navigate = useNavigate();
@@ -806,6 +912,47 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
     return hasData >= 2 ? data : [];
   }, [sales, saleItems, expenses, selectedMonth]);
 
+  // Acumulado no ano: jan → mês selecionado (mesmo ano). Soma o lucro de caixa
+  // mês a mês para mostrar quanto a franquia já construiu no ano + curva cumulativa.
+  const anoResumo = useMemo(() => {
+    const year = selectedMonth.getFullYear();
+    const monthIdx = selectedMonth.getMonth(); // 0..11
+    const meses = [];
+    for (let m = 0; m <= monthIdx; m++) {
+      const d = new Date(year, m, 1);
+      const mSales = sales.filter(s => isInMonth(s.sale_date || s.created_at, d));
+      const ids = new Set(mSales.map(s => s.id));
+      const mItems = saleItems.filter(si => ids.has(si.sale_id));
+      const mExp = expenses.filter(e => isInMonth(e.expense_date || e.created_at, d));
+      const p = calculatePnL(mSales, mItems, mExp);
+      meses.push({
+        mes: format(d, "MMM", { locale: ptBR }).replace(".", ""),
+        lucro: p.lucroCaixa,
+        temDado: mSales.length > 0 || mExp.length > 0,
+      });
+    }
+    const comDado = meses.filter(m => m.temDado);
+    const totalLucro = meses.reduce((s, m) => s + m.lucro, 0);
+    const mesesAzul = comDado.filter(m => m.lucro > 0).length;
+    const melhor = comDado.reduce((b, m) => (m.lucro > (b?.lucro ?? -Infinity) ? m : b), null);
+    const mediaMes = comDado.length ? totalLucro / comDado.length : 0;
+    let acc = 0;
+    const cumulativo = meses.map(m => {
+      acc += m.lucro;
+      return { mes: m.mes, acumulado: acc, lucro: m.lucro };
+    });
+    return {
+      year,
+      totalLucro,
+      mesesAzul,
+      mesesComDado: comDado.length,
+      melhor: melhor || { mes: meses[meses.length - 1]?.mes ?? "", lucro: 0 },
+      mediaMes,
+      cumulativo,
+      ultimoMes: meses[meses.length - 1]?.mes ?? "",
+    };
+  }, [sales, saleItems, expenses, selectedMonth]);
+
   // ─── Handlers
   const handlePrevMonth = () => setSelectedMonth(m => subMonths(m, 1));
   const handleNextMonth = () => {
@@ -889,6 +1036,8 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
         </Card>
       ) : (
         <>
+          <ResumoAnoCard resumo={anoResumo} />
+
           <ContextualBanner estado={estadoFinanceiro} />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
