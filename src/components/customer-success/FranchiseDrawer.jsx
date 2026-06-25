@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatBRL";
+import { marketingLiquid } from "@/lib/franchiseUtils";
 import { addCsWorklistEvent, upsertCsWorklist, getCsWorklistEvents } from "@/entities/all";
 import { TIER, SEV } from "@/components/customer-success/tierConfig";
 
@@ -100,6 +101,8 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
   const t = row ? (row.is_standout ? "standout" : row.tier) : "healthy";
   const deltaStr = row?.revenue_delta_pct != null
     ? `${row.revenue_delta_pct > 0 ? "+" : ""}${row.revenue_delta_pct}%` : null;
+  const mktCur = marketingLiquid(row?.marketing_amount_current || 0);
+  const mktPrev = marketingLiquid(row?.marketing_amount_prev || 0);
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose?.(); }}>
@@ -147,6 +150,9 @@ export default function FranchiseDrawer({ row, userId, onClose, onChanged }) {
                 <Metric icon="smart_toy" label="Conversão do bot" value={row.bot_conversion_30d != null ? `${row.bot_conversion_30d}%` : "—"} />
                 <Metric icon="credit_card" label="Assinatura R$150" value={row.subscription_overdue ? "Atrasada" : "Em dia"}
                   tone={row.subscription_overdue ? "text-red-600" : "text-green-600"} />
+                <Metric icon="campaign" label="Marketing 30d" value={formatBRL(mktCur)}
+                  hint={`antes: ${formatBRL(mktPrev)}`}
+                  tone={mktCur < mktPrev ? "text-red-600" : mktCur > 0 ? "text-green-600" : undefined} />
               </div>
             </div>
 

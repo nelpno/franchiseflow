@@ -3,6 +3,8 @@
 -- cujo guard is_admin_or_manager() excluiria customer_success).
 -- Limiares calibrados 2026-06-20 (pós-1ª distribuição 49/56): stopped_buying crítico só >=30d,
 -- engagement_low >=30d, marketing_unpaid só 2 meses seguidos, guardas em freq/mix. Provisórios — Celso afina em 60d.
+-- DROP necessário: adicionar colunas à RETURNS TABLE muda o tipo de retorno (CREATE OR REPLACE não basta).
+drop function if exists public.get_franchise_health_signals(timestamptz);
 create or replace function public.get_franchise_health_signals(p_since timestamptz default now()-interval '60 days')
 returns table(
   franchise_id text, franchise_name text, city text, state_uf text,
@@ -15,6 +17,7 @@ returns table(
   bot_conversion_30d numeric, bot_conversion_prev numeric,
   growth_pct numeric, network_median_growth numeric,
   subscription_overdue boolean, marketing_paid_current_month boolean,
+  marketing_amount_current numeric, marketing_amount_prev numeric,
   days_since_login int,
   flags jsonb, tier text, is_standout boolean
 )
@@ -79,7 +82,9 @@ mkt_target as (
 mkt as (
   select fr.fid,
     exists(select 1 from marketing_payments mp, mkt_target t where mp.franchise_id=fr.fid and mp.status='confirmed' and mp.reference_month=t.ym) as paid_cur,
-    exists(select 1 from marketing_payments mp, mkt_target t where mp.franchise_id=fr.fid and mp.status='confirmed' and mp.reference_month=t.ym_prev) as paid_prev
+    exists(select 1 from marketing_payments mp, mkt_target t where mp.franchise_id=fr.fid and mp.status='confirmed' and mp.reference_month=t.ym_prev) as paid_prev,
+    coalesce((select sum(mp.amount) from marketing_payments mp, mkt_target t where mp.franchise_id=fr.fid and mp.status='confirmed' and mp.reference_month=t.ym),0) as amt_cur,
+    coalesce((select sum(mp.amount) from marketing_payments mp, mkt_target t where mp.franchise_id=fr.fid and mp.status='confirmed' and mp.reference_month=t.ym_prev),0) as amt_prev
   from fr
 ),
 login as (
@@ -110,6 +115,7 @@ metrics as (
     coalesce(stock.zeroed,0) as zeroed, coalesce(stock.keytot,0) as keytot,
     coalesce(sub.overdue,false) as overdue,
     coalesce(mkt.paid_cur,false) as mkt_paid, coalesce(mkt.paid_prev,false) as mkt_paid_prev,
+    coalesce(mkt.amt_cur,0) as mkt_amt_cur, coalesce(mkt.amt_prev,0) as mkt_amt_prev,
     case when login.last_login is not null then greatest(0,(current_date - login.last_login::date)) end as d_login,
     case when botsum.t30>0 then round(100.0*botsum.c30/botsum.t30,1) end as conv30,
     case when botsum.tprev>0 then round(100.0*botsum.cprev/botsum.tprev,1) end as convprev,
@@ -162,7 +168,9 @@ select m.fid, m.name, m.city, m.state_uf,
   m.cnt30, m.cntprev, m.mix30, m.mixprev,
   m.conv30, m.convprev,
   gr.g, net.med,
-  m.overdue, m.mkt_paid, m.d_login,
+  m.overdue, m.mkt_paid,
+  m.mkt_amt_cur, m.mkt_amt_prev,
+  m.d_login,
   coalesce(fa.flags,'[]'::jsonb) as flags,
   case when m.d_sale is null then 'dormant'
        when coalesce(fa.has_high_churn,false) then 'critical'
