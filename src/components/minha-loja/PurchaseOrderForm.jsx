@@ -73,10 +73,16 @@ export default function PurchaseOrderForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
-  // Standard products = those with cost_price > 0
+  // Produtos da fábrica = catálogo padrão da rede (created_by_franchisee === false) com custo > 0.
+  // Itens extras criados pela própria franquia (created_by_franchisee === true) NÃO podem ser
+  // pedidos à fábrica — o controle desses é da unidade. Antes o filtro usava só cost_price > 0,
+  // o que deixava itens extras com custo (queijo ralado, salsaretti, molhos próprios) vazarem pro pedido.
   const standardProducts = useMemo(() => {
     return (inventoryItems || []).filter(
-      (item) => item.cost_price && parseFloat(item.cost_price) > 0
+      (item) =>
+        item.created_by_franchisee !== true &&
+        item.cost_price &&
+        parseFloat(item.cost_price) > 0
     );
   }, [inventoryItems]);
 

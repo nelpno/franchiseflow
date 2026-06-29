@@ -56,8 +56,14 @@ export default function TabReposicao({
   const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
   const suggestions = useMemo(() => {
+    // Só itens do catálogo padrão da fábrica — extras da franquia (created_by_franchisee) não
+    // são pedidos à fábrica, então não fazem parte da sugestão de reposição.
     const items = (inventoryItems || []).filter(
-      (item) => item.active !== false && item.cost_price && parseFloat(item.cost_price) > 0
+      (item) =>
+        item.created_by_franchisee !== true &&
+        item.active !== false &&
+        item.cost_price &&
+        parseFloat(item.cost_price) > 0
     );
     return items
       .map((item) => {
@@ -106,11 +112,13 @@ export default function TabReposicao({
     setShowOrderDialog(true);
   };
 
-  // Items below minimum stock (critical)
+  // Items below minimum stock (critical) — só catálogo padrão da fábrica.
+  // Itens extras da franquia (created_by_franchisee) não entram no alerta de reposição da fábrica.
   const criticalItems = useMemo(() => {
     return (inventoryItems || [])
       .filter(item => {
         if (item.active === false) return false;
+        if (item.created_by_franchisee === true) return false;
         const qty = item.quantity || 0;
         const min = item.min_stock || 0;
         return min > 0 && qty < min;
