@@ -17,6 +17,8 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
+import { getItemWeightKg, formatWeightKg } from "@/lib/productWeight";
+import { getProductWeightMap } from "@/entities/all";
 
 const formatBRL = (value) => {
   if (value === null || value === undefined || value === "") return "—";
@@ -72,6 +74,16 @@ export default function PurchaseOrderForm({
   const [notes, setNotes] = useState(draft.current?.notes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
+
+  // Mapa de pesos (tabela-mestra). Falha silenciosa cai no parser do nome.
+  const [weightMap, setWeightMap] = useState({});
+  useEffect(() => {
+    let alive = true;
+    getProductWeightMap()
+      .then((m) => { if (alive) setWeightMap(m); })
+      .catch(() => { /* sem mapa: getItemWeightKg usa o parser do nome */ });
+    return () => { alive = false; };
+  }, []);
 
   // Produtos da fábrica = catálogo padrão da rede (created_by_franchisee === false) com custo > 0.
   // Itens extras criados pela própria franquia (created_by_franchisee === true) NÃO podem ser
@@ -180,6 +192,19 @@ export default function PurchaseOrderForm({
     return standardProducts.reduce((sum, item) => sum + getLineTotal(item), 0);
   }, [standardProducts, quantities]);
 
+  // Peso total = Σ(qtd × peso unit). Item sem peso conta 0 e é sinalizado.
+  const { grandWeight, missingWeightCount } = useMemo(() => {
+    let total = 0, missing = 0;
+    standardProducts.forEach((item) => {
+      const qty = quantities[item.id] || 0;
+      if (qty <= 0) return;
+      const w = getItemWeightKg(item, weightMap);
+      if (w == null) { missing++; return; }
+      total += qty * w;
+    });
+    return { grandWeight: total, missingWeightCount: missing };
+  }, [standardProducts, quantities, weightMap]);
+
   const totalItems = useMemo(() =>
     standardProducts.filter((item) => (quantities[item.id] || 0) > 0).length,
     [standardProducts, quantities]
@@ -210,6 +235,7 @@ export default function PurchaseOrderForm({
         franchise_id: franchiseId,
         status: "pendente",
         total_amount: grandTotal,
+        total_weight_kg: grandWeight,
         notes: notes.trim() || null,
         ordered_at: new Date().toISOString(),
       });
@@ -503,6 +529,16 @@ export default function PurchaseOrderForm({
           {totalItems > 0 && (
             <span className="text-xs text-[#4a3d3d]">
               {totalItems} {totalItems === 1 ? "produto" : "produtos"} · {totalUnits} un.
+            </span>
+          )}
+          {grandWeight > 0 && (
+            <p className="text-sm font-bold text-[#1b1c1d] mt-1">
+              Peso total: {formatWeightKg(grandWeight)}
+            </p>
+          )}
+          {missingWeightCount > 0 && (
+            <span className="text-xs text-[#b91c1c]">
+              {missingWeightCount} {missingWeightCount === 1 ? "item sem peso cadastrado" : "itens sem peso cadastrado"}
             </span>
           )}
         </div>
