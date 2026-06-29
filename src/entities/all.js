@@ -274,6 +274,18 @@ export async function getStandardProductCatalog() {
   return data || [];
 }
 
+// Mapa { [product_name]: weight_kg } da tabela-mestra de pesos.
+// Leve (~33 linhas). Usado pelo form de reposição e pela geração de fichas PDF.
+export async function getProductWeightMap({ signal } = {}) {
+  let query = supabase.from("product_weights").select("product_name, weight_kg");
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query;
+  if (error) throw error;
+  const map = {};
+  (data || []).forEach((row) => { map[row.product_name] = Number(row.weight_kg); });
+  return map;
+}
+
 export async function addDefaultProduct({ name, category, unit, costPrice, minStock }) {
   const { data, error } = await supabase.rpc('add_default_product', {
     p_name: name,
