@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseDateOnly } from "./dateOnly";
+import { getItemWeightKg, formatWeightKg } from "./productWeight";
 
 const GROUP_ORDER = [
   "Canelone", "Conchiglione", "Massa", "Nhoque",
@@ -66,7 +67,7 @@ function getDisplayName(productName) {
  * Renders a single picking sheet page onto the jsPDF doc.
  * Returns the doc (for chaining).
  */
-function renderPickingPage(doc, autoTable, { order, items, franchiseName, editedQuantities }) {
+function renderPickingPage(doc, autoTable, { order, items, franchiseName, editedQuantities, weightMap }) {
   const pw = 210;
   const m = 8;
   const usable = pw - m * 2;
@@ -113,6 +114,7 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, edited
   let totalUnits = 0;
   let totalItems = 0;
   let totalValue = 0;
+  let totalWeight = 0;
 
   groups.forEach((group) => {
     tableBody.push([
@@ -123,6 +125,8 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, edited
       totalItems++;
       totalUnits += item.finalQty;
       totalValue += item.finalQty * Number(item.unit_price || 0);
+      const w = getItemWeightKg(item, weightMap);
+      if (w != null) totalWeight += item.finalQty * w;
       tableBody.push([
         "",
         getDisplayName(item.product_name) || "---",
@@ -190,6 +194,7 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, edited
   doc.setTextColor(40, 40, 40);
   doc.setFont("helvetica", "normal");
   let summary = `${totalItems} itens  |  ${totalUnits} un  |  ${fmtBRL(totalValue)}`;
+  if (totalWeight > 0) summary += `  |  Peso total: ${formatWeightKg(totalWeight)}`;
   if (order.freight_cost && Number(order.freight_cost) > 0) {
     summary += `  |  Frete: ${fmtBRL(order.freight_cost)}  |  Total: ${fmtBRL(totalValue + Number(order.freight_cost))}`;
   }
@@ -226,7 +231,7 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, edited
 /**
  * Renders the consolidated summary page for bulk picking sheets.
  */
-function renderSummaryPage(doc, autoTable, ordersWithItems) {
+function renderSummaryPage(doc, autoTable, ordersWithItems, weightMap) {
   const pw = 210;
   const m = 8;
   const usable = pw - m * 2;
@@ -288,6 +293,7 @@ function renderSummaryPage(doc, autoTable, ordersWithItems) {
   let grandTotalUnits = 0;
   let grandTotalItems = 0;
   let grandTotalValue = 0;
+  let grandTotalWeight = 0;
 
   groups.forEach((group) => {
     tableBody.push([
@@ -299,6 +305,8 @@ function renderSummaryPage(doc, autoTable, ordersWithItems) {
       grandTotalUnits += item.finalQty;
       const lineValue = item.finalQty * Number(item.unit_price || 0);
       grandTotalValue += lineValue;
+      const w = getItemWeightKg(item, weightMap);
+      if (w != null) grandTotalWeight += item.finalQty * w;
       tableBody.push([
         getDisplayName(item.product_name) || "---",
         String(item.finalQty),
@@ -352,6 +360,15 @@ function renderSummaryPage(doc, autoTable, ordersWithItems) {
   doc.setFont("helvetica", "bold");
   doc.text(`TOTAL:  ${grandTotalItems} produtos  |  ${grandTotalUnits} unidades  |  ${fmtBRL(grandTotalValue)}`, m, fy);
 
+  if (grandTotalWeight > 0) {
+    fy += 5;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(185, 28, 28);
+    doc.text(`PESO TOTAL DA CARGA: ${formatWeightKg(grandTotalWeight)}`, m, fy);
+    doc.setTextColor(30, 30, 30);
+  }
+
   // Freight totals
   const totalFreight = ordersWithItems.reduce((sum, { order }) => sum + Number(order.freight_cost || 0), 0);
   if (totalFreight > 0) {
@@ -375,11 +392,11 @@ async function loadPdfLibs() {
 /**
  * Compact A4 picking sheet — designed to fit on a single page.
  */
-export async function generatePickingSheet({ order, items, franchiseName, editedQuantities }) {
+export async function generatePickingSheet({ order, items, franchiseName, editedQuantities, weightMap }) {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  renderPickingPage(doc, autoTable, { order, items, franchiseName, editedQuantities });
+  renderPickingPage(doc, autoTable, { order, items, franchiseName, editedQuantities, weightMap });
 
   const dateStr = format(new Date(), "yyyyMMdd");
   const shortId = order.id.slice(0, 8).toUpperCase();
@@ -389,18 +406,18 @@ export async function generatePickingSheet({ order, items, franchiseName, edited
 /**
  * Bulk picking sheets — one page per order + consolidated summary page.
  */
-export async function generateBulkPickingSheet(ordersWithItems) {
+export async function generateBulkPickingSheet(ordersWithItems, weightMap) {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   ordersWithItems.forEach((data, idx) => {
     if (idx > 0) doc.addPage();
-    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName });
+    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName, weightMap });
   });
 
   // Consolidated summary as last page
   doc.addPage();
-  renderSummaryPage(doc, autoTable, ordersWithItems);
+  renderSummaryPage(doc, autoTable, ordersWithItems, weightMap);
 
   const dateStr = format(new Date(), "yyyyMMdd");
   doc.save(`Fichas_Separacao_${dateStr}.pdf`);

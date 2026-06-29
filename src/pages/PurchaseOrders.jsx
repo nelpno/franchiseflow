@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct, getProductWeightMap } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
@@ -98,6 +98,16 @@ export default function PurchaseOrders() {
   const currentLoadRef = useRef(null);
   // Bulk PDF state
   const [generatingBulkPdf, setGeneratingBulkPdf] = useState(false);
+
+  // Mapa de pesos pras fichas de separação. Falha silenciosa = fallback no parser.
+  const [weightMap, setWeightMap] = useState({});
+  useEffect(() => {
+    let alive = true;
+    getProductWeightMap()
+      .then((m) => { if (alive) setWeightMap(m); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // Delete state
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -578,7 +588,7 @@ export default function PurchaseOrders() {
         })
       );
       const { generateBulkPickingSheet } = await import("@/lib/pickingSheetPdf");
-      await generateBulkPickingSheet(ordersWithItems);
+      await generateBulkPickingSheet(ordersWithItems, weightMap);
       toast.success(`${ordersWithItems.length} fichas geradas!`, { id: toastId });
     } catch (err) {
       console.error("Erro ao gerar fichas:", err);
@@ -1243,6 +1253,7 @@ export default function PurchaseOrders() {
                           items: orderItems,
                           franchiseName: getFranchiseName(selectedOrder.franchise_id),
                           editedQuantities,
+                          weightMap,
                         });
                         toast.success("Ficha de separacao gerada!");
                       } catch (err) {
