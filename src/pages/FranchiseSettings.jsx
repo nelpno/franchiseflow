@@ -42,6 +42,8 @@ const initialFormData = {
   has_delivery: true,
   has_pickup: false,
   pickup_requires_scheduling: true,
+  pickup_is_store: false,
+  pickup_address: '',
   accepts_reservation_without_payment: false,
   charges_card_fee_to_customer: false,
   delivery_method: '',
@@ -65,6 +67,11 @@ const initialFormData = {
 
 const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
 const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
+
+const PICKUP_TYPES = [
+  { value: 'simple', label: '🏠 Retirada simples', description: 'Cliente combina e busca com você (sem loja).' },
+  { value: 'store', label: '🏪 Loja / ponto físico', description: 'Você tem um ponto comercial. O bot fala "nossa loja" e informa o endereço.' },
+];
 
 function FieldHint({ text }) {
   return (
@@ -92,6 +99,11 @@ function FranchiseSettingsContent() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedConfigId, setSelectedConfigId] = useState(null);
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [pickupAddrMode, setPickupAddrMode] = useState('same');
+  useEffect(() => {
+    setPickupAddrMode(formData.pickup_address ? 'other' : 'same');
+  }, [editingConfig?.id, formData.pickup_is_store]); // eslint-disable-line react-hooks/exhaustive-deps
+  const cadastroAddress = [formData.street_address, formData.neighborhood, formData.city].filter(Boolean).join(', ');
 
   const updateConfigurationStatus = useCallback((configId, updates) => {
     setConfigurations((prev) => prev.map((config) =>
@@ -222,6 +234,8 @@ function FranchiseSettingsContent() {
       pickup_schedule: config.pickup_schedule || [],
       has_custom_pickup_hours: config.has_custom_pickup_hours ?? false,
       pickup_requires_scheduling: config.pickup_requires_scheduling ?? true,
+      pickup_is_store: config.pickup_is_store ?? false,
+      pickup_address: config.pickup_address || '',
       accepts_reservation_without_payment: config.accepts_reservation_without_payment ?? false,
       charges_card_fee_to_customer: config.charges_card_fee_to_customer ?? false,
       catalog_image_url: config.catalog_image_url || '',
@@ -316,6 +330,9 @@ function FranchiseSettingsContent() {
     if (finalData.delivery_method === 'third_party' && Array.isArray(finalData.payment_delivery)) {
       finalData.payment_delivery = finalData.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash' && p !== 'meal_voucher');
     }
+
+    // Coerência: sem loja não persiste endereço de loja órfão
+    if (!finalData.pickup_is_store) finalData.pickup_address = '';
 
     try {
       if (editingConfig) {
@@ -730,6 +747,45 @@ function FranchiseSettingsContent() {
                 checked={formData.has_pickup ?? false}
                 onChange={(val) => handleInputChange('has_pickup', val)}
               />
+              {(formData.has_pickup ?? false) && (
+                <div className="ml-4 mt-2 space-y-3">
+                  <label className={labelClass}>Como funciona a sua retirada?</label>
+                  <RadioCards
+                    options={PICKUP_TYPES}
+                    value={formData.pickup_is_store ? 'store' : 'simple'}
+                    onChange={(val) => {
+                      const isStore = val === 'store';
+                      handleInputChange('pickup_is_store', isStore);
+                      if (!isStore) { handleInputChange('pickup_address', ''); setPickupAddrMode('same'); }
+                    }}
+                  />
+                  {(formData.pickup_is_store ?? false) && (
+                    <div className="space-y-2">
+                      <label className={labelClass}>Endereço da loja</label>
+                      <RadioCards
+                        options={[
+                          { value: 'same', label: 'Mesmo do cadastro', description: cadastroAddress || 'Preencha o endereço no passo "Sua Unidade"' },
+                          { value: 'other', label: 'Outro endereço', description: 'A loja fica em outro lugar.' },
+                        ]}
+                        value={pickupAddrMode}
+                        onChange={(val) => {
+                          setPickupAddrMode(val);
+                          if (val === 'same') handleInputChange('pickup_address', '');
+                        }}
+                      />
+                      {pickupAddrMode === 'other' && (
+                        <input className={inputClass} type="text" value={formData.pickup_address}
+                          onChange={(e) => handleInputChange('pickup_address', e.target.value)}
+                          placeholder="Ex: Av. Brasil, 500 - Centro" />
+                      )}
+                      <p className="text-[11px] text-[#4a3d3d]/70 mt-1 flex items-start gap-1">
+                        <MaterialIcon icon="chat" size={12} className="mt-0.5 shrink-0" />
+                        <span>O bot vai dizer: "Você pode retirar na nossa loja: {(pickupAddrMode === 'other' ? formData.pickup_address : cadastroAddress) || '<endereço do cadastro>'}"</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
               {(formData.has_pickup ?? false) && (
                 <div className="ml-4 mt-2 mb-3">
                   <ToggleCard
