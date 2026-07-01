@@ -377,6 +377,74 @@ export async function updateCsWorklistEventNote(eventId, note) {
   return true;
 }
 
+// ---- Mural CS v2 (cs_tasks) ----
+export async function getCsTasks({ includeArchived = false, signal } = {}) {
+  let query = supabase.from('cs_tasks').select('*').order('moved_to_column_at', { ascending: false });
+  if (!includeArchived) query = query.is('archived_at', null);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createCsTask(payload, userId) {
+  const { data, error } = await withTimeout(
+    supabase.from('cs_tasks').insert({ ...payload, created_by: userId ?? null }).select().single(),
+    30000,
+  );
+  if (error) throw error;
+  return data;
+}
+
+export async function updateCsTask(taskId, patch) {
+  const { data, error } = await withTimeout(
+    supabase.from('cs_tasks').update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', taskId).select().single(),
+    30000,
+  );
+  if (error) throw error;
+  return data;
+}
+
+export async function moveCsTask(taskId, column, userId, franchiseId = null) {
+  const nowIso = new Date().toISOString();
+  const patch = { column_status: column, moved_to_column_at: nowIso, updated_at: nowIso };
+  if (column === 'feito') patch.resolved_at = nowIso;
+  const { data, error } = await withTimeout(
+    supabase.from('cs_tasks').update(patch).eq('id', taskId).select().single(),
+    30000,
+  );
+  if (error) throw error;
+  // destino 'feito' registra 'resolve' (semântica do histórico); demais = 'move'
+  await addCsTaskEvent(taskId, column === 'feito' ? 'resolve' : 'move', null, userId, data?.franchise_id ?? franchiseId);
+  return data;
+}
+
+export async function getCsTaskEvents(taskId, { signal } = {}) {
+  let query = supabase.from('cs_worklist_events').select('*')
+    .eq('task_id', taskId).order('created_at', { ascending: false });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function addCsTaskEvent(taskId, eventType, note, userId, franchiseId = null) {
+  const { data, error } = await withTimeout(
+    supabase.from('cs_worklist_events')
+      .insert({ task_id: taskId, franchise_id: franchiseId, event_type: eventType, note: note || null, created_by: userId ?? null })
+      .select().single(),
+    30000,
+  );
+  if (error) throw error;
+  return data;
+}
+
+export async function reconcileCsAutoTasks() {
+  const { error } = await withTimeout(supabase.rpc('reconcile_cs_auto_tasks'), 30000);
+  if (error) throw error;
+}
+
 // User é especial - tem método .me() além dos métodos padrão
 export const User = {
   ...createEntity('profiles'),
