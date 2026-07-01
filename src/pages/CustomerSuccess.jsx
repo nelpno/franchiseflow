@@ -1,214 +1,176 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { toast } from "sonner";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
-import { getFranchiseHealthSignals, getCsWorklist } from "@/entities/all";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { getFranchiseHealthSignals, getCsTasks, moveCsTask, reconcileCsAutoTasks } from "@/entities/all";
 import FranchiseDrawer from "@/components/customer-success/FranchiseDrawer";
-import { TIER, SEV } from "@/components/customer-success/tierConfig";
-
-const STATUS_LABEL = {
-  a_contatar: "A contatar",
-  contatado: "Contatado",
-  reuniao_marcada: "Reunião marcada",
-  resolvido: "Resolvido",
-};
-
-function effectiveTier(row) {
-  return row.is_standout ? "standout" : row.tier;
-}
-
-// Suprime alertas leves após contato; crítico NUNCA é suprimido (reabre sozinho)
-function computeSuppressed(row, wl) {
-  if (!wl || row.tier === "critical") return false;
-  if (wl.status === "resolvido") return true;
-  if ((wl.status === "contatado" || wl.status === "reuniao_marcada") && wl.last_contact_at) {
-    const days = (Date.now() - new Date(wl.last_contact_at).getTime()) / 86400000;
-    return days < 7;
-  }
-  return false;
-}
-
-const FILTERS = [
-  { key: "alertas", label: "Alertas", icon: "notifications_active" },
-  { key: "critical", label: "🔴 Crítico" },
-  { key: "attention", label: "🟡 Atenção" },
-  { key: "standout", label: "🏆 Destaque" },
-  { key: "healthy", label: "🟢 Saudável" },
-  { key: "dormant", label: "⚪ Dormente" },
-  { key: "todas", label: "Todas" },
-];
+import CsBoard from "@/components/customer-success/CsBoard";
+import CsRadarPanel from "@/components/customer-success/CsRadarPanel";
+import QuickAddCard from "@/components/customer-success/QuickAddCard";
 
 export default function CustomerSuccess() {
   const { user } = useAuth();
-  const [rows, setRows] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("alertas");
-  const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(null);
+  const [tab, setTab] = useState("mural");
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [previewRow, setPreviewRow] = useState(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddFranchise, setQuickAddFranchise] = useState("");
   const mountedRef = useRef(true);
 
   useEffect(() => () => { mountedRef.current = false; }, []);
 
+  // Recarrega só os cartões (barato) — usado após ações e no polling de visibilidade
+  const reloadTasks = useCallback(async () => {
+    try {
+      const t = await getCsTasks();
+      if (mountedRef.current) setTasks(t);
+    } catch (e) {
+      console.error("[CustomerSuccess] reloadTasks", e);
+    }
+  }, []);
+
+  // Carga completa: reconcilia os automáticos, depois puxa cartões + saúde da rede
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [signals, worklist] = await Promise.all([getFranchiseHealthSignals(), getCsWorklist()]);
-      const wlMap = Object.fromEntries((worklist || []).map((w) => [w.franchise_id, w]));
-      const merged = (signals || []).map((s) => {
-        const wl = wlMap[s.franchise_id] || null;
-        return { ...s, wl, suppressed: computeSuppressed(s, wl), status: wl?.status || "a_contatar" };
-      });
-      if (mountedRef.current) setRows(merged);
+      try { await reconcileCsAutoTasks(); } catch (e) { console.warn("[CustomerSuccess] reconcile", e); }
+      const [t, s] = await Promise.all([getCsTasks(), getFranchiseHealthSignals()]);
+      if (mountedRef.current) { setTasks(t); setSignals(s); }
     } catch (e) {
-      console.error("[CustomerSuccess] load failed", e);
-      if (mountedRef.current) setError("Não foi possível carregar a saúde da rede. Tente novamente.");
+      console.error("[CustomerSuccess] load", e);
+      if (mountedRef.current) setError("Não foi possível carregar o mural. Tente novamente.");
     } finally {
       if (mountedRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useVisibilityPolling(reloadTasks, 300000);
 
-  const counts = useMemo(() => {
-    const c = { alertas: 0, critical: 0, attention: 0, standout: 0, healthy: 0, dormant: 0, todas: rows.length };
-    for (const r of rows) {
-      const t = effectiveTier(r);
-      c[t] = (c[t] || 0) + 1;
-      if ((r.tier === "critical" || r.tier === "attention") && !r.suppressed) c.alertas += 1;
+  const signalsByFranchise = useMemo(
+    () => Object.fromEntries((signals || []).map((s) => [s.franchise_id, s])),
+    [signals],
+  );
+
+  const openCardIds = useMemo(
+    () => new Set(tasks.filter((t) => t.franchise_id && t.column_status !== "feito").map((t) => t.franchise_id)),
+    [tasks],
+  );
+
+  const franchisesForAdd = useMemo(
+    () => (signals || [])
+      .map((s) => ({ franchise_id: s.franchise_id, franchise_name: s.franchise_name, city: s.city }))
+      .sort((a, b) => a.franchise_name.localeCompare(b.franchise_name)),
+    [signals],
+  );
+
+  // Move otimista (arrastar ou "mover para" no mobile), com rollback no erro
+  const onMoveTask = useCallback(async (task, col) => {
+    if (task.column_status === col) return;
+    const prev = tasks;
+    const nowIso = new Date().toISOString();
+    setTasks((ts) => ts.map((t) => (t.id === task.id
+      ? { ...t, column_status: col, moved_to_column_at: nowIso, ...(col === "feito" ? { resolved_at: nowIso } : {}) }
+      : t)));
+    try {
+      await moveCsTask(task.id, col, user?.id, task.franchise_id);
+    } catch (e) {
+      console.error("[CustomerSuccess] move", e);
+      toast.error(safeErrorMessage(e, "Não foi possível mover o cartão."));
+      if (mountedRef.current) setTasks(prev);
     }
-    return c;
-  }, [rows]);
+  }, [tasks, user?.id]);
 
-  const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    let list = rows.filter((r) => {
-      if (q && !(`${r.franchise_name} ${r.city || ""}`.toLowerCase().includes(q))) return false;
-      const t = effectiveTier(r);
-      if (filter === "todas") return true;
-      if (filter === "alertas") return (r.tier === "critical" || r.tier === "attention") && !r.suppressed;
-      return t === filter;
-    });
-    list.sort((a, b) => {
-      if (a.suppressed !== b.suppressed) return a.suppressed ? 1 : -1;
-      const ra = TIER[effectiveTier(a)].rank, rb = TIER[effectiveTier(b)].rank;
-      if (ra !== rb) return ra - rb;
-      return (b.flags?.length || 0) - (a.flags?.length || 0);
-    });
-    return list;
-  }, [rows, filter, search]);
+  const openTask = (task) => { setPreviewRow(null); setSelectedTask(task); };
+  const openPreview = (row) => { setSelectedTask(null); setPreviewRow(row); };
+  const closeDrawer = () => { setSelectedTask(null); setPreviewRow(null); };
+  const createCardFor = (row) => {
+    closeDrawer();
+    setQuickAddFranchise(row?.franchise_id || "");
+    setQuickAddOpen(true);
+  };
+
+  const drawerRow = selectedTask
+    ? (selectedTask.franchise_id ? signalsByFranchise[selectedTask.franchise_id] : null)
+    : previewRow;
 
   return (
     <div className="p-4 md:p-8 space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1b1c1d] flex items-center gap-2">
-          <MaterialIcon icon="monitor_heart" className="text-[#b91c1c]" /> Customer Success
-        </h1>
-        <p className="text-sm text-[#4a3d3d] mt-1">
-          Saúde da rede — quem precisa de atenção agora, por quê, e o que fazer.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1b1c1d] flex items-center gap-2">
+            <MaterialIcon icon="view_kanban" className="text-[#b91c1c]" /> Customer Success
+          </h1>
+          <p className="text-sm text-[#4a3d3d] mt-1">
+            O que precisa ser feito com cada franquia — arraste o cartão até o check.
+          </p>
+        </div>
+        {tab === "mural" && (
+          <Button size="sm" onClick={() => { setQuickAddFranchise(""); setQuickAddOpen(true); }}
+            className="bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1">
+            <MaterialIcon icon="add" size={16} /> Novo cartão
+          </Button>
+        )}
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+      {/* Abas Mural / Radar */}
+      <div className="flex gap-2">
+        {[{ key: "mural", label: "Mural", icon: "view_kanban" }, { key: "radar", label: "Radar da rede", icon: "radar" }].map((tb) => (
           <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
-              filter === f.key
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all flex items-center gap-1.5 ${
+              tab === tb.key
                 ? "bg-[#b91c1c] text-white border-[#b91c1c]"
                 : "bg-white text-[#4a3d3d] border-[#291715]/10 hover:border-[#b91c1c]/40"
             }`}
           >
-            {f.label}
-            {counts[f.key] != null && (
-              <span className={`ml-1.5 ${filter === f.key ? "opacity-90" : "text-[#8a7e7e]"}`}>
-                {counts[f.key]}
-              </span>
-            )}
+            <MaterialIcon icon={tb.icon} size={16} /> {tb.label}
           </button>
         ))}
       </div>
 
-      <Input
-        placeholder="Buscar por nome ou cidade…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
-
-      {/* Lista */}
       {loading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
         </div>
       ) : error ? (
         <div className="text-center py-12 text-[#4a3d3d]">
           <p>{error}</p>
           <button onClick={load} className="mt-3 text-[#b91c1c] font-semibold">Tentar novamente</button>
         </div>
-      ) : visible.length === 0 ? (
-        <div className="text-center py-16 text-[#8a7e7e]">
-          <MaterialIcon icon="check_circle" size={40} className="text-green-500 mb-2" />
-          <p>Nenhuma franquia neste filtro. 🎉</p>
-        </div>
+      ) : tab === "mural" ? (
+        <CsBoard tasks={tasks} signalsByFranchise={signalsByFranchise} onOpen={openTask} onMoveTask={onMoveTask} />
       ) : (
-        <div className="space-y-2">
-          {visible.map((r) => {
-            const t = effectiveTier(r);
-            return (
-              <button
-                key={r.franchise_id}
-                onClick={() => setSelected(r)}
-                className={`w-full text-left bg-white rounded-xl border border-[#291715]/5 shadow-sm hover:shadow-md transition-all p-4 flex items-start gap-3 ${
-                  r.suppressed ? "opacity-50" : ""
-                }`}
-              >
-                <span className="text-lg leading-none mt-0.5">{TIER[t].dot}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-[#1b1c1d] truncate">{r.franchise_name}</span>
-                    <span className="text-xs text-[#8a7e7e]">{r.city}</span>
-                    {r.status !== "a_contatar" && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#b91c1c]/10 text-[#b91c1c] font-medium">
-                        {STATUS_LABEL[r.status]}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {(r.flags || []).slice(0, 4).map((f, i) => (
-                      <span key={i} className={`text-[11px] px-1.5 py-0.5 rounded ${SEV[f.sev] || SEV.low}`}>
-                        {f.label}
-                      </span>
-                    ))}
-                    {(r.flags?.length || 0) > 4 && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
-                        +{r.flags.length - 4}
-                      </span>
-                    )}
-                    {t === "standout" && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
-                        Acima da média da rede
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <MaterialIcon icon="chevron_right" className="text-[#c4b8b8] shrink-0" />
-              </button>
-            );
-          })}
-        </div>
+        <CsRadarPanel rows={signals} openCardIds={openCardIds} onCreateCard={createCardFor} onOpenPreview={openPreview} />
       )}
 
       <FranchiseDrawer
-        row={selected}
+        task={selectedTask}
+        row={drawerRow}
         userId={user?.id}
         isAdmin={user?.role === "admin"}
-        onClose={() => setSelected(null)}
-        onChanged={load}
+        onClose={closeDrawer}
+        onChanged={reloadTasks}
+        onCreateCard={createCardFor}
+      />
+
+      <QuickAddCard
+        open={quickAddOpen}
+        onOpenChange={setQuickAddOpen}
+        userId={user?.id}
+        franchises={franchisesForAdd}
+        defaultFranchiseId={quickAddFranchise}
+        onCreated={() => { setTab("mural"); reloadTasks(); }}
       />
     </div>
   );
