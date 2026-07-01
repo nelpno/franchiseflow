@@ -12,3 +12,11 @@ export const SEV = {
   med: "bg-amber-100 text-amber-700",
   low: "bg-gray-100 text-gray-600",
 };
+
+// Colunas do mural (Kanban) do Customer Success
+export const COLUMN_CONFIG = [
+  { key: "a_fazer", label: "A fazer", accent: "border-t-[#b91c1c]" },
+  { key: "em_andamento", label: "Em andamento", accent: "border-t-amber-400" },
+  { key: "aguardando_retorno", label: "Aguardando retorno", accent: "border-t-blue-400" },
+  { key: "feito", label: "Feito", accent: "border-t-green-500" },
+];
