@@ -54,6 +54,11 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
     deliveryFee +
     (showCardFeeRow ? cardFeeAmount : 0);
 
+  // Endereço: usa o contato "vivo" quando carregado; senão cai no snapshot gravado na venda
+  // (contatos antigos ficam fora da janela de ~1000 carregados na tela de Vendas).
+  const receiptAddress = contact?.endereco || sale.customer_address;
+  const receiptNeighborhood = contact?.bairro || sale.customer_neighborhood;
+
   return (
     <div
       ref={ref}
@@ -161,11 +166,11 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             <span style={{ fontWeight: 600 }}>{contact?.nome || sale.customer_name}</span>
           </div>
         )}
-        {(contact?.endereco || contact?.bairro) && (
+        {(receiptAddress || receiptNeighborhood) && (
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span style={{ color: "#666", flexShrink: 0 }}>Endereço</span>
             <span style={{ textAlign: "right", fontWeight: 600 }}>
-              {[contact.endereco, contact.bairro].filter(Boolean).join(" — ")}
+              {[receiptAddress, receiptNeighborhood].filter(Boolean).join(" — ")}
             </span>
           </div>
         )}

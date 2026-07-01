@@ -382,7 +382,7 @@ export default function TabLancar({
 
       const blob = await generateReceiptImage(receiptRef.current);
       const dateStr = format(new Date(), "ddMMyyyy");
-      const clientName = contact?.nome?.replace(/\s+/g, "-") || "venda";
+      const clientName = (contact?.nome || sale.customer_name)?.replace(/\s+/g, "-") || "venda";
       const filename = `comprovante-${clientName}-${dateStr}.png`;
 
       await shareImage(blob, filename);
