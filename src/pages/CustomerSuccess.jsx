@@ -69,7 +69,7 @@ export default function CustomerSuccess() {
   const franchisesForAdd = useMemo(
     () => (signals || [])
       .map((s) => ({ franchise_id: s.franchise_id, franchise_name: s.franchise_name, city: s.city }))
-      .sort((a, b) => a.franchise_name.localeCompare(b.franchise_name)),
+      .sort((a, b) => (a.franchise_name || "").localeCompare(b.franchise_name || "")),
     [signals],
   );
 
