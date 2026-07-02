@@ -76,7 +76,14 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
     <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden">
       <CardContent className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" size="icon" onClick={onPrevMonth} className="rounded-xl">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onPrevMonth}
+            className="rounded-xl"
+            aria-label="Mês anterior"
+            title="Mês anterior"
+          >
             <MaterialIcon icon="chevron_left" size={22} className="text-[#4a3d3d]" />
           </Button>
           <div className="text-center">
@@ -93,6 +100,8 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
             onClick={onNextMonth}
             disabled={isCurrentMonth}
             className="rounded-xl"
+            aria-label="Próximo mês"
+            title="Próximo mês"
           >
             <MaterialIcon icon="chevron_right" size={22} className={isCurrentMonth ? "text-[#cac0c0]" : "text-[#4a3d3d]"} />
           </Button>
@@ -771,7 +780,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
           { franchise_id: franchiseId },
           null,
           null,
-          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at', fetchAll: true }
+          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, fee_passed_to_customer, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at', fetchAll: true }
         ),
         Expense.filter({ franchise_id: franchiseId }, null, null, { fetchAll: true }),
         InventoryItem.filter(
@@ -787,12 +796,22 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
       const get = (r) => r.status === "fulfilled" ? r.value : [];
       const salesData = get(results[0]);
 
-      // SaleItem em segundo round (depende dos sale IDs)
+      // SaleItem em segundo round (depende dos sale IDs).
+      // Chunk de 500 ids/request pra não estourar o limite de URL do PostgREST — o
+      // histórico inteiro da franquia num único .in() quebrava em franquia grande.
       const saleIds = salesData.map(s => s.id);
-      const saleItemsData = saleIds.length > 0
-        ? await SaleItem.filter({ sale_id: saleIds }, null, null,
-            { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name', fetchAll: true })
-        : [];
+      const saleItemsData = [];
+      const SALE_ID_CHUNK = 500;
+      for (let i = 0; i < saleIds.length; i += SALE_ID_CHUNK) {
+        const chunk = saleIds.slice(i, i + SALE_ID_CHUNK);
+        try {
+          const items = await SaleItem.filter({ sale_id: chunk }, null, null,
+            { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name', fetchAll: true });
+          saleItemsData.push(...items);
+        } catch (err) {
+          console.warn('SaleItems chunk falhou:', err);
+        }
+      }
 
       setSales(salesData);
       setSaleItems(saleItemsData);

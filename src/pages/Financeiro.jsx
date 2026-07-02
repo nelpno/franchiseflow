@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { format, subMonths, addMonths, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calculatePnL, isInMonth, groupByFranchiseAndMonth } from "@/lib/financialCalcs";
-import { safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
+import { safeErrorMessage, safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
 import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
@@ -53,7 +53,7 @@ export default function Financeiro() {
       const results = await Promise.allSettled([
         Franchise.list(),
         Sale.list("-sale_date", null, {
-          columns: "id, franchise_id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, payment_method, created_at",
+          columns: "id, franchise_id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, fee_passed_to_customer, payment_method, created_at",
           fetchAll: true,
           gte: { sale_date: cutoffWindow },
         }),
@@ -384,6 +384,8 @@ export default function Financeiro() {
             size="icon"
             onClick={handlePrevMonth}
             className="h-9 w-9 rounded-xl"
+            aria-label="Mês anterior"
+            title="Mês anterior"
           >
             <MaterialIcon icon="chevron_left" size={20} />
           </Button>
@@ -396,6 +398,8 @@ export default function Financeiro() {
             onClick={handleNextMonth}
             disabled={isCurrentMonth}
             className="h-9 w-9 rounded-xl"
+            aria-label="Próximo mês"
+            title="Próximo mês"
           >
             <MaterialIcon icon="chevron_right" size={20} />
           </Button>

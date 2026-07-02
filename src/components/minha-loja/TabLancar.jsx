@@ -12,6 +12,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
 import SaleReceipt from "./SaleReceipt";
@@ -20,6 +30,7 @@ import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format, startOfWeek, startOfMonth, endOfMonth, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -154,6 +165,7 @@ export default function TabLancar({
   const [expandedItems, setExpandedItems] = useState({});
   const [deletingSale, setDeletingSale] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCapiDeleteWarning, setShowCapiDeleteWarning] = useState(false);
   const [sharingSaleId, setSharingSaleId] = useState(null);
   const [printingSaleId, setPrintingSaleId] = useState(null);
   const receiptRef = useRef(null);
@@ -253,20 +265,24 @@ export default function TabLancar({
     if (!deletingSale) return;
     // Aviso quando venda ja enviou CAPI: deletar deixa Purchase fantasma no Meta
     if (deletingSale.capi_sent) {
-      const ok = window.confirm(
-        "Esta venda ja enviou conversao para o Meta Ads. Deletar agora deixa um registro fantasma na atribuicao do anuncio. Continuar mesmo assim?"
-      );
-      if (!ok) return;
+      setShowCapiDeleteWarning(true);
+      return;
     }
+    await performDeleteSale();
+  };
+
+  const performDeleteSale = async () => {
+    if (!deletingSale) return;
     setIsDeleting(true);
     try {
       await Sale.delete(deletingSale.id);
       toast.success("Venda excluída.");
       setDeletingSale(null);
+      setShowCapiDeleteWarning(false);
       onRefresh();
     } catch (error) {
       console.error("Erro ao excluir venda:", error);
-      toast.error("Erro ao excluir venda.");
+      toast.error(safeErrorMessage(error, "Erro ao excluir venda."));
     } finally {
       setIsDeleting(false);
     }
@@ -887,7 +903,7 @@ export default function TabLancar({
                           0
                         );
                         const totalRecebido = (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0);
-                        const taxaCartao = parseFloat(sale.card_fee_amount) || 0;
+                        const taxaCartao = sale.fee_passed_to_customer ? 0 : (parseFloat(sale.card_fee_amount) || 0);
                         const lucro = totalRecebido - custoTotal - taxaCartao;
                         const margem = totalRecebido > 0 ? (lucro / totalRecebido) * 100 : 0;
                         const isPositive = lucro >= 0;
@@ -1114,6 +1130,29 @@ export default function TabLancar({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* CAPI warning before deleting a sale already reported to Meta Ads */}
+      <AlertDialog open={showCapiDeleteWarning} onOpenChange={setShowCapiDeleteWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-plus-jakarta">Atenção</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#4a3d3d]">
+              Essa venda já foi contada no seu anúncio do Facebook. Excluir agora pode
+              bagunçar o relatório do anúncio. Excluir mesmo assim?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={performDeleteSale}
+              disabled={isDeleting}
+              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir mesmo assim"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

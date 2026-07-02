@@ -275,7 +275,7 @@ export default function MarketingPaymentSection() {
                   </span>
                 )}
                 {currentPayment.status === "pending" && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-[#d4af37] bg-[#d4af37]/10 px-2 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-xs font-medium text-[#775a19] bg-[#d4af37]/10 px-2 py-1 rounded-full">
                     <MaterialIcon icon="schedule" size={14} />
                     Aguardando
                   </span>
@@ -321,7 +321,7 @@ export default function MarketingPaymentSection() {
                   {currentPayment.proof_url ? "Editar / trocar comprovante" : "Anexar comprovante"}
                 </Button>
                 {!currentPayment.proof_url && (
-                  <p className="text-[11px] text-[#d4af37] mt-1.5">
+                  <p className="text-[11px] text-[#775a19] mt-1.5">
                     Pagamento sem comprovante — anexe pra agilizar a confirmação.
                   </p>
                 )}

@@ -4,6 +4,7 @@ import { format, subDays } from "date-fns";
 import { User, Franchise, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,7 @@ export default function Gestao() {
       if (!userData) throw new Error("Não foi possível carregar usuário");
       if (franchisesResult.status === "rejected" && !signal.aborted) {
         console.warn("Falha ao carregar franquias:", franchisesResult.reason?.message);
-        toast.error(`Erro ao carregar franquias: ${franchisesResult.reason?.message || "Erro desconhecido"}`);
+        toast.error(safeErrorMessage(franchisesResult.reason, "Erro ao carregar franquias."));
       }
       setCurrentUser(userData);
       setFranchises(franchisesData);

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/table";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import FilterBar from "@/components/shared/FilterBar";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
@@ -378,7 +379,7 @@ export default function TabEstoque({
       } else if (error?.message?.includes("Tempo limite")) {
         toast.error("Salvamento demorou demais. Tente novamente.");
       } else {
-        toast.error(`Erro ao salvar produto: ${error?.message || "tente novamente"}`);
+        toast.error(safeErrorMessage(error, "Erro ao salvar produto. Tente novamente."));
       }
     } finally {
       setIsSubmitting(false);
@@ -763,6 +764,8 @@ export default function TabEstoque({
                               size="icon"
                               className="h-7 w-7 text-[#4a3d3d] hover:text-[#b91c1c]"
                               onClick={() => handleOpenEditDialog(item)}
+                              aria-label="Editar produto"
+                              title="Editar produto"
                             >
                               <MaterialIcon icon="edit" size={14} />
                             </Button>
@@ -771,7 +774,8 @@ export default function TabEstoque({
                               size="icon"
                               className="h-7 w-7 text-[#4a3d3d] hover:text-[#775a19]"
                               onClick={() => handleToggleActive(item)}
-                              title={item.active === false ? "Reativar produto" : "Ocultar produto"}
+                              aria-label={item.active === false ? "Reativar produto" : "Ocultar do catálogo"}
+                              title={item.active === false ? "Reativar produto" : "Ocultar do catálogo"}
                             >
                               <MaterialIcon icon={item.active === false ? "visibility" : "visibility_off"} size={14} />
                             </Button>
@@ -780,6 +784,8 @@ export default function TabEstoque({
                               size="icon"
                               className="h-7 w-7 text-[#cac0c0] hover:text-[#b91c1c]"
                               onClick={() => setDeleteConfirmId(item.id)}
+                              aria-label="Excluir produto"
+                              title="Excluir produto"
                             >
                               <MaterialIcon icon="delete" size={14} />
                             </Button>
@@ -1125,6 +1131,8 @@ export default function TabEstoque({
                                     size="icon"
                                     className="h-8 w-8 text-[#4a3d3d] hover:text-[#b91c1c]"
                                     onClick={() => handleOpenEditDialog(item)}
+                                    aria-label="Editar produto"
+                                    title="Editar produto"
                                   >
                                     <MaterialIcon icon="edit" size={16} />
                                   </Button>
@@ -1133,6 +1141,7 @@ export default function TabEstoque({
                                     size="icon"
                                     className="h-8 w-8 text-[#4a3d3d] hover:text-[#775a19]"
                                     onClick={() => handleToggleActive(item)}
+                                    aria-label="Ocultar do catálogo"
                                     title="Ocultar produto — não aparece para o bot nem na reposição"
                                   >
                                     <MaterialIcon icon="visibility_off" size={16} />
@@ -1142,6 +1151,8 @@ export default function TabEstoque({
                                     size="icon"
                                     className="h-8 w-8 text-[#cac0c0] hover:text-[#b91c1c]"
                                     onClick={() => setDeleteConfirmId(item.id)}
+                                    aria-label="Excluir produto"
+                                    title="Excluir produto"
                                   >
                                     <MaterialIcon icon="delete" size={16} />
                                   </Button>

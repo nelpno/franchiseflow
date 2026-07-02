@@ -5,6 +5,7 @@ import MaterialIcon from '@/components/ui/MaterialIcon';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 const TYPE_STYLES = {
   info: 'bg-blue-50 text-blue-600',
@@ -59,7 +60,10 @@ export default function NotificationBell({ size = 20 }) {
         await Notification.update(notification.id, { read: true });
         setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Falha ao marcar notificação como lida:', e);
+        toast.error('Não foi possível marcar como lida');
+      }
     }
     if (notification.link) {
       setIsOpen(false);
@@ -73,7 +77,10 @@ export default function NotificationBell({ size = 20 }) {
       await Promise.all(unread.map(n => Notification.update(n.id, { read: true })));
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Falha ao marcar notificações como lidas:', e);
+      toast.error('Não foi possível marcar como lida');
+    }
   };
 
   return (

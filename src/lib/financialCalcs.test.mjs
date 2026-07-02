@@ -79,6 +79,32 @@ test("ignora _saleItems (compat de assinatura)", () => {
   assert.equal(r1.lucroCaixa, r2.lucroCaixa);
 });
 
+test("taxa de cartão REPASSADA ao cliente não reduz o lucro", () => {
+  // R$100 no crédito, taxa R$3,50 repassada (cliente pagou) → não é custo da franquia
+  const s = [{ value: 100, delivery_fee: 0, discount_amount: 0, card_fee_amount: 3.5, fee_passed_to_customer: true }];
+  const r = calculatePnL(s, null, []);
+  assert.equal(r.totalRecebido, 100);
+  assert.equal(r.taxasCartao, 0);
+  assert.equal(r.lucroCaixa, 100);
+});
+
+test("taxa de cartão ABSORVIDA pela franquia reduz o lucro", () => {
+  const s = [{ value: 100, delivery_fee: 0, discount_amount: 0, card_fee_amount: 3.5, fee_passed_to_customer: false }];
+  const r = calculatePnL(s, null, []);
+  assert.equal(r.taxasCartao, 3.5);
+  assert.equal(r.lucroCaixa, 96.5);
+});
+
+test("mix repassada + absorvida: só a absorvida entra em taxasCartao", () => {
+  const s = [
+    { value: 100, delivery_fee: 0, discount_amount: 0, card_fee_amount: 3.5, fee_passed_to_customer: true },
+    { value: 100, delivery_fee: 0, discount_amount: 0, card_fee_amount: 4, fee_passed_to_customer: false },
+  ];
+  const r = calculatePnL(s, null, []);
+  assert.equal(r.taxasCartao, 4);
+  assert.equal(r.lucroCaixa, 196);
+});
+
 // ─── calcularEstoqueResumo ──────────────────────────────────────────────────
 console.log("\n📦 calcularEstoqueResumo");
 

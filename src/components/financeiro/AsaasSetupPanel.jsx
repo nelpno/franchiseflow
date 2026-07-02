@@ -44,7 +44,7 @@ function StatusBadge({ status, asaasId, cpfCnpj }) {
   }
   if (cpfCnpj) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#d4af37]">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#775a19]">
         <MaterialIcon icon="schedule" size={14} />
         Pendente
       </span>
@@ -64,7 +64,7 @@ function SubscriptionBadge({ sub }) {
   // Customer cadastrado mas assinatura ainda não criada
   if (sub.asaas_customer_id && !sub.asaas_subscription_id && status !== "CANCELLED") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#d4af37]">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#775a19]">
         <MaterialIcon icon="hourglass_empty" size={14} />
         Aguardando criar
       </span>
@@ -88,7 +88,7 @@ function SubscriptionBadge({ sub }) {
   }
   if (status === "PENDING") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#d4af37]">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#775a19]">
         <MaterialIcon icon="schedule" size={14} />
         Pendente
       </span>
@@ -165,7 +165,7 @@ export default function AsaasSetupPanel() {
       setConfigs(cRes.status === "fulfilled" ? cRes.value : []);
       setSubscriptions(sRes.status === "fulfilled" ? sRes.value : []);
     } catch (err) {
-      toast.error("Erro ao carregar dados: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao carregar dados."));
     } finally {
       if (mountedRef.current) setIsLoading(false);
     }
@@ -196,7 +196,7 @@ export default function AsaasSetupPanel() {
       setEditingEmail(prev => { const n = { ...prev }; delete n[franchise.id]; return n; });
       toast.success(`Email salvo para ${franchise.name}`);
     } catch (err) {
-      toast.error("Erro ao salvar: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao salvar."));
     } finally {
       setSavingEmail(prev => ({ ...prev, [franchise.id]: false }));
     }
@@ -217,7 +217,7 @@ export default function AsaasSetupPanel() {
       setEditingCpf(prev => { const n = { ...prev }; delete n[franchise.id]; return n; });
       toast.success(`CPF/CNPJ salvo para ${franchise.name}`);
     } catch (err) {
-      toast.error("Erro ao salvar: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao salvar."));
     } finally {
       setSavingCpf(prev => ({ ...prev, [franchise.id]: false }));
     }
@@ -235,7 +235,7 @@ export default function AsaasSetupPanel() {
       // Reload data after a short delay for n8n to process
       setTimeout(() => loadData(), 3000);
     } catch (err) {
-      toast.error("Erro ao cadastrar no ASAAS: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao cadastrar no ASAAS."));
     } finally {
       setCreatingAsaas(prev => ({ ...prev, [evoId]: false }));
     }
@@ -257,7 +257,7 @@ export default function AsaasSetupPanel() {
       setExcludedSubIds(new Set());
       setTimeout(() => loadData(), 5000);
     } catch (err) {
-      toast.error("Erro ao criar assinaturas: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao criar assinaturas."));
     } finally {
       setCreatingAll(false);
     }
@@ -275,7 +275,7 @@ export default function AsaasSetupPanel() {
       setCancellingSub(null);
       setTimeout(() => loadData(), 2000);
     } catch (err) {
-      toast.error("Erro ao cancelar: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao cancelar."));
     } finally {
       setIsCancelling(false);
     }
@@ -304,7 +304,7 @@ export default function AsaasSetupPanel() {
       setApplyToCurrent(false);
       setTimeout(() => loadData(), 3000);
     } catch (err) {
-      toast.error("Erro ao atualizar valor: " + err.message);
+      toast.error(safeErrorMessage(err, "Erro ao atualizar valor."));
     } finally {
       setIsUpdatingValue(false);
     }
@@ -522,7 +522,7 @@ export default function AsaasSetupPanel() {
                 toast.success(`${pendingRegister.length} franqueados enviados para cadastro no ASAAS`);
                 setTimeout(() => loadData(), 5000);
               } catch (err) {
-                toast.error("Erro no cadastro batch: " + err.message);
+                toast.error(safeErrorMessage(err, "Erro no cadastro batch."));
               } finally {
                 setCreatingAll(false);
               }

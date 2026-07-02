@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Franchise } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { format, differenceInDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -378,7 +380,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
       onUploaded();
     } catch (err) {
       console.error("Erro ao enviar material:", err);
-      toast.error("Erro ao enviar: " + (err.message || "Erro desconhecido"));
+      toast.error(safeErrorMessage(err, "Erro ao enviar material."));
     } finally {
       setUploading(false);
     }
@@ -913,7 +915,7 @@ export default function Marketing() {
 
       if (results[0].status === "rejected") {
         console.warn("Falha ao carregar arquivos:", results[0].reason);
-        toast.error(`Erro ao carregar materiais: ${results[0].reason?.message || "Erro desconhecido"}`);
+        toast.error(safeErrorMessage(results[0].reason, "Erro ao carregar materiais."));
       }
       if (results[1].status === "rejected") {
         console.warn("Falha ao carregar franquias:", results[1].reason);
@@ -1223,8 +1225,10 @@ export default function Marketing() {
           </Button>
         </div>
       ) : loading ? (
-        <div className="flex items-center justify-center py-20">
-          <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
         </div>
       ) : filteredFiles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">

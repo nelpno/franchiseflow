@@ -35,7 +35,13 @@ export function calculatePnL(sales, _saleItems, expenses) {
   const totalDescontos = sales.reduce((sum, s) => sum + (parseFloat(s.discount_amount) || 0), 0);
   const totalRecebido = vendas + freteCobrado - totalDescontos;
 
-  const taxasCartao = sales.reduce((sum, s) => sum + (parseFloat(s.card_fee_amount) || 0), 0);
+  // Só a taxa que a FRANQUIA absorveu é custo. Quando repassada ao cliente
+  // (fee_passed_to_customer), o cliente pagou a taxa — não reduz o lucro; senão o
+  // DRE subestima o lucro em ~o valor da taxa em toda venda com repasse.
+  const taxasCartao = sales.reduce(
+    (sum, s) => (s.fee_passed_to_customer ? sum : sum + (parseFloat(s.card_fee_amount) || 0)),
+    0
+  );
   const outrasDespesas = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
   const lucroCaixa = totalRecebido - taxasCartao - outrasDespesas;

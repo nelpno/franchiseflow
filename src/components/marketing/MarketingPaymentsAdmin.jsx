@@ -292,7 +292,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-[#7a6d6d] mb-1">Saldo a Depositar</p>
-            <p className={`text-lg font-bold ${balance > 0 ? "text-[#d4af37]" : "text-[#16a34a]"}`}>
+            <p className={`text-lg font-bold ${balance > 0 ? "text-[#775a19]" : "text-[#16a34a]"}`}>
               {formatBRL(Math.max(0, balance))}
             </p>
             {balance <= 0 && <p className="text-xs text-[#16a34a] mt-1">Tudo depositado</p>}

@@ -165,7 +165,7 @@ export default function FranchiseForm({
             </div>
           </div>
           {onCancel && (
-            <Button variant="ghost" size="icon" onClick={onCancel}>
+            <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Fechar" title="Fechar">
               <MaterialIcon icon="close" size={16} />
             </Button>
           )}

@@ -634,15 +634,19 @@ Deno.serve(async (req) => {
     }
 
     // --- All other actions: require authenticated user ---
-    // Service role key bypass: decode JWT and check role claim
+    // Service-role bypass: accept ONLY the real service-role key (constant-time compare).
+    // NEVER trust a decoded `role` claim — a JWT payload is unsigned data and can be forged
+    // (anyone could send `{"role":"service_role"}` and become admin). Only a caller holding
+    // the actual secret key is treated as service role.
     let isServiceRole = false;
-    try {
-      const token = (req.headers.get("Authorization") || "").replace("Bearer ", "");
-      if (token) {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        isServiceRole = payload.role === "service_role";
+    const bearer = (req.headers.get("Authorization") || "").replace("Bearer ", "");
+    if (bearer && SUPABASE_SERVICE_ROLE_KEY && bearer.length === SUPABASE_SERVICE_ROLE_KEY.length) {
+      let diff = 0;
+      for (let i = 0; i < bearer.length; i++) {
+        diff |= bearer.charCodeAt(i) ^ SUPABASE_SERVICE_ROLE_KEY.charCodeAt(i);
       }
-    } catch { /* not a valid JWT */ }
+      isServiceRole = diff === 0;
+    }
 
     const user = isServiceRole
       ? { id: "service_role", role: "admin" as UserRole, managed: [] }

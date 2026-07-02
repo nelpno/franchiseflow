@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FranchiseConfiguration, Franchise, User } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
@@ -480,10 +481,15 @@ function FranchiseSettingsContent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex items-center gap-3 text-[#3d4a42]">
-          <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-[#b91c1c]" />
-          <span className="text-sm font-medium">Carregando configurações...</span>
+      <div className="px-4 md:px-8 pt-12 min-h-[60vh]">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-full" />
+          <div className="space-y-3">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+          </div>
         </div>
       </div>
     );

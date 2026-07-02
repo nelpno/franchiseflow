@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { PurchaseOrder } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatBRL";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,6 +28,16 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
   const [orderItems, setOrderItems] = useState({});
   const [cancellingId, setCancellingId] = useState(null);
   const [confirmCancelId, setConfirmCancelId] = useState(null);
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!franchiseId) return;
@@ -33,12 +45,20 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
   }, [franchiseId, refreshKey]);
 
   const loadOrders = async () => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
     setLoading(true);
     try {
       const data = await PurchaseOrder.filter(
         { franchise_id: franchiseId },
-        "-ordered_at"
+        "-ordered_at",
+        undefined,
+        { signal }
       );
+      if (!mountedRef.current || signal.aborted) return;
       setOrders(data);
 
       // Carregar items de todos os pedidos de uma vez
@@ -47,7 +67,10 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
         const { data: allItems } = await supabase
           .from('purchase_order_items')
           .select('*')
-          .in('order_id', orderIds);
+          .in('order_id', orderIds)
+          .abortSignal(signal);
+
+        if (!mountedRef.current || signal.aborted) return;
 
         const grouped = {};
         for (const item of (allItems || [])) {
@@ -57,9 +80,11 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
         setOrderItems(grouped);
       }
     } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      if (!mountedRef.current) return;
       console.error("Erro ao carregar pedidos:", error);
     } finally {
-      setLoading(false);
+      if (mountedRef.current && !signal.aborted) setLoading(false);
     }
   };
 
@@ -75,7 +100,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
       loadOrders();
     } catch (error) {
       console.error("Erro ao cancelar pedido:", error);
-      toast.error(error?.message || "Erro ao cancelar pedido.");
+      toast.error(safeErrorMessage(error, "Erro ao cancelar pedido."));
     } finally {
       setCancellingId(null);
       setConfirmCancelId(null);
@@ -94,8 +119,11 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-[#cac0c0]" />
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-40 rounded-md" />
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+        ))}
       </div>
     );
   }

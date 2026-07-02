@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRLInteger } from "@/lib/formatters";
-import { safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
+import { safeFailedQueriesMessage, safeErrorMessage } from "@/lib/safeErrorMessage";
 import AdminHeader from "./AdminHeader";
 import AlertsPanel from "./AlertsPanel";
 import FranchiseRanking from "./FranchiseRanking";
@@ -205,8 +205,9 @@ export default function AdminDashboard() {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard admin:", err);
-      setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
-      toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
+      const msg = safeErrorMessage(err, "Erro ao carregar o painel");
+      setLoadError(msg);
+      toast.error(msg);
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
@@ -250,7 +251,12 @@ export default function AdminDashboard() {
 
     try {
       const results = await Promise.allSettled([
-        Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at, last_contact_at, last_purchase_at, purchase_count, nome, telefone, created_at', signal, fetchAll: true }),
+        // No refresh por polling (force=true) NÃO re-baixa os ~31k contatos — nada que os
+        // alertas/smartActions usem muda em 5min; reusa o que já está em memória. Só o
+        // cold-load (primeiro expand) puxa a lista cheia. Corta ~66MB/h por aba admin.
+        force
+          ? Promise.resolve(collapsedData.contacts)
+          : Contact.list(null, null, { columns: 'id, franchise_id, status, updated_at, last_contact_at, last_purchase_at, purchase_count, nome, telefone, created_at', signal, fetchAll: true }),
         InventoryItem.list(null, null, { columns: 'id, product_name, quantity, min_stock, franchise_id', signal, fetchAll: true }),
         PurchaseOrder.list("-ordered_at", 500, { columns: 'id, franchise_id, status, ordered_at, delivered_at', signal }),
       ]);

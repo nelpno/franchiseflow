@@ -311,7 +311,7 @@ export default function Franchises() {
       loadData(true);
     } catch (error) {
       console.error("Erro ao excluir franquia:", error);
-      toast.error(error?.message || "Erro ao excluir franquia.");
+      toast.error(safeErrorMessage(error, "Erro ao excluir franquia."));
     } finally {
       setIsDeletingFranchise(false);
     }
@@ -381,7 +381,7 @@ export default function Franchises() {
       if (error.message?.includes("duplicate") || error.message?.includes("already")) {
         toast.error("Este email já tem conta no sistema. Peça para ele fazer login primeiro.");
       } else {
-        toast.error(error.message || "Erro ao adicionar membro à equipe.");
+        toast.error(safeErrorMessage(error, "Erro ao adicionar membro à equipe."));
       }
     } finally {
       setIsAddingStaff(false);
@@ -429,7 +429,7 @@ export default function Franchises() {
       loadData(true);
     } catch (error) {
       console.error("Erro ao desvincular:", error);
-      toast.error(`Erro ao desvincular: ${error?.message || "erro desconhecido"}`);
+      toast.error(safeErrorMessage(error, "Erro ao desvincular usuário."));
     } finally {
       setIsUnlinking(false);
     }
@@ -516,21 +516,15 @@ export default function Franchises() {
     if (!invitingFranchise || !inviteEmail) return;
     setIsSendingInvite(true);
     try {
-      // Cria convite no banco (insert direto sem .select() — não precisamos do retorno)
+      // Cria convite no banco (via entity — timeout de escrita + detecção de RLS)
       try {
-        const { error: invErr } = await supabase
-          .from('franchise_invites')
-          .insert({
-            franchise_id: invitingFranchise.evolution_instance_id,
-            email: inviteEmail,
-            status: "pending",
-          });
-        if (invErr) {
-          // Constraint de duplicata (23505) = convite já existe, prosseguir com reenvio
-          const isDuplicate = invErr.code === "23505" || invErr.message?.includes("duplicate");
-          if (!isDuplicate) throw invErr;
-        }
+        await FranchiseInvite.create({
+          franchise_id: invitingFranchise.evolution_instance_id,
+          email: inviteEmail,
+          status: "pending",
+        });
       } catch (createErr) {
+        // Constraint de duplicata (23505) = convite já existe, prosseguir com reenvio
         const isDuplicate = createErr?.code === "23505" || createErr?.message?.includes("duplicate");
         if (!isDuplicate) throw createErr;
       }
@@ -554,7 +548,7 @@ export default function Franchises() {
       return;
     } catch (error) {
       console.error("Erro ao enviar convite:", error);
-      toast.error(`Erro ao enviar convite: ${error?.message || "Erro desconhecido"}`);
+      toast.error(safeErrorMessage(error, "Erro ao enviar convite."));
     }
     setIsSendingInvite(false);
   };

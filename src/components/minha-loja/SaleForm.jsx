@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
+import { normalizePhone } from "@/lib/whatsappUtils";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -189,14 +191,6 @@ const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     value || 0
   );
-
-// Normalize phone to E.164-ish format (55 + DDD + number)
-function normalizePhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("55") && digits.length >= 12) return digits;
-  if (digits.length >= 10) return "55" + digits;
-  return digits;
-}
 
 // Format phone for display
 function formatPhone(phone) {
@@ -719,7 +713,7 @@ export default function SaleForm({
       } else if (err?.code === "42501" || err?.message?.includes("policy")) {
         toast.error("Sem permissão para criar contato. Verifique sua franquia.");
       } else {
-        toast.error(`Erro ao criar contato: ${err?.message || "tente novamente"}`);
+        toast.error(safeErrorMessage(err, "Não foi possível criar o contato"));
       }
     } finally {
       setIsCreatingContact(false);
@@ -732,11 +726,12 @@ export default function SaleForm({
     // If user typed something but didn't pick, try to match or skip
     if (!contactSearch || contactSearch.trim().length < 2) return null;
 
-    // Server-side lookup by phone
+    // Server-side lookup by phone (canônico: só dígitos, sem DDI 55 — casa com o armazenado)
     const digits = contactSearch.replace(/\D/g, "");
-    if (digits.length >= 8) {
+    const normalized = normalizePhone(contactSearch);
+    if (digits.length >= 8 && normalized) {
       try {
-        const matches = await Contact.search(digits, {
+        const matches = await Contact.search(normalized, {
           columns: "id, telefone",
           searchColumns: ["telefone"],
           criteria: franchiseId ? { franchise_id: franchiseId } : undefined,
@@ -749,7 +744,6 @@ export default function SaleForm({
     // Create new contact from phone + name
     try {
       const isPhone = digits.length >= 8;
-      const normalized = normalizePhone(contactSearch);
       const newContact = await Contact.create({
         franchise_id: franchiseId,
         telefone: isPhone ? normalized : null,

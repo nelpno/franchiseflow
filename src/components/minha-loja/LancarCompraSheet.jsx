@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { supabase } from "@/api/supabaseClient";
@@ -117,7 +118,7 @@ export default function LancarCompraSheet({
       onOpenChange(false);
     } catch (err) {
       console.error("Erro ao lançar compra:", err);
-      toast.error(err?.message || "Erro ao lançar compra. Tente novamente.");
+      toast.error(safeErrorMessage(err, "Erro ao lançar compra. Tente novamente."));
     } finally {
       setIsSubmitting(false);
     }

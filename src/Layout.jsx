@@ -250,14 +250,14 @@ export default function Layout({ children, currentPageName }) {
       const today = format(new Date(), "yyyy-MM-dd");
       const results = await Promise.allSettled([
         DailyUniqueContact.filter({ date: today }),
-        Sale.list("-sale_date", 50),
+        // Só as vendas de HOJE (id apenas): elimina o teto silencioso de 50/dia e o select('*').
+        Sale.filter({ sale_date: today }, null, null, { columns: 'id' }),
       ]);
       if (!mountedRef.current) return;
       const contactsData = results[0].status === "fulfilled" ? results[0].value : [];
       const salesData = results[1].status === "fulfilled" ? results[1].value : [];
       setTodayContacts(contactsData.length);
-      const todaySalesCount = salesData.filter((s) => s.sale_date === today).length;
-      setTodaySales(todaySalesCount);
+      setTodaySales(salesData.length);
     } catch (error) {
       console.error("Erro ao carregar estatísticas rápidas:", error);
     }

@@ -4,6 +4,7 @@ import { supabase } from "@/api/supabaseClient";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -354,7 +355,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error(error?.message || "Erro ao salvar alterações.");
+      toast.error(safeErrorMessage(error, "Erro ao salvar alterações."));
     } finally {
       setSaving(false);
     }
@@ -437,7 +438,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao alterar status:", error);
-      toast.error(error?.message || "Erro ao alterar status do pedido.");
+      toast.error(safeErrorMessage(error, "Erro ao alterar status do pedido."));
     } finally {
       setSaving(false);
       setConfirmAction(null);
@@ -506,7 +507,7 @@ export default function PurchaseOrders() {
       loadData();
     } catch (error) {
       console.error("Erro ao alterar status em lote:", error);
-      toast.error(error?.message || "Erro ao alterar status dos pedidos.");
+      toast.error(safeErrorMessage(error, "Erro ao alterar status dos pedidos."));
     } finally {
       setBulkChanging(false);
       setConfirmBulkAction(null);
@@ -538,21 +539,21 @@ export default function PurchaseOrders() {
     setDeleting(true);
     const toastId = toast.loading(`Excluindo ${orderIds.length} pedido${orderIds.length > 1 ? "s" : ""}...`);
     try {
-      for (const oid of orderIds) {
-        // Delete items first (FK constraint)
-        const items = await PurchaseOrderItem.filter({ order_id: oid });
-        if (items.length > 0) {
-          await Promise.all(items.map((item) => PurchaseOrderItem.delete(item.id)));
-        }
-        await PurchaseOrder.delete(oid);
-      }
+      // Batch: 2 requests em vez de N+1 (~1 por item, ~320 pra 20 pedidos).
+      // purchase_order_items não tem triggers (CLAUDE.md) → delete em lote é seguro. Itens primeiro (FK).
+      const { error: itemsErr } = await supabase
+        .from("purchase_order_items").delete().in("order_id", orderIds);
+      if (itemsErr) throw itemsErr;
+      const { error: ordersErr } = await supabase
+        .from("purchase_orders").delete().in("id", orderIds);
+      if (ordersErr) throw ordersErr;
       toast.success(`${orderIds.length} pedido${orderIds.length > 1 ? "s excluídos" : " excluído"}.`, { id: toastId });
       setSelectedIds(new Set());
       closeDialog();
       loadData();
     } catch (error) {
       console.error("Erro ao excluir:", error);
-      toast.error(error?.message || "Erro ao excluir pedido(s).", { id: toastId });
+      toast.error(safeErrorMessage(error, "Erro ao excluir pedido(s)."), { id: toastId });
       loadData(); // re-sync after partial failure
     } finally {
       setDeleting(false);
@@ -592,7 +593,7 @@ export default function PurchaseOrders() {
       toast.success(`${ordersWithItems.length} fichas geradas!`, { id: toastId });
     } catch (err) {
       console.error("Erro ao gerar fichas:", err);
-      toast.error(err?.message || "Erro ao gerar fichas.", { id: toastId });
+      toast.error(safeErrorMessage(err, "Erro ao gerar fichas."), { id: toastId });
     } finally {
       setGeneratingBulkPdf(false);
     }
@@ -633,9 +634,24 @@ export default function PurchaseOrders() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 max-w-7xl mx-auto">
-        <div className="flex items-center justify-center py-20">
-          <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#cac0c0]" />
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32 rounded-xl" />
+        </div>
+        <div className="flex items-center justify-center gap-2">
+          <Skeleton className="h-8 w-48 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
+          ))}
+        </div>
+        <Skeleton className="h-12 rounded-xl" />
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
         </div>
       </div>
     );
@@ -1115,8 +1131,10 @@ export default function PurchaseOrders() {
 
               {/* Items */}
               {loadingItems ? (
-                <div className="flex items-center justify-center py-6">
-                  <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-[#cac0c0]" />
+                <div className="space-y-2 py-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 rounded-lg" />
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-2">

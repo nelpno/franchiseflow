@@ -5,12 +5,13 @@ import { useAuth } from "@/lib/AuthContext";
 import { getPrimaryFranchise } from "@/lib/franchiseUtils";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
 import TabLancar from "@/components/minha-loja/TabLancar";
 
-const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, customer_address, customer_neighborhood, delivery_method, net_value';
+const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, fee_passed_to_customer, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, customer_address, customer_neighborhood, delivery_method, net_value';
 const SALES_LOOKBACK_MONTHS = 6;
 const getSalesCutoff = () => format(subMonths(new Date(), SALES_LOOKBACK_MONTHS), 'yyyy-MM-dd');
 
@@ -149,9 +150,22 @@ export default function Vendas() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-3 text-[#4a3d3d]">Carregando...</span>
+      <div className="bg-[#fbf9fa]">
+        <div className="p-4 md:p-8 space-y-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

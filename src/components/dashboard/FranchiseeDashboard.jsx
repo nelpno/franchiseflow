@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRLInteger } from "@/lib/formatters";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import StatsCard from "./StatsCard";
 import FranchiseeGreeting from "./FranchiseeGreeting";
 import DailyGoalProgress from "./DailyGoalProgress";
@@ -90,8 +91,9 @@ export default function FranchiseeDashboard() {
 
       const today = getToday();
       const yesterday = getYesterday();
-      // Janela 90d: cobre period max "month" (30d) com folga 3×. healthScore + stats não precisam de mais.
-      const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
+      // Janela cobre o mês mais antigo navegável (offset -2) INTEIRO + seu comparativo (-3),
+      // senão o dia 1 do mês antigo cai fora e total/delta% saem parciais. ~3 meses ≈ 90d.
+      const cutoff90d = format(startOfMonth(subMonths(new Date(), 3)), "yyyy-MM-dd");
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
         evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", null,
@@ -155,8 +157,9 @@ export default function FranchiseeDashboard() {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
       console.error("Erro ao carregar dashboard:", err);
-      setLoadError(`Erro ao carregar dados: ${err?.message || "Erro desconhecido"}`);
-      toast.error(`Erro ao carregar dashboard: ${err?.message || "Erro desconhecido"}`);
+      const msg = safeErrorMessage(err, "Erro ao carregar o painel");
+      setLoadError(msg);
+      toast.error(msg);
     } finally {
       clearTimeout(safetyTimer);
       if (mountedRef.current) {
