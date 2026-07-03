@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Franchise, Sale, SaleItem, Expense, InventoryItem, User } from "@/entities/all";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,8 @@ import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
 import TabResultado from "@/components/minha-loja/TabResultado";
 
 export default function Financeiro() {
-  const [activeTab, setActiveTab] = useState("financeiro"); // "financeiro" | "mensalidades" | "porunidade"
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") === "porunidade" ? "porunidade" : "financeiro"); // "financeiro" | "mensalidades" | "porunidade"
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [franchises, setFranchises] = useState([]);
   const [allSales, setAllSales] = useState([]);
@@ -25,7 +27,7 @@ export default function Financeiro() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [selectedFranchiseId, setSelectedFranchiseId] = useState("");
+  const [selectedFranchiseId, setSelectedFranchiseId] = useState(() => searchParams.get("franchise") || "");
   const mountedRef = useRef(true);
 
   useEffect(() => {

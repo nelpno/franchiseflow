@@ -70,7 +70,7 @@ export default function LastPurchaseOrderCard({ franchises, purchaseOrders, conf
           return (
             <div
               key={franchise.id}
-              onClick={() => navigate(`/Franchises?id=${encodeURIComponent(evoId)}&openSheet=1`)}
+              onClick={() => navigate(`/Financeiro?tab=porunidade&franchise=${encodeURIComponent(evoId)}`)}
               className={`flex items-center gap-4 p-3 rounded-xl border ${band.border} ${band.bg}/30 cursor-pointer hover:shadow-md transition-shadow`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${band.bg} ${band.text}`}>

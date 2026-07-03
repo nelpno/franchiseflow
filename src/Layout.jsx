@@ -77,13 +77,6 @@ const navigationItems = [
     adminSection: "Administração",
   },
   {
-    title: "Relatórios",
-    url: createPageUrl("Reports"),
-    materialIcon: "bar_chart",
-    adminOnly: true,
-    adminSection: "Gestão",
-  },
-  {
     title: "Financeiro",
     url: createPageUrl("Financeiro"),
     materialIcon: "account_balance",

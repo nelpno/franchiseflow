@@ -162,7 +162,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
               <div
                 key={f.id}
                 className="flex items-center gap-4 cursor-pointer hover:bg-[#fbf9fa] rounded-xl px-2 py-1 -mx-2 transition-colors"
-                onClick={() => navigate(`/Acompanhamento?franchise=${f.evoId}`)}
+                onClick={() => navigate(`/Financeiro?tab=porunidade&franchise=${encodeURIComponent(f.evoId)}`)}
                 title={`Ver detalhes de ${f.name}`}
               >
                 <span className="w-6 text-sm font-bold text-[#1b1c1d]/70">
@@ -229,7 +229,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                   <div
                     key={f.id}
                     className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-red-50/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/Acompanhamento?franchise=${f.evoId}`)}
+                    onClick={() => navigate(`/Financeiro?tab=porunidade&franchise=${encodeURIComponent(f.evoId)}`)}
                   >
                     <span className="text-sm text-[#4a3d3d] font-medium">{f.name}</span>
                     <span className="text-xs font-semibold text-[#b91c1c]">{formatBRL(f.revenue)}</span>
