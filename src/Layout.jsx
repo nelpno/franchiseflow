@@ -98,14 +98,6 @@ const navigationItems = [
     adminSection: "Administração",
   },
   {
-    title: "Acompanhamento",
-    url: createPageUrl("Acompanhamento"),
-    materialIcon: "visibility",
-    adminOnly: true,
-    adminSection: "Gestão",
-    adminSidebarHidden: true,
-  },
-  {
     title: "Customer Success",
     url: createPageUrl("CustomerSuccess"),
     materialIcon: "monitor_heart",

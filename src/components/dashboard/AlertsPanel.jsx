@@ -351,13 +351,13 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
             />
           )}
 
-          {/* Link para Acompanhamento */}
+          {/* Link para o Customer Success (Mural) */}
           <button
-            onClick={() => navigate(createPageUrl("Acompanhamento"))}
+            onClick={() => navigate(createPageUrl("CustomerSuccess"))}
             className="flex items-center gap-2 mt-2 text-sm font-medium text-[#a80012] hover:underline"
           >
             <MaterialIcon icon="monitoring" size={18} />
-            Ver detalhes no Acompanhamento
+            Ver no Customer Success
           </button>
         </div>
       )}
