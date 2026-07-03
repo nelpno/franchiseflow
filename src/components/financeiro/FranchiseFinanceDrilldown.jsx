@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { getTopProducts } from "@/lib/financialCalcs";
 import { getMarginTierCounts } from "@/lib/marginHelpers";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 
 function PnlRow({ label, value, color, bold }) {
   if (!value && value !== 0) return null;

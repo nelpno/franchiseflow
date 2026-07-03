@@ -41,9 +41,11 @@ import {
   getEstadoFinanceiro,
   isInMonth,
   getTopProducts,
+  getSaleNetValue,
 } from "@/lib/financialCalcs";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
+import { SALE_PNL_COLUMNS } from "@/entities/columns";
 
 // --------------------------------------------------------------- helpers
 const formatBRL = (v) =>
@@ -780,7 +782,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
           { franchise_id: franchiseId },
           null,
           null,
-          { columns: 'id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, fee_passed_to_customer, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at', fetchAll: true }
+          { columns: `id, sale_date, ${SALE_PNL_COLUMNS}, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at`, fetchAll: true }
         ),
         Expense.filter({ franchise_id: franchiseId }, null, null, { fetchAll: true }),
         InventoryItem.filter(
@@ -866,7 +868,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
       const key = format(d, "yyyy-MM");
       counts[key] = sales
         .filter(s => isInMonth(s.sale_date || s.created_at, d))
-        .reduce((sum, s) => sum + (parseFloat(s.value) || 0) + (parseFloat(s.delivery_fee) || 0) - (parseFloat(s.discount_amount) || 0), 0);
+        .reduce((sum, s) => sum + getSaleNetValue(s), 0);
     }
     const values = Object.values(counts).filter(v => v > 0);
     return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;

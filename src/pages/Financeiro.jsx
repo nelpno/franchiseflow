@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { format, subMonths, addMonths, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calculatePnL, isInMonth, groupByFranchiseAndMonth } from "@/lib/financialCalcs";
+import { SALE_PNL_COLUMNS } from "@/entities/columns";
 import { safeErrorMessage, safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
@@ -53,7 +54,7 @@ export default function Financeiro() {
       const results = await Promise.allSettled([
         Franchise.list(),
         Sale.list("-sale_date", null, {
-          columns: "id, franchise_id, sale_date, value, delivery_fee, discount_amount, card_fee_amount, fee_passed_to_customer, payment_method, created_at",
+          columns: `id, franchise_id, sale_date, ${SALE_PNL_COLUMNS}, payment_method, created_at`,
           fetchAll: true,
           gte: { sale_date: cutoffWindow },
         }),

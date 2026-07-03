@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import {
   Franchise,
   Sale,
@@ -151,10 +152,7 @@ function ReportsContent() {
     for (const s of rawSales) {
       const row = byFranchise.get(s.franchise_id);
       if (!row) continue;
-      const value = Number(s.value || 0);
-      const discount = Number(s.discount_amount || 0);
-      const delivery = Number(s.delivery_fee || 0);
-      row.revenue += value - discount + delivery;
+      row.revenue += getSaleNetValue(s);
       row.ordersCount += 1;
     }
 

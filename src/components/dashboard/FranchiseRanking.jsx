@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useNavigate } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -35,7 +36,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
     });
 
     const isBotSource = (s) => s.source === 'bot';
-    const saleRevenue = (s) => (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0);
+    const saleRevenue = (s) => getSaleNetValue(s);
 
     if (period === "today") {
       // Use LIVE todaySales data (not daily_summaries which doesn't exist for today)

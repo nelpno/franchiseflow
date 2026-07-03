@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { safeHref } from "@/lib/safeHref";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";

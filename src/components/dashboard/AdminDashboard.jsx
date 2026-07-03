@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { supabase } from "@/api/supabaseClient";
 import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, Contact } from "@/entities/all";
@@ -361,8 +362,8 @@ export default function AdminDashboard() {
     if (period === "today") {
       const salesCount = todaySales.length;
       const prevSalesCount = yesterdaySales.length;
-      const revenue = todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
-      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const revenue = todaySales.reduce((sum, s) => sum + getSaleNetValue(s), 0);
+      const prevRevenue = yesterdaySales.reduce((sum, s) => sum + getSaleNetValue(s), 0);
       const contacts = Math.max(todayContacts.length, contactsFromSummaries(todayStr, todayStr));
       const prevContacts = contactsFromSummaries(yesterdayStr, yesterdayStr);
       const leads = botLeadsForRange(todayStr, todayStr);
@@ -383,8 +384,8 @@ export default function AdminDashboard() {
 
     const salesCount = currentSales.length;
     const prevSalesCount = prevSales.length;
-    const revenue = currentSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
-    const prevRevenue = prevSales.reduce((s, sale) => s + (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0), 0);
+    const revenue = currentSales.reduce((s, sale) => s + getSaleNetValue(sale), 0);
+    const prevRevenue = prevSales.reduce((s, sale) => s + getSaleNetValue(sale), 0);
     let contacts = contactsFromSummaries(cutoff, todayStr);
     if (todayContacts.length > 0) contacts = Math.max(contacts, contactsFromSummaries(cutoff, format(subDays(new Date(), 1), "yyyy-MM-dd")) + todayContacts.length);
     const prevContacts = contactsFromSummaries(prevCutoff, format(subDays(new Date(), days), "yyyy-MM-dd"));
@@ -399,7 +400,7 @@ export default function AdminDashboard() {
   }, [period, allSales, todaySales, yesterdaySales, todayContacts, summaries, contactsFromSummaries, botLeadsForRange, botLeadsDaily]);
 
   const liveTodayRevenue = useMemo(() =>
-    todaySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
+    todaySales.reduce((sum, s) => sum + getSaleNetValue(s), 0),
     [todaySales]
   );
 

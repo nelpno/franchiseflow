@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import { format, subDays } from "date-fns";
 import { formatBRL } from "@/lib/formatters";
 
@@ -12,7 +13,7 @@ function DailyRevenueChart({ allSales = [], isLoading, days = 7 }) {
       const date = subDays(new Date(), i);
       const dateStr = format(date, 'yyyy-MM-dd');
       const daySales = allSales.filter(s => s.sale_date === dateStr);
-      const revenue = daySales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0);
+      const revenue = daySales.reduce((sum, s) => sum + getSaleNetValue(s), 0);
       data.push({
         dayLabel: DAY_LABELS[date.getDay()],
         revenue,

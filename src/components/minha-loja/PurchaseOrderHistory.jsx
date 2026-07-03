@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";

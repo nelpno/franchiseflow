@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -13,7 +14,7 @@ export default function FinanceiroSummaryCard({ allSales, configMap }) {
     const monthSales = allSales.filter(s => s.sale_date?.startsWith(currentMonth));
 
     const totalRevenue = monthSales.reduce(
-      (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0
+      (sum, s) => sum + getSaleNetValue(s), 0
     );
     const totalSalesCount = monthSales.length;
 
@@ -22,7 +23,7 @@ export default function FinanceiroSummaryCard({ allSales, configMap }) {
     for (const s of monthSales) {
       const fid = s.franchise_id;
       if (!byFranchise[fid]) byFranchise[fid] = 0;
-      byFranchise[fid] += (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0);
+      byFranchise[fid] += getSaleNetValue(s);
     }
 
     // Top and bottom franchise

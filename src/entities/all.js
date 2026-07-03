@@ -307,54 +307,6 @@ export async function getFranchiseHealthSignals({ signal } = {}) {
   return data || [];
 }
 
-export async function getCsWorklist({ signal } = {}) {
-  let query = supabase.from('cs_worklist').select('*');
-  if (signal) query = query.abortSignal(signal);
-  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
-  if (error) throw error;
-  return data || [];
-}
-
-export async function getCsWorklistEvents(franchiseId, { signal } = {}) {
-  let query = supabase
-    .from('cs_worklist_events')
-    .select('*')
-    .eq('franchise_id', franchiseId)
-    .order('created_at', { ascending: false });
-  if (signal) query = query.abortSignal(signal);
-  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
-  if (error) throw error;
-  return data || [];
-}
-
-export async function upsertCsWorklist(franchiseId, patch, userId) {
-  const row = {
-    franchise_id: franchiseId,
-    ...patch,
-    updated_by: userId ?? null,
-    updated_at: new Date().toISOString(),
-  };
-  const { data, error } = await withTimeout(
-    supabase.from('cs_worklist').upsert(row, { onConflict: 'franchise_id' }).select().single(),
-    30000,
-  );
-  if (error) throw error;
-  return data;
-}
-
-export async function addCsWorklistEvent(franchiseId, eventType, note, userId) {
-  const { data, error } = await withTimeout(
-    supabase
-      .from('cs_worklist_events')
-      .insert({ franchise_id: franchiseId, event_type: eventType, note: note || null, created_by: userId ?? null })
-      .select()
-      .single(),
-    30000,
-  );
-  if (error) throw error;
-  return data;
-}
-
 export async function deleteCsWorklistEvent(eventId) {
   // .select('id') detecta RLS silencioso (0 rows = sem permissão, não erro)
   const { data, error } = await withTimeout(

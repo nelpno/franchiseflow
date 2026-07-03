@@ -776,7 +776,7 @@ export default function TabLancar({
                     {/* Values */}
                     <div className="text-right shrink-0">
                       <p className="font-bold text-[#1b1c1d] font-mono-numbers">
-                        {formatCurrency((parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0))}
+                        {formatCurrency(getSaleNetValue(sale))}
                       </p>
                       {(sale.delivery_fee > 0 || sale.discount_amount > 0) && (
                         <p className="text-xs text-[#4a3d3d] font-mono-numbers">
@@ -902,7 +902,7 @@ export default function TabLancar({
                           (sum, si) => sum + (parseFloat(si.cost_price) || 0) * (si.quantity || 1),
                           0
                         );
-                        const totalRecebido = (parseFloat(sale.value) || 0) - (parseFloat(sale.discount_amount) || 0) + (parseFloat(sale.delivery_fee) || 0);
+                        const totalRecebido = getSaleNetValue(sale);
                         const taxaCartao = sale.fee_passed_to_customer ? 0 : (parseFloat(sale.card_fee_amount) || 0);
                         const lucro = totalRecebido - custoTotal - taxaCartao;
                         const margem = totalRecebido > 0 ? (lucro / totalRecebido) * 100 : 0;

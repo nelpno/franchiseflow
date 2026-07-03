@@ -1,12 +1,13 @@
 import React, { useMemo } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function sumNet(sales) {
   return sales.reduce(
-    (sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0),
+    (sum, s) => sum + getSaleNetValue(s),
     0
   );
 }

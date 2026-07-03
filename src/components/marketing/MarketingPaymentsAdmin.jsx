@@ -39,7 +39,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 import { MARKETING_TAX_RATE, marketingLiquid } from "@/lib/franchiseUtils";
 import MetaDepositDialog from "./MetaDepositDialog";
 import { FranchiseConfiguration } from "@/entities/all";

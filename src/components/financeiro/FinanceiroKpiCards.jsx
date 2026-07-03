@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 
 export default function FinanceiroKpiCards({ aggregated, worstFranchise }) {
   const cards = [

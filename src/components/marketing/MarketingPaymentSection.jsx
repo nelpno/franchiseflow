@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 
 const BUCKET = "marketing-comprovantes";
 const MIN_AMOUNT = 200;

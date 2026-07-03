@@ -4,7 +4,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 import { marketingLiquid } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import {

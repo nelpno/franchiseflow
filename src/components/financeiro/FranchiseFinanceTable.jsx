@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import FranchiseFinanceDrilldown from "./FranchiseFinanceDrilldown";
-import { formatBRLCompact } from "@/lib/formatBRL";
+import { formatBRLInteger } from "@/lib/formatters";
 
 function MarginBadge({ margem }) {
   let colorClass = "bg-green-100 text-green-700";
@@ -161,18 +161,18 @@ export default function FranchiseFinanceTable({
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-[#7a6d6d]">Faturamento</p>
-                      <p className="text-sm font-medium text-[#1b1c1d]">{formatBRLCompact(f.pnl.totalRecebido)}</p>
+                      <p className="text-sm font-medium text-[#1b1c1d]">{formatBRLInteger(f.pnl.totalRecebido)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-[#7a6d6d]">Custos</p>
                       <p className="text-sm font-medium text-[#4a3d3d]">
-                        {formatBRLCompact(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
+                        {formatBRLInteger(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-[#7a6d6d]">Lucro</p>
                       <p className={`text-sm font-bold ${f.pnl.lucroCaixa >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-                        {formatBRLCompact(f.pnl.lucroCaixa)}
+                        {formatBRLInteger(f.pnl.lucroCaixa)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -204,18 +204,18 @@ export default function FranchiseFinanceTable({
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
                         <p className="text-[10px] text-[#7a6d6d]">Faturamento</p>
-                        <p className="text-xs font-medium text-[#1b1c1d]">{formatBRLCompact(f.pnl.totalRecebido)}</p>
+                        <p className="text-xs font-medium text-[#1b1c1d]">{formatBRLInteger(f.pnl.totalRecebido)}</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-[#7a6d6d]">Custos</p>
                         <p className="text-xs font-medium text-[#4a3d3d]">
-                          {formatBRLCompact(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
+                          {formatBRLInteger(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
                         </p>
                       </div>
                       <div>
                         <p className="text-[10px] text-[#7a6d6d]">Lucro</p>
                         <p className={`text-xs font-bold ${f.pnl.lucroCaixa >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
-                          {formatBRLCompact(f.pnl.lucroCaixa)}
+                          {formatBRLInteger(f.pnl.lucroCaixa)}
                         </p>
                       </div>
                     </div>

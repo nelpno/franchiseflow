@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { formatBRL } from "@/lib/formatBRL";
+import { formatBRL } from "@/lib/formatters";
 import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";

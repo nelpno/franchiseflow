@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
 import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
@@ -184,7 +185,7 @@ export default function FranchiseeDashboard() {
 
   // Helper: compute revenue from sales array
   const calcRevenue = useCallback((sales) =>
-    sales.reduce((sum, s) => sum + (parseFloat(s.value) || 0) - (parseFloat(s.discount_amount) || 0) + (parseFloat(s.delivery_fee) || 0), 0),
+    sales.reduce((sum, s) => sum + getSaleNetValue(s), 0),
   []);
 
   // Derive today/yesterday from allSales — recalculates when allSales changes (polling refresh)
