@@ -1,4 +1,4 @@
-<!-- Last Updated: 2026-07-02 -->
+<!-- Last Updated: 2026-07-03 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
@@ -142,7 +142,8 @@
 - Error handling: `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout
 - Rotas: `createPageUrl("PageName")` → `"/PageName"` (capitalizado)
 - Navegação programática: `useNavigate()` + `useSearchParams()` de `react-router-dom`. Query params para pré-seleção (ex: `/Onboarding?franchise=evo_id`)
-- Abrir detail sheet por URL: `/Franchises?id=<evolution_instance_id>&openSheet=1` → `useSearchParams` + `useEffect` em `Franchises.jsx` abre sheet da franquia match e limpa params com `setSearchParams({}, {replace:true})`. Padrão usado pela tabela de `Reports.jsx`
+- Abrir detail sheet por URL: `/Franchises?id=<evolution_instance_id>&openSheet=1` → `useSearchParams` + `useEffect` em `Franchises.jsx` abre sheet da franquia match e limpa params com `setSearchParams({}, {replace:true})`. (A tabela de Reports usava isso, mas `Reports.jsx` foi REMOVIDO 03/07/2026.)
+- **Clique na franquia (admin) → Financeiro Por Unidade** (03/07/2026, deploy `fbabfe6`): `Financeiro.jsx` aceita deep-link `/Financeiro?tab=porunidade&franchise=<evolution_instance_id>` (via `useSearchParams` + lazy init da aba e da unidade). O ranking do Painel Geral (`FranchiseRanking`) e o card de últimos pedidos (`LastPurchaseOrderCard`) navegam pra lá. Usa **`evolution_instance_id` (NÃO UUID)** — o mesmo id do ranking. Antes ia pro `/Acompanhamento`, que IGNORAVA o param (fluxo estava furado).
 - Toast: sonner (importar de `"sonner"`, NÃO shadcn legado). NUNCA alert()/window.confirm()
 - Clickable card pattern: `cursor-pointer hover:shadow-md active:scale-[0.98] transition-all` (QuickAccessCards.jsx)
 - **Card-wide click pattern com filhos interativos**: `onClick={(e) => { if (e.target.closest('button, a')) return; openX(); }}` é mais limpo que espalhar `e.stopPropagation()` em todo botão filho. Aplicado em [MyContacts.jsx:637](src/pages/MyContacts.jsx#L637) (commit `2e5769b` 28/05/2026) após heatmap Clarity mostrar 51 dead clicks na linha do contato (modal Editar Contato funcionava, problema era a lista)
@@ -254,12 +255,8 @@
 - Staff: `staffInvite(email, role)` → webhook `/staff-invite`. Se user existe → atualiza role; se não → convite
 - Supabase 23505 (duplicate) = conta já existe em auth.users
 
-### Health Score
-- 5 dimensões: vendas, estoque, reposição, setup, bot. Pesos variam com `hasBotData`
-- **UM sistema** (atualizado 29/05/2026): `healthScore.js` (`calculateFranchiseHealth()`), consumido por Acompanhamento via `FranchiseHealthDetail`. O componente `FranchiseHealthScore.jsx` foi DELETADO na auditoria de 29/05 (0 imports — era código morto). NÃO recriar.
-- `healthScore.js` consome `botSummary` aggregates do RPC `get_bot_conversation_summary` (não array bruto de conversas)
-- ~~BUG CATEGORY_CONFIG_WITH_BOT (barras > 100%)~~ — resolvido em 29/05/2026 deletando o componente FranchiseHealthScore.jsx (código morto)
-
+### Health Score — REMOVIDO 03/07/2026
+- O health score e a página **Acompanhamento** foram **REMOVIDOS** (Nelson: não usava mais; o **Mural do Customer Success** substituiu). Apagados: `pages/Acompanhamento.jsx`, `lib/healthScore.js`, `components/acompanhamento/` inteiro (`FranchiseHealthDetail`, `HealthScoreBar`, `FranchiseNotes`, `InventorySheet`). **NÃO recriar.** A `AlertsPanel` (Painel Geral) agora leva ao **Customer Success**, não ao Acompanhamento. Deploy `1b3eff1`.
 ### Customer Success Cockpit (20/06/2026)
 Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem precisa de atenção, por quê, e worklist de ação. Tiers 🔴 crítico / 🟡 atenção / 🏆 destaque / 🟢 saudável / ⚪ dormente.
 
@@ -286,7 +283,7 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 
 ### UX
 - Franqueado: sidebar 8 itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu Vendedor, Tutoriais, Onboarding condicional) + bottom nav 5 slots (FAB Vender centro)
-- Admin: o sidebar oculta só itens com `adminSidebarHidden: true` — hoje **apenas `Acompanhamento`** ([Layout.jsx:108-113](src/Layout.jsx#L108)), acessível por URL `/Acompanhamento`. Financeiro É visível (seção "Gestão"). A antiga "Inteligência Bot" foi REMOVIDA 29/05/2026 (página + rota + item de menu) — não existe mais; ver "Features Removidas"
+- Admin: a sidebar mostra os itens `adminOnly` na sua seção. **`adminSidebarHidden` não é mais usado** — o único item que o tinha (`Acompanhamento`) foi REMOVIDO 03/07/2026. Financeiro É visível (seção "Gestão"). "Inteligência Bot" (29/05), "Relatórios" e "Acompanhamento" (03/07) foram REMOVIDAS — ver "Features Removidas"
 - Manager: mesma visão admin mas SEM delete. Checagens: `role === "admin" || role === "manager"` visão, `role === "admin"` delete
 - Terminologia: "Estoque" (NÃO "Inventário"), "Valor Médio" (NÃO "Ticket Médio"), NÃO "Líquido"
 - Onboarding: 9 blocos (8 numerados + gate de liberação). `TOTAL_ITEMS` computado dinamicamente. Acessível via sidebar, franchise cards e detail sheet
@@ -343,6 +340,8 @@ Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login G
 **Removidos 02/07/2026 (auditoria Bloco A — dívida técnica, verificado 0 imports por reachability):** 30 componentes shadcn `src/components/ui/` órfãos (accordion, alert, aspect-ratio, avatar, breadcrumb, calendar, carousel, chart, command, context-menu, drawer, dropdown-menu, form, hover-card, input-otp, menubar, navigation-menu, pagination, popover, progress, radio-group, resizable, scroll-area, slider, sonner, toast, toaster, toggle, toggle-group, use-toast) + **26 deps** não importadas (17 `@radix-ui/*` + `react-hook-form`, `zod`, `@hookform/resolvers`, `cmdk`, `vaul`, `input-otp`, `react-day-picker`, `react-resizable-panels`, `sharp`, `eslint-plugin-react-refresh`) + `@radix-ui/react-dropdown-menu` fora do chunk `ui` do `vite.config.js` + 4 exports `cs_worklist` v1 mortos em `entities/all.js` (`getCsWorklist`/`getCsWorklistEvents`/`upsertCsWorklist`/`addCsWorklistEvent` — os de EVENTS `deleteCsWorklistEvent`/`updateCsWorklistEventNote` SEGUEM usados pelo FranchiseDrawer). **NÃO recriar** os shadcn órfãos (o app usa sonner direto p/ toast, não `ui/toaster`; datas via date-fns, não `react-day-picker`). Mantidos por serem dynamic-import/config: jspdf, jspdf-autotable, xlsx, html2canvas, file-saver, tailwindcss-animate.
 
 **Outras mudanças Bloco A (02/07):** `getSaleNetValue` consolidado nos ~9 arquivos que reimplementavam `value−desconto+frete` inline; `SALE_PNL_COLUMNS`/`SALE_REVENUE_COLUMNS` em [src/entities/columns.js](src/entities/columns.js) (trava as colunas de dinheiro do DRE contra omissão silenciosa); ESLint agora cobre `src/lib`/`entities`/`hooks` + `react-hooks/exhaustive-deps:"warn"` (0 erros / 61 warnings de backlog) e `jsconfig include` corrigido (casava ~1 arquivo).
+
+**Removidos 03/07/2026 (simplificação da navegação admin + legado, 0 imports verificado):** **Relatórios** (`pages/Reports.jsx` + `components/reports/FranchiseReportTable.jsx` + `FranchiseReportToolbar.jsx`; `generateSalesReportsAI` já era código morto — o Financeiro cobre faturamento) e **Acompanhamento + health score** (`pages/Acompanhamento.jsx`, `lib/healthScore.js`, `components/acompanhamento/` inteiro — substituído pelo Mural do Customer Success). Tirados do menu (`Layout.jsx`), `pages.config.js` (lazy+PAGES) e `ADMIN_ONLY_PAGES` (`App.jsx`); `AlertsPanel` relinkado pro Customer Success. **NÃO recriar.** Deploys `fbabfe6` (nav) + `1b3eff1` (Acompanhamento).
 
 ## Meta-regras
 - NUNCA alterar `franchise_configurations` sem verificar compatibilidade com vendedor genérico
