@@ -142,7 +142,7 @@ export default function PurchaseOrders() {
       const results = await Promise.allSettled([
         PurchaseOrder.list("-ordered_at"),
         Franchise.list(),
-        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name' }),
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name, personal_phone_for_summary, unit_address' }),
       ]);
       if (!mountedRef.current) return;
 
@@ -202,6 +202,16 @@ export default function PurchaseOrders() {
     const f = franchiseMap[franchiseId];
     const cfg = configMap[franchiseId] || configMap[f?.evolution_instance_id];
     return cfg?.franchise_name || f?.city || f?.owner_name || "Franquia";
+  };
+
+  // Telefone do responsável (resumo) + endereço da unidade — pra ficha do motorista
+  const getFranchiseContact = (franchiseId) => {
+    const f = franchiseMap[franchiseId];
+    const cfg = configMap[franchiseId] || configMap[f?.evolution_instance_id];
+    return {
+      phone: cfg?.personal_phone_for_summary || "",
+      address: cfg?.unit_address || "",
+    };
   };
 
   const filteredOrders = useMemo(() => {
@@ -585,6 +595,7 @@ export default function PurchaseOrders() {
             order,
             items,
             franchiseName: getFranchiseName(order.franchise_id),
+            ...getFranchiseContact(order.franchise_id),
           };
         })
       );
@@ -1270,6 +1281,7 @@ export default function PurchaseOrders() {
                           order: selectedOrder,
                           items: orderItems,
                           franchiseName: getFranchiseName(selectedOrder.franchise_id),
+                          ...getFranchiseContact(selectedOrder.franchise_id),
                           editedQuantities,
                           weightMap,
                         });

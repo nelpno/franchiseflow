@@ -56,6 +56,15 @@ function fmtDate(d) {
   catch { return String(d); }
 }
 
+function formatPhoneBR(raw) {
+  if (!raw) return "";
+  let d = String(raw).replace(/\D/g, "");
+  if (d.length >= 12 && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return String(raw);
+}
+
 function getDisplayName(productName) {
   if (productName && productName.includes("Fatiado") && !productName.startsWith("Fatiado")) {
     return "Fatiado " + productName.replace(/\s*Fatiado\s*/, " ").trim();
@@ -67,7 +76,7 @@ function getDisplayName(productName) {
  * Renders a single picking sheet page onto the jsPDF doc.
  * Returns the doc (for chaining).
  */
-function renderPickingPage(doc, autoTable, { order, items, franchiseName, editedQuantities, weightMap }) {
+function renderPickingPage(doc, autoTable, { order, items, franchiseName, phone, address, editedQuantities, weightMap }) {
   const pw = 210;
   const m = 8;
   const usable = pw - m * 2;
@@ -96,17 +105,91 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, edited
   doc.line(m, y, pw - m, y);
   y += 4;
 
-  // ── Info line ──
-  doc.setFontSize(9);
-  doc.setTextColor(40, 40, 40);
-  doc.setFont("helvetica", "bold");
-  doc.text(franchiseName || "---", m, y);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  const infoRight = `Pedido: ${fmtDate(order.ordered_at)}    Entrega: ${fmtDate(order.estimated_delivery)}`;
-  doc.text(infoRight, pw - m, y, { align: "right" });
+  // ── Card de entrega (endereço + contato) em destaque pro motorista ──
+  // Endereço em primeiro plano (é o que ele usa pra navegar); telefone ao lado.
+  const fmtPhone = formatPhoneBR(phone);
+  const dateL1 = `Pedido: ${fmtDate(order.ordered_at)}`;
+  const dateL2 = `Entrega: ${fmtDate(order.estimated_delivery)}`;
 
-  y += 5;
+  if (address || fmtPhone) {
+    const padX = 5;
+    const padY = 4;
+    const eyeH = 3.4;   // altura do rótulo (eyebrow)
+    const addrLH = 5.0; // altura de linha do endereço
+    const rightColW = 60;
+    const leftX = m + padX;
+    const rightX = pw - m - padX - rightColW;
+    const addrW = rightX - 8 - leftX; // gap de 8mm entre colunas
+    // mede a quebra JÁ na fonte de render (11pt bold) — senão a linha estoura a coluna
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    const addrLines = address ? doc.splitTextToSize(String(address), addrW) : [];
+
+    // altura do card = maior coluna + respiro
+    const leftH = addrLines.length ? eyeH + addrLines.length * addrLH : 6;
+    const rightH = (fmtPhone ? eyeH + 6 : 0) + 4.2 + 4.2; // tel + 2 datas
+    const cardH = Math.max(leftH, rightH) + padY * 2;
+
+    // fundo + barra de acento
+    doc.setFillColor(247, 245, 242);
+    doc.roundedRect(m, y, usable, cardH, 1.8, 1.8, "F");
+    doc.setFillColor(185, 28, 28);
+    doc.rect(m, y, 1.6, cardH, "F");
+
+    // ── Coluna esquerda: ENDEREÇO (destaque) ──
+    let ly = y + padY + 2.4;
+    if (addrLines.length) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.8);
+      doc.setTextColor(185, 28, 28);
+      doc.text("ENDERECO DE ENTREGA", leftX, ly);
+      ly += eyeH;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
+      doc.text(addrLines, leftX, ly + 0.8);
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
+      doc.text(franchiseName || "---", leftX, ly + 2);
+    }
+
+    // ── Coluna direita: TELEFONE + datas ──
+    let ry = y + padY + 2.4;
+    if (fmtPhone) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.8);
+      doc.setTextColor(185, 28, 28);
+      doc.text("TEL. RESPONSAVEL", rightX, ry);
+      ry += eyeH;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.text(fmtPhone, rightX, ry + 1.2);
+      ry += 8;
+    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(115, 115, 115);
+    doc.text(dateL1, rightX, ry);
+    ry += 4.2;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(70, 70, 70);
+    doc.text(dateL2, rightX, ry);
+
+    y += cardH + 3;
+  } else {
+    // Sem contato cadastrado: mantém nome + datas simples
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(40, 40, 40);
+    doc.text(franchiseName || "---", m, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(`${dateL1}    ${dateL2}`, pw - m, y, { align: "right" });
+    y += 5;
+  }
 
   // ── Items Table ──
   const groups = groupItems(items, editedQuantities);
@@ -392,11 +475,11 @@ async function loadPdfLibs() {
 /**
  * Compact A4 picking sheet — designed to fit on a single page.
  */
-export async function generatePickingSheet({ order, items, franchiseName, editedQuantities, weightMap }) {
+export async function generatePickingSheet({ order, items, franchiseName, phone, address, editedQuantities, weightMap }) {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  renderPickingPage(doc, autoTable, { order, items, franchiseName, editedQuantities, weightMap });
+  renderPickingPage(doc, autoTable, { order, items, franchiseName, phone, address, editedQuantities, weightMap });
 
   const dateStr = format(new Date(), "yyyyMMdd");
   const shortId = order.id.slice(0, 8).toUpperCase();
@@ -412,7 +495,7 @@ export async function generateBulkPickingSheet(ordersWithItems, weightMap) {
 
   ordersWithItems.forEach((data, idx) => {
     if (idx > 0) doc.addPage();
-    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName, weightMap });
+    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName, phone: data.phone, address: data.address, weightMap });
   });
 
   // Consolidated summary as last page
