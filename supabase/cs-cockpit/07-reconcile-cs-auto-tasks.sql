@@ -11,13 +11,17 @@ begin
   drop table if exists _h;   -- guarda contra 2ª chamada na MESMA transação (senão 42P07)
   create temp table _h on commit drop as select * from public.get_franchise_health_signals();
 
-  -- 1) abrir cartão auto p/ franquia crítica sem auto aberto e fora da supressão 7d
+  -- 1) abrir cartão auto p/ franquia crítica SEM NENHUM cartão aberto (manual OU auto), fora da supressão 7d
+  --    FIX 2026-07-10: o gate antes olhava só source='auto' -> o reconcile criava um auto AO LADO de
+  --    cartões manuais/migrados (duplicata que "voltava" após limpeza do CS). Agora QUALQUER cartão
+  --    aberto (manual ou auto) suprime o auto. Cartão auto é rede de segurança: só entra se ninguém
+  --    já está cuidando da franquia. Resolvido o cartão e seguindo crítica, o auto volta no próximo load.
   with cand as (
     select h.franchise_id, h.franchise_name, h.flags
     from _h h
     where h.tier = 'critical'
       and not exists (select 1 from cs_tasks t where t.franchise_id=h.franchise_id
-                        and t.source='auto' and t.archived_at is null and t.column_status <> 'feito')
+                        and t.archived_at is null and t.column_status <> 'feito')
       -- supressão v1 = janela simples de 7d. PENDÊNCIA (spec §2.2): "reabrir se piorar" fica p/ v2.
       and not exists (select 1 from cs_tasks t where t.franchise_id=h.franchise_id
                         and t.source='auto' and t.column_status='feito' and t.resolved_at > v_now - interval '7 days')

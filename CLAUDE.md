@@ -20,6 +20,15 @@
 - Vite prod: `console.log`/`debugger` stripados (`esbuild.drop`). Manual chunks: recharts, export (jspdf/xlsx), vendor, ui, supabase, dates. CSS via lightningcss
 - Deps notáveis não-óbvias: `@hello-pangea/dnd` (drag-drop), `html2canvas` + `jspdf` (export PDF), `xlsx` (export Excel)
 
+## Mapa do código (`src/`)
+- `pages/` — 1 arquivo por rota (`createPageUrl("X")`→`/X`): Dashboard, Vendas, Gestao, Financeiro, Franchises, Marketing, MyContacts, Onboarding, FranchiseSettings, CustomerSuccess…
+- `entities/all.js` — **camada de dados** (entity adapter; SEMPRE importar daqui, nunca `supabase.from()` direto) · `entities/columns.js` — listas de colunas travadas (`SALE_PNL_COLUMNS` etc)
+- `lib/` — regras puras: `financialCalcs` (DRE/`getSaleNetValue`), `formatters`, `dateOnly`, `stockSuggestion`, `salesExport`, `franchiseUtils` (`PAYMENT_METHODS`), `saveFiscalData`, `smartActions`, `safeErrorMessage`/`csvSanitize`/`safeHref` (segurança)
+- `components/minha-loja/` — telas do franqueado (TabResultado, TabLancar, TabEstoque, TabReposicao, SaleForm, PurchaseOrderForm, SaleReceipt, ExpenseForm)
+- `components/dashboard/` — FranchiseeDashboard + cards (FinancialObligationsCard, BotSummaryCard, FranchiseRanking) · `financeiro/` — AsaasSetupPanel, MarketingPaymentsAdmin · `customer-success/` — Mural CS (CsBoard/CsCard/FranchiseDrawer/tierConfig) · `onboarding/` · `marketing/` · `vendedor/` — wizard "Meu Vendedor" · `ui/` — shadcn
+- `App.jsx` (rotas + gates `ADMIN_ONLY_PAGES`/`CsRoute`) · `Layout.jsx` (nav + `FranchiseSelector`) · `lib/AuthContext.jsx` (auth, `selectedFranchise`)
+- `supabase/` — migrations `.sql` versionadas + `functions/asaas-billing/` (edge) · `docs/claude/` — shards do CLAUDE.md
+
 ## Gotchas Críticos
 
 ### Auth (AuthContext.jsx)
@@ -73,6 +82,7 @@
 
 **RLS específico:**
 - `managed_franchise_ids` contém AMBOS UUID e evolution_instance_id (28 policies dependem)
+- **`managed_franchise_ids` costuma guardar o UUID E o `evolution_instance_id` da MESMA franquia** → `array_length` ≠ nº de franquias reais (2 entradas podem ser 1 unidade). Contar de fato: casar cada id contra `franchises.id::text` OU `evolution_instance_id` e deduplicar. Remover um vínculo exige tirar OS DOIS ids (é o que `handleSavePermissions`/`handleUnlinkUser` fazem)
 - `franchises_update` policy (fix 17/04/2026): `is_admin_or_manager() OR evolution_instance_id = ANY (managed_franchise_ids())` — franqueado edita dados fiscais da própria franquia via gate onboarding. Antes era só admin/manager
 - profiles SELECT: `is_admin_or_manager() OR id = (select auth.uid())` — NUNCA `is_admin()` sozinha (recursão infinita)
 - Tabelas novas: DELETE policy com `is_admin()` obrigatória (sem ela, delete retorna sucesso mas 0 rows)
@@ -214,6 +224,7 @@
 - **`aggregate_daily_data` (cron 02h) é canônica desde 02/07**: subtrai `discount_amount` + data BRT `(now() AT TIME ZONE 'America/Sao_Paulo')::date-1` (a versão antiga somava sem desconto → `daily_summaries.sales_value`/meta diária inflados; 925 linhas corrigidas). Backfill de correção mexe SÓ em `sales_value` (não reprocessa via RPC, pra não zerar `unique_contacts`)
 - Valor recebido por venda: SEMPRE `getSaleNetValue(sale)` de `lib/financialCalcs.js` (mesma fórmula). NUNCA `s.net_value || s.value` — `net_value` pode ser null em vendas antigas (bug Ricardo Tatuapé 28/04: R$ 118,50 saía 111,50 sem o frete)
 - Export de vendas: `SALES_EXPORT_COLUMNS` + `buildSalesExportRows(sales, contactsMap, { includeTotalsRow })` em `lib/salesExport.js` — fonte única usada por TabLancar (tela Vendas) e TabResultado (Gestão > Resultado). Adicionar coluna nova = editar só esse arquivo
+- **Coluna "Hora" (13/07/2026)** = `created_at` (TIMESTAMPTZ UTC), NÃO `sale_date` (DATE puro sem hora). Para hora-do-dia correta em QUALQUER dispositivo, fixar o fuso: `toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'})` — `new Date()`+`format(d,'HH:mm')` usa o fuso do navegador e erra se o device estiver noutro TZ. `SALES_COLUMNS` (Vendas.jsx) e o `columns` do TabResultado já trazem `created_at` — coluna de horário no export não exige mudança de query. Padrão reusável p/ hora em relatório/export
 - **Nome+telefone do cliente são denormalizados na venda via trigger `trg_sales_fill_customer_snapshot`** (BEFORE INSERT/UPDATE, fix 16/06/2026): a venda guarda `contact_id` (FK) E `customer_name`/`contact_phone` (snapshot). SaleForm (manual) grava SÓ `contact_id`; o bot grava o snapshot. O trigger copia nome+tel do contato quando vier null (`coalesce`, não sobrescreve). **Por quê:** Vendas carrega só os ~1000 contatos mais recentes ([Vendas.jsx:88](src/pages/Vendas.jsx#L88), `Contact.filter` sem fetchAll) — franquia >1000 contatos perdia o nome de vendas ligadas a contato antigo (lista "—", comprovante sem Cliente). Exibição: lista [TabLancar.jsx:429](src/components/minha-loja/TabLancar.jsx#L429)/export [salesExport.js:49](src/lib/salesExport.js#L49)/comprovante [SaleReceipt.jsx:158](src/components/minha-loja/SaleReceipt.jsx#L158) usam `contactsMap[id]?.nome || sale.customer_name`. NÃO trocar por fetchAll de contatos (custo cresce com a base); denormalizar é O(1)/venda. Migration: [supabase/sales-customer-name-denormalize.sql](supabase/sales-customer-name-denormalize.sql)
 - Label de método de pagamento: `getPaymentMethodLabel(value)` de `franchiseUtils.js` (não fazer `PAYMENT_METHODS.find(...)` inline)
 - `card_fee_amount` sobre `subtotal + effectiveDeliveryFee` — label dinâmica
@@ -254,6 +265,8 @@
 - Franqueado: `inviteFranchisee()` via webhook n8n (NÃO `resetPasswordForEmail` — email duplicado)
 - Staff: `staffInvite(email, role)` → webhook `/staff-invite`. Se user existe → atualiza role; se não → convite
 - Supabase 23505 (duplicate) = conta já existe em auth.users
+- **Gerenciar vínculo usuário↔franquia (admin) JÁ existe no app** ([Franchises.jsx](src/pages/Franchises.jsx), detalhe da franquia): **"Editar Permissões"** (dialog com switch por usuário; `handleSavePermissions` remove UUID+evo_id ao desmarcar, adiciona ao marcar) e **"Excluir usuário"**. `handleUnlinkUser` tira a franquia do array e, se o usuário ficar **órfão (0 franquias)**, **deleta a conta** via RPC `delete_user_complete`. `<FranchiseSelector>` ([Layout.jsx](src/Layout.jsx)) aparece no topo quando o franqueado tem 2+ franquias reais (troca na tela inicial, persiste em `localStorage`)
+- **RPC `delete_user_complete(p_user_id uuid)`** (SECURITY DEFINER): guard `is_admin()` + não-self → deleta `notifications`/`audit_logs`/`franchise_notes` + `DELETE FROM auth.users` (cascadeia `profiles`). ⚠️ Chamada via MCP `execute_sql` (service_role, `auth.uid()` null) **falha no guard `is_admin()`** → pra deletar usuário por SQL direto, **replicar os 4 DELETEs do corpo**, não chamar a RPC. Deletar franqueado NÃO mexe no array dos outros (ex: co-titular da mesma unidade fica intacto)
 
 ### Health Score — REMOVIDO 03/07/2026
 - O health score e a página **Acompanhamento** foram **REMOVIDOS** (Nelson: não usava mais; o **Mural do Customer Success** substituiu). Apagados: `pages/Acompanhamento.jsx`, `lib/healthScore.js`, `components/acompanhamento/` inteiro (`FranchiseHealthDetail`, `HealthScoreBar`, `FranchiseNotes`, `InventorySheet`). **NÃO recriar.** A `AlertsPanel` (Painel Geral) agora leva ao **Customer Success**, não ao Acompanhamento. Deploy `1b3eff1`.
