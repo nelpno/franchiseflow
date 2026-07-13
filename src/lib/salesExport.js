@@ -19,6 +19,23 @@ function formatDateBR(value) {
   }
 }
 
+// Hora em que a venda foi lançada (created_at é TIMESTAMPTZ em UTC).
+// Fixado em America/Sao_Paulo para não depender do fuso do dispositivo.
+function formatTimeBR(value) {
+  if (!value) return "";
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
 function formatMoney(value) {
   const n = parseFloat(value) || 0;
   return n.toFixed(2).replace(".", ",");
@@ -31,6 +48,7 @@ function formatMoney(value) {
  */
 export const SALES_EXPORT_COLUMNS = [
   { key: "sale_date", header: "Data" },
+  { key: "hora", header: "Hora" },
   { key: "sale_number", header: "Nº Pedido" },
   { key: "customer", header: "Cliente" },
   { key: "phone", header: "Telefone" },
@@ -64,6 +82,7 @@ function buildRow(sale, contactsMap) {
 
   return {
     sale_date: formatDateBR(sale?.sale_date || sale?.created_at),
+    hora: formatTimeBR(sale?.created_at),
     sale_number: sale?.sale_number ? `#${sale.sale_number}` : "",
     customer: resolveCustomerName(sale, contactsMap),
     phone: resolveCustomerPhone(sale, contactsMap),
@@ -91,6 +110,7 @@ function buildTotalsRow(sales) {
   }
   return {
     sale_date: "",
+    hora: "",
     sale_number: "",
     customer: "TOTAL",
     phone: "",
