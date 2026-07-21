@@ -1,4 +1,5 @@
 import { Franchise, FranchiseConfiguration } from "@/entities/all";
+import { assembleUnitAddress } from "@/lib/addressUtils";
 
 // Campos que vão para franchises
 const FRANCHISE_FIELDS = [
@@ -11,8 +12,11 @@ const FRANCHISE_FIELDS = [
   "city",
 ];
 
-// Campos que vão para franchise_configurations
-const CONFIG_FIELDS = ["street_address", "cep"];
+// Campos que vão para franchise_configurations.
+// bairro/cidade são copiados também pra config (o wizard "Meu Vendedor" lê daqui),
+// mantendo config e cadastro fiscal em sincronia — senão um "salvar" no wizard,
+// que carrega esses campos vazios, apagaria o endereço.
+const CONFIG_FIELDS = ["street_address", "cep", "neighborhood", "city"];
 
 function pick(obj, keys) {
   const out = {};
@@ -37,6 +41,18 @@ export async function saveFiscalData(franchiseId, evolutionInstanceId, data) {
   for (const k of Object.keys(configPatch)) {
     if (configPatch[k] === "") configPatch[k] = null;
   }
+
+  // Monta o unit_address (endereço do motorista) a partir do que foi enviado.
+  // Assim, completar o cadastro fiscal (gate de onboarding ou edição admin) já
+  // preenche o endereço — sem depender de abrir/salvar o wizard "Meu Vendedor".
+  const assembledAddress = assembleUnitAddress({
+    street: data.street_address,
+    number: data.address_number,
+    neighborhood: data.neighborhood,
+    city: data.city,
+    cep: data.cep,
+  });
+  if (assembledAddress) configPatch.unit_address = assembledAddress;
 
   if (Object.keys(franchisePatch).length > 0) {
     await Franchise.update(franchiseId, franchisePatch);

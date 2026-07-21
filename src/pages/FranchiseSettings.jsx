@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
 
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -201,6 +202,20 @@ function FranchiseSettingsContent() {
   const loadConfigIntoForm = (config) => {
     setEditingConfig(config);
 
+    // Semeia bairro/cidade/número do cadastro fiscal (tabela franchises) quando a config
+    // ainda não os tem — evita que um "salvar" no wizard apague o endereço já montado.
+    // Só dobra o número na rua se ela ainda NÃO terminar em número (não mexe no que o
+    // franqueado digitou).
+    const fiscal = franchises.find(
+      (f) => f.evolution_instance_id === config.franchise_evolution_instance_id
+    );
+    const streetHasNumber = /\d\s*$/.test((config.street_address || '').trim());
+    const seededStreet = streetHasNumber
+      ? (config.street_address || '')
+      : foldStreetNumber(config.street_address || '', fiscal?.address_number);
+    const seededNeighborhood = config.neighborhood || fiscal?.neighborhood || '';
+    const seededCity = config.city || stripCityUf(fiscal?.city) || '';
+
     const baseData = {
       ...initialFormData,
       ...config,
@@ -228,9 +243,9 @@ function FranchiseSettingsContent() {
       operating_hours: config.operating_hours || [],
       pix_holder_name: config.pix_holder_name || '',
       pix_bank: config.pix_bank || '',
-      city: config.city || '',
-      neighborhood: config.neighborhood || '',
-      street_address: config.street_address || config.unit_address || '',
+      city: seededCity,
+      neighborhood: seededNeighborhood,
+      street_address: seededStreet || config.unit_address || '',
       cep: config.cep || '',
       pickup_schedule: config.pickup_schedule || [],
       has_custom_pickup_hours: config.has_custom_pickup_hours ?? false,
@@ -306,13 +321,14 @@ function FranchiseSettingsContent() {
     // Strip UI-only / read-only fields before sending to DB
     const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = formData;
 
-    // Build unit_address from structured fields
-    const streetPart = (dbFields.street_address || '').trim();
-    const neighborhoodPart = (dbFields.neighborhood || '').trim();
-    const cityPart = (dbFields.city || '').trim();
-    const cepPart = (dbFields.cep || '').trim();
-    const assembledAddress = [streetPart, neighborhoodPart, cityPart].filter(Boolean).join(', ')
-      + (cepPart ? ` - ${cepPart}` : '');
+    // Monta o unit_address pelo helper compartilhado (mesmo formato do fluxo fiscal).
+    // O campo "Rua e número" do wizard já traz o número embutido -> number vazio aqui.
+    const assembledAddress = assembleUnitAddress({
+      street: dbFields.street_address,
+      neighborhood: dbFields.neighborhood,
+      city: dbFields.city,
+      cep: dbFields.cep,
+    });
 
     const finalData = {
       ...dbFields,
