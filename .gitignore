@@ -21,6 +21,11 @@ dist-ssr
 # Claude Code (credenciais e worktrees)
 .claude/
 
+# Scratch de sessao — contem segredo em texto claro (ex: .tmp/deploy.mjs tem a API key
+# do Portainer). Sem esta linha, um `git add -A` distraido publica a chave no GitHub.
+# Artefato que DEVE ser versionado vai em docs/ ou supabase/, nunca em .tmp/.
+.tmp/
+
 # Temp/misc
 temp/
 *.ogg
