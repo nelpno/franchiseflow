@@ -1,8 +1,10 @@
 -- Ranking de funil por franquia (conversão + recompra) para o painel ADMIN.
 -- Irmã de get-franchise-funnel-stats.sql (que é a versão franchisee-scoped).
 --
--- Guard is_admin_or_manager() com RAISE (padrão get-bot-conversation-summary.sql),
--- não o filtro-por-id: aqui o objetivo É ver a rede inteira.
+-- Guard is_cs_or_admin() com RAISE (padrão get-bot-conversation-summary.sql), não o
+-- filtro-por-id: aqui o objetivo É ver a rede inteira. Usa is_cs_or_admin (e NÃO
+-- is_admin_or_manager) porque o Celso é `customer_success` e precisa ver o funil no
+-- Mural — é o mesmo helper que as demais RPCs do cockpit de CS já usam.
 -- Testar via MCP exige simular o papel — service_role tem auth.uid() nulo e cai no 42501:
 --   select set_config('request.jwt.claims', json_build_object('sub','<uuid admin>')::text, true);
 --
@@ -37,7 +39,7 @@ SECURITY DEFINER
 SET search_path = 'public'
 AS $$
 BEGIN
-  IF NOT is_admin_or_manager() THEN
+  IF NOT is_cs_or_admin() THEN
     RAISE EXCEPTION 'Acesso negado' USING ERRCODE = '42501';
   END IF;
 
@@ -104,4 +106,4 @@ REVOKE ALL ON FUNCTION public.get_network_funnel_ranking(date, date) FROM PUBLIC
 GRANT EXECUTE ON FUNCTION public.get_network_funnel_ranking(date, date) TO authenticated;
 
 COMMENT ON FUNCTION public.get_network_funnel_ranking(date, date) IS
-  'Ranking de funil por franquia (conversao + recompra) para o painel admin. Guard is_admin_or_manager. bot_share_pct = quanto das vendas veio de quem passou pelo robo.';
+  'Ranking de funil por franquia (conversao + recompra) para admin E customer_success. Guard is_cs_or_admin. bot_share_pct = quanto das vendas veio de quem passou pelo robo.';

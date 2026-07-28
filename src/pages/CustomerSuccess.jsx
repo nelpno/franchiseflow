@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
-import { getFranchiseHealthSignals, getCsTasks, moveCsTask, reconcileCsAutoTasks } from "@/entities/all";
+import { getFranchiseHealthSignals, getCsTasks, moveCsTask, reconcileCsAutoTasks, getNetworkFunnelRanking } from "@/entities/all";
+import NetworkFunnelPanel from "@/components/dashboard/NetworkFunnelPanel";
+import { format, startOfMonth } from "date-fns";
 import FranchiseDrawer from "@/components/customer-success/FranchiseDrawer";
 import CsBoard from "@/components/customer-success/CsBoard";
 import CsRadarPanel from "@/components/customer-success/CsRadarPanel";
@@ -23,6 +25,29 @@ export default function CustomerSuccess() {
   const [previewRow, setPreviewRow] = useState(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddFranchise, setQuickAddFranchise] = useState("");
+  // Funil da rede — lazy: a RPC custa ~230ms varrendo todas as franquias, então só
+  // carrega quando a aba é aberta (e uma vez só).
+  const [funnel, setFunnel] = useState({ rows: [], loading: false, error: null, fetched: false });
+  const funnelFetchingRef = useRef(false);
+
+  const loadFunnel = useCallback(async () => {
+    if (funnelFetchingRef.current || funnel.fetched) return;
+    funnelFetchingRef.current = true;
+    setFunnel((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const rows = await getNetworkFunnelRanking(
+        format(startOfMonth(new Date()), "yyyy-MM-dd"),
+        format(new Date(), "yyyy-MM-dd")
+      );
+      setFunnel({ rows, loading: false, error: null, fetched: true });
+    } catch (err) {
+      setFunnel({ rows: [], loading: false, error: safeErrorMessage(err, "Erro ao carregar o funil"), fetched: false });
+    } finally {
+      funnelFetchingRef.current = false;
+    }
+  }, [funnel.fetched]);
+
+  useEffect(() => { if (tab === "funil") loadFunnel(); }, [tab, loadFunnel]);
   const mountedRef = useRef(true);
 
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -124,7 +149,7 @@ export default function CustomerSuccess() {
 
       {/* Abas Mural / Radar */}
       <div className="flex gap-2">
-        {[{ key: "mural", label: "Mural", icon: "view_kanban" }, { key: "radar", label: "Radar da rede", icon: "radar" }].map((tb) => (
+        {[{ key: "mural", label: "Mural", icon: "view_kanban" }, { key: "radar", label: "Radar da rede", icon: "radar" }, { key: "funil", label: "Funil", icon: "filter_alt" }].map((tb) => (
           <button
             key={tb.key}
             onClick={() => setTab(tb.key)}
@@ -150,6 +175,17 @@ export default function CustomerSuccess() {
         </div>
       ) : tab === "mural" ? (
         <CsBoard tasks={tasks} signalsByFranchise={signalsByFranchise} onOpen={openTask} onMoveTask={onMoveTask} />
+      ) : tab === "funil" ? (
+        funnel.loading ? (
+          <Skeleton className="h-64 w-full rounded-xl" />
+        ) : funnel.error ? (
+          <div className="text-center py-12 text-[#4a3d3d]">
+            <p>{funnel.error}</p>
+            <button onClick={loadFunnel} className="mt-3 text-[#b91c1c] font-semibold">Tentar novamente</button>
+          </div>
+        ) : (
+          <NetworkFunnelPanel rows={funnel.rows} />
+        )
       ) : (
         <CsRadarPanel rows={signals} openCardIds={openCardIds} onCreateCard={createCardFor} onOpenPreview={openPreview} />
       )}
