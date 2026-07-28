@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { supabase } from "@/api/supabaseClient";
-import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, Contact } from "@/entities/all";
-import { format, subDays } from "date-fns";
+import { Franchise, DailySummary, Sale, DailyUniqueContact, InventoryItem, PurchaseOrder, FranchiseConfiguration, Contact, getNetworkFunnelRanking } from "@/entities/all";
+import { format, subDays, startOfMonth } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import FranchiseRanking from "./FranchiseRanking";
 import LastPurchaseOrderCard from "./LastPurchaseOrderCard";
 import DailyRevenueChart from "./DailyRevenueChart";
 import BotSummaryCard from "./BotSummaryCard";
+import NetworkFunnelPanel from "./NetworkFunnelPanel";
 import FinanceiroSummaryCard from "./FinanceiroSummaryCard";
 import { buildConfigMap } from "@/lib/franchiseUtils";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -324,6 +325,27 @@ export default function AdminDashboard() {
   useEffect(() => { hasFetchedCollapsedRef.current = hasFetchedCollapsed; }, [hasFetchedCollapsed]);
   useEffect(() => { loadCollapsedDataRef.current = loadCollapsedData; }, [loadCollapsedData]);
 
+  // Funil da rede — lazy-load próprio (a RPC custa ~230ms varrendo todas as franquias;
+  // não pode entrar no load do painel). Mês corrente até hoje, igual ao card do franqueado.
+  const [funnelRanking, setFunnelRanking] = useState({ rows: [], isLoading: false, error: null, fetched: false });
+  const funnelFetchingRef = useRef(false);
+
+  const loadFunnelRanking = useCallback(async () => {
+    if (funnelFetchingRef.current || funnelRanking.fetched) return;
+    funnelFetchingRef.current = true;
+    setFunnelRanking((s) => ({ ...s, isLoading: true, error: null }));
+    try {
+      const start = format(startOfMonth(new Date()), "yyyy-MM-dd");
+      const end = format(new Date(), "yyyy-MM-dd");
+      const rows = await getNetworkFunnelRanking(start, end);
+      setFunnelRanking({ rows, isLoading: false, error: null, fetched: true });
+    } catch (err) {
+      setFunnelRanking({ rows: [], isLoading: false, error: safeErrorMessage(err, "Erro ao carregar o funil"), fetched: false });
+    } finally {
+      funnelFetchingRef.current = false;
+    }
+  }, [funnelRanking.fetched]);
+
   // Build conversationMessages-compatible array from RPC counts for child components
   const conversationMessages = useMemo(() => {
     return humanMsgCounts.map(row => ({
@@ -600,6 +622,30 @@ export default function AdminDashboard() {
             conversationMessages={conversationMessages}
             contacts={collapsedData.contacts}
           />
+        )}
+      </CollapsibleSection>
+
+      {/* Funil da rede — lazy-load: RPC própria (~230ms), fora do load do painel */}
+      <CollapsibleSection
+        title="Conversão e Recompra"
+        icon="filter_alt"
+        defaultOpen={false}
+        onFirstExpand={() => loadFunnelRanking()}
+      >
+        {funnelRanking.isLoading ? (
+          <Skeleton className="h-64 rounded-2xl" />
+        ) : funnelRanking.error ? (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-800 flex items-center justify-between gap-3">
+            <span>{funnelRanking.error}</span>
+            <button
+              onClick={() => loadFunnelRanking()}
+              className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 shrink-0"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
+          <NetworkFunnelPanel rows={funnelRanking.rows} />
         )}
       </CollapsibleSection>
 

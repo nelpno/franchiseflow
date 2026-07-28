@@ -297,6 +297,18 @@ export async function getNetworkFunnelBenchmark(start, end, { signal } = {}) {
   return data?.[0] ?? null;
 }
 
+// Ranking de funil da rede (admin). ~230ms — lazy-load, nunca no load do AdminDashboard.
+export async function getNetworkFunnelRanking(start, end, { signal } = {}) {
+  let query = supabase.rpc('get_network_funnel_ranking', {
+    p_start: start,
+    p_end: end,
+  });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function getStandardProductCatalog() {
   const { data, error } = await supabase.rpc('get_standard_product_catalog');
   if (error) throw error;
