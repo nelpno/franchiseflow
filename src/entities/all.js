@@ -268,6 +268,35 @@ export async function getFranchiseRankingMonthly(yearMonth, franchiseId, { signa
   return data?.[0] ?? null;
 }
 
+// Funil da franquia no período: quantas pessoas falaram com o robô e quantas compraram,
+// mais o comportamento de recompra. ~18ms (index-only scan).
+// has_bot_data=false quando o robô está parado/inexistente — o card esconde o número
+// em vez de mostrar uma taxa sem sentido (Santos daria 4400%).
+export async function getFranchiseFunnelStats(franchiseId, start, end, { signal } = {}) {
+  let query = supabase.rpc('get_franchise_funnel_stats', {
+    p_franchise_id: franchiseId,
+    p_start: start,
+    p_end: end,
+  });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+// Média anônima da rede, só para comparação no detalhe. ~230ms — por isso é chamada
+// apenas quando o franqueado ABRE o detalhe, nunca no load do dashboard.
+export async function getNetworkFunnelBenchmark(start, end, { signal } = {}) {
+  let query = supabase.rpc('get_network_funnel_benchmark', {
+    p_start: start,
+    p_end: end,
+  });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
 export async function getStandardProductCatalog() {
   const { data, error } = await supabase.rpc('get_standard_product_catalog');
   if (error) throw error;

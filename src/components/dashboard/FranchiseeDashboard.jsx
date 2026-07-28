@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -22,6 +22,8 @@ import FinancialObligationsCard from "./FinancialObligationsCard";
 import PriorityAction from "./PriorityAction";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
 import CustomDateRangeSheet from "./CustomDateRangeSheet";
+import ConversionCard from "./ConversionCard";
+import ConversionDetailSheet from "./ConversionDetailSheet";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { generateSmartActions } from "@/lib/smartActions";
 
@@ -56,6 +58,9 @@ export default function FranchiseeDashboard() {
   const [customRange, setCustomRange] = useState(null);
   const [customSheetOpen, setCustomSheetOpen] = useState(false);
   const [monthlyRanking, setMonthlyRanking] = useState(null);
+  const [funnel, setFunnel] = useState(null);
+  const [funnelLoading, setFunnelLoading] = useState(true);
+  const [funnelOpen, setFunnelOpen] = useState(false);
   const { subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [prioritySheetOpen, setPrioritySheetOpen] = useState(false);
 
@@ -303,6 +308,46 @@ export default function FranchiseeDashboard() {
     return () => controller.abort();
   }, [evoId, period, monthOffset, customRange?.start]);
 
+  // Janela do funil — SEMPRE mensal (ou a faixa personalizada). Conversão de um dia
+  // ou de uma semana não tem significado estatístico, então os filtros Hoje/Semana
+  // caem no mês corrente em vez de recortar a amostra.
+  // No mês corrente o fim é HOJE, não o último dia do mês: senão compararia julho
+  // parcial contra junho inteiro e subestimaria o mês em curso.
+  const funnelRange = useMemo(() => {
+    if (period === "custom" && customRange?.start && customRange?.end) {
+      return {
+        start: format(customRange.start, "yyyy-MM-dd"),
+        end: format(customRange.end, "yyyy-MM-dd"),
+        label: `${format(customRange.start, "dd/MM")} – ${format(customRange.end, "dd/MM")}`,
+      };
+    }
+    const offset = period === "month" ? monthOffset : 0;
+    const ref = addMonths(new Date(), offset);
+    const mEnd = endOfMonth(ref);
+    const today = new Date();
+    const end = mEnd > today ? today : mEnd;
+    return {
+      start: format(startOfMonth(ref), "yyyy-MM-dd"),
+      end: format(end, "yyyy-MM-dd"),
+      label: formatMonthLabel(offset),
+    };
+  }, [period, monthOffset, customRange]);
+
+  // Funil — fora do useVisibilityPolling (métrica mensal, não muda a cada 5min).
+  useEffect(() => {
+    if (!evoId) return;
+    const controller = new AbortController();
+    setFunnelLoading(true);
+    getFranchiseFunnelStats(evoId, funnelRange.start, funnelRange.end, { signal: controller.signal })
+      .then((f) => {
+        if (!mountedRef.current) return;
+        setFunnel(f);
+        setFunnelLoading(false);
+      })
+      .catch(() => { if (mountedRef.current) setFunnelLoading(false); });
+    return () => controller.abort();
+  }, [evoId, funnelRange.start, funnelRange.end]);
+
   // Bot is active if franchise has a config with evolution_instance_id
   const botActive = !!(franchiseConfig && evoId);
 
@@ -326,7 +371,8 @@ export default function FranchiseeDashboard() {
     return (
       <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-[#fbf9fa]">
         <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
@@ -458,7 +504,7 @@ export default function FranchiseeDashboard() {
         );
       })()}
 
-      <section className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
         <StatsCard
           title={period === "today" ? "Vendas Hoje" : "Vendas"}
           value={stats.salesCount}
@@ -482,6 +528,11 @@ export default function FranchiseeDashboard() {
           previousValue={stats.prevAvgTicket}
           trend={stats.avgTicket > stats.prevAvgTicket ? 'up' : stats.avgTicket < stats.prevAvgTicket ? 'down' : null}
           href="/Vendas"
+        />
+        <ConversionCard
+          funnel={funnel}
+          loading={funnelLoading}
+          onClick={() => setFunnelOpen(true)}
         />
       </section>
 
@@ -532,6 +583,14 @@ export default function FranchiseeDashboard() {
         subscription={subscription}
         checkPaymentNow={checkPaymentNow}
         isChecking={isChecking}
+      />
+
+      <ConversionDetailSheet
+        open={funnelOpen}
+        onOpenChange={setFunnelOpen}
+        funnel={funnel}
+        range={funnelRange}
+        label={funnelRange.label}
       />
 
       <CustomDateRangeSheet
