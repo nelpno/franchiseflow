@@ -56,6 +56,11 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [confirmId, setConfirmId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  // título salvo nesta sessão do drawer — a lista de fora recarrega por onChanged,
+  // mas o objeto `task` que chegou por prop continua com o valor antigo
+  const [titleLocal, setTitleLocal] = useState(null);
 
   const taskId = task?.id || null;
   const isPreview = !task && !!row;
@@ -71,6 +76,7 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
 
   useEffect(() => {
     setNote(""); setMeetingMode(false); setMeetingDate(""); setEditingId(null); setConfirmId(null);
+    setEditingTitle(false); setTitleDraft(""); setTitleLocal(null);
     setShowRaioX(!task && !!row); // no preview do Radar, já abre o raio-x
     loadEvents();
   }, [drawerKey, task, row, loadEvents]);
@@ -142,6 +148,23 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
     finally { setSaving(false); }
   };
 
+  const startEditTitle = () => { setTitleDraft(cardTitle); setEditingTitle(true); };
+  const saveTitle = async () => {
+    if (!taskId || saving) return;
+    const next = titleDraft.trim();
+    if (!next) { toast.error("O título não pode ficar vazio."); return; }
+    if (next === cardTitle) { setEditingTitle(false); return; }
+    setSaving(true);
+    try {
+      await updateCsTask(taskId, { title: next });
+      setTitleLocal(next);
+      setEditingTitle(false);
+      toast.success("Título atualizado");
+      onChanged?.();
+    } catch (e) { console.error(e); toast.error(safeErrorMessage(e, "Não foi possível editar o título.")); }
+    finally { setSaving(false); }
+  };
+
   const startEdit = (ev) => { setConfirmId(null); setEditingId(ev.id); setEditText(ev.note || ""); };
   const saveEdit = async () => {
     if (!editingId || saving) return;
@@ -167,7 +190,8 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
   };
 
   const tier = row ? (row.is_standout ? "standout" : row.tier) : null;
-  const headerTitle = row ? row.franchise_name : (task?.title || "Cartão");
+  const cardTitle = titleLocal ?? task?.title ?? "";
+  const headerTitle = row ? row.franchise_name : (cardTitle || "Cartão");
   const headerSub = row ? `${row.city || ""}${row.state_uf ? ` · ${row.state_uf}` : ""}` : "Tarefa geral";
   const deltaStr = row?.revenue_delta_pct != null ? `${row.revenue_delta_pct > 0 ? "+" : ""}${row.revenue_delta_pct}%` : null;
   const mktCur = marketingLiquid(row?.marketing_amount_current || 0);
@@ -205,6 +229,12 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
             <DialogHeader className="space-y-1 text-left">
               <DialogTitle className="flex items-center gap-2 text-lg">
                 {tier && <span>{TIER[tier].dot}</span>} {headerTitle}
+                {task && !row && !editingTitle && (
+                  <button type="button" onClick={startEditTitle} title="Editar o título do cartão"
+                    aria-label="Editar o título do cartão" className="shrink-0 text-[#8a7e7e] hover:text-[#b91c1c]">
+                    <MaterialIcon icon="edit" size={16} />
+                  </button>
+                )}
               </DialogTitle>
               <p className="text-sm text-[#8a7e7e]">{headerSub}</p>
               {tier && (
@@ -234,6 +264,40 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
                 )}
               </div>
             )}
+            {/* Título do cartão — editável. No cartão de franquia o topo mostra o nome
+                da unidade, então o título só aparece aqui. */}
+            {task && (editingTitle ? (
+              <div className="space-y-1.5">
+                <label htmlFor="cs-card-title" className="text-xs font-bold text-[#4a3d3d] uppercase tracking-wide">
+                  Título do cartão
+                </label>
+                <input
+                  id="cs-card-title"
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); saveTitle(); }
+                    if (e.key === "Escape") setEditingTitle(false);
+                  }}
+                  maxLength={160}
+                  autoFocus
+                  className="w-full text-sm rounded-lg border border-[#291715]/15 p-2.5 focus:outline-none focus:border-[#b91c1c]"
+                />
+                <div className="flex gap-3 text-xs">
+                  <button type="button" onClick={saveTitle} disabled={saving} className="text-[#b91c1c] font-semibold">Salvar</button>
+                  <button type="button" onClick={() => setEditingTitle(false)} className="text-[#8a7e7e]">Cancelar</button>
+                </div>
+              </div>
+            ) : row ? (
+              <div className="flex items-start gap-1.5">
+                <p className="text-sm font-semibold text-[#1b1c1d] leading-snug">{cardTitle}</p>
+                <button type="button" onClick={startEditTitle} title="Editar o título do cartão"
+                  aria-label="Editar o título do cartão" className="shrink-0 mt-0.5 text-[#8a7e7e] hover:text-[#b91c1c]">
+                  <MaterialIcon icon="edit" size={14} />
+                </button>
+              </div>
+            ) : null)}
+
             {task?.description && !row && <p className="text-sm text-[#4a3d3d]">{task.description}</p>}
 
             {/* 🔎 POR QUÊ (só franquia) */}
