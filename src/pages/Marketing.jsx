@@ -879,7 +879,7 @@ function FileCard({ file, isAdmin, onDelete }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────
 export default function Marketing() {
-  const { user } = useAuth();
+  const { user, selectedFranchise } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "manager";
 
   const [files, setFiles] = useState([]);
@@ -974,10 +974,15 @@ export default function Marketing() {
       }
     }
 
-    // For franchisee: only shared files or their franchise's files
+    // Franqueado: arquivos compartilhados + os da unidade ATIVA (não os de todas
+    // as unidades dele — com 2+ isso misturava o material das duas).
     if (!isAdmin) {
       const myFranchiseIds = user?.managed_franchise_ids || [];
-      if (f.franchise_id && !myFranchiseIds.includes(f.franchise_id)) return false;
+      const activeEvoId = selectedFranchise?.evolution_instance_id;
+      if (f.franchise_id) {
+        const allowed = activeEvoId ? f.franchise_id === activeEvoId : myFranchiseIds.includes(f.franchise_id);
+        if (!allowed) return false;
+      }
     }
 
     // Admin franchise filter

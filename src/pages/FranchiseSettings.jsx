@@ -4,10 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES } from "@/lib/franchiseUtils";
+import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
 
+import FranchisePicker from "@/components/shared/FranchisePicker";
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
 import ErrorBoundary from "../components/ErrorBoundary";
 import WizardStepper from "@/components/vendedor/WizardStepper";
@@ -89,6 +91,7 @@ function RequiredDot() {
 }
 
 function FranchiseSettingsContent() {
+  const { selectedFranchise, setSelectedFranchise } = useAuth();
   const [configurations, setConfigurations] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -119,6 +122,25 @@ function FranchiseSettingsContent() {
     handleConnectWhatsApp, handleCheckWhatsAppStatus,
     handleCloseModalAndCheckStatus, handleCheckStatusFromBadge,
   } = useWhatsAppConnection({ currentUser, updateConfigurationStatus });
+
+  const isAdminUser = currentUser?.role === 'admin' || currentUser?.role === 'manager';
+
+  const availableFranchisesForUser = useMemo(() => {
+    if (!currentUser) return [];
+    return isAdminUser
+      ? franchises
+      : franchises.filter((f) =>
+          currentUser.managed_franchise_ids?.includes(f.id) ||
+          currentUser.managed_franchise_ids?.includes(f.evolution_instance_id)
+        );
+  }, [currentUser, franchises, isAdminUser]);
+
+  // Unidade ativa = a do seletor do topo (franqueado). O wizard TEM que seguir ela:
+  // salvar/conectar WhatsApp na config errada mexeria no bot da outra unidade.
+  const activeFranchise = useMemo(
+    () => resolveActiveFranchise(franchises, currentUser, selectedFranchise),
+    [franchises, currentUser, selectedFranchise]
+  );
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -155,12 +177,7 @@ function FranchiseSettingsContent() {
 
   useEffect(() => {
     if (!isLoading && currentUser && franchises.length > 0 && configurations.length > 0) {
-      const availableFranchises = (currentUser.role === 'admin' || currentUser.role === 'manager')
-        ? franchises
-        : franchises.filter((f) =>
-            currentUser.managed_franchise_ids?.includes(f.id) ||
-            currentUser.managed_franchise_ids?.includes(f.evolution_instance_id)
-          );
+      const availableFranchises = availableFranchisesForUser;
 
       const availableFranchiseIds = availableFranchises.map(f => f.evolution_instance_id);
       const filteredConfigs = configurations.filter(config =>
@@ -175,14 +192,30 @@ function FranchiseSettingsContent() {
       setDisplayConfigurations(configsToDisplay);
 
       if (!selectedConfigId && configsToDisplay.length > 0) {
-        const first = configsToDisplay[0];
-        setSelectedConfigId(first.id);
-        loadConfigIntoForm(first);
+        // Abre a config da unidade ATIVA. Antes abria configsToDisplay[0] (ordem do
+        // banco) — com 2 unidades o wizard mostrava a errada com o seletor do topo
+        // dizendo outra coisa (bug Araras × Limeira, 05/08/2026).
+        const target = activeFranchise
+          ? configsToDisplay.find(
+              (c) => c.franchise_evolution_instance_id === activeFranchise.evolution_instance_id
+            )
+          : null;
+        // Admin (seletor próprio, não é dono de unidade) e quem só tem UMA unidade
+        // seguem abrindo a primeira. Franqueado com 2+ unidades: nada abre sem
+        // seleção — o render pede a unidade em vez de adivinhar. O teto é
+        // availableFranchisesForUser, não configsToDisplay: com 2 unidades e só 1
+        // configurada, "a única config" ainda seria a unidade errada.
+        const chosen =
+          target || (isAdminUser || availableFranchisesForUser.length === 1 ? configsToDisplay[0] : null);
+        if (chosen) {
+          setSelectedConfigId(chosen.id);
+          loadConfigIntoForm(chosen);
+        }
       }
     } else if (!isLoading && currentUser) {
       setDisplayConfigurations([]);
     }
-  }, [isLoading, currentUser, franchises, configurations]);
+  }, [isLoading, currentUser, franchises, configurations, activeFranchise, availableFranchisesForUser, isAdminUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-check WhatsApp status when config is selected/loaded
   useEffect(() => {
@@ -304,9 +337,21 @@ function FranchiseSettingsContent() {
       setSelectedConfigId(configId);
       loadConfigIntoForm(config);
       setCurrentStep(1);
+      // Uma escolha só para o app inteiro: trocar aqui move o seletor do topo junto
+      // (e vice-versa, no efeito abaixo). Duas fontes de verdade foi o que confundiu.
+      if (!isAdminUser && config.franchise) setSelectedFranchise(config.franchise);
     }
     setPendingConfigId(null);
   };
+
+  // Seletor do topo mudou -> o wizard acompanha (com o mesmo aviso de edição não salva).
+  useEffect(() => {
+    if (isAdminUser || !activeFranchise || displayConfigurations.length === 0) return;
+    const target = displayConfigurations.find(
+      (c) => c.franchise_evolution_instance_id === activeFranchise.evolution_instance_id
+    );
+    if (target && target.id !== selectedConfigId) handleSelectConfig(target.id);
+  }, [activeFranchise?.evolution_instance_id, displayConfigurations, selectedConfigId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
@@ -402,20 +447,19 @@ function FranchiseSettingsContent() {
   };
 
 
-  const availableFranchisesForUser = useMemo(() => {
-    if (!currentUser) return [];
-    return (currentUser.role === 'admin' || currentUser.role === 'manager') ?
-      franchises :
-      franchises.filter((f) =>
-        currentUser.managed_franchise_ids?.includes(f.id) ||
-        currentUser.managed_franchise_ids?.includes(f.evolution_instance_id)
-      );
-  }, [currentUser, franchises]);
-
   const configuredInstanceIds = configurations.map((c) => c.franchise_evolution_instance_id);
   const franchisesWithoutConfig = availableFranchisesForUser.filter((f) => !configuredInstanceIds.includes(f.evolution_instance_id));
 
   const currentConfig = displayConfigurations.find(c => c.id === selectedConfigId);
+  // Unidade ativa existe mas ainda não tem config: mostra a tela de "criar
+  // configuração" (abaixo), nunca a config da outra unidade.
+  const activeHasNoConfig = Boolean(
+    !isAdminUser &&
+    activeFranchise &&
+    !displayConfigurations.some(
+      (c) => c.franchise_evolution_instance_id === activeFranchise.evolution_instance_id
+    )
+  );
   const currentFranchise = currentConfig?.franchise;
   const whatsappStatus = currentConfig?.whatsapp_status || 'disconnected';
   const isConnected = whatsappStatus === 'connected';
@@ -511,7 +555,7 @@ function FranchiseSettingsContent() {
     );
   }
 
-  if (displayConfigurations.length === 0 && !isLoading) {
+  if ((displayConfigurations.length === 0 || activeHasNoConfig) && !isLoading) {
     return (
       <div className="px-4 md:px-8 pt-12">
         <div className="max-w-4xl mx-auto text-center py-24">
@@ -561,6 +605,17 @@ function FranchiseSettingsContent() {
     );
   }
 
+  // Franqueado com 2+ unidades e nenhuma escolhida: perguntar. Abrir "a primeira"
+  // aqui faria ele editar o bot da unidade errada achando que era a outra.
+  if (!isAdminUser && !currentConfig && availableFranchisesForUser.length > 1) {
+    return (
+      <FranchisePicker
+        franchises={availableFranchisesForUser}
+        title="Configurar o vendedor de qual unidade?"
+      />
+    );
+  }
+
   return (
     <div className="pb-32">
       <div className="px-4 md:px-8 pt-8 max-w-3xl mx-auto space-y-6">
@@ -569,7 +624,13 @@ function FranchiseSettingsContent() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-[#1b1c1d]">Meu Vendedor</h2>
-            <p className="text-sm text-[#3d4a42]/70 mt-0.5">Configure o assistente de vendas da sua unidade</p>
+            <p className="text-sm text-[#3d4a42]/70 mt-0.5">
+              {/* Com 2+ unidades, dizer QUAL está aberta — o wizard mostra o nome
+                  da unidade nos campos, e sem isso não dá pra ter certeza. */}
+              {availableFranchisesForUser.length > 1 && currentFranchise
+                ? `Unidade ${currentFranchise.city || currentFranchise.name}`
+                : "Configure o assistente de vendas da sua unidade"}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {displayConfigurations.length > 1 && (
@@ -1210,7 +1271,12 @@ function FranchiseSettingsContent() {
             <p className="text-sm text-[#3d4a42] mb-6">Você tem alterações não salvas. Deseja descartá-las?</p>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setPendingConfigId(null)}
+                onClick={() => {
+                  setPendingConfigId(null);
+                  // Se a troca veio do seletor do topo, devolve o topo para a unidade
+                  // que continua aberta aqui — senão o topo diz uma e o wizard mostra outra.
+                  if (!isAdminUser && currentFranchise) setSelectedFranchise(currentFranchise);
+                }}
                 className="px-4 py-2 rounded-xl border border-[#bccac0] text-[#3d4a42] text-sm font-medium hover:bg-[#fbf9fa]"
               >
                 Cancelar

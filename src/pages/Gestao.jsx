@@ -3,7 +3,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import { User, Franchise, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { getPrimaryFranchise } from "@/lib/franchiseUtils";
+import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import FranchisePicker from "@/components/shared/FranchisePicker";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
 import TabResultado from "@/components/minha-loja/TabResultado";
 import TabReposicao from "@/components/minha-loja/TabReposicao";
@@ -140,13 +141,15 @@ export default function Gestao() {
     }
   };
 
-  const primaryFranchise = useMemo(() => {
-    if (selectedFranchise) {
-      const found = franchises.find((f) => f.id === selectedFranchise.id);
-      if (found) return found;
-    }
-    return getPrimaryFranchise(franchises, currentUser);
-  }, [franchises, currentUser, selectedFranchise]);
+  const availableFranchises = useMemo(
+    () => getAvailableFranchises(franchises, currentUser),
+    [franchises, currentUser]
+  );
+
+  const primaryFranchise = useMemo(
+    () => resolveActiveFranchise(franchises, currentUser, selectedFranchise),
+    [franchises, currentUser, selectedFranchise]
+  );
 
   const franchiseId = primaryFranchise?.evolution_instance_id;
 
@@ -210,6 +213,11 @@ export default function Gestao() {
 
   if (currentUser?.role === "admin" || currentUser?.role === "manager") {
     return <Navigate to="/Dashboard" replace />;
+  }
+
+  // 2+ unidades e nenhuma escolhida: perguntar, nunca abrir a primeira da lista
+  if (!primaryFranchise && availableFranchises.length > 1) {
+    return <FranchisePicker franchises={availableFranchises} title="Qual unidade você quer gerenciar?" />;
   }
 
   if (!primaryFranchise) {

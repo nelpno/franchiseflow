@@ -5,6 +5,9 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { useAuth } from "@/lib/AuthContext";
+import { resolveActiveFranchise } from "@/lib/franchiseUtils";
+import FranchisePicker from "@/components/shared/FranchisePicker";
 import ChecklistBlock from "../components/checklist/ChecklistBlock";
 import ChecklistProgress from "../components/checklist/ChecklistProgress";
 import ChecklistHistory from "../components/checklist/ChecklistHistory";
@@ -74,6 +77,11 @@ const TOTAL_DAILY = DAILY_ITEMS.morning.length + DAILY_ITEMS.midday.length + DAI
 const todayStr = () => format(new Date(), "yyyy-MM-dd");
 
 export default function MyChecklist() {
+  const { selectedFranchise: ctxFranchise, setSelectedFranchise } = useAuth();
+  // Ref para o loadData (useCallback sem deps) enxergar a seleção atual sem
+  // recriar a função a cada troca de unidade.
+  const ctxFranchiseRef = useRef(ctxFranchise);
+  useEffect(() => { ctxFranchiseRef.current = ctxFranchise; }, [ctxFranchise]);
   const [franchise, setFranchise] = useState(null);
   const [availableFranchises, setAvailableFranchises] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -103,7 +111,12 @@ export default function MyChecklist() {
 
       setAvailableFranchises(myFranchises);
 
-      const myFranchise = selectedFranchise || myFranchises[0];
+      // Default = unidade do seletor do topo. Só cai na primeira quando há uma
+      // única — com 2+, "a primeira da lista" abre a unidade errada.
+      const myFranchise =
+        selectedFranchise ||
+        resolveActiveFranchise(myFranchises, user, ctxFranchiseRef.current) ||
+        (myFranchises.length === 1 ? myFranchises[0] : null);
 
       if (!myFranchise) {
         setIsLoading(false);
@@ -154,10 +167,23 @@ export default function MyChecklist() {
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Só troca a unidade no contexto — quem recarrega é o efeito abaixo. Chamar
+  // loadData aqui TAMBÉM criaria duas execuções concorrentes, e loadData cria o
+  // checklist do dia quando não existe (viraria checklist duplicado).
   const handleFranchiseChange = (franchiseId) => {
     const selected = availableFranchises.find((f) => f.evolution_instance_id === franchiseId);
-    if (selected) loadData(selected);
+    if (selected) setSelectedFranchise(selected);
   };
+
+  // Seletor do topo mudou -> o checklist acompanha
+  useEffect(() => {
+    if (!ctxFranchise || availableFranchises.length === 0) return;
+    if (ctxFranchise.evolution_instance_id === franchise?.evolution_instance_id) return;
+    const match = availableFranchises.find(
+      (f) => f.evolution_instance_id === ctxFranchise.evolution_instance_id
+    );
+    if (match) loadData(match);
+  }, [ctxFranchise?.evolution_instance_id, availableFranchises]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveChecklist = useCallback(
     async (newItems) => {
@@ -251,6 +277,11 @@ export default function MyChecklist() {
         </div>
       </div>
     );
+  }
+
+  // 2+ unidades e nenhuma escolhida: perguntar (antes abria a primeira da lista)
+  if (!franchise && availableFranchises.length > 1) {
+    return <FranchisePicker franchises={availableFranchises} title="Checklist de qual unidade?" />;
   }
 
   if (!franchise) {

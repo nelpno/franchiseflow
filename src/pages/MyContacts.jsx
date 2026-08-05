@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Contact, Franchise } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
+import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import FranchisePicker from "@/components/shared/FranchisePicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,9 +98,10 @@ function formatCurrency(value) {
 }
 
 export default function MyContacts() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, selectedFranchise } = useAuth();
   const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
+  const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -147,16 +150,25 @@ export default function MyContacts() {
     return msg || "Erro desconhecido";
   };
 
-  useEffect(() => {
-    mountedRef.current = true;
-    loadContacts();
-    return () => {
-      mountedRef.current = false;
-      abortControllerRef.current?.abort();
-    };
-  }, []);
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
 
-  const loadContacts = async (retryCount = 0) => {
+  const availableFranchises = useMemo(
+    () => getAvailableFranchises(franchises, currentUser),
+    [franchises, currentUser]
+  );
+
+  // Unidade ativa = a do seletor do topo. Sem ela, a lista sairia com os clientes
+  // das DUAS unidades (a RLS libera as duas) — foi o que misturou Araras × Limeira.
+  const activeFranchise = useMemo(
+    () => resolveActiveFranchise(franchises, currentUser, selectedFranchise),
+    [franchises, currentUser, selectedFranchise]
+  );
+  const activeEvoId = activeFranchise?.evolution_instance_id;
+
+  const CONTACT_COLUMNS =
+    'id, franchise_id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas';
+
+  const loadContacts = useCallback(async (retryCount = 0) => {
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -164,11 +176,18 @@ export default function MyContacts() {
     try {
       setLoading(true);
       setLoadError(null);
-      const data = await Contact.list("-created_at", null, {
-        fetchAll: true,
-        columns: 'id, franchise_id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas',
-        signal: controller.signal,
-      });
+      // Franqueado: sempre escopado à unidade ativa. Admin: rede inteira (comportamento antigo).
+      const data = isAdmin
+        ? await Contact.list("-created_at", null, {
+            fetchAll: true,
+            columns: CONTACT_COLUMNS,
+            signal: controller.signal,
+          })
+        : await Contact.filter({ franchise_id: activeEvoId }, "-created_at", null, {
+            fetchAll: true,
+            columns: CONTACT_COLUMNS,
+            signal: controller.signal,
+          });
       if (!mountedRef.current) return;
       setContacts(data);
     } catch (error) {
@@ -185,8 +204,35 @@ export default function MyContacts() {
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  };
+  }, [isAdmin, activeEvoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    mountedRef.current = true;
+    Franchise.list()
+      .then((data) => { if (mountedRef.current) setFranchises(data); })
+      .catch((error) => {
+        console.error("Erro ao carregar franquias:", error);
+        if (!mountedRef.current) return;
+        setLoadError("Erro ao carregar suas unidades. Tente novamente.");
+        setLoading(false);
+      });
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Recarrega ao trocar de unidade no seletor do topo. Enquanto a unidade não
+  // resolve (franqueado com 2+ e nada escolhido), NÃO carrega — melhor lista
+  // vazia por um instante que lista com o cliente da outra unidade.
+  useEffect(() => {
+    if (!isAdmin && !activeEvoId) {
+      setContacts([]);
+      if (franchises.length > 0) setLoading(false);
+      return;
+    }
+    loadContacts();
+  }, [isAdmin, activeEvoId, franchises.length, loadContacts]);
 
   const statusCounts = useMemo(() => {
     const counts = {};
@@ -271,16 +317,15 @@ export default function MyContacts() {
     try {
       setIsSaving(true);
       if (!(await checkSession())) return;
-      const franchises = await Franchise.list();
-      const myFranchise = franchises.find(
-        (f) => f.id === currentUser?.managed_franchise_ids?.[0] || f.evolution_instance_id === currentUser?.managed_franchise_ids?.[0]
-      );
-      if (!myFranchise?.evolution_instance_id) {
-        toast.error("Franquia não encontrada");
+      // Grava na unidade ATIVA (a do seletor do topo). Antes usava
+      // managed_franchise_ids[0], que jogava todo contato novo na mesma unidade
+      // independentemente da que estava selecionada.
+      if (!activeEvoId) {
+        toast.error("Selecione a unidade no topo antes de cadastrar o cliente.");
         return;
       }
       await Contact.create({
-        franchise_id: myFranchise.evolution_instance_id,
+        franchise_id: activeEvoId,
         nome: capitalize(newContactForm.nome),
         telefone: normalizePhone(newContactForm.telefone),
         endereco: capitalize(newContactForm.endereco) || null,
@@ -397,6 +442,11 @@ export default function MyContacts() {
     );
   }
 
+  // 2+ unidades e nenhuma escolhida: perguntar em vez de listar as duas juntas
+  if (!isAdmin && !activeEvoId && availableFranchises.length > 1) {
+    return <FranchisePicker franchises={availableFranchises} title="Clientes de qual unidade?" />;
+  }
+
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -411,6 +461,11 @@ export default function MyContacts() {
             </h1>
             <p className="text-sm text-[#4a3d3d]">
               {contacts.length} {contacts.length === 1 ? "contato" : "contatos"}
+              {/* Com 2+ unidades, dizer QUAL está na tela evita a confusão de achar
+                  que o cliente da outra unidade "vazou" para cá. */}
+              {availableFranchises.length > 1 && activeFranchise
+                ? ` · ${activeFranchise.city || activeFranchise.name}`
+                : ""}
             </p>
           </div>
         </div>

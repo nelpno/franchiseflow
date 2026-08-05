@@ -13,6 +13,8 @@ import GateBlock from "@/components/onboarding/GateBlock";
 import ProgressRing from "@/components/onboarding/ProgressRing";
 import FiscalDataGate from "@/components/onboarding/FiscalDataGate";
 import { missingFiscalFields } from "@/lib/saveFiscalData";
+import { useAuth } from "@/lib/AuthContext";
+import FranchisePicker from "@/components/shared/FranchisePicker";
 
 const ALL_BLOCK_KEYS = [
   ...BLOCKS.flatMap(b => b.items.map(i => i.key)),
@@ -61,6 +63,7 @@ const BLOCK_CELEBRATION = [
 
 export default function Onboarding() {
   const [searchParams] = useSearchParams();
+  const { selectedFranchise: ctxFranchise } = useAuth();
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
   const [selectedFranchise, setSelectedFranchise] = useState(null);
@@ -133,7 +136,10 @@ export default function Onboarding() {
         );
         setFranchises(myFranchises);
 
-        if (myFranchises.length > 0) {
+        // Só resolve sozinho quando há UMA unidade. Com 2+, quem manda é o seletor
+        // do topo (efeito de sincronia abaixo) — "a primeira da lista" abria o
+        // onboarding da unidade errada (bug 05/08/2026).
+        if (myFranchises.length === 1) {
           setSelectedFranchise(myFranchises[0]);
           await loadFranchiseChecklist(myFranchises[0]);
         }
@@ -347,6 +353,19 @@ export default function Onboarding() {
     };
   }, [loadData]);
 
+  // Franqueado com 2+ unidades: o onboarding segue o seletor do topo.
+  useEffect(() => {
+    if (!currentUser || currentUser.role === "admin" || currentUser.role === "manager") return;
+    if (!ctxFranchise || franchises.length === 0) return;
+    const match = franchises.find(
+      (f) => f.evolution_instance_id === ctxFranchise.evolution_instance_id
+    );
+    if (match && match.evolution_instance_id !== selectedFranchise?.evolution_instance_id) {
+      setSelectedFranchise(match);
+      loadFranchiseChecklist(match);
+    }
+  }, [ctxFranchise?.evolution_instance_id, franchises, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const saveItems = useCallback(async (newItems, currentChecklist, user) => {
     if (!currentChecklist) return;
     setIsSaving(true);
@@ -520,6 +539,11 @@ export default function Onboarding() {
           <p className="text-[#4a3d3d] mt-2">Entre em contato com o administrador.</p>
         </div>
       );
+    }
+    // 2+ unidades e nenhuma escolhida: perguntar. Antes caía em franchises[0] e
+    // as missões (e o gate fiscal) eram marcadas na unidade errada.
+    if (!selectedFranchise && franchises.length > 1) {
+      return <FranchisePicker franchises={franchises} title="Onboarding de qual unidade?" />;
     }
   }
 

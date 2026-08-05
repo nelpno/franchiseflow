@@ -22,10 +22,46 @@ export function getAvailableFranchises(franchises, currentUser) {
 
 /**
  * Encontra a franquia principal do usuário (primeira da lista).
+ *
+ * ⚠️ Só use quando o usuário tem UMA franquia. Para telas, use
+ * `resolveActiveFranchise` — "a primeira da lista" mostra a unidade errada
+ * para quem gerencia duas (a ordem vem do banco, não da escolha do usuário).
  */
 export function getPrimaryFranchise(franchises, currentUser) {
   const available = getAvailableFranchises(franchises, currentUser);
   return available[0] || null;
+}
+
+/**
+ * Resolve a franquia ATIVA de uma tela: a que está no seletor global do topo
+ * (`selectedFranchise` do AuthContext), validada contra o que o usuário pode ver.
+ *
+ * Com 2+ franquias NUNCA cai na primeira da lista. Devolver `available[0]`
+ * enquanto a seleção não chegou faz a tela abrir a unidade errada em silêncio —
+ * foi o bug de 05/08/2026 (Emerson, Araras + Limeira na mesma conta): o topo
+ * dizia "Araras" e "Meu Vendedor"/"Meus Clientes" mostravam Limeira.
+ *
+ * Retorna `null` = "ainda não dá pra saber". Quem chama deve esperar (loading),
+ * não adivinhar. Na prática o Layout preenche a seleção logo após o primeiro
+ * carregamento, então o null é transitório.
+ */
+export function resolveActiveFranchise(franchises, currentUser, selectedFranchise) {
+  const available = getAvailableFranchises(franchises, currentUser);
+  if (available.length === 0) return null;
+
+  if (selectedFranchise) {
+    // Casa por id OU evolution_instance_id: o objeto salvo pode vir de outro
+    // carregamento (localStorage) e não ser a mesma referência da lista atual.
+    const match = available.find(
+      (f) =>
+        (selectedFranchise.id && f.id === selectedFranchise.id) ||
+        (selectedFranchise.evolution_instance_id &&
+          f.evolution_instance_id === selectedFranchise.evolution_instance_id)
+    );
+    if (match) return match;
+  }
+
+  return available.length === 1 ? available[0] : null;
 }
 
 /**
