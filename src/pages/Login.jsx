@@ -6,6 +6,10 @@ import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import AuthHero from "@/components/auth/AuthHero";
 
+// Autofill de celular pode deixar espaco/maiuscula no e-mail. No reset, e-mail que nao casa
+// com nenhum usuario devolve 200 vazio e NENHUM email e enviado (anti-enumeracao do Supabase).
+const normalizeEmail = (value) => (value || '').trim().toLowerCase();
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +42,7 @@ export default function Login() {
     const safetyTimer = setTimeout(() => setIsLoading(false), 10000);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
       if (error) throw error;
       setFailedAttempts(0);
       // Reset local loading — AuthContext.onAuthStateChange('SIGNED_IN') takes over
@@ -60,17 +64,23 @@ export default function Login() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (!email) {
+    const cleanEmail = normalizeEmail(email);
+    if (!cleanEmail) {
       toast.error('Digite seu email primeiro');
       return;
     }
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: window.location.origin + '/set-password'
       });
       if (error) throw error;
-      toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+      // O Supabase responde sucesso mesmo para e-mail que nao existe, entao NUNCA afirmar
+      // que foi enviado — mostrar o endereco usado para a pessoa conferir o que digitou.
+      toast.success(`Se ${cleanEmail} estiver cadastrado, o link chega em alguns minutos.`, {
+        description: 'Não chegou? Confira se é o mesmo e-mail que recebeu o convite do painel.',
+        duration: 12000
+      });
       setIsResetMode(false);
     } catch (error) {
       toast.error(safeErrorMessage(error, "Erro ao enviar email de recuperação."));
