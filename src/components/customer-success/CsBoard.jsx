@@ -64,6 +64,7 @@ export default function CsBoard({ tasks, signalsByFranchise = {}, onOpen, onMove
                             task={task}
                             subtitle={subtitleFor(task)}
                             tierDot={dotFor(task)}
+                            signals={task.franchise_id ? signalsByFranchise[task.franchise_id] : null}
                             onOpen={onOpen}
                             onMove={onMoveTask}
                           />
