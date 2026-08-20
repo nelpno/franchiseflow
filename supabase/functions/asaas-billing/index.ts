@@ -74,6 +74,37 @@ async function asaasRequest(path: string, options: RequestInit = {}) {
   return data;
 }
 
+/**
+ * Valida CPF (11) / CNPJ (14) pelos dígitos verificadores.
+ * Espelha src/lib/documentUtils.js (front) — runtimes diferentes, mesma regra.
+ * Sem isso, doc com um dígito trocado só falha lá na frente, dentro do ASAAS, com o
+ * erro engolido por um catch não-fatal (caso Americana, 19/08/2026).
+ */
+function isValidCpfCnpj(value: string | null | undefined): boolean {
+  const d = String(value ?? "").replace(/\D/g, "");
+  if (d.length === 11) {
+    if (/^(\d)\1{10}$/.test(d)) return false;
+    const base = d.slice(0, 9).split("").map(Number);
+    let s = base.reduce((a, n, i) => a + n * (10 - i), 0);
+    const d1 = s % 11 < 2 ? 0 : 11 - (s % 11);
+    s = [...base, d1].reduce((a, n, i) => a + n * (11 - i), 0);
+    const d2 = s % 11 < 2 ? 0 : 11 - (s % 11);
+    return `${d1}${d2}` === d.slice(9);
+  }
+  if (d.length === 14) {
+    if (/^(\d)\1{13}$/.test(d)) return false;
+    const W1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const W2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const base = d.slice(0, 12).split("").map(Number);
+    let s = base.reduce((a, n, i) => a + n * W1[i], 0);
+    const d1 = s % 11 < 2 ? 0 : 11 - (s % 11);
+    s = [...base, d1].reduce((a, n, i) => a + n * W2[i], 0);
+    const d2 = s % 11 < 2 ? 0 : 11 - (s % 11);
+    return `${d1}${d2}` === d.slice(12);
+  }
+  return false;
+}
+
 // --- Actions ---
 
 async function registerCustomer(franchiseId: string) {
@@ -85,6 +116,11 @@ async function registerCustomer(franchiseId: string) {
     .single();
   if (fErr || !franchise) throw new Error("Franquia não encontrada");
   if (!franchise.cpf_cnpj) throw new Error("CPF/CNPJ não preenchido");
+  if (!isValidCpfCnpj(franchise.cpf_cnpj)) {
+    throw new Error(
+      `CPF/CNPJ inválido no cadastro (${franchise.cpf_cnpj}) — confira os dígitos em Franquias → Editar dados`
+    );
+  }
 
   // Get config for address
   const { data: config } = await supabase
@@ -174,10 +210,12 @@ async function createSubscription(franchiseId: string, value: number = 150) {
   // Essencial quando a franquia troca de dono (novo CPF/CNPJ): registerCustomer busca pelo
   // cpf_cnpj atual e cria um cliente novo se o documento não existir, então a assinatura cobra
   // o novo dono — não o cliente antigo. Não-fatal: se falhar, segue com o cliente já gravado.
+  let registerErro = "";
   try {
     await registerCustomer(franchiseId);
   } catch (regErr) {
-    console.warn(`[asaas-billing] register-before-create falhou p/ ${franchiseId}: ${(regErr as Error).message}`);
+    registerErro = (regErr as Error).message;
+    console.warn(`[asaas-billing] register-before-create falhou p/ ${franchiseId}: ${registerErro}`);
   }
 
   // Get subscription record (asaas_customer_id já reflete o dono atual após o register acima)
@@ -187,8 +225,29 @@ async function createSubscription(franchiseId: string, value: number = 150) {
     .eq("franchise_id", franchiseId)
     .single();
   if (error || !sub) throw new Error("Franquia não cadastrada no ASAAS ainda");
-  if (!sub.asaas_customer_id) throw new Error("Cliente ASAAS não encontrado");
+  if (!sub.asaas_customer_id) {
+    throw new Error(`Cliente ASAAS não encontrado${registerErro ? ` — ${registerErro}` : ""}`);
+  }
   if (sub.asaas_subscription_id) throw new Error("Assinatura já existe");
+
+  // O cliente gravado pode ter sido REMOVIDO no painel do ASAAS — acontece em troca de dono.
+  // Criar assinatura nele falha em TODA tentativa, e antes disso o erro sumia num catch
+  // não-fatal: a franquia ficava "Cancelada" para sempre sem ninguém saber por quê.
+  let customerAtivo = false;
+  try {
+    const customer = await asaasRequest(`/v3/customers/${sub.asaas_customer_id}`);
+    customerAtivo = !customer?.deleted;
+  } catch {
+    customerAtivo = false;
+  }
+  if (!customerAtivo) {
+    throw new Error(
+      `Cliente ${sub.asaas_customer_id} não existe mais no ASAAS (removido)` +
+        (registerErro
+          ? ` e o recadastro automático falhou: ${registerErro}`
+          : " — corrija os dados fiscais e clique em Criar para recadastrar")
+    );
+  }
 
   // Primeiro vencimento: dia 5 do MÊS CORRENTE se ainda não passou do dia 5 (criar em 01/06
   // → vence 05/06); a partir do dia 6, dia 5 do mês seguinte. Padrão da rede: vencimento dia 5.
@@ -607,6 +666,9 @@ Deno.serve(async (req) => {
   }
 
   const jsonHeaders = { ...corsHeaders, "Content-Type": "application/json" };
+  // Admin precisa VER o motivo real da falha (é ele quem conserta o cadastro);
+  // franqueado continua recebendo mensagem genérica.
+  let requesterIsAdmin = false;
 
   try {
     const body = await req.json();
@@ -656,6 +718,8 @@ Deno.serve(async (req) => {
         status: 401, headers: jsonHeaders,
       });
     }
+
+    requesterIsAdmin = isAdminOrManager(user);
 
     // Admin-only actions
     const adminActions = [
@@ -758,7 +822,9 @@ Deno.serve(async (req) => {
   } catch (err) {
     const message = (err as Error).message;
     // Never expose internal ASAAS error details to non-admin callers
-    const safeMessage = message.includes("ASAAS") ? "Erro no sistema de cobrança" : message;
+    const safeMessage = requesterIsAdmin
+      ? message
+      : message.includes("ASAAS") ? "Erro no sistema de cobrança" : message;
     return new Response(JSON.stringify({ error: safeMessage }), {
       status: 500, headers: jsonHeaders,
     });

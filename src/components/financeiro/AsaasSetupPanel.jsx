@@ -12,6 +12,39 @@ import { supabase } from "@/api/supabaseClient";
 import { missingFiscalFields, saveFiscalData } from "@/lib/saveFiscalData";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { cpfCnpjError } from "@/lib/documentUtils";
+
+/**
+ * Chama a edge asaas-billing devolvendo o MOTIVO real da falha.
+ *
+ * `supabase.functions.invoke` embrulha qualquer resposta não-2xx em
+ * "Edge Function returned a non-2xx status code" — a mensagem que a função escreveu
+ * (ex.: "CPF/CNPJ informado é inválido") fica dentro de `error.context`, que ninguém lia.
+ */
+async function invokeAsaas(body) {
+  const { data, error } = await supabase.functions.invoke("asaas-billing", { body });
+  if (error) {
+    let detalhe = "";
+    try {
+      const payload = await error.context?.json?.();
+      detalhe = payload?.error || "";
+    } catch { /* resposta sem JSON — fica com a mensagem genérica */ }
+    throw new Error(detalhe || error.message || "Falha na comunicação com o sistema de cobrança");
+  }
+  return data;
+}
+
+/**
+ * Lê o array de resultados de uma action em lote (subscribe-batch / register-batch),
+ * que responde HTTP 200 mesmo quando TODOS os itens falharam. Até 19/08/2026 o painel
+ * ignorava isso e dizia "3 assinatura(s) criada(s)!" com zero criada.
+ */
+function resumoLote(data) {
+  const itens = Array.isArray(data) ? data : [];
+  const ok = itens.filter((r) => r?.success);
+  const falhas = itens.filter((r) => r && !r.success);
+  return { itens, ok, falhas };
+}
 
 function formatCpfCnpj(value) {
   const digits = (value || "").replace(/\D/g, "");
@@ -206,8 +239,9 @@ export default function AsaasSetupPanel() {
     const cpf = editingCpf[franchise.id];
     if (!cpf) return;
     const digits = cpf.replace(/\D/g, "");
-    if (digits.length !== 11 && digits.length !== 14) {
-      toast.error("CPF deve ter 11 dígitos ou CNPJ 14 dígitos");
+    const docErro = cpfCnpjError(digits);
+    if (docErro) {
+      toast.error(docErro);
       return;
     }
     setSavingCpf(prev => ({ ...prev, [franchise.id]: true }));
@@ -227,10 +261,7 @@ export default function AsaasSetupPanel() {
     const evoId = franchise.evolution_instance_id;
     setCreatingAsaas(prev => ({ ...prev, [evoId]: true }));
     try {
-      const { error } = await supabase.functions.invoke("asaas-billing", {
-        body: { action: "register", franchise_id: evoId },
-      });
-      if (error) throw error;
+      await invokeAsaas({ action: "register", franchise_id: evoId });
       toast.success(`${franchise.name} cadastrado no ASAAS`);
       // Reload data after a short delay for n8n to process
       setTimeout(() => loadData(), 3000);
@@ -248,13 +279,36 @@ export default function AsaasSetupPanel() {
     }
     setCreatingAll(true);
     try {
-      const { error } = await supabase.functions.invoke("asaas-billing", {
-        body: { action: "subscribe-batch", value: monthlyValue, franchise_ids: franchiseIds },
+      const data = await invokeAsaas({
+        action: "subscribe-batch",
+        value: monthlyValue,
+        franchise_ids: franchiseIds,
       });
-      if (error) throw error;
-      toast.success(`${franchiseIds.length} assinatura(s) criada(s) a R$ ${monthlyValue.toFixed(2)}!`);
-      setShowReview(false);
-      setExcludedSubIds(new Set());
+      // A edge responde 200 com um resultado POR franquia — sucesso do HTTP não é
+      // sucesso da criação. Reportar o que de fato aconteceu, nomeando quem falhou.
+      const { ok, falhas } = resumoLote(data);
+      const nomeDe = (fid) => franchises.find(f => f.evolution_instance_id === fid)?.name || fid;
+
+      if (falhas.length === 0 && ok.length > 0) {
+        toast.success(`${ok.length} assinatura(s) criada(s) a R$ ${monthlyValue.toFixed(2)}!`);
+      } else if (ok.length === 0) {
+        toast.error(
+          `Nenhuma assinatura criada. ${falhas.map(r => `${nomeDe(r.franchise_id)}: ${r.error}`).join(" · ") ||
+            "A função não retornou resultado."}`,
+          { duration: 15000 }
+        );
+      } else {
+        toast.warning(
+          `${ok.length} criada(s), ${falhas.length} falhou/falharam — ${falhas
+            .map(r => `${nomeDe(r.franchise_id)}: ${r.error}`)
+            .join(" · ")}`,
+          { duration: 15000 }
+        );
+      }
+      if (ok.length > 0) {
+        setShowReview(false);
+        setExcludedSubIds(new Set());
+      }
       setTimeout(() => loadData(), 5000);
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao criar assinaturas."));
@@ -267,10 +321,7 @@ export default function AsaasSetupPanel() {
     if (!cancellingSub) return;
     setIsCancelling(true);
     try {
-      const { error } = await supabase.functions.invoke("asaas-billing", {
-        body: { action: "cancel-subscription", franchise_id: cancellingSub.evolution_instance_id },
-      });
-      if (error) throw error;
+      await invokeAsaas({ action: "cancel-subscription", franchise_id: cancellingSub.evolution_instance_id });
       toast.success(`Assinatura de ${cancellingSub.name} cancelada`);
       setCancellingSub(null);
       setTimeout(() => loadData(), 2000);
@@ -288,15 +339,12 @@ export default function AsaasSetupPanel() {
     }
     setIsUpdatingValue(true);
     try {
-      const { data, error } = await supabase.functions.invoke("asaas-billing", {
-        body: {
-          action: "update-subscription-value",
-          all_active: true,
-          new_value: monthlyValue,
-          apply_to_current: applyToCurrent,
-        },
+      const data = await invokeAsaas({
+        action: "update-subscription-value",
+        all_active: true,
+        new_value: monthlyValue,
+        apply_to_current: applyToCurrent,
       });
-      if (error) throw error;
       const updated = data?.updated ?? 0;
       const total = data?.total ?? 0;
       toast.success(`${updated}/${total} assinaturas atualizadas para R$ ${monthlyValue.toFixed(2)}`);
@@ -512,14 +560,22 @@ export default function AsaasSetupPanel() {
             onClick={async () => {
               setCreatingAll(true);
               try {
-                const { error } = await supabase.functions.invoke("asaas-billing", {
-                  body: {
-                    action: "register-batch",
-                    franchise_ids: pendingRegister.map(f => f.evolution_instance_id),
-                  },
+                const data = await invokeAsaas({
+                  action: "register-batch",
+                  franchise_ids: pendingRegister.map(f => f.evolution_instance_id),
                 });
-                if (error) throw error;
-                toast.success(`${pendingRegister.length} franqueados enviados para cadastro no ASAAS`);
+                const { ok, falhas } = resumoLote(data);
+                const nomeDe = (fid) => franchises.find(f => f.evolution_instance_id === fid)?.name || fid;
+                if (falhas.length === 0) {
+                  toast.success(`${ok.length} franqueado(s) cadastrado(s) no ASAAS`);
+                } else {
+                  toast.warning(
+                    `${ok.length} cadastrado(s), ${falhas.length} com erro — ${falhas
+                      .map(r => `${nomeDe(r.franchise_id)}: ${r.error}`)
+                      .join(" · ")}`,
+                    { duration: 15000 }
+                  );
+                }
                 setTimeout(() => loadData(), 5000);
               } catch (err) {
                 toast.error(safeErrorMessage(err, "Erro no cadastro batch."));
@@ -543,10 +599,7 @@ export default function AsaasSetupPanel() {
           onClick={async () => {
             setSyncingAll(true);
             try {
-              const { data, error } = await supabase.functions.invoke("asaas-billing", {
-                body: { action: "check-payment-batch" },
-              });
-              if (error) throw error;
+              const data = await invokeAsaas({ action: "check-payment-batch" });
               const { total = 0, updated = 0, errors = [] } = data || {};
               if (errors.length > 0) {
                 toast.warning(`${updated} de ${total} sincronizadas — ${errors.length} com erro`);

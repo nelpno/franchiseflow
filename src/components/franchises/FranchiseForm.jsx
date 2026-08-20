@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
+import { cpfCnpjError } from "@/lib/documentUtils";
 function formatCpfCnpj(value) {
   const digits = (value || "").replace(/\D/g, "");
   if (digits.length <= 11) {
@@ -110,9 +111,12 @@ export default function FranchiseForm({
         toast.error("E-mail inválido. Confira o endereço informado.");
         return;
       }
-      const cpfDigits = (cpf_cnpj || "").replace(/\D/g, "");
-      if (cpfDigits.length !== 11 && cpfDigits.length !== 14) {
-        toast.error("CPF/CNPJ incompleto. Digite todos os dígitos — CPF tem 11, CNPJ tem 14.");
+      // Confere os dígitos verificadores, não só o tamanho: doc com um dígito trocado
+      // passa no comprimento, o ASAAS recusa ("CPF/CNPJ informado é inválido") e a
+      // mensalidade nunca é criada — foi o que travou a Americana por 2 meses (19/08/2026).
+      const docErro = cpfCnpjError(cpf_cnpj);
+      if (docErro) {
+        toast.error(docErro);
         return;
       }
     }
