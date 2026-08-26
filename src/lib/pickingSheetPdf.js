@@ -76,7 +76,7 @@ function getDisplayName(productName) {
  * Renders a single picking sheet page onto the jsPDF doc.
  * Returns the doc (for chaining).
  */
-function renderPickingPage(doc, autoTable, { order, items, franchiseName, phone, address, editedQuantities, weightMap }) {
+function renderPickingPage(doc, autoTable, { order, items, franchiseName, ownerName, phone, address, editedQuantities, weightMap }) {
   const pw = 210;
   const m = 8;
   const usable = pw - m * 2;
@@ -111,22 +111,29 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, phone,
   const dateL1 = `Pedido: ${fmtDate(order.ordered_at)}`;
   const dateL2 = `Entrega: ${fmtDate(order.estimated_delivery)}`;
 
-  if (address || fmtPhone) {
+  {
     const padX = 5;
     const padY = 4;
     const eyeH = 3.4;   // altura do rótulo (eyebrow)
     const addrLH = 5.0; // altura de linha do endereço
+    const ownerLH = 4.8;
     const rightColW = 60;
     const leftX = m + padX;
     const rightX = pw - m - padX - rightColW;
     const addrW = rightX - 8 - leftX; // gap de 8mm entre colunas
+    // Endereço em branco NUNCA sai calado: o motorista tem que ver que falta cadastro
+    // (foi assim que Leme e Itapevi saíram sem endereço sem ninguém perceber, 23/08/2026).
+    const addrMissing = !String(address || "").trim();
     // mede a quebra JÁ na fonte de render (11pt bold) — senão a linha estoura a coluna
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    const addrLines = address ? doc.splitTextToSize(String(address), addrW) : [];
+    const addrLines = addrMissing
+      ? ["ENDERECO NAO CADASTRADO - confira no painel"]
+      : doc.splitTextToSize(String(address), addrW);
+    const owner = String(ownerName || "").trim();
 
     // altura do card = maior coluna + respiro
-    const leftH = addrLines.length ? eyeH + addrLines.length * addrLH : 6;
+    const leftH = eyeH + addrLines.length * addrLH + (owner ? ownerLH : 0);
     const rightH = (fmtPhone ? eyeH + 6 : 0) + 4.2 + 4.2; // tel + 2 datas
     const cardH = Math.max(leftH, rightH) + padY * 2;
 
@@ -136,23 +143,24 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, phone,
     doc.setFillColor(185, 28, 28);
     doc.rect(m, y, 1.6, cardH, "F");
 
-    // ── Coluna esquerda: ENDEREÇO (destaque) ──
+    // ── Coluna esquerda: ENDEREÇO (destaque) + quem recebe ──
     let ly = y + padY + 2.4;
-    if (addrLines.length) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(6.8);
-      doc.setTextColor(185, 28, 28);
-      doc.text("ENDERECO DE ENTREGA", leftX, ly);
-      ly += eyeH;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(30, 30, 30);
-      doc.text(addrLines, leftX, ly + 0.8);
-    } else {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(30, 30, 30);
-      doc.text(franchiseName || "---", leftX, ly + 2);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.8);
+    doc.setTextColor(185, 28, 28);
+    doc.text("ENDERECO DE ENTREGA", leftX, ly);
+    ly += eyeH;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    if (addrMissing) doc.setTextColor(185, 28, 28);
+    else doc.setTextColor(30, 30, 30);
+    doc.text(addrLines, leftX, ly + 0.8);
+    ly += addrLines.length * addrLH;
+    if (owner) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(90, 90, 90);
+      doc.text(`RECEBER COM: ${owner}`, leftX, ly + 0.6);
     }
 
     // ── Coluna direita: TELEFONE + datas ──
@@ -179,16 +187,6 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, phone,
     doc.text(dateL2, rightX, ry);
 
     y += cardH + 3;
-  } else {
-    // Sem contato cadastrado: mantém nome + datas simples
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 40, 40);
-    doc.text(franchiseName || "---", m, y);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 100);
-    doc.text(`${dateL1}    ${dateL2}`, pw - m, y, { align: "right" });
-    y += 5;
   }
 
   // ── Items Table ──
@@ -475,11 +473,11 @@ async function loadPdfLibs() {
 /**
  * Compact A4 picking sheet — designed to fit on a single page.
  */
-export async function generatePickingSheet({ order, items, franchiseName, phone, address, editedQuantities, weightMap }) {
+export async function generatePickingSheet({ order, items, franchiseName, ownerName, phone, address, editedQuantities, weightMap }) {
   const { jsPDF, autoTable } = await loadPdfLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  renderPickingPage(doc, autoTable, { order, items, franchiseName, phone, address, editedQuantities, weightMap });
+  renderPickingPage(doc, autoTable, { order, items, franchiseName, ownerName, phone, address, editedQuantities, weightMap });
 
   const dateStr = format(new Date(), "yyyyMMdd");
   const shortId = order.id.slice(0, 8).toUpperCase();
@@ -495,7 +493,7 @@ export async function generateBulkPickingSheet(ordersWithItems, weightMap) {
 
   ordersWithItems.forEach((data, idx) => {
     if (idx > 0) doc.addPage();
-    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName, phone: data.phone, address: data.address, weightMap });
+    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName, ownerName: data.ownerName, phone: data.phone, address: data.address, weightMap });
   });
 
   // Consolidated summary as last page

@@ -3,6 +3,7 @@ import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, ad
 import { supabase } from "@/api/supabaseClient";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { resolveDeliveryAddress } from "@/lib/addressUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -142,7 +143,9 @@ export default function PurchaseOrders() {
       const results = await Promise.allSettled([
         PurchaseOrder.list("-ordered_at"),
         Franchise.list(),
-        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name, personal_phone_for_summary, unit_address' }),
+        // street_address/cep/neighborhood/city entram porque a ficha do motorista monta o
+        // endereço pelos COMPONENTES (resolveDeliveryAddress) — o unit_address é só fallback.
+        FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name, personal_phone_for_summary, unit_address, street_address, cep, neighborhood, city' }),
       ]);
       if (!mountedRef.current) return;
 
@@ -204,13 +207,16 @@ export default function PurchaseOrders() {
     return cfg?.franchise_name || f?.city || f?.owner_name || "Franquia";
   };
 
-  // Telefone do responsável (resumo) + endereço da unidade — pra ficha do motorista
+  // Quem recebe + telefone + endereço da unidade — pra ficha do motorista.
+  // O endereço NÃO sai do unit_address gravado (nasce truncado em franquia nova):
+  // resolveDeliveryAddress monta pelos componentes do cadastro fiscal + config.
   const getFranchiseContact = (franchiseId) => {
     const f = franchiseMap[franchiseId];
     const cfg = configMap[franchiseId] || configMap[f?.evolution_instance_id];
     return {
       phone: cfg?.personal_phone_for_summary || "",
-      address: cfg?.unit_address || "",
+      address: resolveDeliveryAddress(f, cfg),
+      ownerName: f?.owner_name || "",
     };
   };
 

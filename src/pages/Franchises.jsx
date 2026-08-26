@@ -181,12 +181,21 @@ export default function Franchises() {
         name: franchiseCore.name || `MaxiMassas ${franchiseCore.city}`,
       });
 
-      // Etapa 1b: Persistir billing_email (franchises) + cep/street (franchise_configurations)
+      // Etapa 1b: Persistir billing_email (franchises) + endereço (franchise_configurations)
+      // ⚠️ Mandar o endereço INTEIRO, não só cep/rua: o unit_address (endereço da ficha
+      // do motorista) é montado a partir do que chega aqui. Enviando só cep+rua ele
+      // nascia "Rua X - CEP", sem número/bairro/cidade — foi assim que as fichas de Leme
+      // e Itapevi foram impressas sem endereço em 23/08/2026.
       try {
         await saveFiscalData(newFranchise.id, newFranchise.evolution_instance_id, {
           billing_email,
           cep: addressExtras?.cep,
           street_address: addressExtras?.street_address,
+          address_number: franchiseCore.address_number,
+          address_complement: franchiseCore.address_complement,
+          neighborhood: franchiseCore.neighborhood,
+          city: franchiseCore.city,
+          state_uf: franchiseCore.state_uf,
         });
       } catch (addrErr) {
         console.error("Erro ao salvar dados fiscais:", addrErr);

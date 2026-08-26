@@ -1,5 +1,5 @@
 import { Franchise, FranchiseConfiguration } from "@/entities/all";
-import { assembleUnitAddress } from "@/lib/addressUtils";
+import { resolveDeliveryAddress } from "@/lib/addressUtils";
 
 // Campos que vão para franchises
 const FRANCHISE_FIELDS = [
@@ -42,29 +42,38 @@ export async function saveFiscalData(franchiseId, evolutionInstanceId, data) {
     if (configPatch[k] === "") configPatch[k] = null;
   }
 
-  // Monta o unit_address (endereço do motorista) a partir do que foi enviado.
-  // Assim, completar o cadastro fiscal (gate de onboarding ou edição admin) já
-  // preenche o endereço — sem depender de abrir/salvar o wizard "Meu Vendedor".
-  const assembledAddress = assembleUnitAddress({
-    street: data.street_address,
-    number: data.address_number,
-    neighborhood: data.neighborhood,
-    city: data.city,
-    cep: data.cep,
-  });
+  // Lê o estado ATUAL das duas tabelas pra montar o unit_address com tudo que a
+  // unidade já tem. Montar só com o que veio no patch TRUNCAVA o endereço: o cadastro
+  // de franquia nova manda apenas billing_email/cep/rua, e o resultado ("Rua X - CEP",
+  // sem número/bairro/cidade) era o que ia parar na ficha do motorista — bug de Leme e
+  // Itapevi, impresso em 23/08/2026 com o cadastro fiscal completo o tempo todo.
+  let currentConfig = null;
+  if (evolutionInstanceId) {
+    const configs = await FranchiseConfiguration.filter({
+      franchise_evolution_instance_id: evolutionInstanceId,
+    });
+    currentConfig = configs[0] || null;
+  }
+  let currentFranchise = null;
+  try {
+    const rows = await Franchise.filter({ id: franchiseId });
+    currentFranchise = rows[0] || null;
+  } catch {
+    // leitura opcional: sem ela o endereço sai só com o que veio no patch
+  }
+
+  const assembledAddress = resolveDeliveryAddress(
+    { ...(currentFranchise || {}), ...franchisePatch },
+    { ...(currentConfig || {}), ...configPatch }
+  );
   if (assembledAddress) configPatch.unit_address = assembledAddress;
 
   if (Object.keys(franchisePatch).length > 0) {
     await Franchise.update(franchiseId, franchisePatch);
   }
 
-  if (Object.keys(configPatch).length > 0 && evolutionInstanceId) {
-    const configs = await FranchiseConfiguration.filter({
-      franchise_evolution_instance_id: evolutionInstanceId,
-    });
-    if (configs[0]) {
-      await FranchiseConfiguration.update(configs[0].id, configPatch);
-    }
+  if (Object.keys(configPatch).length > 0 && currentConfig) {
+    await FranchiseConfiguration.update(currentConfig.id, configPatch);
   }
 }
 
