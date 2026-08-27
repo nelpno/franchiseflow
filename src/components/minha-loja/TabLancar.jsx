@@ -29,6 +29,7 @@ import ExportButtons from "@/components/shared/ExportButtons";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
+import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
@@ -211,7 +212,11 @@ export default function TabLancar({
           const contact = s.contact_id ? contactsMap[s.contact_id] : null;
           const contactName = (contact?.nome || "").toLowerCase();
           const customerName = (s.customer_name || "").toLowerCase();
-          if (!contactName.includes(lower) && !customerName.includes(lower)) {
+          // Telefone: compara so digitos, para casar "11 99999-1234", "(11)99999", "999991234"
+          const termDigits = searchTerm.replace(/[^0-9]/g, "");
+          const phoneDigits = (contact?.telefone || "").replace(/[^0-9]/g, "");
+          const phoneHit = termDigits.length >= 3 && phoneDigits.includes(termDigits);
+          if (!contactName.includes(lower) && !customerName.includes(lower) && !phoneHit) {
             return false;
           }
         }
@@ -600,7 +605,7 @@ export default function TabLancar({
             className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a3d3d]/60"
           />
           <Input
-            placeholder="Buscar cliente..."
+            placeholder="Buscar por nome ou telefone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9 bg-white"
@@ -822,6 +827,53 @@ export default function TabLancar({
                   {/* Expanded detail */}
                   {isExpanded && (
                     <div className="border-t border-[#291715]/5 px-4 py-3 bg-[#fbf9fa]/50 space-y-3">
+                      {/* Cliente: nomes repetem na carteira (7 Adrianas, 3 Deboras...),
+                          entao o que identifica QUAL cliente e o telefone + bairro. */}
+                      {(() => {
+                        const contact = sale.contact_id ? contactsMap[sale.contact_id] : null;
+                        if (!contact) return null;
+                        const telefone = contact.telefone || "";
+                        const local = [contact.bairro, contact.endereco]
+                          .filter(Boolean)
+                          .join(" - ");
+                        return (
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-[#4a3d3d] uppercase tracking-wider mb-1">
+                              Cliente
+                            </p>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex flex-col gap-0.5 min-w-0">
+                                {telefone ? (
+                                  <span className="text-sm font-mono-numbers text-[#1b1c1d]">
+                                    {formatPhone(telefone)}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-[#4a3d3d] italic">
+                                    Sem telefone cadastrado
+                                  </span>
+                                )}
+                                {local && (
+                                  <span className="text-xs text-[#4a3d3d] truncate">{local}</span>
+                                )}
+                              </div>
+                              {telefone && (
+                                <a
+                                  href={getWhatsAppLink(telefone)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors shrink-0"
+                                >
+                                  <MaterialIcon icon="chat" size={16} />
+                                  <span className="hidden sm:inline">WhatsApp</span>
+                                  <span className="sm:hidden">Zap</span>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Sale items */}
                       {saleItemsList.length > 0 ? (
                         <div className="space-y-1">
