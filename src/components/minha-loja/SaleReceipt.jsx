@@ -1,5 +1,6 @@
 import React from "react";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
+import { formatPhone } from "@/lib/whatsappUtils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import logoMaxi from "@/assets/logo-maxi-massas-optimized.png";
@@ -58,6 +59,9 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
   // (contatos antigos ficam fora da janela de ~1000 carregados na tela de Vendas).
   const receiptAddress = contact?.endereco || sale.customer_address;
   const receiptNeighborhood = contact?.bairro || sale.customer_neighborhood;
+  // Telefone do cliente no cupom — o entregador liga direto em vez de acionar a franqueada.
+  // Mesma cascata do endereço: contato "vivo" primeiro, snapshot da venda como fallback.
+  const receiptPhone = formatPhone(contact?.telefone || sale.contact_phone || "");
 
   return (
     <div
@@ -164,6 +168,12 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#666" }}>Cliente</span>
             <span style={{ fontWeight: 600 }}>{contact?.nome || sale.customer_name}</span>
+          </div>
+        )}
+        {receiptPhone && (
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "#666" }}>Telefone</span>
+            <span style={{ fontWeight: 600 }}>{receiptPhone}</span>
           </div>
         )}
         {(receiptAddress || receiptNeighborhood) && (
