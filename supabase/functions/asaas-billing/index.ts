@@ -284,16 +284,12 @@ async function createSubscription(franchiseId: string, value: number = 150) {
         current_payment_url: pay.bankSlipUrl || pay.invoiceUrl || null,
       };
 
-      // Try to get PIX
-      try {
-        const pix = await asaasRequest(`/v3/payments/${pay.id}/pixQrCode`);
-        paymentData.pix_payload = pix.payload || null;
-        paymentData.pix_qr_code_url = pix.encodedImage
-          ? `data:image/png;base64,${pix.encodedImage}`
-          : null;
-      } catch {
-        // PIX not available yet, ok
-      }
+      // PIX da primeira fatura (mesma regra dos demais pontos — ver attachPixFields)
+      await attachPixFields(
+        paymentData,
+        pay.id,
+        paymentData.current_payment_status as string,
+      );
     }
   } catch {
     // Payments not generated yet, ok
@@ -311,6 +307,40 @@ async function createSubscription(franchiseId: string, value: number = 150) {
     .eq("franchise_id", franchiseId);
 
   return { subscriptionId: subscription.id };
+}
+
+/**
+ * Preenche pix_payload/pix_qr_code_url para a fatura que o card vai mostrar.
+ *
+ * 🔴 SEMPRE escreve os dois campos — inclusive com null. Deixar o valor anterior
+ * intacto é o que fez a rede inteira exibir um QR MORTO em 01/09/2026: o ASAAS
+ * responde HTTP 400 em `/pixQrCode` de cobrança já liquidada, então o payload que
+ * ficou guardado do ciclo passado continua sendo servido e o app do banco recusa
+ * ("Não foi possível ler o QR Code / O QR Code não é válido"). Fatura paga não tem
+ * QR: melhor nenhum QR do que o do mês anterior.
+ */
+async function attachPixFields(
+  updateData: Record<string, unknown>,
+  paymentId: string,
+  status: string,
+) {
+  if (status !== "PENDING" && status !== "OVERDUE") {
+    updateData.pix_payload = null;
+    updateData.pix_qr_code_url = null;
+    return;
+  }
+  try {
+    const pix = await asaasRequest(`/v3/payments/${paymentId}/pixQrCode`);
+    updateData.pix_payload = pix.payload || null;
+    updateData.pix_qr_code_url = pix.encodedImage
+      ? `data:image/png;base64,${pix.encodedImage}`
+      : null;
+  } catch (err) {
+    // Falha ao gerar o QR não pode ser silenciosa nem herdar o QR anterior.
+    console.error(`pixQrCode falhou para ${paymentId}:`, (err as Error).message);
+    updateData.pix_payload = null;
+    updateData.pix_qr_code_url = null;
+  }
 }
 
 async function checkPayment(franchiseId: string) {
@@ -359,18 +389,8 @@ async function checkPayment(franchiseId: string) {
     last_synced_at: new Date().toISOString(),
   };
 
-  // Fetch PIX if overdue or pending (so paywall can show it)
-  if (status === "OVERDUE" || status === "PENDING") {
-    try {
-      const pix = await asaasRequest(`/v3/payments/${pay.id}/pixQrCode`);
-      updateData.pix_payload = pix.payload || null;
-      updateData.pix_qr_code_url = pix.encodedImage
-        ? `data:image/png;base64,${pix.encodedImage}`
-        : null;
-    } catch {
-      // PIX not available
-    }
-  }
+  // PIX da fatura selecionada (null quando ela não é pagável — ver attachPixFields)
+  await attachPixFields(updateData, pay.id, status);
 
   await supabase
     .from("system_subscriptions")
@@ -437,18 +457,10 @@ async function handleWebhook(body: Record<string, unknown>) {
     last_synced_at: new Date().toISOString(),
   };
 
-  // Fetch PIX for overdue payments
-  if (status === "OVERDUE") {
-    try {
-      const pix = await asaasRequest(`/v3/payments/${payment.id}/pixQrCode`);
-      updateData.pix_payload = pix.payload || null;
-      updateData.pix_qr_code_url = pix.encodedImage
-        ? `data:image/png;base64,${pix.encodedImage}`
-        : null;
-    } catch {
-      // ok
-    }
-  }
+  // PIX da fatura que o evento traz. Antes só buscava em OVERDUE: um evento PENDING
+  // dentro da carência trocava o current_payment_id e mantinha o QR do ciclo anterior,
+  // deixando o card com o mês novo e um QR morto. Ver attachPixFields.
+  await attachPixFields(updateData, payment.id as string, status);
 
   await supabase
     .from("system_subscriptions")
@@ -579,7 +591,7 @@ async function updateSubscriptionValue({
     try {
       const { data: sub } = await supabase
         .from("system_subscriptions")
-        .select("asaas_subscription_id, current_payment_id")
+        .select("asaas_subscription_id, current_payment_id, current_payment_status")
         .eq("franchise_id", fid)
         .single();
 
@@ -606,16 +618,13 @@ async function updateSubscriptionValue({
           patch.current_payment_value = updated.value ?? newValue;
           patch.current_payment_url = updated.bankSlipUrl || updated.invoiceUrl || null;
 
-          // Recarrega PIX porque o valor mudou = QR novo
-          try {
-            const pix = await asaasRequest(`/v3/payments/${sub.current_payment_id}/pixQrCode`) as {
-              payload?: string; encodedImage?: string;
-            };
-            patch.pix_payload = pix.payload || null;
-            patch.pix_qr_code_url = pix.encodedImage
-              ? `data:image/png;base64,${pix.encodedImage}`
-              : null;
-          } catch { /* PIX pode demorar alguns segundos */ }
+          // Recarrega PIX porque o valor mudou = QR novo. Se falhar, attachPixFields
+          // zera os campos: manter o QR antigo aqui cobraria o valor ERRADO.
+          await attachPixFields(
+            patch,
+            sub.current_payment_id as string,
+            (sub.current_payment_status as string) || "PENDING",
+          );
         } catch (payErr) {
           console.warn(`[asaas-billing] Falha ao atualizar payment de ${fid}: ${(payErr as Error).message}`);
         }

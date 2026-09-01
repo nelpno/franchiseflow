@@ -83,6 +83,34 @@ export default function SubscriptionPaymentSheet({ open, onOpenChange, subscript
             </div>
           )}
 
+          {/* Cobrança em aberto sem QR: a edge agora grava null em vez de herdar o QR
+              do mês anterior (que o banco recusa como "QR Code não é válido"). Sem esta
+              faixa a franqueada abriria um painel vazio, sem saber o que fazer. */}
+          {(isOverdue || isPending) && !pix_qr_code_url && !pix_payload && (
+            <div className="rounded-lg border border-[#d4af37]/40 bg-[#fefce8] p-3 text-center">
+              <p className="text-sm font-medium text-[#1b1c1d]">
+                O QR Code não foi carregado
+              </p>
+              <p className="text-xs text-[#7a6d6d] mt-1">
+                Toque em atualizar para gerar um novo. Se não aparecer, use o boleto ou avise a
+                fábrica.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-3 w-full gap-2"
+                onClick={checkPaymentNow}
+                disabled={isChecking}
+              >
+                <MaterialIcon
+                  icon="refresh"
+                  style={{ fontSize: 18 }}
+                  className={isChecking ? "animate-spin" : undefined}
+                />
+                {isChecking ? "Atualizando..." : "Atualizar cobrança"}
+              </Button>
+            </div>
+          )}
+
           {pix_payload && (
             <Button
               className="w-full gap-2 text-white"
