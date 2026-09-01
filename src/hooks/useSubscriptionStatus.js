@@ -87,16 +87,27 @@ export function useSubscriptionStatus() {
   };
 }
 
-/** PAID + before next due date = cache 24h. OVERDUE = cache 5min. */
+/**
+ * Cobrança QUITADA e ainda dentro do ciclo = cache 24h (não há o que checar).
+ * Qualquer coisa em aberto (PENDING/OVERDUE) = 5min.
+ *
+ * 🔴 Antes o ramo de 24h valia para QUALQUER status desde que o vencimento fosse
+ * futuro — então uma cobrança PENDENTE ficava até 24h em cache e uma aba aberta
+ * continuava exibindo o QR antigo depois que a edge já tinha gerado outro. É a
+ * mesma familia do incidente de 01/09/2026 (QR de fatura paga): QR velho na tela
+ * faz o app do banco recusar o pagamento.
+ */
+const PAID_STATUSES = new Set(['PAID', 'RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH']);
+
 function getStaleTime(subscription) {
-  if (!subscription) return 5 * 60 * 1000;
-  if (subscription.current_payment_status === 'OVERDUE') return 5 * 60 * 1000;
+  const CURTO = 5 * 60 * 1000;
+  if (!subscription) return CURTO;
+  if (!PAID_STATUSES.has(subscription.current_payment_status)) return CURTO;
 
   const dueDate = subscription.current_payment_due_date;
   if (dueDate) {
     const due = new Date(dueDate);
-    const now = new Date();
-    if (due > now) return 24 * 60 * 60 * 1000; // 24h cache
+    if (due > new Date()) return 24 * 60 * 60 * 1000; // 24h cache
   }
-  return 5 * 60 * 1000;
+  return CURTO;
 }
