@@ -66,6 +66,10 @@ export default function MarketingPaymentSection() {
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  // Anexo tardio: pagamento JÁ CONFIRMADO que ficou sem comprovante. Modo separado do
+  // editMode de propósito — aqui só se acrescenta o arquivo; valor e status não mudam
+  // (o admin já validou o pagamento e a despesa do DRE já foi gerada).
+  const [attachOnly, setAttachOnly] = useState(false);
   const [showProofReminder, setShowProofReminder] = useState(false);
 
   const monthOptions = getMonthOptions();
@@ -137,6 +141,45 @@ export default function MarketingPaymentSection() {
       return;
     }
     handleSubmit();
+  };
+
+  // Anexa o comprovante a um pagamento já confirmado: grava SÓ o proof_url.
+  const handleAttachOnly = async () => {
+    if (!file || !currentPayment) return;
+    setSubmitting(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${evoId}/${selectedMonth}_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+
+      await MarketingPayment.update(currentPayment.id, { proof_url: urlData.publicUrl });
+
+      toast.success("Comprovante anexado!");
+      setFile(null);
+      setAttachOnly(false);
+      await loadPayments();
+
+      const franchiseName = ctxFranchise?.franchise_name || ctxFranchise?.owner_name || "Franquia";
+      try {
+        await supabase.rpc("notify_admins", {
+          p_title: "Comprovante de marketing anexado",
+          p_message: `${franchiseName} — ${formatBRL(parseFloat(currentPayment.amount))} ref. ${monthLabel}`,
+          p_type: "info",
+          p_icon: "campaign",
+          p_link: "/Marketing",
+        });
+      } catch {
+        // notificação é acessório: não derruba o anexo
+      }
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Não foi possível anexar o comprovante."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -230,7 +273,17 @@ export default function MarketingPaymentSection() {
             </div>
           </div>
 
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <Select
+            value={selectedMonth}
+            onValueChange={(v) => {
+              // trocar de mês sai de qualquer modo de edição: o pagamento é outro
+              setSelectedMonth(v);
+              setAttachOnly(false);
+              setEditMode(false);
+              setFile(null);
+              setAmount("");
+            }}
+          >
             <SelectTrigger className="h-8 w-40 text-xs border-[#e9e8e9]">
               <SelectValue />
             </SelectTrigger>
@@ -245,7 +298,7 @@ export default function MarketingPaymentSection() {
         </div>
 
         {/* ─── Ja registrou ─── */}
-        {currentPayment && !editMode ? (
+        {currentPayment && !editMode && !attachOnly ? (
           <div>
             <div className="flex items-center justify-between p-3 bg-[#fbf9fa] rounded-xl">
               <div>
@@ -327,6 +380,77 @@ export default function MarketingPaymentSection() {
                 )}
               </div>
             )}
+
+            {/* Já confirmado e sem comprovante: dá pra anexar depois. Na prática o admin
+                confirma o pagamento antes de a franqueada voltar pra anexar, e o botão de
+                cima (status pending) nunca aparecia pra ela. */}
+            {currentPayment.status === "confirmed" && !currentPayment.proof_url && (
+              <div className="mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs"
+                  onClick={() => { setAttachOnly(true); setFile(null); }}
+                >
+                  <MaterialIcon icon="attach_file" size={14} className="mr-1" />
+                  Anexar comprovante
+                </Button>
+                <p className="text-[11px] text-[#775a19] mt-1.5">
+                  Registrado sem comprovante. Você ainda pode anexar — o valor confirmado não muda.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : attachOnly && currentPayment ? (
+          /* ─── Anexo tardio: só o arquivo, valor travado ─── */
+          <div className="space-y-3">
+            <div className="p-3 bg-[#fbf9fa] rounded-xl">
+              <p className="text-lg font-bold text-[#1b1c1d]">
+                {formatBRL(parseFloat(currentPayment.amount))}
+              </p>
+              <p className="text-xs text-[#7a6d6d]">
+                Pagamento já confirmado · {monthLabel}
+              </p>
+            </div>
+
+            <div>
+              <Label className="text-xs text-[#4a3d3d]">Comprovante do PIX</Label>
+              <label className="flex items-center gap-1.5 h-9 px-3 border border-dashed border-[#cac0c0] rounded-md cursor-pointer hover:bg-[#fbf9fa] text-xs text-[#4a3d3d] mt-0.5">
+                <MaterialIcon icon="attach_file" size={14} />
+                <span className="truncate">{file ? file.name : "Escolher arquivo"}</span>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={handleAttachOnly}
+                disabled={submitting || !file}
+                className="flex-1 h-9 bg-[#b91c1c] hover:bg-[#991b1b] text-white text-sm font-medium"
+              >
+                {submitting ? (
+                  <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+                ) : (
+                  <>
+                    <MaterialIcon icon="attach_file" size={16} className="mr-1.5" />
+                    Anexar comprovante
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-xs"
+                onClick={() => { setAttachOnly(false); setFile(null); }}
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
         ) : (
           /* ─── Formulario ─── */
