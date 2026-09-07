@@ -192,7 +192,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                         style={{
                           width: `${(pct * (100 - f.botPercent)) / 100}%`,
                           ...(isFirst && f.botPercent <= 0
-                            ? { boxShadow: "0 0 8px rgba(168, 0, 18, 0.4)" }
+                            ? { boxShadow: "0 0 8px rgba(185, 28, 28, 0.4)" }
                             : {}),
                         }}
                       />

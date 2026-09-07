@@ -44,7 +44,7 @@ function DailyRevenueChart({ allSales = [], isLoading, days = 7 }) {
               key={i}
               className={`flex-1 rounded-t-lg ${
                 d.isLast
-                  ? "bg-gradient-to-t from-brand/40 to-brand shadow-[0_0_15px_rgba(168,0,18,0.2)]"
+                  ? "bg-gradient-to-t from-brand/40 to-brand shadow-[0_0_15px_rgba(185, 28, 28,0.2)]"
                   : "bg-gradient-to-t from-brand/20 to-brand/40"
               }`}
               style={{ height: `${heightPct}%` }}

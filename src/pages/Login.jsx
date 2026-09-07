@@ -91,7 +91,7 @@ export default function Login() {
 
   return (
     <div className="bg-surface text-ink min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
-      <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
+      <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(220, 38, 38,0.08)]">
         <AuthHero
           headline={
             <>

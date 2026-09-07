@@ -13,7 +13,7 @@ export default function AuthHero({ headline, subtitle }) {
       <div
         className="absolute inset-0 opacity-60"
         style={{
-          backgroundImage: "radial-gradient(circle at 2px 2px, rgba(227, 24, 24, 0.05) 1px, transparent 0)",
+          backgroundImage: "radial-gradient(circle at 2px 2px, rgba(220, 38, 38, 0.05) 1px, transparent 0)",
           backgroundSize: "24px 24px",
         }}
       />
@@ -53,7 +53,7 @@ export default function AuthHero({ headline, subtitle }) {
       {/* Dashboard preview (product mockup) */}
       <div className="relative z-10 w-[400px] max-w-full" style={{ animation: "maxiRise .7s ease both", animationDelay: ".16s" }}>
         {/* App window frame */}
-        <div className="rounded-2xl bg-white shadow-[0_28px_60px_-18px_rgba(227,24,24,0.22)] border border-black/5 overflow-hidden">
+        <div className="rounded-2xl bg-white shadow-[0_28px_60px_-18px_rgba(220, 38, 38,0.22)] border border-black/5 overflow-hidden">
           {/* chrome bar */}
           <div className="flex items-center gap-1.5 px-4 py-3 border-b border-black/5 bg-surface">
             <span className="w-2.5 h-2.5 rounded-full bg-err/40" />
@@ -94,7 +94,7 @@ export default function AuthHero({ headline, subtitle }) {
                     className="flex-1 rounded-t-md origin-bottom"
                     style={{
                       height: h + "%",
-                      background: i === 6 ? "#dc2626" : "rgba(227,24,24,0.16)",
+                      background: i === 6 ? "#dc2626" : "rgba(220, 38, 38,0.16)",
                       animation: "maxiGrow .55s ease both",
                       animationDelay: 0.32 + i * 0.05 + "s",
                     }}

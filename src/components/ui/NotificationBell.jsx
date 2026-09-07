@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Notification } from '@/entities/all';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNotifications } from "@/hooks/useNotifications";
 import MaterialIcon from '@/components/ui/MaterialIcon';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,34 +14,13 @@ const TYPE_STYLES = {
 };
 
 export default function NotificationBell({ size = 20 }) {
-  const [notifications, setNotifications] = useState([]);
+  // A busca e o timer vivem no store, nao aqui: o Layout monta DOIS sinos ao mesmo tempo
+  // (topo desktop + topo mobile) e o AdminDashboard monta um terceiro. Cada um tinha o seu
+  // proprio fetch de 2 em 2 minutos — eram 2 requisicoes identicas por carregamento de pagina.
+  const { notifications, unreadCount, marcarComoLida, marcarTodasComoLidas } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-
-  const abortControllerRef = useRef(null);
-
-  const loadNotifications = useCallback(async () => {
-    abortControllerRef.current?.abort();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    try {
-      const data = await Notification.list('-created_at', 20, { signal: controller.signal });
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.read).length);
-    } catch (e) {
-      if (e?.name === 'AbortError') return;
-      // silently fail
-    }
-  }, []);
-
-  useEffect(() => {
-    loadNotifications();
-    return () => abortControllerRef.current?.abort();
-  }, [loadNotifications]);
-
-  useVisibilityPolling(loadNotifications, 120000);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -57,9 +35,7 @@ export default function NotificationBell({ size = 20 }) {
   const handleClick = async (notification) => {
     if (!notification.read) {
       try {
-        await Notification.update(notification.id, { read: true });
-        setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        await marcarComoLida(notification.id);
       } catch (e) {
         console.warn('Falha ao marcar notificação como lida:', e);
         toast.error('Não foi possível marcar como lida');
@@ -72,11 +48,8 @@ export default function NotificationBell({ size = 20 }) {
   };
 
   const markAllRead = async () => {
-    const unread = notifications.filter(n => !n.read);
     try {
-      await Promise.all(unread.map(n => Notification.update(n.id, { read: true })));
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
+      await marcarTodasComoLidas();
     } catch (e) {
       console.warn('Falha ao marcar notificações como lidas:', e);
       toast.error('Não foi possível marcar como lida');
