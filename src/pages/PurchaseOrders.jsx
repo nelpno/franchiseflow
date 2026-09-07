@@ -51,7 +51,7 @@ const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente", order: 0 },
   confirmado: { color: "bg-[#2563eb]/10 text-[#2563eb]", icon: "check_circle", label: "Confirmado", order: 1 },
   em_rota: { color: "bg-[#ea580c]/10 text-[#ea580c]", icon: "local_shipping", label: "Em Rota", order: 2 },
-  entregue: { color: "bg-ok/10 text-ok", icon: "inventory", label: "Entregue", order: 3 },
+  entregue: { color: "bg-ok/10 text-ok-ink", icon: "inventory", label: "Entregue", order: 3 },
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado", order: 4 },
 };
 
@@ -765,7 +765,7 @@ export default function PurchaseOrders() {
         const stats = [
           { icon: "schedule", label: "Pendentes", value: pendentes.length, detail: pendentesTotal > 0 ? formatBRL(pendentesTotal) : null, color: "#d97706" },
           { icon: "local_shipping", label: "Em Rota", value: emRota.length, color: "#ea580c" },
-          { icon: "inventory", label: "Entregues", value: entregues.length, detail: tempoMedio ? `média ${tempoMedio}` : null, color: "#16a34a" },
+          { icon: "inventory", label: "Entregues", value: entregues.length, detail: tempoMedio ? `média ${tempoMedio}` : null, color: "#15803d" },
           { icon: "timer", label: "Tempo Médio", value: tempoMedio || "—", detail: entregas.length > 0 ? `${entregas.length} entrega${entregas.length > 1 ? "s" : ""}` : "sem dados", color: "#2563eb" },
         ];
         return (
@@ -1122,7 +1122,7 @@ export default function PurchaseOrders() {
                     </span>
                   )}
                   {selectedOrder.delivered_at && (
-                    <span className="flex items-center gap-1.5 text-ok">
+                    <span className="flex items-center gap-1.5 text-ok-ink">
                       <MaterialIcon icon="check_circle" size={14} />
                       <span className="font-medium">Entregue:</span>
                       {format(new Date(selectedOrder.delivered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
@@ -1137,7 +1137,7 @@ export default function PurchaseOrders() {
                     new Date(selectedOrder.delivered_at) > new Date(selectedOrder.estimated_delivery + 'T23:59:59');
                   return (
                     <div className="flex items-center gap-2 pt-1 border-t border-ink-4/20">
-                      <span className={`flex items-center gap-1 text-xs font-medium ${wasLate ? 'text-err' : 'text-ok'}`}>
+                      <span className={`flex items-center gap-1 text-xs font-medium ${wasLate ? 'text-err' : 'text-ok-ink'}`}>
                         <MaterialIcon icon="timer" size={14} />
                         Tempo de atendimento: {diffDays > 0 ? `${diffDays}d ${diffHours}h` : `${diffHours}h`}
                         {wasLate && ' (atrasado)'}

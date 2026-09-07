@@ -71,7 +71,7 @@ export default function AuthHero({ headline, subtitle }) {
               <div className="rounded-xl bg-err/[0.04] border border-err/10 p-3">
                 <p className="text-[9px] uppercase tracking-widest text-[#3d4a42] font-semibold">Faturamento hoje</p>
                 <p className="text-xl font-bold text-ink mt-0.5 leading-none">R$ 4.850</p>
-                <p className="text-[10px] font-semibold text-ok flex items-center gap-0.5 mt-1">
+                <p className="text-[10px] font-semibold text-ok-ink flex items-center gap-0.5 mt-1">
                   <MaterialIcon icon="trending_up" size={12} /> +12% vs ontem
                 </p>
               </div>
@@ -107,7 +107,7 @@ export default function AuthHero({ headline, subtitle }) {
               <div className="rounded-xl border border-black/5 p-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <p className="text-[10px] font-semibold text-[#3d4a42]">Meta diária</p>
-                  <p className="text-[10px] font-bold text-ok">96%</p>
+                  <p className="text-[10px] font-bold text-ok-ink">96%</p>
                 </div>
                 <div className="h-2 rounded-full bg-surface-line overflow-hidden">
                   <div className="h-full rounded-full bg-gradient-to-r from-err to-[#B8860B]" style={{ width: "96%" }} />

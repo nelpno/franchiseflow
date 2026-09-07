@@ -129,7 +129,7 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
                 className={deltaPct >= 0 ? "text-ok" : "text-err"}
               />
               <span className="text-xs text-ink-2">
-                <span className={`font-bold ${deltaPct >= 0 ? "text-ok" : "text-err"}`}>
+                <span className={`font-bold ${deltaPct >= 0 ? "text-ok-ink" : "text-err"}`}>
                   {deltaPct > 0 ? "+" : ""}{deltaPct}%
                 </span>{" "}vs mês anterior ({formatBRL(lucroAnterior)})
               </span>
@@ -184,7 +184,7 @@ function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }
             </div>
             <div className="flex items-center justify-between text-ink-2">
               <span>Markup médio</span>
-              <span className={`font-mono-numbers font-medium ${estoque.markupMedioPct >= 0 ? "text-ok" : "text-err"}`}>
+              <span className={`font-mono-numbers font-medium ${estoque.markupMedioPct >= 0 ? "text-ok-ink" : "text-err"}`}>
                 {estoque.markupMedioPct >= 0 ? "+" : ""}{estoque.markupMedioPct}%
               </span>
             </div>
@@ -254,7 +254,7 @@ function CardCaixa({ pnl, onLancarDespesa }) {
                 <MaterialIcon icon="arrow_upward" size={12} className="text-ok" />
                 Entrou
               </span>
-              <span className="font-mono-numbers font-bold text-ok">{formatBRL(totalRecebido)}</span>
+              <span className="font-mono-numbers font-bold text-ok-ink">{formatBRL(totalRecebido)}</span>
             </div>
             <div className="flex items-center justify-between text-ink-2 pl-4">
               <span className="text-xs">└ Vendas</span>
@@ -502,11 +502,11 @@ function EvolucaoCard({ evolucao }) {
           </p>
           <p className="text-ink-2">
             Lucro:{" "}
-            <span className={`font-mono-numbers font-medium ${item.lucro >= 0 ? "text-ok" : "text-err"}`}>
+            <span className={`font-mono-numbers font-medium ${item.lucro >= 0 ? "text-ok-ink" : "text-err"}`}>
               {formatBRL(item.lucro)}
             </span>
             {item.receita > 0 && (
-              <span className={`ml-1.5 text-xs ${margem >= 0 ? "text-ok" : "text-err"}`}>
+              <span className={`ml-1.5 text-xs ${margem >= 0 ? "text-ok-ink" : "text-err"}`}>
                 ({margem >= 0 ? "+" : ""}{margem.toFixed(1)}% margem)
               </span>
             )}
@@ -670,11 +670,11 @@ function ResumoAnoCard({ resumo }) {
         <p className="font-bold text-ink capitalize mb-1">{it.mes}</p>
         <p className="text-ink-2">
           Acumulado:{" "}
-          <span className="font-mono-numbers font-medium text-ok">{formatBRL(it.acumulado)}</span>
+          <span className="font-mono-numbers font-medium text-ok-ink">{formatBRL(it.acumulado)}</span>
         </p>
         <p className="text-ink-2">
           No mês:{" "}
-          <span className={`font-mono-numbers font-medium ${it.lucro >= 0 ? "text-ok" : "text-err"}`}>
+          <span className={`font-mono-numbers font-medium ${it.lucro >= 0 ? "text-ok-ink" : "text-err"}`}>
             {formatBRL(it.lucro)}
           </span>
         </p>
@@ -705,7 +705,7 @@ function ResumoAnoCard({ resumo }) {
               Lucro do ano
             </p>
             <div className={`text-3xl md:text-4xl font-bold font-mono-numbers tracking-tight ${
-              isPositive ? "text-ok" : "text-err"
+              isPositive ? "text-ok-ink" : "text-err"
             }`}>
               {formatBRL(resumo.totalLucro)}
             </div>

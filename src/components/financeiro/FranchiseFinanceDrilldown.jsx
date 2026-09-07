@@ -42,7 +42,7 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
             {variation !== null && (
               <span
                 className={`text-xs font-bold ml-auto ${
-                  variation >= 0 ? "text-ok" : "text-err"
+                  variation >= 0 ? "text-ok-ink" : "text-err"
                 }`}
               >
                 {variation >= 0 ? "+" : ""}
@@ -62,7 +62,7 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
           <PnlRow
             label="Lucro do Mes"
             value={pnl.lucroCaixa}
-            color={pnl.lucroCaixa >= 0 ? "#16a34a" : "#dc2626"}
+            color={pnl.lucroCaixa >= 0 ? "#15803d" : "#dc2626"}
             bold
           />
         </div>

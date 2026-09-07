@@ -72,7 +72,7 @@ function displayFranchiseName(name) {
 function StatusBadge({ status, asaasId, cpfCnpj }) {
   if (asaasId) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-ok/10 text-ok">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-ok/10 text-ok-ink">
         <MaterialIcon icon="check_circle" size={14} />
         Cadastrado
       </span>
@@ -97,7 +97,7 @@ function StatusBadge({ status, asaasId, cpfCnpj }) {
 function SubscriptionBadge({ sub }) {
   const { situacao, diasAtraso } = classifySubscription(sub);
   const estilo = {
-    [SITUACAO.PAGO]: { bg: "bg-ok/10", fg: "text-[#15803d]", icon: "check_circle" },
+    [SITUACAO.PAGO]: { bg: "bg-ok/10", fg: "text-ok-ink", icon: "check_circle" },
     [SITUACAO.VENCIDO]: { bg: "bg-err/10", fg: "text-err", icon: "error" },
     [SITUACAO.PENDENTE]: { bg: "bg-brand-gold/10", fg: "text-brand-gold-ink", icon: "schedule" },
     // "Sem cobranca" e o mais grave: nao existe assinatura, entao o cron de sync
@@ -513,9 +513,9 @@ export default function AsaasSetupPanel() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: "Franquias ativas", value: totalActive, icon: "store", color: "#1b1c1d" },
-          { label: "Dados fiscais completos", value: `${fiscalComplete}/${totalActive}`, icon: "fact_check", color: fiscalComplete === totalActive ? "#16a34a" : "#d4af37" },
-          { label: "No ASAAS", value: `${registered}/${totalActive}`, icon: "cloud_done", color: registered === totalActive ? "#16a34a" : "#d4af37" },
-          { label: "Com assinatura", value: `${withSubscription}/${totalActive}`, icon: "autorenew", color: withSubscription === totalActive ? "#16a34a" : "#d4af37" },
+          { label: "Dados fiscais completos", value: `${fiscalComplete}/${totalActive}`, icon: "fact_check", color: fiscalComplete === totalActive ? "#15803d" : "#d4af37" },
+          { label: "No ASAAS", value: `${registered}/${totalActive}`, icon: "cloud_done", color: registered === totalActive ? "#15803d" : "#d4af37" },
+          { label: "Com assinatura", value: `${withSubscription}/${totalActive}`, icon: "autorenew", color: withSubscription === totalActive ? "#15803d" : "#d4af37" },
         ].map(stat => (
           <Card key={stat.label} className="bg-white">
             <CardContent className="p-3 text-center">

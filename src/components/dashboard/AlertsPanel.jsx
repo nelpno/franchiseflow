@@ -272,7 +272,7 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
       {totalGroups === 0 ? (
         <div className="flex items-center gap-3 p-3 bg-[#f0fdf4] border-l-4 border-[#22c55e] rounded-r-xl">
           <MaterialIcon icon="check_circle" filled size={20} className="text-ok" />
-          <span className="text-sm font-medium text-[#15803d]">
+          <span className="text-sm font-medium text-ok-ink">
             Todas as franquias operando normalmente
           </span>
         </div>

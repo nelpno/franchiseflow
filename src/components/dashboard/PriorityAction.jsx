@@ -143,7 +143,7 @@ export default function PriorityAction({ healthResult, smartActions, coachAction
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-semibold text-ink">Tudo em dia!</p>
-          <p className="text-[11px] text-ok">Seu negócio está rodando bem. Continue assim!</p>
+          <p className="text-[11px] text-ok-ink">Seu negócio está rodando bem. Continue assim!</p>
         </div>
       </div>
     );

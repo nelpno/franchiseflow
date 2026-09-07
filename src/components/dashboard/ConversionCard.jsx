@@ -55,7 +55,7 @@ function ConversionCard({ funnel, loading, onClick }) {
           {rate.toFixed(0)}%
         </span>
         {hasDelta && (
-          <span className={`text-xs font-bold flex items-center gap-0.5 ${isUp ? "text-ok" : "text-err"}`}>
+          <span className={`text-xs font-bold flex items-center gap-0.5 ${isUp ? "text-ok-ink" : "text-err"}`}>
             <MaterialIcon icon={isUp ? "arrow_upward" : "arrow_downward"} size={14} />
             {Math.abs(deltaPP).toFixed(1).replace(".", ",")} p.p.
           </span>

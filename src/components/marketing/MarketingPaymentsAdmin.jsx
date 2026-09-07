@@ -63,7 +63,7 @@ function generateMonthOptions() {
 }
 
 const STATUS_CONFIG = {
-  confirmed: { label: "Confirmado", color: "#16a34a", icon: "check_circle" },
+  confirmed: { label: "Confirmado", color: "#15803d", icon: "check_circle" },
   pending: { label: "Pendente", color: "#d4af37", icon: "schedule" },
   rejected: { label: "Recusado", color: "#dc2626", icon: "error" },
   not_paid: { label: "Nao pagou", color: "#dc2626", icon: "cancel" },
@@ -293,10 +293,10 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-ink-3 mb-1">Saldo a Depositar</p>
-            <p className={`text-lg font-bold ${balance > 0 ? "text-brand-gold-ink" : "text-ok"}`}>
+            <p className={`text-lg font-bold ${balance > 0 ? "text-brand-gold-ink" : "text-ok-ink"}`}>
               {formatBRL(Math.max(0, balance))}
             </p>
-            {balance <= 0 && <p className="text-xs text-ok mt-1">Tudo depositado</p>}
+            {balance <= 0 && <p className="text-xs text-ok-ink mt-1">Tudo depositado</p>}
           </CardContent>
         </Card>
       </div>
@@ -428,7 +428,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-ok hover:bg-ok/10"
+                            className="h-7 w-7 p-0 text-ok-ink hover:bg-ok/10"
                             onClick={() => handleConfirm(p.id)}
                             disabled={isLoading}
                             title="Confirmar"

@@ -1207,7 +1207,7 @@ export default function TabEstoque({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 gap-1 text-xs text-ok hover:text-ok hover:bg-ok/10"
+                    className="h-8 gap-1 text-xs text-ok-ink hover:text-ok-ink hover:bg-ok/10"
                     onClick={() => handleToggleActive(item)}
                   >
                     <MaterialIcon icon="visibility" size={14} />

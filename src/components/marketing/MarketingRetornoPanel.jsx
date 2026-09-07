@@ -32,7 +32,7 @@ function corDoRetorno(roas) {
   if (roas == null) return { texto: "text-ink-3", fundo: "bg-surface-2" };
   if (roas < 1) return { texto: "text-brand", fundo: "bg-brand/10" };
   if (roas < 3) return { texto: "text-brand-gold-ink", fundo: "bg-brand-gold/15" };
-  return { texto: "text-ok", fundo: "bg-ok/10" };
+  return { texto: "text-ok-ink", fundo: "bg-ok/10" };
 }
 
 const vezes = (n) => `${n.toFixed(1).replace(".", ",")}×`;

@@ -67,7 +67,7 @@ const ACTION_RULES = [
     type: "fidelizar",
     label: "Fidelizar",
     icon: "favorite",
-    color: "#16a34a",
+    color: "#15803d",
     bgColor: "#f0fdf4",
     test: (contact) =>
       (contact.purchase_count || 0) >= 5 &&

@@ -250,7 +250,7 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[#15803d] hover:underline"
+                      className="inline-flex items-center gap-1 text-ok-ink hover:underline"
                     >
                       <MaterialIcon icon="chat" size={14} aria-hidden="true" />
                       {formatPhone(contato.phone)}

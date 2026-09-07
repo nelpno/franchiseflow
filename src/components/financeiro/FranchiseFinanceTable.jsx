@@ -206,7 +206,7 @@ export default function FranchiseFinanceTable({
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-ink-3">Lucro</p>
-                      <p className={`text-sm font-bold ${f.pnl.lucroCaixa >= 0 ? "text-ok" : "text-err"}`}>
+                      <p className={`text-sm font-bold ${f.pnl.lucroCaixa >= 0 ? "text-ok-ink" : "text-err"}`}>
                         {formatBRLInteger(f.pnl.lucroCaixa)}
                       </p>
                     </div>
@@ -254,7 +254,7 @@ export default function FranchiseFinanceTable({
                       </div>
                       <div>
                         <p className="text-[10px] text-ink-3">Lucro</p>
-                        <p className={`text-xs font-bold ${f.pnl.lucroCaixa >= 0 ? "text-ok" : "text-err"}`}>
+                        <p className={`text-xs font-bold ${f.pnl.lucroCaixa >= 0 ? "text-ok-ink" : "text-err"}`}>
                           {formatBRLInteger(f.pnl.lucroCaixa)}
                         </p>
                       </div>

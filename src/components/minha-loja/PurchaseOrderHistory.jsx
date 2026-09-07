@@ -17,7 +17,7 @@ const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
   confirmado: { color: "bg-[#2563eb]/10 text-[#2563eb]", icon: "check_circle", label: "Confirmado" },
   em_rota: { color: "bg-[#ea580c]/10 text-[#ea580c]", icon: "local_shipping", label: "Em Rota" },
-  entregue: { color: "bg-ok/10 text-ok", icon: "inventory", label: "Entregue" },
+  entregue: { color: "bg-ok/10 text-ok-ink", icon: "inventory", label: "Entregue" },
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado" },
 };
 
@@ -202,7 +202,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                     )}
 
                     {order.delivered_at && (
-                      <span className="text-xs text-ok flex items-center gap-1">
+                      <span className="text-xs text-ok-ink flex items-center gap-1">
                         <MaterialIcon icon="check_circle" size={12} />
                         Entregue {format(new Date(order.delivered_at), "dd/MM", { locale: ptBR })}
                         {order.ordered_at && (() => {

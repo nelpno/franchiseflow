@@ -109,7 +109,7 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
                   {pct(rate)}
                 </span>
                 {deltaPP != null && Math.abs(deltaPP) >= 0.1 && (
-                  <span className={`text-sm font-bold flex items-center gap-0.5 ${deltaPP > 0 ? "text-ok" : "text-err"}`}>
+                  <span className={`text-sm font-bold flex items-center gap-0.5 ${deltaPP > 0 ? "text-ok-ink" : "text-err"}`}>
                     <MaterialIcon icon={deltaPP > 0 ? "arrow_upward" : "arrow_downward"} size={16} />
                     {Math.abs(deltaPP).toFixed(1).replace(".", ",")} p.p.
                   </span>

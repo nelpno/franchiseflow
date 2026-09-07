@@ -223,7 +223,7 @@ export default function TabReposicao({
           <CardContent className="p-5">
             <div className="flex items-center gap-2">
               <MaterialIcon icon="check_circle" size={20} className="text-ok" />
-              <span className="text-sm font-medium text-ok">
+              <span className="text-sm font-medium text-ok-ink">
                 Estoque em dia!
               </span>
             </div>

@@ -18,13 +18,13 @@ function pctColor(v) {
   if (v == null) return "text-ink-3";
   if (v < 5) return "text-err font-bold";
   if (v < 10) return "text-[#b45309]";
-  if (v >= 15) return "text-ok font-bold";
+  if (v >= 15) return "text-ok-ink font-bold";
   return "text-ink";
 }
 
 function repeatColor(v) {
   if (v == null) return "text-ink-3";
-  if (v >= 1.5) return "text-ok font-bold";
+  if (v >= 1.5) return "text-ok-ink font-bold";
   if (v <= 1.02) return "text-err";
   return "text-ink";
 }

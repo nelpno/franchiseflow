@@ -42,7 +42,7 @@ const STATUS_CONFIG = {
     label: "Clientes",
     badgeLabel: "Cliente",
     bg: "bg-ok/10",
-    text: "text-ok",
+    text: "text-ok-ink",
   },
   recorrente: {
     label: "Fiéis",
@@ -75,7 +75,7 @@ const FILTER_TABS = [
 
 const SOURCE_CONFIG = {
   manual: { label: "Manual", bg: "bg-surface-line", text: "text-ink-2" },
-  bot: { label: "Bot", bg: "bg-ok/10", text: "text-ok" },
+  bot: { label: "Bot", bg: "bg-ok/10", text: "text-ok-ink" },
   whatsapp: { label: "WhatsApp", bg: "bg-[#075e54]/10", text: "text-[#075e54]" },
 };
 
@@ -776,7 +776,7 @@ export default function MyContacts() {
                         href={getWhatsAppLink(phone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
                       >
                         <MaterialIcon icon="chat" size={16} />
                         <span className="hidden sm:inline">WhatsApp</span>
@@ -786,7 +786,7 @@ export default function MyContacts() {
                   ) : (
                     <button
                       onClick={() => openEdit(contact)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
                       title="Adicionar telefone para usar WhatsApp"
                     >
                       <MaterialIcon icon="phone" size={16} />

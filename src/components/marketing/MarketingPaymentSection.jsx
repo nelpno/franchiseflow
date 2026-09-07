@@ -322,7 +322,7 @@ export default function MarketingPaymentSection() {
                   </a>
                 )}
                 {currentPayment.status === "confirmed" && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-ok bg-ok/10 px-2 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-xs font-medium text-ok-ink bg-ok/10 px-2 py-1 rounded-full">
                     <MaterialIcon icon="check_circle" size={14} />
                     Confirmado
                   </span>

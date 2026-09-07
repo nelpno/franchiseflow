@@ -123,7 +123,7 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
                       "_blank"
                     )
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
                 >
                   <MaterialIcon icon="chat" size={16} />
                   WhatsApp

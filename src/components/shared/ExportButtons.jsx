@@ -105,7 +105,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
         variant="outline"
         size="sm"
         onClick={handleExcel}
-        className="gap-1.5 text-ink-2 hover:text-ok hover:border-ok/30 rounded-xl text-xs"
+        className="gap-1.5 text-ink-2 hover:text-ok-ink hover:border-ok/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="download" size={16} />
         Excel

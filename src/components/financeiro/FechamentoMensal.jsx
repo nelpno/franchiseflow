@@ -32,16 +32,16 @@ const ORDENS = [
 ];
 
 const MKT = {
-  confirmed: { rotulo: "Pago", cor: "text-ok bg-ok/10" },
+  confirmed: { rotulo: "Pago", cor: "text-ok-ink bg-ok/10" },
   pending: { rotulo: "Pendente", cor: "text-brand-gold-ink bg-brand-gold/15" },
   rejected: { rotulo: "Recusado", cor: "text-err bg-err/10" },
   sem_registro: { rotulo: "Não pagou", cor: "text-err bg-err/10" },
 };
 
 const SUB = {
-  PAID: { rotulo: "Pago", cor: "text-ok bg-ok/10" },
-  RECEIVED: { rotulo: "Pago", cor: "text-ok bg-ok/10" },
-  CONFIRMED: { rotulo: "Pago", cor: "text-ok bg-ok/10" },
+  PAID: { rotulo: "Pago", cor: "text-ok-ink bg-ok/10" },
+  RECEIVED: { rotulo: "Pago", cor: "text-ok-ink bg-ok/10" },
+  CONFIRMED: { rotulo: "Pago", cor: "text-ok-ink bg-ok/10" },
   PENDING: { rotulo: "Pendente", cor: "text-brand-gold-ink bg-brand-gold/15" },
   OVERDUE: { rotulo: "Vencido", cor: "text-err bg-err/10" },
   CANCELLED: { rotulo: "Cancelada", cor: "text-ink-3 bg-surface-2" },
@@ -206,7 +206,7 @@ export default function FechamentoMensal() {
             <Card className="border-0 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs text-ink-3 mb-1">Lucro em caixa</p>
-                <p className={`text-lg font-bold ${totais.lucro >= 0 ? "text-ok" : "text-err"}`}>
+                <p className={`text-lg font-bold ${totais.lucro >= 0 ? "text-ok-ink" : "text-err"}`}>
                   {formatBRLInteger(totais.lucro)}
                 </p>
                 <p className="text-xs text-ink-3 mt-1">soma das unidades</p>
@@ -262,7 +262,7 @@ export default function FechamentoMensal() {
                         {l.delta == null ? (
                           <span className="text-ink-3">—</span>
                         ) : (
-                          <span className={l.delta >= 0 ? "text-ok font-semibold" : "text-err font-semibold"}>
+                          <span className={l.delta >= 0 ? "text-ok-ink font-semibold" : "text-err font-semibold"}>
                             {l.delta >= 0 ? "+" : ""}
                             {l.delta.toFixed(0)}%
                           </span>

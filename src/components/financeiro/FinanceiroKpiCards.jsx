@@ -16,14 +16,14 @@ export default function FinanceiroKpiCards({ aggregated, worstFranchise }) {
       label: "Lucro Estimado",
       value: formatBRL(aggregated.lucro),
       icon: "trending_up",
-      color: aggregated.lucro >= 0 ? "#16a34a" : "#dc2626",
+      color: aggregated.lucro >= 0 ? "#15803d" : "#dc2626",
       bgColor: aggregated.lucro >= 0 ? "#f0fdf4" : "#fef2f2",
     },
     {
       label: "Margem Media",
       value: `${(Number(aggregated?.margem) || 0).toFixed(1)}%`,
       icon: "percent",
-      color: aggregated.margem >= 40 ? "#16a34a" : aggregated.margem >= 20 ? "#d97706" : "#dc2626",
+      color: aggregated.margem >= 40 ? "#15803d" : aggregated.margem >= 20 ? "#d97706" : "#dc2626",
       bgColor: aggregated.margem >= 40 ? "#f0fdf4" : aggregated.margem >= 20 ? "#fffbeb" : "#fef2f2",
     },
     {

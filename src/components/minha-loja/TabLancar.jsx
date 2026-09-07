@@ -674,7 +674,7 @@ export default function TabLancar({
             size="sm"
             onClick={() => setShowConfirmAllDialog(true)}
             disabled={isConfirmingAll}
-            className="gap-1.5 text-ok border-ok/30 hover:bg-ok/5"
+            className="gap-1.5 text-ok-ink border-ok/30 hover:bg-ok/5"
           >
             {isConfirmingAll ? (
               <>
@@ -829,8 +829,8 @@ export default function TabLancar({
                       disabled={togglingIds.has(sale.id)}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium shrink-0 min-h-[40px] transition-colors ${
                         sale.payment_confirmed
-                          ? "bg-ok/10 text-ok border-ok/20"
-                          : "bg-[#fef3c7]/50 text-[#92400e] border-[#f59e0b]/30 hover:bg-ok/5 hover:text-ok hover:border-ok/20"
+                          ? "bg-ok/10 text-ok-ink border-ok/20"
+                          : "bg-[#fef3c7]/50 text-[#92400e] border-[#f59e0b]/30 hover:bg-ok/5 hover:text-ok-ink hover:border-ok/20"
                       }`}
                       title={sale.payment_confirmed ? "Pagamento recebido" : "Marcar como recebido"}
                     >
@@ -893,7 +893,7 @@ export default function TabLancar({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors shrink-0"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors shrink-0"
                                 >
                                   <MaterialIcon icon="chat" size={16} />
                                   <span className="hidden sm:inline">WhatsApp</span>
@@ -961,7 +961,7 @@ export default function TabLancar({
                           {sale.delivery_fee > 0 && (
                             <div className="flex justify-between">
                               <span className="text-ink-2">Frete cobrado</span>
-                              <span className="text-ok font-mono-numbers">
+                              <span className="text-ok-ink font-mono-numbers">
                                 + {formatCurrency(sale.delivery_fee)}
                               </span>
                             </div>
@@ -1004,7 +1004,7 @@ export default function TabLancar({
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`font-bold font-mono-numbers ${
-                                    isPositive ? "text-ok" : "text-err"
+                                    isPositive ? "text-ok-ink" : "text-err"
                                   }`}
                                 >
                                   {formatCurrency(lucro)}
@@ -1015,7 +1015,7 @@ export default function TabLancar({
                                       ? "bg-err/10 text-err"
                                       : margem < 25
                                       ? "bg-[#f59e0b]/10 text-[#b45309]"
-                                      : "bg-ok/10 text-ok"
+                                      : "bg-ok/10 text-ok-ink"
                                   }`}
                                 >
                                   {!isPositive ? "\u2193" : margem < 25 ? "!" : "\u2191"} {Math.abs(margem).toFixed(0)}%
