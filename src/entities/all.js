@@ -1,4 +1,5 @@
 import { supabase } from '@/api/supabaseClient';
+import { paginateAll } from "@/lib/paginateAll";
 
 function parseOrderBy(orderByStr) {
   if (!orderByStr) return null;
@@ -25,40 +26,17 @@ function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
   return Promise.race(parts).finally(() => clearTimeout(timeoutId));
 }
 
-// Paginação além do limite de 1000 linhas do Supabase (max_rows).
-// Lotes especulativos: busca PAGE_CONCURRENCY páginas em paralelo por vez e para
-// quando uma página vem incompleta. Telas pequenas (1 página) custam 1 round-trip,
-// idêntico ao comportamento serial anterior; telas grandes (admin: ~7k vendas, ~22k
-// contatos) paralelizam e ficam ~2x mais rápidas. O tie-breaker por `id` no ORDER BY
-// (aplicado por quem chama) garante ordem determinística entre páginas — sem duplicar
-// nem omitir linhas (mesma invariante do fix 5333224). makeQuery(from, to) deve montar
-// a query completa (select + filtros + order + range).
-const PAGE_SIZE = 1000;
-const PAGE_CONCURRENCY = 6;
-
-async function paginateAll(makeQuery, signal) {
-  const fetchPage = async (from) => {
-    const { data, error } = await withTimeout(
-      makeQuery(from, from + PAGE_SIZE - 1), QUERY_TIMEOUT_MS, signal
-    );
+// A paginação vive em lib/paginateAll.js para poder ser testada sem o cliente do
+// Supabase: node src/lib/paginateAll.test.mjs (8 casos, inclusive a varredura que
+// prova que nenhuma linha duplica nem some — a invariante quebrada no fix 5333224).
+// Aqui fica só o adaptador: desembrulha o { data, error } do supabase-js e mantém o
+// timeout de 15 s e o AbortSignal que a versão anterior aplicava em CADA página.
+const paginarComTimeout = (montarQuery, signal) =>
+  paginateAll(async (from, to) => {
+    const { data, error } = await withTimeout(montarQuery(from, to), QUERY_TIMEOUT_MS, signal);
     if (error) throw error;
     return data || [];
-  };
-  // 1ª página sozinha: se vier curta, retorna na hora (caminho das telas pequenas)
-  const first = await fetchPage(0);
-  if (first.length < PAGE_SIZE) return first;
-  let all = first;
-  let base = 1;
-  while (true) {
-    const batch = await Promise.all(
-      Array.from({ length: PAGE_CONCURRENCY }, (_, i) => fetchPage((base + i) * PAGE_SIZE))
-    );
-    for (const page of batch) all = all.concat(page);
-    if (batch.some((page) => page.length < PAGE_SIZE)) break; // chegou ao fim
-    base += PAGE_CONCURRENCY;
-  }
-  return all;
-}
+  });
 
 function createEntity(tableName) {
   return {
@@ -70,7 +48,7 @@ function createEntity(tableName) {
       };
       if (fetchAll) {
         const order = parseOrderBy(orderBy);
-        return paginateAll((from, to) => {
+        return paginarComTimeout((from, to) => {
           let query = supabase.from(tableName).select(columns || '*');
           if (signal) query = query.abortSignal(signal);
           query = applyRangeFilters(query);
@@ -104,7 +82,7 @@ function createEntity(tableName) {
       };
       if (fetchAll) {
         const order = parseOrderBy(orderBy);
-        return paginateAll((from, to) => {
+        return paginarComTimeout((from, to) => {
           let query = supabase.from(tableName).select(columns || '*');
           if (signal) query = query.abortSignal(signal);
           query = applyFilters(query);
