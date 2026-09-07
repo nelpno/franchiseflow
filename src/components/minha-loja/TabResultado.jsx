@@ -254,19 +254,19 @@ function CardCaixa({ pnl, onLancarDespesa }) {
               <span className="font-mono-numbers font-bold text-[#16a34a]">{formatBRL(totalRecebido)}</span>
             </div>
             <div className="flex items-center justify-between text-[#4a3d3d] pl-4">
-              <span className="text-[11px]">└ Vendas</span>
-              <span className="font-mono-numbers text-[11px]">{formatBRL(vendas)}</span>
+              <span className="text-xs">└ Vendas</span>
+              <span className="font-mono-numbers text-xs">{formatBRL(vendas)}</span>
             </div>
             {freteCobrado > 0 && (
               <div className="flex items-center justify-between text-[#4a3d3d] pl-4">
-                <span className="text-[11px]">└ Frete cobrado</span>
-                <span className="font-mono-numbers text-[11px]">{formatBRL(freteCobrado)}</span>
+                <span className="text-xs">└ Frete cobrado</span>
+                <span className="font-mono-numbers text-xs">{formatBRL(freteCobrado)}</span>
               </div>
             )}
             {totalDescontos > 0 && (
               <div className="flex items-center justify-between text-[#4a3d3d] pl-4">
-                <span className="text-[11px]">└ (-) Descontos</span>
-                <span className="font-mono-numbers text-[11px] text-[#dc2626]">-{formatBRL(totalDescontos)}</span>
+                <span className="text-xs">└ (-) Descontos</span>
+                <span className="font-mono-numbers text-xs text-[#dc2626]">-{formatBRL(totalDescontos)}</span>
               </div>
             )}
           </div>
@@ -280,7 +280,7 @@ function CardCaixa({ pnl, onLancarDespesa }) {
               </span>
               <span className="font-mono-numbers font-bold text-[#dc2626]">-{formatBRL(saiu)}</span>
             </div>
-            <p className="text-[10px] text-[#4a3d3d]/60 pl-4 italic">
+            <p className="text-xs text-[#4a3d3d]/60 pl-4 italic">
               detalhe abaixo em "Onde foi o dinheiro"
             </p>
           </div>
@@ -503,13 +503,13 @@ function EvolucaoCard({ evolucao }) {
               {formatBRL(item.lucro)}
             </span>
             {item.receita > 0 && (
-              <span className={`ml-1.5 text-[10px] ${margem >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+              <span className={`ml-1.5 text-xs ${margem >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
                 ({margem >= 0 ? "+" : ""}{margem.toFixed(1)}% margem)
               </span>
             )}
           </p>
           {item.mediaMovel != null && (
-            <p className="text-[#4a3d3d] text-[10px] pt-1 mt-1 border-t border-[#291715]/5">
+            <p className="text-[#4a3d3d] text-xs pt-1 mt-1 border-t border-[#291715]/5">
               Média 3m: <span className="font-mono-numbers font-medium">{formatBRL(item.mediaMovel)}</span>
             </p>
           )}
@@ -540,25 +540,25 @@ function EvolucaoCard({ evolucao }) {
             {stats && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-5">
                 <div className="bg-[#fbf9fa] rounded-xl p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
+                  <p className="text-xs uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
                     Maior lucro
                   </p>
                   <p className="text-sm font-bold text-[#1b1c1d] font-mono-numbers">
                     {formatBRLCompact(stats.maxLucro)}
                   </p>
-                  <p className="text-[10px] text-[#4a3d3d] capitalize">{stats.maxLucroMes}</p>
+                  <p className="text-xs text-[#4a3d3d] capitalize">{stats.maxLucroMes}</p>
                 </div>
                 <div className="bg-[#fbf9fa] rounded-xl p-3">
-                  <p className="text-[10px] uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
+                  <p className="text-xs uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
                     Tendência
                   </p>
                   <p className="text-sm font-bold text-[#1b1c1d]">{stats.tendencia}</p>
-                  <p className="text-[10px] text-[#4a3d3d]">
+                  <p className="text-xs text-[#4a3d3d]">
                     {stats.mesesPositivos}/{stats.total} meses no azul
                   </p>
                 </div>
                 <div className="bg-[#fbf9fa] rounded-xl p-3 col-span-2 md:col-span-1">
-                  <p className="text-[10px] uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
+                  <p className="text-xs uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
                     Crescimento
                   </p>
                   <p className="text-sm font-bold text-[#1b1c1d] font-mono-numbers">
@@ -566,7 +566,7 @@ function EvolucaoCard({ evolucao }) {
                       ? `${Math.round(((evolucao[evolucao.length-1].lucro - evolucao[0].lucro) / Math.abs(evolucao[0].lucro)) * 100)}%`
                       : "—"}
                   </p>
-                  <p className="text-[10px] text-[#4a3d3d]">{evolucao[0].mes} → {evolucao[evolucao.length-1].mes}</p>
+                  <p className="text-xs text-[#4a3d3d]">{evolucao[0].mes} → {evolucao[evolucao.length-1].mes}</p>
                 </div>
               </div>
             )}
@@ -691,7 +691,7 @@ function ResumoAnoCard({ resumo }) {
               Acumulado em {resumo.year}
             </h3>
           </div>
-          <span className="text-[11px] text-[#4a3d3d]/70 capitalize">
+          <span className="text-xs text-[#4a3d3d]/70 capitalize">
             jan → {resumo.ultimoMes}
           </span>
         </div>
@@ -1109,7 +1109,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="text-sm font-medium text-[#1b1c1d] truncate">{exp.description}</p>
                             {isAuto && (
-                              <span className="text-[10px] bg-[#d4af37]/15 text-[#775a19] px-1.5 py-0.5 rounded-full font-medium">
+                              <span className="text-[11px] bg-[#d4af37]/15 text-[#775a19] px-1.5 py-0.5 rounded-full font-medium">
                                 auto
                               </span>
                             )}

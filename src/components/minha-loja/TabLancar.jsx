@@ -487,7 +487,7 @@ export default function TabLancar({
   const getSourceBadge = (source) => {
     const config = SOURCE_CONFIG[source] || SOURCE_CONFIG.manual;
     return (
-      <Badge className={`${config.className} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
+      <Badge className={`${config.className} rounded-full px-2 py-0.5 text-[11px] font-bold gap-1`}>
         <MaterialIcon icon={config.icon} size={12} />
         {config.label}
       </Badge>
@@ -659,7 +659,7 @@ export default function TabLancar({
             >
               {cf.label}
               {cf.value === "pending" && totalPendingCount > 0 && (
-                <span className="ml-1.5 bg-[#f59e0b]/20 text-[#92400e] rounded-full px-1.5 py-0.5 text-[10px] font-bold">
+                <span className="ml-1.5 bg-[#f59e0b]/20 text-[#92400e] rounded-full px-1.5 py-0.5 text-[11px] font-bold">
                   {totalPendingCount}
                 </span>
               )}
@@ -842,7 +842,7 @@ export default function TabLancar({
                           size={16}
                         />
                       )}
-                      <span className="hidden sm:inline">
+                      <span className="sr-only sm:not-sr-only">
                         {sale.payment_confirmed ? "Recebido" : "Pendente"}
                       </span>
                     </button>
@@ -1010,7 +1010,7 @@ export default function TabLancar({
                                   {formatCurrency(lucro)}
                                 </span>
                                 <span
-                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold inline-flex items-center ${
+                                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center ${
                                     !isPositive
                                       ? "bg-[#dc2626]/10 text-[#dc2626]"
                                       : margem < 25
@@ -1036,17 +1036,17 @@ export default function TabLancar({
                             handleShareSale(sale);
                           }}
                           disabled={sharingSaleId === sale.id}
-                          className="gap-1.5 text-[#4a3d3d]"
+                          className="gap-1.5 h-10 min-w-[44px] text-[#4a3d3d]"
                         >
                           {sharingSaleId === sale.id ? (
                             <>
                               <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
-                              <span className="hidden sm:inline">Gerando...</span>
+                              <span className="sr-only sm:not-sr-only">Gerando...</span>
                             </>
                           ) : (
                             <>
                               <MaterialIcon icon="share" size={14} />
-                              <span className="hidden sm:inline">Compartilhar</span>
+                              <span className="sr-only sm:not-sr-only">Compartilhar</span>
                             </>
                           )}
                         </Button>
@@ -1058,17 +1058,17 @@ export default function TabLancar({
                             handlePrintSale(sale);
                           }}
                           disabled={printingSaleId === sale.id}
-                          className="gap-1.5 text-[#4a3d3d]"
+                          className="gap-1.5 h-10 min-w-[44px] text-[#4a3d3d]"
                         >
                           {printingSaleId === sale.id ? (
                             <>
                               <MaterialIcon icon="progress_activity" size={14} className="animate-spin" />
-                              <span className="hidden sm:inline">Imprimindo...</span>
+                              <span className="sr-only sm:not-sr-only">Imprimindo...</span>
                             </>
                           ) : (
                             <>
                               <MaterialIcon icon="print" size={14} />
-                              <span className="hidden sm:inline">Imprimir</span>
+                              <span className="sr-only sm:not-sr-only">Imprimir</span>
                             </>
                           )}
                         </Button>
@@ -1079,10 +1079,10 @@ export default function TabLancar({
                             e.stopPropagation();
                             handleEditSale(sale);
                           }}
-                          className="gap-1.5 text-[#4a3d3d]"
+                          className="gap-1.5 h-10 min-w-[44px] text-[#4a3d3d]"
                         >
                           <MaterialIcon icon="edit" size={14} />
-                          <span className="hidden sm:inline">Editar</span>
+                          <span className="sr-only sm:not-sr-only">Editar</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -1091,10 +1091,10 @@ export default function TabLancar({
                             e.stopPropagation();
                             setDeletingSale(sale);
                           }}
-                          className="gap-1.5 text-[#b91c1c] border-[#b91c1c]/30 hover:bg-[#b91c1c]/5"
+                          className="gap-1.5 h-10 min-w-[44px] text-[#b91c1c] border-[#b91c1c]/30 hover:bg-[#b91c1c]/5"
                         >
                           <MaterialIcon icon="delete" size={14} />
-                          <span className="hidden sm:inline">Excluir</span>
+                          <span className="sr-only sm:not-sr-only">Excluir</span>
                         </Button>
                       </div>
                     </div>

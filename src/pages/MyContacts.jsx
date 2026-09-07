@@ -710,7 +710,7 @@ export default function MyContacts() {
                       const src = contact.source || "manual";
                       const srcCfg = SOURCE_CONFIG[src] || SOURCE_CONFIG.manual;
                       return (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold ${srcCfg.bg} ${srcCfg.text}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold ${srcCfg.bg} ${srcCfg.text}`}>
                           {srcCfg.label}
                         </span>
                       );

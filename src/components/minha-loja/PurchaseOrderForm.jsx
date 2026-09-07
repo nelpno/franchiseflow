@@ -392,7 +392,7 @@ export default function PurchaseOrderForm({
                             <TableCell className="text-center">
                               {suggestion !== null ? (
                                 <Badge
-                                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                                     hasSug
                                       ? "bg-[#d4af37]/10 text-[#775a19]"
                                       : "bg-[#e9e8e9] text-[#4a3d3d]"
@@ -464,7 +464,7 @@ export default function PurchaseOrderForm({
                   </div>
                   {suggestion !== null && (
                     <Badge
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
                         hasSug
                           ? "bg-[#d4af37]/10 text-[#775a19]"
                           : "bg-[#e9e8e9] text-[#4a3d3d]"
@@ -477,7 +477,7 @@ export default function PurchaseOrderForm({
 
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <Label className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                    <Label className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                       Quantidade
                     </Label>
                     <Input
@@ -491,7 +491,7 @@ export default function PurchaseOrderForm({
                     />
                   </div>
                   <div className="text-right">
-                    <Label className="text-[10px] uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                    <Label className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
                       Total
                     </Label>
                     <p className="font-medium text-[#1b1c1d] text-sm mt-1">
