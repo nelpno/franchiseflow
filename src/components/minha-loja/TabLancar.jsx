@@ -367,15 +367,41 @@ export default function TabLancar({
   };
 
   // After save
-  const handleFormSave = () => {
+  // Guarda o id da venda recem-criada para oferecer o comprovante assim que a lista
+  // recarregar. Antes disso o unico caminho ate o cupom era achar a venda na lista —
+  // e o tutorial "Registrando uma Venda" ja prometia que ele aparece na hora.
+  const [pendingReceiptId, setPendingReceiptId] = useState(null);
+
+  const handleFormSave = (savedSaleId) => {
+    const wasEditing = !!editingSale;
     setShowFormDialog(false);
     setEditingSale(null);
     setExpandedItems({});
+    if (savedSaleId && !wasEditing) setPendingReceiptId(savedSaleId);
     onRefresh();
   };
 
   // Share sale receipt
   const [shareData, setShareData] = useState(null);
+
+  // Assim que a venda recem-salva aparece na lista recarregada, oferece o comprovante.
+  // Espera a lista chegar de proposito: handleShareSale precisa da venda inteira
+  // (contact_id, contact_phone, valores) e nao so do id.
+  useEffect(() => {
+    if (!pendingReceiptId) return;
+    const nova = sales.find((s) => s.id === pendingReceiptId);
+    if (!nova) return;
+    setPendingReceiptId(null);
+    toast.success("Venda registrada!", {
+      action: {
+        label: "Comprovante",
+        onClick: () => handleShareSaleRef.current?.(nova),
+      },
+      duration: 8000,
+    });
+  }, [pendingReceiptId, sales]);
+
+  const handleShareSaleRef = useRef(null);
 
   const handleShareSale = useCallback(async (sale) => {
     const saleId = sale.id;
@@ -445,6 +471,11 @@ export default function TabLancar({
       setShareData(null);
     }
   }, [expandedItems, contactsMap]);
+
+  // O effect que oferece o comprovante da venda recem-salva aparece ANTES daqui no
+  // arquivo; a ref evita depender da ordem de declaracao (useCallback em ordem
+  // circular = tela branca, gotcha ja documentado no CLAUDE.md).
+  handleShareSaleRef.current = handleShareSale;
 
   const getContactName = (sale) => {
     if (sale.contact_id && contactsMap[sale.contact_id]) {

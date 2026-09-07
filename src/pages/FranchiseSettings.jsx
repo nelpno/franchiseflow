@@ -422,6 +422,19 @@ function FranchiseSettingsContent() {
     }
   };
 
+  // Botao final do wizard. Com algo por salvar, salva. Sem nada por salvar (o caso
+  // normal, porque cada "Proximo" ja salvou), confirma em voz alta em vez de ficar
+  // inerte — um clique que nao produz nada e a falha mais cara desta tela.
+  const handleFinish = async (e) => {
+    e?.preventDefault();
+    if (isDirty) {
+      const ok = await handleSubmit(e);
+      if (!ok) return;
+    } else {
+      toast.success("Tudo salvo! Seu vendedor está configurado.");
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
@@ -1252,12 +1265,18 @@ function FranchiseSettingsContent() {
             ) : (
               <button
                 type="button"
-                onClick={handleSubmit}
-                disabled={isSubmitting || !isDirty}
+                onClick={handleFinish}
+                /* NUNCA voltar a por `!isDirty` aqui. O "Proximo" ja salva sozinho a
+                   cada etapa (nextStep -> handleSubmit quando isDirty), entao ao
+                   chegar na Revisao nao ha nada sujo e o botao nascia MORTO: a
+                   franqueada clicava em "Salvar" e nao acontecia nada. Era o
+                   candidato mais forte aos 26,3% de sessoes com dead click nesta
+                   tela (Clarity, 3 dias, auditoria 07/09/2026). */
+                disabled={isSubmitting}
                 className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all disabled:opacity-50"
               >
                 {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
-                Salvar
+                Concluir
               </button>
             )}
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, DailyChecklist, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,6 +20,7 @@ import RankingStreak from "./RankingStreak";
 import SmartActions from "./SmartActions";
 import FinancialObligationsCard from "./FinancialObligationsCard";
 import PriorityAction from "./PriorityAction";
+import OpenOrderStrip from "./OpenOrderStrip";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
 import CustomDateRangeSheet from "./CustomDateRangeSheet";
 import ConversionCard from "./ConversionCard";
@@ -50,6 +51,7 @@ export default function FranchiseeDashboard() {
   const [contacts, setContacts] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [botPulse, setBotPulse] = useState(null);
   const [onboardingChecklist, setOnboardingChecklist] = useState(null);
   const [franchiseConfig, setFranchiseConfig] = useState(null);
   const [marketingPayment, setMarketingPayment] = useState(null);
@@ -70,8 +72,25 @@ export default function FranchiseeDashboard() {
 
   const franchiseId = ctxFranchise?.id;
 
+  // O Layout resolve a unidade DEPOIS do primeiro render, entao `ctxFranchise` nasce
+  // null mesmo para quem tem unidade. Desligar o loading aqui pintava "R$ 0,00" nos
+  // quatro cards antes de existir qualquer dado — zero falso que a franqueada le como
+  // "nao vendi nada hoje" e sai da tela (auditoria 07/09/2026: 75% de quickback e 11%
+  // de tempo ativo na home mobile).
+  const temUnidadeVinculada = (user?.managed_franchise_ids?.length ?? 0) > 0;
+  const [resolveUnidadeExpirou, setResolveUnidadeExpirou] = useState(false);
+
+  useEffect(() => {
+    if (franchiseId || !temUnidadeVinculada) return;
+    // rede de seguranca: nao dependurar a tela em skeleton para sempre
+    const t = setTimeout(() => setResolveUnidadeExpirou(true), 10000);
+    return () => clearTimeout(t);
+  }, [franchiseId, temUnidadeVinculada]);
+
   const loadData = useCallback(async () => {
     if (!franchiseId) {
+      // segue no skeleton enquanto a unidade nao chega
+      if (temUnidadeVinculada && !resolveUnidadeExpirou) return;
       setIsLoading(false);
       return;
     }
@@ -111,8 +130,8 @@ export default function FranchiseeDashboard() {
         evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
           { columns: 'id, franchise_id, product_name, quantity, min_stock', signal })
           : Promise.resolve([]),                          // [2] inventory
-        evoId ? DailyChecklist.filter({ franchise_id: evoId, date: today }, null, null, { signal })
-          : Promise.resolve([]),                          // [3] checklist
+        evoId ? getFranchiseBotPulse(evoId, { signal }) : Promise.resolve(null),
+                                                          // [3] pulso do robô (última conversa)
         evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200,
           { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at', signal })
           : Promise.resolve([]),                          // [4] contacts
@@ -135,7 +154,7 @@ export default function FranchiseeDashboard() {
       const inventoryData = getValue(2);
       const contactsData = getValue(4);
 
-      const queryNames = ["vendas","resumos","estoque","checklist","contatos","ranking","pedidos","onboarding","config","marketing"];
+      const queryNames = ["vendas","resumos","estoque","robô","contatos","ranking","pedidos","onboarding","config","marketing"];
       const failedQueries = results
         .map((r, i) => r.status === "rejected" ? queryNames[i] : null)
         .filter(Boolean);
@@ -150,6 +169,7 @@ export default function FranchiseeDashboard() {
       setContacts(contactsData);
       setInventory(inventoryData);
 
+      setBotPulse(results[3].status === "fulfilled" ? results[3].value : null);
       setPurchaseOrders(getValue(6));
       setOnboardingChecklist(getValue(7)?.[0] || null);
       setFranchiseConfig(getValue(8)?.[0] || null);
@@ -173,7 +193,7 @@ export default function FranchiseeDashboard() {
         hasLoadedOnceRef.current = true;
       }
     }
-  }, [franchiseId]);
+  }, [franchiseId, temUnidadeVinculada, resolveUnidadeExpirou]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -348,8 +368,24 @@ export default function FranchiseeDashboard() {
     return () => controller.abort();
   }, [evoId, funnelRange.start, funnelRange.end]);
 
-  // Bot is active if franchise has a config with evolution_instance_id
-  const botActive = !!(franchiseConfig && evoId);
+  // "Configurado" e "ativo" sao coisas DIFERENTES — ate 07/09/2026 o app tratava as
+  // duas como a mesma, e por isso `botActive` nunca ficava falso: bastava existir
+  // linha em franchise_configurations. Medido no banco naquele dia: 8 franquias
+  // vendendo, com o robo sem UMA conversa ha 7+ dias, viam "Tudo em dia!".
+  const botConfigured = !!(franchiseConfig && evoId);
+  const botActive = botConfigured && (botPulse?.conversations_7d ?? 0) > 0;
+
+  // null = nunca conversou (unidade nova, nao e "robo parado")
+  const botSilentDays = botPulse?.last_conversation_at
+    ? differenceInDays(new Date(), new Date(botPulse.last_conversation_at))
+    : null;
+
+  // Unidade que ainda nao vendeu esta em implantacao: nao alarmar. Mesma guarda
+  // (`d_sale is not null`) que o radar do CS usa no SQL.
+  const hasRecentSales = useMemo(() => {
+    const cutoff = format(subDays(new Date(), 30), "yyyy-MM-dd");
+    return allSales.some(sale => sale.sale_date >= cutoff);
+  }, [allSales]);
 
   // Smart actions for contacts (bot active = suppress "responder" since bot handles first contact)
   const actions = useMemo(
@@ -363,9 +399,9 @@ export default function FranchiseeDashboard() {
     if (lowStock) return 'repor_estoque';
     if (actions.some(a => a.type === 'responder')) return 'responder';
     if (!marketingPayment || marketingPayment.status === 'rejected') return 'marketing';
-    if (!botActive) return 'bot_inativo';
+    if (!botConfigured || !botActive) return 'bot_inativo';
     return null;
-  }, [inventory, actions, marketingPayment, botActive]);
+  }, [inventory, actions, marketingPayment, botActive, botConfigured]);
 
   if (isLoading) {
     return (
@@ -383,6 +419,32 @@ export default function FranchiseeDashboard() {
           <Skeleton className="h-40 rounded-xl" />
         </div>
         <Skeleton className="h-48 rounded-xl" />
+      </div>
+    );
+  }
+
+  // Sem unidade resolvida: dizer isso em voz alta. Antes daqui a tela caia direto no
+  // corpo do dashboard e mostrava quatro "R$ 0,00" como se fossem numeros reais.
+  if (!franchiseId) {
+    return (
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa]">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <MaterialIcon icon="storefront" className="text-5xl text-[#7a6d6d]" aria-hidden="true" />
+          <p className="text-[#4a3d3d] text-center max-w-xs">
+            {temUnidadeVinculada
+              ? "Não consegui carregar sua unidade. Verifique a conexão e tente de novo."
+              : "Nenhuma unidade vinculada a este acesso. Fale com a franqueadora."}
+          </p>
+          {temUnidadeVinculada && (
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 px-4 py-2 min-h-[44px] border border-[#cac0c0] rounded-lg text-sm text-[#4a3d3d] hover:bg-white"
+            >
+              <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" aria-hidden="true" />
+              Tentar novamente
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -540,10 +602,15 @@ export default function FranchiseeDashboard() {
         <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
       )}
 
+      <OpenOrderStrip purchaseOrders={purchaseOrders} />
+
       <PriorityAction
         smartActions={actions}
         marketingPayment={marketingPayment}
         botActive={botActive}
+        botConfigured={botConfigured}
+        botSilentDays={botSilentDays}
+        hasRecentSales={hasRecentSales}
         subscription={subscription}
         onOpenPaymentSheet={() => setPrioritySheetOpen(true)}
       />

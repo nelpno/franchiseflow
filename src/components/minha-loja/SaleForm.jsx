@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
+import { parseDeliveryFeeOptions } from "@/lib/deliveryFeeRules";
 import { normalizePhone } from "@/lib/whatsappUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
@@ -401,6 +402,7 @@ export default function SaleForm({
   // Delivery
   const [deliveryMethod, setDeliveryMethod] = useState("retirada");
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliveryFeeOptions, setDeliveryFeeOptions] = useState([]);
 
   // Discount
   const [discountType, setDiscountType] = useState("fixed"); // "fixed" | "percent"
@@ -540,6 +542,10 @@ export default function SaleForm({
         const cfg = configs?.[0];
         const fees = cfg?.payment_fees;
         if (fees && typeof fees === "object") setPaymentFees(fees);
+        // A regra de frete ja esta cadastrada em 61 das 67 unidades — mas ate 07/09/2026
+        // so o robo a lia. Na venda manual o campo nascia vazio e 622 entregas em 90
+        // dias sairam com frete R$ 0 (que e receita perdida no DRE).
+        setDeliveryFeeOptions(parseDeliveryFeeOptions(cfg?.delivery_fee_rules));
         const charges = cfg?.charges_card_fee_to_customer ?? false;
         setFranchiseChargesFee(charges);
         // Sale NOVA: default vem da config. Sale EDIT: useEffect de hydrate já cuidou disso.
@@ -847,12 +853,16 @@ export default function SaleForm({
     };
 
     try {
-      await withRetry(submitSale);
+      // O RPC save_sale_with_items DEVOLVE o id — ele so estava sendo jogado fora aqui.
+      // Sem ele, imprimir o cupom logo apos salvar obrigava a cacar a venda na lista,
+      // enquanto o tutorial "Registrando uma Venda" promete que o comprovante aparece
+      // na tela. Auditoria 07/09/2026.
+      const savedSaleId = await withRetry(submitSale);
 
       // Success — clear draft and notify
       clearDraft(franchiseId);
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
-      onSave();
+      onSave(savedSaleId);
     } catch (error) {
       console.error("Erro ao salvar venda após retentativas:", error);
       // Ensure draft is saved so user doesn't lose data
@@ -1245,7 +1255,15 @@ export default function SaleForm({
           </button>
           <button
             type="button"
-            onClick={() => setDeliveryMethod("delivery")}
+            onClick={() => {
+              setDeliveryMethod("delivery");
+              // Preenche sozinho SO quando nao ha escolha a fazer. Com 2+ faixas nao
+              // adivinha: a venda manual nao sabe a distancia ate o cliente, e chutar
+              // uma faixa e inventar numero de dinheiro. Ver lib/deliveryFeeRules.js.
+              if (deliveryFeeOptions.length === 1 && !deliveryFee) {
+                setDeliveryFee(deliveryFeeOptions[0].fee);
+              }
+            }}
             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
               deliveryMethod === "delivery"
                 ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
@@ -1258,17 +1276,44 @@ export default function SaleForm({
         </div>
 
         {deliveryMethod === "delivery" && (
-          <div className="flex items-center gap-3 mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
-            <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Frete (R$)</Label>
-            <Input
-              type="number"
-              min={0}
-              step={0.01}
-              value={deliveryFee || ""}
-              onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
-              className="w-28 bg-white text-right font-mono-numbers"
-              placeholder="0,00"
-            />
+          <div className="mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
+            <div className="flex items-center gap-3">
+              <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Frete (R$)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={deliveryFee || ""}
+                onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
+                className="w-28 bg-white text-right font-mono-numbers"
+                placeholder="0,00"
+              />
+            </div>
+
+            {deliveryFeeOptions.length > 1 && (
+              <div className="mt-3">
+                <p className="text-[11px] text-[#7a6d6d] mb-1.5">Sua tabela de frete:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {deliveryFeeOptions.map((opt) => {
+                    const ativo = Number(deliveryFee) === opt.fee;
+                    return (
+                      <button
+                        key={`${opt.label}-${opt.fee}`}
+                        type="button"
+                        onClick={() => setDeliveryFee(opt.fee)}
+                        className={`px-3 min-h-[40px] rounded-lg border text-xs transition-colors ${
+                          ativo
+                            ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-semibold"
+                            : "border-[#291715]/10 bg-white text-[#4a3d3d] active:bg-[#f5f3f0]"
+                        }`}
+                      >
+                        {opt.label} · {opt.fee === 0 ? "grátis" : formatCurrency(opt.fee)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </MobileSection>

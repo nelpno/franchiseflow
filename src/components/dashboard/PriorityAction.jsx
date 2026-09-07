@@ -91,12 +91,34 @@ const SCENARIOS = [
     }),
   },
   {
+    // Robo CONFIGURADO que parou de responder. Vem antes do "ative seu robo" porque a
+    // acao e outra: aqui nao se configura nada, se RECONECTA o WhatsApp.
+    // Ate 07/09/2026 este caso era invisivel: `botActive` significava "existe linha em
+    // franchise_configurations", entao nunca ficava falso e 8 franquias que vendiam com
+    // o robo mudo ha 7+ dias viam a faixa verde "Tudo em dia!".
+    key: "bot_parado",
+    check: ({ botConfigured, botActive, botSilentDays, hasRecentSales }) =>
+      botConfigured && !botActive && botSilentDays !== null && hasRecentSales,
+    render: ({ botSilentDays }) => ({
+      icon: "smart_toy",
+      title: botSilentDays >= 1
+        ? `Seu robô não responde há ${botSilentDays} ${botSilentDays === 1 ? "dia" : "dias"}`
+        : "Seu robô parou de responder",
+      subtitle: "Reconecte o WhatsApp — quem chamar não está sendo atendido",
+      cta: "Reconectar",
+      navigateTo: "/FranchiseSettings",
+      colors: { bg: "#fef2f2", border: "#fecaca", button: "#b91c1c" },
+    }),
+  },
+  {
     key: "bot",
-    check: ({ botActive }) => !botActive,
+    check: ({ botConfigured }) => !botConfigured,
     render: () => ({
       icon: "smart_toy",
       title: "Ative seu Vendedor Digital",
-      subtitle: "Franquias com bot vendem em média 40% mais",
+      // o "40% mais" que estava aqui nao tem medicao por tras — trocado pelo que o
+      // robo de fato faz (auditoria 07/09/2026).
+      subtitle: "Ele responde seus clientes enquanto você produz",
       cta: "Configurar",
       navigateTo: "/FranchiseSettings",
       colors: { bg: "#f8fafc", border: "#cbd5e1", button: "#475569" },
@@ -104,10 +126,10 @@ const SCENARIOS = [
   },
 ];
 
-export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, botActive, subscription, onOpenPaymentSheet }) {
+export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription, onOpenPaymentSheet }) {
   const navigate = useNavigate();
 
-  const ctx = { healthResult, smartActions, coachActions, marketingPayment, botActive, subscription };
+  const ctx = { healthResult, smartActions, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription };
   const activeScenario = SCENARIOS.find(s => s.check(ctx));
 
   if (!activeScenario) {

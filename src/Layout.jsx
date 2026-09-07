@@ -152,6 +152,9 @@ export default function Layout({ children, currentPageName }) {
       return () => { mountedRef.current = false; };
     }
     if (currentUser.managed_franchise_ids?.length > 0) {
+      // Guardado fora da cadeia porque o `.then` seguinte precisa saber a IDADE da
+      // unidade para decidir se mostra o tour de boas-vindas.
+      let primaryFranchiseForOnboarding = null;
       Franchise.list()
         .then((allFranchises) => {
           if (!mountedRef.current) return;
@@ -166,6 +169,7 @@ export default function Layout({ children, currentPageName }) {
           }
 
           const primaryFranchise = getPrimaryFranchise(allFranchises, currentUser);
+          primaryFranchiseForOnboarding = primaryFranchise;
           const franchiseId = primaryFranchise?.evolution_instance_id;
           if (!franchiseId) {
             if (mountedRef.current) setOnboardingLoaded(true);
@@ -176,12 +180,10 @@ export default function Layout({ children, currentPageName }) {
         .then((obs) => {
           if (!mountedRef.current) return;
           if (!obs) {
-            // Promise chain returned undefined (no franchiseId) — still mark as loaded
-            const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
-            const skipped = localStorage.getItem("onboarding_skipped") === "true";
-            if (currentUser.role === "franchisee" && !welcomeSeen && !skipped) {
-              setNeedsOnboardingWelcome(true);
-            }
+            // Sem evolution_instance_id nao da para dizer nada sobre o onboarding
+            // desta unidade — e mandar para o tour com base so em localStorage era o
+            // que jogava franqueada veterana nas 7 telas de boas-vindas em todo
+            // aparelho novo (auditoria 07/09/2026).
             setOnboardingLoaded(true);
             return;
           }
@@ -199,8 +201,18 @@ export default function Layout({ children, currentPageName }) {
           if (obs.length > 0 && obs[0].status !== "approved" && !welcomeSeen && !skipped) {
             setNeedsOnboardingWelcome(true);
           }
-          // If no checklist exists and welcome not seen and not skipped => show welcome
-          if (obs.length === 0 && !welcomeSeen && !skipped) {
+          // Sem linha de checklist: isso NAO quer dizer "precisa de onboarding".
+          // Medido em 07/09/2026: 57 das 67 unidades ativas nao tem linha nenhuma —
+          // e as 57 tem MAIS de 30 dias (o checklist nasceu depois delas). Como a
+          // decisao se apoiava so em localStorage, qualquer celular ou navegador novo
+          // jogava uma franqueada veterana nas 7 telas de boas-vindas.
+          // So e "unidade nova" quem foi criada ha pouco.
+          const criadaEm = primaryFranchiseForOnboarding?.created_at
+            ? new Date(primaryFranchiseForOnboarding.created_at)
+            : null;
+          const unidadeNova =
+            criadaEm && Date.now() - criadaEm.getTime() < 30 * 24 * 60 * 60 * 1000;
+          if (obs.length === 0 && unidadeNova && !welcomeSeen && !skipped) {
             setNeedsOnboardingWelcome(true);
           }
 

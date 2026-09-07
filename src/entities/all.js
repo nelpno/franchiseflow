@@ -268,6 +268,19 @@ export async function getFranchiseRankingMonthly(yearMonth, franchiseId, { signa
   return data?.[0] ?? null;
 }
 
+// Pulso do robô da unidade: quando foi a ÚLTIMA conversa e quantas houve em 7 dias.
+// Existe porque "robô ativo" no painel do franqueado significava apenas "existe linha em
+// franchise_configurations" — ou seja, nunca ficava falso. Medido em 07/09/2026: 8
+// franquias vendendo, com o robô sem UMA conversa há 7+ dias, viam a faixa verde
+// "Tudo em dia!". ~0,6ms (duas subqueries no bot_conversations_lookup_idx).
+export async function getFranchiseBotPulse(franchiseId, { signal } = {}) {
+  let query = supabase.rpc('get_franchise_bot_pulse', { p_franchise_id: franchiseId });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
 // Funil da franquia no período: quantas pessoas falaram com o robô e quantas compraram,
 // mais o comportamento de recompra. ~18ms (index-only scan).
 // has_bot_data=false quando o robô está parado/inexistente — o card esconde o número
