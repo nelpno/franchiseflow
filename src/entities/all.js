@@ -245,6 +245,18 @@ export async function getFranchiseRankingMonthly(yearMonth, franchiseId, { signa
   return data?.[0] ?? null;
 }
 
+// Fechamento do mes: uma linha por unidade com faturamento, delta vs mes anterior, lucro
+// em caixa, vendas sem baixa, verba de marketing e mensalidade. Antes isso exigia tres
+// telas que nao se cruzam. O lucro sai da MESMA conta do franqueado (a RPC copia
+// calculatePnL, inclusive a regra de taxa repassada nao ser custo).
+export async function getFechamentoMensal(yearMonth, { signal } = {}) {
+  let query = supabase.rpc('get_fechamento_mensal', { p_month: yearMonth });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
 // Retorno da verba de marketing, por unidade e por mes.
 // O robo grava ctwa_clid/meta_ad_id no contato desde o primeiro "oi": 38.612 dos 57.096
 // contatos tem um dos dois, e em agosto/2026 as vendas ligadas a eles somaram R$ 119.264,93

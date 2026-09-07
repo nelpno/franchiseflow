@@ -14,10 +14,14 @@ import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
 import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
 import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
 import TabResultado from "@/components/minha-loja/TabResultado";
+import FechamentoMensal from "@/components/financeiro/FechamentoMensal";
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") === "porunidade" ? "porunidade" : "financeiro"); // "financeiro" | "mensalidades" | "porunidade"
+  const [activeTab, setActiveTab] = useState(() => {
+    const t = searchParams.get("tab");
+    return ["porunidade", "mensalidades", "fechamento"].includes(t) ? t : "financeiro";
+  }); // "financeiro" | "fechamento" | "porunidade" | "mensalidades"
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [franchises, setFranchises] = useState([]);
   const [allSales, setAllSales] = useState([]);
@@ -341,6 +345,7 @@ export default function Financeiro() {
         <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
           {[
             { key: "financeiro", label: "Resultado", icon: "account_balance" },
+            { key: "fechamento", label: "Fechamento", icon: "fact_check" },
             { key: "porunidade", label: "Por Unidade", icon: "store" },
             { key: "mensalidades", label: "Mensalidades", icon: "autorenew" },
           ].map(tab => (
@@ -360,7 +365,9 @@ export default function Financeiro() {
         </div>
       </div>
 
-      {activeTab === "mensalidades" ? (
+      {activeTab === "fechamento" ? (
+        <FechamentoMensal />
+      ) : activeTab === "mensalidades" ? (
         <AsaasSetupPanel />
       ) : activeTab === "porunidade" ? (
         <div className="space-y-4">

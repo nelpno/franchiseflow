@@ -68,6 +68,7 @@ error
 error_outline
 event
 event_available
+event_busy
 expand_less
 expand_more
 fact_check
@@ -143,6 +144,7 @@ policy
 portrait
 price_change
 print
+priority_high
 progress_activity
 psychology
 qr_code
