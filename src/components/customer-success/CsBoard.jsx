@@ -43,17 +43,17 @@ export default function CsBoard({ tasks, signalsByFranchise = {}, onOpen, onMove
                 <div
                   ref={prov.innerRef}
                   {...prov.droppableProps}
-                  className={`rounded-xl bg-[#f6f2f2] border-t-2 ${col.accent} p-2 ${collapsed ? "self-start" : "min-h-[160px]"} transition-shadow ${snap.isDraggingOver ? "ring-2 ring-[#b91c1c]/30" : ""}`}
+                  className={`rounded-xl bg-[#f6f2f2] border-t-2 ${col.accent} p-2 ${collapsed ? "self-start" : "min-h-[160px]"} transition-shadow ${snap.isDraggingOver ? "ring-2 ring-brand/30" : ""}`}
                 >
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#4a3d3d] px-1 pb-2 flex justify-between items-center">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-ink-2 px-1 pb-2 flex justify-between items-center">
                     <span>{col.label}</span>
                     {isDone ? (
-                      <button onClick={() => setShowDone((v) => !v)} className="flex items-center gap-0.5 text-[#8a7e7e] hover:text-[#b91c1c]" aria-label={showDone ? "Ocultar resolvidos" : "Ver resolvidos"}>
+                      <button onClick={() => setShowDone((v) => !v)} className="flex items-center gap-0.5 text-ink-3 hover:text-brand" aria-label={showDone ? "Ocultar resolvidos" : "Ver resolvidos"}>
                         {count}
                         <MaterialIcon icon={showDone ? "expand_less" : "expand_more"} size={16} />
                       </button>
                     ) : (
-                      <span className="text-[#8a7e7e]">{count}</span>
+                      <span className="text-ink-3">{count}</span>
                     )}
                   </div>
                   {!collapsed && byCol[col.key].map((task, i) => (

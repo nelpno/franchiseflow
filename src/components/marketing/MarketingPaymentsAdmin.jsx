@@ -243,7 +243,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       {/* ─── Filtros ─── */}
       <div className="flex flex-wrap gap-3">
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-48 border-[#e9e8e9]">
+          <SelectTrigger className="w-48 border-surface-line">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +254,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
         </Select>
 
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40 border-[#e9e8e9]">
+          <SelectTrigger className="w-40 border-surface-line">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -271,32 +271,32 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Arrecadado</p>
-            <p className="text-lg font-bold text-[#1b1c1d]">{formatBRL(totalCollected)}</p>
-            <p className="text-xs text-[#7a6d6d] mt-1">{paidCount} de {franchises.length} pagaram</p>
+            <p className="text-xs text-ink-3 mb-1">Arrecadado</p>
+            <p className="text-lg font-bold text-ink">{formatBRL(totalCollected)}</p>
+            <p className="text-xs text-ink-3 mt-1">{paidCount} de {franchises.length} pagaram</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Liquido Campanha</p>
-            <p className="text-lg font-bold text-[#1b1c1d]">{formatBRL(totalLiquid)}</p>
-            <p className="text-xs text-[#7a6d6d] mt-1">-{MARKETING_TAX_RATE * 100}% imposto</p>
+            <p className="text-xs text-ink-3 mb-1">Liquido Campanha</p>
+            <p className="text-lg font-bold text-ink">{formatBRL(totalLiquid)}</p>
+            <p className="text-xs text-ink-3 mt-1">-{MARKETING_TAX_RATE * 100}% imposto</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Depositado Meta</p>
-            <p className="text-lg font-bold text-[#1b1c1d]">{formatBRL(totalDeposited)}</p>
-            <p className="text-xs text-[#7a6d6d] mt-1">{deposits.length} deposito{deposits.length !== 1 ? "s" : ""}</p>
+            <p className="text-xs text-ink-3 mb-1">Depositado Meta</p>
+            <p className="text-lg font-bold text-ink">{formatBRL(totalDeposited)}</p>
+            <p className="text-xs text-ink-3 mt-1">{deposits.length} deposito{deposits.length !== 1 ? "s" : ""}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Saldo a Depositar</p>
-            <p className={`text-lg font-bold ${balance > 0 ? "text-[#775a19]" : "text-[#16a34a]"}`}>
+            <p className="text-xs text-ink-3 mb-1">Saldo a Depositar</p>
+            <p className={`text-lg font-bold ${balance > 0 ? "text-brand-gold-ink" : "text-ok"}`}>
               {formatBRL(Math.max(0, balance))}
             </p>
-            {balance <= 0 && <p className="text-xs text-[#16a34a] mt-1">Tudo depositado</p>}
+            {balance <= 0 && <p className="text-xs text-ok mt-1">Tudo depositado</p>}
           </CardContent>
         </Card>
       </div>
@@ -310,13 +310,13 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-plus-jakarta font-bold text-sm text-[#1b1c1d]">
+            <h3 className="font-plus-jakarta font-bold text-sm text-ink">
               Depositos Meta
             </h3>
             <Button
               size="sm"
               variant="outline"
-              className="h-8 text-xs border-[#b91c1c] text-[#b91c1c]"
+              className="h-8 text-xs border-brand text-brand"
               onClick={() => setShowDepositDialog(true)}
             >
               <MaterialIcon icon="add" size={14} className="mr-1" />
@@ -325,23 +325,23 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
           </div>
 
           {deposits.length === 0 ? (
-            <p className="text-xs text-[#7a6d6d] py-4 text-center">
+            <p className="text-xs text-ink-3 py-4 text-center">
               Nenhum deposito registrado em {monthLabel}
             </p>
           ) : (
             <div className="space-y-2">
               {deposits.map((d) => (
-                <div key={d.id} className="flex items-center justify-between py-2 border-b border-[#e9e8e9] last:border-0">
+                <div key={d.id} className="flex items-center justify-between py-2 border-b border-surface-line last:border-0">
                   <div className="flex items-center gap-3">
-                    <MaterialIcon icon="account_balance" size={16} className="text-[#7a6d6d]" />
+                    <MaterialIcon icon="account_balance" size={16} className="text-ink-3" />
                     <div>
-                      <p className="text-sm font-medium text-[#1b1c1d]">
+                      <p className="text-sm font-medium text-ink">
                         {formatBRL(parseFloat(d.amount))}
                       </p>
-                      {d.notes && <p className="text-xs text-[#7a6d6d]">{d.notes}</p>}
+                      {d.notes && <p className="text-xs text-ink-3">{d.notes}</p>}
                     </div>
                   </div>
-                  <span className="text-xs text-[#7a6d6d]">
+                  <span className="text-xs text-ink-3">
                     {format(new Date(d.deposit_date + "T12:00:00"), "dd/MM/yyyy")}
                   </span>
                 </div>
@@ -354,12 +354,12 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       {/* ─── Tabela Franquias ─── */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
-          <h3 className="font-plus-jakarta font-bold text-sm text-[#1b1c1d] mb-3">
+          <h3 className="font-plus-jakarta font-bold text-sm text-ink mb-3">
             Franquias — {monthLabel}
           </h3>
 
           {/* Header desktop */}
-          <div className="hidden md:grid grid-cols-12 gap-2 pb-2 border-b border-[#e9e8e9] text-xs font-medium text-[#7a6d6d]">
+          <div className="hidden md:grid grid-cols-12 gap-2 pb-2 border-b border-surface-line text-xs font-medium text-ink-3">
             <div className="col-span-3">Franquia</div>
             <div className="col-span-2 text-right">Valor Pago</div>
             <div className="col-span-2 text-right">Campanha</div>
@@ -368,11 +368,11 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
           </div>
 
           {filteredRows.length === 0 ? (
-            <p className="text-xs text-[#7a6d6d] py-8 text-center">
+            <p className="text-xs text-ink-3 py-8 text-center">
               Nenhuma franquia encontrada com esse filtro
             </p>
           ) : (
-            <div className="divide-y divide-[#e9e8e9]">
+            <div className="divide-y divide-surface-line">
               {filteredRows.map((row) => {
                 const { franchise: f, payment: p, status } = row;
                 const cfg = STATUS_CONFIG[status];
@@ -387,22 +387,22 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                   >
                     {/* Franquia */}
                     <div className="md:col-span-3">
-                      <p className="text-sm font-medium text-[#1b1c1d]">
+                      <p className="text-sm font-medium text-ink">
                         {getFranchiseDisplayName(f)}
                       </p>
-                      <p className="text-xs text-[#7a6d6d]">{f.owner_name || f.city}{f.state_uf ? ` — ${f.state_uf}` : ""}</p>
+                      <p className="text-xs text-ink-3">{f.owner_name || f.city}{f.state_uf ? ` — ${f.state_uf}` : ""}</p>
                     </div>
 
                     {/* Valor */}
                     <div className="md:col-span-2 md:text-right">
-                      <span className="text-sm text-[#1b1c1d]">
+                      <span className="text-sm text-ink">
                         {p ? formatBRL(amount) : "—"}
                       </span>
                     </div>
 
                     {/* Campanha (liquido) */}
                     <div className="md:col-span-2 md:text-right">
-                      <span className="text-sm text-[#4a3d3d]">
+                      <span className="text-sm text-ink-2">
                         {p ? formatBRL(liquid) : "—"}
                       </span>
                     </div>
@@ -428,7 +428,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-[#16a34a] hover:bg-[#16a34a]/10"
+                            className="h-7 w-7 p-0 text-ok hover:bg-ok/10"
                             onClick={() => handleConfirm(p.id)}
                             disabled={isLoading}
                             title="Confirmar"
@@ -438,7 +438,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-[#dc2626] hover:bg-[#dc2626]/10"
+                            className="h-7 w-7 p-0 text-err hover:bg-err/10"
                             onClick={() => setRejectDialog({ paymentId: p.id })}
                             disabled={isLoading}
                             title="Recusar"
@@ -452,7 +452,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                           href={safeHref(p.proof_url)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-[#7a6d6d] hover:bg-[#e9e8e9]"
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-ink-3 hover:bg-surface-line"
                           title="Ver comprovante"
                         >
                           <MaterialIcon icon="visibility" size={18} />
@@ -462,7 +462,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-[#dc2626] hover:bg-[#dc2626]/10"
+                          className="h-7 w-7 p-0 text-err hover:bg-err/10"
                           onClick={() => setCancelDialog({ payment: p })}
                           disabled={isLoading}
                           title="Cancelar pagamento"
@@ -471,7 +471,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                         </Button>
                       )}
                       {!p && (
-                        <span className="text-xs text-[#7a6d6d]">—</span>
+                        <span className="text-xs text-ink-3">—</span>
                       )}
                     </div>
                   </div>
@@ -503,7 +503,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               rows={2}
-              className="border-[#e9e8e9] resize-none"
+              className="border-surface-line resize-none"
             />
           </div>
           <DialogFooter>
@@ -513,7 +513,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             <Button
               onClick={handleReject}
               disabled={!!actionLoading}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white"
+              className="bg-err hover:bg-brand text-white"
             >
               Recusar
             </Button>
@@ -538,7 +538,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             <AlertDialogAction
               onClick={handleCancel}
               disabled={!!actionLoading}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white"
+              className="bg-err hover:bg-brand text-white"
             >
               {actionLoading ? "Cancelando..." : "Cancelar pagamento"}
             </AlertDialogAction>

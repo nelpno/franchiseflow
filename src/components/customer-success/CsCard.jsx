@@ -5,7 +5,7 @@ import { COLUMN_CONFIG, SEV } from "./tierConfig";
 function agingClass(days) {
   if (days >= 7) return "text-red-600 font-semibold";
   if (days >= 3) return "text-amber-600";
-  return "text-[#8a7e7e]";
+  return "text-ink-3";
 }
 
 // "Hoje no radar" — o cartão MANUAL guarda o texto do dia em que foi escrito e nunca é
@@ -43,7 +43,7 @@ export default function CsCard({ task, subtitle, tierDot, signals, onOpen, onMov
   return (
     <div
       onClick={(e) => { if (e.target.closest("button, select, a")) return; onOpen?.(task); }}
-      className="cursor-pointer rounded-lg border border-[#291715]/10 bg-white p-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
+      className="cursor-pointer rounded-lg border border-ink-shadow/10 bg-white p-3 shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs" title={task.source === "auto" ? "Gerado pelo radar de saúde" : "Criado manualmente"}>
@@ -53,22 +53,22 @@ export default function CsCard({ task, subtitle, tierDot, signals, onOpen, onMov
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">Prioridade</span>
         )}
       </div>
-      <div className="font-semibold text-sm text-[#1b1c1d] mt-1 leading-snug">{task.title}</div>
-      {subtitle && <div className="text-[11px] text-[#8a7e7e] mt-0.5">{subtitle}</div>}
-      {task.description && <div className="text-xs text-[#4a3d3d] mt-1 leading-snug">{task.description}</div>}
+      <div className="font-semibold text-sm text-ink mt-1 leading-snug">{task.title}</div>
+      {subtitle && <div className="text-[11px] text-ink-3 mt-0.5">{subtitle}</div>}
+      {task.description && <div className="text-xs text-ink-2 mt-1 leading-snug">{task.description}</div>}
       {mostraRadar && (
-        <div className="mt-2 pt-2 border-t border-[#291715]/5">
-          <div className="text-[10px] uppercase tracking-wide text-[#8a7e7e] mb-1">Hoje no radar</div>
+        <div className="mt-2 pt-2 border-t border-ink-shadow/5">
+          <div className="text-[10px] uppercase tracking-wide text-ink-3 mb-1">Hoje no radar</div>
           <RadarHoje signals={signals} />
         </div>
       )}
       <div className="flex items-center justify-between mt-2 text-[11px]">
-        <span className="text-[#8a7e7e]">{task.assignee ? "👤 assumido" : ""}</span>
+        <span className="text-ink-3">{task.assignee ? "👤 assumido" : ""}</span>
         {task.column_status !== "feito" && <span className={agingClass(days)}>parado há {days}d</span>}
       </div>
       {/* fallback mobile: mover de coluna sem arrastar */}
       <select
-        className="mt-2 w-full text-xs sm:hidden border border-[#291715]/15 rounded p-1 bg-white"
+        className="mt-2 w-full text-xs sm:hidden border border-ink-shadow/15 rounded p-1 bg-white"
         value={task.column_status}
         onChange={(e) => onMove?.(task, e.target.value)}
         aria-label="Mover cartão para outra coluna"

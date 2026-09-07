@@ -9,13 +9,13 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
  * para abrir o detalhe — o StatsCard só suporta href.
  */
 function ConversionCard({ funnel, loading, onClick }) {
-  const base = "bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-[#cac0c0]/10 text-left w-full";
+  const base = "bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-ink-4/10 text-left w-full";
 
   if (loading || !funnel) {
     return (
       <div className={base}>
-        <p className="text-xs text-[#4a3d3d] font-medium mb-1 truncate">Conversão</p>
-        <div className="h-6 sm:h-8 w-12 bg-[#291715]/5 rounded animate-pulse" />
+        <p className="text-xs text-ink-2 font-medium mb-1 truncate">Conversão</p>
+        <div className="h-6 sm:h-8 w-12 bg-ink-shadow/5 rounded animate-pulse" />
       </div>
     );
   }
@@ -30,11 +30,11 @@ function ConversionCard({ funnel, loading, onClick }) {
   if (!funnel.has_bot_data) {
     return (
       <button type="button" onClick={onClick} className={base + " cursor-pointer hover:shadow-md active:scale-[0.98] transition-all"}>
-        <p className="text-xs text-[#4a3d3d] font-medium mb-1 truncate">Conversão</p>
+        <p className="text-xs text-ink-2 font-medium mb-1 truncate">Conversão</p>
         <div className="flex items-baseline gap-1">
-          <span className="text-base sm:text-2xl font-extrabold tracking-tight text-[#7a6d6d]">—</span>
+          <span className="text-base sm:text-2xl font-extrabold tracking-tight text-ink-3">—</span>
         </div>
-        <p className="text-[10px] sm:text-xs text-[#7a6d6d] mt-0.5 leading-tight">
+        <p className="text-[10px] sm:text-xs text-ink-3 mt-0.5 leading-tight">
           Ative o robô para medir
         </p>
       </button>
@@ -49,19 +49,19 @@ function ConversionCard({ funnel, loading, onClick }) {
 
   return (
     <button type="button" onClick={onClick} className={base + " cursor-pointer hover:shadow-md active:scale-[0.98] transition-all"}>
-      <p className="text-xs text-[#4a3d3d] font-medium mb-1 truncate">Conversão</p>
+      <p className="text-xs text-ink-2 font-medium mb-1 truncate">Conversão</p>
       <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-        <span className="text-base sm:text-2xl font-extrabold tracking-tight text-[#1d1b1b] tabular-nums">
+        <span className="text-base sm:text-2xl font-extrabold tracking-tight text-ink tabular-nums">
           {rate.toFixed(0)}%
         </span>
         {hasDelta && (
-          <span className={`text-xs font-bold flex items-center gap-0.5 ${isUp ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+          <span className={`text-xs font-bold flex items-center gap-0.5 ${isUp ? "text-ok" : "text-err"}`}>
             <MaterialIcon icon={isUp ? "arrow_upward" : "arrow_downward"} size={14} />
             {Math.abs(deltaPP).toFixed(1).replace(".", ",")} p.p.
           </span>
         )}
       </div>
-      <p className="text-[10px] sm:text-xs text-[#7a6d6d] mt-0.5 leading-tight tabular-nums">
+      <p className="text-[10px] sm:text-xs text-ink-3 mt-0.5 leading-tight tabular-nums">
         {converted} de {reached} contatos
       </p>
     </button>

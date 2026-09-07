@@ -8,7 +8,7 @@ import { WEEKDAYS } from "@/lib/franchiseUtils";
  * Formato: [{ days: ["seg","ter","qua","qui","sex"], open: "09:00", close: "19:00" }]
  */
 
-const inputClass = "bg-[#e9e8e9] border-none rounded-xl px-3 py-2 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none w-24 text-center";
+const inputClass = "bg-surface-line border-none rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand/20 text-sm outline-none w-24 text-center";
 
 export default function OperatingHoursEditor({ value = [], onChange }) {
   const ranges = value.length > 0 ? value : [{ days: ["seg", "ter", "qua", "qui", "sex"], open: "09:00", close: "19:00" }];
@@ -73,7 +73,7 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
               <button
                 type="button"
                 onClick={() => removeRange(index)}
-                className="text-xs text-[#b91c1c] hover:underline flex items-center gap-1"
+                className="text-xs text-brand hover:underline flex items-center gap-1"
               >
                 <MaterialIcon icon="close" size={14} />
                 Remover
@@ -97,10 +97,10 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
                   onClick={() => toggleDay(index, day.value)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                     isSelected
-                      ? "bg-[#b91c1c] text-white"
+                      ? "bg-brand text-white"
                       : isUsedElsewhere
-                      ? "bg-[#e9e8e9] text-[#3d4a42]/30 cursor-not-allowed"
-                      : "bg-[#e9e8e9] text-[#3d4a42] hover:bg-[#e3e2e3]"
+                      ? "bg-surface-line text-[#3d4a42]/30 cursor-not-allowed"
+                      : "bg-surface-line text-[#3d4a42] hover:bg-[#e3e2e3]"
                   }`}
                 >
                   {day.label}
@@ -139,7 +139,7 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
         <button
           type="button"
           onClick={addRange}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/30 text-sm font-medium text-[#3d4a42] hover:border-[#b91c1c]/30 hover:text-[#b91c1c] transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/30 text-sm font-medium text-[#3d4a42] hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2"
         >
           <MaterialIcon icon="add" size={18} />
           Adicionar faixa de horário
@@ -148,7 +148,7 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
 
       {/* Preview of what the bot will say */}
       {ranges.length > 0 && (
-        <div className="bg-[#fbf9fa] rounded-xl p-3 mt-2">
+        <div className="bg-surface rounded-xl p-3 mt-2">
           <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">
             O vendedor vai dizer:
           </p>

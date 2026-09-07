@@ -34,12 +34,12 @@ function daysAgo(n) {
 
 function Metric({ icon, label, value, hint, tone }) {
   return (
-    <div className="bg-[#fbf9fa] rounded-lg p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-[#8a7e7e] font-medium uppercase tracking-wide">
+    <div className="bg-surface rounded-lg p-3">
+      <div className="flex items-center gap-1.5 text-[11px] text-ink-3 font-medium uppercase tracking-wide">
         <MaterialIcon icon={icon} size={14} /> {label}
       </div>
-      <div className={`text-base font-bold mt-0.5 ${tone || "text-[#1b1c1d]"}`}>{value}</div>
-      {hint && <div className="text-[11px] text-[#8a7e7e] mt-0.5">{hint}</div>}
+      <div className={`text-base font-bold mt-0.5 ${tone || "text-ink"}`}>{value}</div>
+      {hint && <div className="text-[11px] text-ink-3 mt-0.5">{hint}</div>}
     </div>
   );
 }
@@ -233,16 +233,16 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                 {tier && <span>{TIER[tier].dot}</span>} {headerTitle}
                 {task && !row && !editingTitle && (
                   <button type="button" onClick={startEditTitle} title="Editar o título do cartão"
-                    aria-label="Editar o título do cartão" className="shrink-0 text-[#8a7e7e] hover:text-[#b91c1c]">
+                    aria-label="Editar o título do cartão" className="shrink-0 text-ink-3 hover:text-brand">
                     <MaterialIcon icon="edit" size={16} />
                   </button>
                 )}
               </DialogTitle>
-              <p className="text-sm text-[#8a7e7e]">{headerSub}</p>
+              <p className="text-sm text-ink-3">{headerSub}</p>
               {/* Com quem falar. Sem isto o cartao dizia o QUE fazer e nao COM QUEM —
                   o Celso abria e ia procurar o contato noutra tela. */}
               {contato?.owner_name && (
-                <p className="text-sm text-[#4a3d3d] mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-sm text-ink-2 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="font-medium">{contato.owner_name}</span>
                   {contato.phone ? (
                     <a
@@ -256,7 +256,7 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                       {formatPhone(contato.phone)}
                     </a>
                   ) : (
-                    <span className="text-xs text-[#8a7e7e]">(sem telefone cadastrado)</span>
+                    <span className="text-xs text-ink-3">(sem telefone cadastrado)</span>
                   )}
                 </p>
               )}
@@ -270,20 +270,20 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
             {/* Estado do cartão */}
             {task && (
               <div className="flex items-center flex-wrap gap-2 text-xs">
-                <span className="px-2 py-0.5 rounded-full bg-[#b91c1c]/10 text-[#b91c1c] font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">
                   {task.source === "auto" ? "🤖 automático" : "✍️ manual"} · {COLUMN_LABEL[task.column_status]}
                 </span>
                 {!isDone && (
-                  <span className={agingDays >= 7 ? "text-red-600 font-semibold" : agingDays >= 3 ? "text-amber-600" : "text-[#8a7e7e]"}>
+                  <span className={agingDays >= 7 ? "text-red-600 font-semibold" : agingDays >= 3 ? "text-amber-600" : "text-ink-3"}>
                     parado há {agingDays}d
                   </span>
                 )}
                 {task.assignee === userId ? (
-                  <span className="text-[#8a7e7e]">👤 você assumiu</span>
+                  <span className="text-ink-3">👤 você assumiu</span>
                 ) : task.assignee ? (
-                  <span className="text-[#8a7e7e]">👤 assumido por outro</span>
+                  <span className="text-ink-3">👤 assumido por outro</span>
                 ) : (
-                  <button onClick={assignToMe} disabled={saving} className="text-[#b91c1c] font-medium underline">assumir</button>
+                  <button onClick={assignToMe} disabled={saving} className="text-brand font-medium underline">assumir</button>
                 )}
               </div>
             )}
@@ -291,7 +291,7 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                 da unidade, então o título só aparece aqui. */}
             {task && (editingTitle ? (
               <div className="space-y-1.5">
-                <label htmlFor="cs-card-title" className="text-xs font-bold text-[#4a3d3d] uppercase tracking-wide">
+                <label htmlFor="cs-card-title" className="text-xs font-bold text-ink-2 uppercase tracking-wide">
                   Título do cartão
                 </label>
                 <input
@@ -304,29 +304,29 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                   }}
                   maxLength={160}
                   autoFocus
-                  className="w-full text-sm rounded-lg border border-[#291715]/15 p-2.5 focus:outline-none focus:border-[#b91c1c]"
+                  className="w-full text-sm rounded-lg border border-ink-shadow/15 p-2.5 focus:outline-none focus:border-brand"
                 />
                 <div className="flex gap-3 text-xs">
-                  <button type="button" onClick={saveTitle} disabled={saving} className="text-[#b91c1c] font-semibold">Salvar</button>
-                  <button type="button" onClick={() => setEditingTitle(false)} className="text-[#8a7e7e]">Cancelar</button>
+                  <button type="button" onClick={saveTitle} disabled={saving} className="text-brand font-semibold">Salvar</button>
+                  <button type="button" onClick={() => setEditingTitle(false)} className="text-ink-3">Cancelar</button>
                 </div>
               </div>
             ) : row ? (
               <div className="flex items-start gap-1.5">
-                <p className="text-sm font-semibold text-[#1b1c1d] leading-snug">{cardTitle}</p>
+                <p className="text-sm font-semibold text-ink leading-snug">{cardTitle}</p>
                 <button type="button" onClick={startEditTitle} title="Editar o título do cartão"
-                  aria-label="Editar o título do cartão" className="shrink-0 mt-0.5 text-[#8a7e7e] hover:text-[#b91c1c]">
+                  aria-label="Editar o título do cartão" className="shrink-0 mt-0.5 text-ink-3 hover:text-brand">
                   <MaterialIcon icon="edit" size={14} />
                 </button>
               </div>
             ) : null)}
 
-            {task?.description && !row && <p className="text-sm text-[#4a3d3d]">{task.description}</p>}
+            {task?.description && !row && <p className="text-sm text-ink-2">{task.description}</p>}
 
             {/* 🔎 POR QUÊ (só franquia) */}
             {(row?.flags?.length || 0) > 0 && (
               <div>
-                <h3 className="text-xs font-bold text-[#4a3d3d] uppercase tracking-wide mb-2">Por quê</h3>
+                <h3 className="text-xs font-bold text-ink-2 uppercase tracking-wide mb-2">Por quê</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {row.flags.map((f, i) => (
                     <span key={i} className={`text-xs px-2 py-1 rounded ${SEV[f.sev] || SEV.low}`}>{f.label}</span>
@@ -337,32 +337,32 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
 
             {/* ✍️ REGISTRAR (só com cartão) */}
             {task && (
-              <div className="border-t border-[#291715]/5 pt-4">
-                <h3 className="text-xs font-bold text-[#4a3d3d] uppercase tracking-wide mb-2">Registrar o que você fez</h3>
+              <div className="border-t border-ink-shadow/5 pt-4">
+                <h3 className="text-xs font-bold text-ink-2 uppercase tracking-wide mb-2">Registrar o que você fez</h3>
                 <textarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Ex: liguei, vão repor o estoque na quinta…"
                   rows={2}
                   maxLength={1000}
-                  className="w-full text-sm rounded-lg border border-[#291715]/15 p-2.5 focus:outline-none focus:border-[#b91c1c] resize-none"
+                  className="w-full text-sm rounded-lg border border-ink-shadow/15 p-2.5 focus:outline-none focus:border-brand resize-none"
                 />
 
                 {meetingMode ? (
                   <div className="mt-2 flex items-center flex-wrap gap-2 text-sm">
                     <input type="date" value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)}
-                      className="rounded-md border border-[#291715]/15 px-2 py-1.5 text-sm focus:outline-none focus:border-[#b91c1c]" />
-                    <Button size="sm" disabled={saving} onClick={confirmMeeting} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1">
+                      className="rounded-md border border-ink-shadow/15 px-2 py-1.5 text-sm focus:outline-none focus:border-brand" />
+                    <Button size="sm" disabled={saving} onClick={confirmMeeting} className="bg-brand hover:bg-brand-dark text-white gap-1">
                       <MaterialIcon icon="check" size={16} /> Confirmar reunião
                     </Button>
-                    <button onClick={() => { setMeetingMode(false); setMeetingDate(""); }} className="text-[#8a7e7e]">cancelar</button>
+                    <button onClick={() => { setMeetingMode(false); setMeetingDate(""); }} className="text-ink-3">cancelar</button>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {!isDone && (
                       <>
                         <Button size="sm" disabled={saving} onClick={registerContact}
-                          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1 min-h-[40px]">
+                          className="bg-brand hover:bg-brand-dark text-white gap-1 min-h-[40px]">
                           <MaterialIcon icon="call" size={16} /> Falei com a franquia
                         </Button>
                         <Button size="sm" variant="outline" disabled={saving} onClick={() => setMeetingMode(true)} className="gap-1 min-h-[40px]">
@@ -386,7 +386,7 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                     )}
                   </div>
                 )}
-                <p className="text-[11px] text-[#8a7e7e] mt-2 leading-snug">
+                <p className="text-[11px] text-ink-3 mt-2 leading-snug">
                   Cada registro entra no histórico abaixo (só você e o Nelson veem).
                   {task.source === "auto" && " Cartões automáticos reabrem sozinhos se o problema voltar."}
                 </p>
@@ -395,36 +395,36 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
 
             {/* 📋 O QUE JÁ FOI FEITO */}
             {task && (
-              <div className="border-t border-[#291715]/5 pt-4">
-                <h3 className="text-xs font-bold text-[#4a3d3d] uppercase tracking-wide mb-2">O que já foi feito</h3>
+              <div className="border-t border-ink-shadow/5 pt-4">
+                <h3 className="text-xs font-bold text-ink-2 uppercase tracking-wide mb-2">O que já foi feito</h3>
                 {events.length === 0 ? (
-                  <p className="text-xs text-[#8a7e7e]">Nada registrado ainda.</p>
+                  <p className="text-xs text-ink-3">Nada registrado ainda.</p>
                 ) : (
                   <div className="space-y-2">
                     {events.map((ev) => {
                       const canManage = isAdmin || (ev.created_by && ev.created_by === userId);
                       const isEditing = editingId === ev.id;
                       return (
-                        <div key={ev.id} className="text-xs bg-[#fbf9fa] rounded-lg p-2.5">
+                        <div key={ev.id} className="text-xs bg-surface rounded-lg p-2.5">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-semibold text-[#4a3d3d] flex items-center gap-1">
+                            <span className="font-semibold text-ink-2 flex items-center gap-1">
                               <MaterialIcon icon={EVENT_ICON[ev.event_type] || "circle"} size={13} />
                               {EVENT_LABEL[ev.event_type] || ev.event_type}
                             </span>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-[#8a7e7e]">{new Date(ev.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
+                              <span className="text-ink-3">{new Date(ev.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>
                               {canManage && !isEditing && (confirmId === ev.id ? (
                                 <span className="flex items-center gap-1.5">
-                                  <span className="text-[#8a7e7e]">Apagar?</span>
-                                  <button type="button" onClick={() => removeEvent(ev)} disabled={saving} className="text-[#b91c1c] font-semibold">Sim</button>
-                                  <button type="button" onClick={() => setConfirmId(null)} className="text-[#8a7e7e]">Não</button>
+                                  <span className="text-ink-3">Apagar?</span>
+                                  <button type="button" onClick={() => removeEvent(ev)} disabled={saving} className="text-brand font-semibold">Sim</button>
+                                  <button type="button" onClick={() => setConfirmId(null)} className="text-ink-3">Não</button>
                                 </span>
                               ) : (
                                 <>
-                                  <button type="button" onClick={() => startEdit(ev)} title="Editar nota" className="text-[#8a7e7e] hover:text-[#b91c1c]">
+                                  <button type="button" onClick={() => startEdit(ev)} title="Editar nota" className="text-ink-3 hover:text-brand">
                                     <MaterialIcon icon="edit" size={14} />
                                   </button>
-                                  <button type="button" onClick={() => setConfirmId(ev.id)} title="Apagar registro" className="text-[#8a7e7e] hover:text-[#b91c1c]">
+                                  <button type="button" onClick={() => setConfirmId(ev.id)} title="Apagar registro" className="text-ink-3 hover:text-brand">
                                     <MaterialIcon icon="delete" size={14} />
                                   </button>
                                 </>
@@ -434,14 +434,14 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                           {isEditing ? (
                             <div className="mt-1.5">
                               <textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={2} maxLength={1000}
-                                className="w-full text-xs rounded-md border border-[#291715]/15 p-2 focus:outline-none focus:border-[#b91c1c] resize-none" />
+                                className="w-full text-xs rounded-md border border-ink-shadow/15 p-2 focus:outline-none focus:border-brand resize-none" />
                               <div className="flex gap-2 mt-1">
-                                <button type="button" onClick={saveEdit} disabled={saving} className="text-[#b91c1c] font-semibold">Salvar</button>
-                                <button type="button" onClick={() => { setEditingId(null); setEditText(""); }} className="text-[#8a7e7e]">Cancelar</button>
+                                <button type="button" onClick={saveEdit} disabled={saving} className="text-brand font-semibold">Salvar</button>
+                                <button type="button" onClick={() => { setEditingId(null); setEditText(""); }} className="text-ink-3">Cancelar</button>
                               </div>
                             </div>
                           ) : (
-                            ev.note && <p className="text-[#4a3d3d] mt-1 whitespace-pre-wrap">{ev.note}</p>
+                            ev.note && <p className="text-ink-2 mt-1 whitespace-pre-wrap">{ev.note}</p>
                           )}
                         </div>
                       );
@@ -453,11 +453,11 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
 
             {/* 📊 RAIO-X (colapsável) */}
             {row && (
-              <div className="border-t border-[#291715]/5 pt-4">
+              <div className="border-t border-ink-shadow/5 pt-4">
                 <button onClick={() => setShowRaioX((v) => !v)}
-                  className="w-full flex items-center justify-between text-xs font-bold text-[#4a3d3d] uppercase tracking-wide">
+                  className="w-full flex items-center justify-between text-xs font-bold text-ink-2 uppercase tracking-wide">
                   <span>Raio-x da unidade</span>
-                  <MaterialIcon icon={showRaioX ? "expand_less" : "expand_more"} size={18} className="text-[#8a7e7e]" />
+                  <MaterialIcon icon={showRaioX ? "expand_less" : "expand_more"} size={18} className="text-ink-3" />
                 </button>
                 {showRaioX && <div className="mt-2">{raioX}</div>}
               </div>
@@ -465,11 +465,11 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
 
             {/* Preview do Radar: criar cartão */}
             {isPreview && (
-              <div className="border-t border-[#291715]/5 pt-4">
-                <Button onClick={() => onCreateCard?.(row)} className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1 min-h-[44px]">
+              <div className="border-t border-ink-shadow/5 pt-4">
+                <Button onClick={() => onCreateCard?.(row)} className="w-full bg-brand hover:bg-brand-dark text-white gap-1 min-h-[44px]">
                   <MaterialIcon icon="add" size={16} /> Criar cartão pra essa franquia
                 </Button>
-                <p className="text-[11px] text-[#8a7e7e] mt-2 leading-snug">
+                <p className="text-[11px] text-ink-3 mt-2 leading-snug">
                   As franquias 🟡 atenção não viram cartão automático — crie um aqui quando quiser agir.
                 </p>
               </div>

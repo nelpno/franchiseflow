@@ -567,7 +567,7 @@ export default function Franchises() {
   const getStatusColor = (status) => {
     switch (status) {
       case "active":
-        return "bg-[#b91c1c]/10 text-[#b91c1c]";
+        return "bg-brand/10 text-brand";
       case "inactive":
         return "bg-gray-100 text-gray-800";
       case "suspended":
@@ -594,19 +594,19 @@ export default function Franchises() {
     switch (role) {
       case "admin":
         return (
-          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#a80012]/10 text-[#a80012]">
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-brand/10 text-brand">
             Admin
           </span>
         );
       case "manager":
         return (
-          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#d4af37]/15 text-[#8a7023]">
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-brand-gold/15 text-[#8a7023]">
             Gerente
           </span>
         );
       case "franchisee":
         return (
-          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#b91c1c]/10 text-[#b91c1c]">
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-brand/10 text-brand">
             Franqueado
           </span>
         );
@@ -620,18 +620,18 @@ export default function Franchises() {
   };
 
   return (
-    <div className="p-4 md:p-8 bg-[#fbf9fa]">
+    <div className="p-4 md:p-8 bg-surface">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-[#1b1c1d]">Franqueados</h1>
-            <p className="text-sm sm:text-base text-[#4a3d3d] mt-1">Gerencie franquias, equipe e permissões</p>
+            <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-ink">Franqueados</h1>
+            <p className="text-sm sm:text-base text-ink-2 mt-1">Gerencie franquias, equipe e permissões</p>
           </div>
           {(currentUser?.role === "admin" || currentUser?.role === "manager") && (
             <Button
               onClick={() => setShowForm(true)}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 self-start sm:self-auto"
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 self-start sm:self-auto"
             >
               <MaterialIcon icon="add" size={16} className="mr-2" />
               Nova Franquia
@@ -642,18 +642,18 @@ export default function Franchises() {
         {/* Equipe Section (Collapsible) */}
         {isStaff && !isLoading && (
           <Collapsible open={equipeOpen} onOpenChange={setEquipeOpen} className="mb-8">
-            <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+            <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
               <CollapsibleTrigger asChild>
-                <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-[#fbf9fa]/50 transition-colors rounded-2xl">
+                <button className="w-full px-6 py-4 flex items-center justify-between hover:bg-surface/50 transition-colors rounded-2xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[#d4af37]/15 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-brand-gold/15 rounded-lg flex items-center justify-center">
                       <MaterialIcon icon="shield_person" size={18} className="text-[#8a7023]" />
                     </div>
                     <div className="text-left">
-                      <h2 className="text-base font-bold font-plus-jakarta text-[#1b1c1d]">
+                      <h2 className="text-base font-bold font-plus-jakarta text-ink">
                         Equipe
                       </h2>
-                      <p className="text-xs text-[#4a3d3d]">
+                      <p className="text-xs text-ink-2">
                         {staffUsers.length} {staffUsers.length === 1 ? "membro" : "membros"} (admins e gerentes)
                       </p>
                     </div>
@@ -661,17 +661,17 @@ export default function Franchises() {
                   <MaterialIcon
                     icon={equipeOpen ? "expand_less" : "expand_more"}
                     size={20}
-                    className="text-[#4a3d3d]"
+                    className="text-ink-2"
                   />
                 </button>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="px-6 pb-5 border-t border-[#291715]/5">
+                <div className="px-6 pb-5 border-t border-ink-shadow/5">
                   <div className="mt-4 space-y-3">
                     <div className="flex justify-end mb-2">
                       <Button
                         size="sm"
-                        className="bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl text-xs h-8"
+                        className="bg-brand-gold hover:bg-[#b8941f] text-white font-bold rounded-xl text-xs h-8"
                         onClick={() => setShowAddStaff(true)}
                       >
                         <MaterialIcon icon="person_add" size={14} className="mr-1" />
@@ -679,25 +679,25 @@ export default function Franchises() {
                       </Button>
                     </div>
                     {staffUsers.length === 0 ? (
-                      <p className="text-sm text-[#4a3d3d] py-4 text-center">Nenhum membro na equipe</p>
+                      <p className="text-sm text-ink-2 py-4 text-center">Nenhum membro na equipe</p>
                     ) : (
                       staffUsers.map((staff) => (
                         <div
                           key={staff.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5"
+                          className="flex items-center justify-between p-3 rounded-xl bg-surface border border-ink-shadow/5"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-full bg-[#705d00] flex items-center justify-center text-white font-bold text-xs shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-brand-gold-ink flex items-center justify-center text-white font-bold text-xs shrink-0">
                               {staff.full_name?.charAt(0).toUpperCase() || "?"}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-[#1b1c1d] truncate">
+                                <p className="text-sm font-semibold text-ink truncate">
                                   {staff.full_name || "Sem nome"}
                                 </p>
                                 {getRoleBadge(staff.role)}
                               </div>
-                              <p className="text-xs text-[#4a3d3d] truncate">{staff.email}</p>
+                              <p className="text-xs text-ink-2 truncate">{staff.email}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1 ml-3 shrink-0">
@@ -706,7 +706,7 @@ export default function Franchises() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 w-8 p-0 text-[#4a3d3d] hover:text-[#1b1c1d] hover:bg-white"
+                                  className="h-8 w-8 p-0 text-ink-2 hover:text-ink hover:bg-white"
                                   onClick={() => {
                                     setEditingStaffRole({ userId: staff.id, currentRole: staff.role });
                                     setStaffNewRole(staff.role);
@@ -756,8 +756,8 @@ export default function Franchises() {
             ))
           ) : loadError ? (
             <div className="col-span-full flex flex-col items-center justify-center py-16 gap-3">
-              <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-              <p className="text-[#4a3d3d] text-center">{loadError}</p>
+              <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+              <p className="text-ink-2 text-center">{loadError}</p>
               <Button variant="outline" onClick={loadData} className="mt-2">
                 <MaterialIcon icon="refresh" className="mr-2 text-lg" />
                 Tentar novamente
@@ -769,12 +769,12 @@ export default function Franchises() {
               return (
                 <Card
                   key={franchise.id}
-                  className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                  className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-lg transition-all duration-300 cursor-pointer"
                   onClick={() => setSelectedFranchise(franchise)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-xl font-bold font-plus-jakarta text-[#1b1c1d]">
+                      <CardTitle className="text-xl font-bold font-plus-jakarta text-ink">
                         {getDisplayName(franchise)}
                       </CardTitle>
                       <Badge className={getStatusColor(franchise.status)}>
@@ -783,19 +783,19 @@ export default function Franchises() {
                       </Badge>
                     </div>
                     {franchise.name && (
-                      <p className="text-sm text-[#4a3d3d] mt-1">
+                      <p className="text-sm text-ink-2 mt-1">
                         <MaterialIcon icon="location_on" size={14} className="inline mr-1 align-text-bottom" />
                         {franchise.city}
                       </p>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
+                    <div className="flex items-center gap-3 text-ink-2">
                       <MaterialIcon icon="person" size={16} />
                       <span className="text-sm">{franchise.owner_name}</span>
                     </div>
                     {franchise.phone_number && (
-                      <div className="flex items-center gap-3 text-[#4a3d3d]">
+                      <div className="flex items-center gap-3 text-ink-2">
                         <MaterialIcon icon="phone" size={16} />
                         <span className="text-sm">{franchise.phone_number}</span>
                       </div>
@@ -807,29 +807,29 @@ export default function Franchises() {
                       if (pct === undefined || pct >= 100) return null;
                       return (
                         <div className="flex items-center gap-2">
-                          <MaterialIcon icon="school" size={14} className="text-[#d4af37]" />
-                          <div className="flex-1 h-1.5 bg-[#291715]/5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-[#d4af37]" style={{ width: `${pct}%` }} />
+                          <MaterialIcon icon="school" size={14} className="text-brand-gold" />
+                          <div className="flex-1 h-1.5 bg-ink-shadow/5 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-brand-gold" style={{ width: `${pct}%` }} />
                           </div>
-                          <span className="text-xs font-semibold text-[#d4af37]">{pct}%</span>
+                          <span className="text-xs font-semibold text-brand-gold">{pct}%</span>
                         </div>
                       );
                     })()}
 
                     {/* Linked Users */}
-                    <div className="pt-3 border-t border-[#291715]/5">
+                    <div className="pt-3 border-t border-ink-shadow/5">
                       {linked.length > 0 ? (
                         <div className="space-y-2">
                           {linked.map((u) => (
                             <div key={u.id} className="flex items-center justify-between">
                               <div className="flex items-center gap-2 min-w-0">
-                                <MaterialIcon icon="account_circle" size={14} className="text-[#4a3d3d]" />
-                                <span className="text-xs text-[#4a3d3d] truncate">{u.email}</span>
+                                <MaterialIcon icon="account_circle" size={14} className="text-ink-2" />
+                                <span className="text-xs text-ink-2 truncate">{u.email}</span>
                                 {getRoleBadge(u.role)}
                               </div>
                               {currentUser?.role === "admin" && u.role === "franchisee" && (
                                 <button
-                                  className="text-[#cac0c0] hover:text-[#b91c1c] transition-colors ml-2 shrink-0"
+                                  className="text-ink-4 hover:text-brand transition-colors ml-2 shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setUnlinkingUser({ user: u, franchise });
@@ -843,7 +843,7 @@ export default function Franchises() {
                           ))}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-[#d4af37]">
+                        <div className="flex items-center gap-2 text-brand-gold">
                           <MaterialIcon icon="warning" size={14} />
                           <span className="text-xs font-medium">Sem usuário vinculado</span>
                         </div>
@@ -852,11 +852,11 @@ export default function Franchises() {
 
                     {/* Action buttons */}
                     {isStaff && (
-                      <div className="pt-3 border-t border-[#291715]/5 flex flex-wrap gap-2">
+                      <div className="pt-3 border-t border-ink-shadow/5 flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs h-8 rounded-lg border-[#291715]/10"
+                          className="text-xs h-8 rounded-lg border-ink-shadow/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             setInvitingFranchise(franchise);
@@ -870,7 +870,7 @@ export default function Franchises() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-xs h-8 rounded-lg text-[#b91c1c] hover:bg-[#b91c1c]/10"
+                            className="text-xs h-8 rounded-lg text-brand hover:bg-brand/10"
                             onClick={(e) => handleDeleteFranchiseQuick(e, franchise)}
                           >
                             <MaterialIcon icon="delete" size={14} />
@@ -888,23 +888,23 @@ export default function Franchises() {
         {/* Empty state */}
         {!isLoading && franchises.length === 0 && (
           <div className="text-center py-16">
-            <div className="w-24 h-24 bg-[#b91c1c]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <MaterialIcon icon="store" size={48} className="text-[#b91c1c]/40" />
+            <div className="w-24 h-24 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MaterialIcon icon="store" size={48} className="text-brand/40" />
             </div>
-            <h3 className="text-xl font-semibold text-[#1b1c1d] mb-2">Nenhuma franquia cadastrada</h3>
+            <h3 className="text-xl font-semibold text-ink mb-2">Nenhuma franquia cadastrada</h3>
             {isStaff ? (
               <>
-                <p className="text-[#4a3d3d] mb-6">Comece adicionando sua primeira franquia ao sistema</p>
+                <p className="text-ink-2 mb-6">Comece adicionando sua primeira franquia ao sistema</p>
                 <Button
                   onClick={() => setShowForm(true)}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                  className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
                 >
                   <MaterialIcon icon="add" size={16} className="mr-2" />
                   Adicionar Franquia
                 </Button>
               </>
             ) : (
-              <p className="text-[#4a3d3d] mb-6">Contate um administrador para adicionar novas franquias.</p>
+              <p className="text-ink-2 mb-6">Contate um administrador para adicionar novas franquias.</p>
             )}
           </div>
         )}
@@ -989,9 +989,9 @@ export default function Franchises() {
             </DialogHeader>
             <div className="py-4 space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-[#4a3d3d]">Novo cargo</Label>
+                <Label className="text-sm font-semibold text-ink-2">Novo cargo</Label>
                 <Select value={staffNewRole} onValueChange={setStaffNewRole}>
-                  <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                  <SelectTrigger className="bg-surface-line border-none rounded-xl">
                     <SelectValue placeholder="Selecione..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -1014,7 +1014,7 @@ export default function Franchises() {
                 <Button
                   onClick={handleUpdateStaffRole}
                   disabled={!staffNewRole}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                  className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
                 >
                   Salvar
                 </Button>
@@ -1038,7 +1038,7 @@ export default function Franchises() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#4a3d3d]">
+              <p className="text-sm text-ink-2">
                 Tem certeza que deseja excluir o usuário{" "}
                 <strong>{deletingStaff?.full_name}</strong>? Esta ação não pode ser desfeita.
               </p>
@@ -1073,7 +1073,7 @@ export default function Franchises() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#4a3d3d]">
+              <p className="text-sm text-ink-2">
                 Tem certeza que deseja excluir a franquia de{" "}
                 <strong>{getDisplayName(deletingFranchise)}</strong>? Esta ação não pode ser desfeita.
               </p>
@@ -1102,13 +1102,13 @@ export default function Franchises() {
         >
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#b91c1c]">
+              <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-brand">
                 <MaterialIcon icon="link_off" size={20} />
                 Desvincular Usuário
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#4a3d3d]">
+              <p className="text-sm text-ink-2">
                 Deseja desvincular{" "}
                 <strong>{unlinkingUser?.user?.full_name || unlinkingUser?.user?.email}</strong> de{" "}
                 <strong>{getDisplayName(unlinkingUser?.franchise)}</strong>?
@@ -1121,7 +1121,7 @@ export default function Franchises() {
                 );
                 if (remaining.length === 0) {
                   return (
-                    <p className="text-xs text-[#b91c1c] mt-2 flex items-start gap-1.5">
+                    <p className="text-xs text-brand mt-2 flex items-start gap-1.5">
                       <MaterialIcon icon="warning" size={14} className="shrink-0 mt-0.5" />
                       Este usuário não tem outras franquias e será removido do sistema.
                     </p>
@@ -1136,7 +1136,7 @@ export default function Franchises() {
                 <Button
                   onClick={handleUnlinkUser}
                   disabled={isUnlinking}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl min-w-[120px]"
+                  className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-w-[120px]"
                 >
                   {isUnlinking ? "Desvinculando..." : "Desvincular"}
                 </Button>
@@ -1160,7 +1160,7 @@ export default function Franchises() {
               </DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-sm text-[#4a3d3d] mb-4">
+              <p className="text-sm text-ink-2 mb-4">
                 Selecione quais usuários podem gerenciar esta franquia:
               </p>
               <div className="space-y-3 max-h-60 overflow-y-auto">
@@ -1169,7 +1169,7 @@ export default function Franchises() {
                   .map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center space-x-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5"
+                      className="flex items-center space-x-3 p-3 rounded-xl bg-surface border border-ink-shadow/5"
                     >
                       <Checkbox
                         id={`perm-user-${user.id}`}
@@ -1181,15 +1181,15 @@ export default function Franchises() {
                         className="flex-1 text-sm font-medium cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-[#1b1c1d]">{user.full_name || "Sem nome"}</p>
+                          <p className="font-semibold text-ink">{user.full_name || "Sem nome"}</p>
                           {getRoleBadge(user.role)}
                         </div>
-                        <p className="text-[#4a3d3d] text-xs">{user.email}</p>
+                        <p className="text-ink-2 text-xs">{user.email}</p>
                       </label>
                     </div>
                   ))}
                 {users.filter((u) => u.role !== "admin").length === 0 && (
-                  <p className="text-sm text-[#4a3d3d] text-center py-4">
+                  <p className="text-sm text-ink-2 text-center py-4">
                     Nenhum usuário disponível (exceto admins)
                   </p>
                 )}
@@ -1206,7 +1206,7 @@ export default function Franchises() {
               <Button
                 onClick={handleSavePermissions}
                 disabled={isSavingPermissions}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
               >
                 <MaterialIcon icon="save" size={16} className="mr-2" />
                 {isSavingPermissions ? "Salvando..." : "Salvar Permissões"}
@@ -1234,13 +1234,13 @@ export default function Franchises() {
             </DialogHeader>
             <div className="py-4 space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-[#4a3d3d]">Email do franqueado</Label>
+                <Label className="text-sm font-semibold text-ink-2">Email do franqueado</Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="bg-[#e9e8e9] border-none rounded-xl"
+                  className="bg-surface-line border-none rounded-xl"
                 />
               </div>
               <div className="flex justify-end gap-3">
@@ -1257,7 +1257,7 @@ export default function Franchises() {
                 <Button
                   onClick={handleSendInvite}
                   disabled={!inviteEmail || isSendingInvite}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                  className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
                 >
                   <MaterialIcon icon="send" size={16} className="mr-2" />
                   {isSendingInvite ? "Enviando..." : "Enviar Convite"}
@@ -1272,26 +1272,26 @@ export default function Franchises() {
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
-                <MaterialIcon icon="person_add" size={20} className="text-[#d4af37]" />
+                <MaterialIcon icon="person_add" size={20} className="text-brand-gold" />
                 Adicionar Membro à Equipe
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
               <div>
-                <Label className="text-[#1b1c1d]">Email do usuário</Label>
+                <Label className="text-ink">Email do usuário</Label>
                 <Input
                   type="email"
                   placeholder="email@exemplo.com"
                   value={addStaffEmail}
                   onChange={(e) => setAddStaffEmail(e.target.value)}
-                  className="mt-1 bg-[#e9e8e9] border-none rounded-xl"
+                  className="mt-1 bg-surface-line border-none rounded-xl"
                 />
-                <p className="text-xs text-[#4a3d3d] mt-1">Se não tiver conta, enviaremos um convite por email</p>
+                <p className="text-xs text-ink-2 mt-1">Se não tiver conta, enviaremos um convite por email</p>
               </div>
               <div>
-                <Label className="text-[#1b1c1d]">Cargo</Label>
+                <Label className="text-ink">Cargo</Label>
                 <Select value={addStaffRole} onValueChange={setAddStaffRole}>
-                  <SelectTrigger className="mt-1 bg-[#e9e8e9] border-none rounded-xl">
+                  <SelectTrigger className="mt-1 bg-surface-line border-none rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1307,7 +1307,7 @@ export default function Franchises() {
                 <Button
                   onClick={handleAddStaff}
                   disabled={!addStaffEmail || isAddingStaff}
-                  className="bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl"
+                  className="bg-brand-gold hover:bg-[#b8941f] text-white font-bold rounded-xl"
                 >
                   <MaterialIcon icon={isAddingStaff ? "hourglass_empty" : "person_add"} size={16} className="mr-2" />
                   {isAddingStaff ? "Enviando..." : "Adicionar"}
@@ -1326,11 +1326,11 @@ export default function Franchises() {
         >
           <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto bg-white">
             <SheetHeader className="mb-6">
-              <SheetTitle className="text-xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-2">
-                <MaterialIcon icon="store" size={22} className="text-[#b91c1c]" />
+              <SheetTitle className="text-xl font-bold font-plus-jakarta text-ink flex items-center gap-2">
+                <MaterialIcon icon="store" size={22} className="text-brand" />
                 {getDisplayName(selectedFranchise)}
               </SheetTitle>
-              <SheetDescription className="text-[#4a3d3d]">
+              <SheetDescription className="text-ink-2">
                 Detalhes da franquia e usuários vinculados
               </SheetDescription>
             </SheetHeader>
@@ -1343,7 +1343,7 @@ export default function Franchises() {
                     {getStatusText(selectedFranchise.status)}
                   </Badge>
                   {selectedFranchise.evolution_instance_id && (
-                    <span className="text-[10px] font-mono text-[#4a3d3d] bg-[#fbf9fa] px-2 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-ink-2 bg-surface px-2 py-0.5 rounded">
                       {selectedFranchise.evolution_instance_id}
                     </span>
                   )}
@@ -1351,26 +1351,26 @@ export default function Franchises() {
 
                 {/* Dados */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-[#4a3d3d] uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-ink-2 uppercase tracking-wider">
                     Dados da Franquia
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
+                    <div className="flex items-center gap-3 text-ink-2">
                       <MaterialIcon icon="person" size={16} />
                       <span className="text-sm">{selectedFranchise.owner_name}</span>
                     </div>
-                    <div className="flex items-center gap-3 text-[#4a3d3d]">
+                    <div className="flex items-center gap-3 text-ink-2">
                       <MaterialIcon icon="location_on" size={16} />
                       <span className="text-sm">{selectedFranchise.city}</span>
                     </div>
                     {selectedFranchise.phone_number && (
-                      <div className="flex items-center gap-3 text-[#4a3d3d]">
+                      <div className="flex items-center gap-3 text-ink-2">
                         <MaterialIcon icon="phone" size={16} />
                         <span className="text-sm">{selectedFranchise.phone_number}</span>
                       </div>
                     )}
                     {selectedFranchise.name && selectedFranchise.name !== selectedFranchise.city && (
-                      <div className="flex items-center gap-3 text-[#4a3d3d]">
+                      <div className="flex items-center gap-3 text-ink-2">
                         <MaterialIcon icon="apartment" size={16} />
                         <span className="text-sm">{selectedFranchise.name}</span>
                       </div>
@@ -1380,7 +1380,7 @@ export default function Franchises() {
 
                 {/* Linked Users */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-[#4a3d3d] uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-ink-2 uppercase tracking-wider">
                     Usuários Vinculados
                   </h3>
                   {(() => {
@@ -1398,19 +1398,19 @@ export default function Franchises() {
                         {linked.map((u) => (
                           <div
                             key={u.id}
-                            className="flex items-center gap-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5"
+                            className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-ink-shadow/5"
                           >
                             <div className="w-8 h-8 rounded-full bg-[#f2e7e7] flex items-center justify-center shrink-0">
-                              <MaterialIcon icon="account_circle" size={16} className="text-[#4a3d3d]" />
+                              <MaterialIcon icon="account_circle" size={16} className="text-ink-2" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-[#1b1c1d] truncate">
+                                <p className="text-sm font-semibold text-ink truncate">
                                   {u.full_name || "Sem nome"}
                                 </p>
                                 {getRoleBadge(u.role)}
                               </div>
-                              <p className="text-xs text-[#4a3d3d] truncate">{u.email}</p>
+                              <p className="text-xs text-ink-2 truncate">{u.email}</p>
                             </div>
                           </div>
                         ))}
@@ -1420,12 +1420,12 @@ export default function Franchises() {
                 </div>
 
                 {/* Onboarding */}
-                <div className="space-y-3 pt-4 border-t border-[#291715]/5">
+                <div className="space-y-3 pt-4 border-t border-ink-shadow/5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#4a3d3d] uppercase tracking-wider">
+                    <h3 className="text-sm font-bold text-ink-2 uppercase tracking-wider">
                       Onboarding
                     </h3>
-                    <span className="text-sm font-semibold text-[#4a3d3d]">
+                    <span className="text-sm font-semibold text-ink-2">
                       {onboardingMap[selectedFranchise.evolution_instance_id] ?? 0}%
                     </span>
                   </div>
@@ -1440,7 +1440,7 @@ export default function Franchises() {
                   </div>
                   <Button
                     variant="outline"
-                    className="w-full rounded-xl border-[#291715]/10"
+                    className="w-full rounded-xl border-ink-shadow/10"
                     onClick={() => {
                       setSelectedFranchise(null);
                       navigate(`/Onboarding?franchise=${selectedFranchise.evolution_instance_id}`);
@@ -1453,9 +1453,9 @@ export default function Franchises() {
 
                 {/* Actions */}
                 {currentUser?.role === "admin" && (
-                  <div className="space-y-3 pt-4 border-t border-[#291715]/5">
+                  <div className="space-y-3 pt-4 border-t border-ink-shadow/5">
                     <Button
-                      className="w-full bg-[#d4af37] hover:bg-[#b8941f] text-white font-bold rounded-xl"
+                      className="w-full bg-brand-gold hover:bg-[#b8941f] text-white font-bold rounded-xl"
                       onClick={() => {
                         setSelectedFranchise(null);
                         openEditFiscal(selectedFranchise);
@@ -1465,7 +1465,7 @@ export default function Franchises() {
                       Editar dados fiscais
                     </Button>
                     <Button
-                      className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                      className="w-full bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
                       onClick={() => {
                         openPermissionsDialog(selectedFranchise);
                       }}
@@ -1475,7 +1475,7 @@ export default function Franchises() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="w-full rounded-xl border-[#291715]/10"
+                      className="w-full rounded-xl border-ink-shadow/10"
                       onClick={() => {
                         setInvitingFranchise(selectedFranchise);
                         setInviteEmail("");

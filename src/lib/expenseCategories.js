@@ -13,7 +13,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "marketing", label: "Marketing", icon: "campaign", color: "#9333ea", help: "Tráfego pago, panfletos, anúncios, leads" },
   { value: "pacote_sistema", label: "Pacote Tecnologia", icon: "auto_awesome", color: "#dc2626", help: "Mensalidade Maxi Massas (dashboard + robô + tráfego + artes)" },
   { value: "impostos", label: "Impostos", icon: "receipt_long", color: "#475569", help: "DAS, INSS, ISS, NFS-e" },
-  { value: "outros", label: "Outros gastos", icon: "more_horiz", color: "#525252", help: "Despesas que não se encaixam nas demais" },
+  { value: "outros", label: "Outros gastos", icon: "more_horiz", color: "#4a3d3d", help: "Despesas que não se encaixam nas demais" },
 ];
 
 export const CATEGORY_BY_VALUE = Object.fromEntries(

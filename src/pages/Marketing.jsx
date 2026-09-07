@@ -412,7 +412,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
                 uploadMode === "file"
-                  ? "bg-[#b91c1c] text-white"
+                  ? "bg-brand text-white"
                   : "bg-white text-gray-600 hover:bg-gray-50"
               }`}
               onClick={() => setUploadMode("file")}
@@ -424,7 +424,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
                 uploadMode === "link"
-                  ? "bg-[#b91c1c] text-white"
+                  ? "bg-brand text-white"
                   : "bg-white text-gray-600 hover:bg-gray-50"
               }`}
               onClick={() => setUploadMode("link")}
@@ -440,8 +440,8 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                   dragOver
-                    ? "border-[#b91c1c] bg-red-50"
-                    : "border-gray-300 hover:border-[#b91c1c]/40 hover:bg-gray-50"
+                    ? "border-brand bg-red-50"
+                    : "border-gray-300 hover:border-brand/40 hover:bg-gray-50"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -454,7 +454,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
                 <MaterialIcon icon="upload" size={32} className="mx-auto text-gray-400 mb-2" />
                 <p className="text-sm text-gray-600">
                   Arraste arquivos aqui ou{" "}
-                  <span className="text-[#b91c1c] font-medium">clique para selecionar</span>
+                  <span className="text-brand font-medium">clique para selecionar</span>
                 </p>
                 <p className="text-xs text-gray-400 mt-1">Imagens, PDFs e outros formatos</p>
                 <input
@@ -643,7 +643,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
             <Button
               type="submit"
               disabled={uploading}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
             >
               {uploading ? (
                 <>
@@ -723,7 +723,7 @@ function FileCard({ file, isAdmin, onDelete }) {
   };
 
   return (
-    <Card className="group overflow-hidden hover:shadow-md transition-shadow bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+    <Card className="group overflow-hidden hover:shadow-md transition-shadow bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
       {/* Preview area */}
       <div
         className="relative h-48 bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer"
@@ -774,7 +774,7 @@ function FileCard({ file, isAdmin, onDelete }) {
         </div>
 
         {isNew && (
-          <Badge className="absolute top-2 right-2 text-xs bg-[#d4af37] text-white border-0">
+          <Badge className="absolute top-2 right-2 text-xs bg-brand-gold text-white border-0">
             NOVO
           </Badge>
         )}
@@ -798,7 +798,7 @@ function FileCard({ file, isAdmin, onDelete }) {
                 navigator.clipboard.writeText(file.description);
                 toast.success("Legenda copiada!");
               }}
-              className="flex items-center gap-1 text-[10px] font-medium text-[#b91c1c] hover:text-[#991b1b] transition-colors"
+              className="flex items-center gap-1 text-[10px] font-medium text-brand hover:text-brand-dark transition-colors"
             >
               <MaterialIcon icon="content_copy" size={12} />
               Copiar legenda
@@ -850,7 +850,7 @@ function FileCard({ file, isAdmin, onDelete }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-[#4a3d3d] hover:bg-gray-100 px-2 text-xs"
+                className="text-ink-2 hover:bg-gray-100 px-2 text-xs"
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
               >
@@ -1032,15 +1032,15 @@ export default function Marketing() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-[#fbf9fa]">
+    <div className="p-6 space-y-6 bg-surface">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-[#b91c1c] to-[#991b1b] rounded-lg">
+          <div className="p-2 bg-gradient-to-br from-brand to-brand-dark rounded-lg">
             <MaterialIcon icon="campaign" size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Marketing</h1>
+            <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Marketing</h1>
             <p className="text-sm text-gray-500">
               {isAdmin
                 ? "Gerencie materiais de marketing das franquias"
@@ -1052,7 +1052,7 @@ export default function Marketing() {
         {isAdmin && (
           <Button
             onClick={() => setShowUpload(true)}
-            className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+            className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
           >
             <MaterialIcon icon="add" size={16} className="mr-2" />
             Novo Material
@@ -1081,7 +1081,7 @@ export default function Marketing() {
       )}
 
       {/* Search + Filters */}
-      <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+      <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
         <CardContent className="p-4 space-y-3">
           {/* Search bar */}
           <div className="relative">
@@ -1114,7 +1114,7 @@ export default function Marketing() {
                 onClick={() => setFilterType(ft.value)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   filterType === ft.value
-                    ? "bg-[#b91c1c] text-white"
+                    ? "bg-brand text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
@@ -1209,7 +1209,7 @@ export default function Marketing() {
               </span>
               <button
                 onClick={clearFilters}
-                className="text-xs text-[#b91c1c] hover:underline flex items-center gap-1"
+                className="text-xs text-brand hover:underline flex items-center gap-1"
               >
                 <MaterialIcon icon="filter_alt_off" size={14} />
                 Limpar filtros
@@ -1223,7 +1223,7 @@ export default function Marketing() {
       {loadError ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <MaterialIcon icon="cloud_off" size={48} className="text-gray-300 mb-4" />
-          <p className="text-[#4a3d3d] font-medium mb-2">{loadError}</p>
+          <p className="text-ink-2 font-medium mb-2">{loadError}</p>
           <Button variant="outline" onClick={loadData} className="mt-2">
             <MaterialIcon icon="refresh" size={16} className="mr-2" />
             Tentar novamente
@@ -1270,7 +1270,7 @@ export default function Marketing() {
               <div key={groupKey}>
                 <h2 className="text-lg font-semibold text-gray-700 capitalize mb-4">
                   {groupByCampaign && (
-                    <MaterialIcon icon="campaign" size={20} className="inline mr-1.5 align-text-bottom text-[#b91c1c]" />
+                    <MaterialIcon icon="campaign" size={20} className="inline mr-1.5 align-text-bottom text-brand" />
                   )}
                   {groupLabel}
                   <span className="text-sm font-normal text-gray-400 ml-2">

@@ -21,7 +21,7 @@ function StatsCard({ title, value, rawValue, previousValue, icon: Icon, trend, c
     const isUp = trend === 'up';
     return (
       <span className={`text-xs font-bold flex items-center gap-0.5 ${
-        isUp ? 'text-[#16a34a]' : 'text-[#dc2626]'
+        isUp ? 'text-ok' : 'text-err'
       }`}>
         <MaterialIcon icon={isUp ? "arrow_upward" : "arrow_downward"} size={14} />
         {isUp ? '+' : ''}{Math.abs(percentageChange).toFixed(0)}%
@@ -31,14 +31,14 @@ function StatsCard({ title, value, rawValue, previousValue, icon: Icon, trend, c
 
   const Wrapper = href ? Link : 'div';
   const wrapperProps = href ? { to: href, "aria-label": `Ver detalhes de ${title}` } : {};
-  const baseClasses = "bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-[#cac0c0]/10";
+  const baseClasses = "bg-white p-3 sm:p-5 rounded-xl shadow-sm border border-ink-4/10";
   const clickClasses = href ? " cursor-pointer hover:shadow-md active:scale-[0.98] transition-all" : "";
 
   return (
     <Wrapper {...wrapperProps} className={baseClasses + clickClasses}>
-      <p className="text-xs text-[#4a3d3d] font-medium mb-1 truncate">{title}</p>
+      <p className="text-xs text-ink-2 font-medium mb-1 truncate">{title}</p>
       <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-        <span className="text-base sm:text-2xl font-extrabold tracking-tight text-[#1d1b1b]">
+        <span className="text-base sm:text-2xl font-extrabold tracking-tight text-ink">
           {value}
         </span>
         {getTrendDisplay()}

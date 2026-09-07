@@ -105,7 +105,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
         variant="outline"
         size="sm"
         onClick={handleExcel}
-        className="gap-1.5 text-[#4a3d3d] hover:text-[#16a34a] hover:border-[#16a34a]/30 rounded-xl text-xs"
+        className="gap-1.5 text-ink-2 hover:text-ok hover:border-ok/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="download" size={16} />
         Excel
@@ -114,7 +114,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
         variant="outline"
         size="sm"
         onClick={handlePdf}
-        className="gap-1.5 text-[#4a3d3d] hover:text-[#b91c1c] hover:border-[#b91c1c]/30 rounded-xl text-xs"
+        className="gap-1.5 text-ink-2 hover:text-brand hover:border-brand/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="picture_as_pdf" size={16} />
         PDF

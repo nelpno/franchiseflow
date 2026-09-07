@@ -146,22 +146,22 @@ export default function FranchiseForm({
     ? "w-full"
     : "fixed inset-0 bg-black/50 flex items-start justify-center p-4 z-50 overflow-y-auto";
   const cardClass = isFiscalOnly
-    ? "w-full bg-white rounded-2xl shadow-sm border border-[#291715]/5"
-    : "w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-[#291715]/5 my-auto";
+    ? "w-full bg-white rounded-2xl shadow-sm border border-ink-shadow/5"
+    : "w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-ink-shadow/5 my-auto";
 
   return (
     <div className={wrapperClass}>
       <Card className={cardClass}>
-        <CardHeader className="flex flex-row items-center justify-between bg-[#fbf9fa] border-b border-[#291715]/5">
+        <CardHeader className="flex flex-row items-center justify-between bg-surface border-b border-ink-shadow/5">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#b91c1c] text-white rounded-lg">
+            <div className="p-2 bg-brand text-white rounded-lg">
               <MaterialIcon icon={isFiscalOnly ? "receipt_long" : "apartment"} size={20} />
             </div>
             <div>
-              <CardTitle className="text-xl font-plus-jakarta text-[#1b1c1d]">
+              <CardTitle className="text-xl font-plus-jakarta text-ink">
                 {isFiscalOnly ? "Seus dados de cobrança e NFe" : "Nova Franquia"}
               </CardTitle>
-              <p className="text-sm text-[#4a3d3d] mt-1">
+              <p className="text-sm text-ink-2 mt-1">
                 {isFiscalOnly
                   ? "Confirme os dados usados na mensalidade e notas fiscais."
                   : "Preencha os dados. O sistema configura tudo automaticamente."}
@@ -180,9 +180,9 @@ export default function FranchiseForm({
             {/* Dados da Unidade — só Nome (cidade agora vem do CEP, bloco de endereço). Oculto em fiscal-only, salvo edição admin (allowNameEdit). */}
             {showNameFields && (
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Dados da Unidade</h3>
+                <h3 className="text-sm font-semibold text-ink-2 uppercase tracking-wider">Dados da Unidade</h3>
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-semibold text-[#4a3d3d]">
+                  <Label htmlFor="name" className="text-sm font-semibold text-ink-2">
                     <MaterialIcon icon="apartment" size={16} className="inline mr-1" />
                     Nome da Franquia *
                   </Label>
@@ -193,20 +193,20 @@ export default function FranchiseForm({
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     required
                   />
-                  <p className="text-xs text-[#4a3d3d]">Sugerido automaticamente pelo CEP — editável.</p>
+                  <p className="text-xs text-ink-2">Sugerido automaticamente pelo CEP — editável.</p>
                 </div>
               </div>
             )}
 
             {/* Dados do Franqueado (nome + email + CPF) */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">
+              <h3 className="text-sm font-semibold text-ink-2 uppercase tracking-wider">
                 {isFiscalOnly ? "Dados de Cobrança" : "Dados do Franqueado"}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {showNameFields && (
                   <div className="space-y-2">
-                    <Label htmlFor="owner_name" className="text-sm font-semibold text-[#4a3d3d]">
+                    <Label htmlFor="owner_name" className="text-sm font-semibold text-ink-2">
                       <MaterialIcon icon="person" size={16} className="inline mr-1" />
                       Nome do Franqueado *
                     </Label>
@@ -221,7 +221,7 @@ export default function FranchiseForm({
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="franchisee_email" className="text-sm font-semibold text-[#4a3d3d]">
+                  <Label htmlFor="franchisee_email" className="text-sm font-semibold text-ink-2">
                     <MaterialIcon icon="mail" size={16} className="inline mr-1" />
                     Email de cobrança e NFe {fiscalRequired && "*"}
                   </Label>
@@ -233,13 +233,13 @@ export default function FranchiseForm({
                     onChange={(e) => handleInputChange('franchisee_email', e.target.value)}
                     required={fiscalRequired}
                   />
-                  <p className="text-xs text-[#4a3d3d]">
+                  <p className="text-xs text-ink-2">
                     Usado para mensalidade ASAAS e emissão de notas fiscais.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cpf_cnpj" className="text-sm font-semibold text-[#4a3d3d]">
+                  <Label htmlFor="cpf_cnpj" className="text-sm font-semibold text-ink-2">
                     <MaterialIcon icon="badge" size={16} className="inline mr-1" />
                     CPF/CNPJ {fiscalRequired && "*"}
                   </Label>
@@ -250,7 +250,7 @@ export default function FranchiseForm({
                     onChange={(e) => handleInputChange('cpf_cnpj', e.target.value.replace(/\D/g, "").slice(0, 14))}
                     required={fiscalRequired}
                   />
-                  <p className="text-xs text-[#4a3d3d]">
+                  <p className="text-xs text-ink-2">
                     Prefira CNPJ (MEI) se tiver — usado na NFe.
                   </p>
                 </div>
@@ -259,15 +259,15 @@ export default function FranchiseForm({
 
             {/* Endereço */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-[#4a3d3d] uppercase tracking-wider">Endereço</h3>
+              <h3 className="text-sm font-semibold text-ink-2 uppercase tracking-wider">Endereço</h3>
               {isFiscalOnly && (
-                <p className="text-xs text-[#4a3d3d]/80">
+                <p className="text-xs text-ink-2/80">
                   Aparece na ficha de separação e na NFe.
                 </p>
               )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cep" className="text-sm font-semibold text-[#4a3d3d]">
+                  <Label htmlFor="cep" className="text-sm font-semibold text-ink-2">
                     <MaterialIcon icon="pin_drop" size={16} className="inline mr-1" />
                     CEP {fiscalRequired && "*"}
                   </Label>
@@ -285,7 +285,7 @@ export default function FranchiseForm({
                   </div>
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="street" className="text-sm font-semibold text-[#4a3d3d]">Rua {fiscalRequired && "*"}</Label>
+                  <Label htmlFor="street" className="text-sm font-semibold text-ink-2">Rua {fiscalRequired && "*"}</Label>
                   <Input
                     id="street"
                     placeholder="Logradouro"
@@ -297,7 +297,7 @@ export default function FranchiseForm({
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="number" className="text-sm font-semibold text-[#4a3d3d]">Número {fiscalRequired && "*"}</Label>
+                  <Label htmlFor="number" className="text-sm font-semibold text-ink-2">Número {fiscalRequired && "*"}</Label>
                   <Input
                     id="number"
                     placeholder="123"
@@ -307,7 +307,7 @@ export default function FranchiseForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="neighborhood" className="text-sm font-semibold text-[#4a3d3d]">Bairro {fiscalRequired && "*"}</Label>
+                  <Label htmlFor="neighborhood" className="text-sm font-semibold text-ink-2">Bairro {fiscalRequired && "*"}</Label>
                   <Input
                     id="neighborhood"
                     placeholder="Bairro"
@@ -317,7 +317,7 @@ export default function FranchiseForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state_uf" className="text-sm font-semibold text-[#4a3d3d]">UF {fiscalRequired && "*"}</Label>
+                  <Label htmlFor="state_uf" className="text-sm font-semibold text-ink-2">UF {fiscalRequired && "*"}</Label>
                   <Input
                     id="state_uf"
                     placeholder="SP"
@@ -328,7 +328,7 @@ export default function FranchiseForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city_fiscal" className="text-sm font-semibold text-[#4a3d3d]">Cidade {fiscalRequired && "*"}</Label>
+                  <Label htmlFor="city_fiscal" className="text-sm font-semibold text-ink-2">Cidade {fiscalRequired && "*"}</Label>
                   <Input
                     id="city_fiscal"
                     placeholder="Preenchido pelo CEP"
@@ -339,7 +339,7 @@ export default function FranchiseForm({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address_complement" className="text-sm font-semibold text-[#4a3d3d]">Complemento</Label>
+                <Label htmlFor="address_complement" className="text-sm font-semibold text-ink-2">Complemento</Label>
                 <Input
                   id="address_complement"
                   placeholder="Apto, bloco, sala, fundos, ponto de referência (opcional)"
@@ -351,9 +351,9 @@ export default function FranchiseForm({
 
             {/* O que acontece automaticamente — só em criação */}
             {!isFiscalOnly && (
-              <div className="bg-[#fbf9fa] border border-[#291715]/5 rounded-xl p-4">
-                <h4 className="text-sm font-semibold text-[#b91c1c] mb-2">O que acontece ao criar:</h4>
-                <ul className="text-sm text-[#4a3d3d] space-y-1">
+              <div className="bg-surface border border-ink-shadow/5 rounded-xl p-4">
+                <h4 className="text-sm font-semibold text-brand mb-2">O que acontece ao criar:</h4>
+                <ul className="text-sm text-ink-2 space-y-1">
                   <li>✓ Configurações da unidade criadas automaticamente</li>
                   <li>✓ Estoque populado com os 28 produtos padrão</li>
                   <li>✓ ID do vendedor automático gerado</li>
@@ -363,16 +363,16 @@ export default function FranchiseForm({
               </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#291715]/5">
+            <div className="flex justify-end gap-3 pt-4 border-t border-ink-shadow/5">
               {onCancel && (
-                <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="border border-[#b91c1c] text-[#b91c1c] rounded-xl">
+                <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="border border-brand text-brand rounded-xl">
                   Cancelar
                 </Button>
               )}
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg"
+                className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg"
               >
                 {isSubmitting
                   ? (isFiscalOnly ? 'Salvando...' : 'Criando...')

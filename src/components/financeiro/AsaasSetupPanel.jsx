@@ -72,7 +72,7 @@ function displayFranchiseName(name) {
 function StatusBadge({ status, asaasId, cpfCnpj }) {
   if (asaasId) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#16a34a]/10 text-[#16a34a]">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-ok/10 text-ok">
         <MaterialIcon icon="check_circle" size={14} />
         Cadastrado
       </span>
@@ -80,14 +80,14 @@ function StatusBadge({ status, asaasId, cpfCnpj }) {
   }
   if (cpfCnpj) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#775a19]">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-brand-gold/10 text-brand-gold-ink">
         <MaterialIcon icon="schedule" size={14} />
         Pendente
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#dc2626]/10 text-[#dc2626]">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-err/10 text-err">
       <MaterialIcon icon="error" size={14} />
       Falta CPF/CNPJ
     </span>
@@ -97,14 +97,14 @@ function StatusBadge({ status, asaasId, cpfCnpj }) {
 function SubscriptionBadge({ sub }) {
   const { situacao, diasAtraso } = classifySubscription(sub);
   const estilo = {
-    [SITUACAO.PAGO]: { bg: "bg-[#16a34a]/10", fg: "text-[#15803d]", icon: "check_circle" },
-    [SITUACAO.VENCIDO]: { bg: "bg-[#dc2626]/10", fg: "text-[#dc2626]", icon: "error" },
-    [SITUACAO.PENDENTE]: { bg: "bg-[#d4af37]/10", fg: "text-[#775a19]", icon: "schedule" },
+    [SITUACAO.PAGO]: { bg: "bg-ok/10", fg: "text-[#15803d]", icon: "check_circle" },
+    [SITUACAO.VENCIDO]: { bg: "bg-err/10", fg: "text-err", icon: "error" },
+    [SITUACAO.PENDENTE]: { bg: "bg-brand-gold/10", fg: "text-brand-gold-ink", icon: "schedule" },
     // "Sem cobranca" e o mais grave: nao existe assinatura, entao o cron de sync
     // nunca vai olhar para esta unidade e ninguem vai cobrar. Antes aparecia como
     // um travessao neutro.
-    [SITUACAO.SEM_COBRANCA]: { bg: "bg-[#dc2626]/15", fg: "text-[#991b1b]", icon: "money_off" },
-    [SITUACAO.AGUARDANDO]: { bg: "bg-[#d4af37]/10", fg: "text-[#775a19]", icon: "hourglass_empty" },
+    [SITUACAO.SEM_COBRANCA]: { bg: "bg-err/15", fg: "text-brand-dark", icon: "money_off" },
+    [SITUACAO.AGUARDANDO]: { bg: "bg-brand-gold/10", fg: "text-brand-gold-ink", icon: "hourglass_empty" },
     [SITUACAO.CANCELADA]: { bg: "bg-gray-100", fg: "text-gray-600", icon: "block" },
   }[situacao];
 
@@ -457,7 +457,7 @@ export default function AsaasSetupPanel() {
                       <button
                         type="button"
                         onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
-                        className="text-[#4a3d3d]/40 hover:text-[#4a3d3d]/70 transition-colors"
+                        className="text-ink-2/40 hover:text-ink-2/70 transition-colors"
                         title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
                       >
                         <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} />
@@ -470,7 +470,7 @@ export default function AsaasSetupPanel() {
                     <button
                       type="button"
                       onClick={() => toggleExcludeSub(f.evolution_instance_id)}
-                      className={`p-1 rounded-lg transition-colors ${isExcluded ? "text-[#b91c1c] hover:bg-red-50" : "text-gray-400 hover:bg-gray-100 hover:text-[#b91c1c]"}`}
+                      className={`p-1 rounded-lg transition-colors ${isExcluded ? "text-brand hover:bg-red-50" : "text-gray-400 hover:bg-gray-100 hover:text-brand"}`}
                       title={isExcluded ? "Incluir de volta" : "Tirar da lista"}
                     >
                       <MaterialIcon icon={isExcluded ? "undo" : "close"} size={18} />
@@ -486,7 +486,7 @@ export default function AsaasSetupPanel() {
           <Button
             onClick={() => handleCreateAllSubscriptions(selectedIds)}
             disabled={creatingAll || selectedIds.length === 0}
-            className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+            className="w-full bg-brand hover:bg-brand-dark text-white"
           >
             {creatingAll ? (
               <>
@@ -647,10 +647,10 @@ export default function AsaasSetupPanel() {
               aria-pressed={ativo}
               className={`px-3 min-h-[40px] rounded-lg border text-xs transition-colors ${
                 ativo
-                  ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-semibold"
+                  ? "border-brand bg-brand/5 text-brand font-semibold"
                   : urgente
-                    ? "border-[#dc2626]/30 bg-[#dc2626]/5 text-[#991b1b] font-medium hover:bg-[#dc2626]/10"
-                    : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                    ? "border-err/30 bg-err/5 text-brand-dark font-medium hover:bg-err/10"
+                    : "border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface"
               }`}
             >
               {SITUACAO_LABEL[sit]} <span className="font-semibold">{n}</span>
@@ -661,7 +661,7 @@ export default function AsaasSetupPanel() {
           <button
             type="button"
             onClick={() => setSituacaoFiltro(null)}
-            className="px-3 min-h-[40px] rounded-lg text-xs text-[#7a6d6d] underline"
+            className="px-3 min-h-[40px] rounded-lg text-xs text-ink-3 underline"
           >
             limpar filtro
           </button>
@@ -706,7 +706,7 @@ export default function AsaasSetupPanel() {
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
-                          className="text-[#4a3d3d]/40 hover:text-[#4a3d3d]/70 transition-colors"
+                          className="text-ink-2/40 hover:text-ink-2/70 transition-colors"
                           title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
                         >
                           <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} />
@@ -730,7 +730,7 @@ export default function AsaasSetupPanel() {
                           disabled={savingCpf[f.id]}
                           className="h-8 w-8 p-0"
                         >
-                          <MaterialIcon icon={savingCpf[f.id] ? "sync" : "check"} size={16} className={savingCpf[f.id] ? "animate-spin" : "text-[#16a34a]"} />
+                          <MaterialIcon icon={savingCpf[f.id] ? "sync" : "check"} size={16} className={savingCpf[f.id] ? "animate-spin" : "text-ok"} />
                         </Button>
                         {f.cpf_cnpj && (
                           <Button
@@ -770,7 +770,7 @@ export default function AsaasSetupPanel() {
                           disabled={savingEmail[f.id]}
                           className="h-8 w-8 p-0"
                         >
-                          <MaterialIcon icon={savingEmail[f.id] ? "sync" : "check"} size={16} className={savingEmail[f.id] ? "animate-spin" : "text-[#16a34a]"} />
+                          <MaterialIcon icon={savingEmail[f.id] ? "sync" : "check"} size={16} className={savingEmail[f.id] ? "animate-spin" : "text-ok"} />
                         </Button>
                         {f.billing_email && (
                           <Button
@@ -801,7 +801,7 @@ export default function AsaasSetupPanel() {
                   </td>
                   <td className="py-3 whitespace-nowrap">
                     {cls.vencimento ? (
-                      <span className={cls.diasAtraso > 0 ? "text-[#dc2626] font-medium" : "text-[#4a3d3d]"}>
+                      <span className={cls.diasAtraso > 0 ? "text-err font-medium" : "text-ink-2"}>
                         {formatDateOnly(cls.vencimento)}
                         {cls.valor != null && (
                           <span className="text-xs text-gray-500"> · {formatBRL(cls.valor)}</span>
@@ -818,7 +818,7 @@ export default function AsaasSetupPanel() {
                         <button
                           type="button"
                           onClick={() => setEditingFiscal({ franchise: f, config: getConfig(f.evolution_instance_id) })}
-                          className="inline-flex items-center gap-1 text-xs text-[#d4af37] hover:text-[#b91c1c] hover:underline cursor-pointer"
+                          className="inline-flex items-center gap-1 text-xs text-brand-gold hover:text-brand hover:underline cursor-pointer"
                           title={`Faltam: ${missing.join(", ")}. Clique para preencher.`}
                         >
                           <MaterialIcon icon="warning" size={14} />
@@ -834,7 +834,7 @@ export default function AsaasSetupPanel() {
                               size="sm"
                               variant="ghost"
                               onClick={() => setCancellingSub(f)}
-                              className="h-7 text-xs text-gray-500 hover:text-[#dc2626] hover:bg-[#dc2626]/5"
+                              className="h-7 text-xs text-gray-500 hover:text-err hover:bg-err/5"
                               title="Cancelar assinatura"
                             >
                               <MaterialIcon icon="block" size={14} className="mr-1" />
@@ -880,12 +880,12 @@ export default function AsaasSetupPanel() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#dc2626]">
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-err">
               <MaterialIcon icon="block" size={20} />
               Cancelar assinatura
             </DialogTitle>
           </DialogHeader>
-          <div className="py-2 space-y-3 text-sm text-[#4a3d3d]">
+          <div className="py-2 space-y-3 text-sm text-ink-2">
             <p>
               Confirmar cancelamento da assinatura de{" "}
               <strong>{cancellingSub?.name}</strong>?
@@ -894,7 +894,7 @@ export default function AsaasSetupPanel() {
               <li>Cobrança recorrente mensal será encerrada no ASAAS</li>
               <li>Fatura pendente do mês também será cancelada</li>
               <li>Cliente ASAAS será mantido (permite recriar assinatura depois)</li>
-              <li className="font-semibold text-[#b91c1c]">A franquia NÃO será desativada</li>
+              <li className="font-semibold text-brand">A franquia NÃO será desativada</li>
             </ul>
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -909,7 +909,7 @@ export default function AsaasSetupPanel() {
             <Button
               onClick={handleCancelSubscription}
               disabled={isCancelling}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl"
+              className="bg-err hover:bg-brand text-white font-bold rounded-xl"
             >
               {isCancelling ? (
                 <>
@@ -941,7 +941,7 @@ export default function AsaasSetupPanel() {
               Atualizar valor da mensalidade
             </DialogTitle>
           </DialogHeader>
-          <div className="py-2 space-y-4 text-sm text-[#4a3d3d]">
+          <div className="py-2 space-y-4 text-sm text-ink-2">
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
               Serão atualizadas <strong>{withSubscription}</strong> franquias com assinatura ativa para <strong>R$ {monthlyValue.toFixed(2)}</strong>.
             </div>
@@ -953,7 +953,7 @@ export default function AsaasSetupPanel() {
               />
               <span className="text-xs">
                 <strong className="block">Aplicar também à fatura pendente do mês atual</strong>
-                <span className="text-[#4a3d3d]/70">
+                <span className="text-ink-2/70">
                   Refaz fatura + gera PIX novo. Se desmarcado, só próximos ciclos usam o novo valor.
                 </span>
               </span>
@@ -971,7 +971,7 @@ export default function AsaasSetupPanel() {
             <Button
               onClick={handleUpdateValue}
               disabled={isUpdatingValue}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
             >
               {isUpdatingValue ? (
                 <>

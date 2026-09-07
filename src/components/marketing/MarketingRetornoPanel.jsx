@@ -29,10 +29,10 @@ const ORDENACOES = [
 ];
 
 function corDoRetorno(roas) {
-  if (roas == null) return { texto: "text-[#7a6d6d]", fundo: "bg-[#f5f3f0]" };
-  if (roas < 1) return { texto: "text-[#b91c1c]", fundo: "bg-[#b91c1c]/10" };
-  if (roas < 3) return { texto: "text-[#775a19]", fundo: "bg-[#d4af37]/15" };
-  return { texto: "text-[#16a34a]", fundo: "bg-[#16a34a]/10" };
+  if (roas == null) return { texto: "text-ink-3", fundo: "bg-surface-2" };
+  if (roas < 1) return { texto: "text-brand", fundo: "bg-brand/10" };
+  if (roas < 3) return { texto: "text-brand-gold-ink", fundo: "bg-brand-gold/15" };
+  return { texto: "text-ok", fundo: "bg-ok/10" };
 }
 
 const vezes = (n) => `${n.toFixed(1).replace(".", ",")}×`;
@@ -78,8 +78,8 @@ export default function MarketingRetornoPanel({ month }) {
     return (
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
-          <MaterialIcon icon="cloud_off" size={32} className="text-[#7a6d6d]" />
-          <p className="text-sm text-[#4a3d3d]">{erro}</p>
+          <MaterialIcon icon="cloud_off" size={32} className="text-ink-3" />
+          <p className="text-sm text-ink-2">{erro}</p>
           <Button variant="outline" size="sm" className="min-h-[40px]" onClick={carregar}>
             <MaterialIcon icon="refresh" size={16} className="mr-1" />
             Tentar novamente
@@ -160,8 +160,8 @@ export function RetornoDaVerba({ linhas, month }) {
     return (
       <Card className="border-0 shadow-sm">
         <CardContent className="p-6 text-center">
-          <MaterialIcon icon="query_stats" size={32} className="text-[#cac0c0] mb-2" />
-          <p className="text-sm text-[#4a3d3d]">Nenhuma venda nem verba registrada neste mês.</p>
+          <MaterialIcon icon="query_stats" size={32} className="text-ink-4 mb-2" />
+          <p className="text-sm text-ink-2">Nenhuma venda nem verba registrada neste mês.</p>
         </CardContent>
       </Card>
     );
@@ -171,8 +171,8 @@ export function RetornoDaVerba({ linhas, month }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="text-base font-bold text-[#1b1c1d] font-plus-jakarta">Retorno da verba</h3>
-          <p className="text-sm text-[#4a3d3d]">
+          <h3 className="text-base font-bold text-ink font-plus-jakarta">Retorno da verba</h3>
+          <p className="text-sm text-ink-2">
             Quanto voltou em venda de quem chegou por anúncio
             {mesCorrente ? ` — mês em andamento, até o dia ${diaDeHoje}` : ""}
           </p>
@@ -196,38 +196,38 @@ export function RetornoDaVerba({ linhas, month }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Receita de anúncio</p>
-            <p className="text-lg font-bold text-[#1b1c1d]">{formatBRLInteger(total.receitaAnuncio)}</p>
-            <p className="text-xs text-[#7a6d6d] mt-1">
+            <p className="text-xs text-ink-3 mb-1">Receita de anúncio</p>
+            <p className="text-lg font-bold text-ink">{formatBRLInteger(total.receitaAnuncio)}</p>
+            <p className="text-xs text-ink-3 mt-1">
               {total.pctReceita.toFixed(1).replace(".", ",")}% de tudo que a rede vendeu
             </p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Verba líquida</p>
-            <p className="text-lg font-bold text-[#1b1c1d]">{formatBRLInteger(total.liquido)}</p>
-            <p className="text-xs text-[#7a6d6d] mt-1">já sem os {MARKETING_TAX_RATE * 100}% do Meta</p>
+            <p className="text-xs text-ink-3 mb-1">Verba líquida</p>
+            <p className="text-lg font-bold text-ink">{formatBRLInteger(total.liquido)}</p>
+            <p className="text-xs text-ink-3 mt-1">já sem os {MARKETING_TAX_RATE * 100}% do Meta</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Retorno da rede</p>
+            <p className="text-xs text-ink-3 mb-1">Retorno da rede</p>
             <p className={`text-lg font-bold ${corDoRetorno(total.roas).texto}`}>
               {total.roas == null ? "—" : vezes(total.roas)}
             </p>
-            <p className="text-xs text-[#7a6d6d] mt-1">
+            <p className="text-xs text-ink-3 mt-1">
               {total.roas == null ? "sem verba no mês" : "para cada R$ 1 em anúncio"}
             </p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
-            <p className="text-xs text-[#7a6d6d] mb-1">Clientes novos</p>
-            <p className="text-lg font-bold text-[#1b1c1d]">
+            <p className="text-xs text-ink-3 mb-1">Clientes novos</p>
+            <p className="text-lg font-bold text-ink">
               {total.clientesNovos.toLocaleString("pt-BR")}
             </p>
-            <p className="text-xs text-[#7a6d6d] mt-1">chegaram por anúncio neste mês</p>
+            <p className="text-xs text-ink-3 mt-1">chegaram por anúncio neste mês</p>
           </CardContent>
         </Card>
       </div>
@@ -235,7 +235,7 @@ export function RetornoDaVerba({ linhas, month }) {
       <Card className="border-0 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[#f5f3f0] text-[#4a3d3d]">
+            <thead className="bg-surface-2 text-ink-2">
               <tr>
                 <th className="text-left font-semibold px-3 py-2 whitespace-nowrap">Unidade</th>
                 <th className="text-right font-semibold px-3 py-2 whitespace-nowrap">Verba líquida</th>
@@ -253,12 +253,12 @@ export function RetornoDaVerba({ linhas, month }) {
               {ordenadas.map((l) => {
                 const cor = corDoRetorno(l.roas);
                 return (
-                  <tr key={l.franchise_id} className="border-t border-[#e9e8e9]">
-                    <td className="px-3 py-2 text-[#1b1c1d]">{l.franchise_name}</td>
-                    <td className="px-3 py-2 text-right text-[#4a3d3d] whitespace-nowrap">
+                  <tr key={l.franchise_id} className="border-t border-surface-line">
+                    <td className="px-3 py-2 text-ink">{l.franchise_name}</td>
+                    <td className="px-3 py-2 text-right text-ink-2 whitespace-nowrap">
                       {l.bruto > 0 ? formatBRL(l.liquido) : "—"}
                     </td>
-                    <td className="px-3 py-2 text-right text-[#1b1c1d] whitespace-nowrap">
+                    <td className="px-3 py-2 text-right text-ink whitespace-nowrap">
                       {formatBRL(l.receitaAnuncio)}
                     </td>
                     <td className="px-3 py-2 text-right whitespace-nowrap">
@@ -268,8 +268,8 @@ export function RetornoDaVerba({ linhas, month }) {
                         {l.roas == null ? "sem verba" : vezes(l.roas)}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right text-[#4a3d3d]">{l.vendas_anuncio}</td>
-                    <td className="px-3 py-2 text-right text-[#4a3d3d]">
+                    <td className="px-3 py-2 text-right text-ink-2">{l.vendas_anuncio}</td>
+                    <td className="px-3 py-2 text-right text-ink-2">
                       {l.clientes_novos_anuncio}
                     </td>
                   </tr>
@@ -280,7 +280,7 @@ export function RetornoDaVerba({ linhas, month }) {
         </div>
       </Card>
 
-      <p className="text-xs text-[#7a6d6d] leading-relaxed">
+      <p className="text-xs text-ink-3 leading-relaxed">
         Conta como venda de anúncio toda venda ligada a um contato que chegou pelo clique do
         anúncio — inclusive a recompra de quem já era cliente. Por isso a coluna &quot;clientes
         novos&quot; ao lado: ela conta só quem apareceu neste mês. Não dá para dizer de qual

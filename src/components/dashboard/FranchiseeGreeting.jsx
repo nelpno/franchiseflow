@@ -13,11 +13,11 @@ export default function FranchiseeGreeting({ userName, franchiseName }) {
 
   return (
     <section className="mb-6">
-      <h2 className="text-2xl font-bold text-[#1d1b1b]">
+      <h2 className="text-2xl font-bold text-ink">
         {getGreeting()}, {firstName}!
       </h2>
       {franchiseName && (
-        <p className="text-sm text-[#4a3d3d]">{franchiseName}</p>
+        <p className="text-sm text-ink-2">{franchiseName}</p>
       )}
     </section>
   );

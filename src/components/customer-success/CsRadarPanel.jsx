@@ -61,13 +61,13 @@ export default function CsRadarPanel({ rows, openCardIds, onCreateCard, onOpenPr
             onClick={() => setFilter(f.key)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
               filter === f.key
-                ? "bg-[#b91c1c] text-white border-[#b91c1c]"
-                : "bg-white text-[#4a3d3d] border-[#291715]/10 hover:border-[#b91c1c]/40"
+                ? "bg-brand text-white border-brand"
+                : "bg-white text-ink-2 border-ink-shadow/10 hover:border-brand/40"
             }`}
           >
             {f.label}
             {counts[f.key] != null && (
-              <span className={`ml-1.5 ${filter === f.key ? "opacity-90" : "text-[#8a7e7e]"}`}>{counts[f.key]}</span>
+              <span className={`ml-1.5 ${filter === f.key ? "opacity-90" : "text-ink-3"}`}>{counts[f.key]}</span>
             )}
           </button>
         ))}
@@ -81,7 +81,7 @@ export default function CsRadarPanel({ rows, openCardIds, onCreateCard, onOpenPr
       />
 
       {visible.length === 0 ? (
-        <div className="text-center py-12 text-[#8a7e7e]">Nenhuma franquia neste filtro.</div>
+        <div className="text-center py-12 text-ink-3">Nenhuma franquia neste filtro.</div>
       ) : (
         <div className="space-y-2">
           {visible.map((r) => {
@@ -90,14 +90,14 @@ export default function CsRadarPanel({ rows, openCardIds, onCreateCard, onOpenPr
             return (
               <div
                 key={r.franchise_id}
-                className="bg-white rounded-xl border border-[#291715]/5 shadow-sm hover:shadow-md transition-all p-3 flex items-start gap-3"
+                className="bg-white rounded-xl border border-ink-shadow/5 shadow-sm hover:shadow-md transition-all p-3 flex items-start gap-3"
               >
                 <button onClick={() => onOpenPreview?.(r)} className="flex items-start gap-3 flex-1 min-w-0 text-left">
                   <span className="text-lg leading-none mt-0.5">{TIER[t].dot}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-[#1b1c1d] truncate">{r.franchise_name}</span>
-                      <span className="text-xs text-[#8a7e7e]">{r.city}</span>
+                      <span className="font-semibold text-ink truncate">{r.franchise_name}</span>
+                      <span className="text-xs text-ink-3">{r.city}</span>
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {(r.flags || []).slice(0, 3).map((f, i) => (
@@ -111,13 +111,13 @@ export default function CsRadarPanel({ rows, openCardIds, onCreateCard, onOpenPr
                 </button>
                 <div className="shrink-0">
                   {hasCard ? (
-                    <span className="text-[11px] text-[#8a7e7e] flex items-center gap-1">
+                    <span className="text-[11px] text-ink-3 flex items-center gap-1">
                       <MaterialIcon icon="task_alt" size={14} /> no mural
                     </span>
                   ) : (
                     <button
                       onClick={() => onCreateCard?.(r)}
-                      className="text-[11px] font-semibold text-[#b91c1c] border border-[#b91c1c]/30 rounded-full px-2 py-1 hover:bg-[#b91c1c]/5 flex items-center gap-1"
+                      className="text-[11px] font-semibold text-brand border border-brand/30 rounded-full px-2 py-1 hover:bg-brand/5 flex items-center gap-1"
                     >
                       <MaterialIcon icon="add" size={14} /> cartão
                     </button>

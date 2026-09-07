@@ -142,8 +142,8 @@ export default function PriorityAction({ healthResult, smartActions, coachAction
           <MaterialIcon icon="check_circle" size={20} style={{ color: "#16a34a" }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-[#1b1c1d]">Tudo em dia!</p>
-          <p className="text-[11px] text-[#16a34a]">Seu negócio está rodando bem. Continue assim!</p>
+          <p className="text-[13px] font-semibold text-ink">Tudo em dia!</p>
+          <p className="text-[11px] text-ok">Seu negócio está rodando bem. Continue assim!</p>
         </div>
       </div>
     );
@@ -163,8 +163,8 @@ export default function PriorityAction({ healthResult, smartActions, coachAction
         <MaterialIcon icon={data.icon} size={20} style={{ color: data.colors.button }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-[#1b1c1d] leading-snug">{data.title}</p>
-        <p className="text-[11px] text-[#7a6d6d] mt-0.5 truncate">{data.subtitle}</p>
+        <p className="text-[13px] font-semibold text-ink leading-snug">{data.title}</p>
+        <p className="text-[11px] text-ink-3 mt-0.5 truncate">{data.subtitle}</p>
       </div>
       <button
         onClick={() => data.onPress ? onOpenPaymentSheet?.() : navigate(data.navigateTo)}

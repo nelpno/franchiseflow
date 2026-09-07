@@ -21,10 +21,10 @@ export function variacaoFaturamento(f) {
 }
 
 function DeltaBadge({ valor }) {
-  if (valor === null) return <span className="text-xs text-[#cac0c0]">—</span>;
+  if (valor === null) return <span className="text-xs text-ink-4">—</span>;
   const caiu = valor < 0;
   const forte = valor <= -10;
-  const cor = forte ? "text-[#dc2626] font-bold" : caiu ? "text-[#b45309]" : "text-[#15803d]";
+  const cor = forte ? "text-err font-bold" : caiu ? "text-[#b45309]" : "text-[#15803d]";
   return (
     <span className={`text-sm ${cor}`}>
       {caiu ? "▼" : "▲"} {Math.abs(valor).toFixed(0)}%
@@ -37,7 +37,7 @@ function MarginBadge({ margem }) {
   if (margem < 20) {
     colorClass = "bg-red-100 text-red-700";
   } else if (margem < 40) {
-    colorClass = "bg-[#d4af37]/10 text-[#775a19]";
+    colorClass = "bg-brand-gold/10 text-brand-gold-ink";
   }
   return (
     <span className={`${colorClass} rounded-full px-2 py-0.5 text-xs font-bold`}>
@@ -131,13 +131,13 @@ export default function FranchiseFinanceTable({
           <MaterialIcon
             icon="search"
             size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7a6d6d]"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
           />
           <Input
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Buscar franquia..."
-            className="pl-10 bg-[#e9e8e9] border-none rounded-xl"
+            className="pl-10 bg-surface-line border-none rounded-xl"
           />
         </div>
         <div className="flex gap-1.5">
@@ -149,8 +149,8 @@ export default function FranchiseFinanceTable({
               onClick={() => handleSort(opt.key)}
               className={`h-9 px-2.5 rounded-xl text-xs gap-1 ${
                 sortBy === opt.key
-                  ? "bg-[#b91c1c]/10 text-[#b91c1c] font-semibold"
-                  : "text-[#4a3d3d] hover:bg-[#b91c1c]/5"
+                  ? "bg-brand/10 text-brand font-semibold"
+                  : "text-ink-2 hover:bg-brand/5"
               }`}
             >
               <MaterialIcon icon={opt.icon} size={14} />
@@ -170,8 +170,8 @@ export default function FranchiseFinanceTable({
       {filtered.length === 0 ? (
         <Card className="border-none shadow-sm">
           <CardContent className="p-8 text-center">
-            <MaterialIcon icon="search_off" size={32} className="text-[#7a6d6d] mx-auto mb-2" />
-            <p className="text-sm text-[#7a6d6d]">Nenhuma franquia encontrada</p>
+            <MaterialIcon icon="search_off" size={32} className="text-ink-3 mx-auto mb-2" />
+            <p className="text-sm text-ink-3">Nenhuma franquia encontrada</p>
           </CardContent>
         </Card>
       ) : (
@@ -185,28 +185,28 @@ export default function FranchiseFinanceTable({
                   onClick={() => setExpandedId(isExpanded ? null : f.franchiseId)}
                 >
                   {/* Desktop row */}
-                  <div className="hidden md:grid md:grid-cols-[2fr_0.8fr_1fr_1fr_1fr_0.9fr_0.8fr_auto] items-center gap-2 px-4 py-3 hover:bg-[#fbf9fa] transition-colors">
+                  <div className="hidden md:grid md:grid-cols-[2fr_0.8fr_1fr_1fr_1fr_0.9fr_0.8fr_auto] items-center gap-2 px-4 py-3 hover:bg-surface transition-colors">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm text-[#1b1c1d] truncate">{f.name}</p>
-                      <p className="text-xs text-[#7a6d6d] truncate">{f.city} &middot; {f.ownerName}</p>
+                      <p className="font-semibold text-sm text-ink truncate">{f.name}</p>
+                      <p className="text-xs text-ink-3 truncate">{f.city} &middot; {f.ownerName}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-[#7a6d6d]">Vendas</p>
-                      <p className="text-sm font-medium text-[#1b1c1d]">{f.pnl.salesCount}</p>
+                      <p className="text-xs text-ink-3">Vendas</p>
+                      <p className="text-sm font-medium text-ink">{f.pnl.salesCount}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-[#7a6d6d]">Faturamento</p>
-                      <p className="text-sm font-medium text-[#1b1c1d]">{formatBRLInteger(f.pnl.totalRecebido)}</p>
+                      <p className="text-xs text-ink-3">Faturamento</p>
+                      <p className="text-sm font-medium text-ink">{formatBRLInteger(f.pnl.totalRecebido)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-[#7a6d6d]">Custos</p>
-                      <p className="text-sm font-medium text-[#4a3d3d]">
+                      <p className="text-xs text-ink-3">Custos</p>
+                      <p className="text-sm font-medium text-ink-2">
                         {formatBRLInteger(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-[#7a6d6d]">Lucro</p>
-                      <p className={`text-sm font-bold ${f.pnl.lucroCaixa >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                      <p className="text-xs text-ink-3">Lucro</p>
+                      <p className={`text-sm font-bold ${f.pnl.lucroCaixa >= 0 ? "text-ok" : "text-err"}`}>
                         {formatBRLInteger(f.pnl.lucroCaixa)}
                       </p>
                     </div>
@@ -214,22 +214,22 @@ export default function FranchiseFinanceTable({
                       <MarginBadge margem={f.pnl.margemCaixa} />
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-[#7a6d6d]">vs mês ant.</p>
+                      <p className="text-xs text-ink-3">vs mês ant.</p>
                       <DeltaBadge valor={variacaoFaturamento(f)} />
                     </div>
                     <MaterialIcon
                       icon={isExpanded ? "expand_less" : "expand_more"}
                       size={20}
-                      className="text-[#7a6d6d]"
+                      className="text-ink-3"
                     />
                   </div>
 
                   {/* Mobile row */}
-                  <div className="md:hidden px-4 py-3 active:bg-[#fbf9fa]">
+                  <div className="md:hidden px-4 py-3 active:bg-surface">
                     <div className="flex items-center justify-between mb-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-sm text-[#1b1c1d] truncate">{f.name}</p>
-                        <p className="text-xs text-[#7a6d6d]">{f.city}</p>
+                        <p className="font-semibold text-sm text-ink truncate">{f.name}</p>
+                        <p className="text-xs text-ink-3">{f.city}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <DeltaBadge valor={variacaoFaturamento(f)} />
@@ -237,24 +237,24 @@ export default function FranchiseFinanceTable({
                         <MaterialIcon
                           icon={isExpanded ? "expand_less" : "expand_more"}
                           size={20}
-                          className="text-[#7a6d6d]"
+                          className="text-ink-3"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
-                        <p className="text-[10px] text-[#7a6d6d]">Faturamento</p>
-                        <p className="text-xs font-medium text-[#1b1c1d]">{formatBRLInteger(f.pnl.totalRecebido)}</p>
+                        <p className="text-[10px] text-ink-3">Faturamento</p>
+                        <p className="text-xs font-medium text-ink">{formatBRLInteger(f.pnl.totalRecebido)}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-[#7a6d6d]">Custos</p>
-                        <p className="text-xs font-medium text-[#4a3d3d]">
+                        <p className="text-[10px] text-ink-3">Custos</p>
+                        <p className="text-xs font-medium text-ink-2">
                           {formatBRLInteger(f.pnl.taxasCartao + f.pnl.outrasDespesas)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-[#7a6d6d]">Lucro</p>
-                        <p className={`text-xs font-bold ${f.pnl.lucroCaixa >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                        <p className="text-[10px] text-ink-3">Lucro</p>
+                        <p className={`text-xs font-bold ${f.pnl.lucroCaixa >= 0 ? "text-ok" : "text-err"}`}>
                           {formatBRLInteger(f.pnl.lucroCaixa)}
                         </p>
                       </div>

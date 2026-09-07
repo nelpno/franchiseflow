@@ -130,11 +130,11 @@ export default function TabReposicao({
     <div className="space-y-6">
       {/* Critical stock alert */}
       {criticalItems.length > 0 && (
-        <Card className="bg-gradient-to-r from-[#dc2626]/5 to-[#dc2626]/10 rounded-2xl shadow-sm border border-[#dc2626]/20">
+        <Card className="bg-gradient-to-r from-err/5 to-err/10 rounded-2xl shadow-sm border border-err/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
-              <MaterialIcon icon="warning" size={20} className="text-[#dc2626]" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[#dc2626] font-plus-jakarta">
+              <MaterialIcon icon="warning" size={20} className="text-err" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-err font-plus-jakarta">
                 Estoque Crítico ({criticalItems.length})
               </h3>
             </div>
@@ -144,21 +144,21 @@ export default function TabReposicao({
                   key={item.id}
                   className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/60"
                 >
-                  <span className="text-sm font-medium text-[#1b1c1d] truncate flex-1 min-w-0">
+                  <span className="text-sm font-medium text-ink truncate flex-1 min-w-0">
                     {item.product_name}
                   </span>
                   <div className="text-right ml-3 flex items-center gap-2">
-                    <span className="text-sm font-bold text-[#dc2626] font-mono-numbers">
+                    <span className="text-sm font-bold text-err font-mono-numbers">
                       {item.quantity || 0}
                     </span>
-                    <span className="text-xs text-[#4a3d3d]">
+                    <span className="text-xs text-ink-2">
                       / mín {item.min_stock}
                     </span>
                   </div>
                 </div>
               ))}
               {criticalItems.length > 8 && (
-                <p className="text-xs text-[#dc2626]/60 text-center">
+                <p className="text-xs text-err/60 text-center">
                   +{criticalItems.length - 8} produtos abaixo do mínimo
                 </p>
               )}
@@ -169,11 +169,11 @@ export default function TabReposicao({
 
       {/* Suggestion card */}
       {suggestions.length > 0 ? (
-        <Card className="bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 rounded-2xl shadow-sm border border-[#d4af37]/20">
+        <Card className="bg-gradient-to-r from-brand-gold/5 to-brand-gold/10 rounded-2xl shadow-sm border border-brand-gold/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
-              <MaterialIcon icon="lightbulb" size={20} className="text-[#d4af37]" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-[#775a19] font-plus-jakarta">
+              <MaterialIcon icon="lightbulb" size={20} className="text-brand-gold" />
+              <h3 className="text-sm font-bold uppercase tracking-widest text-brand-gold-ink font-plus-jakarta">
                 Sugestão de Reposição
               </h3>
             </div>
@@ -184,18 +184,18 @@ export default function TabReposicao({
                   className="flex items-center justify-between py-2 px-3 rounded-xl bg-white/60"
                 >
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-[#1b1c1d] truncate block">
+                    <span className="text-sm font-medium text-ink truncate block">
                       {item.name}
                     </span>
-                    <span className="text-xs text-[#4a3d3d]">
+                    <span className="text-xs text-ink-2">
                       Estoque: {item.stock} · Giro: {item.weeklyTurnover.toFixed(1)}/sem
                     </span>
                   </div>
                   <div className="text-right ml-3">
-                    <span className="text-sm font-bold text-[#b91c1c] font-mono-numbers">
+                    <span className="text-sm font-bold text-brand font-mono-numbers">
                       +{item.suggestion}
                     </span>
-                    <span className="text-xs text-[#4a3d3d] block">un</span>
+                    <span className="text-xs text-ink-2 block">un</span>
                   </div>
                 </div>
               ))}
@@ -203,15 +203,15 @@ export default function TabReposicao({
           </CardContent>
         </Card>
       ) : !hasHistory ? (
-        <Card className="bg-gradient-to-r from-[#1b1c1d]/5 to-[#1b1c1d]/10 rounded-2xl shadow-sm border border-[#1b1c1d]/10">
+        <Card className="bg-gradient-to-r from-ink/5 to-ink/10 rounded-2xl shadow-sm border border-ink/10">
           <CardContent className="p-5">
             <div className="flex items-start gap-2">
-              <MaterialIcon icon="hourglass_empty" size={20} className="text-[#4a3d3d] mt-0.5" />
+              <MaterialIcon icon="hourglass_empty" size={20} className="text-ink-2 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-[#1b1c1d]">
+                <p className="text-sm font-medium text-ink">
                   Sem histórico de vendas suficiente.
                 </p>
-                <p className="text-xs text-[#4a3d3d] mt-1">
+                <p className="text-xs text-ink-2 mt-1">
                   Registre vendas por alguns dias para começarmos a sugerir reposições baseadas no seu giro.
                 </p>
               </div>
@@ -219,11 +219,11 @@ export default function TabReposicao({
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-gradient-to-r from-[#16a34a]/5 to-[#16a34a]/10 rounded-2xl shadow-sm border border-[#16a34a]/20">
+        <Card className="bg-gradient-to-r from-ok/5 to-ok/10 rounded-2xl shadow-sm border border-ok/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2">
-              <MaterialIcon icon="check_circle" size={20} className="text-[#16a34a]" />
-              <span className="text-sm font-medium text-[#16a34a]">
+              <MaterialIcon icon="check_circle" size={20} className="text-ok" />
+              <span className="text-sm font-medium text-ok">
                 Estoque em dia!
               </span>
             </div>
@@ -234,10 +234,10 @@ export default function TabReposicao({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
+          <h2 className="text-lg font-bold text-ink font-plus-jakarta">
             Reposição de Estoque
           </h2>
-          <p className="text-sm text-[#4a3d3d]">
+          <p className="text-sm text-ink-2">
             Faça pedidos para a fábrica Maxi Massas
           </p>
         </div>
@@ -251,7 +251,7 @@ export default function TabReposicao({
                     variant="outline"
                     onClick={handleRepeatLastOrder}
                     disabled={!lastOrder || loadingLastOrder}
-                    className="gap-2 border-[#d4af37] text-[#775a19] font-bold rounded-xl hover:bg-[#d4af37]/10 disabled:opacity-50"
+                    className="gap-2 border-brand-gold text-brand-gold-ink font-bold rounded-xl hover:bg-brand-gold/10 disabled:opacity-50"
                   >
                     <MaterialIcon icon="replay" size={18} />
                     Repetir último
@@ -268,7 +268,7 @@ export default function TabReposicao({
 
           <Button
             onClick={handleNewOrder}
-            className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+            className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
           >
             <MaterialIcon icon="add_shopping_cart" size={18} />
             Novo Pedido
@@ -283,8 +283,8 @@ export default function TabReposicao({
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] rounded-2xl p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d] min-w-0">
-              <MaterialIcon icon="local_shipping" size={20} className="text-[#d4af37] shrink-0" />
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink min-w-0">
+              <MaterialIcon icon="local_shipping" size={20} className="text-brand-gold shrink-0" />
               <span className="truncate">
                 {initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
               </span>

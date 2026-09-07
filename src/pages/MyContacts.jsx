@@ -28,20 +28,20 @@ const STATUS_CONFIG = {
   novo_lead: {
     label: "Responder",
     badgeLabel: "Contato Novo",
-    bg: "bg-[#b91c1c]/10",
-    text: "text-[#b91c1c]",
+    bg: "bg-brand/10",
+    text: "text-brand",
   },
   em_negociacao: {
     label: "Negociando",
     badgeLabel: "Interessado",
-    bg: "bg-[#d4af37]/10",
-    text: "text-[#775a19]",
+    bg: "bg-brand-gold/10",
+    text: "text-brand-gold-ink",
   },
   cliente: {
     label: "Clientes",
     badgeLabel: "Cliente",
-    bg: "bg-[#16a34a]/10",
-    text: "text-[#16a34a]",
+    bg: "bg-ok/10",
+    text: "text-ok",
   },
   recorrente: {
     label: "Fiéis",
@@ -52,14 +52,14 @@ const STATUS_CONFIG = {
   remarketing: {
     label: "Clientes Sumidos",
     badgeLabel: "Clientes Sumidos",
-    bg: "bg-[#775a19]/10",
-    text: "text-[#775a19]",
+    bg: "bg-brand-gold-ink/10",
+    text: "text-brand-gold-ink",
   },
   perdido: {
     label: "Perdido",
     badgeLabel: "Perdido",
-    bg: "bg-[#e9e8e9]",
-    text: "text-[#4a3d3d]",
+    bg: "bg-surface-line",
+    text: "text-ink-2",
   },
 };
 
@@ -73,8 +73,8 @@ const FILTER_TABS = [
 ];
 
 const SOURCE_CONFIG = {
-  manual: { label: "Manual", bg: "bg-[#e9e8e9]", text: "text-[#4a3d3d]" },
-  bot: { label: "Bot", bg: "bg-[#16a34a]/10", text: "text-[#16a34a]" },
+  manual: { label: "Manual", bg: "bg-surface-line", text: "text-ink-2" },
+  bot: { label: "Bot", bg: "bg-ok/10", text: "text-ok" },
   whatsapp: { label: "WhatsApp", bg: "bg-[#075e54]/10", text: "text-[#075e54]" },
 };
 
@@ -411,16 +411,16 @@ export default function MyContacts() {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-48 bg-[#e9e8e9] rounded-xl animate-pulse" />
+          <div className="h-8 w-48 bg-surface-line rounded-xl animate-pulse" />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-9 w-28 bg-[#e9e8e9] rounded-xl animate-pulse shrink-0" />
+            <div key={i} className="h-9 w-28 bg-surface-line rounded-xl animate-pulse shrink-0" />
           ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 bg-white rounded-2xl border border-[#291715]/5 animate-pulse" />
+            <div key={i} className="h-40 bg-white rounded-2xl border border-ink-shadow/5 animate-pulse" />
           ))}
         </div>
       </div>
@@ -431,8 +431,8 @@ export default function MyContacts() {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
           <Button variant="outline" onClick={() => loadContacts()} className="mt-2">
             <MaterialIcon icon="refresh" className="mr-2 text-lg" />
             Tentar novamente
@@ -452,14 +452,14 @@ export default function MyContacts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#b91c1c]/10 flex items-center justify-center">
-            <MaterialIcon icon="group" size={22} className="text-[#b91c1c]" />
+          <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
+            <MaterialIcon icon="group" size={22} className="text-brand" />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold font-plus-jakarta text-[#1b1c1d]">
+            <h1 className="text-xl md:text-2xl font-bold font-plus-jakarta text-ink">
               Meus Clientes
             </h1>
-            <p className="text-sm text-[#4a3d3d]">
+            <p className="text-sm text-ink-2">
               {contacts.length} {contacts.length === 1 ? "contato" : "contatos"}
               {/* Com 2+ unidades, dizer QUAL está na tela evita a confusão de achar
                   que o cliente da outra unidade "vazou" para cá. */}
@@ -471,7 +471,7 @@ export default function MyContacts() {
         </div>
         <Button
           onClick={() => setIsCreating(true)}
-          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl gap-2"
+          className="bg-brand hover:bg-brand-dark text-white rounded-xl gap-2"
         >
           <MaterialIcon icon="person_add" size={18} />
           <span className="hidden sm:inline">Novo Cliente</span>
@@ -486,49 +486,49 @@ export default function MyContacts() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-[#1b1c1d]">Nome *</Label>
+              <Label className="text-ink">Nome *</Label>
               <Input
                 value={newContactForm.nome}
                 onChange={(e) => setNewContactForm({ ...newContactForm, nome: e.target.value })}
                 placeholder="Nome do cliente"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#1b1c1d]">Telefone</Label>
+              <Label className="text-ink">Telefone</Label>
               <Input
                 value={newContactForm.telefone}
                 onChange={(e) => setNewContactForm({ ...newContactForm, telefone: e.target.value })}
                 placeholder="(14) 99999-9999"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#1b1c1d]">Endereço</Label>
+              <Label className="text-ink">Endereço</Label>
               <Input
                 value={newContactForm.endereco}
                 onChange={(e) => setNewContactForm({ ...newContactForm, endereco: e.target.value })}
                 placeholder="Rua das Flores, 123"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#1b1c1d]">Bairro</Label>
+              <Label className="text-ink">Bairro</Label>
               <Input
                 value={newContactForm.bairro}
                 onChange={(e) => setNewContactForm({ ...newContactForm, bairro: e.target.value })}
                 placeholder="Ex: Centro"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#1b1c1d]">Observações</Label>
+              <Label className="text-ink">Observações</Label>
               <Textarea
                 value={newContactForm.notas}
                 onChange={(e) => setNewContactForm({ ...newContactForm, notas: e.target.value })}
                 placeholder="Anotações sobre o cliente..."
                 rows={3}
-                className="bg-[#e9e8e9] border-none rounded-xl resize-none"
+                className="bg-surface-line border-none rounded-xl resize-none"
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -538,7 +538,7 @@ export default function MyContacts() {
               <Button
                 onClick={handleCreate}
                 disabled={isSaving || !newContactForm.nome?.trim()}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl"
+                className="bg-brand hover:bg-brand-dark text-white rounded-xl"
               >
                 {isSaving ? "Criando..." : "Criar Contato"}
               </Button>
@@ -558,8 +558,8 @@ export default function MyContacts() {
               onClick={() => setActiveFilter(tab.key)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
                 isActive
-                  ? "bg-[#b91c1c] text-white shadow-sm"
-                  : "bg-white text-[#4a3d3d] border border-[#291715]/10 hover:bg-[#fbf9fa]"
+                  ? "bg-brand text-white shadow-sm"
+                  : "bg-white text-ink-2 border border-ink-shadow/10 hover:bg-surface"
               }`}
             >
               {tab.label}
@@ -567,7 +567,7 @@ export default function MyContacts() {
                 className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
                   isActive
                     ? "bg-white/20 text-white"
-                    : "bg-[#e9e8e9] text-[#4a3d3d]"
+                    : "bg-surface-line text-ink-2"
                 }`}
               >
                 {count}
@@ -621,13 +621,13 @@ export default function MyContacts() {
       {/* Export CSV */}
       {filteredContacts.length > 0 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-[#4a3d3d]/70">
+          <p className="text-xs text-ink-2/70">
             {filteredContacts.length} cliente{filteredContacts.length !== 1 ? "s" : ""}
           </p>
           <Button
             variant="outline"
             size="sm"
-            className="gap-1.5 text-xs h-8 rounded-xl border-[#291715]/10"
+            className="gap-1.5 text-xs h-8 rounded-xl border-ink-shadow/10"
             onClick={() => {
               const headers = ["Nome", "Telefone", "Status", "Origem", "Total Compras", "Valor Total", "Último Contato", "Endereço", "Bairro"];
               const escape = (v) => {
@@ -665,13 +665,13 @@ export default function MyContacts() {
       {/* Contact Cards Grid */}
       {filteredContacts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#e9e8e9] flex items-center justify-center mb-4">
-            <MaterialIcon icon="group" size={32} className="text-[#4a3d3d]" />
+          <div className="w-16 h-16 rounded-full bg-surface-line flex items-center justify-center mb-4">
+            <MaterialIcon icon="group" size={32} className="text-ink-2" />
           </div>
-          <h3 className="text-lg font-semibold text-[#1b1c1d] mb-1">
+          <h3 className="text-lg font-semibold text-ink mb-1">
             Nenhum contato encontrado
           </h3>
-          <p className="text-sm text-[#4a3d3d] max-w-sm">
+          <p className="text-sm text-ink-2 max-w-sm">
             {searchTerm || activeFilter !== "todos"
               ? "Tente ajustar seus filtros ou busca."
               : "Os contatos das suas vendas e conversas aparecerão aqui."}
@@ -693,15 +693,15 @@ export default function MyContacts() {
                   if (e.target.closest('button, a')) return;
                   openEdit(contact);
                 }}
-                className="bg-white rounded-2xl border border-[#291715]/5 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md hover:border-[#b91c1c]/20 transition-all cursor-pointer"
+                className="bg-white rounded-2xl border border-ink-shadow/5 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md hover:border-brand/20 transition-all cursor-pointer"
               >
                 {/* Top row: name, phone, badge */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-[#1b1c1d] truncate text-base">
+                    <h3 className="font-semibold text-ink truncate text-base">
                       {name}
                     </h3>
-                    <p className="text-sm text-[#4a3d3d] font-mono-numbers">
+                    <p className="text-sm text-ink-2 font-mono-numbers">
                       {formatPhone(phone)}
                     </p>
                   </div>
@@ -724,10 +724,10 @@ export default function MyContacts() {
                 </div>
 
                 {/* Purchase info or lead info */}
-                <div className="text-sm text-[#4a3d3d]">
+                <div className="text-sm text-ink-2">
                   {hasPurchases ? (
                     <div className="flex items-center gap-1.5">
-                      <MaterialIcon icon="shopping_bag" size={16} className="text-[#16a34a] shrink-0" />
+                      <MaterialIcon icon="shopping_bag" size={16} className="text-ok shrink-0" />
                       <span>
                         {contact.purchase_count}{" "}
                         {contact.purchase_count === 1 ? "compra" : "compras"}
@@ -739,7 +739,7 @@ export default function MyContacts() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      <MaterialIcon icon="schedule" size={16} className="text-[#4a3d3d] shrink-0" />
+                      <MaterialIcon icon="schedule" size={16} className="text-ink-2 shrink-0" />
                       <span>
                         Novo lead
                         {contact.created_at
@@ -752,7 +752,7 @@ export default function MyContacts() {
 
                 {/* Bairro */}
                 {contact.bairro && (
-                  <div className="flex items-center gap-1.5 text-sm text-[#4a3d3d]">
+                  <div className="flex items-center gap-1.5 text-sm text-ink-2">
                     <MaterialIcon icon="location_on" size={16} className="shrink-0" />
                     <span className="truncate">{contact.bairro}</span>
                   </div>
@@ -760,7 +760,7 @@ export default function MyContacts() {
 
                 {/* Notes preview */}
                 {contact.notas && (
-                  <p className="text-xs text-[#4a3d3d]/70 line-clamp-2 italic">
+                  <p className="text-xs text-ink-2/70 line-clamp-2 italic">
                     {contact.notas.length > 80
                       ? contact.notas.slice(0, 80) + "..."
                       : contact.notas}
@@ -768,14 +768,14 @@ export default function MyContacts() {
                 )}
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-[#291715]/5">
+                <div className="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-ink-shadow/5">
                   {phone ? (
                     <>
                       <a
                         href={getWhatsAppLink(phone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors"
                       >
                         <MaterialIcon icon="chat" size={16} />
                         <span className="hidden sm:inline">WhatsApp</span>
@@ -785,7 +785,7 @@ export default function MyContacts() {
                   ) : (
                     <button
                       onClick={() => openEdit(contact)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors"
                       title="Adicionar telefone para usar WhatsApp"
                     >
                       <MaterialIcon icon="phone" size={16} />
@@ -795,7 +795,7 @@ export default function MyContacts() {
                   )}
                   <button
                     onClick={() => navigateToSales(contact)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#d4af37]/10 text-[#775a19] hover:bg-[#d4af37]/20 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-brand-gold/10 text-brand-gold-ink hover:bg-brand-gold/20 transition-colors"
                   >
                     <MaterialIcon icon="point_of_sale" size={16} />
                     <span className="hidden sm:inline">+ Venda</span>
@@ -803,7 +803,7 @@ export default function MyContacts() {
                   </button>
                   <button
                     onClick={() => openEdit(contact)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#e9e8e9] text-[#4a3d3d] hover:bg-[#e9e8e9]/80 transition-colors ml-auto"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-surface-line text-ink-2 hover:bg-surface-line/80 transition-colors ml-auto"
                     title="Editar contato"
                   >
                     <MaterialIcon icon="edit" size={16} />
@@ -830,60 +830,60 @@ export default function MyContacts() {
           <div className="space-y-4 pt-2">
             {/* Nome */}
             <div className="space-y-1.5">
-              <Label htmlFor="edit-nome" className="text-[#1b1c1d]">Nome</Label>
+              <Label htmlFor="edit-nome" className="text-ink">Nome</Label>
               <Input
                 id="edit-nome"
                 value={editForm.nome || ""}
                 onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
 
             {/* Telefone */}
             <div className="space-y-1.5">
-              <Label htmlFor="edit-telefone" className="text-[#1b1c1d]">Telefone</Label>
+              <Label htmlFor="edit-telefone" className="text-ink">Telefone</Label>
               <Input
                 id="edit-telefone"
                 value={editForm.telefone || ""}
                 onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
                 placeholder="(11) 99999-9999"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
 
             {/* Endereco */}
             <div className="space-y-1.5">
-              <Label htmlFor="edit-endereco" className="text-[#1b1c1d]">Endereço</Label>
+              <Label htmlFor="edit-endereco" className="text-ink">Endereço</Label>
               <Input
                 id="edit-endereco"
                 value={editForm.endereco || ""}
                 onChange={(e) => setEditForm({ ...editForm, endereco: e.target.value })}
                 placeholder="Rua das Flores, 123"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
 
             {/* Bairro */}
             <div className="space-y-1.5">
-              <Label htmlFor="edit-bairro" className="text-[#1b1c1d]">Bairro</Label>
+              <Label htmlFor="edit-bairro" className="text-ink">Bairro</Label>
               <Input
                 id="edit-bairro"
                 value={editForm.bairro || ""}
                 onChange={(e) => setEditForm({ ...editForm, bairro: e.target.value })}
                 placeholder="Ex: Centro"
-                className="bg-[#e9e8e9] border-none rounded-xl"
+                className="bg-surface-line border-none rounded-xl"
               />
             </div>
 
             {/* Notas */}
             <div className="space-y-1.5">
-              <Label htmlFor="edit-notas" className="text-[#1b1c1d]">Notas</Label>
+              <Label htmlFor="edit-notas" className="text-ink">Notas</Label>
               <Textarea
                 id="edit-notas"
                 value={editForm.notas || ""}
                 onChange={(e) => setEditForm({ ...editForm, notas: e.target.value })}
                 rows={3}
-                className="bg-[#e9e8e9] border-none rounded-xl resize-none"
+                className="bg-surface-line border-none rounded-xl resize-none"
               />
             </div>
 
@@ -891,7 +891,7 @@ export default function MyContacts() {
             <div className="flex items-center pt-2">
               {confirmDelete === editingContact?.id ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-[#4a3d3d]">Excluir?</span>
+                  <span className="text-sm text-ink-2">Excluir?</span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -904,7 +904,7 @@ export default function MyContacts() {
                     size="sm"
                     onClick={() => { setConfirmDelete(null); handleDelete(editingContact); }}
                     disabled={!!deletingContactId}
-                    className="bg-[#dc2626] hover:bg-[#b91c1c] text-white rounded-xl text-xs h-8"
+                    className="bg-err hover:bg-brand text-white rounded-xl text-xs h-8"
                   >
                     {deletingContactId ? "Excluindo..." : "Sim, excluir"}
                   </Button>
@@ -914,7 +914,7 @@ export default function MyContacts() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setConfirmDelete(editingContact?.id)}
-                  className="text-[#dc2626] hover:text-[#b91c1c] hover:bg-red-50 rounded-xl text-xs h-8 px-2"
+                  className="text-err hover:text-brand hover:bg-red-50 rounded-xl text-xs h-8 px-2"
                 >
                   <MaterialIcon icon="delete" className="text-base mr-1" />
                   Excluir
@@ -931,7 +931,7 @@ export default function MyContacts() {
                 <Button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+                  className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
                 >
                   {isSaving ? "Salvando..." : "Salvar"}
                 </Button>

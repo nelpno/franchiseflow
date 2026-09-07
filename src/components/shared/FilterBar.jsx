@@ -45,13 +45,13 @@ export default function FilterBar({
             <MaterialIcon
               icon="search"
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a3d3d]/50"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-2/50"
             />
             <Input
               placeholder={searchPlaceholder}
               value={searchValue || ""}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10 bg-[#e9e8e9] border-none rounded-xl h-10"
+              className="pl-10 bg-surface-line border-none rounded-xl h-10"
             />
           </div>
         )}
@@ -60,7 +60,7 @@ export default function FilterBar({
         {hasFilters && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="sm:hidden flex items-center gap-1 px-3 py-2 bg-white border border-[#291715]/10 rounded-xl text-sm text-[#4a3d3d] hover:bg-[#fbf9fa] shrink-0"
+            className="sm:hidden flex items-center gap-1 px-3 py-2 bg-white border border-ink-shadow/10 rounded-xl text-sm text-ink-2 hover:bg-surface shrink-0"
           >
             <MaterialIcon icon="tune" size={18} />
             Filtros
@@ -86,7 +86,7 @@ export default function FilterBar({
               value={filter.value}
               onValueChange={filter.onChange}
             >
-              <SelectTrigger className="w-full sm:w-[180px] bg-white border-[#cac0c0]/30 rounded-xl h-10 text-sm">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white border-ink-4/30 rounded-xl h-10 text-sm">
                 <SelectValue placeholder={filter.label} />
               </SelectTrigger>
               <SelectContent>
@@ -101,7 +101,7 @@ export default function FilterBar({
 
           {sortOptions && sortOptions.length > 0 && (
             <Select value={sortValue || ""} onValueChange={onSortChange}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-white border-[#cac0c0]/30 rounded-xl h-10 text-sm">
+              <SelectTrigger className="w-full sm:w-[180px] bg-white border-ink-4/30 rounded-xl h-10 text-sm">
                 <SelectValue placeholder="Ordenar por" />
               </SelectTrigger>
               <SelectContent>

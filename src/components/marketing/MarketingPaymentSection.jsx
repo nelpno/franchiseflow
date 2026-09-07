@@ -258,18 +258,18 @@ export default function MarketingPaymentSection() {
 
   return (
     <>
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-[#b91c1c]/10 rounded-lg">
-              <MaterialIcon icon="campaign" className="text-[#b91c1c]" size={20} />
+            <div className="p-1.5 bg-brand/10 rounded-lg">
+              <MaterialIcon icon="campaign" className="text-brand" size={20} />
             </div>
             <div>
-              <h3 className="font-plus-jakarta font-bold text-sm text-[#1b1c1d]">
+              <h3 className="font-plus-jakarta font-bold text-sm text-ink">
                 Investimento em Marketing
               </h3>
-              <p className="text-xs text-[#7a6d6d]">Minimo {formatBRL(MIN_AMOUNT)}/mes</p>
+              <p className="text-xs text-ink-3">Minimo {formatBRL(MIN_AMOUNT)}/mes</p>
             </div>
           </div>
 
@@ -284,7 +284,7 @@ export default function MarketingPaymentSection() {
               setAmount("");
             }}
           >
-            <SelectTrigger className="h-8 w-40 text-xs border-[#e9e8e9]">
+            <SelectTrigger className="h-8 w-40 text-xs border-surface-line">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -300,12 +300,12 @@ export default function MarketingPaymentSection() {
         {/* ─── Ja registrou ─── */}
         {currentPayment && !editMode && !attachOnly ? (
           <div>
-            <div className="flex items-center justify-between p-3 bg-[#fbf9fa] rounded-xl">
+            <div className="flex items-center justify-between p-3 bg-surface rounded-xl">
               <div>
-                <p className="text-lg font-bold text-[#1b1c1d]">
+                <p className="text-lg font-bold text-ink">
                   {formatBRL(parseFloat(currentPayment.amount))}
                 </p>
-                <p className="text-xs text-[#7a6d6d]">
+                <p className="text-xs text-ink-3">
                   Enviado em {format(parseISO(currentPayment.created_at), "dd/MM/yyyy")}
                 </p>
               </div>
@@ -315,26 +315,26 @@ export default function MarketingPaymentSection() {
                     href={safeHref(currentPayment.proof_url)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-[#b91c1c] hover:underline"
+                    className="flex items-center gap-1 text-xs text-brand hover:underline"
                   >
                     <MaterialIcon icon="receipt_long" size={16} />
                     Comprovante
                   </a>
                 )}
                 {currentPayment.status === "confirmed" && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-[#16a34a] bg-[#16a34a]/10 px-2 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-xs font-medium text-ok bg-ok/10 px-2 py-1 rounded-full">
                     <MaterialIcon icon="check_circle" size={14} />
                     Confirmado
                   </span>
                 )}
                 {currentPayment.status === "pending" && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-[#775a19] bg-[#d4af37]/10 px-2 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-xs font-medium text-brand-gold-ink bg-brand-gold/10 px-2 py-1 rounded-full">
                     <MaterialIcon icon="schedule" size={14} />
                     Aguardando
                   </span>
                 )}
                 {currentPayment.status === "rejected" && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-[#dc2626] bg-[#dc2626]/10 px-2 py-1 rounded-full">
+                  <span className="flex items-center gap-1 text-xs font-medium text-err bg-err/10 px-2 py-1 rounded-full">
                     <MaterialIcon icon="error" size={14} />
                     Recusado
                   </span>
@@ -343,14 +343,14 @@ export default function MarketingPaymentSection() {
             </div>
 
             {currentPayment.status === "rejected" && (
-              <div className="mt-3 p-3 bg-[#dc2626]/5 rounded-xl">
-                <p className="text-xs text-[#dc2626] mb-2">
+              <div className="mt-3 p-3 bg-err/5 rounded-xl">
+                <p className="text-xs text-err mb-2">
                   {currentPayment.rejection_reason || "Pagamento recusado"}
                 </p>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 text-xs border-[#dc2626] text-[#dc2626]"
+                  className="h-8 text-xs border-err text-err"
                   onClick={() => {
                     setEditMode(true);
                     setAmount(String(currentPayment.amount));
@@ -374,7 +374,7 @@ export default function MarketingPaymentSection() {
                   {currentPayment.proof_url ? "Editar / trocar comprovante" : "Anexar comprovante"}
                 </Button>
                 {!currentPayment.proof_url && (
-                  <p className="text-[11px] text-[#775a19] mt-1.5">
+                  <p className="text-[11px] text-brand-gold-ink mt-1.5">
                     Pagamento sem comprovante — anexe pra agilizar a confirmação.
                   </p>
                 )}
@@ -395,7 +395,7 @@ export default function MarketingPaymentSection() {
                   <MaterialIcon icon="attach_file" size={14} className="mr-1" />
                   Anexar comprovante
                 </Button>
-                <p className="text-[11px] text-[#775a19] mt-1.5">
+                <p className="text-[11px] text-brand-gold-ink mt-1.5">
                   Registrado sem comprovante. Você ainda pode anexar — o valor confirmado não muda.
                 </p>
               </div>
@@ -404,18 +404,18 @@ export default function MarketingPaymentSection() {
         ) : attachOnly && currentPayment ? (
           /* ─── Anexo tardio: só o arquivo, valor travado ─── */
           <div className="space-y-3">
-            <div className="p-3 bg-[#fbf9fa] rounded-xl">
-              <p className="text-lg font-bold text-[#1b1c1d]">
+            <div className="p-3 bg-surface rounded-xl">
+              <p className="text-lg font-bold text-ink">
                 {formatBRL(parseFloat(currentPayment.amount))}
               </p>
-              <p className="text-xs text-[#7a6d6d]">
+              <p className="text-xs text-ink-3">
                 Pagamento já confirmado · {monthLabel}
               </p>
             </div>
 
             <div>
-              <Label className="text-xs text-[#4a3d3d]">Comprovante do PIX</Label>
-              <label className="flex items-center gap-1.5 h-9 px-3 border border-dashed border-[#cac0c0] rounded-md cursor-pointer hover:bg-[#fbf9fa] text-xs text-[#4a3d3d] mt-0.5">
+              <Label className="text-xs text-ink-2">Comprovante do PIX</Label>
+              <label className="flex items-center gap-1.5 h-9 px-3 border border-dashed border-ink-4 rounded-md cursor-pointer hover:bg-surface text-xs text-ink-2 mt-0.5">
                 <MaterialIcon icon="attach_file" size={14} />
                 <span className="truncate">{file ? file.name : "Escolher arquivo"}</span>
                 <input
@@ -431,7 +431,7 @@ export default function MarketingPaymentSection() {
               <Button
                 onClick={handleAttachOnly}
                 disabled={submitting || !file}
-                className="flex-1 h-9 bg-[#b91c1c] hover:bg-[#991b1b] text-white text-sm font-medium"
+                className="flex-1 h-9 bg-brand hover:bg-brand-dark text-white text-sm font-medium"
               >
                 {submitting ? (
                   <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
@@ -457,9 +457,9 @@ export default function MarketingPaymentSection() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-[#4a3d3d]">Valor que você pagou</Label>
+                <Label className="text-xs text-ink-2">Valor que você pagou</Label>
                 <div className="relative mt-0.5">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[#7a6d6d]">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-ink-3">
                     R$
                   </span>
                   <Input
@@ -470,14 +470,14 @@ export default function MarketingPaymentSection() {
                     placeholder="Digite o valor"
                     value={amount}
                     onChange={(e) => { setAmount(e.target.value); if (amountError) setAmountError(false); }}
-                    className={`h-9 text-sm pl-9 ${amountError ? "border-[#dc2626] ring-1 ring-[#dc2626]" : "border-[#e9e8e9]"}`}
+                    className={`h-9 text-sm pl-9 ${amountError ? "border-err ring-1 ring-err" : "border-surface-line"}`}
                     inputMode="decimal"
                   />
                 </div>
               </div>
               <div>
-                <Label className="text-xs text-[#4a3d3d]">Comprovante do PIX</Label>
-                <label className="flex items-center gap-1.5 h-9 px-3 border border-dashed border-[#cac0c0] rounded-md cursor-pointer hover:bg-[#fbf9fa] text-xs text-[#4a3d3d] mt-0.5">
+                <Label className="text-xs text-ink-2">Comprovante do PIX</Label>
+                <label className="flex items-center gap-1.5 h-9 px-3 border border-dashed border-ink-4 rounded-md cursor-pointer hover:bg-surface text-xs text-ink-2 mt-0.5">
                   <MaterialIcon icon="attach_file" size={14} />
                   <span className="truncate">{file ? file.name : "Anexar"}</span>
                   <input
@@ -490,7 +490,7 @@ export default function MarketingPaymentSection() {
               </div>
             </div>
 
-            <p className="text-[11px] text-[#7a6d6d] flex items-start gap-1">
+            <p className="text-[11px] text-ink-3 flex items-start gap-1">
               <MaterialIcon icon="info" size={13} className="mt-0.5 shrink-0" />
               Faça o PIX e anexe o comprovante. Se preferir, registre agora e anexe depois.
             </p>
@@ -499,7 +499,7 @@ export default function MarketingPaymentSection() {
               <Button
                 onClick={handleRegisterClick}
                 disabled={submitting}
-                className="flex-1 h-9 bg-[#b91c1c] hover:bg-[#991b1b] text-white text-sm font-medium"
+                className="flex-1 h-9 bg-brand hover:bg-brand-dark text-white text-sm font-medium"
               >
                 {submitting ? (
                   <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
@@ -538,7 +538,7 @@ export default function MarketingPaymentSection() {
           <AlertDialogCancel>Anexar agora</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => { setShowProofReminder(false); handleSubmit(); }}
-            className="bg-[#b91c1c] hover:bg-[#991b1b]"
+            className="bg-brand hover:bg-brand-dark"
           >
             Registrar sem comprovante
           </AlertDialogAction>

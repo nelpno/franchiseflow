@@ -8,7 +8,7 @@ import { ITEM_DETAILS } from "./ITEM_DETAILS";
 function ItemDetails({ details }) {
   if (!details) return null;
   return (
-    <div className="ml-9 mr-4 mb-3 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/5 px-4 py-3 text-[13px] text-[#4a3d3d] leading-relaxed">
+    <div className="ml-9 mr-4 mb-3 rounded-xl border border-brand-gold/20 bg-brand-gold/5 px-4 py-3 text-[13px] text-ink-2 leading-relaxed">
       <div className="whitespace-pre-wrap">{details.text}</div>
       {details.links?.length > 0 && (
         <div className="mt-2 flex flex-col gap-1">
@@ -19,7 +19,7 @@ function ItemDetails({ details }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-[#b91c1c] underline underline-offset-2 hover:text-[#991b1b] font-medium min-h-[40px]"
+              className="inline-flex items-center gap-1 text-brand underline underline-offset-2 hover:text-brand-dark font-medium min-h-[40px]"
             >
               {link.label}
               <MaterialIcon icon="open_in_new" size={12} className="flex-shrink-0" />
@@ -109,9 +109,9 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
   if (isComplete) {
     cardClassName += "bg-[#ecfdf5]/30 border border-emerald-200";
   } else if (isExpanded) {
-    cardClassName += "shadow-md border border-[#291715]/5";
+    cardClassName += "shadow-md border border-ink-shadow/5";
   } else {
-    cardClassName += "bg-white border border-[#291715]/5 hover:shadow-sm";
+    cardClassName += "bg-white border border-ink-shadow/5 hover:shadow-sm";
   }
 
   // Celebration glow
@@ -144,8 +144,8 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
             onClick={() => !locked && onToggle(item.key)}
           >
             {locked && item.role !== "auto" && !checked ? (
-              <div className="w-7 h-7 rounded-lg border-2 border-[#291715]/15 bg-[#fbf9fa] flex items-center justify-center">
-                <MaterialIcon icon="lock" size={12} className="text-[#291715]/30" />
+              <div className="w-7 h-7 rounded-lg border-2 border-ink-shadow/15 bg-surface flex items-center justify-center">
+                <MaterialIcon icon="lock" size={12} className="text-ink-shadow/30" />
               </div>
             ) : (
               <div
@@ -155,8 +155,8 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                   checked
                     ? "border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200"
                     : item.role === "auto"
-                    ? "border-[#291715]/15 bg-[#fbf9fa]"
-                    : "border-[#291715]/20 bg-white hover:border-[#d4af37]"
+                    ? "border-ink-shadow/15 bg-surface"
+                    : "border-ink-shadow/20 bg-white hover:border-brand-gold"
                 }`}
               >
                 {checked && (
@@ -172,7 +172,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-1.5">
               <span
-                className={`text-sm leading-snug ${checked ? "line-through text-[#4a3d3d]/40" : "text-[#1b1c1d]"} ${details ? "cursor-pointer" : ""}`}
+                className={`text-sm leading-snug ${checked ? "line-through text-ink-2/40" : "text-ink"} ${details ? "cursor-pointer" : ""}`}
                 onClick={details ? (e) => toggleItemExpand(item.key, e) : undefined}
               >
                 {item.label}
@@ -182,8 +182,8 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
                   onClick={(e) => toggleItemExpand(item.key, e)}
                   className={`inline-flex items-center flex-shrink-0 mt-0.5 w-5 h-5 rounded-full transition-all ${
                     isItemExpanded
-                      ? "bg-[#d4af37]/20 text-[#775a19]"
-                      : "bg-[#291715]/5 text-[#291715]/40 hover:bg-[#d4af37]/10 hover:text-[#775a19]"
+                      ? "bg-brand-gold/20 text-brand-gold-ink"
+                      : "bg-ink-shadow/5 text-ink-shadow/40 hover:bg-brand-gold/10 hover:text-brand-gold-ink"
                   }`}
                 >
                   <MaterialIcon icon={isItemExpanded ? "expand_less" : "help_outline"} size={14} className="mx-auto" />
@@ -227,7 +227,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
         {/* Card Header */}
         <button
           onClick={handleToggleExpand}
-          className="w-full p-3 sm:p-4 flex items-center gap-3 transition-colors hover:bg-[#fbf9fa]/50"
+          className="w-full p-3 sm:p-4 flex items-center gap-3 transition-colors hover:bg-surface/50"
         >
           {/* Progress Ring */}
           <div className="sm:hidden">
@@ -251,7 +251,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
 
           {/* Title + Subtitle */}
           <div className="flex-1 min-w-0 text-left">
-            <h3 className={`font-bold text-sm ${isComplete ? "text-emerald-700" : "text-[#1b1c1d]"}`}>
+            <h3 className={`font-bold text-sm ${isComplete ? "text-emerald-700" : "text-ink"}`}>
               {block.title}
             </h3>
             <p className="text-xs mt-0.5" style={{ color: subtitleColor }}>
@@ -263,7 +263,7 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
           <MaterialIcon
             icon={isExpanded ? "expand_less" : "expand_more"}
             size={20}
-            className="text-[#4a3d3d]/40 flex-shrink-0"
+            className="text-ink-2/40 flex-shrink-0"
           />
         </button>
 
@@ -271,25 +271,25 @@ export default function OnboardingBlock({ block, items, onToggle, isAdmin, disab
         {isExpanded && (
           <CardContent className="p-0 pt-0">
             {/* Dashed separator */}
-            <div className="border-t border-dashed border-[#291715]/10 mx-4" />
+            <div className="border-t border-dashed border-ink-shadow/10 mx-4" />
 
             {/* Franchisee/both items */}
             {franchiseeItems.length > 0 && (
-              <div className="divide-y divide-[#291715]/5">
+              <div className="divide-y divide-ink-shadow/5">
                 {franchiseeItems.map(renderItem)}
               </div>
             )}
 
             {/* Franchisor items grouped separately */}
             {franchisorItems.length > 0 && (
-              <div className={`${franchiseeItems.length > 0 ? "border-t border-dashed border-[#291715]/10 mt-1" : ""}`}>
+              <div className={`${franchiseeItems.length > 0 ? "border-t border-dashed border-ink-shadow/10 mt-1" : ""}`}>
                 {!isAdmin && (
-                  <div className="px-4 py-2 bg-[#291715]/3 flex items-center gap-2">
-                    <MaterialIcon icon="schedule" size={14} className="text-[#4a3d3d]/50" />
-                    <span className="text-xs text-[#4a3d3d]/70 font-medium">Aguardando franqueador</span>
+                  <div className="px-4 py-2 bg-ink-shadow/3 flex items-center gap-2">
+                    <MaterialIcon icon="schedule" size={14} className="text-ink-2/50" />
+                    <span className="text-xs text-ink-2/70 font-medium">Aguardando franqueador</span>
                   </div>
                 )}
-                <div className="divide-y divide-[#291715]/5">
+                <div className="divide-y divide-ink-shadow/5">
                   {franchisorItems.map(renderItem)}
                 </div>
               </div>

@@ -10,7 +10,7 @@ function PnlRow({ label, value, color, bold }) {
   if (isZero && !bold) return null;
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-[#4a3d3d]">{label}</span>
+      <span className="text-sm text-ink-2">{label}</span>
       <span
         className={`text-sm ${bold ? "font-bold" : "font-medium"}`}
         style={{ color: color || "#1b1c1d" }}
@@ -32,17 +32,17 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
       : null;
 
   return (
-    <div className="border-t border-[#e9e8e9] bg-[#fbf9fa] px-4 py-4">
+    <div className="border-t border-surface-line bg-surface px-4 py-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* P&L Breakdown */}
         <div className="space-y-1">
-          <h4 className="text-sm font-semibold text-[#1b1c1d] flex items-center gap-1.5 mb-2">
-            <MaterialIcon icon="receipt_long" size={16} className="text-[#b91c1c]" />
+          <h4 className="text-sm font-semibold text-ink flex items-center gap-1.5 mb-2">
+            <MaterialIcon icon="receipt_long" size={16} className="text-brand" />
             Resultado do Mes
             {variation !== null && (
               <span
                 className={`text-xs font-bold ml-auto ${
-                  variation >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"
+                  variation >= 0 ? "text-ok" : "text-err"
                 }`}
               >
                 {variation >= 0 ? "+" : ""}
@@ -54,11 +54,11 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
           <PnlRow label="Vendas" value={pnl.vendas} />
           <PnlRow label="Frete cobrado" value={pnl.freteCobrado} />
           <PnlRow label="Descontos" value={-pnl.totalDescontos} color="#dc2626" />
-          <div className="border-t border-[#e9e8e9] my-1" />
+          <div className="border-t border-surface-line my-1" />
           <PnlRow label="Total Recebido" value={pnl.totalRecebido} bold />
           <PnlRow label="(-) Taxas cartao" value={-pnl.taxasCartao} color="#dc2626" />
           <PnlRow label="(-) Despesas" value={-pnl.outrasDespesas} color="#dc2626" />
-          <div className="border-t border-[#e9e8e9] my-1" />
+          <div className="border-t border-surface-line my-1" />
           <PnlRow
             label="Lucro do Mes"
             value={pnl.lucroCaixa}
@@ -69,20 +69,20 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
 
         {/* Top Products */}
         <div>
-          <h4 className="text-sm font-semibold text-[#1b1c1d] flex items-center gap-1.5 mb-2">
-            <MaterialIcon icon="star" size={16} className="text-[#d4af37]" />
+          <h4 className="text-sm font-semibold text-ink flex items-center gap-1.5 mb-2">
+            <MaterialIcon icon="star" size={16} className="text-brand-gold" />
             Top Produtos
           </h4>
           {topProducts.length === 0 ? (
-            <p className="text-xs text-[#7a6d6d]">Sem vendas no periodo</p>
+            <p className="text-xs text-ink-3">Sem vendas no periodo</p>
           ) : (
             <div className="space-y-1.5">
               {topProducts.map((p, i) => (
                 <div key={p.name} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#7a6d6d] w-4">{i + 1}</span>
-                  <span className="text-sm text-[#1b1c1d] flex-1 truncate">{p.name}</span>
-                  <span className="text-xs text-[#7a6d6d]">{p.quantity}un</span>
-                  <span className="text-xs font-medium text-[#4a3d3d]">{formatBRL(p.revenue)}</span>
+                  <span className="text-xs font-bold text-ink-3 w-4">{i + 1}</span>
+                  <span className="text-sm text-ink flex-1 truncate">{p.name}</span>
+                  <span className="text-xs text-ink-3">{p.quantity}un</span>
+                  <span className="text-xs font-medium text-ink-2">{formatBRL(p.revenue)}</span>
                 </div>
               ))}
             </div>
@@ -91,16 +91,16 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
 
         {/* Margin Summary */}
         <div>
-          <h4 className="text-sm font-semibold text-[#1b1c1d] flex items-center gap-1.5 mb-2">
-            <MaterialIcon icon="inventory_2" size={16} className="text-[#775a19]" />
+          <h4 className="text-sm font-semibold text-ink flex items-center gap-1.5 mb-2">
+            <MaterialIcon icon="inventory_2" size={16} className="text-brand-gold-ink" />
             Markup do Estoque
           </h4>
           {marginTiers.total === 0 ? (
-            <p className="text-xs text-[#7a6d6d]">Sem itens de estoque</p>
+            <p className="text-xs text-ink-3">Sem itens de estoque</p>
           ) : (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-3 rounded-full overflow-hidden bg-[#e9e8e9] flex">
+                <div className="flex-1 h-3 rounded-full overflow-hidden bg-surface-line flex">
                   {marginTiers.high > 0 && (
                     <div
                       className="h-full bg-green-500"
@@ -109,7 +109,7 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
                   )}
                   {marginTiers.medium > 0 && (
                     <div
-                      className="h-full bg-[#d4af37]"
+                      className="h-full bg-brand-gold"
                       style={{ width: `${(marginTiers.medium / marginTiers.total) * 100}%` }}
                     />
                   )}
@@ -124,23 +124,23 @@ export default function FranchiseFinanceDrilldown({ franchiseData, inventoryItem
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
                   <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />
-                  <span className="text-xs text-[#4a3d3d]">{marginTiers.high} boa</span>
+                  <span className="text-xs text-ink-2">{marginTiers.high} boa</span>
                 </div>
                 <div>
-                  <span className="inline-block w-2 h-2 rounded-full bg-[#d4af37] mr-1" />
-                  <span className="text-xs text-[#4a3d3d]">{marginTiers.medium} media</span>
+                  <span className="inline-block w-2 h-2 rounded-full bg-brand-gold mr-1" />
+                  <span className="text-xs text-ink-2">{marginTiers.medium} media</span>
                 </div>
                 <div>
                   <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />
-                  <span className="text-xs text-[#4a3d3d]">{marginTiers.low} baixa</span>
+                  <span className="text-xs text-ink-2">{marginTiers.low} baixa</span>
                 </div>
               </div>
               {marginTiers.noPrice > 0 && (
-                <p className="text-xs text-[#7a6d6d]">
+                <p className="text-xs text-ink-3">
                   {marginTiers.noPrice} sem preco definido
                 </p>
               )}
-              <p className="text-xs font-medium text-[#1b1c1d]">
+              <p className="text-xs font-medium text-ink">
                 Markup medio: {marginTiers.avgMargin.toFixed(0)}%
               </p>
             </div>

@@ -1,12 +1,12 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
-const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
+const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-sm outline-none";
 
 const pillClass = (active) =>
   `px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
     active
-      ? "bg-[#b91c1c] text-white"
-      : "bg-[#e9e8e9] text-[#3d4a42]/70 hover:bg-[#ddd]"
+      ? "bg-brand text-white"
+      : "bg-surface-line text-[#3d4a42]/70 hover:bg-[#ddd]"
   }`;
 
 export default function DeliveryFeeEditor({ value, onChange }) {
@@ -139,7 +139,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
       <button
         type="button"
         onClick={addRow}
-        className="flex items-center gap-1.5 text-xs font-semibold text-[#b91c1c] hover:text-[#991b1b] transition-colors mt-1"
+        className="flex items-center gap-1.5 text-xs font-semibold text-brand hover:text-brand-dark transition-colors mt-1"
       >
         <MaterialIcon icon="add" size={16} />
         {isModality ? "Adicionar regra" : "Adicionar faixa de km"}

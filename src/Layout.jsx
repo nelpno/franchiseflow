@@ -316,9 +316,9 @@ export default function Layout({ children, currentPageName }) {
       (item.url.includes(currentPageName) && currentPageName);
     return (
       <SidebarMenuItem key={item.url + item.title}>
-        <SidebarMenuButton asChild isActive={isActive} className={`h-11 px-3 gap-3 rounded-xl transition-all ${isActive ? "bg-[#b91c1c]/10 text-[#b91c1c] font-semibold shadow-sm" : "hover:bg-[#b91c1c]/5 text-[#4a3d3d]"}`}>
+        <SidebarMenuButton asChild isActive={isActive} className={`h-11 px-3 gap-3 rounded-xl transition-all ${isActive ? "bg-brand/10 text-brand font-semibold shadow-sm" : "hover:bg-brand/5 text-ink-2"}`}>
           <Link to={item.url} className="flex items-center gap-3">
-            <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-[#b91c1c]" : ""} />
+            <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} />
             <span className="text-sm">{item.title}</span>
           </Link>
         </SidebarMenuButton>
@@ -379,10 +379,10 @@ export default function Layout({ children, currentPageName }) {
         }
       `}</style>
 
-      <div className="min-h-screen flex w-full bg-[#fbf9fa]">
+      <div className="min-h-screen flex w-full bg-surface">
         {/* Desktop Sidebar */}
-        <Sidebar className="w-[260px] border-r border-[#f8eeee]/50 bg-gradient-to-b from-[#fbf9fa] via-white to-[#fbf9fa]">
-          <SidebarHeader className="px-4 h-28 flex items-center justify-center border-b border-[#b91c1c]/5">
+        <Sidebar className="w-[260px] border-r border-[#f8eeee]/50 bg-gradient-to-b from-surface via-white to-surface">
+          <SidebarHeader className="px-4 h-28 flex items-center justify-center border-b border-brand/5">
             <div className="flex items-center gap-2.5">
               <img src={logoImg} alt="Maxi Massas" className="h-16 w-auto object-contain" />
             </div>
@@ -394,7 +394,7 @@ export default function Layout({ children, currentPageName }) {
               <div className="space-y-6 pb-6">
                 {Object.entries(groupedItems).map(([section, items]) => (
                   <SidebarGroup key={section} className="space-y-1">
-                    <SidebarGroupLabel className="px-3 mb-2 text-[10px] font-bold text-[#4a3d3d]/70 tracking-widest uppercase">
+                    <SidebarGroupLabel className="px-3 mb-2 text-[10px] font-bold text-ink-2/70 tracking-widest uppercase">
                       {section}
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
@@ -420,25 +420,25 @@ export default function Layout({ children, currentPageName }) {
               {currentUser ? (
                 <>
                   {isAdmin ? (
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-[#705d00] flex items-center justify-center text-white font-bold text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-brand-gold-ink flex items-center justify-center text-white font-bold text-xs shrink-0">
                       {currentUser.full_name?.charAt(0).toUpperCase()}
                     </div>
                   ) : (
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-[#f2e7e7] flex items-center justify-center shrink-0">
-                      <MaterialIcon icon="account_circle" size={16} className="text-[#4a3d3d]" />
+                      <MaterialIcon icon="account_circle" size={16} className="text-ink-2" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#201a1a] truncate">
+                    <p className="text-sm font-semibold text-ink truncate">
                       {currentUser.full_name}
                     </p>
-                    <p className="text-[11px] text-[#4a3d3d] truncate">
+                    <p className="text-[11px] text-ink-2 truncate">
                       {isAdmin ? "Admin" : currentUser.email}
                     </p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="text-[#4a3d3d] hover:text-[#ba1a1a] transition-colors shrink-0"
+                    className="text-ink-2 hover:text-brand transition-colors shrink-0"
                     title="Sair"
                   >
                     <MaterialIcon icon="logout" size={20} />
@@ -461,9 +461,9 @@ export default function Layout({ children, currentPageName }) {
         <main className="flex-1 flex flex-col min-w-0">
           {/* Top bar — desktop (hidden on admin Dashboard since AdminHeader replaces it) */}
           {!(isAdmin && location.pathname === createPageUrl("Dashboard")) && (
-            <header className="hidden md:flex fixed top-0 right-0 z-40 h-20 items-center justify-between px-8 bg-[#fbf9fa]/80 backdrop-blur-md" style={{ width: "calc(100% - 16rem)" }}>
+            <header className="hidden md:flex fixed top-0 right-0 z-40 h-20 items-center justify-between px-8 bg-surface/80 backdrop-blur-md" style={{ width: "calc(100% - 16rem)" }}>
               <div className="flex items-center gap-4">
-                <h1 className="text-lg font-semibold tracking-tight text-[#1b1c1d]">
+                <h1 className="text-lg font-semibold tracking-tight text-ink">
                   {currentPageTitle}
                 </h1>
               </div>
@@ -477,13 +477,13 @@ export default function Layout({ children, currentPageName }) {
           )}
 
           {/* Top bar — mobile */}
-          <header className="md:hidden sticky top-0 z-40 bg-[#fbf9fa]/80 backdrop-blur-md h-16 flex items-center justify-between px-4 border-b border-[#f8eeee]/50">
+          <header className="md:hidden sticky top-0 z-40 bg-surface/80 backdrop-blur-md h-16 flex items-center justify-between px-4 border-b border-[#f8eeee]/50">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="p-2 rounded-xl text-[#4a3d3d] hover:bg-white/50 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" />
+              <SidebarTrigger className="p-2 rounded-xl text-ink-2 hover:bg-white/50 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" />
               {!isAdmin && availableFranchises.length > 1 ? (
                 <FranchiseSelector franchises={availableFranchises} />
               ) : (
-                <h1 className="text-lg font-semibold text-[#1b1c1d]">
+                <h1 className="text-lg font-semibold text-ink">
                   {currentPageTitle}
                 </h1>
               )}
@@ -496,21 +496,21 @@ export default function Layout({ children, currentPageName }) {
                 <div className="relative group">
                   <button
                     onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="w-9 h-9 rounded-full bg-[#f2e7e7] flex items-center justify-center text-[#4a3d3d] font-bold text-xs overflow-hidden"
+                    className="w-9 h-9 rounded-full bg-[#f2e7e7] flex items-center justify-center text-ink-2 font-bold text-xs overflow-hidden"
                   >
                     {currentUser.full_name?.charAt(0).toUpperCase()}
                   </button>
                   {showMobileMenu && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowMobileMenu(false)} />
-                      <div className="absolute right-0 top-11 z-50 bg-white rounded-xl shadow-lg border border-[#291715]/10 w-56 py-2 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-[#291715]/5">
-                          <p className="font-semibold text-sm text-[#1b1c1d] truncate">{currentUser.full_name || "Usuário"}</p>
-                          <p className="text-xs text-[#4a3d3d] truncate">{currentUser.email}</p>
+                      <div className="absolute right-0 top-11 z-50 bg-white rounded-xl shadow-lg border border-ink-shadow/10 w-56 py-2 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-ink-shadow/5">
+                          <p className="font-semibold text-sm text-ink truncate">{currentUser.full_name || "Usuário"}</p>
+                          <p className="text-xs text-ink-2 truncate">{currentUser.email}</p>
                         </div>
                         <button
                           onClick={() => { setShowMobileMenu(false); handleLogout(); }}
-                          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-[#b91c1c] hover:bg-[#b91c1c]/5 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-3 text-sm text-brand hover:bg-brand/5 transition-colors"
                         >
                           <MaterialIcon icon="logout" size={18} />
                           Sair da conta
@@ -544,7 +544,7 @@ export default function Layout({ children, currentPageName }) {
                     to={item.url}
                     className="flex flex-col items-center -mt-10"
                   >
-                    <div className="w-12 h-12 rounded-full bg-[#9c4143] text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform border-4 border-[#fbf9fa]">
+                    <div className="w-12 h-12 rounded-full bg-[#9c4143] text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform border-4 border-surface">
                       <MaterialIcon icon="add" size={24} />
                     </div>
                     <span className="text-xs font-bold text-[#9c4143] mt-1">{item.label}</span>
@@ -561,7 +561,7 @@ export default function Layout({ children, currentPageName }) {
                   // 48 px de altura e largura dividida: era ~40 px de area util no
                   // controle mais tocado do app
                   className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 ${
-                    isActive ? "text-[#9c4143]" : "text-[#4a3d3d]"
+                    isActive ? "text-[#9c4143]" : "text-ink-2"
                   }`}
                 >
                   <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} />

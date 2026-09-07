@@ -8,14 +8,14 @@ const dec = (n) => Number(n).toFixed(2).replace(".", ",");
 
 function Row({ label, hint, value, sub }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2.5 border-b border-[#291715]/5 last:border-0">
+    <div className="flex items-start justify-between gap-3 py-2.5 border-b border-ink-shadow/5 last:border-0">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-[#1d1b1b]">{label}</p>
-        {hint && <p className="text-xs text-[#7a6d6d] leading-tight mt-0.5">{hint}</p>}
+        <p className="text-sm font-medium text-ink">{label}</p>
+        {hint && <p className="text-xs text-ink-3 leading-tight mt-0.5">{hint}</p>}
       </div>
       <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-[#1d1b1b] tabular-nums">{value}</p>
-        {sub && <p className="text-xs text-[#7a6d6d] tabular-nums">{sub}</p>}
+        <p className="text-sm font-bold text-ink tabular-nums">{value}</p>
+        {sub && <p className="text-xs text-ink-3 tabular-nums">{sub}</p>}
       </div>
     </div>
   );
@@ -65,7 +65,7 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
       >
         <SheetHeader className="mb-4">
           <SheetTitle className="text-lg font-semibold flex items-center gap-2">
-            <MaterialIcon icon="groups" className="text-[#b91c1c]" />
+            <MaterialIcon icon="groups" className="text-brand" />
             Seus contatos {label ? `· ${label}` : ""}
           </SheetTitle>
           <SheetDescription className="text-sm text-gray-600">
@@ -75,10 +75,10 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
 
         {!hasBot ? (
           <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-2 text-sm text-[#4a3d3d] bg-[#f5f3f0] border border-[#291715]/10 rounded-lg px-3 py-3">
-              <MaterialIcon icon="smart_toy" style={{ fontSize: 20 }} className="text-[#7a6d6d] shrink-0" />
+            <div className="flex items-start gap-2 text-sm text-ink-2 bg-surface-2 border border-ink-shadow/10 rounded-lg px-3 py-3">
+              <MaterialIcon icon="smart_toy" style={{ fontSize: 20 }} className="text-ink-3 shrink-0" />
               <div>
-                <p className="font-medium text-[#1d1b1b] mb-1">Ainda não dá para medir sua conversão</p>
+                <p className="font-medium text-ink mb-1">Ainda não dá para medir sua conversão</p>
                 <p className="leading-snug">
                   Essa conta usa as conversas do robô para saber quantas pessoas chegaram até você.
                   Sem o robô ativo, só aparecem os clientes que você mesma cadastrou ao lançar a venda —
@@ -87,7 +87,7 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
               </div>
             </div>
             {customers > 0 && (
-              <div className="bg-white rounded-lg border border-[#291715]/10 px-3">
+              <div className="bg-white rounded-lg border border-ink-shadow/10 px-3">
                 <Row
                   label="Clientes que compraram no período"
                   value={customers}
@@ -105,22 +105,22 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
           <div className="flex flex-col gap-5">
             <section>
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl font-extrabold tracking-tight text-[#1d1b1b] tabular-nums">
+                <span className="text-3xl font-extrabold tracking-tight text-ink tabular-nums">
                   {pct(rate)}
                 </span>
                 {deltaPP != null && Math.abs(deltaPP) >= 0.1 && (
-                  <span className={`text-sm font-bold flex items-center gap-0.5 ${deltaPP > 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+                  <span className={`text-sm font-bold flex items-center gap-0.5 ${deltaPP > 0 ? "text-ok" : "text-err"}`}>
                     <MaterialIcon icon={deltaPP > 0 ? "arrow_upward" : "arrow_downward"} size={16} />
                     {Math.abs(deltaPP).toFixed(1).replace(".", ",")} p.p.
                   </span>
                 )}
               </div>
-              <p className="text-sm text-[#4a3d3d]">
-                <strong className="text-[#1d1b1b] tabular-nums">{converted}</strong> das{" "}
-                <strong className="text-[#1d1b1b] tabular-nums">{reached}</strong> pessoas que falaram com você compraram.
+              <p className="text-sm text-ink-2">
+                <strong className="text-ink tabular-nums">{converted}</strong> das{" "}
+                <strong className="text-ink tabular-nums">{reached}</strong> pessoas que falaram com você compraram.
               </p>
 
-              <div className="mt-3 bg-white rounded-lg border border-[#291715]/10 px-3">
+              <div className="mt-3 bg-white rounded-lg border border-ink-shadow/10 px-3">
                 <Row
                   label="Chegaram agora"
                   hint="Primeira vez que falaram com você"
@@ -151,16 +151,16 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
             </section>
 
             <section>
-              <h3 className="text-sm font-bold text-[#1d1b1b] mb-1 flex items-center gap-1.5">
-                <MaterialIcon icon="replay" size={18} className="text-[#b91c1c]" />
+              <h3 className="text-sm font-bold text-ink mb-1 flex items-center gap-1.5">
+                <MaterialIcon icon="replay" size={18} className="text-brand" />
                 Voltaram a comprar
               </h3>
-              <p className="text-sm text-[#4a3d3d]">
-                <strong className="text-[#1d1b1b] tabular-nums">{repeatCustomers}</strong> dos{" "}
-                <strong className="text-[#1d1b1b] tabular-nums">{customers}</strong> clientes compraram mais de uma vez no período.
+              <p className="text-sm text-ink-2">
+                <strong className="text-ink tabular-nums">{repeatCustomers}</strong> dos{" "}
+                <strong className="text-ink tabular-nums">{customers}</strong> clientes compraram mais de uma vez no período.
               </p>
 
-              <div className="mt-3 bg-white rounded-lg border border-[#291715]/10 px-3">
+              <div className="mt-3 bg-white rounded-lg border border-ink-shadow/10 px-3">
                 <Row
                   label="Compras por cliente"
                   value={ppc ? dec(ppc) : "—"}
@@ -168,7 +168,7 @@ export default function ConversionDetailSheet({ open, onOpenChange, funnel, rang
                 />
               </div>
 
-              <p className="text-xs text-[#7a6d6d] leading-snug mt-2">
+              <p className="text-xs text-ink-3 leading-snug mt-2">
                 Quem gosta costuma voltar em cerca de duas semanas. Cliente que passa um mês sem comprar
                 dificilmente volta sozinho — vale uma mensagem antes disso.
               </p>

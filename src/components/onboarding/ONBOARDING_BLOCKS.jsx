@@ -6,7 +6,7 @@ export const BLOCKS = [
   {
     id: 1,
     title: "Primeiros Passos",
-    color: "#D32F2F",
+    color: "#b91c1c",
     icon: "handshake",
     items: [
       { key: "1-1", label: "Contrato de franquia assinado", role: "auto" },
@@ -108,9 +108,9 @@ export const GATE_BLOCK = {
 
 export const ROLE_TAGS = {
   franchisee: { label: "VOCÊ", className: "bg-orange-100 text-orange-700 border-orange-300" },
-  franchisor: { label: "FRANQUEADOR", className: "bg-[#b91c1c]/10 text-[#b91c1c] border-[#b91c1c]/30" },
+  franchisor: { label: "FRANQUEADOR", className: "bg-brand/10 text-brand border-brand/30" },
   both: { label: "AMBOS", className: "bg-purple-100 text-purple-700 border-purple-300" },
-  auto: { label: "AUTOMÁTICO", className: "bg-[#e9e8e9] text-[#4a3d3d] border-[#4a3d3d]/20" },
+  auto: { label: "AUTOMÁTICO", className: "bg-surface-line text-ink-2 border-ink-2/20" },
 };
 
 export const TOTAL_ITEMS = BLOCKS.reduce((sum, b) => sum + b.items.length, 0) + GATE_BLOCK.items.length;

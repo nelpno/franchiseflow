@@ -31,7 +31,7 @@ export default function BotSummaryCard({ botSummary }) {
 
   if (!metrics) {
     return (
-      <div className="bg-white rounded-2xl border border-[#291715]/5 p-5 flex flex-col items-center justify-center text-[#4a3d3d]/50 min-h-[140px]">
+      <div className="bg-white rounded-2xl border border-ink-shadow/5 p-5 flex flex-col items-center justify-center text-ink-2/50 min-h-[140px]">
         <MaterialIcon icon="smart_toy" size={28} className="mb-2 opacity-40" />
         <p className="text-sm">Sem dados de bot</p>
       </div>
@@ -39,30 +39,30 @@ export default function BotSummaryCard({ botSummary }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#291715]/5 p-5 space-y-3">
+    <div className="bg-white rounded-2xl border border-ink-shadow/5 p-5 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#705d00]/10 flex items-center justify-center">
-            <MaterialIcon icon="psychology" size={18} className="text-[#705d00]" />
+          <div className="w-8 h-8 rounded-lg bg-brand-gold-ink/10 flex items-center justify-center">
+            <MaterialIcon icon="psychology" size={18} className="text-brand-gold-ink" />
           </div>
-          <h3 className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Performance Bot</h3>
+          <h3 className="text-sm font-bold text-ink font-plus-jakarta">Performance Bot</h3>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Conversão</p>
-          <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{metrics.conversionRate}%</p>
+          <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">Conversão</p>
+          <p className="text-lg font-extrabold text-ink font-mono-numbers">{metrics.conversionRate}%</p>
         </div>
         <div>
-          <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Abandono</p>
-          <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{metrics.abandonRate}%</p>
+          <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">Abandono</p>
+          <p className="text-lg font-extrabold text-ink font-mono-numbers">{metrics.abandonRate}%</p>
         </div>
       </div>
 
-      <p className="text-xs text-[#4a3d3d]/70">
+      <p className="text-xs text-ink-2/70">
         {metrics.concluded} concluídas · {metrics.converted} convertidas
-        <span className="ml-1.5 text-[#4a3d3d]/40">({metrics.monthLabel})</span>
+        <span className="ml-1.5 text-ink-2/40">({metrics.monthLabel})</span>
       </p>
     </div>
   );

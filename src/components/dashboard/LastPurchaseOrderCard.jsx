@@ -7,7 +7,7 @@ import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
 
 function getBand(daysSince) {
   if (daysSince === null) {
-    return { bg: "bg-[#291715]/5", text: "text-[#1b1c1d]/60", border: "border-[#291715]/10", dot: "bg-[#1b1c1d]/30", label: "Nunca pediu" };
+    return { bg: "bg-ink-shadow/5", text: "text-ink/60", border: "border-ink-shadow/10", dot: "bg-ink/30", label: "Nunca pediu" };
   }
   if (daysSince > 30) return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", dot: "bg-red-500", label: `há ${daysSince}d` };
   if (daysSince >= 15) return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500", label: `há ${daysSince}d` };
@@ -46,9 +46,9 @@ export default function LastPurchaseOrderCard({ franchises, purchaseOrders, conf
   const overdueCount = rows.filter((r) => r.daysSince === null || r.daysSince > 30).length;
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5">
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-ink-shadow/5">
       <div className="flex items-center justify-between mb-6">
-        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1b1c1d]/60 font-plus-jakarta">
+        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-ink/60 font-plus-jakarta">
           Última Reposição por Unidade
         </h4>
         {overdueCount > 0 && (
@@ -77,10 +77,10 @@ export default function LastPurchaseOrderCard({ franchises, purchaseOrders, conf
                 <MaterialIcon icon="local_shipping" size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta truncate">
+                <p className="font-bold text-sm text-ink font-plus-jakarta truncate">
                   {getFranchiseDisplayName(franchise, configMap[evoId])}
                 </p>
-                <p className="text-xs text-[#1b1c1d]/60 truncate">{subtitle}</p>
+                <p className="text-xs text-ink/60 truncate">{subtitle}</p>
               </div>
               <div className={`px-3 py-1 rounded-full text-xs font-bold ${band.bg} ${band.text} ${band.border} border shrink-0`}>
                 <div className="flex items-center gap-1.5">
@@ -96,7 +96,7 @@ export default function LastPurchaseOrderCard({ franchises, purchaseOrders, conf
       {rows.length > 5 && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="w-full mt-4 py-2 text-xs font-bold uppercase tracking-wide text-[#1b1c1d]/60 hover:text-[#b91c1c] transition-colors"
+          className="w-full mt-4 py-2 text-xs font-bold uppercase tracking-wide text-ink/60 hover:text-brand transition-colors"
         >
           {expanded ? "Mostrar menos" : `Ver todas (${rows.length})`}
         </button>

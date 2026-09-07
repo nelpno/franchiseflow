@@ -17,7 +17,7 @@ const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
   confirmado: { color: "bg-[#2563eb]/10 text-[#2563eb]", icon: "check_circle", label: "Confirmado" },
   em_rota: { color: "bg-[#ea580c]/10 text-[#ea580c]", icon: "local_shipping", label: "Em Rota" },
-  entregue: { color: "bg-[#16a34a]/10 text-[#16a34a]", icon: "inventory", label: "Entregue" },
+  entregue: { color: "bg-ok/10 text-ok", icon: "inventory", label: "Entregue" },
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado" },
 };
 
@@ -131,11 +131,11 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
   if (orders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <MaterialIcon icon="shopping_bag" size={48} className="text-[#cac0c0] mb-3" />
-        <h4 className="text-sm font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+        <MaterialIcon icon="shopping_bag" size={48} className="text-ink-4 mb-3" />
+        <h4 className="text-sm font-medium text-ink mb-1 font-plus-jakarta">
           Nenhum pedido realizado ainda.
         </h4>
-        <p className="text-xs text-[#4a3d3d]">
+        <p className="text-xs text-ink-2">
           Faca seu primeiro pedido clicando em "Fazer Pedido" acima.
         </p>
       </div>
@@ -144,8 +144,8 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta flex items-center gap-2">
-        <MaterialIcon icon="history" size={18} className="text-[#b91c1c]" />
+      <h3 className="text-sm font-bold text-ink font-plus-jakarta flex items-center gap-2">
+        <MaterialIcon icon="history" size={18} className="text-brand" />
         Histórico de Pedidos
       </h3>
 
@@ -156,18 +156,18 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
         return (
           <Card
             key={order.id}
-            className="rounded-2xl shadow-sm border border-[#291715]/5 bg-white overflow-hidden"
+            className="rounded-2xl shadow-sm border border-ink-shadow/5 bg-white overflow-hidden"
           >
             <CardContent className="p-0">
               {/* Order header - clickable */}
               <button
                 type="button"
                 onClick={() => toggleExpand(order.id)}
-                className="w-full p-4 flex items-center justify-between text-left hover:bg-[#fbf9fa] transition-colors"
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-surface transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-[#1b1c1d]">
+                    <span className="text-sm font-medium text-ink">
                       {order.ordered_at
                         ? format(new Date(order.ordered_at), "dd/MM/yyyy 'as' HH:mm", {
                             locale: ptBR,
@@ -178,31 +178,31 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                   </div>
 
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    <span className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
+                    <span className="text-lg font-bold text-ink font-plus-jakarta">
                       {formatBRL(order.total_amount)}
                     </span>
                     {items.length > 0 && (
-                      <span className="text-xs text-[#4a3d3d]">
+                      <span className="text-xs text-ink-2">
                         {items.length} {items.length === 1 ? "produto" : "produtos"} · {items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)} un.
                       </span>
                     )}
 
                     {order.estimated_delivery && (
-                      <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
+                      <span className="text-xs text-ink-2 flex items-center gap-1">
                         <MaterialIcon icon="calendar_today" size={12} />
                         Previsao: {formatDateOnly(order.estimated_delivery)}
                       </span>
                     )}
 
                     {order.freight_cost != null && parseFloat(order.freight_cost) > 0 && (
-                      <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
+                      <span className="text-xs text-ink-2 flex items-center gap-1">
                         <MaterialIcon icon="local_shipping" size={12} />
                         Frete: {formatBRL(order.freight_cost)}
                       </span>
                     )}
 
                     {order.delivered_at && (
-                      <span className="text-xs text-[#16a34a] flex items-center gap-1">
+                      <span className="text-xs text-ok flex items-center gap-1">
                         <MaterialIcon icon="check_circle" size={12} />
                         Entregue {format(new Date(order.delivered_at), "dd/MM", { locale: ptBR })}
                         {order.ordered_at && (() => {
@@ -219,15 +219,15 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                 <MaterialIcon
                   icon={isExpanded ? "expand_less" : "expand_more"}
                   size={20}
-                  className="text-[#4a3d3d] ml-2 flex-shrink-0"
+                  className="text-ink-2 ml-2 flex-shrink-0"
                 />
               </button>
 
               {/* Expanded items */}
               {isExpanded && (
-                <div className="border-t border-[#cac0c0]/20 px-4 pb-4">
+                <div className="border-t border-ink-4/20 px-4 pb-4">
                   {items.length === 0 ? (
-                    <p className="text-xs text-[#4a3d3d] py-3">Nenhum item encontrado.</p>
+                    <p className="text-xs text-ink-2 py-3">Nenhum item encontrado.</p>
                   ) : (
                     <div className="space-y-2 pt-3">
                       {items.map((item) => (
@@ -236,13 +236,13 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                           className="flex items-center justify-between text-sm py-1"
                         >
                           <div className="flex-1 min-w-0">
-                            <span className="text-[#1b1c1d]">{item.product_name}</span>
+                            <span className="text-ink">{item.product_name}</span>
                           </div>
                           <div className="flex items-center gap-4 ml-2">
-                            <span className="text-[#4a3d3d]">
+                            <span className="text-ink-2">
                               {item.quantity} x {formatBRL(item.unit_price)}
                             </span>
-                            <span className="font-medium text-[#1b1c1d] min-w-[80px] text-right">
+                            <span className="font-medium text-ink min-w-[80px] text-right">
                               {formatBRL(
                                 (parseFloat(item.quantity) || 0) *
                                   (parseFloat(item.unit_price) || 0)
@@ -253,8 +253,8 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                       ))}
 
                       {order.notes && (
-                        <div className="pt-2 mt-2 border-t border-[#cac0c0]/20">
-                          <p className="text-xs text-[#4a3d3d]">
+                        <div className="pt-2 mt-2 border-t border-ink-4/20">
+                          <p className="text-xs text-ink-2">
                             <span className="font-medium">Obs:</span> {order.notes}
                           </p>
                         </div>
@@ -262,17 +262,17 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
 
                       {/* Cancelar pedido pendente */}
                       {order.status === "pendente" && (
-                        <div className="pt-3 mt-2 border-t border-[#cac0c0]/20">
+                        <div className="pt-3 mt-2 border-t border-ink-4/20">
                           {confirmCancelId === order.id ? (
-                            <div className="flex items-center justify-between gap-2 bg-[#fbf9fa] rounded-xl p-3">
-                              <span className="text-xs text-[#4a3d3d]">Cancelar este pedido?</span>
+                            <div className="flex items-center justify-between gap-2 bg-surface rounded-xl p-3">
+                              <span className="text-xs text-ink-2">Cancelar este pedido?</span>
                               <div className="flex gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
                                   disabled={cancellingId === order.id}
-                                  className="h-7 text-xs border-[#cac0c0] text-[#4a3d3d] rounded-lg"
+                                  className="h-7 text-xs border-ink-4 text-ink-2 rounded-lg"
                                 >
                                   Não
                                 </Button>

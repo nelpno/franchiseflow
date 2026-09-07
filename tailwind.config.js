@@ -10,6 +10,31 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			// Paleta da marca em token. Os VALORES sao exatamente os hex que ja dominavam o
+  			// codigo, para a tokenizacao nao mexer em nenhum pixel — o que ela resolve e a
+  			// deriva: havia 114 hex distintos, ~45 deles variacao acidental de outro
+  			// (#a80012/#ba1a1a/#d32f2f/#a01818 todos querendo ser o vermelho da marca).
+  			brand: {
+  				DEFAULT: '#b91c1c',
+  				dark: '#991b1b',
+  				gold: '#d4af37',      // fundo/borda/icone decorativo — NUNCA texto (2,10:1)
+  				'gold-ink': '#775a19' // gold como TEXTO (6,44:1)
+  			},
+  			ink: {
+  				DEFAULT: '#1b1c1d',   // texto principal
+  				2: '#4a3d3d',         // secundario
+  				3: '#7a6d6d',         // terciario
+  				4: '#cac0c0',         // desabilitado/placeholder — nunca em icone clicavel
+  				shadow: '#291715'     // so em opacidade baixa: borda e sombra dos cards
+  			},
+  			surface: {
+  				DEFAULT: '#fbf9fa',   // fundo da pagina
+  				2: '#f5f3f0',         // display read-only
+  				line: '#e9e8e9'       // borda neutra
+  			},
+  			ok: { DEFAULT: '#16a34a', ink: '#15803d', soft: '#f0fdf4' },
+  			warn: { DEFAULT: '#d4af37', ink: '#92400e', soft: '#fef3c7' },
+  			err: { DEFAULT: '#dc2626', soft: '#fef2f2' },
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

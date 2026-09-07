@@ -2,7 +2,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import DeliveryFeeEditor from "@/components/vendedor/DeliveryFeeEditor";
 import { WEEKDAYS } from "@/lib/franchiseUtils";
 
-const inputClass = "bg-[#e9e8e9] border-none rounded-xl px-3 py-2 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none w-28 text-center";
+const inputClass = "bg-surface-line border-none rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand/20 text-sm outline-none w-28 text-center";
 
 const timeOptions = Array.from({ length: 35 }, (_, i) => {
   const h = Math.floor(i / 2) + 6;
@@ -118,7 +118,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
               <button
                 type="button"
                 onClick={() => removeRange(index)}
-                className="text-xs text-[#b91c1c] hover:underline flex items-center gap-1"
+                className="text-xs text-brand hover:underline flex items-center gap-1"
               >
                 <MaterialIcon icon="close" size={14} />
                 Remover
@@ -140,10 +140,10 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
                   onClick={() => toggleDay(index, day.value)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                     isSelected
-                      ? "bg-[#b91c1c] text-white"
+                      ? "bg-brand text-white"
                       : isUsedElsewhere
-                      ? "bg-[#e9e8e9] text-[#3d4a42]/30 cursor-not-allowed"
-                      : "bg-[#e9e8e9] text-[#3d4a42] hover:bg-[#e3e2e3]"
+                      ? "bg-surface-line text-[#3d4a42]/30 cursor-not-allowed"
+                      : "bg-surface-line text-[#3d4a42] hover:bg-[#e3e2e3]"
                   }`}
                 >
                   {day.label}
@@ -154,7 +154,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
 
           {/* Time selects */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-[#4a3d3d]/60">Entrega das</span>
+            <span className="text-xs text-ink-2/60">Entrega das</span>
             <select
               className={inputClass}
               value={range.delivery_start || ""}
@@ -165,7 +165,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
                 <option key={t} value={t}>{t}</option>
               ))}
             </select>
-            <span className="text-xs text-[#4a3d3d]/60">às</span>
+            <span className="text-xs text-ink-2/60">às</span>
             <select
               className={inputClass}
               value={range.delivery_end || ""}
@@ -179,7 +179,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
           </div>
 
           {/* Fee toggle */}
-          <label className="flex items-center gap-3 p-3 rounded-xl bg-[#fbf9fa] cursor-pointer">
+          <label className="flex items-center gap-3 p-3 rounded-xl bg-surface cursor-pointer">
             <div className="relative">
               <input
                 type="checkbox"
@@ -187,7 +187,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
                 onChange={(e) => updateRange(index, "charges_fee", e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-9 h-5 bg-[#e9e8e9] rounded-full peer-checked:bg-[#b91c1c] transition-colors" />
+              <div className="w-9 h-5 bg-surface-line rounded-full peer-checked:bg-brand transition-colors" />
               <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
             </div>
             <span className="text-xs font-semibold text-[#3d4a42]">Cobro taxa de entrega</span>
@@ -207,7 +207,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
           )}
 
           {/* Horário limite para pedidos */}
-          <div className="space-y-2 mt-2 p-3 rounded-xl bg-[#fbf9fa]">
+          <div className="space-y-2 mt-2 p-3 rounded-xl bg-surface">
             <p className="text-xs font-semibold text-[#3d4a42]">
               Quando você aceita pedidos para essa faixa?
             </p>
@@ -218,7 +218,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
                 name={`cutoff-${index}`}
                 checked={!range.order_cutoff}
                 onChange={() => updateRange(index, "order_cutoff", "")}
-                className="mt-0.5 accent-[#b91c1c]"
+                className="mt-0.5 accent-brand"
               />
               <div>
                 <span className="text-sm font-medium text-[#3d4a42]">Pedido chegou, eu entrego</span>
@@ -232,13 +232,13 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
                 name={`cutoff-${index}`}
                 checked={!!range.order_cutoff}
                 onChange={() => updateRange(index, "order_cutoff", range.delivery_start || "17:00")}
-                className="mt-0.5 accent-[#b91c1c]"
+                className="mt-0.5 accent-brand"
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-[#3d4a42]">Só entrego pedidos feitos até um horário</span>
                 {range.order_cutoff && (
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-xs text-[#4a3d3d]/60">Pedidos até:</span>
+                    <span className="text-xs text-ink-2/60">Pedidos até:</span>
                     <select
                       className={inputClass}
                       value={range.order_cutoff}
@@ -270,7 +270,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
         <button
           type="button"
           onClick={addRange}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/30 text-sm font-medium text-[#3d4a42] hover:border-[#b91c1c]/30 hover:text-[#b91c1c] transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/30 text-sm font-medium text-[#3d4a42] hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2"
         >
           <MaterialIcon icon="add" size={18} />
           Adicionar dias com horário diferente
@@ -279,7 +279,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
 
       {/* Preview */}
       {ranges.length > 0 && (
-        <div className="bg-[#fbf9fa] rounded-xl p-3">
+        <div className="bg-surface rounded-xl p-3">
           <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">
             O vendedor vai dizer:
           </p>

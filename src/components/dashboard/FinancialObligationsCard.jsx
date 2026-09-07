@@ -87,13 +87,13 @@ export default function FinancialObligationsCard({ marketingPayment }) {
     ? "bg-green-100"
     : subStatus === "OVERDUE"
     ? "bg-red-100"
-    : "bg-[#d4af37]/10";
+    : "bg-brand-gold/10";
 
   const subIconColor = isPaidStatus
     ? "text-green-600"
     : subStatus === "OVERDUE"
     ? "text-red-600"
-    : "text-[#d4af37]";
+    : "text-brand-gold";
 
   const subSubtitle = isPaidStatus
     ? "Pago"
@@ -120,10 +120,10 @@ export default function FinancialObligationsCard({ marketingPayment }) {
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1b1c1d] truncate">
+              <p className="text-sm font-medium text-ink truncate">
                 Sua Equipe Digital — {subMonthLabel}
               </p>
-              <p className="text-xs text-[#7a6d6d] mt-0.5">{subSubtitle}</p>
+              <p className="text-xs text-ink-3 mt-0.5">{subSubtitle}</p>
             </div>
 
             <div className="shrink-0">
@@ -134,14 +134,14 @@ export default function FinancialObligationsCard({ marketingPayment }) {
               ) : subStatus === "OVERDUE" ? (
                 <button
                   onClick={() => setSheetOpen(true)}
-                  className="rounded-lg text-xs font-medium px-3 py-1.5 active:scale-95 transition-transform bg-[#b91c1c] text-white"
+                  className="rounded-lg text-xs font-medium px-3 py-1.5 active:scale-95 transition-transform bg-brand text-white"
                 >
                   Regularizar
                 </button>
               ) : (
                 <button
                   onClick={() => setSheetOpen(true)}
-                  className="rounded-lg text-xs font-medium px-3 py-1.5 active:scale-95 transition-transform border border-[#b91c1c] text-[#b91c1c] bg-white"
+                  className="rounded-lg text-xs font-medium px-3 py-1.5 active:scale-95 transition-transform border border-brand text-brand bg-white"
                 >
                   Pagar →
                 </button>
@@ -159,34 +159,34 @@ export default function FinancialObligationsCard({ marketingPayment }) {
           >
             <div
               className={`w-[38px] h-[38px] rounded-xl flex items-center justify-center shrink-0 ${
-                isRejected ? "bg-red-100" : "bg-[#d4af37]/10"
+                isRejected ? "bg-red-100" : "bg-brand-gold/10"
               }`}
             >
               <MaterialIcon
                 icon={isRejected ? "error" : "campaign"}
                 size={20}
-                className={isRejected ? "text-red-600" : "text-[#d4af37]"}
+                className={isRejected ? "text-red-600" : "text-brand-gold"}
               />
             </div>
 
             <div className="flex-1 min-w-0">
               <p
                 className={`text-sm font-medium truncate ${
-                  isRejected ? "text-red-600" : "text-[#1b1c1d]"
+                  isRejected ? "text-red-600" : "text-ink"
                 }`}
               >
                 {isRejected
                   ? `Pagamento de ${targetMonthLabel} recusado`
                   : `Investimento Marketing — ${targetMonthLabel}`}
               </p>
-              <p className="text-xs text-[#7a6d6d] mt-0.5">
+              <p className="text-xs text-ink-3 mt-0.5">
                 {isRejected
                   ? marketingPaymentForMonth?.rejection_reason || "Reenvie seu comprovante"
                   : "Registre seu investimento (min R$ 200)"}
               </p>
             </div>
 
-            <MaterialIcon icon="chevron_right" size={20} className="text-[#7a6d6d] shrink-0" />
+            <MaterialIcon icon="chevron_right" size={20} className="text-ink-3 shrink-0" />
           </div>
         )}
       </CardContent>

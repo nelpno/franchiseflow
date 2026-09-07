@@ -24,9 +24,9 @@ function formatAlertDetail(item, type) {
 }
 
 const LEVEL_STYLES = {
-  red: { border: "border-[#a80012]", bg: "bg-[#a80012]/5", icon: "text-[#a80012]" },
+  red: { border: "border-brand", bg: "bg-brand/5", icon: "text-brand" },
   orange: { border: "border-[#c2410c]", bg: "bg-[#c2410c]/5", icon: "text-[#c2410c]" },
-  yellow: { border: "border-[#775a19]", bg: "bg-[#775a19]/5", icon: "text-[#775a19]" },
+  yellow: { border: "border-brand-gold-ink", bg: "bg-brand-gold-ink/5", icon: "text-brand-gold-ink" },
 };
 
 function AlertGroup({ level, icon, label, items, type }) {
@@ -54,21 +54,21 @@ function AlertGroup({ level, icon, label, items, type }) {
       >
         <MaterialIcon icon={icon} size={18} className={styles.icon} />
         <div className="flex-1 min-w-0">
-          <span className="font-bold text-sm text-[#1b1c1d] font-plus-jakarta">
+          <span className="font-bold text-sm text-ink font-plus-jakarta">
             {items.length} {items.length === 1 ? "franquia" : "franquias"}
           </span>
-          <span className="text-[#4a3d3d] text-sm"> — {dynamicLabel}</span>
+          <span className="text-ink-2 text-sm"> — {dynamicLabel}</span>
         </div>
         <MaterialIcon
           icon={expanded ? "expand_less" : "expand_more"}
           size={18}
-          className="text-[#4a3d3d]/50"
+          className="text-ink-2/50"
         />
       </button>
 
       {expanded && (
         <div className="px-3 pb-3 pl-10">
-          <p className="text-xs text-[#4a3d3d]">
+          <p className="text-xs text-ink-2">
             {items.map(i => formatAlertDetail(i, type)).join(", ")}
           </p>
         </div>
@@ -76,7 +76,7 @@ function AlertGroup({ level, icon, label, items, type }) {
 
       {!expanded && items.length > 0 && (
         <div className="px-3 pb-2 pl-10">
-          <p className="text-xs text-[#4a3d3d]/70">
+          <p className="text-xs text-ink-2/70">
             {preview.join(", ")}
             {remaining > 0 && `, +${remaining}`}
           </p>
@@ -240,16 +240,16 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
     (alertGroups.staleLeads.length > 0 ? 1 : 0);
 
   return (
-    <section className="bg-white rounded-2xl p-5 shadow-sm border border-[#291715]/5">
+    <section className="bg-white rounded-2xl p-5 shadow-sm border border-ink-shadow/5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-[#1b1c1d] font-bold tracking-tight font-plus-jakarta text-sm">
+        <h4 className="text-ink font-bold tracking-tight font-plus-jakarta text-sm">
           ALERTAS
         </h4>
         <div className="flex items-center gap-4 text-xs font-medium">
           {redCount > 0 && (
-            <span className="flex items-center gap-1.5 text-[#a80012]">
-              <span className="w-2 h-2 rounded-full bg-[#a80012]" />
+            <span className="flex items-center gap-1.5 text-brand">
+              <span className="w-2 h-2 rounded-full bg-brand" />
               {redCount} {redCount === 1 ? "critico" : "criticos"}
             </span>
           )}
@@ -260,8 +260,8 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
             </span>
           )}
           {yellowCount > 0 && (
-            <span className="flex items-center gap-1.5 text-[#775a19]">
-              <span className="w-2 h-2 rounded-full bg-[#775a19]" />
+            <span className="flex items-center gap-1.5 text-brand-gold-ink">
+              <span className="w-2 h-2 rounded-full bg-brand-gold-ink" />
               {yellowCount} {yellowCount === 1 ? "informativo" : "informativos"}
             </span>
           )}
@@ -271,7 +271,7 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
       {/* Alert groups or empty state */}
       {totalGroups === 0 ? (
         <div className="flex items-center gap-3 p-3 bg-[#f0fdf4] border-l-4 border-[#22c55e] rounded-r-xl">
-          <MaterialIcon icon="check_circle" filled size={20} className="text-[#16a34a]" />
+          <MaterialIcon icon="check_circle" filled size={20} className="text-ok" />
           <span className="text-sm font-medium text-[#15803d]">
             Todas as franquias operando normalmente
           </span>
@@ -354,7 +354,7 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
           {/* Link para o Customer Success (Mural) */}
           <button
             onClick={() => navigate(createPageUrl("CustomerSuccess"))}
-            className="flex items-center gap-2 mt-2 text-sm font-medium text-[#a80012] hover:underline"
+            className="flex items-center gap-2 mt-2 text-sm font-medium text-brand hover:underline"
           >
             <MaterialIcon icon="monitoring" size={18} />
             Ver no Customer Success

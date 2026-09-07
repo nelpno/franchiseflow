@@ -47,8 +47,8 @@ function CsRoute({ children }) {
 
 const PageFallback = () => (
   <div className="p-4 md:p-8 space-y-4 animate-pulse">
-    <div className="h-8 w-48 bg-[#b91c1c]/10 rounded-md" />
-    <div className="h-64 bg-[#b91c1c]/10 rounded-xl" />
+    <div className="h-8 w-48 bg-brand/10 rounded-md" />
+    <div className="h-64 bg-brand/10 rounded-xl" />
   </div>
 );
 
@@ -98,23 +98,23 @@ const AuthenticatedApp = () => {
 
 function ProfileRetryScreen({ onRetry, onLogout }) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[#fbf9fa] p-6">
+    <div className="fixed inset-0 flex items-center justify-center bg-surface p-6">
       <div className="text-center max-w-sm space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#b91c1c]/10 flex items-center justify-center mx-auto">
-          <MaterialIcon icon="cloud_off" size={32} className="text-[#b91c1c]" />
+        <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center mx-auto">
+          <MaterialIcon icon="cloud_off" size={32} className="text-brand" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-[#1b1c1d] mb-1">Erro de conexão</h2>
-          <p className="text-sm text-[#4a3d3d]">
+          <h2 className="text-lg font-semibold text-ink mb-1">Erro de conexão</h2>
+          <p className="text-sm text-ink-2">
             Não foi possível carregar seu perfil. Verifique sua conexão e tente novamente.
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <Button onClick={onRetry} className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white w-full">
+          <Button onClick={onRetry} className="gap-2 bg-brand hover:bg-brand-dark text-white w-full">
             <MaterialIcon icon="refresh" size={16} />
             Tentar novamente
           </Button>
-          <button onClick={onLogout} className="text-sm text-[#4a3d3d] hover:text-[#b91c1c] transition-colors py-2">
+          <button onClick={onLogout} className="text-sm text-ink-2 hover:text-brand transition-colors py-2">
             Voltar ao login
           </button>
         </div>
@@ -130,7 +130,7 @@ function AppRoutes() {
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#e9e8e9] border-t-[#b91c1c] rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-surface-line border-t-brand rounded-full animate-spin"></div>
       </div>
     );
   }

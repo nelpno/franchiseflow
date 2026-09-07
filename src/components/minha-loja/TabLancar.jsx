@@ -64,8 +64,8 @@ const CONFIRMATION_FILTERS = [
 ];
 
 const SOURCE_CONFIG = {
-  manual: { label: "Manual", icon: "edit", className: "bg-[#4a3d3d]/10 text-[#4a3d3d]" },
-  bot: { label: "Bot", icon: "smart_toy", className: "bg-[#775a19]/10 text-[#775a19]" },
+  manual: { label: "Manual", icon: "edit", className: "bg-ink-2/10 text-ink-2" },
+  bot: { label: "Bot", icon: "smart_toy", className: "bg-brand-gold-ink/10 text-brand-gold-ink" },
 };
 
 function getPaymentIcon(method) {
@@ -552,14 +552,14 @@ export default function TabLancar({
       <div className="flex flex-col md:flex-row md:items-center gap-3">
         <Button
           onClick={handleNewSale}
-          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1.5 shrink-0"
+          className="bg-brand hover:bg-brand-dark text-white gap-1.5 shrink-0"
         >
           <MaterialIcon icon="add_circle" size={18} />
           Nova Venda
         </Button>
 
         {/* Period tabs */}
-        <div className="flex gap-1 bg-white rounded-xl border border-[#291715]/5 p-1 overflow-x-auto">
+        <div className="flex gap-1 bg-white rounded-xl border border-ink-shadow/5 p-1 overflow-x-auto">
           {PERIOD_FILTERS.map((pf) => {
             if (pf.value === "month") {
               const isActive = period === "month";
@@ -570,7 +570,7 @@ export default function TabLancar({
                 <div
                   key="month"
                   className={`flex items-center rounded-lg whitespace-nowrap transition-colors min-h-[40px] ${
-                    isActive ? "bg-[#b91c1c] text-white" : "text-[#4a3d3d]"
+                    isActive ? "bg-brand text-white" : "text-ink-2"
                   }`}
                 >
                   <button
@@ -618,8 +618,8 @@ export default function TabLancar({
                 onClick={() => setPeriod(pf.value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                   period === pf.value
-                    ? "bg-[#b91c1c] text-white"
-                    : "text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                    ? "bg-brand text-white"
+                    : "text-ink-2 hover:bg-surface"
                 }`}
               >
                 {pf.label}
@@ -633,7 +633,7 @@ export default function TabLancar({
           <MaterialIcon
             icon="search"
             size={18}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4a3d3d]/60"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-2/60"
           />
           <Input
             placeholder="Buscar por nome ou telefone..."
@@ -646,15 +646,15 @@ export default function TabLancar({
 
       {/* Confirmation filter */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex gap-1 bg-white rounded-xl border border-[#291715]/5 p-1">
+        <div className="flex gap-1 bg-white rounded-xl border border-ink-shadow/5 p-1">
           {CONFIRMATION_FILTERS.map((cf) => (
             <button
               key={cf.value}
               onClick={() => setConfirmationFilter(cf.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 confirmationFilter === cf.value
-                  ? "bg-[#4a3d3d] text-white"
-                  : "text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                  ? "bg-ink-2 text-white"
+                  : "text-ink-2 hover:bg-surface"
               }`}
             >
               {cf.label}
@@ -674,7 +674,7 @@ export default function TabLancar({
             size="sm"
             onClick={() => setShowConfirmAllDialog(true)}
             disabled={isConfirmingAll}
-            className="gap-1.5 text-[#16a34a] border-[#16a34a]/30 hover:bg-[#16a34a]/5"
+            className="gap-1.5 text-ok border-ok/30 hover:bg-ok/5"
           >
             {isConfirmingAll ? (
               <>
@@ -705,24 +705,24 @@ export default function TabLancar({
 
       {/* Period summary */}
       {filteredSales.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#4a3d3d]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-2">
           <span className="flex items-center gap-1">
             <MaterialIcon icon="schedule" size={14} className="text-[#f59e0b]" />
-            <strong className="text-[#1b1c1d] font-mono-numbers">{periodStats.pendingCount}</strong>
+            <strong className="text-ink font-mono-numbers">{periodStats.pendingCount}</strong>
             {" "}pendente{periodStats.pendingCount !== 1 ? "s" : ""}
             {" "}<span className="font-mono-numbers">({formatCurrency(periodStats.pendingTotal)})</span>
           </span>
-          <span className="text-[#291715]/20">|</span>
+          <span className="text-ink-shadow/20">|</span>
           <span className="flex items-center gap-1">
-            <MaterialIcon icon="check_circle" size={14} className="text-[#16a34a]" />
-            <strong className="text-[#1b1c1d] font-mono-numbers">{periodStats.confirmedCount}</strong>
+            <MaterialIcon icon="check_circle" size={14} className="text-ok" />
+            <strong className="text-ink font-mono-numbers">{periodStats.confirmedCount}</strong>
             {" "}recebida{periodStats.confirmedCount !== 1 ? "s" : ""}
             {" "}<span className="font-mono-numbers">({formatCurrency(periodStats.confirmedTotal)})</span>
           </span>
-          <span className="text-[#291715]/20">|</span>
+          <span className="text-ink-shadow/20">|</span>
           <span>
             Total{" "}
-            <strong className="text-[#1b1c1d] font-mono-numbers">
+            <strong className="text-ink font-mono-numbers">
               {formatCurrency(periodStats.total)}
             </strong>
           </span>
@@ -732,16 +732,16 @@ export default function TabLancar({
       {/* Sales list */}
       {filteredSales.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <MaterialIcon icon="point_of_sale" size={64} className="text-[#cac0c0] mb-4" />
-          <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+          <MaterialIcon icon="point_of_sale" size={64} className="text-ink-4 mb-4" />
+          <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
             Nenhuma venda registrada
           </h3>
-          <p className="text-sm text-[#4a3d3d] max-w-sm">
+          <p className="text-sm text-ink-2 max-w-sm">
             Comece lançando sua primeira venda!
           </p>
           <Button
             onClick={handleNewSale}
-            className="mt-4 bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1.5"
+            className="mt-4 bg-brand hover:bg-brand-dark text-white gap-1.5"
           >
             <MaterialIcon icon="add_circle" size={18} />
             Nova Venda
@@ -756,46 +756,46 @@ export default function TabLancar({
             return (
               <Card
                 key={sale.id}
-                className={`bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden border-l-[3px] ${
+                className={`bg-white rounded-2xl shadow-sm border border-ink-shadow/5 overflow-hidden border-l-[3px] ${
                   sale.payment_confirmed
-                    ? "border-l-[#16a34a]"
+                    ? "border-l-ok"
                     : "border-l-[#f59e0b]"
                 }`}
               >
                 <CardContent className="p-0">
                   {/* Main row */}
                   <div
-                    className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[#fbf9fa]/50 transition-colors"
+                    className="flex items-center gap-3 p-4 cursor-pointer hover:bg-surface/50 transition-colors"
                     onClick={() => handleToggleExpand(sale.id)}
                   >
                     {/* Payment icon */}
-                    <div className="p-2 bg-[#e9e8e9]/50 rounded-xl shrink-0">
+                    <div className="p-2 bg-surface-line/50 rounded-xl shrink-0">
                       <MaterialIcon
                         icon={getPaymentIcon(sale.payment_method)}
                         size={20}
-                        className="text-[#4a3d3d]"
+                        className="text-ink-2"
                       />
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-[#1b1c1d] truncate">
+                        <span className="font-medium text-ink truncate">
                           {getContactName(sale)}
                         </span>
                         {sale.sale_number ? (
-                          <span className="font-mono text-xs text-[#4a3d3d]/60 shrink-0 tabular-nums">
+                          <span className="font-mono text-xs text-ink-2/60 shrink-0 tabular-nums">
                             #{sale.sale_number}
                           </span>
                         ) : null}
                         {getSourceBadge(sale.source)}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#4a3d3d] mt-0.5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-2 mt-0.5">
                         <span>{formatDateSafe(sale.sale_date || sale.created_at)}{formatTimeSafe(sale.created_at) && ` às ${formatTimeSafe(sale.created_at)}`}</span>
-                        <span className="text-[#291715]/20">|</span>
+                        <span className="text-ink-shadow/20">|</span>
                         <span className="truncate">{getPaymentLabel(sale.payment_method)}</span>
                         {sale.delivery_method === "delivery" && (
-                          <span className="flex items-center gap-0.5 text-[#b91c1c]/70">
+                          <span className="flex items-center gap-0.5 text-brand/70">
                             <MaterialIcon icon="delivery_dining" size={12} />
                             Entrega
                           </span>
@@ -811,11 +811,11 @@ export default function TabLancar({
 
                     {/* Values */}
                     <div className="text-right shrink-0">
-                      <p className="font-bold text-[#1b1c1d] font-mono-numbers">
+                      <p className="font-bold text-ink font-mono-numbers">
                         {formatCurrency(getSaleNetValue(sale))}
                       </p>
                       {(sale.delivery_fee > 0 || sale.discount_amount > 0) && (
-                        <p className="text-xs text-[#4a3d3d] font-mono-numbers">
+                        <p className="text-xs text-ink-2 font-mono-numbers">
                           {formatCurrency(sale.value)}
                           {sale.discount_amount > 0 && ` − ${formatCurrency(sale.discount_amount)} desc`}
                           {sale.delivery_fee > 0 && ` + ${formatCurrency(sale.delivery_fee)} frete`}
@@ -829,8 +829,8 @@ export default function TabLancar({
                       disabled={togglingIds.has(sale.id)}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium shrink-0 min-h-[40px] transition-colors ${
                         sale.payment_confirmed
-                          ? "bg-[#16a34a]/10 text-[#16a34a] border-[#16a34a]/20"
-                          : "bg-[#fef3c7]/50 text-[#92400e] border-[#f59e0b]/30 hover:bg-[#16a34a]/5 hover:text-[#16a34a] hover:border-[#16a34a]/20"
+                          ? "bg-ok/10 text-ok border-ok/20"
+                          : "bg-[#fef3c7]/50 text-[#92400e] border-[#f59e0b]/30 hover:bg-ok/5 hover:text-ok hover:border-ok/20"
                       }`}
                       title={sale.payment_confirmed ? "Pagamento recebido" : "Marcar como recebido"}
                     >
@@ -851,13 +851,13 @@ export default function TabLancar({
                     <MaterialIcon
                       icon={isExpanded ? "expand_less" : "expand_more"}
                       size={20}
-                      className="text-[#4a3d3d] shrink-0"
+                      className="text-ink-2 shrink-0"
                     />
                   </div>
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="border-t border-[#291715]/5 px-4 py-3 bg-[#fbf9fa]/50 space-y-3">
+                    <div className="border-t border-ink-shadow/5 px-4 py-3 bg-surface/50 space-y-3">
                       {/* Cliente: nomes repetem na carteira (7 Adrianas, 3 Deboras...),
                           entao o que identifica QUAL cliente e o telefone + bairro. */}
                       {(() => {
@@ -869,22 +869,22 @@ export default function TabLancar({
                           .join(" - ");
                         return (
                           <div className="space-y-1">
-                            <p className="text-xs font-medium text-[#4a3d3d] uppercase tracking-wider mb-1">
+                            <p className="text-xs font-medium text-ink-2 uppercase tracking-wider mb-1">
                               Cliente
                             </p>
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex flex-col gap-0.5 min-w-0">
                                 {telefone ? (
-                                  <span className="text-sm font-mono-numbers text-[#1b1c1d]">
+                                  <span className="text-sm font-mono-numbers text-ink">
                                     {formatPhone(telefone)}
                                   </span>
                                 ) : (
-                                  <span className="text-sm text-[#4a3d3d] italic">
+                                  <span className="text-sm text-ink-2 italic">
                                     Sem telefone cadastrado
                                   </span>
                                 )}
                                 {local && (
-                                  <span className="text-xs text-[#4a3d3d] truncate">{local}</span>
+                                  <span className="text-xs text-ink-2 truncate">{local}</span>
                                 )}
                               </div>
                               {telefone && (
@@ -893,7 +893,7 @@ export default function TabLancar({
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors shrink-0"
+                                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors shrink-0"
                                 >
                                   <MaterialIcon icon="chat" size={16} />
                                   <span className="hidden sm:inline">WhatsApp</span>
@@ -908,7 +908,7 @@ export default function TabLancar({
                       {/* Sale items */}
                       {saleItemsList.length > 0 ? (
                         <div className="space-y-1">
-                          <p className="text-xs font-medium text-[#4a3d3d] uppercase tracking-wider mb-1">
+                          <p className="text-xs font-medium text-ink-2 uppercase tracking-wider mb-1">
                             Produtos
                           </p>
                           {saleItemsList.map((si) => (
@@ -916,26 +916,26 @@ export default function TabLancar({
                               key={si.id}
                               className="flex items-center justify-between text-sm py-1"
                             >
-                              <span className="text-[#1b1c1d]">
+                              <span className="text-ink">
                                 {si.product_name}{" "}
-                                <span className="text-[#4a3d3d]">x{si.quantity}</span>
+                                <span className="text-ink-2">x{si.quantity}</span>
                               </span>
-                              <span className="font-mono-numbers text-[#4a3d3d]">
+                              <span className="font-mono-numbers text-ink-2">
                                 {formatCurrency(si.quantity * si.unit_price)}
                               </span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-[#4a3d3d]">
+                        <p className="text-xs text-ink-2">
                           Sem detalhamento de produtos
                         </p>
                       )}
 
                       {/* Observação */}
                       {sale.observacoes?.trim() && (
-                        <div className="border-t border-[#291715]/5 pt-2">
-                          <p className="text-xs font-medium text-[#4a3d3d] uppercase tracking-wider mb-1">
+                        <div className="border-t border-ink-shadow/5 pt-2">
+                          <p className="text-xs font-medium text-ink-2 uppercase tracking-wider mb-1">
                             Observação
                           </p>
                           <div className="flex items-start gap-1.5 text-sm text-[#92400e] bg-[#fef3c7]/50 rounded-md px-2.5 py-1.5">
@@ -947,31 +947,31 @@ export default function TabLancar({
 
                       {/* Financial breakdown */}
                       {(sale.card_fee_amount > 0 || sale.delivery_fee > 0 || sale.discount_amount > 0) && (
-                        <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
+                        <div className="border-t border-ink-shadow/5 pt-2 space-y-1 text-sm">
                           {sale.discount_amount > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-[#4a3d3d]">
+                              <span className="text-ink-2">
                                 Desconto{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
                               </span>
-                              <span className="text-[#dc2626] font-mono-numbers">
+                              <span className="text-err font-mono-numbers">
                                 − {formatCurrency(sale.discount_amount)}
                               </span>
                             </div>
                           )}
                           {sale.delivery_fee > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-[#4a3d3d]">Frete cobrado</span>
-                              <span className="text-[#16a34a] font-mono-numbers">
+                              <span className="text-ink-2">Frete cobrado</span>
+                              <span className="text-ok font-mono-numbers">
                                 + {formatCurrency(sale.delivery_fee)}
                               </span>
                             </div>
                           )}
                           {sale.card_fee_amount > 0 && (
                             <div className="flex justify-between">
-                              <span className="text-[#4a3d3d]">
+                              <span className="text-ink-2">
                                 Taxa {sale.payment_method === "payment_link" ? "link" : "cartão"} ({sale.card_fee_percent}%)
                               </span>
-                              <span className="text-[#dc2626] font-mono-numbers">
+                              <span className="text-err font-mono-numbers">
                                 - {formatCurrency(sale.card_fee_amount)}
                               </span>
                             </div>
@@ -992,19 +992,19 @@ export default function TabLancar({
                         const isPositive = lucro >= 0;
 
                         return custoTotal > 0 ? (
-                          <div className="border-t border-[#291715]/5 pt-2 space-y-1 text-sm">
+                          <div className="border-t border-ink-shadow/5 pt-2 space-y-1 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-[#4a3d3d]">Custo dos produtos</span>
-                              <span className="font-mono-numbers text-[#4a3d3d]">
+                              <span className="text-ink-2">Custo dos produtos</span>
+                              <span className="font-mono-numbers text-ink-2">
                                 {formatCurrency(custoTotal)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-[#4a3d3d]">Lucro da venda</span>
+                              <span className="text-ink-2">Lucro da venda</span>
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`font-bold font-mono-numbers ${
-                                    isPositive ? "text-[#16a34a]" : "text-[#dc2626]"
+                                    isPositive ? "text-ok" : "text-err"
                                   }`}
                                 >
                                   {formatCurrency(lucro)}
@@ -1012,10 +1012,10 @@ export default function TabLancar({
                                 <span
                                   className={`rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center ${
                                     !isPositive
-                                      ? "bg-[#dc2626]/10 text-[#dc2626]"
+                                      ? "bg-err/10 text-err"
                                       : margem < 25
                                       ? "bg-[#f59e0b]/10 text-[#b45309]"
-                                      : "bg-[#16a34a]/10 text-[#16a34a]"
+                                      : "bg-ok/10 text-ok"
                                   }`}
                                 >
                                   {!isPositive ? "\u2193" : margem < 25 ? "!" : "\u2191"} {Math.abs(margem).toFixed(0)}%
@@ -1036,7 +1036,7 @@ export default function TabLancar({
                             handleShareSale(sale);
                           }}
                           disabled={sharingSaleId === sale.id}
-                          className="gap-1.5 h-10 min-w-[44px] text-[#4a3d3d]"
+                          className="gap-1.5 h-10 min-w-[44px] text-ink-2"
                         >
                           {sharingSaleId === sale.id ? (
                             <>
@@ -1058,7 +1058,7 @@ export default function TabLancar({
                             handlePrintSale(sale);
                           }}
                           disabled={printingSaleId === sale.id}
-                          className="gap-1.5 h-10 min-w-[44px] text-[#4a3d3d]"
+                          className="gap-1.5 h-10 min-w-[44px] text-ink-2"
                         >
                           {printingSaleId === sale.id ? (
                             <>
@@ -1079,7 +1079,7 @@ export default function TabLancar({
                             e.stopPropagation();
                             handleEditSale(sale);
                           }}
-                          className="gap-1.5 h-10 min-w-[44px] text-[#4a3d3d]"
+                          className="gap-1.5 h-10 min-w-[44px] text-ink-2"
                         >
                           <MaterialIcon icon="edit" size={14} />
                           <span className="sr-only sm:not-sr-only">Editar</span>
@@ -1091,7 +1091,7 @@ export default function TabLancar({
                             e.stopPropagation();
                             setDeletingSale(sale);
                           }}
-                          className="gap-1.5 h-10 min-w-[44px] text-[#b91c1c] border-[#b91c1c]/30 hover:bg-[#b91c1c]/5"
+                          className="gap-1.5 h-10 min-w-[44px] text-brand border-brand/30 hover:bg-brand/5"
                         >
                           <MaterialIcon icon="delete" size={14} />
                           <span className="sr-only sm:not-sr-only">Excluir</span>
@@ -1149,7 +1149,7 @@ export default function TabLancar({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Confirmar recebimento?</DialogTitle>
-            <DialogDescription className="text-[#4a3d3d]">
+            <DialogDescription className="text-ink-2">
               Marcar{" "}
               <strong>{periodStats.pendingCount} venda{periodStats.pendingCount !== 1 ? "s" : ""}</strong>{" "}
               como recebida{periodStats.pendingCount !== 1 ? "s" : ""}?
@@ -1168,7 +1168,7 @@ export default function TabLancar({
             </Button>
             <Button
               onClick={handleConfirmAllVisible}
-              className="bg-[#16a34a] hover:bg-[#15803d] text-white gap-1.5"
+              className="bg-ok hover:bg-[#15803d] text-white gap-1.5"
             >
               <MaterialIcon icon="done_all" size={16} />
               Confirmar todas
@@ -1182,7 +1182,7 @@ export default function TabLancar({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Excluir venda?</DialogTitle>
-            <DialogDescription className="text-[#4a3d3d]">
+            <DialogDescription className="text-ink-2">
               Esta ação não pode ser desfeita. A venda de{" "}
               <strong>{formatCurrency(deletingSale?.value)}</strong> será removida
               permanentemente.
@@ -1199,7 +1199,7 @@ export default function TabLancar({
             <Button
               onClick={handleConfirmDelete}
               disabled={isDeleting}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+              className="bg-brand hover:bg-brand-dark text-white"
             >
               {isDeleting ? (
                 <>
@@ -1219,7 +1219,7 @@ export default function TabLancar({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="font-plus-jakarta">Atenção</AlertDialogTitle>
-            <AlertDialogDescription className="text-[#4a3d3d]">
+            <AlertDialogDescription className="text-ink-2">
               Essa venda já foi contada no seu anúncio do Facebook. Excluir agora pode
               bagunçar o relatório do anúncio. Excluir mesmo assim?
             </AlertDialogDescription>
@@ -1229,7 +1229,7 @@ export default function TabLancar({
             <AlertDialogAction
               onClick={performDeleteSale}
               disabled={isDeleting}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+              className="bg-brand hover:bg-brand-dark text-white"
             >
               {isDeleting ? "Excluindo..." : "Excluir mesmo assim"}
             </AlertDialogAction>

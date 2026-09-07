@@ -49,7 +49,7 @@ export default function FinanceiroKpiCards({ aggregated, worstFranchise }) {
                 <MaterialIcon icon={card.icon} size={18} style={{ color: card.color }} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-[#7a6d6d] truncate">{card.label}</p>
+                <p className="text-xs text-ink-3 truncate">{card.label}</p>
                 <p
                   className="text-lg font-bold font-plus-jakarta truncate"
                   style={{ color: card.color }}

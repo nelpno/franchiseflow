@@ -1,6 +1,6 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
-const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
+const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-sm outline-none";
 
 export function ToggleCard({ icon, label, description, checked, onChange }) {
   return (
@@ -9,18 +9,18 @@ export function ToggleCard({ icon, label, description, checked, onChange }) {
       onClick={() => onChange(!checked)}
       className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
         checked
-          ? "border-[#b91c1c] bg-[#b91c1c]/5"
-          : "border-[#e9e8e9] bg-[#e9e8e9]/50 hover:border-[#bccac0]"
+          ? "border-brand bg-brand/5"
+          : "border-surface-line bg-surface-line/50 hover:border-[#bccac0]"
       }`}
     >
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${checked ? "bg-[#b91c1c]/10" : "bg-[#e9e8e9]"}`}>
-        <MaterialIcon icon={icon} filled size={22} className={checked ? "text-[#b91c1c]" : "text-[#3d4a42]/40"} />
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${checked ? "bg-brand/10" : "bg-surface-line"}`}>
+        <MaterialIcon icon={icon} filled size={22} className={checked ? "text-brand" : "text-[#3d4a42]/40"} />
       </div>
       <div className="flex-1">
-        <span className={`text-sm font-bold ${checked ? "text-[#1b1c1d]" : "text-[#3d4a42]"}`}>{label}</span>
+        <span className={`text-sm font-bold ${checked ? "text-ink" : "text-[#3d4a42]"}`}>{label}</span>
         {description && <p className="text-xs text-[#3d4a42]/50 mt-0.5">{description}</p>}
       </div>
-      <div className={`w-11 h-6 rounded-full transition-colors relative ${checked ? "bg-[#b91c1c]" : "bg-[#bccac0]/40"}`}>
+      <div className={`w-11 h-6 rounded-full transition-colors relative ${checked ? "bg-brand" : "bg-[#bccac0]/40"}`}>
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`} />
       </div>
     </button>
@@ -41,13 +41,13 @@ export function RadioCards({ options, value, onChange, disabled = [] }) {
             disabled={isDisabled}
             className={`p-4 rounded-xl border-2 text-left transition-all ${
               isDisabled
-                ? "opacity-40 cursor-not-allowed border-[#e9e8e9] bg-[#e9e8e9]/30"
+                ? "opacity-40 cursor-not-allowed border-surface-line bg-surface-line/30"
                 : isSelected
-                ? "border-[#b91c1c] bg-[#b91c1c]/5"
-                : "border-[#e9e8e9] hover:border-[#bccac0] cursor-pointer"
+                ? "border-brand bg-brand/5"
+                : "border-surface-line hover:border-[#bccac0] cursor-pointer"
             }`}
           >
-            <span className={`text-sm font-bold ${isSelected ? "text-[#b91c1c]" : "text-[#3d4a42]"}`}>{opt.label}</span>
+            <span className={`text-sm font-bold ${isSelected ? "text-brand" : "text-[#3d4a42]"}`}>{opt.label}</span>
             {opt.description && <p className="text-xs text-[#3d4a42]/50 mt-1">{opt.description}</p>}
           </button>
         );
@@ -77,10 +77,10 @@ export function PaymentChipsMulti({ options, value = [], onChange, disabledValue
             title={isDisabled ? disabledTooltip : ""}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all ${
               isDisabled
-                ? "bg-[#e9e8e9]/50 text-[#3d4a42]/30 cursor-not-allowed"
+                ? "bg-surface-line/50 text-[#3d4a42]/30 cursor-not-allowed"
                 : isSelected
-                ? "bg-[#b91c1c] text-white"
-                : "bg-[#e9e8e9] text-[#3d4a42] hover:bg-[#e3e2e3] cursor-pointer"
+                ? "bg-brand text-white"
+                : "bg-surface-line text-[#3d4a42] hover:bg-[#e3e2e3] cursor-pointer"
             }`}
           >
             <MaterialIcon icon={opt.icon} size={14} />
@@ -122,8 +122,8 @@ export function DayChipsToggle({ value, onChange }) {
           onClick={() => toggleDay(i)}
           className={`px-4 py-2 rounded-full text-xs font-bold cursor-pointer transition-colors ${
             activeDays[i]
-              ? 'bg-[#b91c1c] text-white'
-              : 'bg-[#e9e8e9] text-[#3d4a42] hover:bg-[#e3e2e3]'
+              ? 'bg-brand text-white'
+              : 'bg-surface-line text-[#3d4a42] hover:bg-[#e3e2e3]'
           }`}
         >
           {day.short}

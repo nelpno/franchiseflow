@@ -21,7 +21,7 @@ export function getMarginBadge(item) {
   if (margin < 50) {
     colorClass = "bg-red-100 text-red-700";
   } else if (margin < 80) {
-    colorClass = "bg-[#d4af37]/10 text-[#775a19]";
+    colorClass = "bg-brand-gold/10 text-brand-gold-ink";
   }
 
   return (

@@ -24,24 +24,24 @@ class PageErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-6">
-          <div className="w-16 h-16 rounded-2xl bg-[#b91c1c]/10 flex items-center justify-center">
-            <MaterialIcon icon="error_outline" size={32} className="text-[#b91c1c]" />
+          <div className="w-16 h-16 rounded-2xl bg-brand/10 flex items-center justify-center">
+            <MaterialIcon icon="error_outline" size={32} className="text-brand" />
           </div>
           <div className="text-center max-w-sm">
-            <h2 className="text-lg font-semibold text-[#1b1c1d] mb-1">
+            <h2 className="text-lg font-semibold text-ink mb-1">
               Erro ao carregar página
             </h2>
-            <p className="text-sm text-[#4a3d3d] mb-1">
+            <p className="text-sm text-ink-2 mb-1">
               Ocorreu um erro inesperado nesta página.
             </p>
-            <p className="text-xs text-[#7a6d6d] font-mono break-all mb-4">
+            <p className="text-xs text-ink-3 font-mono break-all mb-4">
               {this.state.error?.message}
             </p>
           </div>
           <Button
             onClick={this.handleRetry}
             variant="outline"
-            className="gap-2 border-[#cac0c0]"
+            className="gap-2 border-ink-4"
           >
             <MaterialIcon icon="refresh" size={16} />
             Tentar novamente

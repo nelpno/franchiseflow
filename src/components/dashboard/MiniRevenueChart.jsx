@@ -108,8 +108,8 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
   const showValueLabels = chartData.length <= 10;
 
   return (
-    <section className="mb-6 bg-white rounded-xl p-6 shadow-sm border border-[#cac0c0]/10">
-      <h3 className="text-sm font-semibold text-[#4a3d3d] mb-6">{title}</h3>
+    <section className="mb-6 bg-white rounded-xl p-6 shadow-sm border border-ink-4/10">
+      <h3 className="text-sm font-semibold text-ink-2 mb-6">{title}</h3>
       <TooltipProvider delayDuration={100}>
         <div className="flex items-end justify-between gap-1 mb-4" style={{ height: "128px" }}>
           {chartData.map((entry, index) => {
@@ -118,7 +118,7 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
             return (
               <div key={index} className="flex flex-col items-center flex-1 h-full justify-end gap-1">
                 {showValueLabels && (
-                  <span className="text-xs text-[#4a3d3d] font-mono-numbers">
+                  <span className="text-xs text-ink-2 font-mono-numbers">
                     {entry.valor > 0 ? `R$ ${Math.round(entry.valor)}` : ""}
                   </span>
                 )}
@@ -126,7 +126,7 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
                   <TooltipTrigger asChild>
                     <div
                       className={`w-full max-w-[32px] rounded-t-lg transition-all duration-300 cursor-pointer ${
-                        entry.isToday ? "bg-[#b91c1c]" : "bg-[#ffdad6]"
+                        entry.isToday ? "bg-brand" : "bg-[#ffdad6]"
                       }`}
                       style={{ height: `${barHeight}px` }}
                     />
@@ -138,8 +138,8 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
                 <span
                   className={`text-xs ${
                     entry.isToday
-                      ? "text-[#b91c1c] font-bold"
-                      : "text-[#4a3d3d] font-medium"
+                      ? "text-brand font-bold"
+                      : "text-ink-2 font-medium"
                   }`}
                 >
                   {entry.day}
@@ -149,11 +149,11 @@ function MiniRevenueChart({ summaries, franchiseId, todayRevenue = 0, allSales =
           })}
         </div>
       </TooltipProvider>
-      <div className="flex justify-between items-center pt-4 border-t border-[#cac0c0]/10">
-        <span className="text-xs text-[#4a3d3d] font-medium">
+      <div className="flex justify-between items-center pt-4 border-t border-ink-4/10">
+        <span className="text-xs text-ink-2 font-medium">
           Média: {formatBRL(average)}
         </span>
-        <span className="text-xs text-[#4a3d3d] font-medium font-mono-numbers">
+        <span className="text-xs text-ink-2 font-medium font-mono-numbers">
           Total: {formatBRL(total)}
         </span>
       </div>

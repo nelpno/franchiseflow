@@ -43,7 +43,7 @@ export default function SubscriptionPaymentSheet({ open, onOpenChange, subscript
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto sm:max-w-lg sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-8 sm:rounded-2xl">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-lg font-semibold flex items-center gap-2">
-            <MaterialIcon icon="workspace_premium" className="text-[#d4af37]" />
+            <MaterialIcon icon="workspace_premium" className="text-brand-gold" />
             Sua Equipe Digital
           </SheetTitle>
           <SheetDescription className="text-sm text-gray-600">
@@ -87,11 +87,11 @@ export default function SubscriptionPaymentSheet({ open, onOpenChange, subscript
               do mês anterior (que o banco recusa como "QR Code não é válido"). Sem esta
               faixa a franqueada abriria um painel vazio, sem saber o que fazer. */}
           {(isOverdue || isPending) && !pix_qr_code_url && !pix_payload && (
-            <div className="rounded-lg border border-[#d4af37]/40 bg-[#fefce8] p-3 text-center">
-              <p className="text-sm font-medium text-[#1b1c1d]">
+            <div className="rounded-lg border border-brand-gold/40 bg-[#fefce8] p-3 text-center">
+              <p className="text-sm font-medium text-ink">
                 O QR Code não foi carregado
               </p>
-              <p className="text-xs text-[#7a6d6d] mt-1">
+              <p className="text-xs text-ink-3 mt-1">
                 Toque em atualizar para gerar um novo. Se não aparecer, use o boleto ou avise a
                 fábrica.
               </p>

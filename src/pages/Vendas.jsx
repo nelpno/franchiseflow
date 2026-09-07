@@ -149,7 +149,7 @@ export default function Vendas() {
 
   if (loading || (franchiseId && loadingUnidade)) {
     return (
-      <div className="bg-[#fbf9fa]">
+      <div className="bg-surface">
         <div className="p-4 md:p-8 space-y-6">
           <div className="flex items-center gap-3">
             <Skeleton className="w-10 h-10 rounded-xl" />
@@ -172,8 +172,8 @@ export default function Vendas() {
   if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-        <p className="text-[#4a3d3d] text-center">{loadError}</p>
+        <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+        <p className="text-ink-2 text-center">{loadError}</p>
         <Button variant="outline" onClick={loadData} className="mt-2">
           <MaterialIcon icon="refresh" className="mr-2 text-lg" />
           Tentar novamente
@@ -194,11 +194,11 @@ export default function Vendas() {
   if (!primaryFranchise) {
     return (
       <div className="flex flex-col items-center justify-center h-64 px-4 text-center">
-        <MaterialIcon icon="point_of_sale" size={48} className="text-[#cac0c0] mb-4" />
-        <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+        <MaterialIcon icon="point_of_sale" size={48} className="text-ink-4 mb-4" />
+        <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
           Nenhuma franquia vinculada
         </h3>
-        <p className="text-sm text-[#4a3d3d] max-w-sm">
+        <p className="text-sm text-ink-2 max-w-sm">
           Sua conta ainda não está vinculada a nenhuma franquia. Entre em contato com o administrador.
         </p>
       </div>
@@ -206,15 +206,15 @@ export default function Vendas() {
   }
 
   return (
-    <div className="bg-[#fbf9fa]">
+    <div className="bg-surface">
       <div className="p-4 md:p-8 space-y-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#b91c1c]/10 rounded-xl">
-            <MaterialIcon icon="point_of_sale" size={24} className="text-[#b91c1c]" />
+          <div className="p-2 bg-brand/10 rounded-xl">
+            <MaterialIcon icon="point_of_sale" size={24} className="text-brand" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Vendas</h1>
-            <p className="text-sm text-[#4a3d3d]">
+            <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Vendas</h1>
+            <p className="text-sm text-ink-2">
               {primaryFranchise.city || primaryFranchise.name}
             </p>
           </div>

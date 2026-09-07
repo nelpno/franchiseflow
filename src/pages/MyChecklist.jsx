@@ -255,7 +255,7 @@ export default function MyChecklist() {
 
   if (isLoading) {
     return (
-      <div className="bg-[#fbf9fa] flex items-center justify-center h-64">
+      <div className="bg-surface flex items-center justify-center h-64">
         <div className="text-center">
           <MaterialIcon icon="checklist" size={48} className="text-red-500 mx-auto mb-3 animate-pulse" />
           <p className="text-slate-600 font-medium">Carregando checklist...</p>
@@ -266,10 +266,10 @@ export default function MyChecklist() {
 
   if (loadError) {
     return (
-      <div className="bg-[#fbf9fa] flex items-center justify-center h-64">
+      <div className="bg-surface flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
-          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
           <Button variant="outline" onClick={() => loadData()} className="mt-2">
             <MaterialIcon icon="refresh" className="mr-2 text-lg" />
             Tentar novamente
@@ -286,7 +286,7 @@ export default function MyChecklist() {
 
   if (!franchise) {
     return (
-      <div className="bg-[#fbf9fa] flex items-center justify-center p-8 h-64">
+      <div className="bg-surface flex items-center justify-center p-8 h-64">
         <div className="text-center max-w-md">
           <MaterialIcon icon="checklist" size={64} className="text-slate-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-slate-700 mb-2">Nenhuma franquia vinculada</h2>
@@ -297,16 +297,16 @@ export default function MyChecklist() {
   }
 
   return (
-    <div className="bg-[#fbf9fa]">
+    <div className="bg-surface">
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
 
         {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <MaterialIcon icon="checklist" size={24} className="text-[#b91c1c] shrink-0" />
-                <h1 className="text-xl sm:text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Checklist Diário</h1>
+                <MaterialIcon icon="checklist" size={24} className="text-brand shrink-0" />
+                <h1 className="text-xl sm:text-2xl font-bold text-ink font-plus-jakarta">Checklist Diário</h1>
               </div>
               {availableFranchises.length > 1 ? (
                 <Select value={franchise.evolution_instance_id} onValueChange={handleFranchiseChange}>
@@ -351,7 +351,7 @@ export default function MyChecklist() {
           title="⭐ Meio-Dia — Vendas Ativas"
           badge="~45 min · 11h30–12h15"
           badgeExtra="⭐ BLOCO MAIS IMPORTANTE"
-          color="#D32F2F"
+          color="#b91c1c"
           items={DAILY_ITEMS.midday}
           checkedItems={items}
           onToggle={handleToggle}

@@ -15,18 +15,18 @@ const ORDERS = [
 ];
 
 function pctColor(v) {
-  if (v == null) return "text-[#7a6d6d]";
-  if (v < 5) return "text-[#dc2626] font-bold";
+  if (v == null) return "text-ink-3";
+  if (v < 5) return "text-err font-bold";
   if (v < 10) return "text-[#b45309]";
-  if (v >= 15) return "text-[#16a34a] font-bold";
-  return "text-[#1d1b1b]";
+  if (v >= 15) return "text-ok font-bold";
+  return "text-ink";
 }
 
 function repeatColor(v) {
-  if (v == null) return "text-[#7a6d6d]";
-  if (v >= 1.5) return "text-[#16a34a] font-bold";
-  if (v <= 1.02) return "text-[#dc2626]";
-  return "text-[#1d1b1b]";
+  if (v == null) return "text-ink-3";
+  if (v >= 1.5) return "text-ok font-bold";
+  if (v <= 1.02) return "text-err";
+  return "text-ink";
 }
 
 export default function NetworkFunnelPanel({ rows = [] }) {
@@ -62,30 +62,30 @@ export default function NetworkFunnelPanel({ rows = [] }) {
   const noBot = rows.filter((r) => !r.has_bot_data);
 
   if (!rows.length) {
-    return <p className="text-sm text-[#7a6d6d]">Sem dados de funil no período.</p>;
+    return <p className="text-sm text-ink-3">Sem dados de funil no período.</p>;
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-white rounded-xl border border-[#cac0c0]/20 p-3 sm:p-4">
-        <p className="text-sm text-[#4a3d3d]">
-          <strong className="text-[#1d1b1b] tabular-nums">{totals.reached.toLocaleString("pt-BR")}</strong> pessoas falaram com a rede
-          e <strong className="text-[#1d1b1b] tabular-nums">{totals.converted.toLocaleString("pt-BR")}</strong> compraram
-          (<strong className="text-[#1d1b1b]">{totals.pct.toFixed(1).replace(".", ",")}%</strong>) em {totals.franchises} unidades com robô ativo.
+      <div className="bg-white rounded-xl border border-ink-4/20 p-3 sm:p-4">
+        <p className="text-sm text-ink-2">
+          <strong className="text-ink tabular-nums">{totals.reached.toLocaleString("pt-BR")}</strong> pessoas falaram com a rede
+          e <strong className="text-ink tabular-nums">{totals.converted.toLocaleString("pt-BR")}</strong> compraram
+          (<strong className="text-ink">{totals.pct.toFixed(1).replace(".", ",")}%</strong>) em {totals.franchises} unidades com robô ativo.
         </p>
-        <p className="text-xs text-[#7a6d6d] mt-1">
+        <p className="text-xs text-ink-3 mt-1">
           {totals.lost.toLocaleString("pt-BR")} pessoas chegaram e não compraram no período.
         </p>
       </div>
 
-      <div className="flex gap-1 bg-[#291715]/5 p-1 rounded-xl overflow-x-auto sm:w-fit">
+      <div className="flex gap-1 bg-ink-shadow/5 p-1 rounded-xl overflow-x-auto sm:w-fit">
         {ORDERS.map((o) => (
           <button
             key={o.key}
             type="button"
             onClick={() => setOrder(o.key)}
             className={`px-3 py-1.5 text-xs font-plus-jakarta rounded-lg whitespace-nowrap min-h-[36px] flex items-center gap-1 transition-all active:scale-95 ${
-              order === o.key ? "font-bold text-white bg-[#b91c1c] shadow-sm" : "font-medium text-[#1b1c1d]/70"
+              order === o.key ? "font-bold text-white bg-brand shadow-sm" : "font-medium text-ink/70"
             }`}
           >
             <MaterialIcon icon={o.icon} size={15} />
@@ -94,10 +94,10 @@ export default function NetworkFunnelPanel({ rows = [] }) {
         ))}
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-xl border border-[#cac0c0]/20">
+      <div className="overflow-x-auto bg-white rounded-xl border border-ink-4/20">
         <table className="w-full text-sm min-w-[640px]">
           <thead>
-            <tr className="text-left text-xs text-[#4a3d3d] border-b border-[#291715]/10">
+            <tr className="text-left text-xs text-ink-2 border-b border-ink-shadow/10">
               <th className="py-2 px-3 font-medium">Franquia</th>
               <th className="py-2 px-2 font-medium text-right">Falaram</th>
               <th className="py-2 px-2 font-medium text-right">Compraram</th>
@@ -109,18 +109,18 @@ export default function NetworkFunnelPanel({ rows = [] }) {
           </thead>
           <tbody>
             {withBot.map((r) => (
-              <tr key={r.franchise_id} className="border-b border-[#291715]/5 last:border-0 hover:bg-[#fbf9fa]">
-                <td className="py-2 px-3 text-[#1d1b1b]">{r.franchise_name}</td>
-                <td className="py-2 px-2 text-right tabular-nums text-[#4a3d3d]">{r.reached}</td>
-                <td className="py-2 px-2 text-right tabular-nums text-[#4a3d3d]">{r.converted}</td>
+              <tr key={r.franchise_id} className="border-b border-ink-shadow/5 last:border-0 hover:bg-surface">
+                <td className="py-2 px-3 text-ink">{r.franchise_name}</td>
+                <td className="py-2 px-2 text-right tabular-nums text-ink-2">{r.reached}</td>
+                <td className="py-2 px-2 text-right tabular-nums text-ink-2">{r.converted}</td>
                 <td className={`py-2 px-2 text-right tabular-nums ${pctColor(Number(r.conversion_pct))}`}>
                   {r.conversion_pct != null ? `${String(r.conversion_pct).replace(".", ",")}%` : "—"}
                 </td>
-                <td className="py-2 px-2 text-right tabular-nums text-[#4a3d3d]">{r.customers}</td>
+                <td className="py-2 px-2 text-right tabular-nums text-ink-2">{r.customers}</td>
                 <td className={`py-2 px-2 text-right tabular-nums ${repeatColor(Number(r.purchases_per_customer))}`}>
                   {r.purchases_per_customer != null ? String(r.purchases_per_customer).replace(".", ",") : "—"}
                 </td>
-                <td className="py-2 px-3 text-right tabular-nums text-[#7a6d6d]">
+                <td className="py-2 px-3 text-right tabular-nums text-ink-3">
                   {r.bot_share_pct != null ? `${String(r.bot_share_pct).replace(".", ",")}%` : "—"}
                 </td>
               </tr>
@@ -130,9 +130,9 @@ export default function NetworkFunnelPanel({ rows = [] }) {
       </div>
 
       {noBot.length > 0 && (
-        <div className="bg-[#f5f3f0] border border-[#291715]/10 rounded-xl px-3 py-2.5">
-          <p className="text-xs text-[#4a3d3d]">
-            <MaterialIcon icon="smart_toy" size={14} className="align-middle mr-1 text-[#7a6d6d]" />
+        <div className="bg-surface-2 border border-ink-shadow/10 rounded-xl px-3 py-2.5">
+          <p className="text-xs text-ink-2">
+            <MaterialIcon icon="smart_toy" size={14} className="align-middle mr-1 text-ink-3" />
             <strong>{noBot.length}</strong> sem robô ativo no período (menos de 20 pessoas alcançadas) — sem denominador, não entram no ranking:{" "}
             {noBot.map((r) => r.franchise_name).join(", ")}.
           </p>

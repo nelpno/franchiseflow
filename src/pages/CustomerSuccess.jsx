@@ -144,16 +144,16 @@ export default function CustomerSuccess() {
     <div className="p-4 md:p-8 space-y-5">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-[#1b1c1d] flex items-center gap-2">
-            <MaterialIcon icon="view_kanban" className="text-[#b91c1c]" /> Customer Success
+          <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
+            <MaterialIcon icon="view_kanban" className="text-brand" /> Customer Success
           </h1>
-          <p className="text-sm text-[#4a3d3d] mt-1">
+          <p className="text-sm text-ink-2 mt-1">
             O que precisa ser feito com cada franquia — arraste o cartão até o check.
           </p>
         </div>
         {tab === "mural" && (
           <Button size="sm" onClick={() => { setQuickAddFranchise(""); setQuickAddOpen(true); }}
-            className="bg-[#b91c1c] hover:bg-[#991b1b] text-white gap-1">
+            className="bg-brand hover:bg-brand-dark text-white gap-1">
             <MaterialIcon icon="add" size={16} /> Novo cartão
           </Button>
         )}
@@ -167,8 +167,8 @@ export default function CustomerSuccess() {
             onClick={() => setTab(tb.key)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-all flex items-center gap-1.5 ${
               tab === tb.key
-                ? "bg-[#b91c1c] text-white border-[#b91c1c]"
-                : "bg-white text-[#4a3d3d] border-[#291715]/10 hover:border-[#b91c1c]/40"
+                ? "bg-brand text-white border-brand"
+                : "bg-white text-ink-2 border-ink-shadow/10 hover:border-brand/40"
             }`}
           >
             <MaterialIcon icon={tb.icon} size={16} /> {tb.label}
@@ -181,9 +181,9 @@ export default function CustomerSuccess() {
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
         </div>
       ) : error ? (
-        <div className="text-center py-12 text-[#4a3d3d]">
+        <div className="text-center py-12 text-ink-2">
           <p>{error}</p>
-          <button onClick={load} className="mt-3 text-[#b91c1c] font-semibold">Tentar novamente</button>
+          <button onClick={load} className="mt-3 text-brand font-semibold">Tentar novamente</button>
         </div>
       ) : tab === "mural" ? (
         <CsBoard tasks={tasks} signalsByFranchise={signalsByFranchise} onOpen={openTask} onMoveTask={onMoveTask} />
@@ -191,9 +191,9 @@ export default function CustomerSuccess() {
         funnel.loading ? (
           <Skeleton className="h-64 w-full rounded-xl" />
         ) : funnel.error ? (
-          <div className="text-center py-12 text-[#4a3d3d]">
+          <div className="text-center py-12 text-ink-2">
             <p>{funnel.error}</p>
-            <button onClick={loadFunnel} className="mt-3 text-[#b91c1c] font-semibold">Tentar novamente</button>
+            <button onClick={loadFunnel} className="mt-3 text-brand font-semibold">Tentar novamente</button>
           </div>
         ) : (
           <NetworkFunnelPanel rows={funnel.rows} />

@@ -293,15 +293,15 @@ export default function Financeiro() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-4">
-        <div className="h-8 w-48 bg-[#e9e8e9] rounded-xl animate-pulse" />
+        <div className="h-8 w-48 bg-surface-line rounded-xl animate-pulse" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-[#e9e8e9] rounded-xl animate-pulse" />
+            <div key={i} className="h-24 bg-surface-line rounded-xl animate-pulse" />
           ))}
         </div>
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-[#e9e8e9] rounded-xl animate-pulse" />
+            <div key={i} className="h-16 bg-surface-line rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -311,8 +311,8 @@ export default function Financeiro() {
   if (loadError) {
     return (
       <div className="max-w-6xl mx-auto p-4 md:p-6 flex flex-col items-center justify-center gap-4 min-h-[300px]">
-        <MaterialIcon icon="error_outline" size={48} className="text-[#dc2626]" />
-        <p className="text-[#4a3d3d]">{loadError}</p>
+        <MaterialIcon icon="error_outline" size={48} className="text-err" />
+        <p className="text-ink-2">{loadError}</p>
         <Button onClick={loadBaseData} variant="outline" className="rounded-xl">
           <MaterialIcon icon="refresh" size={16} className="mr-2" />
           Tentar novamente
@@ -326,13 +326,13 @@ export default function Financeiro() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#a80012] flex items-center justify-center">
+          <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-ink flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center">
               <MaterialIcon icon="account_balance" size={24} className="text-white" />
             </div>
             Financeiro
           </h1>
-          <p className="text-[#4a3d3d] mt-1 text-sm">
+          <p className="text-ink-2 mt-1 text-sm">
             Visao financeira de todas as franquias
           </p>
         </div>
@@ -349,7 +349,7 @@ export default function Financeiro() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === tab.key
-                  ? "bg-white text-[#1b1c1d] shadow-sm"
+                  ? "bg-white text-ink shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -364,12 +364,12 @@ export default function Financeiro() {
         <AsaasSetupPanel />
       ) : activeTab === "porunidade" ? (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-[#291715]/5 p-4 flex items-center gap-3">
-            <MaterialIcon icon="store" size={20} className="text-[#1b1c1d]/60 shrink-0" />
+          <div className="bg-white rounded-2xl border border-ink-shadow/5 p-4 flex items-center gap-3">
+            <MaterialIcon icon="store" size={20} className="text-ink/60 shrink-0" />
             <select
               value={selectedFranchiseId}
               onChange={(e) => setSelectedFranchiseId(e.target.value)}
-              className="flex-1 bg-transparent text-sm font-semibold text-[#1b1c1d] outline-none cursor-pointer"
+              className="flex-1 bg-transparent text-sm font-semibold text-ink outline-none cursor-pointer"
             >
               <option value="">Selecione uma unidade…</option>
               {franchises
@@ -389,9 +389,9 @@ export default function Financeiro() {
           {selectedFranchiseId ? (
             <TabResultado franchiseId={selectedFranchiseId} currentUser={currentUser} />
           ) : (
-            <div className="bg-white rounded-2xl border border-[#291715]/5 p-12 text-center">
-              <MaterialIcon icon="info" size={32} className="text-[#1b1c1d]/30 mx-auto mb-3" />
-              <p className="text-sm text-[#4a3d3d]">Escolha uma unidade acima para ver o resultado igual à visão do franqueado.</p>
+            <div className="bg-white rounded-2xl border border-ink-shadow/5 p-12 text-center">
+              <MaterialIcon icon="info" size={32} className="text-ink/30 mx-auto mb-3" />
+              <p className="text-sm text-ink-2">Escolha uma unidade acima para ver o resultado igual à visão do franqueado.</p>
             </div>
           )}
         </div>
@@ -409,7 +409,7 @@ export default function Financeiro() {
           >
             <MaterialIcon icon="chevron_left" size={20} />
           </Button>
-          <span className="text-sm font-semibold text-[#1b1c1d] min-w-[120px] text-center capitalize">
+          <span className="text-sm font-semibold text-ink min-w-[120px] text-center capitalize">
             {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
           </span>
           <Button
@@ -436,7 +436,7 @@ export default function Financeiro() {
       />
 
       {/* Footer info */}
-      <p className="text-xs text-[#7a6d6d] text-center">
+      <p className="text-xs text-ink-3 text-center">
         {franchiseData.length} franquias &middot; Dados de {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
       </p>
       </>

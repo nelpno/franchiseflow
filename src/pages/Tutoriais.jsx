@@ -176,7 +176,7 @@ function VideoCard({ video, index, onPlay, onRead }) {
   const watched = localStorage.getItem(`tutorial_watched_${video.id}`) === "true";
 
   return (
-    <div className="group relative bg-white rounded-2xl border border-[#f2e7e7] hover:border-[#b91c1c]/20 hover:shadow-md transition-all overflow-hidden">
+    <div className="group relative bg-white rounded-2xl border border-[#f2e7e7] hover:border-brand/20 hover:shadow-md transition-all overflow-hidden">
       {/* Thumbnail area — clickable for video */}
       <button
         onClick={() => onPlay(video)}
@@ -184,20 +184,20 @@ function VideoCard({ video, index, onPlay, onRead }) {
       >
         <div className="relative aspect-video bg-gradient-to-br from-[#fdf8f8] to-[#f2e7e7] flex items-center justify-center">
           <div className="w-14 h-14 rounded-full bg-white/80 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-            <MaterialIcon icon={video.icon} size={28} className="text-[#b91c1c]" />
+            <MaterialIcon icon={video.icon} size={28} className="text-brand" />
           </div>
           {/* Play overlay */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
-            <div className="w-12 h-12 rounded-full bg-[#b91c1c] flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 rounded-full bg-brand flex items-center justify-center shadow-lg">
               <MaterialIcon icon="play_arrow" size={28} className="text-white" />
             </div>
           </div>
           {/* Episode number */}
-          <span className="absolute top-3 left-3 text-xs font-bold text-[#b91c1c]/60 bg-white/80 px-2 py-0.5 rounded-full">
+          <span className="absolute top-3 left-3 text-xs font-bold text-brand/60 bg-white/80 px-2 py-0.5 rounded-full">
             {index + 1}/{TUTORIAL_VIDEOS.length}
           </span>
           {/* Duration badge */}
-          <span className="absolute top-3 right-3 text-xs font-medium text-[#4a3d3d] bg-white/80 px-2 py-0.5 rounded-full">
+          <span className="absolute top-3 right-3 text-xs font-medium text-ink-2 bg-white/80 px-2 py-0.5 rounded-full">
             {video.duration}
           </span>
         </div>
@@ -206,20 +206,20 @@ function VideoCard({ video, index, onPlay, onRead }) {
       {/* Content */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-[#1b1c1d] leading-tight">
+          <h3 className="text-sm font-semibold text-ink leading-tight">
             {video.title}
           </h3>
           {watched && (
-            <MaterialIcon icon="check_circle" size={16} className="text-[#16a34a] shrink-0 mt-0.5" filled />
+            <MaterialIcon icon="check_circle" size={16} className="text-ok shrink-0 mt-0.5" filled />
           )}
         </div>
-        <p className="text-xs text-[#7a6d6d] mt-1.5 leading-relaxed line-clamp-2">
+        <p className="text-xs text-ink-3 mt-1.5 leading-relaxed line-clamp-2">
           {video.description}
         </p>
         {/* Read tutorial button */}
         <button
           onClick={() => onRead(video)}
-          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#b91c1c] hover:text-[#a80012] transition-colors active:scale-[0.97]"
+          className="mt-3 flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand transition-colors active:scale-[0.97]"
         >
           <MaterialIcon icon="menu_book" size={16} />
           Ler passo a passo
@@ -235,11 +235,11 @@ function StepGuide({ video, onClose }) {
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-[#f2e7e7] px-6 py-4 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-[#fdf8f8] flex items-center justify-center shrink-0">
-          <MaterialIcon icon={video.icon} size={22} className="text-[#b91c1c]" />
+          <MaterialIcon icon={video.icon} size={22} className="text-brand" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-[#1b1c1d]">{video.title}</h3>
-          <p className="text-xs text-[#7a6d6d]">Passo a passo</p>
+          <h3 className="text-base font-semibold text-ink">{video.title}</h3>
+          <p className="text-xs text-ink-3">Passo a passo</p>
         </div>
       </div>
 
@@ -248,9 +248,9 @@ function StepGuide({ video, onClose }) {
         {video.steps.map((step, i) => (
           <div key={i} className="flex gap-3">
             <div className="w-6 h-6 rounded-full bg-[#fdf8f8] border border-[#f2e7e7] flex items-center justify-center shrink-0 mt-0.5">
-              <span className="text-xs font-bold text-[#b91c1c]">{i + 1}</span>
+              <span className="text-xs font-bold text-brand">{i + 1}</span>
             </div>
-            <p className="text-sm text-[#4a3d3d] leading-relaxed pt-0.5">{step}</p>
+            <p className="text-sm text-ink-2 leading-relaxed pt-0.5">{step}</p>
           </div>
         ))}
       </div>
@@ -259,7 +259,7 @@ function StepGuide({ video, onClose }) {
       <div className="sticky bottom-0 bg-white border-t border-[#f2e7e7] px-6 py-3 flex justify-end">
         <button
           onClick={onClose}
-          className="px-4 py-2 text-sm font-medium text-[#b91c1c] hover:bg-[#b91c1c]/5 rounded-lg transition-colors"
+          className="px-4 py-2 text-sm font-medium text-brand hover:bg-brand/5 rounded-lg transition-colors"
         >
           Fechar
         </button>
@@ -293,21 +293,21 @@ export default function Tutoriais() {
     <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-[#1b1c1d] tracking-tight">
+        <h2 className="text-xl font-bold text-ink tracking-tight">
           Tutoriais
         </h2>
-        <p className="text-sm text-[#7a6d6d] mt-1">
+        <p className="text-sm text-ink-3 mt-1">
           Aprenda a usar todas as ferramentas do seu app. Assista aos vídeos ou leia o passo a passo.
         </p>
         {watchedCount > 0 && (
           <div className="flex items-center gap-2 mt-3">
             <div className="flex-1 h-1.5 bg-[#f2e7e7] rounded-full overflow-hidden max-w-xs">
               <div
-                className="h-full bg-[#16a34a] rounded-full transition-all duration-500"
+                className="h-full bg-ok rounded-full transition-all duration-500"
                 style={{ width: `${(watchedCount / TUTORIAL_VIDEOS.length) * 100}%` }}
               />
             </div>
-            <span className="text-xs font-medium text-[#7a6d6d]">
+            <span className="text-xs font-medium text-ink-3">
               {watchedCount}/{TUTORIAL_VIDEOS.length} assistidos
             </span>
           </div>

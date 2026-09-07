@@ -69,7 +69,7 @@ const initialFormData = {
   facebook_page_id: '',
 };
 
-const inputClass = "w-full bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 text-sm outline-none";
+const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-sm outline-none";
 const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
 
 const PICKUP_TYPES = [
@@ -79,7 +79,7 @@ const PICKUP_TYPES = [
 
 function FieldHint({ text }) {
   return (
-    <p className="text-[11px] text-[#4a3d3d]/70 mt-1.5 flex items-start gap-1">
+    <p className="text-[11px] text-ink-2/70 mt-1.5 flex items-start gap-1">
       <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
       <span>{text}</span>
     </p>
@@ -87,7 +87,7 @@ function FieldHint({ text }) {
 }
 
 function RequiredDot() {
-  return <span className="text-[#b91c1c] ml-0.5">*</span>;
+  return <span className="text-brand ml-0.5">*</span>;
 }
 
 function FranchiseSettingsContent() {
@@ -573,14 +573,14 @@ function FranchiseSettingsContent() {
       <div className="px-4 md:px-8 pt-12">
         <div className="max-w-4xl mx-auto text-center py-24">
           <MaterialIcon icon="info" filled size={64} className="text-[#bccac0] mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-[#1b1c1d] mb-2">Nenhuma configuração encontrada</h3>
+          <h3 className="text-xl font-bold text-ink mb-2">Nenhuma configuração encontrada</h3>
           <p className="text-[#3d4a42]/60 mb-6">Comece adicionando a primeira configuração de franquia.</p>
           {franchisesWithoutConfig.length > 0 && (
             <div className="max-w-xs mx-auto space-y-3">
               <Select onValueChange={(value) => {
                 setFormData(prev => ({ ...prev, franchise_evolution_instance_id: value }));
               }}>
-                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                <SelectTrigger className="bg-surface-line border-none rounded-xl">
                   <SelectValue placeholder="Selecione uma franquia..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -606,7 +606,7 @@ function FranchiseSettingsContent() {
                   setIsSubmitting(false);
                 }}
                 disabled={isSubmitting}
-                className="w-full bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl font-bold py-3 px-6 text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-brand hover:bg-brand-dark text-white rounded-xl font-bold py-3 px-6 text-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
                 Criar Configuração
@@ -636,7 +636,7 @@ function FranchiseSettingsContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-[#1b1c1d]">Meu Vendedor</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-ink">Meu Vendedor</h2>
             <p className="text-sm text-[#3d4a42]/70 mt-0.5">
               {/* Com 2+ unidades, dizer QUAL está aberta — o wizard mostra o nome
                   da unidade nos campos, e sem isso não dá pra ter certeza. */}
@@ -648,7 +648,7 @@ function FranchiseSettingsContent() {
           <div className="flex items-center gap-3">
             {displayConfigurations.length > 1 && (
               <Select value={selectedConfigId} onValueChange={handleSelectConfig}>
-                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl text-sm w-48">
+                <SelectTrigger className="bg-surface-line border-none rounded-xl text-sm w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -665,16 +665,16 @@ function FranchiseSettingsContent() {
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${
                 isConnected
                   ? 'bg-emerald-50 border-emerald-200'
-                  : 'bg-[#e9e8e9]/50 border-[#bccac0]/30'
+                  : 'bg-surface-line/50 border-[#bccac0]/30'
               }`}
               title="Clique para verificar o status atual"
             >
               {checkingStatusFor === currentConfig?.id ? (
-                <MaterialIcon icon="progress_activity" size={8} className="animate-spin text-[#4a3d3d]" />
+                <MaterialIcon icon="progress_activity" size={8} className="animate-spin text-ink-2" />
               ) : (
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-[#7a6d6d]'}`} />
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-ink-3'}`} />
               )}
-              <span className={`text-xs font-semibold ${isConnected ? 'text-emerald-700' : 'text-[#4a3d3d]'}`}>
+              <span className={`text-xs font-semibold ${isConnected ? 'text-emerald-700' : 'text-ink-2'}`}>
                 {checkingStatusFor === currentConfig?.id ? 'Verificando...' : isConnected ? 'Conectado' : 'Não conectado'}
               </span>
             </button>
@@ -688,7 +688,7 @@ function FranchiseSettingsContent() {
           <div className="flex items-center gap-5">
             <div className="relative">
               <div className={`w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden ${
-                isConnected ? 'bg-emerald-100' : 'bg-[#e9e8e9]/50'
+                isConnected ? 'bg-emerald-100' : 'bg-surface-line/50'
               }`}>
                 {isConnected ? (
                   <MaterialIcon icon="check_circle" filled size={32} className="text-emerald-600" />
@@ -698,10 +698,10 @@ function FranchiseSettingsContent() {
               </div>
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#1b1c1d]">
+              <h3 className="text-base font-bold text-ink">
                 {isConnected ? 'WhatsApp ativo' : 'Conectar WhatsApp'}
               </h3>
-              <p className="text-xs text-[#4a3d3d] mt-0.5">
+              <p className="text-xs text-ink-2 mt-0.5">
                 {isConnected
                   ? 'Seu vendedor está recebendo mensagens'
                   : 'Escaneie o QR Code para ativar seu vendedor'}
@@ -713,8 +713,8 @@ function FranchiseSettingsContent() {
             disabled={isConnectingWhatsApp}
             className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap ${
               isConnected
-                ? 'border border-[#7a6d6d]/30 text-[#4a3d3d] hover:bg-[#e9e8e9]/50'
-                : 'bg-[#b91c1c] text-white hover:bg-[#991b1b]'
+                ? 'border border-ink-3/30 text-ink-2 hover:bg-surface-line/50'
+                : 'bg-brand text-white hover:bg-brand-dark'
             }`}
           >
             {isConnectingWhatsApp ? (
@@ -874,7 +874,7 @@ function FranchiseSettingsContent() {
                           onChange={(e) => handleInputChange('pickup_address', e.target.value)}
                           placeholder="Ex: Av. Brasil, 500 - Centro" />
                       )}
-                      <p className="text-[11px] text-[#4a3d3d]/70 mt-1 flex items-start gap-1">
+                      <p className="text-[11px] text-ink-2/70 mt-1 flex items-start gap-1">
                         <MaterialIcon icon="chat" size={12} className="mt-0.5 shrink-0" />
                         <span>O bot vai dizer: "Você pode retirar na nossa loja: {(pickupAddrMode === 'other' ? formData.pickup_address : cadastroAddress) || '<endereço do cadastro>'}"</span>
                       </p>
@@ -891,7 +891,7 @@ function FranchiseSettingsContent() {
                     checked={formData.pickup_requires_scheduling ?? true}
                     onChange={(val) => handleInputChange('pickup_requires_scheduling', val)}
                   />
-                  <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
+                  <p className="text-xs text-ink-3 mt-1 ml-1">
                     Desative se você tem um espaço onde o cliente pode chegar e comprar sem precisar agendar.
                   </p>
                 </div>
@@ -933,7 +933,7 @@ function FranchiseSettingsContent() {
                   ) : (
                     <div className="mt-2">
                       <label className={labelClass}>Horários de retirada</label>
-                      <p className="text-[11px] text-[#4a3d3d]/70 mb-3 flex items-start gap-1">
+                      <p className="text-[11px] text-ink-2/70 mb-3 flex items-start gap-1">
                         <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
                         <span>Defina quando sua unidade aceita retirada. Esses horários também definem quando sua unidade funciona.</span>
                       </p>
@@ -969,7 +969,7 @@ function FranchiseSettingsContent() {
                   checked={formData.accepts_reservation_without_payment ?? false}
                   onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
                 />
-                <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
+                <p className="text-xs text-ink-3 mt-1 ml-1">
                   Desativado por padrão. Ative apenas se você confia em separar produto antes de receber pagamento — você assume o risco do cliente sumir.
                 </p>
                 <div className="mt-3">
@@ -980,7 +980,7 @@ function FranchiseSettingsContent() {
                     checked={formData.charges_card_fee_to_customer ?? false}
                     onChange={(val) => handleInputChange('charges_card_fee_to_customer', val)}
                   />
-                  <p className="text-xs text-[#7a6d6d] mt-1 ml-1">
+                  <p className="text-xs text-ink-3 mt-1 ml-1">
                     Desativado por padrão. Ative apenas se quiser que o cliente pague a taxa (em vez da franquia absorver). Cadastre as taxas por método na seção abaixo antes de ativar.
                   </p>
                 </div>
@@ -992,13 +992,13 @@ function FranchiseSettingsContent() {
                   <MaterialIcon icon="percent" size={14} />
                   Taxa por Forma de Pagamento
                 </h4>
-                <p className="text-[11px] text-[#4a3d3d]/70 mb-3">
+                <p className="text-[11px] text-ink-2/70 mb-3">
                   Defina a taxa (%) cobrada pela operadora em cada forma de pagamento. Usado no cálculo automático de vendas.
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {PAYMENT_METHODS.map((pm) => (
                     <div key={pm.value}>
-                      <label className="text-xs font-medium text-[#4a3d3d] flex items-center gap-1 mb-1">
+                      <label className="text-xs font-medium text-ink-2 flex items-center gap-1 mb-1">
                         <MaterialIcon icon={pm.icon} size={14} />
                         {pm.label}
                       </label>
@@ -1009,7 +1009,7 @@ function FranchiseSettingsContent() {
                           max="100"
                           step="0.01"
                           placeholder="0"
-                          className="w-full bg-[#e9e8e9] border-none rounded-xl px-3 py-2 pr-8 text-sm text-right font-mono"
+                          className="w-full bg-surface-line border-none rounded-xl px-3 py-2 pr-8 text-sm text-right font-mono"
                           value={formData.payment_fees?.[pm.value] ?? ""}
                           onChange={(e) => {
                             const val = e.target.value === "" ? null : parseFloat(e.target.value);
@@ -1017,7 +1017,7 @@ function FranchiseSettingsContent() {
                             handleInputChange('payment_fees', updated);
                           }}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4a3d3d]/50">%</span>
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-2/50">%</span>
                       </div>
                     </div>
                   ))}
@@ -1109,7 +1109,7 @@ function FranchiseSettingsContent() {
 
               <div className="mt-2">
                 <label className={labelClass}>Horários e taxas de entrega</label>
-                <p className="text-[11px] text-[#4a3d3d]/70 mb-3 flex items-start gap-1">
+                <p className="text-[11px] text-ink-2/70 mb-3 flex items-start gap-1">
                   <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
                   <span>Configure horários e fretes diferentes por dia da semana. Esses horários também definem quando sua unidade funciona.</span>
                 </p>
@@ -1210,7 +1210,7 @@ function FranchiseSettingsContent() {
       )}
 
       {/* Fixed Bottom Navigation */}
-      <footer className="fixed bottom-16 md:bottom-0 right-0 left-0 md:left-[260px] bg-white border-t border-[#e9e8e9] px-4 md:px-8 py-3 z-40">
+      <footer className="fixed bottom-16 md:bottom-0 right-0 left-0 md:left-[260px] bg-white border-t border-surface-line px-4 md:px-8 py-3 z-40">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           {/* Left: Voltar */}
           <div className="w-28">
@@ -1218,7 +1218,7 @@ function FranchiseSettingsContent() {
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-[#b91c1c] text-[#b91c1c] font-bold text-sm hover:bg-[#b91c1c]/5 transition-all"
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-brand text-brand font-bold text-sm hover:bg-brand/5 transition-all"
               >
                 <MaterialIcon icon="arrow_back" size={16} />
                 Voltar
@@ -1234,12 +1234,12 @@ function FranchiseSettingsContent() {
                   key={s}
                   className={`w-2 h-2 rounded-full transition-colors ${
                     skippedSteps.includes(s)
-                      ? 'bg-[#e9e8e9]/50'
+                      ? 'bg-surface-line/50'
                       : s === currentStep
-                      ? 'bg-[#b91c1c]'
+                      ? 'bg-brand'
                       : completedSteps.includes(s)
-                      ? 'bg-[#b91c1c]/30'
-                      : 'bg-[#e9e8e9]'
+                      ? 'bg-brand/30'
+                      : 'bg-surface-line'
                   }`}
                 />
               ))}
@@ -1256,7 +1256,7 @@ function FranchiseSettingsContent() {
                 type="button"
                 onClick={nextStep}
                 disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all disabled:opacity-60"
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm shadow-lg shadow-brand/20 transition-all disabled:opacity-60"
               >
                 {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
                 Próximo
@@ -1273,7 +1273,7 @@ function FranchiseSettingsContent() {
                    candidato mais forte aos 26,3% de sessoes com dead click nesta
                    tela (Clarity, 3 dias, auditoria 07/09/2026). */
                 disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-sm shadow-lg shadow-[#b91c1c]/20 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm shadow-lg shadow-brand/20 transition-all disabled:opacity-50"
               >
                 {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
                 Concluir
@@ -1286,7 +1286,7 @@ function FranchiseSettingsContent() {
       {pendingConfigId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-bold text-[#1b1c1d] mb-2">Alterações não salvas</h3>
+            <h3 className="text-lg font-bold text-ink mb-2">Alterações não salvas</h3>
             <p className="text-sm text-[#3d4a42] mb-6">Você tem alterações não salvas. Deseja descartá-las?</p>
             <div className="flex gap-3 justify-end">
               <button
@@ -1296,13 +1296,13 @@ function FranchiseSettingsContent() {
                   // que continua aberta aqui — senão o topo diz uma e o wizard mostra outra.
                   if (!isAdminUser && currentFranchise) setSelectedFranchise(currentFranchise);
                 }}
-                className="px-4 py-2 rounded-xl border border-[#bccac0] text-[#3d4a42] text-sm font-medium hover:bg-[#fbf9fa]"
+                className="px-4 py-2 rounded-xl border border-[#bccac0] text-[#3d4a42] text-sm font-medium hover:bg-surface"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => { setIsDirty(false); applyConfigSelection(pendingConfigId); }}
-                className="px-4 py-2 rounded-xl bg-[#b91c1c] text-white text-sm font-bold hover:bg-[#991b1b]"
+                className="px-4 py-2 rounded-xl bg-brand text-white text-sm font-bold hover:bg-brand-dark"
               >
                 Descartar
               </button>

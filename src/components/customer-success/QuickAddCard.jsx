@@ -46,15 +46,15 @@ export default function QuickAddCard({ open, onOpenChange, userId, franchises = 
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-[#4a3d3d]">O que precisa ser feito?</label>
+            <label className="text-xs font-medium text-ink-2">O que precisa ser feito?</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Ligar pra Cotia sobre estoque" />
           </div>
           <div>
-            <label className="text-xs font-medium text-[#4a3d3d]">Franquia (opcional)</label>
+            <label className="text-xs font-medium text-ink-2">Franquia (opcional)</label>
             <select
               value={franchiseId}
               onChange={(e) => setFranchiseId(e.target.value)}
-              className="w-full text-sm rounded-md border border-[#291715]/15 px-2 py-2 bg-white"
+              className="w-full text-sm rounded-md border border-ink-shadow/15 px-2 py-2 bg-white"
             >
               <option value="">— Tarefa geral (sem franquia) —</option>
               {franchises.map((f) => (
@@ -65,18 +65,18 @@ export default function QuickAddCard({ open, onOpenChange, userId, franchises = 
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-[#4a3d3d]">Coluna</label>
+            <label className="text-xs font-medium text-ink-2">Coluna</label>
             <select
               value={column}
               onChange={(e) => setColumn(e.target.value)}
-              className="w-full text-sm rounded-md border border-[#291715]/15 px-2 py-2 bg-white"
+              className="w-full text-sm rounded-md border border-ink-shadow/15 px-2 py-2 bg-white"
             >
               {COLUMN_CONFIG.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={submit} disabled={saving} className="bg-[#b91c1c] hover:bg-[#991b1b] text-white">
+          <Button onClick={submit} disabled={saving} className="bg-brand hover:bg-brand-dark text-white">
             Criar cartão
           </Button>
         </DialogFooter>

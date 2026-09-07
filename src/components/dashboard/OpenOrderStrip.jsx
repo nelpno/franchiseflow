@@ -58,8 +58,8 @@ export default function OpenOrderStrip({ purchaseOrders = [] }) {
         <MaterialIcon icon={e.icon} size={20} style={{ color: e.ink }} aria-hidden="true" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-semibold text-[#1b1c1d] leading-snug">{e.rotulo}</p>
-        <p className="text-[11px] text-[#7a6d6d] mt-0.5 truncate">{detalhe}</p>
+        <p className="text-[13px] font-semibold text-ink leading-snug">{e.rotulo}</p>
+        <p className="text-[11px] text-ink-3 mt-0.5 truncate">{detalhe}</p>
       </div>
       <MaterialIcon icon="chevron_right" size={20} style={{ color: e.ink }} aria-hidden="true" />
     </button>

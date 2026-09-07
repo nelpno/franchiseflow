@@ -72,7 +72,7 @@ export default function MetaDepositDialog({ open, onOpenChange, referenceMonth, 
               placeholder="1.500,00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="border-[#e9e8e9]"
+              className="border-surface-line"
               inputMode="decimal"
               autoFocus
             />
@@ -84,7 +84,7 @@ export default function MetaDepositDialog({ open, onOpenChange, referenceMonth, 
               type="date"
               value={depositDate}
               onChange={(e) => setDepositDate(e.target.value)}
-              className="border-[#e9e8e9]"
+              className="border-surface-line"
             />
           </div>
 
@@ -95,7 +95,7 @@ export default function MetaDepositDialog({ open, onOpenChange, referenceMonth, 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="border-[#e9e8e9] resize-none"
+              className="border-surface-line resize-none"
             />
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function MetaDepositDialog({ open, onOpenChange, referenceMonth, 
           <Button
             onClick={handleSave}
             disabled={submitting || !amount}
-            className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+            className="bg-brand hover:bg-brand-dark text-white"
           >
             {submitting ? (
               <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />

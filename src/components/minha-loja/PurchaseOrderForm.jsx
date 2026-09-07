@@ -290,7 +290,7 @@ export default function PurchaseOrderForm({
     <div className="space-y-4">
       {/* Draft restored indicator */}
       {draft.current && !initialQuantities && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-sm text-[#775a19]">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-sm text-brand-gold-ink">
           <MaterialIcon icon="history" size={18} />
           <span>Rascunho restaurado.</span>
           <button
@@ -311,7 +311,7 @@ export default function PurchaseOrderForm({
 
       {/* Header with suggestion button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-sm text-[#4a3d3d]">
+        <p className="text-sm text-ink-2">
           Selecione as quantidades dos produtos que deseja encomendar.
         </p>
         {hasSuggestions && (
@@ -319,7 +319,7 @@ export default function PurchaseOrderForm({
             variant="outline"
             size="sm"
             onClick={handleUseSuggestions}
-            className="gap-2 border-[#d4af37] text-[#775a19] rounded-xl hover:bg-[#d4af37]/10"
+            className="gap-2 border-brand-gold text-brand-gold-ink rounded-xl hover:bg-brand-gold/10"
           >
             <MaterialIcon icon="auto_fix_high" size={16} />
             Usar sugestao
@@ -329,28 +329,28 @@ export default function PurchaseOrderForm({
 
       {/* Desktop: table */}
       <div className="hidden md:block">
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+        <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-[#cac0c0]/30">
-                    <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                  <TableRow className="border-b border-ink-4/30">
+                    <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Produto
                     </TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Custo
                     </TableHead>
-                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Estoque
                     </TableHead>
-                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Sugestão
                     </TableHead>
-                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta w-[100px]">
+                    <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta w-[100px]">
                       QTD
                     </TableHead>
-                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Total
                     </TableHead>
                   </TableRow>
@@ -358,9 +358,9 @@ export default function PurchaseOrderForm({
                 <TableBody>
                   {productGroups.map((group) => (
                     <React.Fragment key={group.label}>
-                      <TableRow className="bg-[#fbf9fa] border-t border-[#291715]/10">
+                      <TableRow className="bg-surface border-t border-ink-shadow/10">
                         <TableCell colSpan={6} className="py-2">
-                          <span className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta">
+                          <span className="text-xs font-bold uppercase tracking-widest text-brand font-plus-jakarta">
                             {group.label}
                           </span>
                         </TableCell>
@@ -376,17 +376,17 @@ export default function PurchaseOrderForm({
                             key={item.id}
                             className={
                               hasSug
-                                ? "border-l-2 border-l-[#d4af37] hover:bg-[#d4af37]/5"
-                                : "hover:bg-[#fbf9fa]"
+                                ? "border-l-2 border-l-brand-gold hover:bg-brand-gold/5"
+                                : "hover:bg-surface"
                             }
                           >
-                            <TableCell className="font-medium text-[#1b1c1d]">
+                            <TableCell className="font-medium text-ink">
                               {item.product_name}
                             </TableCell>
-                            <TableCell className="text-right text-sm text-[#4a3d3d]">
+                            <TableCell className="text-right text-sm text-ink-2">
                               {formatBRL(item.cost_price)}
                             </TableCell>
-                            <TableCell className="text-center text-sm text-[#4a3d3d]">
+                            <TableCell className="text-center text-sm text-ink-2">
                               {item.quantity ?? 0}
                             </TableCell>
                             <TableCell className="text-center">
@@ -394,14 +394,14 @@ export default function PurchaseOrderForm({
                                 <Badge
                                   className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
                                     hasSug
-                                      ? "bg-[#d4af37]/10 text-[#775a19]"
-                                      : "bg-[#e9e8e9] text-[#4a3d3d]"
+                                      ? "bg-brand-gold/10 text-brand-gold-ink"
+                                      : "bg-surface-line text-ink-2"
                                   }`}
                                 >
                                   {suggestion}
                                 </Badge>
                               ) : (
-                                <span className="text-sm text-[#cac0c0]">—</span>
+                                <span className="text-sm text-ink-4">—</span>
                               )}
                             </TableCell>
                             <TableCell className="text-center">
@@ -412,10 +412,10 @@ export default function PurchaseOrderForm({
                                 value={qty || ""}
                                 onChange={(e) => setQty(item.id, e.target.value)}
                                 placeholder="0"
-                                className="w-20 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                className="w-20 mx-auto text-center h-8 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                               />
                             </TableCell>
-                            <TableCell className="text-right text-sm font-medium text-[#1b1c1d]">
+                            <TableCell className="text-right text-sm font-medium text-ink">
                               {qty > 0 ? formatBRL(lineTotal) : "—"}
                             </TableCell>
                           </TableRow>
@@ -434,7 +434,7 @@ export default function PurchaseOrderForm({
       <div className="md:hidden space-y-4">
         {productGroups.map((group) => (
           <div key={group.label} className="space-y-2">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta px-1">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-brand font-plus-jakarta px-1">
               {group.label}
             </h3>
             {group.items.map((item) => {
@@ -448,17 +448,17 @@ export default function PurchaseOrderForm({
                   key={item.id}
                   className={`rounded-2xl shadow-sm border ${
                     hasSug
-                      ? "border-[#d4af37]/40 bg-[#d4af37]/5"
-                      : "border-[#291715]/5 bg-white"
+                      ? "border-brand-gold/40 bg-brand-gold/5"
+                      : "border-ink-shadow/5 bg-white"
                   }`}
                 >
                   <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-[#1b1c1d] truncate">
+                    <h4 className="font-medium text-ink truncate">
                       {item.product_name}
                     </h4>
-                    <p className="text-xs text-[#4a3d3d] truncate">
+                    <p className="text-xs text-ink-2 truncate">
                       Custo: {formatBRL(item.cost_price)} · Estoque: {item.quantity ?? 0}
                     </p>
                   </div>
@@ -466,8 +466,8 @@ export default function PurchaseOrderForm({
                     <Badge
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${
                         hasSug
-                          ? "bg-[#d4af37]/10 text-[#775a19]"
-                          : "bg-[#e9e8e9] text-[#4a3d3d]"
+                          ? "bg-brand-gold/10 text-brand-gold-ink"
+                          : "bg-surface-line text-ink-2"
                       }`}
                     >
                       Sug: {suggestion}
@@ -477,7 +477,7 @@ export default function PurchaseOrderForm({
 
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <Label className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                    <Label className="text-xs uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
                       Quantidade
                     </Label>
                     <Input
@@ -487,14 +487,14 @@ export default function PurchaseOrderForm({
                       value={qty || ""}
                       onChange={(e) => setQty(item.id, e.target.value)}
                       placeholder="0"
-                      className="h-9 bg-[#e9e8e9] border-none rounded-xl px-3 focus:ring-2 focus:ring-[#b91c1c]/20"
+                      className="h-9 bg-surface-line border-none rounded-xl px-3 focus:ring-2 focus:ring-brand/20"
                     />
                   </div>
                   <div className="text-right">
-                    <Label className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                    <Label className="text-xs uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
                       Total
                     </Label>
-                    <p className="font-medium text-[#1b1c1d] text-sm mt-1">
+                    <p className="font-medium text-ink text-sm mt-1">
                       {qty > 0 ? formatBRL(lineTotal) : "—"}
                     </p>
                   </div>
@@ -509,35 +509,35 @@ export default function PurchaseOrderForm({
 
       {/* Notes */}
       <div className="space-y-2">
-        <Label className="text-[#1b1c1d]">Comentário</Label>
+        <Label className="text-ink">Comentário</Label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Observações sobre o pedido..."
           rows={3}
-          className="w-full rounded-xl bg-[#e9e8e9] border-none px-4 py-3 text-sm focus:ring-2 focus:ring-[#b91c1c]/20 focus:outline-none resize-none"
+          className="w-full rounded-xl bg-surface-line border-none px-4 py-3 text-sm focus:ring-2 focus:ring-brand/20 focus:outline-none resize-none"
         />
       </div>
 
       {/* Grand total + actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-[#cac0c0]/30">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-ink-4/30">
         <div>
-          <span className="text-sm text-[#4a3d3d]">Total do pedido</span>
-          <p className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">
+          <span className="text-sm text-ink-2">Total do pedido</span>
+          <p className="text-2xl font-bold text-ink font-plus-jakarta">
             {formatBRL(grandTotal)}
           </p>
           {totalItems > 0 && (
-            <span className="text-xs text-[#4a3d3d]">
+            <span className="text-xs text-ink-2">
               {totalItems} {totalItems === 1 ? "produto" : "produtos"} · {totalUnits} un.
             </span>
           )}
           {grandWeight > 0 && (
-            <p className="text-sm font-bold text-[#1b1c1d] mt-1">
+            <p className="text-sm font-bold text-ink mt-1">
               Peso total: {formatWeightKg(grandWeight)}
             </p>
           )}
           {missingWeightCount > 0 && (
-            <span className="text-xs text-[#b91c1c]">
+            <span className="text-xs text-brand">
               {missingWeightCount} {missingWeightCount === 1 ? "item sem peso cadastrado" : "itens sem peso cadastrado"}
             </span>
           )}
@@ -548,14 +548,14 @@ export default function PurchaseOrderForm({
             variant="outline"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa]"
+            className="border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!hasAnyQty || isSubmitting}
-            className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+            className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
           >
             {isSubmitting ? (
               <>

@@ -50,7 +50,7 @@ const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente", order: 0 },
   confirmado: { color: "bg-[#2563eb]/10 text-[#2563eb]", icon: "check_circle", label: "Confirmado", order: 1 },
   em_rota: { color: "bg-[#ea580c]/10 text-[#ea580c]", icon: "local_shipping", label: "Em Rota", order: 2 },
-  entregue: { color: "bg-[#16a34a]/10 text-[#16a34a]", icon: "inventory", label: "Entregue", order: 3 },
+  entregue: { color: "bg-ok/10 text-ok", icon: "inventory", label: "Entregue", order: 3 },
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado", order: 4 },
 };
 
@@ -678,8 +678,8 @@ export default function PurchaseOrders() {
     return (
       <div className="p-6 md:p-8 max-w-7xl mx-auto">
         <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-          <p className="text-[#4a3d3d] text-center">{loadError}</p>
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
           <Button variant="outline" onClick={loadData} className="mt-2">
             <MaterialIcon icon="refresh" className="mr-2 text-lg" />
             Tentar novamente
@@ -694,21 +694,21 @@ export default function PurchaseOrders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="hidden md:flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#b91c1c]/10 flex items-center justify-center">
-            <MaterialIcon icon="local_shipping" size={22} className="text-[#b91c1c]" />
+          <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
+            <MaterialIcon icon="local_shipping" size={22} className="text-brand" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-[#1b1c1d] font-plus-jakarta">
+            <h1 className="text-xl font-bold text-ink font-plus-jakarta">
               Pedidos de Compra
             </h1>
-            <p className="text-sm text-[#4a3d3d]">
+            <p className="text-sm text-ink-2">
               Gerencie os pedidos de todas as franquias
             </p>
           </div>
         </div>
         <Button
           onClick={() => setNewProductOpen(true)}
-          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-1.5"
+          className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-1.5"
         >
           <MaterialIcon icon="add_circle" size={18} />
           <span className="hidden sm:inline">Novo Produto Padrão</span>
@@ -722,11 +722,11 @@ export default function PurchaseOrders() {
           variant="ghost"
           size="sm"
           onClick={() => setSelectedMonth((m) => subMonths(m, 1))}
-          className="hover:bg-[#b91c1c]/5 rounded-xl"
+          className="hover:bg-brand/5 rounded-xl"
         >
           <MaterialIcon icon="chevron_left" size={20} />
         </Button>
-        <span className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta min-w-[160px] text-center capitalize">
+        <span className="text-sm font-bold text-ink font-plus-jakarta min-w-[160px] text-center capitalize">
           {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
         </span>
         <Button
@@ -734,7 +734,7 @@ export default function PurchaseOrders() {
           size="sm"
           onClick={() => setSelectedMonth((m) => addMonths(m, 1))}
           disabled={isSameMonth(selectedMonth, new Date())}
-          className="hover:bg-[#b91c1c]/5 rounded-xl"
+          className="hover:bg-brand/5 rounded-xl"
         >
           <MaterialIcon icon="chevron_right" size={20} />
         </Button>
@@ -770,15 +770,15 @@ export default function PurchaseOrders() {
         return (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {stats.map((s) => (
-              <div key={s.label} className="bg-white p-4 rounded-2xl shadow-sm border border-[#291715]/5">
+              <div key={s.label} className="bg-white p-4 rounded-2xl shadow-sm border border-ink-shadow/5">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: s.color + "15", color: s.color }}>
                     <MaterialIcon icon={s.icon} size={18} />
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#1b1c1d]/60 font-plus-jakarta">{s.label}</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-ink/60 font-plus-jakarta">{s.label}</span>
                 </div>
-                <p className="text-2xl font-bold text-[#1b1c1d]">{s.value}</p>
-                {s.detail && <p className="text-xs text-[#4a3d3d] mt-0.5">{s.detail}</p>}
+                <p className="text-2xl font-bold text-ink">{s.value}</p>
+                {s.detail && <p className="text-xs text-ink-2 mt-0.5">{s.detail}</p>}
               </div>
             ))}
           </div>
@@ -816,8 +816,8 @@ export default function PurchaseOrders() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-[#b91c1c]/5 border border-[#b91c1c]/20 rounded-xl px-4 py-3">
-          <span className="text-sm text-[#1b1c1d] font-medium">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-brand/5 border border-brand/20 rounded-xl px-4 py-3">
+          <span className="text-sm text-ink font-medium">
             {selectedIds.size} pedido{selectedIds.size > 1 ? "s" : ""} selecionado{selectedIds.size > 1 ? "s" : ""}
           </span>
           <div className="flex flex-wrap gap-2 items-center">
@@ -841,7 +841,7 @@ export default function PurchaseOrders() {
               return (
                 <>
                   <Select value={bulkStatus} onValueChange={setBulkStatus}>
-                    <SelectTrigger className="w-[130px] h-8 bg-white border-[#cac0c0] rounded-xl text-xs">
+                    <SelectTrigger className="w-[130px] h-8 bg-white border-ink-4 rounded-xl text-xs">
                       <SelectValue placeholder="Alterar para..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -873,7 +873,7 @@ export default function PurchaseOrders() {
               variant="outline"
               size="sm"
               onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}
-              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl text-xs"
+              className="border-ink-4 text-ink-2 rounded-xl text-xs"
             >
               Limpar
             </Button>
@@ -882,7 +882,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={handleBulkPickingSheet}
               disabled={generatingBulkPdf}
-              className="text-[#d4af37] border-[#d4af37]/30 rounded-xl text-xs gap-1"
+              className="text-brand-gold border-brand-gold/30 rounded-xl text-xs gap-1"
             >
               <MaterialIcon icon="print" size={14} />
               <span className="hidden sm:inline">{generatingBulkPdf ? "Gerando..." : "Fichas de Separação"}</span>
@@ -896,7 +896,7 @@ export default function PurchaseOrders() {
                 size="sm"
                 onClick={() => setConfirmDeleteAction({ type: "bulk" })}
                 disabled={deleting}
-                className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1 text-xs"
+                className="bg-err hover:bg-brand text-white font-bold rounded-xl gap-1 text-xs"
               >
                 <MaterialIcon icon="delete" size={14} />
                 <span className="hidden sm:inline">Excluir Selecionados</span>
@@ -909,11 +909,11 @@ export default function PurchaseOrders() {
       {/* Empty state */}
       {filteredOrders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <MaterialIcon icon="local_shipping" size={48} className="text-[#cac0c0] mb-3" />
-          <h4 className="text-sm font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+          <MaterialIcon icon="local_shipping" size={48} className="text-ink-4 mb-3" />
+          <h4 className="text-sm font-medium text-ink mb-1 font-plus-jakarta">
             Nenhum pedido recebido.
           </h4>
-          <p className="text-xs text-[#4a3d3d]">
+          <p className="text-xs text-ink-2">
             Os pedidos das franquias aparecerão aqui.
           </p>
         </div>
@@ -921,36 +921,36 @@ export default function PurchaseOrders() {
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+            <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-b border-[#cac0c0]/30">
+                      <TableRow className="border-b border-ink-4/30">
                         <TableHead className="w-10">
                           <input
                             type="checkbox"
                             checked={filteredOrders.length > 0 && filteredOrders.every((o) => selectedIds.has(o.id))}
                             onChange={toggleSelectAll}
-                            className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                            className="w-4 h-4 rounded border-ink-4 text-brand focus:ring-brand/20"
                           />
                         </TableHead>
-                        <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                        <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Franquia
                         </TableHead>
-                        <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                        <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Data Pedido
                         </TableHead>
-                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Total
                         </TableHead>
-                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Frete
                         </TableHead>
-                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Status
                         </TableHead>
-                        <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                        <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Ações
                         </TableHead>
                       </TableRow>
@@ -964,7 +964,7 @@ export default function PurchaseOrders() {
                             className={
                               overdue
                                 ? "bg-red-50 border-l-4 border-l-red-500 hover:bg-red-100/60"
-                                : "hover:bg-[#fbf9fa]"
+                                : "hover:bg-surface"
                             }
                           >
                             <TableCell className="w-10">
@@ -973,21 +973,21 @@ export default function PurchaseOrders() {
                                 checked={selectedIds.has(order.id)}
                                 onChange={() => toggleSelectOrder(order.id)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-4 h-4 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                                className="w-4 h-4 rounded border-ink-4 text-brand focus:ring-brand/20"
                               />
                             </TableCell>
-                            <TableCell className="font-medium text-[#1b1c1d]">
+                            <TableCell className="font-medium text-ink">
                               {getFranchiseName(order.franchise_id)}
                             </TableCell>
-                            <TableCell className="text-sm text-[#4a3d3d]">
+                            <TableCell className="text-sm text-ink-2">
                               {order.ordered_at
                                 ? format(new Date(order.ordered_at), "dd/MM/yyyy", { locale: ptBR })
                                 : "\u2014"}
                             </TableCell>
-                            <TableCell className="text-center text-sm font-medium text-[#1b1c1d]">
+                            <TableCell className="text-center text-sm font-medium text-ink">
                               {formatBRL(order.total_amount)}
                             </TableCell>
-                            <TableCell className="text-center text-sm text-[#4a3d3d]">
+                            <TableCell className="text-center text-sm text-ink-2">
                               {order.freight_cost != null && parseFloat(order.freight_cost) > 0
                                 ? formatBRL(order.freight_cost)
                                 : "\u2014"}
@@ -1000,7 +1000,7 @@ export default function PurchaseOrders() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => openOrderDetail(order)}
-                                className="text-[#b91c1c] hover:text-[#991b1b] hover:bg-[#b91c1c]/5 rounded-xl gap-1"
+                                className="text-brand hover:text-brand-dark hover:bg-brand/5 rounded-xl gap-1"
                               >
                                 <MaterialIcon icon="visibility" size={16} />
                                 Ver
@@ -1026,7 +1026,7 @@ export default function PurchaseOrders() {
                 className={`rounded-2xl shadow-sm border bg-white ${
                   overdue
                     ? "border-red-300 border-l-4 border-l-red-500 bg-red-50"
-                    : "border-[#291715]/5"
+                    : "border-ink-shadow/5"
                 }`}
               >
                 <CardContent className="p-4">
@@ -1036,13 +1036,13 @@ export default function PurchaseOrders() {
                       checked={selectedIds.has(order.id)}
                       onChange={() => toggleSelectOrder(order.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 mt-1 mr-3 flex-shrink-0 rounded border-[#cac0c0] text-[#b91c1c] focus:ring-[#b91c1c]/20"
+                      className="w-4 h-4 mt-1 mr-3 flex-shrink-0 rounded border-ink-4 text-brand focus:ring-brand/20"
                     />
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-[#1b1c1d] truncate font-plus-jakarta">
+                      <h4 className="font-medium text-ink truncate font-plus-jakarta">
                         {getFranchiseName(order.franchise_id)}
                       </h4>
-                      <p className="text-xs text-[#4a3d3d]">
+                      <p className="text-xs text-ink-2">
                         {order.ordered_at
                           ? format(new Date(order.ordered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
                           : "\u2014"}
@@ -1053,11 +1053,11 @@ export default function PurchaseOrders() {
 
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
+                      <span className="text-lg font-bold text-ink font-plus-jakarta">
                         {formatBRL(order.total_amount)}
                       </span>
                       {order.freight_cost != null && parseFloat(order.freight_cost) > 0 && (
-                        <span className="text-xs text-[#4a3d3d] flex items-center gap-1">
+                        <span className="text-xs text-ink-2 flex items-center gap-1">
                           <MaterialIcon icon="local_shipping" size={12} />
                           {formatBRL(order.freight_cost)}
                         </span>
@@ -1067,7 +1067,7 @@ export default function PurchaseOrders() {
                       variant="ghost"
                       size="sm"
                       onClick={() => openOrderDetail(order)}
-                      className="text-[#b91c1c] hover:text-[#991b1b] hover:bg-[#b91c1c]/5 rounded-xl gap-1"
+                      className="text-brand hover:text-brand-dark hover:bg-brand/5 rounded-xl gap-1"
                     >
                       <MaterialIcon icon="visibility" size={16} />
                       Ver
@@ -1086,7 +1086,7 @@ export default function PurchaseOrders() {
         <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
-              <MaterialIcon icon="receipt_long" size={20} className="text-[#b91c1c]" />
+              <MaterialIcon icon="receipt_long" size={20} className="text-brand" />
               Detalhes do Pedido
             </DialogTitle>
           </DialogHeader>
@@ -1097,16 +1097,16 @@ export default function PurchaseOrders() {
             <div className="flex-1 overflow-y-auto min-h-0 space-y-5 pr-1">
               {/* Order info */}
               <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="font-medium text-[#1b1c1d]">
+                <span className="font-medium text-ink">
                   {getFranchiseName(selectedOrder.franchise_id)}
                 </span>
                 {getStatusBadge(selectedOrder.status, isOverdue(selectedOrder))}
               </div>
 
               {/* Timeline logística */}
-              <div className="bg-[#fbf9fa] rounded-xl p-3 space-y-2">
+              <div className="bg-surface rounded-xl p-3 space-y-2">
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
-                  <span className="flex items-center gap-1.5 text-[#4a3d3d]">
+                  <span className="flex items-center gap-1.5 text-ink-2">
                     <MaterialIcon icon="shopping_cart" size={14} className="text-[#d97706]" />
                     <span className="font-medium">Pedido:</span>
                     {selectedOrder.ordered_at
@@ -1114,14 +1114,14 @@ export default function PurchaseOrders() {
                       : "—"}
                   </span>
                   {selectedOrder.estimated_delivery && (
-                    <span className="flex items-center gap-1.5 text-[#4a3d3d]">
+                    <span className="flex items-center gap-1.5 text-ink-2">
                       <MaterialIcon icon="event" size={14} className="text-[#2563eb]" />
                       <span className="font-medium">Previsão:</span>
                       {formatDateOnly(selectedOrder.estimated_delivery)}
                     </span>
                   )}
                   {selectedOrder.delivered_at && (
-                    <span className="flex items-center gap-1.5 text-[#16a34a]">
+                    <span className="flex items-center gap-1.5 text-ok">
                       <MaterialIcon icon="check_circle" size={14} />
                       <span className="font-medium">Entregue:</span>
                       {format(new Date(selectedOrder.delivered_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
@@ -1135,8 +1135,8 @@ export default function PurchaseOrders() {
                   const wasLate = selectedOrder.estimated_delivery &&
                     new Date(selectedOrder.delivered_at) > new Date(selectedOrder.estimated_delivery + 'T23:59:59');
                   return (
-                    <div className="flex items-center gap-2 pt-1 border-t border-[#cac0c0]/20">
-                      <span className={`flex items-center gap-1 text-xs font-medium ${wasLate ? 'text-[#dc2626]' : 'text-[#16a34a]'}`}>
+                    <div className="flex items-center gap-2 pt-1 border-t border-ink-4/20">
+                      <span className={`flex items-center gap-1 text-xs font-medium ${wasLate ? 'text-err' : 'text-ok'}`}>
                         <MaterialIcon icon="timer" size={14} />
                         Tempo de atendimento: {diffDays > 0 ? `${diffDays}d ${diffHours}h` : `${diffHours}h`}
                         {wasLate && ' (atrasado)'}
@@ -1155,7 +1155,7 @@ export default function PurchaseOrders() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                     Itens do Pedido
                   </h4>
                   <div className="space-y-2">
@@ -1167,11 +1167,11 @@ export default function PurchaseOrders() {
                       return (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-3 py-2 border-b border-[#cac0c0]/15 last:border-0"
+                          className="flex items-center justify-between gap-3 py-2 border-b border-ink-4/15 last:border-0"
                         >
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm text-[#1b1c1d]">{item.product_name}</span>
-                            <p className="text-xs text-[#4a3d3d]">
+                            <span className="text-sm text-ink">{item.product_name}</span>
+                            <p className="text-xs text-ink-2">
                               {formatBRL(item.unit_price)} / un
                             </p>
                           </div>
@@ -1189,14 +1189,14 @@ export default function PurchaseOrders() {
                                     [item.id]: isNaN(parsed) || parsed < 0 ? 0 : parsed,
                                   }));
                                 }}
-                                className="w-16 text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                                className="w-16 text-center h-8 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                               />
                             ) : (
-                              <span className="text-sm text-[#4a3d3d] w-16 text-center">
+                              <span className="text-sm text-ink-2 w-16 text-center">
                                 {qty}
                               </span>
                             )}
-                            <span className="text-sm font-medium text-[#1b1c1d] min-w-[80px] text-right">
+                            <span className="text-sm font-medium text-ink min-w-[80px] text-right">
                               {formatBRL(lineTotal)}
                             </span>
                           </div>
@@ -1206,9 +1206,9 @@ export default function PurchaseOrders() {
                   </div>
 
                   {/* Total dos Itens */}
-                  <div className="flex items-center justify-between pt-3 border-t border-[#cac0c0]/30">
-                    <span className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Total dos Itens</span>
-                    <span className="text-lg font-bold text-[#1b1c1d] font-plus-jakarta">
+                  <div className="flex items-center justify-between pt-3 border-t border-ink-4/30">
+                    <span className="text-sm font-bold text-ink font-plus-jakarta">Total dos Itens</span>
+                    <span className="text-lg font-bold text-ink font-plus-jakarta">
                       {formatBRL(recalculateTotal())}
                     </span>
                   </div>
@@ -1217,14 +1217,14 @@ export default function PurchaseOrders() {
                   {(parseFloat(editedFreight) || 0) > 0 && (
                     <>
                       <div className="flex items-center justify-between pt-1">
-                        <span className="text-sm text-[#4a3d3d]">Frete</span>
-                        <span className="text-sm text-[#4a3d3d]">
+                        <span className="text-sm text-ink-2">Frete</span>
+                        <span className="text-sm text-ink-2">
                           {formatBRL(parseFloat(editedFreight))}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-[#cac0c0]/30">
-                        <span className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Total do Pedido</span>
-                        <span className="text-lg font-bold text-[#b91c1c] font-plus-jakarta">
+                      <div className="flex items-center justify-between pt-2 border-t border-ink-4/30">
+                        <span className="text-sm font-bold text-ink font-plus-jakarta">Total do Pedido</span>
+                        <span className="text-lg font-bold text-brand font-plus-jakarta">
                           {formatBRL(recalculateTotal() + parseFloat(editedFreight))}
                         </span>
                       </div>
@@ -1237,7 +1237,7 @@ export default function PurchaseOrders() {
               {selectedOrder.status !== "entregue" && selectedOrder.status !== "cancelado" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Frete (R$)
                     </Label>
                     <Input
@@ -1247,18 +1247,18 @@ export default function PurchaseOrders() {
                       value={editedFreight}
                       onChange={(e) => setEditedFreight(e.target.value)}
                       placeholder="0,00"
-                      className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                      className="h-9 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                       Previsão de Entrega
                     </Label>
                     <Input
                       type="date"
                       value={editedDeliveryDate}
                       onChange={(e) => setEditedDeliveryDate(e.target.value)}
-                      className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                      className="h-9 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                     />
                   </div>
                 </div>
@@ -1266,8 +1266,8 @@ export default function PurchaseOrders() {
 
               {/* Notes */}
               {selectedOrder.notes && (
-                <div className="p-3 bg-[#fbf9fa] rounded-xl">
-                  <p className="text-xs text-[#4a3d3d]">
+                <div className="p-3 bg-surface rounded-xl">
+                  <p className="text-xs text-ink-2">
                     <span className="font-medium">Obs:</span> {selectedOrder.notes}
                   </p>
                 </div>
@@ -1275,7 +1275,7 @@ export default function PurchaseOrders() {
 
             </div>
               {/* Action buttons — outside scroll area */}
-              <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:justify-between border-t border-[#cac0c0]/20 pt-3 mt-3">
+              <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:justify-between border-t border-ink-4/20 pt-3 mt-3">
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -1298,7 +1298,7 @@ export default function PurchaseOrders() {
                       }
                     }}
                     disabled={loadingItems || orderItems.length === 0}
-                    className="text-[#d4af37] border-[#d4af37]/30 rounded-xl hover:bg-[#d4af37]/5 gap-1"
+                    className="text-brand-gold border-brand-gold/30 rounded-xl hover:bg-brand-gold/5 gap-1"
                   >
                     <MaterialIcon icon="print" size={16} />
                     Ficha de Separacao
@@ -1321,7 +1321,7 @@ export default function PurchaseOrders() {
                       size="sm"
                       onClick={() => setConfirmDeleteAction({ type: "single", orderId: selectedOrder.id })}
                       disabled={saving || deleting}
-                      className="text-[#dc2626] border-[#dc2626]/30 rounded-xl hover:bg-[#dc2626]/5 gap-1"
+                      className="text-err border-err/30 rounded-xl hover:bg-err/5 gap-1"
                     >
                       <MaterialIcon icon="delete" size={16} />
                       Excluir
@@ -1335,7 +1335,7 @@ export default function PurchaseOrders() {
                       size="sm"
                       onClick={handleSaveEdits}
                       disabled={saving}
-                      className="border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa] gap-1"
+                      className="border-ink-4 text-ink-2 rounded-xl hover:bg-surface gap-1"
                     >
                       <MaterialIcon icon="save" size={16} />
                       Salvar
@@ -1371,7 +1371,7 @@ export default function PurchaseOrders() {
                       size="sm"
                       onClick={() => handleStatusChange("entregue")}
                       disabled={saving}
-                      className="bg-[#16a34a] hover:bg-[#15803d] text-white font-bold rounded-xl gap-1"
+                      className="bg-ok hover:bg-[#15803d] text-white font-bold rounded-xl gap-1"
                     >
                       <MaterialIcon icon="inventory" size={16} />
                       Confirmar Entrega
@@ -1392,13 +1392,13 @@ export default function PurchaseOrders() {
               <MaterialIcon
                 icon={confirmAction?.type === "entregue" ? "inventory" : "cancel"}
                 size={20}
-                className={confirmAction?.type === "entregue" ? "text-[#16a34a]" : "text-[#6b7280]"}
+                className={confirmAction?.type === "entregue" ? "text-ok" : "text-[#6b7280]"}
               />
               {confirmAction?.type === "entregue" ? "Confirmar Entrega" : "Cancelar Pedido"}
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-[#4a3d3d]">
+          <p className="text-sm text-ink-2">
             {confirmAction?.type === "entregue"
               ? "Ao confirmar a entrega, o estoque da franquia será atualizado automaticamente. Essa ação não pode ser desfeita."
               : "Tem certeza que deseja cancelar este pedido? Essa ação não pode ser desfeita."}
@@ -1410,7 +1410,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={() => setConfirmAction(null)}
               disabled={saving}
-              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
+              className="border-ink-4 text-ink-2 rounded-xl"
             >
               Voltar
             </Button>
@@ -1420,7 +1420,7 @@ export default function PurchaseOrders() {
               disabled={saving}
               className={`font-bold rounded-xl gap-1 ${
                 confirmAction?.type === "entregue"
-                  ? "bg-[#16a34a] hover:bg-[#15803d] text-white"
+                  ? "bg-ok hover:bg-[#15803d] text-white"
                   : "bg-[#6b7280] hover:bg-[#4b5563] text-white"
               }`}
             >
@@ -1447,13 +1447,13 @@ export default function PurchaseOrders() {
                 icon={STATUS_CONFIG[confirmBulkAction?.status]?.icon || "sync"}
                 size={20}
                 style={{ color: STATUS_CONFIG[confirmBulkAction?.status]?.icon ? undefined : "#2563eb" }}
-                className={confirmBulkAction?.status === "entregue" ? "text-[#16a34a]" : confirmBulkAction?.status === "em_rota" ? "text-[#ea580c]" : "text-[#2563eb]"}
+                className={confirmBulkAction?.status === "entregue" ? "text-ok" : confirmBulkAction?.status === "em_rota" ? "text-[#ea580c]" : "text-[#2563eb]"}
               />
               Alterar {confirmBulkAction?.orderIds?.length} pedido{confirmBulkAction?.orderIds?.length > 1 ? "s" : ""} para {STATUS_CONFIG[confirmBulkAction?.status]?.label}
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-[#4a3d3d]">
+          <p className="text-sm text-ink-2">
             {confirmBulkAction?.status === "entregue"
               ? `O estoque de ${confirmBulkAction?.orderIds?.length} franquia(s) será atualizado automaticamente. Essa ação não pode ser desfeita.`
               : `Alterar o status de ${confirmBulkAction?.orderIds?.length} pedido${confirmBulkAction?.orderIds?.length > 1 ? "s" : ""} para "${STATUS_CONFIG[confirmBulkAction?.status]?.label}".`}
@@ -1465,7 +1465,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={() => setConfirmBulkAction(null)}
               disabled={bulkChanging}
-              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
+              className="border-ink-4 text-ink-2 rounded-xl"
             >
               Cancelar
             </Button>
@@ -1474,7 +1474,7 @@ export default function PurchaseOrders() {
               onClick={doBulkStatusChange}
               disabled={bulkChanging}
               className={`font-bold rounded-xl gap-1 ${
-                confirmBulkAction?.status === "entregue" ? "bg-[#16a34a] hover:bg-[#15803d] text-white"
+                confirmBulkAction?.status === "entregue" ? "bg-ok hover:bg-[#15803d] text-white"
                 : confirmBulkAction?.status === "em_rota" ? "bg-[#ea580c] hover:bg-[#c2410c] text-white"
                 : "bg-[#2563eb] hover:bg-[#1d4ed8] text-white"
               }`}
@@ -1495,12 +1495,12 @@ export default function PurchaseOrders() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
-              <MaterialIcon icon="delete" size={20} className="text-[#dc2626]" />
+              <MaterialIcon icon="delete" size={20} className="text-err" />
               Excluir Pedido{confirmDeleteAction?.type === "bulk" && selectedIds.size > 1 ? "s" : ""}
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-[#4a3d3d]">
+          <p className="text-sm text-ink-2">
             {confirmDeleteAction?.type === "bulk"
               ? `Excluir ${selectedIds.size} pedido${selectedIds.size > 1 ? "s" : ""} permanentemente? Essa ação não pode ser desfeita.`
               : "Excluir este pedido permanentemente? Essa ação não pode ser desfeita."}
@@ -1512,7 +1512,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={() => setConfirmDeleteAction(null)}
               disabled={deleting}
-              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
+              className="border-ink-4 text-ink-2 rounded-xl"
             >
               Voltar
             </Button>
@@ -1520,7 +1520,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={handleDeleteConfirm}
               disabled={deleting}
-              className="bg-[#dc2626] hover:bg-[#b91c1c] text-white font-bold rounded-xl gap-1"
+              className="bg-err hover:bg-brand text-white font-bold rounded-xl gap-1"
             >
               {deleting ? (
                 <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
@@ -1538,37 +1538,37 @@ export default function PurchaseOrders() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
-              <MaterialIcon icon="add_circle" size={20} className="text-[#b91c1c]" />
+              <MaterialIcon icon="add_circle" size={20} className="text-brand" />
               Novo Produto Padrão
             </DialogTitle>
           </DialogHeader>
 
-          <p className="text-sm text-[#4a3d3d]">
+          <p className="text-sm text-ink-2">
             O produto será adicionado ao estoque de todas as franquias existentes.
           </p>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+              <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                 Nome do Produto *
               </Label>
               <Input
                 value={newProduct.name}
                 onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
                 placeholder="Ex: Nhoque Quatro Queijos"
-                className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                className="h-9 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+              <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                 Categoria *
               </Label>
               <Select
                 value={newProduct.category}
                 onValueChange={(val) => setNewProduct((p) => ({ ...p, category: val }))}
               >
-                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                <SelectTrigger className="bg-surface-line border-none rounded-xl">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1582,14 +1582,14 @@ export default function PurchaseOrders() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+              <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                 Unidade
               </Label>
               <Select
                 value={newProduct.unit}
                 onValueChange={(val) => setNewProduct((p) => ({ ...p, unit: val }))}
               >
-                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                <SelectTrigger className="bg-surface-line border-none rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1604,7 +1604,7 @@ export default function PurchaseOrders() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                   Custo Unitário (R$)
                 </Label>
                 <Input
@@ -1614,11 +1614,11 @@ export default function PurchaseOrders() {
                   value={newProduct.cost_price}
                   onChange={(e) => setNewProduct((p) => ({ ...p, cost_price: e.target.value }))}
                   placeholder="0,00"
-                  className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                  className="h-9 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                <Label className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                   Estoque Mínimo
                 </Label>
                 <Input
@@ -1627,7 +1627,7 @@ export default function PurchaseOrders() {
                   step="1"
                   value={newProduct.min_stock}
                   onChange={(e) => setNewProduct((p) => ({ ...p, min_stock: e.target.value }))}
-                  className="h-9 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20"
+                  className="h-9 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                 />
               </div>
             </div>
@@ -1639,7 +1639,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={() => setNewProductOpen(false)}
               disabled={savingProduct}
-              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl"
+              className="border-ink-4 text-ink-2 rounded-xl"
             >
               Cancelar
             </Button>
@@ -1647,7 +1647,7 @@ export default function PurchaseOrders() {
               size="sm"
               onClick={handleCreateDefaultProduct}
               disabled={savingProduct || !newProduct.name.trim() || !newProduct.category}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-1"
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-1"
             >
               {savingProduct ? (
                 <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />

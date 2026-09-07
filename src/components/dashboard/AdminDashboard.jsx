@@ -37,12 +37,12 @@ function CollapsibleSection({ title, icon, defaultOpen = false, onFirstExpand, c
   return (
     <Collapsible open={open} onOpenChange={handleOpenChange}>
       <CollapsibleTrigger asChild>
-        <button className="w-full flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl shadow-sm border border-[#291715]/5 hover:bg-[#fbf9fa] transition-colors cursor-pointer">
+        <button className="w-full flex items-center justify-between bg-white px-5 py-3.5 rounded-2xl shadow-sm border border-ink-shadow/5 hover:bg-surface transition-colors cursor-pointer">
           <div className="flex items-center gap-2.5">
-            <MaterialIcon icon={icon} size={20} className="text-[#1b1c1d]/50" />
-            <span className="text-sm font-bold font-plus-jakarta tracking-tight text-[#1b1c1d]/70 uppercase">{title}</span>
+            <MaterialIcon icon={icon} size={20} className="text-ink/50" />
+            <span className="text-sm font-bold font-plus-jakarta tracking-tight text-ink/70 uppercase">{title}</span>
           </div>
-          <MaterialIcon icon={open ? "expand_less" : "expand_more"} size={20} className="text-[#1b1c1d]/40" />
+          <MaterialIcon icon={open ? "expand_less" : "expand_more"} size={20} className="text-ink/40" />
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-2">
@@ -441,7 +441,7 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-8 space-y-6 bg-[#fbf9fa]">
+      <div className="p-4 md:p-8 space-y-6 bg-surface">
         <Skeleton className="h-14 w-full rounded-2xl" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <Skeleton className="h-40 rounded-2xl" />
@@ -457,11 +457,11 @@ export default function AdminDashboard() {
 
   if (loadError) {
     return (
-      <div className="p-4 md:p-8 bg-[#fbf9fa]">
+      <div className="p-4 md:p-8 bg-surface">
         <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-          <p className="text-[#4a3d3d] text-center">{loadError}</p>
-          <button onClick={loadData} className="mt-2 px-4 py-2 border border-[#cac0c0] rounded-lg text-sm text-[#4a3d3d] hover:bg-white">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
+          <button onClick={loadData} className="mt-2 px-4 py-2 border border-ink-4 rounded-lg text-sm text-ink-2 hover:bg-white">
             <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" />
             Tentar novamente
           </button>
@@ -481,9 +481,9 @@ export default function AdminDashboard() {
       previousValue: stats.prevSalesCount,
       materialIcon: "shopping_bag",
       trend: trendFor(stats.salesCount, stats.prevSalesCount),
-      iconBg: "bg-[#a80012]/10",
-      iconColor: "text-[#a80012]",
-      trendColor: "text-[#a80012]",
+      iconBg: "bg-brand/10",
+      iconColor: "text-brand",
+      trendColor: "text-brand",
     },
     {
       title: "FATURAMENTO",
@@ -492,9 +492,9 @@ export default function AdminDashboard() {
       previousValue: stats.prevRevenue,
       materialIcon: "payments",
       trend: trendFor(stats.revenue, stats.prevRevenue),
-      iconBg: "bg-[#775a19]/10",
-      iconColor: "text-[#775a19]",
-      trendColor: "text-[#a80012]",
+      iconBg: "bg-brand-gold-ink/10",
+      iconColor: "text-brand-gold-ink",
+      trendColor: "text-brand",
     },
     {
       title: "CONVERSÃO",
@@ -503,9 +503,9 @@ export default function AdminDashboard() {
       previousValue: stats.prevConversion,
       materialIcon: "trending_up",
       trend: trendFor(stats.conversion, stats.prevConversion),
-      iconBg: "bg-[#775a19]/10",
-      iconColor: "text-[#775a19]",
-      trendColor: "text-[#a80012]",
+      iconBg: "bg-brand-gold-ink/10",
+      iconColor: "text-brand-gold-ink",
+      trendColor: "text-brand",
     },
     {
       title: "VENDAS BOT",
@@ -514,14 +514,14 @@ export default function AdminDashboard() {
       previousValue: stats.prevBotPercent,
       materialIcon: "smart_toy",
       trend: trendFor(stats.botPercent, stats.prevBotPercent),
-      iconBg: "bg-[#705d00]/10",
-      iconColor: "text-[#705d00]",
-      trendColor: "text-[#a80012]",
+      iconBg: "bg-brand-gold-ink/10",
+      iconColor: "text-brand-gold-ink",
+      trendColor: "text-brand",
     },
   ];
 
   return (
-    <div className="md:pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-[#fbf9fa] max-w-[1920px] mx-auto">
+    <div className="md:pt-20 p-4 md:p-8 space-y-6 md:space-y-8 bg-surface max-w-[1920px] mx-auto">
       <AdminHeader period={period} onPeriodChange={setPeriod} />
 
       {/* Stats Cards */}
@@ -539,13 +539,13 @@ export default function AdminDashboard() {
           if (card.trendColor) {
             trendTextColor = card.trendColor;
           } else {
-            trendTextColor = isDown ? "text-[#ba1a1a]" : "text-[#a80012]";
+            trendTextColor = isDown ? "text-brand" : "text-brand";
           }
 
           return (
             <div
               key={card.title}
-              className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-[#291715]/5 flex flex-col gap-3 md:gap-4"
+              className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-ink-shadow/5 flex flex-col gap-3 md:gap-4"
             >
               {/* Top: icon + trend */}
               <div className="flex justify-between items-start">
@@ -566,10 +566,10 @@ export default function AdminDashboard() {
 
               {/* Label + Value */}
               <div>
-                <p className="text-[#1b1c1d]/60 text-sm font-bold font-plus-jakarta tracking-tight">
+                <p className="text-ink/60 text-sm font-bold font-plus-jakarta tracking-tight">
                   {card.title}
                 </p>
-                <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight font-mono-numbers text-[#1b1c1d]">
+                <h3 className="text-2xl md:text-3xl font-extrabold tracking-tight font-mono-numbers text-ink">
                   {card.value}
                 </h3>
               </div>

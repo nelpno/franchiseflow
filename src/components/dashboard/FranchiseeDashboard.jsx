@@ -405,7 +405,7 @@ export default function FranchiseeDashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-[#fbf9fa]">
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
           <Skeleton className="h-24 rounded-xl" />
@@ -427,10 +427,10 @@ export default function FranchiseeDashboard() {
   // corpo do dashboard e mostrava quatro "R$ 0,00" como se fossem numeros reais.
   if (!franchiseId) {
     return (
-      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa]">
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-surface">
         <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <MaterialIcon icon="storefront" className="text-5xl text-[#7a6d6d]" aria-hidden="true" />
-          <p className="text-[#4a3d3d] text-center max-w-xs">
+          <MaterialIcon icon="storefront" className="text-5xl text-ink-3" aria-hidden="true" />
+          <p className="text-ink-2 text-center max-w-xs">
             {temUnidadeVinculada
               ? "Não consegui carregar sua unidade. Verifique a conexão e tente de novo."
               : "Nenhuma unidade vinculada a este acesso. Fale com a franqueadora."}
@@ -438,7 +438,7 @@ export default function FranchiseeDashboard() {
           {temUnidadeVinculada && (
             <button
               onClick={() => window.location.reload()}
-              className="mt-2 px-4 py-2 min-h-[44px] border border-[#cac0c0] rounded-lg text-sm text-[#4a3d3d] hover:bg-white"
+              className="mt-2 px-4 py-2 min-h-[44px] border border-ink-4 rounded-lg text-sm text-ink-2 hover:bg-white"
             >
               <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" aria-hidden="true" />
               Tentar novamente
@@ -451,11 +451,11 @@ export default function FranchiseeDashboard() {
 
   if (loadError) {
     return (
-      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa]">
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-surface">
         <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-          <p className="text-[#4a3d3d] text-center">{loadError}</p>
-          <button onClick={loadData} className="mt-2 px-4 py-2 border border-[#cac0c0] rounded-lg text-sm text-[#4a3d3d] hover:bg-white">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
+          <button onClick={loadData} className="mt-2 px-4 py-2 border border-ink-4 rounded-lg text-sm text-ink-2 hover:bg-white">
             <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" />
             Tentar novamente
           </button>
@@ -465,7 +465,7 @@ export default function FranchiseeDashboard() {
   }
 
   return (
-    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-[#fbf9fa]">
+    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-surface">
       <div className="mb-4">
         <div className="flex items-start justify-between">
           <FranchiseeGreeting
@@ -486,15 +486,15 @@ export default function FranchiseeDashboard() {
           : "Personalizado";
 
         return (
-          <div className="flex gap-1 bg-[#291715]/5 p-1 rounded-xl mb-4 overflow-x-auto sm:w-fit sm:max-w-full">
+          <div className="flex gap-1 bg-ink-shadow/5 p-1 rounded-xl mb-4 overflow-x-auto sm:w-fit sm:max-w-full">
             {["today", "week"].map((value) => (
               <button
                 key={value}
                 onClick={() => setPeriod(value)}
                 className={`px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 rounded-lg whitespace-nowrap min-h-[40px] ${
                   period === value
-                    ? "font-bold text-white bg-[#b91c1c] shadow-sm"
-                    : "font-medium text-[#1b1c1d]/70"
+                    ? "font-bold text-white bg-brand shadow-sm"
+                    : "font-medium text-ink/70"
                 }`}
               >
                 {value === "today" ? "Hoje" : "Semana"}
@@ -503,7 +503,7 @@ export default function FranchiseeDashboard() {
 
             <div
               className={`flex items-center rounded-lg whitespace-nowrap transition-colors min-h-[40px] ${
-                isMonthActive ? "bg-[#b91c1c] text-white shadow-sm" : "text-[#1b1c1d]/70"
+                isMonthActive ? "bg-brand text-white shadow-sm" : "text-ink/70"
               }`}
             >
               <button
@@ -549,8 +549,8 @@ export default function FranchiseeDashboard() {
               onClick={() => setCustomSheetOpen(true)}
               className={`px-2 sm:px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 rounded-lg whitespace-nowrap min-h-[40px] flex items-center gap-1 ${
                 isCustomActive
-                  ? "font-bold text-white bg-[#b91c1c] shadow-sm"
-                  : "font-medium text-[#1b1c1d]/70"
+                  ? "font-bold text-white bg-brand shadow-sm"
+                  : "font-medium text-ink/70"
               }`}
               aria-label="Período personalizado"
               title="Período personalizado"
@@ -680,7 +680,7 @@ export default function FranchiseeDashboard() {
       <div className="hidden md:flex fixed bottom-10 right-10 z-50">
         <Button
           onClick={() => navigate("/Vendas?action=nova-venda")}
-          className="h-12 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl shadow-lg flex items-center gap-2 px-6"
+          className="h-12 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg flex items-center gap-2 px-6"
         >
           <MaterialIcon icon="point_of_sale" size={18} />
           Nova Venda

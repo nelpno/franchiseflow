@@ -34,13 +34,13 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
     <div className="w-full space-y-3">
       {/* Progress summary */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 bg-[#e9e8e9] rounded-full h-2 overflow-hidden">
+        <div className="flex-1 bg-surface-line rounded-full h-2 overflow-hidden">
           <div
-            className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-[#b91c1c] to-[#d4af37]"
+            className="h-2 rounded-full transition-all duration-500 bg-gradient-to-r from-brand to-brand-gold"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="text-xs font-bold text-[#4a3d3d] whitespace-nowrap">
+        <span className="text-xs font-bold text-ink-2 whitespace-nowrap">
           {completedCount}/{countableSteps.length} etapas
         </span>
       </div>
@@ -66,12 +66,12 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                       isActive
-                        ? "bg-[#b91c1c] text-white shadow-md shadow-[#b91c1c]/30 ring-2 ring-[#b91c1c]/20 ring-offset-2 scale-110"
+                        ? "bg-brand text-white shadow-md shadow-brand/30 ring-2 ring-brand/20 ring-offset-2 scale-110"
                         : isCompleted
-                        ? "bg-[#b91c1c]/15 text-[#b91c1c]"
+                        ? "bg-brand/15 text-brand"
                         : isSkipped
-                        ? "bg-[#e9e8e9]/50 text-[#3d4a42]/30"
-                        : "bg-[#e9e8e9] text-[#3d4a42]"
+                        ? "bg-surface-line/50 text-[#3d4a42]/30"
+                        : "bg-surface-line text-[#3d4a42]"
                     }`}
                   >
                     {isCompleted ? (
@@ -85,9 +85,9 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                   <span
                     className={`text-[11px] font-medium leading-tight text-center w-16 ${
                       isActive
-                        ? "text-[#b91c1c] font-bold"
+                        ? "text-brand font-bold"
                         : isCompleted
-                        ? "text-[#b91c1c]/70 font-semibold"
+                        ? "text-brand/70 font-semibold"
                         : isSkipped
                         ? "text-[#3d4a42]/30"
                         : "text-[#3d4a42]/60"
@@ -99,7 +99,7 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                 {!isLast && (
                   <div
                     className={`w-6 md:flex-1 h-[2px] shrink-0 transition-colors ${
-                      isCompleted ? "bg-[#b91c1c]/30" : "bg-[#e9e8e9]"
+                      isCompleted ? "bg-brand/30" : "bg-surface-line"
                     }`}
                   />
                 )}

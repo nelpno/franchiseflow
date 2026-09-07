@@ -8,7 +8,7 @@ function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
     <div className="border border-[#bccac0]/10 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <MaterialIcon icon={icon} filled size={18} className="text-[#b91c1c]" />
+          <MaterialIcon icon={icon} filled size={18} className="text-brand" />
           <h4 className="text-sm font-bold text-[#3d4a42]">{title}</h4>
           {hasWarning && (
             <MaterialIcon icon="warning" filled size={14} className="text-amber-500" />
@@ -17,7 +17,7 @@ function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
         <button
           type="button"
           onClick={() => onGoToStep(stepNum)}
-          className="text-xs text-[#b91c1c] font-semibold hover:underline"
+          className="text-xs text-brand font-semibold hover:underline"
         >
           Editar
         </button>
@@ -29,7 +29,7 @@ function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
             {f.warning ? (
               <span className="text-xs text-amber-600 italic">{f.value || "Não preenchido"}</span>
             ) : (
-              <span className="text-xs text-[#1b1c1d] font-medium">{f.value || "—"}</span>
+              <span className="text-xs text-ink font-medium">{f.value || "—"}</span>
             )}
           </div>
         ))}

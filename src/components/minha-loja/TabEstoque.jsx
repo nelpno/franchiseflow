@@ -493,21 +493,21 @@ export default function TabEstoque({
   const getStockBadge = (item) => {
     if (!item.min_stock || item.min_stock <= 0) {
       return (
-        <Badge className="bg-[#e9e8e9] text-[#4a3d3d] rounded-full px-2 py-0.5 text-[11px] font-bold">
+        <Badge className="bg-surface-line text-ink-2 rounded-full px-2 py-0.5 text-[11px] font-bold">
           Sem minimo
         </Badge>
       );
     }
     if (item.quantity < item.min_stock) {
       return (
-        <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[11px] font-bold">
+        <Badge className="bg-brand/10 text-brand rounded-full px-2 py-0.5 text-[11px] font-bold">
           <MaterialIcon icon="warning" size={12} className="mr-1" />
           Estoque baixo
         </Badge>
       );
     }
     return (
-      <Badge className="bg-[#b91c1c]/10 text-[#9c4143] rounded-full px-2 py-0.5 text-[11px] font-bold">
+      <Badge className="bg-brand/10 text-[#9c4143] rounded-full px-2 py-0.5 text-[11px] font-bold">
         <MaterialIcon icon="check" size={12} className="mr-1" />
         OK
       </Badge>
@@ -527,9 +527,9 @@ export default function TabEstoque({
     let colorClass = "bg-[#9c4143]/10 text-[#9c4143]"; // green/ok
 
     if (stock <= giro * 0.5) {
-      colorClass = "bg-[#b91c1c]/10 text-[#b91c1c]"; // red — will run out
+      colorClass = "bg-brand/10 text-brand"; // red — will run out
     } else if (stock >= giro * 2) {
-      colorClass = "bg-[#d4af37]/10 text-[#775a19]"; // amber — buying too much
+      colorClass = "bg-brand-gold/10 text-brand-gold-ink"; // amber — buying too much
     }
 
     return (
@@ -544,7 +544,7 @@ export default function TabEstoque({
     if (toBuy === null || toBuy <= 0) return null;
 
     return (
-      <Badge className="bg-[#d4af37]/10 text-[#775a19] rounded-full px-2 py-0.5 text-[11px] font-bold">
+      <Badge className="bg-brand-gold/10 text-brand-gold-ink rounded-full px-2 py-0.5 text-[11px] font-bold">
         <MaterialIcon icon="shopping_cart" size={12} className="mr-1" />
         Comprar {toBuy} {item.unit || "un"}
       </Badge>
@@ -579,7 +579,7 @@ export default function TabEstoque({
     if (margin < 50) {
       colorClass = "bg-red-100 text-red-700";
     } else if (margin < 80) {
-      colorClass = "bg-[#d4af37]/10 text-[#775a19]";
+      colorClass = "bg-brand-gold/10 text-brand-gold-ink";
     }
 
     return (
@@ -623,15 +623,15 @@ export default function TabEstoque({
       {/* Header actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-[#4a3d3d]">
-            <span className="font-bold text-[#1b1c1d]">{totalProducts}</span> produtos
+          <div className="flex items-center gap-2 text-sm text-ink-2">
+            <span className="font-bold text-ink">{totalProducts}</span> produtos
             {lowStockCount > 0 && (
-              <Badge className="bg-[#b91c1c]/10 text-[#b91c1c] rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
+              <Badge className="bg-brand/10 text-brand rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
                 {lowStockCount} baixo
               </Badge>
             )}
             {faturamentoPotencial > 0 && (
-              <Badge className="bg-[#d4af37]/10 text-[#775a19] rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
+              <Badge className="bg-brand-gold/10 text-brand-gold-ink rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
                 Potencial {formatBRL(faturamentoPotencial)}
               </Badge>
             )}
@@ -642,7 +642,7 @@ export default function TabEstoque({
           <Button
             variant="outline"
             onClick={handleExportCSV}
-            className="gap-2 border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa]"
+            className="gap-2 border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
             size="sm"
           >
             <MaterialIcon icon="upload" size={16} />
@@ -650,7 +650,7 @@ export default function TabEstoque({
           </Button>
           <Button
             onClick={handleOpenAddDialog}
-            className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+            className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
             size="sm"
           >
             <MaterialIcon icon="add" size={16} />
@@ -692,9 +692,9 @@ export default function TabEstoque({
 
       {/* Missing sale_price banner */}
       {missingPriceCount > 0 && (
-        <div className="flex items-center gap-3 p-3 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-xl">
-          <MaterialIcon icon="warning" size={20} className="text-[#775a19] shrink-0" />
-          <p className="text-sm text-[#775a19] flex-1">
+        <div className="flex items-center gap-3 p-3 bg-brand-gold/10 border border-brand-gold/30 rounded-xl">
+          <MaterialIcon icon="warning" size={20} className="text-brand-gold-ink shrink-0" />
+          <p className="text-sm text-brand-gold-ink flex-1">
             <strong>{missingPriceCount} de {items.length}</strong> produtos sem preco de venda definido.
             {" "}Clique no valor para editar.
           </p>
@@ -704,11 +704,11 @@ export default function TabEstoque({
       {/* Content */}
       {filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <MaterialIcon icon="package_2" size={64} className="text-[#cac0c0] mb-4" />
-          <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+          <MaterialIcon icon="package_2" size={64} className="text-ink-4 mb-4" />
+          <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
             Nenhum produto encontrado
           </h3>
-          <p className="text-sm text-[#4a3d3d] mb-4 max-w-sm">
+          <p className="text-sm text-ink-2 mb-4 max-w-sm">
             {searchTerm || filterCategory !== "all"
               ? "Nenhum produto corresponde aos filtros aplicados."
               : "Comece adicionando produtos ao estoque da sua loja."}
@@ -716,7 +716,7 @@ export default function TabEstoque({
           {!searchTerm && filterCategory === "all" && (
             <Button
               onClick={handleOpenAddDialog}
-              className="gap-2 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl"
+              className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
             >
               <MaterialIcon icon="add" size={18} />
               Adicionar Primeiro Produto
@@ -729,7 +729,7 @@ export default function TabEstoque({
           <div className="md:hidden space-y-4">
             {itemGroups.map((group) => (
               <div key={group.label} className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta px-1">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-brand font-plus-jakarta px-1">
                   {group.label}
                 </h3>
                 {group.items.map((item) => {
@@ -741,20 +741,20 @@ export default function TabEstoque({
                       key={item.id}
                       className={`rounded-2xl shadow-sm border ${
                         isLowStock
-                          ? "border-[#b91c1c]/20 bg-[#b91c1c]/5"
-                          : "border-[#291715]/5 bg-white"
+                          ? "border-brand/20 bg-brand/5"
+                          : "border-ink-shadow/5 bg-white"
                       }`}
                     >
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
                             <h4
-                              className="font-medium text-[#1b1c1d] truncate cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors"
+                              className="font-medium text-ink truncate cursor-pointer hover:underline hover:text-brand transition-colors"
                               onClick={() => handleOpenEditDialog(item)}
                             >
                               {item.product_name}
                             </h4>
-                            <p className="text-xs text-[#4a3d3d]">
+                            <p className="text-xs text-ink-2">
                               {item.category || getCategoryFromName(item.product_name)} · {getUnitLabel(item.unit)}
                             </p>
                           </div>
@@ -762,7 +762,7 @@ export default function TabEstoque({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-10 w-10 text-[#4a3d3d] hover:text-[#b91c1c]"
+                              className="h-10 w-10 text-ink-2 hover:text-brand"
                               onClick={() => handleOpenEditDialog(item)}
                               aria-label="Editar produto"
                               title="Editar produto"
@@ -772,7 +772,7 @@ export default function TabEstoque({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-10 w-10 text-[#4a3d3d] hover:text-[#775a19]"
+                              className="h-10 w-10 text-ink-2 hover:text-brand-gold-ink"
                               onClick={() => handleToggleActive(item)}
                               aria-label={item.active === false ? "Reativar produto" : "Ocultar do catálogo"}
                               title={item.active === false ? "Reativar produto" : "Ocultar do catálogo"}
@@ -782,7 +782,7 @@ export default function TabEstoque({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-10 w-10 text-[#cac0c0] hover:text-[#b91c1c]"
+                              className="h-10 w-10 text-ink-4 hover:text-brand"
                               onClick={() => setDeleteConfirmId(item.id)}
                               aria-label="Excluir produto"
                               title="Excluir produto"
@@ -794,11 +794,11 @@ export default function TabEstoque({
 
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                            <span className="text-xs uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
                               Quantidade
                             </span>
                             <div
-                              className="font-bold text-[#1b1c1d] cursor-pointer active:text-[#775a19] flex items-center gap-1 bg-[#e9e8e9]/50 rounded-lg px-2 py-1 min-h-[32px]"
+                              className="font-bold text-ink cursor-pointer active:text-brand-gold-ink flex items-center gap-1 bg-surface-line/50 rounded-lg px-2 py-1 min-h-[32px]"
                               onClick={() =>
                                 handleCellClick(item.id, "quantity", item.quantity)
                               }
@@ -821,17 +821,17 @@ export default function TabEstoque({
                               ) : (
                                 <>
                                   <span>{item.quantity ?? 0} {item.unit}</span>
-                                  <MaterialIcon icon="edit" size={12} className="text-[#4a3d3d]/40" />
+                                  <MaterialIcon icon="edit" size={12} className="text-ink-2/40" />
                                 </>
                               )}
                             </div>
                           </div>
                           <div>
-                            <span className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                            <span className="text-xs uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
                               Min.
                             </span>
                             <div
-                              className="font-bold text-[#1b1c1d] cursor-pointer active:text-[#775a19] flex items-center gap-1 bg-[#e9e8e9]/50 rounded-lg px-2 py-1 min-h-[32px]"
+                              className="font-bold text-ink cursor-pointer active:text-brand-gold-ink flex items-center gap-1 bg-surface-line/50 rounded-lg px-2 py-1 min-h-[32px]"
                               onClick={() =>
                                 handleCellClick(item.id, "min_stock", item.min_stock)
                               }
@@ -854,7 +854,7 @@ export default function TabEstoque({
                               ) : (
                                 <>
                                   <span>{item.min_stock ?? 0}</span>
-                                  <MaterialIcon icon="edit" size={12} className="text-[#4a3d3d]/40" />
+                                  <MaterialIcon icon="edit" size={12} className="text-ink-2/40" />
                                 </>
                               )}
                             </div>
@@ -864,18 +864,18 @@ export default function TabEstoque({
                         {/* Prices */}
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                            <span className="text-xs uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
                               Custo
                             </span>
-                            <p className="text-[#4a3d3d]">{formatBRL(item.cost_price)}</p>
+                            <p className="text-ink-2">{formatBRL(item.cost_price)}</p>
                           </div>
                           <div>
-                            <span className="text-xs uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+                            <span className="text-xs uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
                               Venda
                             </span>
                             <div
-                              className={`cursor-pointer active:text-[#775a19] flex items-center gap-1 bg-[#e9e8e9]/50 rounded-lg px-2 py-1 min-h-[32px] ${
-                                !item.sale_price ? "text-[#b91c1c] font-medium" : "text-[#4a3d3d]"
+                              className={`cursor-pointer active:text-brand-gold-ink flex items-center gap-1 bg-surface-line/50 rounded-lg px-2 py-1 min-h-[32px] ${
+                                !item.sale_price ? "text-brand font-medium" : "text-ink-2"
                               }`}
                               onClick={() =>
                                 handleCellClick(item.id, "sale_price", item.sale_price)
@@ -907,12 +907,12 @@ export default function TabEstoque({
                                       </>
                                     ) : (
                                       <>
-                                        <MaterialIcon icon="warning" size={12} className="text-[#b91c1c]" />
+                                        <MaterialIcon icon="warning" size={12} className="text-brand" />
                                         Definir
                                       </>
                                     )}
                                   </span>
-                                  <MaterialIcon icon="edit" size={12} className="text-[#4a3d3d]/40 ml-auto" />
+                                  <MaterialIcon icon="edit" size={12} className="text-ink-2/40 ml-auto" />
 </>
                               )}
                             </div>
@@ -934,40 +934,40 @@ export default function TabEstoque({
           </div>
 
           {/* Desktop: table layout */}
-          <Card className="hidden md:block bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+          <Card className="hidden md:block bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-b border-[#cac0c0]/30">
-                      <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                    <TableRow className="border-b border-ink-4/30">
+                      <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Produto
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Categoria
                       </TableHead>
-                      <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Qtd
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Un.
                       </TableHead>
-                      <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Min.
                       </TableHead>
-                      <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Custo
                       </TableHead>
-                      <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Venda
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Status
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Giro
                       </TableHead>
-                      <TableHead className="text-xs font-bold uppercase tracking-widest text-[#1b1c1d]/60 font-plus-jakarta">
+                      <TableHead className="text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                         Sugestão
                       </TableHead>
                       <TableHead className="w-[80px]"></TableHead>
@@ -976,9 +976,9 @@ export default function TabEstoque({
                   <TableBody>
                     {itemGroups.map((group) => (
                       <React.Fragment key={group.label}>
-                        <TableRow className="bg-[#fbf9fa] border-t border-[#291715]/10">
+                        <TableRow className="bg-surface border-t border-ink-shadow/10">
                           <TableCell colSpan={999} className="py-2">
-                            <span className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] font-plus-jakarta">
+                            <span className="text-xs font-bold uppercase tracking-widest text-brand font-plus-jakarta">
                               {group.label}
                             </span>
                           </TableCell>
@@ -992,13 +992,13 @@ export default function TabEstoque({
                               key={item.id}
                               className={
                                 isLowStock
-                                  ? "bg-[#b91c1c]/5 hover:bg-[#b91c1c]/10"
-                                  : "hover:bg-[#fbf9fa]"
+                                  ? "bg-brand/5 hover:bg-brand/10"
+                                  : "hover:bg-surface"
                               }
                             >
-                              <TableCell className="font-medium text-[#1b1c1d]">
+                              <TableCell className="font-medium text-ink">
                                 <span
-                                  className="cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors"
+                                  className="cursor-pointer hover:underline hover:text-brand transition-colors"
                                   onClick={() => handleOpenEditDialog(item)}
                                   title="Clique para editar"
                                 >
@@ -1006,7 +1006,7 @@ export default function TabEstoque({
                                 </span>
                               </TableCell>
 
-                              <TableCell className="text-sm text-[#4a3d3d]">
+                              <TableCell className="text-sm text-ink-2">
                                 {item.category || getCategoryFromName(item.product_name)}
                               </TableCell>
 
@@ -1023,11 +1023,11 @@ export default function TabEstoque({
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
-                                    className="w-16 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                    className="w-16 mx-auto text-center h-8 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                   />
                                 ) : (
                                   <span
-                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block w-16 text-center"
+                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-brand-gold/10 hover:text-brand-gold-ink transition-colors inline-block w-16 text-center"
                                     onClick={() =>
                                       handleCellClick(item.id, "quantity", item.quantity)
                                     }
@@ -1038,7 +1038,7 @@ export default function TabEstoque({
                                 )}
                               </TableCell>
 
-                              <TableCell className="text-sm text-[#4a3d3d]">
+                              <TableCell className="text-sm text-ink-2">
                                 {getUnitLabel(item.unit)}
                               </TableCell>
 
@@ -1055,11 +1055,11 @@ export default function TabEstoque({
                                     onChange={(e) => setEditValue(e.target.value)}
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
-                                    className="w-16 mx-auto text-center h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                    className="w-16 mx-auto text-center h-8 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                   />
                                 ) : (
                                   <span
-                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-block w-16 text-center"
+                                    className="cursor-pointer px-2 py-1 rounded-lg hover:bg-brand-gold/10 hover:text-brand-gold-ink transition-colors inline-block w-16 text-center"
                                     onClick={() =>
                                       handleCellClick(item.id, "min_stock", item.min_stock)
                                     }
@@ -1071,7 +1071,7 @@ export default function TabEstoque({
                               </TableCell>
 
                               {/* Cost price */}
-                              <TableCell className="text-right text-sm text-[#4a3d3d]">
+                              <TableCell className="text-right text-sm text-ink-2">
                                 {formatBRL(item.cost_price)}
                               </TableCell>
 
@@ -1089,14 +1089,14 @@ export default function TabEstoque({
                                     onBlur={handleCellBlur}
                                     onKeyDown={handleCellKeyDown}
                                     placeholder={getRecommendedPrice(item) ? formatBRL(getRecommendedPrice(item)) : "0,00"}
-                                    className="w-20 ml-auto text-right h-8 bg-[#e9e8e9] border-none rounded-xl focus:ring-2 focus:ring-[#b91c1c]/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                    className="w-20 ml-auto text-right h-8 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                                   />
                                 ) : (
                                   <span
-                                    className={`cursor-pointer px-2 py-1 rounded-lg hover:bg-[#d4af37]/10 hover:text-[#775a19] transition-colors inline-flex items-center gap-1 ${
+                                    className={`cursor-pointer px-2 py-1 rounded-lg hover:bg-brand-gold/10 hover:text-brand-gold-ink transition-colors inline-flex items-center gap-1 ${
                                       !item.sale_price
-                                        ? "text-[#b91c1c] font-medium"
-                                        : "text-[#4a3d3d]"
+                                        ? "text-brand font-medium"
+                                        : "text-ink-2"
                                     }`}
                                     onClick={() =>
                                       handleCellClick(item.id, "sale_price", item.sale_price)
@@ -1110,7 +1110,7 @@ export default function TabEstoque({
                                       </>
                                     ) : (
                                       <>
-                                        <MaterialIcon icon="warning" size={14} className="text-[#b91c1c]" />
+                                        <MaterialIcon icon="warning" size={14} className="text-brand" />
                                         Definir
                                       </>
                                     )}
@@ -1129,7 +1129,7 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-[#4a3d3d] hover:text-[#b91c1c]"
+                                    className="h-8 w-8 text-ink-2 hover:text-brand"
                                     onClick={() => handleOpenEditDialog(item)}
                                     aria-label="Editar produto"
                                     title="Editar produto"
@@ -1139,7 +1139,7 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-[#4a3d3d] hover:text-[#775a19]"
+                                    className="h-8 w-8 text-ink-2 hover:text-brand-gold-ink"
                                     onClick={() => handleToggleActive(item)}
                                     aria-label="Ocultar do catálogo"
                                     title="Ocultar produto — não aparece para o bot nem na reposição"
@@ -1149,7 +1149,7 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-[#cac0c0] hover:text-[#b91c1c]"
+                                    className="h-8 w-8 text-ink-4 hover:text-brand"
                                     onClick={() => setDeleteConfirmId(item.id)}
                                     aria-label="Excluir produto"
                                     title="Excluir produto"
@@ -1173,41 +1173,41 @@ export default function TabEstoque({
 
       {/* Hidden items section */}
       {hiddenItems.length > 0 && (
-        <div className="border border-[#cac0c0]/30 rounded-2xl overflow-hidden">
+        <div className="border border-ink-4/30 rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowHidden(!showHidden)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-[#fbf9fa] hover:bg-[#f5f3f4] transition-colors text-left"
+            className="w-full flex items-center justify-between px-4 py-3 bg-surface hover:bg-[#f5f3f4] transition-colors text-left"
           >
             <div className="flex items-center gap-2">
-              <MaterialIcon icon="visibility_off" size={18} className="text-[#4a3d3d]/60" />
-              <span className="text-sm font-semibold text-[#4a3d3d]">
+              <MaterialIcon icon="visibility_off" size={18} className="text-ink-2/60" />
+              <span className="text-sm font-semibold text-ink-2">
                 {hiddenItems.length} produto{hiddenItems.length > 1 ? "s" : ""} oculto{hiddenItems.length > 1 ? "s" : ""}
               </span>
-              <span className="text-xs text-[#4a3d3d]/60">
+              <span className="text-xs text-ink-2/60">
                 — não aparecem para o bot nem na reposição
               </span>
             </div>
-            <MaterialIcon icon={showHidden ? "expand_less" : "expand_more"} size={20} className="text-[#4a3d3d]/60" />
+            <MaterialIcon icon={showHidden ? "expand_less" : "expand_more"} size={20} className="text-ink-2/60" />
           </button>
           {showHidden && (
-            <div className="p-3 space-y-2 border-t border-[#cac0c0]/20">
+            <div className="p-3 space-y-2 border-t border-ink-4/20">
               {hiddenItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-[#cac0c0]/20"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-white border border-ink-4/20"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-[#4a3d3d]/60 line-through">
+                    <span className="text-sm font-medium text-ink-2/60 line-through">
                       {item.product_name}
                     </span>
-                    <span className="text-xs text-[#4a3d3d]/40">
+                    <span className="text-xs text-ink-2/40">
                       {item.quantity ?? 0} {item.unit}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 gap-1 text-xs text-[#16a34a] hover:text-[#16a34a] hover:bg-[#16a34a]/10"
+                    className="h-8 gap-1 text-xs text-ok hover:text-ok hover:bg-ok/10"
                     onClick={() => handleToggleActive(item)}
                   >
                     <MaterialIcon icon="visibility" size={14} />
@@ -1224,8 +1224,8 @@ export default function TabEstoque({
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d]">
-              <MaterialIcon icon="inventory_2" size={20} className="text-[#b91c1c]" />
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink">
+              <MaterialIcon icon="inventory_2" size={20} className="text-brand" />
               {editingItem ? "Editar Produto" : "Adicionar Produto"}
             </DialogTitle>
           </DialogHeader>
@@ -1233,7 +1233,7 @@ export default function TabEstoque({
           <form onSubmit={handleSubmitProduct} className="space-y-4">
             {/* Product name with autocomplete */}
             <div className="space-y-2 relative">
-              <Label className="text-[#1b1c1d]">Nome do Produto *</Label>
+              <Label className="text-ink">Nome do Produto *</Label>
               <Input
                 value={formData.product_name}
                 onChange={(e) => {
@@ -1248,25 +1248,25 @@ export default function TabEstoque({
                 placeholder="Ex: Lasanha Bolonhesa 500g"
                 required
                 autoComplete="off"
-                className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
+                className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
               />
               {showSuggestions && filteredSuggestions.length > 0 && !editingItem && (
                 <div
                   ref={suggestionsRef}
-                  className="absolute z-50 w-full mt-1 bg-white border border-[#cac0c0]/30 rounded-xl shadow-lg max-h-48 overflow-y-auto"
+                  className="absolute z-50 w-full mt-1 bg-white border border-ink-4/30 rounded-xl shadow-lg max-h-48 overflow-y-auto"
                 >
-                  <p className="px-3 py-1.5 text-xs uppercase tracking-widest text-[#4a3d3d]/60 font-plus-jakarta border-b border-[#cac0c0]/10">
+                  <p className="px-3 py-1.5 text-xs uppercase tracking-widest text-ink-2/60 font-plus-jakarta border-b border-ink-4/10">
                     Produtos padrão da rede
                   </p>
                   {filteredSuggestions.slice(0, 8).map((p) => (
                     <button
                       key={p.product_name}
                       type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-[#b91c1c]/5 transition-colors text-sm text-[#1b1c1d] flex justify-between items-center"
+                      className="w-full text-left px-3 py-2 hover:bg-brand/5 transition-colors text-sm text-ink flex justify-between items-center"
                       onClick={() => handleSelectStandard(p)}
                     >
                       <span className="truncate">{p.product_name}</span>
-                      <span className="text-xs text-[#4a3d3d]/60 ml-2 shrink-0">
+                      <span className="text-xs text-ink-2/60 ml-2 shrink-0">
                         {p.sale_price ? formatBRL(p.sale_price) : ""}
                       </span>
                     </button>
@@ -1277,7 +1277,7 @@ export default function TabEstoque({
 
             {/* Category */}
             <div className="space-y-2">
-              <Label className="text-[#1b1c1d]">Categoria</Label>
+              <Label className="text-ink">Categoria</Label>
               <Select
                 value={formData.category || "none"}
                 onValueChange={(val) =>
@@ -1287,7 +1287,7 @@ export default function TabEstoque({
                   }))
                 }
               >
-                <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                <SelectTrigger className="bg-surface-line border-none rounded-xl">
                   <SelectValue placeholder="Selecione a categoria" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1304,7 +1304,7 @@ export default function TabEstoque({
             {/* Quantity and Unit */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-[#1b1c1d]">Quantidade</Label>
+                <Label className="text-ink">Quantidade</Label>
                 <Input
                   type="number"
                   min="0"
@@ -1317,19 +1317,19 @@ export default function TabEstoque({
                     }))
                   }
                   placeholder="0"
-                  className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
+                  className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[#1b1c1d]">Unidade</Label>
+                <Label className="text-ink">Unidade</Label>
                 <Select
                   value={formData.unit}
                   onValueChange={(val) =>
                     setFormData((prev) => ({ ...prev, unit: val }))
                   }
                 >
-                  <SelectTrigger className="bg-[#e9e8e9] border-none rounded-xl">
+                  <SelectTrigger className="bg-surface-line border-none rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1345,7 +1345,7 @@ export default function TabEstoque({
 
             {/* Min stock */}
             <div className="space-y-2">
-              <Label className="text-[#1b1c1d]">Estoque Minimo</Label>
+              <Label className="text-ink">Estoque Minimo</Label>
               <Input
                 type="number"
                 min="0"
@@ -1358,9 +1358,9 @@ export default function TabEstoque({
                   }))
                 }
                 placeholder="0"
-                className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
+                className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
               />
-              <p className="text-xs text-[#4a3d3d]">
+              <p className="text-xs text-ink-2">
                 Você será alertado quando a quantidade ficar abaixo deste valor.
               </p>
             </div>
@@ -1368,10 +1368,10 @@ export default function TabEstoque({
             {/* Prices */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-[#1b1c1d]">
+                <Label className="text-ink">
                   Preco de Custo (R$)
                   {!isAdmin && editingItem && !canEditCostPrice(editingItem) && (
-                    <span className="text-xs text-[#4a3d3d] ml-1">(somente admin)</span>
+                    <span className="text-xs text-ink-2 ml-1">(somente admin)</span>
                   )}
                 </Label>
                 <Input
@@ -1387,12 +1387,12 @@ export default function TabEstoque({
                   }
                   placeholder="0,00"
                   disabled={!isAdmin && editingItem && !canEditCostPrice(editingItem)}
-                  className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20 disabled:opacity-50"
+                  className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[#1b1c1d]">Preco de Venda (R$)</Label>
+                <Label className="text-ink">Preco de Venda (R$)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -1405,17 +1405,17 @@ export default function TabEstoque({
                     }))
                   }
                   placeholder={formData.cost_price ? formatBRL(parseFloat(formData.cost_price) * 2) : "0,00"}
-                  className="bg-[#e9e8e9] border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#b91c1c]/20"
+                  className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
                 />
                 {formData.cost_price && parseFloat(formData.cost_price) > 0 && (
-                  <p className="text-xs text-[#4a3d3d]">
+                  <p className="text-xs text-ink-2">
                     Sugerido: {formatBRL(parseFloat(formData.cost_price) * 2)} (100% markup)
                     {formData.sale_price && parseFloat(formData.sale_price) > 0 && (
                       <span className={`ml-2 font-bold ${
                         ((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price) * 100) >= 80
                           ? "text-green-600"
                           : ((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price) * 100) >= 50
-                            ? "text-[#775a19]"
+                            ? "text-brand-gold-ink"
                             : "text-red-600"
                       }`}>
                         Margem: {(((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price)) * 100).toFixed(0)}%
@@ -1433,14 +1433,14 @@ export default function TabEstoque({
                 variant="outline"
                 onClick={() => setShowAddDialog(false)}
                 disabled={isSubmitting}
-                className="border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa]"
+                className="border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-2"
+                className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -1470,12 +1470,12 @@ export default function TabEstoque({
       >
         <DialogContent className="sm:max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-[#1b1c1d]">
-              <MaterialIcon icon="delete" size={20} className="text-[#b91c1c]" />
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink">
+              <MaterialIcon icon="delete" size={20} className="text-brand" />
               Confirmar Exclusao
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#4a3d3d]">
+          <p className="text-sm text-ink-2">
             Tem certeza que deseja remover{" "}
             <strong>
               {items.find((i) => i.id === deleteConfirmId)?.product_name}
@@ -1486,7 +1486,7 @@ export default function TabEstoque({
             <Button
               variant="outline"
               onClick={() => setDeleteConfirmId(null)}
-              className="border-[#cac0c0] text-[#4a3d3d] rounded-xl hover:bg-[#fbf9fa]"
+              className="border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
             >
               Cancelar
             </Button>
@@ -1495,7 +1495,7 @@ export default function TabEstoque({
                 const item = items.find((i) => i.id === deleteConfirmId);
                 if (item) handleDelete(item);
               }}
-              className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold rounded-xl gap-2"
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-2"
             >
               <MaterialIcon icon="delete" size={16} />
               Remover

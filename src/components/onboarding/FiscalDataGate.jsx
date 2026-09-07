@@ -83,10 +83,10 @@ export default function FiscalDataGate({ franchise, onReady }) {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-[#d4af37]/10 border-[#d4af37]/30">
+      <Card className="bg-brand-gold/10 border-brand-gold/30">
         <CardContent className="p-4 flex items-start gap-3">
-          <MaterialIcon icon="info" size={20} className="text-[#775a19] mt-0.5 shrink-0" />
-          <div className="text-sm text-[#775a19]">
+          <MaterialIcon icon="info" size={20} className="text-brand-gold-ink mt-0.5 shrink-0" />
+          <div className="text-sm text-brand-gold-ink">
             <p className="font-semibold">Antes de começar, precisamos dos seus dados fiscais.</p>
             <p className="mt-1">
               São usados na mensalidade (ASAAS) e na emissão de notas fiscais.

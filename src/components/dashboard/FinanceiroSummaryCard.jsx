@@ -46,7 +46,7 @@ export default function FinanceiroSummaryCard({ allSales, configMap }) {
 
   if (!metrics) {
     return (
-      <div className="bg-white rounded-2xl border border-[#291715]/5 p-5 flex flex-col items-center justify-center text-[#4a3d3d]/50 min-h-[140px]">
+      <div className="bg-white rounded-2xl border border-ink-shadow/5 p-5 flex flex-col items-center justify-center text-ink-2/50 min-h-[140px]">
         <MaterialIcon icon="account_balance" size={28} className="mb-2 opacity-40" />
         <p className="text-sm">Sem dados financeiros</p>
       </div>
@@ -54,37 +54,37 @@ export default function FinanceiroSummaryCard({ allSales, configMap }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#291715]/5 p-5 space-y-3">
+    <div className="bg-white rounded-2xl border border-ink-shadow/5 p-5 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#a80012]/10 flex items-center justify-center">
-            <MaterialIcon icon="account_balance" size={18} className="text-[#a80012]" />
+          <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+            <MaterialIcon icon="account_balance" size={18} className="text-brand" />
           </div>
-          <h3 className="text-sm font-bold text-[#1b1c1d] font-plus-jakarta">Financeiro do Mês</h3>
+          <h3 className="text-sm font-bold text-ink font-plus-jakarta">Financeiro do Mês</h3>
         </div>
-        <Link to={createPageUrl("Financeiro")} className="text-xs text-[#a80012] hover:underline font-medium">
+        <Link to={createPageUrl("Financeiro")} className="text-xs text-brand hover:underline font-medium">
           Ver detalhes
         </Link>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Faturamento</p>
-          <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{formatBRLInteger(metrics.totalRevenue)}</p>
+          <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">Faturamento</p>
+          <p className="text-lg font-extrabold text-ink font-mono-numbers">{formatBRLInteger(metrics.totalRevenue)}</p>
         </div>
         <div>
-          <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Vendas</p>
-          <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{metrics.totalSalesCount}</p>
+          <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">Vendas</p>
+          <p className="text-lg font-extrabold text-ink font-mono-numbers">{metrics.totalSalesCount}</p>
         </div>
         <div>
-          <p className="text-[10px] font-bold text-[#1b1c1d]/50 uppercase tracking-wider">Valor Médio</p>
-          <p className="text-lg font-extrabold text-[#1b1c1d] font-mono-numbers">{formatBRLInteger(metrics.avgTicket)}</p>
+          <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">Valor Médio</p>
+          <p className="text-lg font-extrabold text-ink font-mono-numbers">{formatBRLInteger(metrics.avgTicket)}</p>
         </div>
       </div>
 
       {metrics.bottomFranchise && (
-        <p className="text-xs text-[#4a3d3d]/70">
-          <MaterialIcon icon="arrow_downward" size={12} className="text-[#ba1a1a] align-middle mr-0.5" />
+        <p className="text-xs text-ink-2/70">
+          <MaterialIcon icon="arrow_downward" size={12} className="text-brand align-middle mr-0.5" />
           {metrics.bottomFranchise.name}: {formatBRLInteger(metrics.bottomFranchise.value)}
         </p>
       )}

@@ -75,7 +75,7 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
   const isPositive = lucro >= 0;
 
   return (
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 overflow-hidden">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 overflow-hidden">
       <CardContent className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <Button
@@ -86,13 +86,13 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
             aria-label="Mês anterior"
             title="Mês anterior"
           >
-            <MaterialIcon icon="chevron_left" size={22} className="text-[#4a3d3d]" />
+            <MaterialIcon icon="chevron_left" size={22} className="text-ink-2" />
           </Button>
           <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/70 font-plus-jakarta">
+            <p className="text-xs font-bold uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
               Como foi
             </p>
-            <h2 className="text-base md:text-lg font-bold text-[#1b1c1d] font-plus-jakarta capitalize mt-0.5">
+            <h2 className="text-base md:text-lg font-bold text-ink font-plus-jakarta capitalize mt-0.5">
               {monthLabel}
             </h2>
           </div>
@@ -105,16 +105,16 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
             aria-label="Próximo mês"
             title="Próximo mês"
           >
-            <MaterialIcon icon="chevron_right" size={22} className={isCurrentMonth ? "text-[#cac0c0]" : "text-[#4a3d3d]"} />
+            <MaterialIcon icon="chevron_right" size={22} className={isCurrentMonth ? "text-ink-4" : "text-ink-2"} />
           </Button>
         </div>
 
         <div className="text-center py-1">
-          <p className="text-xs text-[#4a3d3d] uppercase tracking-widest font-plus-jakarta mb-2">
+          <p className="text-xs text-ink-2 uppercase tracking-widest font-plus-jakarta mb-2">
             Lucro do mês
           </p>
           <div className={`text-4xl md:text-5xl font-bold font-mono-numbers tracking-tight ${
-            isPositive ? "text-[#1b1c1d]" : "text-[#dc2626]"
+            isPositive ? "text-ink" : "text-err"
           }`}>
             {formatBRL(lucro)}
           </div>
@@ -123,10 +123,10 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
               <MaterialIcon
                 icon={deltaPct >= 0 ? "trending_up" : "trending_down"}
                 size={16}
-                className={deltaPct >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}
+                className={deltaPct >= 0 ? "text-ok" : "text-err"}
               />
-              <span className="text-xs text-[#4a3d3d]">
-                <span className={`font-bold ${deltaPct >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+              <span className="text-xs text-ink-2">
+                <span className={`font-bold ${deltaPct >= 0 ? "text-ok" : "text-err"}`}>
                   {deltaPct > 0 ? "+" : ""}{deltaPct}%
                 </span>{" "}vs mês anterior ({formatBRL(lucroAnterior)})
               </span>
@@ -157,35 +157,35 @@ function ContextualBanner({ estado }) {
 // --------------------------------------------------------------- CardEmEstoque
 function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }) {
   return (
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-md transition-shadow">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-md transition-shadow">
       <CardContent className="p-5 flex flex-col h-full">
         <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 bg-[#d4af37]/10 rounded-lg">
-            <MaterialIcon icon="inventory_2" size={16} className="text-[#775a19]" />
+          <div className="p-1.5 bg-brand-gold/10 rounded-lg">
+            <MaterialIcon icon="inventory_2" size={16} className="text-brand-gold-ink" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+          <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
             Em Estoque
           </span>
         </div>
 
         <div className="flex-1">
-          <div className="text-3xl font-bold text-[#1b1c1d] font-mono-numbers mb-0.5">
+          <div className="text-3xl font-bold text-ink font-mono-numbers mb-0.5">
             {formatBRL(estoque.vendaPotencial)}
           </div>
-          <p className="text-xs text-[#4a3d3d] mb-3">a vender</p>
+          <p className="text-xs text-ink-2 mb-3">a vender</p>
 
           <div className="space-y-1.5 text-xs">
-            <div className="flex items-center justify-between text-[#4a3d3d]">
+            <div className="flex items-center justify-between text-ink-2">
               <span>Custo</span>
               <span className="font-mono-numbers font-medium">{formatBRL(estoque.custoTotal)}</span>
             </div>
-            <div className="flex items-center justify-between text-[#4a3d3d]">
+            <div className="flex items-center justify-between text-ink-2">
               <span>Markup médio</span>
-              <span className={`font-mono-numbers font-medium ${estoque.markupMedioPct >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+              <span className={`font-mono-numbers font-medium ${estoque.markupMedioPct >= 0 ? "text-ok" : "text-err"}`}>
                 {estoque.markupMedioPct >= 0 ? "+" : ""}{estoque.markupMedioPct}%
               </span>
             </div>
-            <div className="flex items-center justify-between text-[#4a3d3d]">
+            <div className="flex items-center justify-between text-ink-2">
               <span>Produtos ativos</span>
               <span className="font-mono-numbers font-medium">{estoque.qtdProdutosAtivos}</span>
             </div>
@@ -194,10 +194,10 @@ function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }
           {paradosCount > 0 && (
             <button
               onClick={onClickEstoque}
-              className="mt-3 pt-3 border-t border-[#291715]/5 w-full flex items-center justify-between text-xs text-[#775a19] hover:text-[#5a4012] transition-colors group"
+              className="mt-3 pt-3 border-t border-ink-shadow/5 w-full flex items-center justify-between text-xs text-brand-gold-ink hover:text-brand-gold-ink transition-colors group"
             >
               <span className="flex items-center gap-1.5">
-                <MaterialIcon icon="ac_unit" size={14} className="text-[#d4af37]" />
+                <MaterialIcon icon="ac_unit" size={14} className="text-brand-gold" />
                 <span className="font-medium">
                   {paradosCount} parado{paradosCount > 1 ? "s" : ""} há 28+ dias
                 </span>
@@ -210,7 +210,7 @@ function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }
         <Button
           size="sm"
           onClick={onLancarCompra}
-          className="w-full gap-1.5 bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl text-xs mt-4"
+          className="w-full gap-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs mt-4"
         >
           <MaterialIcon icon="add_shopping_cart" size={16} />
           Lançar compra
@@ -227,60 +227,60 @@ function CardCaixa({ pnl, onLancarDespesa }) {
   const isPositive = lucroCaixa >= 0;
 
   return (
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-md transition-shadow">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-md transition-shadow">
       <CardContent className="p-5 flex flex-col h-full">
         <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 bg-[#16a34a]/10 rounded-lg">
+          <div className="p-1.5 bg-ok/10 rounded-lg">
             <MaterialIcon icon="account_balance_wallet" size={16} className="text-[#15803d]" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+          <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
             Caixa do mês
           </span>
         </div>
 
         <div className="flex-1">
-          <div className={`text-3xl font-bold font-mono-numbers mb-0.5 ${isPositive ? "text-[#1b1c1d]" : "text-[#dc2626]"}`}>
+          <div className={`text-3xl font-bold font-mono-numbers mb-0.5 ${isPositive ? "text-ink" : "text-err"}`}>
             {formatBRL(lucroCaixa)}
           </div>
-          <p className="text-xs text-[#4a3d3d] mb-3">saldo</p>
+          <p className="text-xs text-ink-2 mb-3">saldo</p>
 
           {/* ENTROU detalhado */}
           <div className="space-y-1 text-xs mb-3">
-            <div className="flex items-center justify-between text-[#1b1c1d]">
+            <div className="flex items-center justify-between text-ink">
               <span className="flex items-center gap-1 font-semibold">
-                <MaterialIcon icon="arrow_upward" size={12} className="text-[#16a34a]" />
+                <MaterialIcon icon="arrow_upward" size={12} className="text-ok" />
                 Entrou
               </span>
-              <span className="font-mono-numbers font-bold text-[#16a34a]">{formatBRL(totalRecebido)}</span>
+              <span className="font-mono-numbers font-bold text-ok">{formatBRL(totalRecebido)}</span>
             </div>
-            <div className="flex items-center justify-between text-[#4a3d3d] pl-4">
+            <div className="flex items-center justify-between text-ink-2 pl-4">
               <span className="text-xs">└ Vendas</span>
               <span className="font-mono-numbers text-xs">{formatBRL(vendas)}</span>
             </div>
             {freteCobrado > 0 && (
-              <div className="flex items-center justify-between text-[#4a3d3d] pl-4">
+              <div className="flex items-center justify-between text-ink-2 pl-4">
                 <span className="text-xs">└ Frete cobrado</span>
                 <span className="font-mono-numbers text-xs">{formatBRL(freteCobrado)}</span>
               </div>
             )}
             {totalDescontos > 0 && (
-              <div className="flex items-center justify-between text-[#4a3d3d] pl-4">
+              <div className="flex items-center justify-between text-ink-2 pl-4">
                 <span className="text-xs">└ (-) Descontos</span>
-                <span className="font-mono-numbers text-xs text-[#dc2626]">-{formatBRL(totalDescontos)}</span>
+                <span className="font-mono-numbers text-xs text-err">-{formatBRL(totalDescontos)}</span>
               </div>
             )}
           </div>
 
           {/* SAIU sumarizado */}
           <div className="space-y-1 text-xs">
-            <div className="flex items-center justify-between text-[#1b1c1d]">
+            <div className="flex items-center justify-between text-ink">
               <span className="flex items-center gap-1 font-semibold">
-                <MaterialIcon icon="arrow_downward" size={12} className="text-[#dc2626]" />
+                <MaterialIcon icon="arrow_downward" size={12} className="text-err" />
                 Saiu
               </span>
-              <span className="font-mono-numbers font-bold text-[#dc2626]">-{formatBRL(saiu)}</span>
+              <span className="font-mono-numbers font-bold text-err">-{formatBRL(saiu)}</span>
             </div>
-            <p className="text-xs text-[#4a3d3d]/60 pl-4 italic">
+            <p className="text-xs text-ink-2/60 pl-4 italic">
               detalhe abaixo em "Onde foi o dinheiro"
             </p>
           </div>
@@ -290,7 +290,7 @@ function CardCaixa({ pnl, onLancarDespesa }) {
           variant="outline"
           size="sm"
           onClick={onLancarDespesa}
-          className="w-full gap-1.5 rounded-xl text-xs mt-4 border-[#291715]/20"
+          className="w-full gap-1.5 rounded-xl text-xs mt-4 border-ink-shadow/20"
         >
           <MaterialIcon icon="add" size={16} />
           Lançar despesa
@@ -304,17 +304,17 @@ function CardCaixa({ pnl, onLancarDespesa }) {
 function CardMaisVendidos({ topProducts, onSeeAll }) {
   if (!topProducts.length) {
     return (
-      <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+      <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
         <CardContent className="p-5 flex flex-col h-full">
           <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-[#d4af37]/15 rounded-lg">
-              <MaterialIcon icon="emoji_events" size={16} className="text-[#775a19]" />
+            <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+              <MaterialIcon icon="emoji_events" size={16} className="text-brand-gold-ink" />
             </div>
-            <span className="text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+            <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
               Mais vendidos
             </span>
           </div>
-          <p className="text-xs text-[#4a3d3d] flex-1 flex items-center justify-center text-center py-6">
+          <p className="text-xs text-ink-2 flex-1 flex items-center justify-center text-center py-6">
             Sem vendas neste mês.
           </p>
         </CardContent>
@@ -323,13 +323,13 @@ function CardMaisVendidos({ topProducts, onSeeAll }) {
   }
 
   return (
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5 hover:shadow-md transition-shadow">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-md transition-shadow">
       <CardContent className="p-5 flex flex-col h-full">
         <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 bg-[#d4af37]/15 rounded-lg">
-            <MaterialIcon icon="emoji_events" size={16} className="text-[#775a19]" />
+          <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+            <MaterialIcon icon="emoji_events" size={16} className="text-brand-gold-ink" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+          <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
             Mais vendidos
           </span>
         </div>
@@ -337,12 +337,12 @@ function CardMaisVendidos({ topProducts, onSeeAll }) {
         <div className="flex-1 space-y-3">
           {topProducts.slice(0, 3).map((p, i) => (
             <div key={p.name} className="flex items-start gap-2.5">
-              <span className="text-base font-bold text-[#d4af37] w-5 text-center font-mono-numbers shrink-0">
+              <span className="text-base font-bold text-brand-gold w-5 text-center font-mono-numbers shrink-0">
                 {i + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#1b1c1d] truncate leading-tight">{p.name}</p>
-                <div className="flex items-center gap-2 text-xs text-[#4a3d3d] mt-0.5">
+                <p className="text-sm font-medium text-ink truncate leading-tight">{p.name}</p>
+                <div className="flex items-center gap-2 text-xs text-ink-2 mt-0.5">
                   <span className="font-mono-numbers">{p.quantity} un</span>
                   <span className="opacity-30">·</span>
                   <span className="font-mono-numbers">{formatBRL(p.revenue)}</span>
@@ -354,7 +354,7 @@ function CardMaisVendidos({ topProducts, onSeeAll }) {
 
         <button
           onClick={onSeeAll}
-          className="text-xs text-[#b91c1c] hover:text-[#991b1b] font-medium mt-4 flex items-center gap-1 self-start"
+          className="text-xs text-brand hover:text-brand-dark font-medium mt-4 flex items-center gap-1 self-start"
         >
           Ver todas as vendas
           <MaterialIcon icon="arrow_forward" size={14} />
@@ -385,21 +385,21 @@ function OndeFoiODinheiro({ expenses, taxasCartao, onLancarDespesa }) {
 
   if (!byCategory.length) {
     return (
-      <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+      <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
         <CardContent className="p-5 md:p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-1.5 bg-[#b91c1c]/10 rounded-lg">
-              <MaterialIcon icon="pie_chart" size={16} className="text-[#b91c1c]" />
+            <div className="p-1.5 bg-brand/10 rounded-lg">
+              <MaterialIcon icon="pie_chart" size={16} className="text-brand" />
             </div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
               Onde foi o dinheiro
             </h3>
           </div>
-          <p className="text-xs text-[#4a3d3d] text-center py-4">
+          <p className="text-xs text-ink-2 text-center py-4">
             Nenhuma despesa neste mês ainda.
           </p>
           <div className="flex justify-center">
-            <Button onClick={onLancarDespesa} variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs border-[#291715]/20">
+            <Button onClick={onLancarDespesa} variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs border-ink-shadow/20">
               <MaterialIcon icon="add" size={16} />
               Lançar primeira despesa
             </Button>
@@ -410,18 +410,18 @@ function OndeFoiODinheiro({ expenses, taxasCartao, onLancarDespesa }) {
   }
 
   return (
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
       <CardContent className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-[#b91c1c]/10 rounded-lg">
-              <MaterialIcon icon="pie_chart" size={16} className="text-[#b91c1c]" />
+            <div className="p-1.5 bg-brand/10 rounded-lg">
+              <MaterialIcon icon="pie_chart" size={16} className="text-brand" />
             </div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
               Onde foi o dinheiro
             </h3>
           </div>
-          <span className="text-sm text-[#4a3d3d] font-mono-numbers">
+          <span className="text-sm text-ink-2 font-mono-numbers">
             Total {formatBRL(total)}
           </span>
         </div>
@@ -439,17 +439,17 @@ function OndeFoiODinheiro({ expenses, taxasCartao, onLancarDespesa }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-[#1b1c1d]">{meta.label}</span>
-                    <span className="text-sm font-semibold text-[#1b1c1d] font-mono-numbers">{formatBRL(amount)}</span>
+                    <span className="text-sm font-medium text-ink">{meta.label}</span>
+                    <span className="text-sm font-semibold text-ink font-mono-numbers">{formatBRL(amount)}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-[#e9e8e9] rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-surface-line rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{ width: `${pct}%`, backgroundColor: meta.color }}
                       />
                     </div>
-                    <span className="text-xs text-[#4a3d3d] font-mono-numbers w-10 text-right">
+                    <span className="text-xs text-ink-2 font-mono-numbers w-10 text-right">
                       {pct.toFixed(0)}%
                     </span>
                   </div>
@@ -459,8 +459,8 @@ function OndeFoiODinheiro({ expenses, taxasCartao, onLancarDespesa }) {
           })}
         </div>
 
-        <div className="mt-5 pt-4 border-t border-[#291715]/5">
-          <Button onClick={onLancarDespesa} variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs border-[#291715]/20">
+        <div className="mt-5 pt-4 border-t border-ink-shadow/5">
+          <Button onClick={onLancarDespesa} variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs border-ink-shadow/20">
             <MaterialIcon icon="add" size={16} />
             Lançar despesa
           </Button>
@@ -491,25 +491,25 @@ function EvolucaoCard({ evolucao }) {
     const item = payload[0].payload;
     const margem = item.margemPct || 0;
     return (
-      <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg px-3 py-2 text-xs">
-        <p className="font-bold text-[#1b1c1d] capitalize mb-1">{label}</p>
+      <div className="bg-white border border-ink-shadow/10 rounded-xl shadow-lg px-3 py-2 text-xs">
+        <p className="font-bold text-ink capitalize mb-1">{label}</p>
         <div className="space-y-0.5">
-          <p className="text-[#4a3d3d]">
-            Receita: <span className="font-mono-numbers font-medium text-[#1b1c1d]">{formatBRL(item.receita)}</span>
+          <p className="text-ink-2">
+            Receita: <span className="font-mono-numbers font-medium text-ink">{formatBRL(item.receita)}</span>
           </p>
-          <p className="text-[#4a3d3d]">
+          <p className="text-ink-2">
             Lucro:{" "}
-            <span className={`font-mono-numbers font-medium ${item.lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+            <span className={`font-mono-numbers font-medium ${item.lucro >= 0 ? "text-ok" : "text-err"}`}>
               {formatBRL(item.lucro)}
             </span>
             {item.receita > 0 && (
-              <span className={`ml-1.5 text-xs ${margem >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+              <span className={`ml-1.5 text-xs ${margem >= 0 ? "text-ok" : "text-err"}`}>
                 ({margem >= 0 ? "+" : ""}{margem.toFixed(1)}% margem)
               </span>
             )}
           </p>
           {item.mediaMovel != null && (
-            <p className="text-[#4a3d3d] text-xs pt-1 mt-1 border-t border-[#291715]/5">
+            <p className="text-ink-2 text-xs pt-1 mt-1 border-t border-ink-shadow/5">
               Média 3m: <span className="font-mono-numbers font-medium">{formatBRL(item.mediaMovel)}</span>
             </p>
           )}
@@ -521,52 +521,52 @@ function EvolucaoCard({ evolucao }) {
   if (!evolucao.length) return null;
 
   return (
-    <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
       <CardContent className="p-5 md:p-6">
         <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-[#d4af37]/15 rounded-lg">
-              <MaterialIcon icon="show_chart" size={16} className="text-[#775a19]" />
+            <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+              <MaterialIcon icon="show_chart" size={16} className="text-brand-gold-ink" />
             </div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
               Evolução · últimos 6 meses
             </h3>
           </div>
-          <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={20} className="text-[#4a3d3d]" />
+          <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={20} className="text-ink-2" />
         </button>
 
         {expanded && (
           <>
             {stats && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-5">
-                <div className="bg-[#fbf9fa] rounded-xl p-3">
-                  <p className="text-xs uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
+                <div className="bg-surface rounded-xl p-3">
+                  <p className="text-xs uppercase tracking-wider text-ink-2/70 font-medium mb-0.5">
                     Maior lucro
                   </p>
-                  <p className="text-sm font-bold text-[#1b1c1d] font-mono-numbers">
+                  <p className="text-sm font-bold text-ink font-mono-numbers">
                     {formatBRLCompact(stats.maxLucro)}
                   </p>
-                  <p className="text-xs text-[#4a3d3d] capitalize">{stats.maxLucroMes}</p>
+                  <p className="text-xs text-ink-2 capitalize">{stats.maxLucroMes}</p>
                 </div>
-                <div className="bg-[#fbf9fa] rounded-xl p-3">
-                  <p className="text-xs uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
+                <div className="bg-surface rounded-xl p-3">
+                  <p className="text-xs uppercase tracking-wider text-ink-2/70 font-medium mb-0.5">
                     Tendência
                   </p>
-                  <p className="text-sm font-bold text-[#1b1c1d]">{stats.tendencia}</p>
-                  <p className="text-xs text-[#4a3d3d]">
+                  <p className="text-sm font-bold text-ink">{stats.tendencia}</p>
+                  <p className="text-xs text-ink-2">
                     {stats.mesesPositivos}/{stats.total} meses no azul
                   </p>
                 </div>
-                <div className="bg-[#fbf9fa] rounded-xl p-3 col-span-2 md:col-span-1">
-                  <p className="text-xs uppercase tracking-wider text-[#4a3d3d]/70 font-medium mb-0.5">
+                <div className="bg-surface rounded-xl p-3 col-span-2 md:col-span-1">
+                  <p className="text-xs uppercase tracking-wider text-ink-2/70 font-medium mb-0.5">
                     Crescimento
                   </p>
-                  <p className="text-sm font-bold text-[#1b1c1d] font-mono-numbers">
+                  <p className="text-sm font-bold text-ink font-mono-numbers">
                     {evolucao[0].lucro > 0
                       ? `${Math.round(((evolucao[evolucao.length-1].lucro - evolucao[0].lucro) / Math.abs(evolucao[0].lucro)) * 100)}%`
                       : "—"}
                   </p>
-                  <p className="text-xs text-[#4a3d3d]">{evolucao[0].mes} → {evolucao[evolucao.length-1].mes}</p>
+                  <p className="text-xs text-ink-2">{evolucao[0].mes} → {evolucao[evolucao.length-1].mes}</p>
                 </div>
               </div>
             )}
@@ -631,18 +631,18 @@ function EvolucaoCard({ evolucao }) {
               </ResponsiveContainer>
             </div>
 
-            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-[#4a3d3d] flex-wrap">
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-ink-2 flex-wrap">
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-[#1b1c1d]/30" />
-                <span>Receita <span className="text-[#1b1c1d]/60">(esq)</span></span>
+                <div className="w-3 h-3 rounded bg-ink/30" />
+                <span>Receita <span className="text-ink/60">(esq)</span></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-0.5 bg-[#b91c1c]" />
-                <span>Lucro <span className="text-[#b91c1c]/70">(dir)</span></span>
+                <div className="w-4 h-0.5 bg-brand" />
+                <span>Lucro <span className="text-brand/70">(dir)</span></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-0.5 bg-[#b91c1c]/35" style={{ borderTop: "1.5px dashed #b91c1c", height: 0, opacity: 0.6 }} />
-                <span className="text-[#4a3d3d]/70">Média 3 meses</span>
+                <div className="w-4 h-0.5 bg-brand/35" style={{ borderTop: "1.5px dashed #b91c1c", height: 0, opacity: 0.6 }} />
+                <span className="text-ink-2/70">Média 3 meses</span>
               </div>
             </div>
           </>
@@ -663,15 +663,15 @@ function ResumoAnoCard({ resumo }) {
     if (!active || !payload?.length) return null;
     const it = payload[0].payload;
     return (
-      <div className="bg-white border border-[#291715]/10 rounded-xl shadow-lg px-3 py-2 text-xs">
-        <p className="font-bold text-[#1b1c1d] capitalize mb-1">{it.mes}</p>
-        <p className="text-[#4a3d3d]">
+      <div className="bg-white border border-ink-shadow/10 rounded-xl shadow-lg px-3 py-2 text-xs">
+        <p className="font-bold text-ink capitalize mb-1">{it.mes}</p>
+        <p className="text-ink-2">
           Acumulado:{" "}
-          <span className="font-mono-numbers font-medium text-[#16a34a]">{formatBRL(it.acumulado)}</span>
+          <span className="font-mono-numbers font-medium text-ok">{formatBRL(it.acumulado)}</span>
         </p>
-        <p className="text-[#4a3d3d]">
+        <p className="text-ink-2">
           No mês:{" "}
-          <span className={`font-mono-numbers font-medium ${it.lucro >= 0 ? "text-[#16a34a]" : "text-[#dc2626]"}`}>
+          <span className={`font-mono-numbers font-medium ${it.lucro >= 0 ? "text-ok" : "text-err"}`}>
             {formatBRL(it.lucro)}
           </span>
         </p>
@@ -680,45 +680,45 @@ function ResumoAnoCard({ resumo }) {
   };
 
   return (
-    <Card className="bg-gradient-to-br from-[#fbf9fa] to-white rounded-2xl shadow-sm border border-[#d4af37]/25 overflow-hidden">
+    <Card className="bg-gradient-to-br from-surface to-white rounded-2xl shadow-sm border border-brand-gold/25 overflow-hidden">
       <CardContent className="p-5 md:p-6">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-[#d4af37]/15 rounded-lg">
-              <MaterialIcon icon="savings" size={16} className="text-[#775a19]" />
+            <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+              <MaterialIcon icon="savings" size={16} className="text-brand-gold-ink" />
             </div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
               Acumulado em {resumo.year}
             </h3>
           </div>
-          <span className="text-xs text-[#4a3d3d]/70 capitalize">
+          <span className="text-xs text-ink-2/70 capitalize">
             jan → {resumo.ultimoMes}
           </span>
         </div>
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs text-[#4a3d3d] uppercase tracking-widest font-plus-jakarta mb-1">
+            <p className="text-xs text-ink-2 uppercase tracking-widest font-plus-jakarta mb-1">
               Lucro do ano
             </p>
             <div className={`text-3xl md:text-4xl font-bold font-mono-numbers tracking-tight ${
-              isPositive ? "text-[#16a34a]" : "text-[#dc2626]"
+              isPositive ? "text-ok" : "text-err"
             }`}>
               {formatBRL(resumo.totalLucro)}
             </div>
-            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-2.5 text-xs text-[#4a3d3d]">
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-2.5 text-xs text-ink-2">
               <span className="flex items-center gap-1">
-                <MaterialIcon icon="emoji_events" size={13} className="text-[#d4af37]" />
+                <MaterialIcon icon="emoji_events" size={13} className="text-brand-gold" />
                 Melhor mês:{" "}
-                <span className="font-semibold text-[#1b1c1d] capitalize">{resumo.melhor.mes}</span>{" "}
+                <span className="font-semibold text-ink capitalize">{resumo.melhor.mes}</span>{" "}
                 ({formatBRLCompact(resumo.melhor.lucro)})
               </span>
               <span className="flex items-center gap-1">
-                <MaterialIcon icon="check_circle" size={13} className="text-[#16a34a]" />
+                <MaterialIcon icon="check_circle" size={13} className="text-ok" />
                 {resumo.mesesAzul}/{resumo.mesesComDado} meses no azul
               </span>
               <span className="flex items-center gap-1">
-                <MaterialIcon icon="calculate" size={13} className="text-[#4a3d3d]/60" />
+                <MaterialIcon icon="calculate" size={13} className="text-ink-2/60" />
                 Média {formatBRLCompact(resumo.mediaMes)}/mês
               </span>
             </div>
@@ -1022,8 +1022,8 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-3 text-[#4a3d3d]">Carregando...</span>
+        <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-brand" />
+        <span className="ml-3 text-ink-2">Carregando...</span>
       </div>
     );
   }
@@ -1040,13 +1040,13 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
       />
 
       {!hasData ? (
-        <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+        <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
           <CardContent className="p-8 text-center">
-            <MaterialIcon icon="analytics" size={48} className="text-[#cac0c0] mb-3 mx-auto" />
-            <h3 className="text-base font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+            <MaterialIcon icon="analytics" size={48} className="text-ink-4 mb-3 mx-auto" />
+            <h3 className="text-base font-medium text-ink mb-1 font-plus-jakarta">
               Vazio por enquanto
             </h3>
-            <p className="text-sm text-[#4a3d3d] mb-4">
+            <p className="text-sm text-ink-2 mb-4">
               Lance sua primeira venda do mês ou registre uma despesa pra ver seu resultado.
             </p>
             <Button onClick={handleLancarDespesa} variant="outline" className="gap-1.5 rounded-xl">
@@ -1081,53 +1081,53 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
           <EvolucaoCard evolucao={evolucaoData} />
 
           {/* Despesas list (mantida) */}
-          <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+          <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
             <CardContent className="p-5 md:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
                   Despesas do mês
                 </h3>
-                <Button size="sm" onClick={handleLancarDespesa} className="gap-1.5 bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-xl text-xs">
+                <Button size="sm" onClick={handleLancarDespesa} className="gap-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs">
                   <MaterialIcon icon="add" size={16} />
                   Adicionar
                 </Button>
               </div>
 
               {monthExpenses.length === 0 ? (
-                <p className="text-sm text-[#4a3d3d] text-center py-6">Nenhuma despesa neste mês.</p>
+                <p className="text-sm text-ink-2 text-center py-6">Nenhuma despesa neste mês.</p>
               ) : (
                 <div className="space-y-2">
                   {monthExpenses.map((exp) => {
                     const meta = getCategoryMeta(exp.category);
                     const isAuto = exp.source && exp.source !== "manual";
                     return (
-                      <div key={exp.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5">
+                      <div key={exp.id} className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-ink-shadow/5">
                         <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${meta.color}15` }}>
                           <MaterialIcon icon={meta.icon} size={16} style={{ color: meta.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="text-sm font-medium text-[#1b1c1d] truncate">{exp.description}</p>
+                            <p className="text-sm font-medium text-ink truncate">{exp.description}</p>
                             {isAuto && (
-                              <span className="text-[11px] bg-[#d4af37]/15 text-[#775a19] px-1.5 py-0.5 rounded-full font-medium">
+                              <span className="text-[11px] bg-brand-gold/15 text-brand-gold-ink px-1.5 py-0.5 rounded-full font-medium">
                                 auto
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-[#4a3d3d]">
+                          <p className="text-xs text-ink-2">
                             {meta.label}
                             {exp.supplier && ` · ${exp.supplier}`}
                             {exp.expense_date && ` · ${format(parseISO(exp.expense_date), "dd/MM/yyyy")}`}
                           </p>
                         </div>
-                        <span className="text-sm font-semibold text-[#1b1c1d] font-mono-numbers shrink-0">
+                        <span className="text-sm font-semibold text-ink font-mono-numbers shrink-0">
                           {formatBRL(exp.amount)}
                         </span>
                         <div className="flex gap-1 shrink-0">
-                          <button onClick={() => handleEditExpense(exp)} className="p-1.5 rounded-lg hover:bg-[#d4af37]/10 text-[#4a3d3d] hover:text-[#775a19]">
+                          <button onClick={() => handleEditExpense(exp)} className="p-1.5 rounded-lg hover:bg-brand-gold/10 text-ink-2 hover:text-brand-gold-ink">
                             <MaterialIcon icon="edit" size={16} />
                           </button>
-                          <button onClick={() => setDeleteConfirmId(exp.id)} className="p-1.5 rounded-lg hover:bg-[#b91c1c]/10 text-[#4a3d3d] hover:text-[#b91c1c]">
+                          <button onClick={() => setDeleteConfirmId(exp.id)} className="p-1.5 rounded-lg hover:bg-brand/10 text-ink-2 hover:text-brand">
                             <MaterialIcon icon="delete" size={16} />
                           </button>
                         </div>
@@ -1141,14 +1141,14 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
 
           {/* Export Vendas (mantido) */}
           {monthSales.length > 0 && (
-            <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+            <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
               <CardContent className="p-5 md:p-6">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
                       Exportar vendas
                     </h3>
-                    <p className="text-xs text-[#4a3d3d]/70 mt-1">
+                    <p className="text-xs text-ink-2/70 mt-1">
                       {monthSales.length} venda{monthSales.length !== 1 ? "s" : ""} em {monthLabel}
                     </p>
                   </div>
@@ -1165,36 +1165,36 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
 
           {/* Audit log (mantido, colapsado) */}
           {auditLogs.length > 0 && (
-            <Card className="bg-white rounded-2xl shadow-sm border border-[#291715]/5">
+            <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
               <CardContent className="p-5 md:p-6">
                 <button onClick={() => setShowAuditLogs(v => !v)} className="flex items-center justify-between w-full">
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-[#4a3d3d]/80 font-plus-jakarta">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
                     Histórico de ações
                   </h3>
-                  <MaterialIcon icon={showAuditLogs ? "expand_less" : "expand_more"} size={20} className="text-[#4a3d3d]" />
+                  <MaterialIcon icon={showAuditLogs ? "expand_less" : "expand_more"} size={20} className="text-ink-2" />
                 </button>
 
                 {showAuditLogs && (
                   <div className="mt-4 space-y-2">
                     {auditLogs.map((log) => (
-                      <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-[#fbf9fa] border border-[#291715]/5">
-                        <div className="p-1.5 bg-[#b91c1c]/10 rounded-lg shrink-0 mt-0.5">
+                      <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-surface border border-ink-shadow/5">
+                        <div className="p-1.5 bg-brand/10 rounded-lg shrink-0 mt-0.5">
                           <MaterialIcon
                             icon={log.action === "create" ? "add_circle" : log.action === "update" ? "edit" : "delete"}
                             size={14}
-                            className="text-[#b91c1c]"
+                            className="text-brand"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-[#1b1c1d]">
+                          <p className="text-sm text-ink">
                             <span className="font-medium">{log.user_name || "Usuário"}</span>{" "}
                             {{ create: "criou", update: "editou", delete: "excluiu" }[log.action] || log.action}{" "}
                             {{ sale: "venda", expense: "despesa" }[log.entity_type] || log.entity_type}
-                            {log.details?.value && <span className="text-[#4a3d3d]"> ({formatBRL(log.details.value)})</span>}
-                            {log.details?.amount && <span className="text-[#4a3d3d]"> ({formatBRL(log.details.amount)})</span>}
-                            {log.details?.description && <span className="text-[#4a3d3d]"> — {log.details.description}</span>}
+                            {log.details?.value && <span className="text-ink-2"> ({formatBRL(log.details.value)})</span>}
+                            {log.details?.amount && <span className="text-ink-2"> ({formatBRL(log.details.amount)})</span>}
+                            {log.details?.description && <span className="text-ink-2"> — {log.details.description}</span>}
                           </p>
-                          <p className="text-xs text-[#4a3d3d]/70 mt-0.5">
+                          <p className="text-xs text-ink-2/70 mt-0.5">
                             {log.created_at ? format(parseISO(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "—"}
                           </p>
                         </div>
@@ -1242,10 +1242,10 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Excluir despesa?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-[#4a3d3d]">Esta ação não pode ser desfeita.</p>
+          <p className="text-sm text-ink-2">Esta ação não pode ser desfeita.</p>
           <div className="flex gap-3 mt-4">
             <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
-            <Button className="flex-1 bg-[#b91c1c] hover:bg-[#991b1b] text-white" onClick={() => handleDeleteExpense(deleteConfirmId)}>
+            <Button className="flex-1 bg-brand hover:bg-brand-dark text-white" onClick={() => handleDeleteExpense(deleteConfirmId)}>
               Excluir
             </Button>
           </div>

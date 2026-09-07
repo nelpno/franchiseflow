@@ -53,17 +53,17 @@ export default function SetPassword() {
   };
 
   return (
-    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
+    <div className="bg-surface text-ink min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
       <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
         <AuthHero
           headline={
             isRecovery ? (
               <>
-                Redefina sua senha e volte a <span className="text-[#e31818]">gerenciar</span> sua franquia
+                Redefina sua senha e volte a <span className="text-err">gerenciar</span> sua franquia
               </>
             ) : (
               <>
-                Bem-vindo à <span className="text-[#e31818]">família</span> Maxi Massas!
+                Bem-vindo à <span className="text-err">família</span> Maxi Massas!
               </>
             )
           }
@@ -83,7 +83,7 @@ export default function SetPassword() {
             </div>
 
             <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-[#1b1c1d] tracking-tight mb-2">
+              <h2 className="text-3xl font-bold text-ink tracking-tight mb-2">
                 {isRecovery ? 'Redefinir senha' : 'Crie sua senha'}
               </h2>
               <p className="text-[#3d4a42]">
@@ -108,13 +108,13 @@ export default function SetPassword() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoFocus
-                    className="w-full px-4 py-3.5 bg-[#e9e8e9] rounded-xl border-none focus:ring-2 focus:ring-[#e31818]/20 transition-all text-[#1b1c1d] placeholder:text-[#6d7a72]/60 outline-none"
+                    className="w-full px-4 py-3.5 bg-surface-line rounded-xl border-none focus:ring-2 focus:ring-err/20 transition-all text-ink placeholder:text-[#6d7a72]/60 outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-[#e31818] transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-err transition-colors"
                   >
                     {showPassword ? <MaterialIcon icon="visibility_off" size={20} /> : <MaterialIcon icon="visibility" size={20} />}
                   </button>
@@ -133,7 +133,7 @@ export default function SetPassword() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3.5 bg-[#e9e8e9] rounded-xl border-none focus:ring-2 focus:ring-[#e31818]/20 transition-all text-[#1b1c1d] placeholder:text-[#6d7a72]/60 outline-none"
+                    className="w-full px-4 py-3.5 bg-surface-line rounded-xl border-none focus:ring-2 focus:ring-err/20 transition-all text-ink placeholder:text-[#6d7a72]/60 outline-none"
                   />
                 </div>
               </div>
@@ -141,26 +141,26 @@ export default function SetPassword() {
               <div className="min-h-[20px]">
                 {password && !isPasswordValid && (
                   <div className="text-sm ml-1 space-y-0.5">
-                    <p className={`flex items-center gap-1.5 ${hasMinLength ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                    <p className={`flex items-center gap-1.5 ${hasMinLength ? 'text-green-600' : 'text-err/70'}`}>
                       <MaterialIcon icon={hasMinLength ? 'check_circle' : 'info'} size={14} />
                       8 caracteres
                     </p>
-                    <p className={`flex items-center gap-1.5 ${hasUppercase ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                    <p className={`flex items-center gap-1.5 ${hasUppercase ? 'text-green-600' : 'text-err/70'}`}>
                       <MaterialIcon icon={hasUppercase ? 'check_circle' : 'info'} size={14} />
                       1 letra maiuscula
                     </p>
-                    <p className={`flex items-center gap-1.5 ${hasLowercase ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                    <p className={`flex items-center gap-1.5 ${hasLowercase ? 'text-green-600' : 'text-err/70'}`}>
                       <MaterialIcon icon={hasLowercase ? 'check_circle' : 'info'} size={14} />
                       1 letra minuscula
                     </p>
-                    <p className={`flex items-center gap-1.5 ${hasNumber ? 'text-green-600' : 'text-[#e31818]/70'}`}>
+                    <p className={`flex items-center gap-1.5 ${hasNumber ? 'text-green-600' : 'text-err/70'}`}>
                       <MaterialIcon icon={hasNumber ? 'check_circle' : 'info'} size={14} />
                       1 numero
                     </p>
                   </div>
                 )}
                 {password && isPasswordValid && confirmPassword && password !== confirmPassword && (
-                  <p className="text-sm text-[#e31818]/70 ml-1 flex items-center gap-1.5">
+                  <p className="text-sm text-err/70 ml-1 flex items-center gap-1.5">
                     <MaterialIcon icon="warning" size={16} />
                     As senhas nao coincidem
                   </p>
@@ -170,7 +170,7 @@ export default function SetPassword() {
               <button
                 type="submit"
                 disabled={isLoading || !isPasswordValid || password !== confirmPassword}
-                className="w-full h-12 bg-[#e31818] text-white font-bold rounded-xl shadow-lg shadow-[#e31818]/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-[#e5e3e4] disabled:text-[#9a9394] disabled:shadow-none disabled:cursor-not-allowed"
+                className="w-full h-12 bg-err text-white font-bold rounded-xl shadow-lg shadow-err/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-[#e5e3e4] disabled:text-[#9a9394] disabled:shadow-none disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Aguarde...' : isRecovery ? 'Redefinir senha' : 'Criar senha e entrar'}
               </button>
@@ -180,7 +180,7 @@ export default function SetPassword() {
       </main>
 
       <footer className="fixed bottom-6 left-0 right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
-        <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
+        <p className="text-[10px] tracking-widest uppercase font-bold text-ink">
           &copy; 2026 Maxi Massas
         </p>
       </footer>

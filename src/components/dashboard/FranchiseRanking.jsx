@@ -144,14 +144,14 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
   return (
     <div className={showMeta ? "grid grid-cols-1 lg:grid-cols-5 gap-8" : ""}>
       {/* Ranking Table */}
-      <div className={`bg-white rounded-2xl p-6 shadow-sm border border-[#291715]/5 ${showMeta ? "lg:col-span-3" : ""}`}>
-        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1b1c1d]/70 mb-8 font-plus-jakarta">
+      <div className={`bg-white rounded-2xl p-6 shadow-sm border border-ink-shadow/5 ${showMeta ? "lg:col-span-3" : ""}`}>
+        <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-ink/70 mb-8 font-plus-jakarta">
           {periodLabel}
         </h4>
 
         <div className="space-y-8">
           {activeFranchises.length === 0 && (
-            <p className="text-sm text-[#4a3d3d]/60 text-center py-4">Nenhuma franquia com vendas no período</p>
+            <p className="text-sm text-ink-2/60 text-center py-4">Nenhuma franquia com vendas no período</p>
           )}
           {(expanded ? activeFranchises : activeFranchises.slice(0, VISIBLE_COUNT)).map((f, i) => {
             const pct = maxRevenue > 0 ? Math.max((f.revenue / maxRevenue) * 100, 2) : 2;
@@ -161,26 +161,26 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
             return (
               <div
                 key={f.id}
-                className="flex items-center gap-4 cursor-pointer hover:bg-[#fbf9fa] rounded-xl px-2 py-1 -mx-2 transition-colors"
+                className="flex items-center gap-4 cursor-pointer hover:bg-surface rounded-xl px-2 py-1 -mx-2 transition-colors"
                 onClick={() => navigate(`/Financeiro?tab=porunidade&franchise=${encodeURIComponent(f.evoId)}`)}
                 title={`Ver detalhes de ${f.name}`}
               >
-                <span className="w-6 text-sm font-bold text-[#1b1c1d]/70">
+                <span className="w-6 text-sm font-bold text-ink/70">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="flex-1">
                   <div className="flex justify-between items-end mb-2">
-                    <span className="font-bold text-[#1b1c1d] font-plus-jakarta">
+                    <span className="font-bold text-ink font-plus-jakarta">
                       {f.name}
                     </span>
-                    <span className="text-sm font-bold text-[#a80012]">
+                    <span className="text-sm font-bold text-brand">
                       {formatBRL(f.revenue)}
                     </span>
                   </div>
-                  <div className="h-2 w-full bg-[#291715]/5 rounded-full overflow-hidden flex" title={`${f.botPercent}% bot · ${100 - f.botPercent}% manual`}>
+                  <div className="h-2 w-full bg-ink-shadow/5 rounded-full overflow-hidden flex" title={`${f.botPercent}% bot · ${100 - f.botPercent}% manual`}>
                     {f.botPercent > 0 && (
                       <div
-                        className={`h-full bg-[#705d00] ${f.botPercent >= 100 ? 'rounded-full' : 'rounded-l-full'} ${opacityClass}`}
+                        className={`h-full bg-brand-gold-ink ${f.botPercent >= 100 ? 'rounded-full' : 'rounded-l-full'} ${opacityClass}`}
                         style={{
                           width: `${(pct * f.botPercent) / 100}%`,
                         }}
@@ -188,7 +188,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                     )}
                     {f.botPercent < 100 && (
                       <div
-                        className={`h-full bg-[#a80012] ${f.botPercent <= 0 ? 'rounded-full' : 'rounded-r-full'} ${opacityClass}`}
+                        className={`h-full bg-brand ${f.botPercent <= 0 ? 'rounded-full' : 'rounded-r-full'} ${opacityClass}`}
                         style={{
                           width: `${(pct * (100 - f.botPercent)) / 100}%`,
                           ...(isFirst && f.botPercent <= 0
@@ -207,7 +207,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         {activeFranchises.length > VISIBLE_COUNT && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="mt-6 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-[#a80012] hover:bg-[#a80012]/5 rounded-xl transition-colors"
+            className="mt-6 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-brand hover:bg-brand/5 rounded-xl transition-colors"
           >
             <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={18} />
             {expanded
@@ -219,8 +219,8 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         {activeFranchises.length > 5 && (() => {
           const bottom5 = activeFranchises.slice(-5).reverse();
           return (
-            <div className="mt-6 pt-4 border-t border-[#291715]/5">
-              <h5 className="text-xs font-bold uppercase tracking-[0.15em] text-[#b91c1c]/70 mb-3 flex items-center gap-1.5">
+            <div className="mt-6 pt-4 border-t border-ink-shadow/5">
+              <h5 className="text-xs font-bold uppercase tracking-[0.15em] text-brand/70 mb-3 flex items-center gap-1.5">
                 <MaterialIcon icon="trending_down" size={14} />
                 Precisam de Atenção
               </h5>
@@ -231,8 +231,8 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                     className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-red-50/50 cursor-pointer transition-colors"
                     onClick={() => navigate(`/Financeiro?tab=porunidade&franchise=${encodeURIComponent(f.evoId)}`)}
                   >
-                    <span className="text-sm text-[#4a3d3d] font-medium">{f.name}</span>
-                    <span className="text-xs font-semibold text-[#b91c1c]">{formatBRL(f.revenue)}</span>
+                    <span className="text-sm text-ink-2 font-medium">{f.name}</span>
+                    <span className="text-xs font-semibold text-brand">{formatBRL(f.revenue)}</span>
                   </div>
                 ))}
               </div>
@@ -241,7 +241,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
         })()}
 
         {inactiveFranchises > 0 && (
-          <p className="text-xs text-[#4a3d3d]/40 text-center mt-3">
+          <p className="text-xs text-ink-2/40 text-center mt-3">
             {inactiveFranchises} franquia{inactiveFranchises > 1 ? "s" : ""} sem vendas no período
           </p>
         )}
@@ -250,15 +250,15 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
       {/* Meta do Dia — only for "today" period */}
       {showMeta && (
         <div className="lg:col-span-2">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#291715]/5">
-            <h4 className="text-sm font-bold text-[#1b1c1d] mb-4 font-plus-jakarta">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-ink-shadow/5">
+            <h4 className="text-sm font-bold text-ink mb-4 font-plus-jakarta">
               Meta do Dia
             </h4>
             <div className="flex items-center justify-center py-4">
               <div className="relative w-32 h-32 flex items-center justify-center">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
-                    className="text-[#291715]/5"
+                    className="text-ink-shadow/5"
                     cx="64"
                     cy="64"
                     r={radius}
@@ -267,7 +267,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                     strokeWidth="10"
                   />
                   <circle
-                    className="text-[#a80012]"
+                    className="text-brand"
                     cx="64"
                     cy="64"
                     r={radius}
@@ -280,16 +280,16 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className={`text-2xl font-bold font-mono-numbers ${exceeded ? "text-[#2e7d32]" : "text-[#1b1c1d]"}`}>
+                  <span className={`text-2xl font-bold font-mono-numbers ${exceeded ? "text-[#2e7d32]" : "text-ink"}`}>
                     {goalPercent}%
                   </span>
-                  <span className={`text-xs uppercase font-bold font-plus-jakarta ${exceeded ? "text-[#2e7d32]/70" : "text-[#1b1c1d]/70"}`}>
+                  <span className={`text-xs uppercase font-bold font-plus-jakarta ${exceeded ? "text-[#2e7d32]/70" : "text-ink/70"}`}>
                     Atingido
                   </span>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-center text-[#1b1c1d]/70 font-medium">
+            <p className="text-xs text-center text-ink/70 font-medium">
               {exceeded ? (
                 <>
                   Meta batida!{" "}
@@ -300,7 +300,7 @@ function FranchiseRanking({ franchises, summaries, todaySales = [], period = "to
               ) : (
                 <>
                   Faltam{" "}
-                  <span className="text-[#a80012] font-bold">
+                  <span className="text-brand font-bold">
                     {formatBRL(remaining)}
                   </span>{" "}
                   para bater a meta global

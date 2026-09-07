@@ -72,7 +72,7 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
       >
         <SheetHeader className="mb-4">
           <SheetTitle className="text-lg font-semibold flex items-center gap-2">
-            <MaterialIcon icon="event" className="text-[#b91c1c]" />
+            <MaterialIcon icon="event" className="text-brand" />
             Período personalizado
           </SheetTitle>
           <SheetDescription className="text-sm text-gray-600">
@@ -83,25 +83,25 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[#4a3d3d]">Início</span>
+              <span className="text-xs font-medium text-ink-2">Início</span>
               <input
                 type="date"
                 value={startStr}
                 onChange={(e) => setStartStr(e.target.value)}
                 min={minStartStr}
                 max={todayStr}
-                className="border border-[#291715]/15 rounded-lg px-3 py-2 text-sm font-mono-numbers tabular-nums focus:outline-none focus:ring-2 focus:ring-[#b91c1c]/30"
+                className="border border-ink-shadow/15 rounded-lg px-3 py-2 text-sm font-mono-numbers tabular-nums focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-[#4a3d3d]">Fim</span>
+              <span className="text-xs font-medium text-ink-2">Fim</span>
               <input
                 type="date"
                 value={endStr}
                 onChange={(e) => setEndStr(e.target.value)}
                 min={startStr || minStartStr}
                 max={todayStr}
-                className="border border-[#291715]/15 rounded-lg px-3 py-2 text-sm font-mono-numbers tabular-nums focus:outline-none focus:ring-2 focus:ring-[#b91c1c]/30"
+                className="border border-ink-shadow/15 rounded-lg px-3 py-2 text-sm font-mono-numbers tabular-nums focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
             </label>
           </div>
@@ -114,7 +114,7 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button onClick={handleApply} className="flex-1 bg-[#b91c1c] hover:bg-[#a01818] text-white min-h-[44px]">
+            <Button onClick={handleApply} className="flex-1 bg-brand hover:bg-brand text-white min-h-[44px]">
               Aplicar
             </Button>
             {hasRange && (

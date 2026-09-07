@@ -192,7 +192,7 @@ export default function Gestao() {
 
   if (loading || (franchiseId && loadingUnidade)) {
     return (
-      <div className="bg-[#fbf9fa] p-4 md:p-8 space-y-6">
+      <div className="bg-surface p-4 md:p-8 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="flex gap-2">
           <Skeleton className="h-10 flex-1 rounded-lg" />
@@ -207,8 +207,8 @@ export default function Gestao() {
   if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <MaterialIcon icon="cloud_off" className="text-5xl text-[#7a6d6d]" />
-        <p className="text-[#4a3d3d] text-center">{loadError}</p>
+        <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+        <p className="text-ink-2 text-center">{loadError}</p>
         <Button variant="outline" onClick={loadData} className="mt-2">
           <MaterialIcon icon="refresh" className="mr-2 text-lg" />
           Tentar novamente
@@ -229,11 +229,11 @@ export default function Gestao() {
   if (!primaryFranchise) {
     return (
       <div className="flex flex-col items-center justify-center h-64 px-4 text-center">
-        <MaterialIcon icon="bar_chart" size={48} className="text-[#cac0c0] mb-4" />
-        <h3 className="text-lg font-medium text-[#1b1c1d] mb-1 font-plus-jakarta">
+        <MaterialIcon icon="bar_chart" size={48} className="text-ink-4 mb-4" />
+        <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
           Nenhuma franquia vinculada
         </h3>
-        <p className="text-sm text-[#4a3d3d] max-w-sm">
+        <p className="text-sm text-ink-2 max-w-sm">
           Sua conta ainda não está vinculada a nenhuma franquia. Entre em contato com o administrador.
         </p>
       </div>
@@ -241,22 +241,22 @@ export default function Gestao() {
   }
 
   return (
-    <div className="bg-[#fbf9fa]">
+    <div className="bg-surface">
       <div className="p-4 md:p-8 space-y-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#775a19]/10 rounded-xl">
-            <MaterialIcon icon="bar_chart" size={24} className="text-[#775a19]" />
+          <div className="p-2 bg-brand-gold-ink/10 rounded-xl">
+            <MaterialIcon icon="bar_chart" size={24} className="text-brand-gold-ink" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#1b1c1d] font-plus-jakarta">Gestão</h1>
-            <p className="text-sm text-[#4a3d3d]">
+            <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Gestão</h1>
+            <p className="text-sm text-ink-2">
               {primaryFranchise.city || primaryFranchise.name}
             </p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="bg-white border border-[#291715]/5 rounded-xl p-1 w-full md:w-auto flex">
+          <TabsList className="bg-white border border-ink-shadow/5 rounded-xl p-1 w-full md:w-auto flex">
             {[
               { value: "resultado", icon: "analytics", label: "Resultado", shortLabel: "Resultado" },
               { value: "estoque", icon: "inventory_2", label: "Estoque", shortLabel: "Estoque" },
@@ -265,7 +265,7 @@ export default function Gestao() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="gap-1 rounded-lg data-[state=active]:bg-[#b91c1c] data-[state=active]:text-white data-[state=active]:shadow-none px-2 md:px-4 flex-1 md:flex-none text-xs md:text-sm"
+                className="gap-1 rounded-lg data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-none px-2 md:px-4 flex-1 md:flex-none text-xs md:text-sm"
               >
                 <MaterialIcon icon={tab.icon} size={14} />
                 <span className="hidden md:inline">{tab.label}</span>

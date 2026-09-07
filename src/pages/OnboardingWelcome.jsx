@@ -15,7 +15,7 @@ const STEPS = [
     detail:
       "Em poucos minutos você vai conhecer as ferramentas que vão te ajudar a gerenciar sua franquia de forma simples e eficiente.",
     color: "#d4af37",
-    bgGradient: "from-[#d4af37]/10 to-[#d4af37]/5",
+    bgGradient: "from-brand-gold/10 to-brand-gold/5",
   },
   {
     icon: "point_of_sale",
@@ -25,7 +25,7 @@ const STEPS = [
     detail:
       "Na tela de Vendas você lança vendas rapidamente, seleciona produtos do estoque, aplica frete e taxas de cartão. Tudo calculado automaticamente.",
     color: "#b91c1c",
-    bgGradient: "from-[#b91c1c]/10 to-[#b91c1c]/5",
+    bgGradient: "from-brand/10 to-brand/5",
     features: [
       { icon: "add_shopping_cart", label: "Lançamento Rápido", desc: "Selecione produtos e registre em segundos" },
       { icon: "receipt_long", label: "Comprovante", desc: "Compartilhe o comprovante pelo WhatsApp" },
@@ -39,7 +39,7 @@ const STEPS = [
       "Acompanhe o resultado financeiro, controle seu estoque e peça reposição direto para a fábrica.",
     detail: null,
     color: "#b91c1c",
-    bgGradient: "from-[#b91c1c]/10 to-[#b91c1c]/5",
+    bgGradient: "from-brand/10 to-brand/5",
     features: [
       { icon: "analytics", label: "Resultado", desc: "Lucro, despesas e faturamento do período" },
       { icon: "inventory_2", label: "Estoque", desc: "Controle produtos e quantidades disponíveis" },
@@ -99,7 +99,7 @@ const STEPS = [
     detail:
       "Ao clicar em 'Começar', você será direcionado para o Checklist de Iniciação — um passo a passo com tudo que precisa estar pronto antes de ativar as campanhas de tráfego pago. Seu consultor de franquias vai te acompanhar nesse processo.",
     color: "#b91c1c",
-    bgGradient: "from-[#b91c1c]/10 to-[#d4af37]/5",
+    bgGradient: "from-brand/10 to-brand-gold/5",
   },
 ];
 
@@ -158,11 +158,11 @@ export default function OnboardingWelcome() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbf9fa] flex flex-col max-h-screen overflow-hidden">
+    <div className="min-h-screen bg-surface flex flex-col max-h-screen overflow-hidden">
       {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-1.5 bg-[#e9e8e9]">
+      <div className="fixed top-0 left-0 right-0 z-50 h-1.5 bg-surface-line">
         <div
-          className="h-full bg-gradient-to-r from-[#b91c1c] to-[#d4af37] transition-all duration-500 ease-out"
+          className="h-full bg-gradient-to-r from-brand to-brand-gold transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -171,12 +171,12 @@ export default function OnboardingWelcome() {
       <header className="flex items-center justify-between px-4 md:px-8 py-4 pt-6">
         <img src={logoImg} alt="Maxi Massas" className="h-12 w-auto object-contain" />
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#4a3d3d]/70 font-medium">
+          <span className="text-xs text-ink-2/70 font-medium">
             {currentStep + 1} de {STEPS.length}
           </span>
           <button
             onClick={handleSkip}
-            className="text-sm text-[#4a3d3d]/80 hover:text-[#b91c1c] transition-colors underline"
+            className="text-sm text-ink-2/80 hover:text-brand transition-colors underline"
           >
             Pular por agora
           </button>
@@ -192,10 +192,10 @@ export default function OnboardingWelcome() {
             aria-label={`Passo ${idx + 1} de ${STEPS.length}`}
             className={`transition-all duration-300 rounded-full ${
               idx === currentStep
-                ? "w-8 h-2 bg-[#b91c1c]"
+                ? "w-8 h-2 bg-brand"
                 : idx < currentStep
-                ? "w-2 h-2 bg-[#b91c1c]/40"
-                : "w-2 h-2 bg-[#e9e8e9]"
+                ? "w-2 h-2 bg-brand/40"
+                : "w-2 h-2 bg-surface-line"
             }`}
           />
         ))}
@@ -218,12 +218,12 @@ export default function OnboardingWelcome() {
           </div>
 
           {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-[#1b1c1d] text-center mb-3">
+          <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-ink text-center mb-3">
             {step.title}
           </h1>
 
           {/* Description */}
-          <p className="text-sm md:text-base text-[#4a3d3d] text-center leading-relaxed mb-6">
+          <p className="text-sm md:text-base text-ink-2 text-center leading-relaxed mb-6">
             {step.description}
           </p>
 
@@ -233,7 +233,7 @@ export default function OnboardingWelcome() {
               {step.features.map((feature) => (
                 <div
                   key={feature.label}
-                  className="bg-white rounded-xl border border-[#291715]/5 p-4 text-center shadow-sm"
+                  className="bg-white rounded-xl border border-ink-shadow/5 p-4 text-center shadow-sm"
                 >
                   <div
                     className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center"
@@ -241,8 +241,8 @@ export default function OnboardingWelcome() {
                   >
                     <MaterialIcon icon={feature.icon} size={20} style={{ color: step.color }} />
                   </div>
-                  <h4 className="text-sm font-bold text-[#1b1c1d] mb-1">{feature.label}</h4>
-                  <p className="text-xs text-[#4a3d3d]/80 leading-snug">{feature.desc}</p>
+                  <h4 className="text-sm font-bold text-ink mb-1">{feature.label}</h4>
+                  <p className="text-xs text-ink-2/80 leading-snug">{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -250,8 +250,8 @@ export default function OnboardingWelcome() {
 
           {/* Detail text */}
           {step.detail && (
-            <div className="bg-white rounded-xl border border-[#291715]/5 p-4 mb-6 shadow-sm">
-              <p className="text-sm text-[#4a3d3d]/90 leading-relaxed text-center">
+            <div className="bg-white rounded-xl border border-ink-shadow/5 p-4 mb-6 shadow-sm">
+              <p className="text-sm text-ink-2/90 leading-relaxed text-center">
                 {step.detail}
               </p>
             </div>
@@ -274,7 +274,7 @@ export default function OnboardingWelcome() {
               <Button
                 variant="outline"
                 onClick={handlePrev}
-                className="flex items-center gap-1.5 rounded-xl border-[#b91c1c] text-[#b91c1c] hover:bg-[#b91c1c]/5"
+                className="flex items-center gap-1.5 rounded-xl border-brand text-brand hover:bg-brand/5"
               >
                 <MaterialIcon icon="arrow_back" size={16} />
                 Voltar
@@ -288,8 +288,8 @@ export default function OnboardingWelcome() {
               disabled={isCompleting}
               className={`flex items-center gap-1.5 rounded-xl font-bold shadow-lg transition-all ${
                 isLastStep
-                  ? "bg-[#b91c1c] hover:bg-[#991b1b] text-white shadow-[#b91c1c]/20 px-8"
-                  : "bg-[#b91c1c] hover:bg-[#991b1b] text-white shadow-[#b91c1c]/20"
+                  ? "bg-brand hover:bg-brand-dark text-white shadow-brand/20 px-8"
+                  : "bg-brand hover:bg-brand-dark text-white shadow-brand/20"
               }`}
             >
               {isCompleting ? (

@@ -27,12 +27,12 @@ function DailyRevenueChart({ allSales = [], isLoading, days = 7 }) {
   const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#291715]/5">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-ink-shadow/5">
       <div className="flex justify-between items-center mb-6">
-        <h4 className="font-bold text-[#1b1c1d] font-plus-jakarta">
+        <h4 className="font-bold text-ink font-plus-jakarta">
           Faturamento {days} dias
         </h4>
-        <span className="text-xs font-black text-[#a80012] uppercase tracking-tight">
+        <span className="text-xs font-black text-brand uppercase tracking-tight">
           {formatBRL(totalRevenue)} TOTAL
         </span>
       </div>
@@ -44,15 +44,15 @@ function DailyRevenueChart({ allSales = [], isLoading, days = 7 }) {
               key={i}
               className={`flex-1 rounded-t-lg ${
                 d.isLast
-                  ? "bg-gradient-to-t from-[#a80012]/40 to-[#a80012] shadow-[0_0_15px_rgba(168,0,18,0.2)]"
-                  : "bg-gradient-to-t from-[#a80012]/20 to-[#a80012]/40"
+                  ? "bg-gradient-to-t from-brand/40 to-brand shadow-[0_0_15px_rgba(168,0,18,0.2)]"
+                  : "bg-gradient-to-t from-brand/20 to-brand/40"
               }`}
               style={{ height: `${heightPct}%` }}
             />
           );
         })}
       </div>
-      <div className="flex justify-between mt-4 text-xs font-bold text-[#1b1c1d]/60 uppercase tracking-widest font-plus-jakarta">
+      <div className="flex justify-between mt-4 text-xs font-bold text-ink/60 uppercase tracking-widest font-plus-jakarta">
         {chartData.map((d, i) => (
           <span key={i}>{d.dayLabel}</span>
         ))}

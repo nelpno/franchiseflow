@@ -14,7 +14,7 @@ export default function FranchiseSelector({ franchises }) {
   // Single franchise — show name only
   if (franchises.length === 1) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#b91c1c]/5 text-sm font-medium text-[#b91c1c]">
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5 text-sm font-medium text-brand">
         <MaterialIcon icon="storefront" size={16} />
         <span className="truncate max-w-[160px]">
           {franchises[0].city || franchises[0].name || "Minha Franquia"}
@@ -33,12 +33,12 @@ export default function FranchiseSelector({ franchises }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#b91c1c]/5">
-        <MaterialIcon icon="storefront" size={16} className="text-[#b91c1c] shrink-0" />
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5">
+        <MaterialIcon icon="storefront" size={16} className="text-brand shrink-0" />
         <select
           value={selectedFranchise?.id || ""}
           onChange={handleChange}
-          className="bg-transparent text-sm font-medium text-[#b91c1c] border-none outline-none cursor-pointer pr-1 max-w-[160px] truncate appearance-none"
+          className="bg-transparent text-sm font-medium text-brand border-none outline-none cursor-pointer pr-1 max-w-[160px] truncate appearance-none"
           style={{ WebkitAppearance: "none" }}
         >
           {franchises.map((f) => (
@@ -47,7 +47,7 @@ export default function FranchiseSelector({ franchises }) {
             </option>
           ))}
         </select>
-        <MaterialIcon icon="expand_more" size={16} className="text-[#b91c1c] shrink-0 -ml-1" />
+        <MaterialIcon icon="expand_more" size={16} className="text-brand shrink-0 -ml-1" />
       </div>
     </div>
   );

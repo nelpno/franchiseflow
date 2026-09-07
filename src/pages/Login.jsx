@@ -90,12 +90,12 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-[#fbf9fa] text-[#1b1c1d] min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
+    <div className="bg-surface text-ink min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
       <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(227,24,24,0.08)]">
         <AuthHero
           headline={
             <>
-              Gestão inteligente para sua <span className="text-[#e31818]">franquia</span> de massas artesanais
+              Gestão inteligente para sua <span className="text-err">franquia</span> de massas artesanais
             </>
           }
           subtitle="Vendas, estoque, financeiro e o robô vendedor — tudo num lugar só."
@@ -114,7 +114,7 @@ export default function Login() {
             </div>
 
             <div className="mb-6 md:mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-[#1b1c1d] tracking-tight mb-2">
+              <h2 className="text-3xl font-bold text-ink tracking-tight mb-2">
                 {isResetMode ? 'Recuperar senha' : 'Bem-vindo de volta'}
               </h2>
               <p className="text-[#3d4a42]">
@@ -135,7 +135,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-3.5 bg-[#e9e8e9] rounded-xl border-none focus:ring-2 focus:ring-[#e31818]/20 transition-all text-[#1b1c1d] placeholder:text-[#6d7a72]/60 outline-none"
+                    className="w-full px-4 py-3.5 bg-surface-line rounded-xl border-none focus:ring-2 focus:ring-err/20 transition-all text-ink placeholder:text-[#6d7a72]/60 outline-none"
                   />
                 </div>
               </div>
@@ -149,7 +149,7 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() => setIsResetMode(true)}
-                      className="text-sm font-semibold text-[#e31818] hover:underline"
+                      className="text-sm font-semibold text-err hover:underline"
                     >
                       Esqueci minha senha
                     </button>
@@ -162,13 +162,13 @@ export default function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="w-full px-4 py-3.5 bg-[#e9e8e9] rounded-xl border-none focus:ring-2 focus:ring-[#e31818]/20 transition-all text-[#1b1c1d] placeholder:text-[#6d7a72]/60 outline-none"
+                      className="w-full px-4 py-3.5 bg-surface-line rounded-xl border-none focus:ring-2 focus:ring-err/20 transition-all text-ink placeholder:text-[#6d7a72]/60 outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-[#e31818] transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-err transition-colors"
                     >
                       {showPassword ? <MaterialIcon icon="visibility_off" size={20} /> : <MaterialIcon icon="visibility" size={20} />}
                     </button>
@@ -177,7 +177,7 @@ export default function Login() {
               )}
 
               {isLockedOut && !isResetMode && (
-                <p className="text-sm text-[#e31818] text-center font-medium">
+                <p className="text-sm text-err text-center font-medium">
                   Muitas tentativas. Aguarde {lockoutSeconds} segundos.
                 </p>
               )}
@@ -185,7 +185,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading || (isLockedOut && !isResetMode)}
-                className="w-full h-12 bg-[#e31818] text-white font-bold rounded-xl shadow-lg shadow-[#e31818]/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-[#e5e3e4] disabled:text-[#9a9394] disabled:shadow-none disabled:cursor-not-allowed"
+                className="w-full h-12 bg-err text-white font-bold rounded-xl shadow-lg shadow-err/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-[#e5e3e4] disabled:text-[#9a9394] disabled:shadow-none disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : isLockedOut ? `Aguarde ${lockoutSeconds}s` : 'Entrar'}
               </button>
@@ -195,7 +195,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setIsResetMode(false)}
-                    className="text-sm font-semibold text-[#e31818] hover:underline"
+                    className="text-sm font-semibold text-err hover:underline"
                   >
                     Voltar ao login
                   </button>
@@ -216,12 +216,12 @@ export default function Login() {
                     }
                     setIsResetMode(true);
                   }}
-                  className="text-[#e31818] font-bold hover:underline"
+                  className="text-err font-bold hover:underline"
                 >
                   Defina sua senha aqui
                 </button>
               </p>
-              <p className="text-xs text-[#4a3d3d]">
+              <p className="text-xs text-ink-2">
                 Não possui acesso? Solicite ao administrador
               </p>
             </div>
@@ -231,7 +231,7 @@ export default function Login() {
 
       {/* Footer Meta */}
       <footer className="mt-4 md:fixed md:bottom-6 md:left-0 md:right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
-        <p className="text-[10px] tracking-widest uppercase font-bold text-[#1b1c1d]">
+        <p className="text-[10px] tracking-widest uppercase font-bold text-ink">
           &copy; 2026 Maxi Massas
         </p>
       </footer>

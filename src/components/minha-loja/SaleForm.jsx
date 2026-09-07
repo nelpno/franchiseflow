@@ -142,10 +142,10 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
           placeholder={placeholder}
           className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
         />
-        <MaterialIcon icon="search" size={18} className="text-[#4a3d3d]/50 mr-2 shrink-0" />
+        <MaterialIcon icon="search" size={18} className="text-ink-2/50 mr-2 shrink-0" />
       </div>
       {open && filtered.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full min-w-fit bg-white border border-[#291715]/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full min-w-fit bg-white border border-ink-shadow/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
           {filtered.map((p) => (
             <button
               key={p.id}
@@ -161,18 +161,18 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
                   if (qtyInput) setTimeout(() => qtyInput.focus(), 0);
                 }
               }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-[#fbf9fa] transition-colors flex justify-between items-center ${
-                p.id === selectedId ? "bg-[#b91c1c]/5 text-[#b91c1c]" : (p.quantity || 0) <= 0 ? "text-[#1b1c1d]/40" : "text-[#1b1c1d]"
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-surface transition-colors flex justify-between items-center ${
+                p.id === selectedId ? "bg-brand/5 text-brand" : (p.quantity || 0) <= 0 ? "text-ink/40" : "text-ink"
               }`}
             >
               <span>
                 {p.product_name}
                 {(p.quantity || 0) <= 0 && (
-                  <span className="text-[#b91c1c] text-xs ml-1.5 font-medium">(sem estoque)</span>
+                  <span className="text-brand text-xs ml-1.5 font-medium">(sem estoque)</span>
                 )}
               </span>
               {p.sale_price > 0 && (
-                <span className="text-xs text-[#4a3d3d]/70 font-mono-numbers">
+                <span className="text-xs text-ink-2/70 font-mono-numbers">
                   R$ {(p.sale_price || 0).toFixed(2).replace('.', ',')}
                 </span>
               )}
@@ -181,7 +181,7 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
         </div>
       )}
       {open && filtered.length === 0 && query && (
-        <div className="absolute z-50 mt-1 w-full min-w-fit bg-white border border-[#291715]/10 rounded-xl shadow-lg p-3 text-sm text-[#4a3d3d]/70">
+        <div className="absolute z-50 mt-1 w-full min-w-fit bg-white border border-ink-shadow/10 rounded-xl shadow-lg p-3 text-sm text-ink-2/70">
           Nenhum produto encontrado
         </div>
       )}
@@ -316,9 +316,9 @@ function ContactAutocomplete({
         autoComplete="off"
       />
       {showDropdown && (searchResults.length > 0 || hasQuery) && (
-        <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-[#291715]/10 max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white rounded-xl shadow-lg border border-ink-shadow/10 max-h-60 overflow-y-auto">
           {searching && searchResults.length === 0 && (
-            <div className="px-4 py-3 text-sm text-[#7a6d6d] flex items-center gap-2">
+            <div className="px-4 py-3 text-sm text-ink-3 flex items-center gap-2">
               <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
               Buscando...
             </div>
@@ -328,20 +328,20 @@ function ContactAutocomplete({
               key={contact.id}
               type="button"
               onClick={() => handleSelect(contact)}
-              className="w-full text-left px-4 py-3 hover:bg-[#fbf9fa] transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
+              className="w-full text-left px-4 py-3 hover:bg-surface transition-colors first:rounded-t-xl flex items-center justify-between gap-2"
             >
               <div className="flex-1 min-w-0">
-                <span className="font-medium text-[#1b1c1d] truncate block">
+                <span className="font-medium text-ink truncate block">
                   {contact.nome || "Sem nome"}
                 </span>
-                <span className="text-sm text-[#4a3d3d]">
+                <span className="text-sm text-ink-2">
                   {formatPhone(contact.telefone)}
                 </span>
               </div>
             </button>
           ))}
           {!searching && hasQuery && searchResults.length === 0 && (
-            <div className="px-4 py-3 text-sm text-[#7a6d6d]">
+            <div className="px-4 py-3 text-sm text-ink-3">
               Nenhum contato encontrado
             </div>
           )}
@@ -353,7 +353,7 @@ function ContactAutocomplete({
                 setHasQuery(false);
                 onCreateNew();
               }}
-              className="w-full text-left px-4 py-3 hover:bg-[#fffbeb] transition-colors last:rounded-b-xl flex items-center gap-2 border-t border-[#291715]/5 text-[#b91c1c]"
+              className="w-full text-left px-4 py-3 hover:bg-[#fffbeb] transition-colors last:rounded-b-xl flex items-center gap-2 border-t border-ink-shadow/5 text-brand"
             >
               <MaterialIcon icon="person_add" size={18} />
               <span className="font-medium text-sm">Novo contato</span>
@@ -893,18 +893,18 @@ export default function SaleForm({
         onClick={() => toggleSection(id)}
         className="md:hidden flex items-center justify-between w-full text-left"
       >
-        <Label className="text-sm font-medium text-[#1b1c1d] flex items-center gap-1.5 pointer-events-none">
-          <MaterialIcon icon={icon} size={16} className="text-[#7a6d6d]" />
+        <Label className="text-sm font-medium text-ink flex items-center gap-1.5 pointer-events-none">
+          <MaterialIcon icon={icon} size={16} className="text-ink-3" />
           {label}
         </Label>
         <div className="flex items-center gap-2">
           {!expandedSections[id] && summary && (
-            <span className="text-xs text-[#7a6d6d] max-w-[140px] truncate">{summary}</span>
+            <span className="text-xs text-ink-3 max-w-[140px] truncate">{summary}</span>
           )}
-          <MaterialIcon icon={expandedSections[id] ? "expand_less" : "expand_more"} size={18} className="text-[#7a6d6d]" />
+          <MaterialIcon icon={expandedSections[id] ? "expand_less" : "expand_more"} size={18} className="text-ink-3" />
         </div>
       </button>
-      <Label className="hidden md:block text-sm font-medium text-[#1b1c1d]">{label}</Label>
+      <Label className="hidden md:block text-sm font-medium text-ink">{label}</Label>
       <div className={`${expandedSections[id] ? "" : "hidden md:block"}`}>
         {children}
       </div>
@@ -914,8 +914,8 @@ export default function SaleForm({
   if (loadingItems) {
     return (
       <div className="flex items-center justify-center py-8">
-        <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-[#b91c1c]" />
-        <span className="ml-2 text-sm text-[#4a3d3d]">Carregando...</span>
+        <MaterialIcon icon="progress_activity" size={24} className="animate-spin text-brand" />
+        <span className="ml-2 text-sm text-ink-2">Carregando...</span>
       </div>
     );
   }
@@ -929,7 +929,7 @@ export default function SaleForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Contact */}
       <div className="space-y-2">
-        <Label htmlFor="contact" className="text-sm font-medium text-[#1b1c1d]">
+        <Label htmlFor="contact" className="text-sm font-medium text-ink">
           Cliente
         </Label>
         <ContactAutocomplete
@@ -939,11 +939,11 @@ export default function SaleForm({
           onSelect={handleContactSelect}
           onCreateNew={handleOpenInlineCreate}
           franchiseId={franchiseId}
-          className="bg-[#e9e8e9]/50"
+          className="bg-surface-line/50"
         />
         {isNewContact && !showInlineCreate && (
-          <div className="flex items-center gap-2 p-3 bg-[#fffbeb] rounded-xl border border-[#d4af37]/30">
-            <MaterialIcon icon="person_add" size={18} className="text-[#d4af37] shrink-0" />
+          <div className="flex items-center gap-2 p-3 bg-[#fffbeb] rounded-xl border border-brand-gold/30">
+            <MaterialIcon icon="person_add" size={18} className="text-brand-gold shrink-0" />
             <div className="flex-1">
               <p className="text-xs text-[#92400e] mb-1">Novo contato — adicione o nome:</p>
               <Input
@@ -956,10 +956,10 @@ export default function SaleForm({
           </div>
         )}
         {showInlineCreate && (
-          <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#b91c1c]/20 space-y-3">
+          <div className="p-4 bg-surface rounded-xl border border-brand/20 space-y-3">
             <div className="flex items-center gap-2 mb-1">
-              <MaterialIcon icon="person_add" size={18} className="text-[#b91c1c]" />
-              <span className="text-sm font-medium text-[#1b1c1d]">Novo contato</span>
+              <MaterialIcon icon="person_add" size={18} className="text-brand" />
+              <span className="text-sm font-medium text-ink">Novo contato</span>
             </div>
             <div className="space-y-2">
               <Input
@@ -995,7 +995,7 @@ export default function SaleForm({
                 size="sm"
                 onClick={handleInlineContactCreate}
                 disabled={isCreatingContact}
-                className="bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+                className="bg-brand hover:bg-brand-dark text-white"
               >
                 {isCreatingContact ? (
                   <>
@@ -1013,7 +1013,7 @@ export default function SaleForm({
 
       {/* Products */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium text-[#1b1c1d]">Produtos</Label>
+        <Label className="text-sm font-medium text-ink">Produtos</Label>
 
         {items.map((item, index) => {
           const selectedInv = item.inventory_item_id
@@ -1025,7 +1025,7 @@ export default function SaleForm({
           <div
             key={index}
             data-sale-item
-            className="flex flex-col gap-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5"
+            className="flex flex-col gap-2 p-3 bg-surface rounded-xl border border-ink-shadow/5"
           >
             <div className="flex flex-col md:flex-row gap-2">
             {/* Product search */}
@@ -1085,7 +1085,7 @@ export default function SaleForm({
             {/* Line total — calculado automaticamente, NÃO é input */}
             <div className="flex items-center justify-between md:w-28">
               <span
-                className="text-sm font-medium text-[#4a3d3d] font-mono-numbers md:text-right md:w-full px-2 py-1.5 bg-[#f5f3f0] rounded-md cursor-default select-none"
+                className="text-sm font-medium text-ink-2 font-mono-numbers md:text-right md:w-full px-2 py-1.5 bg-surface-2 rounded-md cursor-default select-none"
                 title="Subtotal (quantidade × preço unitário)"
               >
                 {formatCurrency((Number(item.quantity) || 0) * item.unit_price)}
@@ -1094,7 +1094,7 @@ export default function SaleForm({
                 <button
                   type="button"
                   onClick={() => handleRemoveItem(index)}
-                  className="ml-2 p-1 rounded-lg hover:bg-[#b91c1c]/10 text-[#4a3d3d] hover:text-[#b91c1c] transition-colors"
+                  className="ml-2 p-1 rounded-lg hover:bg-brand/10 text-ink-2 hover:text-brand transition-colors"
                 >
                   <MaterialIcon icon="close" size={18} />
                 </button>
@@ -1103,8 +1103,8 @@ export default function SaleForm({
             </div>
 
             {isZeroStock && (
-              <div className="flex items-center gap-1.5 px-2 py-1.5 bg-[#fffbeb] rounded-lg border border-[#d4af37]/30">
-                <MaterialIcon icon="warning" size={14} className="text-[#d4af37] shrink-0" />
+              <div className="flex items-center gap-1.5 px-2 py-1.5 bg-[#fffbeb] rounded-lg border border-brand-gold/30">
+                <MaterialIcon icon="warning" size={14} className="text-brand-gold shrink-0" />
                 <span className="text-xs text-[#92400e]">Estoque zerado — atualize seu estoque</span>
               </div>
             )}
@@ -1117,7 +1117,7 @@ export default function SaleForm({
           variant="outline"
           size="sm"
           onClick={handleAddItem}
-          className="gap-1.5 text-[#b91c1c] border-[#b91c1c]/30 hover:bg-[#b91c1c]/5"
+          className="gap-1.5 text-brand border-brand/30 hover:bg-brand/5"
         >
           <MaterialIcon icon="add" size={16} />
           Adicionar produto
@@ -1127,14 +1127,14 @@ export default function SaleForm({
       {/* Discount */}
       <MobileSection id="discount" label="Desconto" icon="sell" summary={discountSummary}>
         <div className="flex items-center gap-2">
-          <div className="grid grid-cols-2 gap-1 p-0.5 bg-[#fbf9fa] rounded-lg border border-[#291715]/10">
+          <div className="grid grid-cols-2 gap-1 p-0.5 bg-surface rounded-lg border border-ink-shadow/10">
             <button
               type="button"
               onClick={() => { setDiscountType("fixed"); setDiscountInput(0); }}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 discountType === "fixed"
-                  ? "bg-white text-[#b91c1c] shadow-sm"
-                  : "text-[#7a6d6d] hover:text-[#4a3d3d]"
+                  ? "bg-white text-brand shadow-sm"
+                  : "text-ink-3 hover:text-ink-2"
               }`}
             >
               R$
@@ -1144,8 +1144,8 @@ export default function SaleForm({
               onClick={() => { setDiscountType("percent"); setDiscountInput(0); }}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 discountType === "percent"
-                  ? "bg-white text-[#b91c1c] shadow-sm"
-                  : "text-[#7a6d6d] hover:text-[#4a3d3d]"
+                  ? "bg-white text-brand shadow-sm"
+                  : "text-ink-3 hover:text-ink-2"
               }`}
             >
               %
@@ -1167,7 +1167,7 @@ export default function SaleForm({
           />
         </div>
         {discountAmount > 0 && (
-          <p className="text-xs text-[#7a6d6d]">
+          <p className="text-xs text-ink-3">
             −{formatCurrency(discountAmount)} no subtotal
           </p>
         )}
@@ -1183,8 +1183,8 @@ export default function SaleForm({
               onClick={() => setPaymentMethod(pm.value)}
               className={`flex items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-colors text-xs min-h-[48px] ${
                 paymentMethod === pm.value
-                  ? "border-[#b91c1c] bg-[#b91c1c]/10 text-[#b91c1c] font-bold shadow-sm"
-                  : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa] hover:border-[#291715]/20"
+                  ? "border-brand bg-brand/10 text-brand font-bold shadow-sm"
+                  : "border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface hover:border-ink-shadow/20"
               }`}
             >
               <MaterialIcon icon={pm.icon} size={16} />
@@ -1194,9 +1194,9 @@ export default function SaleForm({
         </div>
 
         {cobraTaxa && (
-          <div className="mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 flex flex-col gap-3">
+          <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5 flex flex-col gap-3">
             <div className="flex items-center gap-3">
-              <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
+              <Label className="text-sm text-ink-2 whitespace-nowrap">Taxa (%)</Label>
               <Input
                 type="number"
                 min={0}
@@ -1206,16 +1206,16 @@ export default function SaleForm({
                 onChange={(e) => setCardFeePercent(parseFloat(e.target.value) || 0)}
                 className="w-24 bg-white text-right font-mono-numbers"
               />
-              <span className="text-sm text-[#4a3d3d] font-mono-numbers">
+              <span className="text-sm text-ink-2 font-mono-numbers">
                 = {formatCurrency(cardFeeAmount)}
               </span>
             </div>
-            <div className="flex items-start justify-between gap-3 pt-2 border-t border-[#291715]/5">
+            <div className="flex items-start justify-between gap-3 pt-2 border-t border-ink-shadow/5">
               <div className="flex flex-col">
-                <Label className="text-sm text-[#4a3d3d] cursor-pointer" htmlFor="fee-passed-toggle">
+                <Label className="text-sm text-ink-2 cursor-pointer" htmlFor="fee-passed-toggle">
                   Cliente paga a taxa
                 </Label>
-                <span className="text-xs text-[#7a6868] mt-0.5">
+                <span className="text-xs text-ink-3 mt-0.5">
                   Quando ativo, soma a taxa no total cobrado do cliente
                 </span>
               </div>
@@ -1237,8 +1237,8 @@ export default function SaleForm({
             onClick={() => setDeliveryMethod("retirada")}
             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
               deliveryMethod === "retirada"
-                ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
-                : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                ? "border-brand bg-brand/5 text-brand font-medium"
+                : "border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface"
             }`}
           >
             <MaterialIcon icon="store" size={18} />
@@ -1257,8 +1257,8 @@ export default function SaleForm({
             }}
             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors text-sm ${
               deliveryMethod === "delivery"
-                ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-medium"
-                : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
+                ? "border-brand bg-brand/5 text-brand font-medium"
+                : "border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface"
             }`}
           >
             <MaterialIcon icon="delivery_dining" size={18} />
@@ -1267,9 +1267,9 @@ export default function SaleForm({
         </div>
 
         {deliveryMethod === "delivery" && (
-          <div className="mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
+          <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5">
             <div className="flex items-center gap-3">
-              <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Frete (R$)</Label>
+              <Label className="text-sm text-ink-2 whitespace-nowrap">Frete (R$)</Label>
               <Input
                 type="number"
                 min={0}
@@ -1283,7 +1283,7 @@ export default function SaleForm({
 
             {deliveryFeeOptions.length > 1 && (
               <div className="mt-3">
-                <p className="text-[11px] text-[#7a6d6d] mb-1.5">Sua tabela de frete:</p>
+                <p className="text-[11px] text-ink-3 mb-1.5">Sua tabela de frete:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {deliveryFeeOptions.map((opt) => {
                     const ativo = Number(deliveryFee) === opt.fee;
@@ -1294,8 +1294,8 @@ export default function SaleForm({
                         onClick={() => setDeliveryFee(opt.fee)}
                         className={`px-3 min-h-[40px] rounded-lg border text-xs transition-colors ${
                           ativo
-                            ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-semibold"
-                            : "border-[#291715]/10 bg-white text-[#4a3d3d] active:bg-[#f5f3f0]"
+                            ? "border-brand bg-brand/5 text-brand font-semibold"
+                            : "border-ink-shadow/10 bg-white text-ink-2 active:bg-surface-2"
                         }`}
                       >
                         {opt.label} · {opt.fee === 0 ? "grátis" : formatCurrency(opt.fee)}
@@ -1310,9 +1310,9 @@ export default function SaleForm({
       </MobileSection>
 
       {/* Sale date */}
-      <div className="flex items-center gap-3 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
-        <MaterialIcon icon="calendar_today" size={18} className="text-[#7a6d6d]" />
-        <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Data da venda</Label>
+      <div className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-ink-shadow/5">
+        <MaterialIcon icon="calendar_today" size={18} className="text-ink-3" />
+        <Label className="text-sm text-ink-2 whitespace-nowrap">Data da venda</Label>
         <Input
           type="date"
           value={saleDate}
@@ -1322,35 +1322,35 @@ export default function SaleForm({
       </div>
 
       {/* Observações */}
-      <div className="p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5">
+      <div className="p-3 bg-surface rounded-xl border border-ink-shadow/5">
         <div className="flex items-center gap-2 mb-2">
-          <MaterialIcon icon="notes" size={18} className="text-[#7a6d6d]" />
-          <Label className="text-sm text-[#4a3d3d]">Observações</Label>
+          <MaterialIcon icon="notes" size={18} className="text-ink-3" />
+          <Label className="text-sm text-ink-2">Observações</Label>
         </div>
         <textarea
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           placeholder="Ex: Entregar sábado até às 12h, deixar na portaria..."
           rows={2}
-          className="w-full text-sm rounded-lg border border-[#291715]/10 bg-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#b91c1c]/20 focus:border-[#b91c1c]/30"
+          className="w-full text-sm rounded-lg border border-ink-shadow/10 bg-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/30"
         />
       </div>
 
       {/* Summary */}
-      <div className="p-4 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 space-y-2">
+      <div className="p-4 bg-surface rounded-xl border border-ink-shadow/5 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-[#4a3d3d]">Subtotal</span>
-          <span className="font-medium text-[#1b1c1d] font-mono-numbers">
+          <span className="text-ink-2">Subtotal</span>
+          <span className="font-medium text-ink font-mono-numbers">
             {formatCurrency(subtotal)}
           </span>
         </div>
 
         {discountAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#4a3d3d]">
+            <span className="text-ink-2">
               Desconto{discountType === "percent" ? ` (${discountInput}%)` : ""}
             </span>
-            <span className="font-medium text-[#dc2626] font-mono-numbers">
+            <span className="font-medium text-err font-mono-numbers">
               − {formatCurrency(discountAmount)}
             </span>
           </div>
@@ -1358,11 +1358,11 @@ export default function SaleForm({
 
         {cardFeeAmount > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#4a3d3d]">
+            <span className="text-ink-2">
               Taxa {paymentMethod === "payment_link" ? "link" : paymentMethod === "pix" ? "PIX" : paymentMethod === "cash" ? "dinheiro" : "cartão"} ({cardFeePercent}%)
-              {feePassedToCustomer && <span className="text-xs text-[#7a6868] ml-1">(cliente paga)</span>}
+              {feePassedToCustomer && <span className="text-xs text-ink-3 ml-1">(cliente paga)</span>}
             </span>
-            <span className={`font-medium font-mono-numbers ${feePassedToCustomer ? "text-[#16a34a]" : "text-[#b91c1c]"}`}>
+            <span className={`font-medium font-mono-numbers ${feePassedToCustomer ? "text-ok" : "text-brand"}`}>
               {feePassedToCustomer ? "+" : "-"} {formatCurrency(cardFeeAmount)}
             </span>
           </div>
@@ -1370,16 +1370,16 @@ export default function SaleForm({
 
         {deliveryMethod === "delivery" && effectiveDeliveryFee > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#4a3d3d]">Frete (receita)</span>
-            <span className="font-medium text-[#16a34a] font-mono-numbers">
+            <span className="text-ink-2">Frete (receita)</span>
+            <span className="font-medium text-ok font-mono-numbers">
               + {formatCurrency(effectiveDeliveryFee)}
             </span>
           </div>
         )}
 
-        <div className="border-t border-[#291715]/10 pt-2 flex justify-between">
-          <span className="font-medium text-[#1b1c1d]">Total a receber</span>
-          <span className="font-bold text-lg text-[#1b1c1d] font-mono-numbers">
+        <div className="border-t border-ink-shadow/10 pt-2 flex justify-between">
+          <span className="font-medium text-ink">Total a receber</span>
+          <span className="font-bold text-lg text-ink font-mono-numbers">
             {formatCurrency(netValue)}
           </span>
         </div>
@@ -1399,7 +1399,7 @@ export default function SaleForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+          className="flex-1 bg-brand hover:bg-brand-dark text-white"
         >
           {isSubmitting ? (
             <>

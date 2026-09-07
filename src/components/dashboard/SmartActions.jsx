@@ -47,17 +47,17 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
     return (
       <section className="mb-6">
         <div className="flex items-center gap-2 mb-3">
-          <MaterialIcon icon="bolt" size={20} className="text-[#d4af37]" />
-          <h2 className="text-base font-bold font-plus-jakarta text-[#1b1c1d]">
+          <MaterialIcon icon="bolt" size={20} className="text-brand-gold" />
+          <h2 className="text-base font-bold font-plus-jakarta text-ink">
             Outras Ações
           </h2>
         </div>
-        <div className="bg-white rounded-2xl border border-[#291715]/5 p-6 flex flex-col items-center text-center">
-          <div className="w-12 h-12 rounded-full bg-[#16a34a]/10 flex items-center justify-center mb-3">
-            <MaterialIcon icon="check_circle" size={28} className="text-[#16a34a]" />
+        <div className="bg-white rounded-2xl border border-ink-shadow/5 p-6 flex flex-col items-center text-center">
+          <div className="w-12 h-12 rounded-full bg-ok/10 flex items-center justify-center mb-3">
+            <MaterialIcon icon="check_circle" size={28} className="text-ok" />
           </div>
-          <p className="text-sm font-medium text-[#1b1c1d]">Tudo em dia!</p>
-          <p className="text-xs text-[#4a3d3d] mt-1">
+          <p className="text-sm font-medium text-ink">Tudo em dia!</p>
+          <p className="text-xs text-ink-2 mt-1">
             Nenhuma ação pendente.
           </p>
         </div>
@@ -68,11 +68,11 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
   return (
     <section className="mb-6">
       <div className="flex items-center gap-2 mb-3">
-        <MaterialIcon icon="bolt" size={20} className="text-[#d4af37]" />
-        <h2 className="text-base font-bold font-plus-jakarta text-[#1b1c1d]">
+        <MaterialIcon icon="bolt" size={20} className="text-brand-gold" />
+        <h2 className="text-base font-bold font-plus-jakarta text-ink">
           Outras Ações
         </h2>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-[#b91c1c]/10 text-[#b91c1c] font-bold">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-bold">
           {actions.length}
         </span>
       </div>
@@ -84,7 +84,7 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
           return (
             <div
               key={actionKey}
-              className="rounded-2xl border border-[#291715]/5 p-4 flex flex-col gap-3 shadow-sm"
+              className="rounded-2xl border border-ink-shadow/5 p-4 flex flex-col gap-3 shadow-sm"
               style={{ backgroundColor: action.bgColor }}
             >
               {/* Action header */}
@@ -108,7 +108,7 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
               </div>
 
               {/* Message */}
-              <p className="text-sm text-[#1b1c1d] font-medium leading-snug">
+              <p className="text-sm text-ink font-medium leading-snug">
                 {action.message}
               </p>
 
@@ -123,7 +123,7 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
                       "_blank"
                     )
                   }
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-[#16a34a]/10 text-[#16a34a] hover:bg-[#16a34a]/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-ok/10 text-ok hover:bg-ok/20 transition-colors"
                 >
                   <MaterialIcon icon="chat" size={16} />
                   WhatsApp
@@ -131,7 +131,7 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
                 <button
                   onClick={() => handleDone(action)}
                   disabled={isLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-white/60 text-[#4a3d3d] hover:bg-white/80 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-white/60 text-ink-2 hover:bg-white/80 transition-colors disabled:opacity-50"
                 >
                   <MaterialIcon icon="check" size={16} />
                   {isLoading ? "..." : "Feito"}
@@ -145,7 +145,7 @@ function SmartActions({ contacts, franchiseId, excludeType, botActive }) {
       {/* Link to MyContacts */}
       <button
         onClick={() => navigate(createPageUrl("MyContacts"))}
-        className="flex items-center gap-1 mt-3 text-sm font-medium text-[#b91c1c] hover:text-[#991b1b] transition-colors"
+        className="flex items-center gap-1 mt-3 text-sm font-medium text-brand hover:text-brand-dark transition-colors"
       >
         Ver todos
         <MaterialIcon icon="arrow_forward" size={16} />

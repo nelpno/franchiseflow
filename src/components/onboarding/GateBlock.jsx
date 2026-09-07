@@ -9,7 +9,7 @@ import { ITEM_DETAILS } from "./ITEM_DETAILS";
 function ItemDetails({ details }) {
   if (!details) return null;
   return (
-    <div className="mx-5 mb-3 rounded-lg border border-[#d4af37]/20 bg-[#d4af37]/5 px-4 py-3 text-[13px] text-[#4a3d3d] leading-relaxed">
+    <div className="mx-5 mb-3 rounded-lg border border-brand-gold/20 bg-brand-gold/5 px-4 py-3 text-[13px] text-ink-2 leading-relaxed">
       <div className="whitespace-pre-wrap">{details.text}</div>
       {details.links?.length > 0 && (
         <div className="mt-2 flex flex-col gap-1">
@@ -20,7 +20,7 @@ function ItemDetails({ details }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="inline-flex items-center gap-1 text-[#b91c1c] underline underline-offset-2 hover:text-[#991b1b] font-medium"
+              className="inline-flex items-center gap-1 text-brand underline underline-offset-2 hover:text-brand-dark font-medium"
             >
               {link.label}
               <MaterialIcon icon="open_in_new" size={12} className="flex-shrink-0" />
@@ -56,7 +56,7 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
   return (
     <Card
       className={`overflow-hidden rounded-xl transition-all duration-300 ${
-        isGateComplete ? "bg-[#ecfdf5]/30 border border-emerald-200" : "border border-[#291715]/5 shadow-md"
+        isGateComplete ? "bg-[#ecfdf5]/30 border border-emerald-200" : "border border-ink-shadow/5 shadow-md"
       }`}
       style={{
         borderLeft: isGateComplete
@@ -64,7 +64,7 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
           : "5px solid transparent",
         borderImage: isGateComplete
           ? undefined
-          : "linear-gradient(to bottom, #D32F2F, #C49A2A) 1",
+          : "linear-gradient(to bottom, #b91c1c, #C49A2A) 1",
         background: isGateComplete ? undefined : "linear-gradient(135deg, #fff9f0 0%, #fffdf5 100%)",
       }}
     >
@@ -79,10 +79,10 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
           />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className={`font-bold text-sm ${isGateComplete ? "text-emerald-700" : "text-[#1b1c1d]"}`}>
+              <h3 className={`font-bold text-sm ${isGateComplete ? "text-emerald-700" : "text-ink"}`}>
                 Gate de Liberação
               </h3>
-              <Badge className="bg-[#d4af37]/10 text-[#775a19] border border-[#d4af37]/30 text-[10px] font-bold">
+              <Badge className="bg-brand-gold/10 text-brand-gold-ink border border-brand-gold/30 text-[10px] font-bold">
                 PRÉ-REQUISITO
               </Badge>
             </div>
@@ -97,7 +97,7 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
         </div>
       </div>
       <CardContent className="p-0">
-        <div className="divide-y divide-[#d4af37]/10">
+        <div className="divide-y divide-brand-gold/10">
           {gateItems.map((item) => {
             const tag = ROLE_TAGS[item.role];
             const locked = !canMark(item);
@@ -107,14 +107,14 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
 
             return (
               <div key={item.key}>
-                <div className={`flex items-start gap-3 px-5 py-3 ${!locked ? "hover:bg-[#d4af37]/5" : "opacity-70"} ${item.highlight ? "bg-[#d4af37]/5" : ""}`}>
+                <div className={`flex items-start gap-3 px-5 py-3 ${!locked ? "hover:bg-brand-gold/5" : "opacity-70"} ${item.highlight ? "bg-brand-gold/5" : ""}`}>
                   {/* Checkbox area */}
                   <div
                     className={`mt-0.5 flex-shrink-0 ${!locked ? "cursor-pointer" : ""}`}
                     onClick={() => !locked && onToggle(item.key)}
                   >
                     {locked ? (
-                      <div className="w-7 h-7 rounded-lg border-2 border-[#d4af37]/30 bg-[#d4af37]/5 flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-lg border-2 border-brand-gold/30 bg-brand-gold/5 flex items-center justify-center">
                         {item.role === "auto" ? (
                           checked ? (
                             <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,13 +122,13 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                             </svg>
                           ) : null
                         ) : (
-                          <MaterialIcon icon="lock" size={12} className="text-[#d4af37]/60" />
+                          <MaterialIcon icon="lock" size={12} className="text-brand-gold/60" />
                         )}
                       </div>
                     ) : (
                       <div
                         className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
-                          checked ? "border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200" : "border-[#d4af37]/40 bg-white hover:border-[#d4af37]"
+                          checked ? "border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200" : "border-brand-gold/40 bg-white hover:border-brand-gold"
                         }`}
                       >
                         {checked && (
@@ -145,14 +145,14 @@ export default function GateBlock({ items, onToggle, isAdmin, blocks1to8Complete
                     className="flex-1 min-w-0 flex items-start gap-1 cursor-pointer select-none"
                     onClick={(e) => toggleExpand(item.key, e)}
                   >
-                    <span className={`text-sm font-medium ${item.highlight ? "text-[#775a19] font-bold text-base" : checked ? "line-through text-[#4a3d3d]/40" : "text-[#1b1c1d]"}`}>
+                    <span className={`text-sm font-medium ${item.highlight ? "text-brand-gold-ink font-bold text-base" : checked ? "line-through text-ink-2/40" : "text-ink"}`}>
                       {item.label}
                     </span>
                     {details && (
                       <MaterialIcon
                         icon="chevron_right"
                         size={14}
-                        className={`flex-shrink-0 mt-0.5 text-[#4a3d3d]/70 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                        className={`flex-shrink-0 mt-0.5 text-ink-2/70 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                       />
                     )}
                   </div>

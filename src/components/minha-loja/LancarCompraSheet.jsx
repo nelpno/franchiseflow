@@ -134,7 +134,7 @@ export default function LancarCompraSheet({
       >
         <SheetHeader className="text-left">
           <SheetTitle className="flex items-center gap-2 font-plus-jakarta">
-            <MaterialIcon icon="add_shopping_cart" size={20} className="text-[#b91c1c]" />
+            <MaterialIcon icon="add_shopping_cart" size={20} className="text-brand" />
             Lançar compra externa
           </SheetTitle>
           <SheetDescription className="text-xs">
@@ -145,7 +145,7 @@ export default function LancarCompraSheet({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Tipo */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-[#1b1c1d]">Tipo de compra</Label>
+            <Label className="text-sm font-medium text-ink">Tipo de compra</Label>
             <div className="grid grid-cols-3 gap-2">
               {TIPOS.map(t => (
                 <button
@@ -154,26 +154,26 @@ export default function LancarCompraSheet({
                   onClick={() => setType(t.value)}
                   className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all ${
                     type === t.value
-                      ? "border-[#b91c1c] bg-[#b91c1c]/5"
-                      : "border-[#291715]/10 hover:border-[#291715]/20 bg-white"
+                      ? "border-brand bg-brand/5"
+                      : "border-ink-shadow/10 hover:border-ink-shadow/20 bg-white"
                   }`}
                 >
                   <MaterialIcon icon={t.icon} size={20} style={{ color: t.color }} />
-                  <span className="text-xs font-medium text-[#1b1c1d]">{t.label}</span>
+                  <span className="text-xs font-medium text-ink">{t.label}</span>
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-[#4a3d3d]/70">{tipoMeta.help}</p>
+            <p className="text-[11px] text-ink-2/70">{tipoMeta.help}</p>
           </div>
 
           {/* Produto (só se tipo=produto) */}
           {type === "produto" && (
             <div className="space-y-2">
-              <Label htmlFor="lc-item" className="text-sm font-medium text-[#1b1c1d]">
+              <Label htmlFor="lc-item" className="text-sm font-medium text-ink">
                 Produto do estoque
               </Label>
               <Select value={inventoryItemId} onValueChange={setInventoryItemId}>
-                <SelectTrigger id="lc-item" className="bg-[#e9e8e9]/50">
+                <SelectTrigger id="lc-item" className="bg-surface-line/50">
                   <SelectValue placeholder="Selecione o produto..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -184,7 +184,7 @@ export default function LancarCompraSheet({
                       <SelectItem key={i.id} value={i.id}>
                         <span className="flex items-center justify-between gap-3 w-full">
                           <span>{i.product_name}</span>
-                          <span className="text-xs text-[#4a3d3d] font-mono-numbers">
+                          <span className="text-xs text-ink-2 font-mono-numbers">
                             estoque {i.quantity} un
                           </span>
                         </span>
@@ -193,7 +193,7 @@ export default function LancarCompraSheet({
                 </SelectContent>
               </Select>
               {selectedItem && (
-                <p className="text-[11px] text-[#4a3d3d]/70">
+                <p className="text-[11px] text-ink-2/70">
                   Custo atual: R$ {parseFloat(selectedItem.cost_price || 0).toFixed(2)} · estoque {selectedItem.quantity} un
                 </p>
               )}
@@ -203,7 +203,7 @@ export default function LancarCompraSheet({
           {/* Quantidade + Custo unitário */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="lc-qty" className="text-sm font-medium text-[#1b1c1d]">
+              <Label htmlFor="lc-qty" className="text-sm font-medium text-ink">
                 Quantidade
               </Label>
               <Input
@@ -215,11 +215,11 @@ export default function LancarCompraSheet({
                 placeholder="0"
                 value={qty}
                 onChange={(e) => setQty(e.target.value)}
-                className="bg-[#e9e8e9]/50 text-right font-mono-numbers"
+                className="bg-surface-line/50 text-right font-mono-numbers"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lc-unit-cost" className="text-sm font-medium text-[#1b1c1d]">
+              <Label htmlFor="lc-unit-cost" className="text-sm font-medium text-ink">
                 Custo unitário (R$)
               </Label>
               <Input
@@ -231,25 +231,25 @@ export default function LancarCompraSheet({
                 placeholder="0,00"
                 value={unitCost}
                 onChange={(e) => setUnitCost(e.target.value)}
-                className="bg-[#e9e8e9]/50 text-right font-mono-numbers"
+                className="bg-surface-line/50 text-right font-mono-numbers"
               />
             </div>
           </div>
 
           {/* Total + sugestão custo médio */}
           {totalAmount > 0 && (
-            <div className="rounded-xl bg-[#fbf9fa] border border-[#291715]/5 p-3 space-y-1.5">
+            <div className="rounded-xl bg-surface border border-ink-shadow/5 p-3 space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#4a3d3d]">Total da compra</span>
-                <span className="font-bold text-[#1b1c1d] font-mono-numbers">R$ {totalAmount.toFixed(2)}</span>
+                <span className="text-ink-2">Total da compra</span>
+                <span className="font-bold text-ink font-mono-numbers">R$ {totalAmount.toFixed(2)}</span>
               </div>
               {sugestaoCustoMedio !== null && selectedItem && (
-                <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#291715]/5">
-                  <span className="text-[#4a3d3d] flex items-center gap-1">
-                    <MaterialIcon icon="lightbulb" size={12} className="text-[#d4af37]" />
+                <div className="flex items-center justify-between text-xs pt-1.5 border-t border-ink-shadow/5">
+                  <span className="text-ink-2 flex items-center gap-1">
+                    <MaterialIcon icon="lightbulb" size={12} className="text-brand-gold" />
                     Novo custo médio do produto
                   </span>
-                  <span className="font-mono-numbers font-medium text-[#775a19]">
+                  <span className="font-mono-numbers font-medium text-brand-gold-ink">
                     R$ {sugestaoCustoMedio.toFixed(2)}
                   </span>
                 </div>
@@ -259,15 +259,15 @@ export default function LancarCompraSheet({
 
           {/* Fornecedor */}
           <div className="space-y-2">
-            <Label htmlFor="lc-supplier" className="text-sm font-medium text-[#1b1c1d]">
-              Fornecedor <span className="text-[11px] text-[#4a3d3d]/60 font-normal">(opcional)</span>
+            <Label htmlFor="lc-supplier" className="text-sm font-medium text-ink">
+              Fornecedor <span className="text-[11px] text-ink-2/60 font-normal">(opcional)</span>
             </Label>
             <Input
               id="lc-supplier"
               placeholder="Ex: Mercado X, Distribuidora Y..."
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
-              className="bg-[#e9e8e9]/50"
+              className="bg-surface-line/50"
               autoComplete="off"
               list="supplier-list"
             />
@@ -280,28 +280,28 @@ export default function LancarCompraSheet({
 
           {/* Descrição opcional */}
           <div className="space-y-2">
-            <Label htmlFor="lc-description" className="text-sm font-medium text-[#1b1c1d]">
-              Descrição <span className="text-[11px] text-[#4a3d3d]/60 font-normal">(opcional)</span>
+            <Label htmlFor="lc-description" className="text-sm font-medium text-ink">
+              Descrição <span className="text-[11px] text-ink-2/60 font-normal">(opcional)</span>
             </Label>
             <Input
               id="lc-description"
               placeholder="Ex: Reposição emergencial Sábado..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="bg-[#e9e8e9]/50"
+              className="bg-surface-line/50"
               autoComplete="off"
             />
           </div>
 
           {/* Data */}
           <div className="space-y-2">
-            <Label htmlFor="lc-date" className="text-sm font-medium text-[#1b1c1d]">Data</Label>
+            <Label htmlFor="lc-date" className="text-sm font-medium text-ink">Data</Label>
             <Input
               id="lc-date"
               type="date"
               value={expenseDate}
               onChange={(e) => setExpenseDate(e.target.value)}
-              className="bg-[#e9e8e9]/50"
+              className="bg-surface-line/50"
               max={format(new Date(), "yyyy-MM-dd")}
             />
           </div>
@@ -319,7 +319,7 @@ export default function LancarCompraSheet({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-[#b91c1c] hover:bg-[#991b1b] text-white"
+              className="flex-1 bg-brand hover:bg-brand-dark text-white"
             >
               {isSubmitting ? (
                 <>
