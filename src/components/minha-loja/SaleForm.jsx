@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { parseDeliveryFeeOptions } from "@/lib/deliveryFeeRules";
@@ -382,6 +392,10 @@ export default function SaleForm({
   const isEditing = !!sale;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
+  // Lembrete de venda a R$ 0 — nao bloqueia, so obriga a olhar. Em 90 dias, 39 vendas
+  // manuais fecharam a R$ 0 e 73 tinham pelo menos uma linha a R$ 0 (126 linhas), todas
+  // salvas com "Venda registrada!" e nenhum aviso. Auditoria 08/09/2026.
+  const [avisoValorZero, setAvisoValorZero] = useState(null);
 
   // Contact
   const [contactSearch, setContactSearch] = useState("");
@@ -404,6 +418,11 @@ export default function SaleForm({
   const [deliveryMethod, setDeliveryMethod] = useState("retirada");
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryFeeOptions, setDeliveryFeeOptions] = useState([]);
+  // Endereco da entrega. Sem ele o cupom do motoboy sai em branco e ele liga para a
+  // franqueada: 4.362 das 6.539 entregas dos ultimos 90 dias (66,7%) nao tinham endereco
+  // em lugar nenhum, porque este formulario nunca pediu um. Auditoria 07/09/2026.
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerNeighborhood, setCustomerNeighborhood] = useState("");
 
   // Discount
   const [discountType, setDiscountType] = useState("fixed"); // "fixed" | "percent"
@@ -442,10 +461,14 @@ export default function SaleForm({
     setContactId(sale.contact_id || null);
 
     // Set contact search display
-    if (sale.contact_id && contacts.length > 0) {
-      const c = contacts.find((ct) => ct.id === sale.contact_id);
-      if (c) setContactSearch(c.nome || formatPhone(c.telefone));
-    }
+    const contatoDaVenda = sale.contact_id && contacts.length > 0
+      ? contacts.find((ct) => ct.id === sale.contact_id)
+      : null;
+    if (contatoDaVenda) setContactSearch(contatoDaVenda.nome || formatPhone(contatoDaVenda.telefone));
+
+    // O snapshot da venda manda; o contato so entra se a venda nao tiver nada gravado.
+    setCustomerAddress(sale.customer_address || contatoDaVenda?.endereco || "");
+    setCustomerNeighborhood(sale.customer_neighborhood || contatoDaVenda?.bairro || "");
 
     // Load existing sale items
     setLoadingItems(true);
@@ -488,6 +511,8 @@ export default function SaleForm({
     if (draft.feePassedToCustomer != null) setFeePassedToCustomer(draft.feePassedToCustomer);
     if (draft.deliveryMethod) setDeliveryMethod(draft.deliveryMethod);
     if (draft.deliveryFee != null) setDeliveryFee(draft.deliveryFee);
+    if (draft.customerAddress) setCustomerAddress(draft.customerAddress);
+    if (draft.customerNeighborhood) setCustomerNeighborhood(draft.customerNeighborhood);
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
     if (draft.saleDate) setSaleDate(draft.saleDate);
@@ -506,6 +531,8 @@ export default function SaleForm({
           setFeePassedToCustomer(franchiseChargesFee);
           setDeliveryMethod("retirada");
           setDeliveryFee(0);
+          setCustomerAddress("");
+          setCustomerNeighborhood("");
           setDiscountType("fixed");
           setDiscountInput(0);
           setObservacoes("");
@@ -532,6 +559,8 @@ export default function SaleForm({
     if (match) {
       setContactId(match.id);
       setContactSearch(match.nome || formatPhone(match.telefone));
+      if (match.endereco) setCustomerAddress((atual) => atual.trim() || match.endereco);
+      if (match.bairro) setCustomerNeighborhood((atual) => atual.trim() || match.bairro);
     }
   }, [isEditing, contacts, initialContactId, initialPhone]);
 
@@ -566,8 +595,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, discountType, discountInput, saleDate, observacoes]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes]
   );
 
   useEffect(() => {
@@ -651,6 +680,10 @@ export default function SaleForm({
     setContactSearch(contact.nome || formatPhone(contact.telefone));
     setIsNewContact(false);
     setNewContactName("");
+    // Pre-enche o endereco pelo contato, mas NUNCA por cima do que ja foi digitado:
+    // trocar de cliente com o endereco em branco puxa o dele; com endereco escrito, respeita.
+    if (contact.endereco) setCustomerAddress((atual) => atual.trim() || contact.endereco);
+    if (contact.bairro) setCustomerNeighborhood((atual) => atual.trim() || contact.bairro);
   };
 
   // Detect new contact when typing a phone number with no match
@@ -747,6 +780,10 @@ export default function SaleForm({
         nome: newContactName.trim() || (isPhone ? null : contactSearch) || null,
         status: "cliente",
         source: "manual",
+        // O endereço já digitado nasce junto com o contato: a próxima venda dele
+        // preenche sozinha e o cupom sai completo sem ninguém digitar de novo.
+        endereco: customerAddress.trim() || null,
+        bairro: customerNeighborhood.trim() || null,
       });
       return newContact.id;
     } catch (err) {
@@ -756,12 +793,35 @@ export default function SaleForm({
   };
 
   // Submit with retry
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, { ignorarValorZero = false } = {}) => {
     e.preventDefault();
 
     if (items.length === 0 || items.every((it) => !it.inventory_item_id)) {
       toast.error("Adicione pelo menos um produto.");
       return;
+    }
+
+    // Preco zerado nao e erro de sistema, e erro de digitacao — e passava calado.
+    if (!ignorarValorZero) {
+      const preenchidos = items.filter((it) => it.inventory_item_id);
+      const semPreco = preenchidos.filter((it) => !(Number(it.unit_price) > 0));
+      if (subtotal <= 0) {
+        setAvisoValorZero({
+          titulo: "Esta venda está zerada",
+          texto: "O total ficou em R$ 0,00. Confira os preços antes de registrar.",
+        });
+        return;
+      }
+      if (semPreco.length > 0) {
+        const nomes = semPreco.map((it) => it.product_name).filter(Boolean).join(", ");
+        setAvisoValorZero({
+          titulo: semPreco.length === 1 ? "Um produto está sem preço" : `${semPreco.length} produtos estão sem preço`,
+          texto: nomes
+            ? `${nomes} está com valor R$ 0,00 e não entra no faturamento.`
+            : "Há produto com valor R$ 0,00 — ele não entra no faturamento.",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -789,6 +849,14 @@ export default function SaleForm({
         fee_passed_to_customer: cardFeeAmount > 0 ? feePassedToCustomer : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
+        // Só mandamos as chaves em entrega. A RPC preserva o que já está gravado quando a
+        // chave NÃO vem, então marcar uma venda como retirada não apaga o endereço antigo.
+        ...(deliveryMethod === "delivery"
+          ? {
+              customer_address: customerAddress.trim() || null,
+              customer_neighborhood: customerNeighborhood.trim() || null,
+            }
+          : {}),
         discount_amount: discountAmount || 0,
         discount_type: discountInput > 0 ? discountType : null,
         discount_input: discountInput > 0 ? discountInput : null,
@@ -850,9 +918,40 @@ export default function SaleForm({
       // na tela. Auditoria 07/09/2026.
       const savedSaleId = await withRetry(submitSale);
 
+      // O contato guarda o ULTIMO endereco conhecido: sem isso a franqueada digitaria o
+      // mesmo endereco a cada pedido do mesmo cliente e o campo continuaria vazio na maioria
+      // das vendas. Nao bloqueia a venda — se falhar, a venda ja esta salva com o endereco.
+      if (resolvedContactId && deliveryMethod === "delivery" && customerAddress.trim()) {
+        const conhecido = contacts.find((c) => c.id === resolvedContactId);
+        const mudouRua = (conhecido?.endereco || "") !== customerAddress.trim();
+        const mudouBairro = (conhecido?.bairro || "") !== customerNeighborhood.trim();
+        if (mudouRua || mudouBairro) {
+          try {
+            await Contact.update(resolvedContactId, {
+              endereco: customerAddress.trim(),
+              bairro: customerNeighborhood.trim() || null,
+            });
+          } catch (err) {
+            console.warn("Nao foi possivel guardar o endereco no contato:", err);
+          }
+        }
+      }
+
       // Success — clear draft and notify
       clearDraft(franchiseId);
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
+
+      // O cliente pode se perder no caminho: resolveContactId devolve null em silencio
+      // quando a busca nao casa e a criacao falha (RLS, telefone duplicado). A venda
+      // salvava com "Venda registrada!" e sem cliente nenhum — 183 das vendas manuais
+      // dos ultimos 90 dias estao assim. Agora a franqueada fica sabendo.
+      if (!resolvedContactId && contactSearch.trim().length >= 2) {
+        toast.warning(`Venda salva, mas "${contactSearch.trim()}" não foi vinculado como cliente.`, {
+          description: "Abra a venda e escolha o cliente na lista para registrar a recompra.",
+          duration: 8000,
+        });
+      }
+
       onSave(savedSaleId);
     } catch (error) {
       console.error("Erro ao salvar venda após retentativas:", error);
@@ -923,7 +1022,14 @@ export default function SaleForm({
   // Mobile section summaries
   const discountSummary = discountAmount > 0 ? `−${formatCurrency(discountAmount)}` : "Nenhum";
   const paymentSummary = PAYMENT_METHODS.find(p => p.value === paymentMethod)?.label || "—";
-  const deliverySummary = deliveryMethod === "delivery" ? `Delivery${effectiveDeliveryFee > 0 ? ` ${formatCurrency(effectiveDeliveryFee)}` : ""}` : "Retirada";
+  // No celular a seção fica fechada: o resumo é o único lugar onde a falta do endereço
+  // aparece sem abrir nada.
+  const deliverySummary =
+    deliveryMethod === "delivery"
+      ? `Delivery${effectiveDeliveryFee > 0 ? ` ${formatCurrency(effectiveDeliveryFee)}` : ""}${
+          customerAddress.trim() ? "" : " · sem endereço"
+        }`
+      : "Retirada";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -1267,7 +1373,35 @@ export default function SaleForm({
         </div>
 
         {deliveryMethod === "delivery" && (
-          <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5">
+          <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5 space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="customer-address" className="text-sm text-ink-2">
+                Endereço da entrega
+              </Label>
+              <Input
+                id="customer-address"
+                value={customerAddress}
+                onChange={(e) => setCustomerAddress(e.target.value)}
+                placeholder="Rua, número e complemento"
+                className="bg-white"
+                autoComplete="off"
+              />
+              <Input
+                aria-label="Bairro da entrega"
+                value={customerNeighborhood}
+                onChange={(e) => setCustomerNeighborhood(e.target.value)}
+                placeholder="Bairro"
+                className="bg-white"
+                autoComplete="off"
+              />
+              {!customerAddress.trim() && (
+                <p className="text-xs text-ink-3 flex items-start gap-1.5">
+                  <MaterialIcon icon="info" size={14} className="shrink-0 mt-0.5" />
+                  Sem isso o cupom sai sem endereço e o entregador liga para você.
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center gap-3">
               <Label className="text-sm text-ink-2 whitespace-nowrap">Frete (R$)</Label>
               <Input
@@ -1282,7 +1416,7 @@ export default function SaleForm({
             </div>
 
             {deliveryFeeOptions.length > 1 && (
-              <div className="mt-3">
+              <div>
                 <p className="text-[11px] text-ink-3 mb-1.5">Sua tabela de frete:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {deliveryFeeOptions.map((opt) => {
@@ -1362,7 +1496,7 @@ export default function SaleForm({
               Taxa {paymentMethod === "payment_link" ? "link" : paymentMethod === "pix" ? "PIX" : paymentMethod === "cash" ? "dinheiro" : "cartão"} ({cardFeePercent}%)
               {feePassedToCustomer && <span className="text-xs text-ink-3 ml-1">(cliente paga)</span>}
             </span>
-            <span className={`font-medium font-mono-numbers ${feePassedToCustomer ? "text-ok" : "text-brand"}`}>
+            <span className={`font-medium font-mono-numbers ${feePassedToCustomer ? "text-ok-ink" : "text-brand"}`}>
               {feePassedToCustomer ? "+" : "-"} {formatCurrency(cardFeeAmount)}
             </span>
           </div>
@@ -1371,7 +1505,7 @@ export default function SaleForm({
         {deliveryMethod === "delivery" && effectiveDeliveryFee > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-ink-2">Frete (receita)</span>
-            <span className="font-medium text-ok font-mono-numbers">
+            <span className="font-medium text-ok-ink font-mono-numbers">
               + {formatCurrency(effectiveDeliveryFee)}
             </span>
           </div>
@@ -1413,6 +1547,28 @@ export default function SaleForm({
           )}
         </Button>
       </div>
+
+      {/* Lembrete de valor zerado. Nao bloqueia: existe venda de cortesia, e travar o
+          registro custaria mais do que o engano que evita. Mas passar calado tambem nao. */}
+      <AlertDialog open={!!avisoValorZero} onOpenChange={(aberto) => !aberto && setAvisoValorZero(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{avisoValorZero?.titulo}</AlertDialogTitle>
+            <AlertDialogDescription>{avisoValorZero?.texto}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Corrigir</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setAvisoValorZero(null);
+                handleSubmit({ preventDefault: () => {} }, { ignorarValorZero: true });
+              }}
+            >
+              Registrar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </form>
   );
 }
