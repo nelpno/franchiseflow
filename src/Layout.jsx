@@ -19,11 +19,12 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { DailyUniqueContact, Sale, Franchise, OnboardingChecklist } from "@/entities/all";
+import { DailyUniqueContact, Sale, OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format } from "date-fns";
 import { getAvailableFranchises, getPrimaryFranchise } from "@/lib/franchiseUtils";
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 // Navigation items with admin section grouping
 const navigationItems = [
@@ -155,7 +156,7 @@ export default function Layout({ children, currentPageName }) {
       // Guardado fora da cadeia porque o `.then` seguinte precisa saber a IDADE da
       // unidade para decidir se mostra o tour de boas-vindas.
       let primaryFranchiseForOnboarding = null;
-      Franchise.list()
+      listarFranquias()
         .then((allFranchises) => {
           if (!mountedRef.current) return;
           const userFranchises = getAvailableFranchises(allFranchises, currentUser);

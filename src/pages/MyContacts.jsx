@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Contact, Franchise } from "@/entities/all";
+import { Contact } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
@@ -23,6 +23,7 @@ import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 const STATUS_CONFIG = {
   novo_lead: {
@@ -204,11 +205,11 @@ export default function MyContacts() {
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, [isAdmin, activeEvoId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAdmin, activeEvoId]);  
 
   useEffect(() => {
     mountedRef.current = true;
-    Franchise.list()
+    listarFranquias()
       .then((data) => { if (mountedRef.current) setFranchises(data); })
       .catch((error) => {
         console.error("Erro ao carregar franquias:", error);

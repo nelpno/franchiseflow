@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
+import { listarFranquias, invalidarFranquias } from "@/lib/franchisesCache";
 
 
 /** Retorna nome legível da franquia: nome da loja (sem "Maxi Massas") ou cidade */
@@ -92,7 +93,7 @@ export default function Franchises() {
     try {
       const todayStr = format(new Date(), "yyyy-MM-dd");
       const results = await Promise.allSettled([
-        Franchise.list(),
+        listarFranquias(),
         DailyUniqueContact.filter({ date: todayStr }),
         User.list(),
         User.me(),
@@ -205,6 +206,7 @@ export default function Franchises() {
       // Franquia criada — fechar form e atualizar lista imediatamente
       setShowForm(false);
       setIsSubmitting(false);
+      invalidarFranquias();
       loadData(true);
 
       if (!franchiseeEmail) {
@@ -235,6 +237,7 @@ export default function Franchises() {
       } else {
         toast.error(msg);
       }
+      invalidarFranquias();
       loadData(true); // Recarrega mesmo em caso de erro (franquia pode ter sido criada server-side)
     }
   };
@@ -280,6 +283,7 @@ export default function Franchises() {
       }
       toast.success("Dados atualizados!");
       setEditingFiscal(null);
+      invalidarFranquias();
       loadData(true);
     } catch (error) {
       console.error("Erro ao salvar dados fiscais:", error);
@@ -317,6 +321,7 @@ export default function Franchises() {
       toast.success(`Franquia ${getDisplayName(deletingFranchise)} excluída e cobrança cancelada.`);
       setDeletingFranchise(null);
       setSelectedFranchise(null);
+      invalidarFranquias();
       loadData(true);
     } catch (error) {
       console.error("Erro ao excluir franquia:", error);
@@ -384,6 +389,7 @@ export default function Franchises() {
       setShowAddStaff(false);
       setAddStaffEmail("");
       setAddStaffRole("manager");
+      invalidarFranquias();
       loadData(true);
     } catch (error) {
       console.error("Erro ao adicionar membro:", error);
@@ -435,6 +441,7 @@ export default function Franchises() {
           : `${user.full_name || user.email} desvinculado e conta removida`
       );
       setUnlinkingUser(null);
+      invalidarFranquias();
       loadData(true);
     } catch (error) {
       console.error("Erro ao desvincular:", error);
@@ -511,6 +518,7 @@ export default function Franchises() {
 
       toast.success("Permissões atualizadas!");
       setEditingPermissions(null);
+      invalidarFranquias();
       loadData(true);
     } catch (error) {
       console.error("Erro ao salvar permissões:", error);
@@ -546,6 +554,7 @@ export default function Franchises() {
       toast.success("Convite registrado! Enviando email...");
 
       // Atualiza lista para refletir o novo convite
+      invalidarFranquias();
       loadData(true);
 
       // Dispara convite n8n em background (não bloqueia UI)

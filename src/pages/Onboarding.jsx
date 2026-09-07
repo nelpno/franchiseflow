@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Franchise, User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem } from "@/entities/all";
+import { User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import FiscalDataGate from "@/components/onboarding/FiscalDataGate";
 import { missingFiscalFields } from "@/lib/saveFiscalData";
 import { useAuth } from "@/lib/AuthContext";
 import FranchisePicker from "@/components/shared/FranchisePicker";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 const ALL_BLOCK_KEYS = [
   ...BLOCKS.flatMap(b => b.items.map(i => i.key)),
@@ -91,7 +92,7 @@ export default function Onboarding() {
       // Parallel: user + franchises + configs (saves round trips)
       const [userResult, franchisesResult, configsResult] = await Promise.allSettled([
         User.me(),
-        Franchise.list(),
+        listarFranquias(),
         FranchiseConfiguration.list("franchise_evolution_instance_id", 200),
       ]);
       const user = userResult.status === "fulfilled" ? userResult.value : null;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { PurchaseOrder, PurchaseOrderItem, Franchise, FranchiseConfiguration, addDefaultProduct, getProductWeightMap } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, FranchiseConfiguration, addDefaultProduct, getProductWeightMap } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
@@ -37,6 +37,7 @@ import FilterBar from "@/components/shared/FilterBar";
 import { toast } from "sonner";
 import { format, differenceInDays, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 const formatBRL = (value) => {
   if (value === null || value === undefined || value === "") return "\u2014";
@@ -142,7 +143,7 @@ export default function PurchaseOrders() {
     try {
       const results = await Promise.allSettled([
         PurchaseOrder.list("-ordered_at"),
-        Franchise.list(),
+        listarFranquias(),
         // street_address/cep/neighborhood/city entram porque a ficha do motorista monta o
         // endereço pelos COMPONENTES (resolveDeliveryAddress) — o unit_address é só fallback.
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name, personal_phone_for_summary, unit_address, street_address, cep, neighborhood, city' }),

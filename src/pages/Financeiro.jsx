@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Franchise, Sale, SaleItem, Expense, InventoryItem, User } from "@/entities/all";
+import { Sale, SaleItem, Expense, InventoryItem, User } from "@/entities/all";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -15,6 +15,7 @@ import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable
 import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
 import TabResultado from "@/components/minha-loja/TabResultado";
 import FechamentoMensal from "@/components/financeiro/FechamentoMensal";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
@@ -58,7 +59,7 @@ export default function Financeiro() {
       // Era 18m — 5 meses de folga inútil; 13m é o requisito real, carrega menos quando a base crescer.
       const cutoffWindow = format(subMonths(new Date(), 13), "yyyy-MM-dd");
       const results = await Promise.allSettled([
-        Franchise.list(),
+        listarFranquias(),
         Sale.list("-sale_date", null, {
           columns: `id, franchise_id, sale_date, ${SALE_PNL_COLUMNS}, payment_method, created_at`,
           fetchAll: true,

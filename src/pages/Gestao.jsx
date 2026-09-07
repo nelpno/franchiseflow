@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { format, subDays } from "date-fns";
-import { User, Franchise, InventoryItem, SaleItem, Contact } from "@/entities/all";
+import { User, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
@@ -15,6 +15,7 @@ import FranchisePicker from "@/components/shared/FranchisePicker";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
 import TabResultado from "@/components/minha-loja/TabResultado";
 import TabReposicao from "@/components/minha-loja/TabReposicao";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 const TAB_MAP = {
   resultado: "resultado",
@@ -74,7 +75,7 @@ export default function Gestao() {
       // Dados críticos — sem eles a página não funciona
       const [userResult, franchisesResult] = await Promise.allSettled([
         User.me({ signal }),
-        Franchise.list(null, null, { signal }),
+        listarFranquias(),
       ]);
       if (!mountedRef.current || signal.aborted) return;
       const userData = userResult.status === "fulfilled" ? userResult.value : null;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { FranchiseConfiguration, Franchise, User } from "@/entities/all";
+import { FranchiseConfiguration, User } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +20,7 @@ import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
 import { ToggleCard, RadioCards, PaymentChipsMulti } from "@/components/vendedor/WizardFields";
 import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
+import { listarFranquias } from "@/lib/franchisesCache";
 
 const initialFormData = {
   franchise_evolution_instance_id: '',
@@ -147,7 +148,7 @@ function FranchiseSettingsContent() {
     try {
       const results = await Promise.allSettled([
         FranchiseConfiguration.list(),
-        Franchise.list(),
+        listarFranquias(),
         User.me()
       ]);
 
