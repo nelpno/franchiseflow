@@ -12,6 +12,7 @@ import { normalizePhone } from "@/lib/whatsappUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { calcSale } from "@/lib/saleCalc";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -589,39 +590,29 @@ export default function SaleForm({
     };
   }, [draftData, isEditing, franchiseId]);
 
-  // Calculations
-  const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + (Number(it.quantity) || 0) * it.unit_price, 0),
-    [items]
-  );
-
-  const effectiveDeliveryFee = deliveryMethod === "delivery" ? deliveryFee : 0;
-
-  const discountAmount = useMemo(() => {
-    if (!discountInput || discountInput <= 0) return 0;
-    if (discountType === "percent") {
-      return Math.min(subtotal * (discountInput / 100), subtotal);
-    }
-    return Math.min(discountInput, subtotal);
-  }, [discountInput, discountType, subtotal]);
-
-  const cardFeeAmount = useMemo(() => {
-    // Base de cálculo da taxa = (subtotal + frete - desconto). Uniforme para AMBOS modos
-    // (repassar OU absorver) — bot V4 e Pedido_Checkout1 usam a mesma base.
-    const feeBase = subtotal - discountAmount + effectiveDeliveryFee;
-    if (paymentFees) {
-      if (!cardFeePercent || cardFeePercent <= 0) return 0;
-      return feeBase * (cardFeePercent / 100);
-    }
-    // Legacy: card methods, payment_link e vale-refeição têm taxa (card_machine removido da UI)
-    const feeableMethods = ["credit", "debit", "nfc", "payment_link", "meal_voucher"];
-    if (!feeableMethods.includes(paymentMethod)) return 0;
-    return feeBase * (cardFeePercent / 100);
-  }, [subtotal, discountAmount, effectiveDeliveryFee, paymentMethod, cardFeePercent, paymentFees]);
-
-  const netValue = feePassedToCustomer
-    ? subtotal - discountAmount + cardFeeAmount + effectiveDeliveryFee  // cliente paga taxa
-    : subtotal - discountAmount - cardFeeAmount + effectiveDeliveryFee; // franquia absorve (legacy)
+  // A conta da venda vive em lib/saleCalc.js (testada: node src/lib/saleCalc.test.mjs).
+  // Ela estava aqui dentro, em quatro useMemo sem teste nenhum, e a regra de "quais metodos
+  // tem taxa" estava copiada em QUATRO pontos deste arquivo — o calculo, dois campos do
+  // payload e a linha do resumo. `cobraTaxa` agora e a mesma decisao nos quatro.
+  const { subtotal, effectiveDeliveryFee, discountAmount, cardFeeAmount, netValue, cobraTaxa } =
+    useMemo(
+      () =>
+        calcSale({
+          items,
+          discountInput,
+          discountType,
+          deliveryMethod,
+          deliveryFee,
+          paymentMethod,
+          cardFeePercent,
+          hasPaymentFeesConfig: Boolean(paymentFees),
+          feePassedToCustomer,
+        }),
+      [
+        items, discountInput, discountType, deliveryMethod, deliveryFee,
+        paymentMethod, cardFeePercent, paymentFees, feePassedToCustomer,
+      ]
+    );
 
   // Item handlers
   const handleAddItem = () => {
@@ -793,8 +784,8 @@ export default function SaleForm({
         contact_id: resolvedContactId || null,
         source: isEditing ? (sale.source || "manual") : "manual",
         payment_method: paymentMethod,
-        card_fee_percent: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link", "meal_voucher"].includes(paymentMethod)) ? cardFeePercent : null,
-        card_fee_amount: (paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link", "meal_voucher"].includes(paymentMethod)) ? cardFeeAmount : null,
+        card_fee_percent: cobraTaxa ? cardFeePercent : null,
+        card_fee_amount: cobraTaxa ? cardFeeAmount : null,
         fee_passed_to_customer: cardFeeAmount > 0 ? feePassedToCustomer : null,
         delivery_method: deliveryMethod,
         delivery_fee: deliveryMethod === "delivery" ? deliveryFee : 0,
@@ -1202,7 +1193,7 @@ export default function SaleForm({
           ))}
         </div>
 
-        {(paymentFees ? cardFeePercent > 0 : ["credit", "debit", "nfc", "payment_link", "meal_voucher"].includes(paymentMethod)) && (
+        {cobraTaxa && (
           <div className="mt-2 p-3 bg-[#fbf9fa] rounded-xl border border-[#291715]/5 flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <Label className="text-sm text-[#4a3d3d] whitespace-nowrap">Taxa (%)</Label>
