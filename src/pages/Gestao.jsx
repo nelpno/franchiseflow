@@ -38,9 +38,12 @@ export default function Gestao() {
   const [saleItems, setSaleItems] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  // fase 2: estoque/itens/contatos so carregam depois de saber qual unidade e
+  const [loadingUnidade, setLoadingUnidade] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
   const abortControllerRef = useRef(null);
+  const franchiseIdRef = useRef(null); // o polling le daqui, nao do render atual
 
   useEffect(() => {
     mountedRef.current = true;
@@ -51,9 +54,10 @@ export default function Gestao() {
     };
   }, []);
 
-  // Reload automático ao voltar para a aba (resolve reload manual no mobile)
+  // Reload automático ao voltar para a aba (resolve reload manual no mobile).
+  // Recarrega só a fase 2 — a lista de franquias não muda enquanto a tela está aberta.
   const reloadOnVisibility = useCallback(() => {
-    if (!loading) loadData();
+    if (!loading && franchiseIdRef.current) loadDadosDaUnidadeRef.current?.(franchiseIdRef.current);
   }, [loading]);
   useVisibilityPolling(reloadOnVisibility, 300000); // 5 min
 
@@ -83,36 +87,8 @@ export default function Gestao() {
       setCurrentUser(userData);
       setFranchises(franchisesData);
 
-      // Dados de tabs — carregam em paralelo, falha não bloqueia a página
-      // Janela 90d em SaleItem (TabResultado/TabReposicao analisam mês atual; 90d é folga 3×).
-      // InventoryItem mantém fetchAll (estoque atual, sem janela temporal).
-      const cutoff90d = format(subDays(new Date(), 90), "yyyy-MM-dd");
-      const cutoff90dIso = `${cutoff90d}T00:00:00.000Z`;
-      const [inventoryResult, saleItemsResult] = await Promise.allSettled([
-        InventoryItem.list("-updated_at", null, {
-          columns: INVENTORY_COLUMNS,
-          fetchAll: true,
-          signal,
-        }),
-        SaleItem.list("-created_at", null, {
-          columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name, created_at',
-          fetchAll: true,
-          gte: { created_at: cutoff90dIso },
-          signal,
-        }),
-      ]);
-      if (!mountedRef.current || signal.aborted) return;
-
-      if (inventoryResult.status === "fulfilled") {
-        setInventoryItems(inventoryResult.value);
-      } else {
-        console.warn("Falha ao carregar estoque:", inventoryResult.reason?.message);
-      }
-      if (saleItemsResult.status === "fulfilled") {
-        setSaleItems(saleItemsResult.value);
-      } else {
-        console.warn("Falha ao carregar itens de venda:", saleItemsResult.reason?.message);
-      }
+      // Estoque, itens de venda e contatos ficam na fase 2 (loadDadosDaUnidade), que só roda
+      // depois que resolveActiveFranchise disser QUAL unidade é — e aí com franchise_id no WHERE.
     } catch (error) {
       if (error?.name === 'AbortError') return;
       if (!mountedRef.current) return;
@@ -130,12 +106,14 @@ export default function Gestao() {
   };
 
   const handleRefreshInventory = async () => {
+    const evoId = franchiseIdRef.current;
+    if (!evoId) return;
     try {
-      const data = await InventoryItem.list("-updated_at", null, {
+      const data = await InventoryItem.filter({ franchise_id: evoId }, "-updated_at", null, {
         columns: INVENTORY_COLUMNS,
         fetchAll: true,
       });
-      setInventoryItems(data);
+      if (mountedRef.current) setInventoryItems(data);
     } catch (error) {
       console.error("Erro ao recarregar estoque:", error);
     }
@@ -158,33 +136,61 @@ export default function Gestao() {
     return inventoryItems.filter((i) => i.franchise_id === franchiseId);
   }, [inventoryItems, franchiseId]);
 
-  // Load contacts scoped to franchise (mesmo padrão de Vendas.jsx)
-  // Necessário para resolver nome do cliente no export do TabResultado
-  const loadFranchiseContacts = useCallback(async (evoId) => {
+  // Fase 2: tudo da unidade escolhida.
+  // InventoryItem e Contact vão com franchise_id explícito. SaleItem NÃO tem essa coluna
+  // (a tabela guarda só sale_id), então continua dependendo da RLS — que desde a migration
+  // 2026-09-07-rls-select-helpers responde em 17 ms no lugar de 300 ms.
+  const loadDadosDaUnidade = useCallback(async (evoId) => {
     if (!evoId) return;
+    const cutoff90dIso = `${format(subDays(new Date(), 90), "yyyy-MM-dd")}T00:00:00.000Z`;
     try {
-      const data = await Contact.filter(
-        { franchise_id: evoId },
-        '-created_at',
-        null,
-        { columns: 'id, nome, telefone, franchise_id' }
-      );
-      if (mountedRef.current) setContacts(data);
-    } catch (err) {
-      console.error("Erro ao carregar contatos:", err);
+      const [inv, itens, cts] = await Promise.allSettled([
+        InventoryItem.filter({ franchise_id: evoId }, "-updated_at", null, {
+          columns: INVENTORY_COLUMNS,
+          fetchAll: true,
+        }),
+        SaleItem.list("-created_at", null, {
+          columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name, created_at',
+          fetchAll: true,
+          gte: { created_at: cutoff90dIso },
+        }),
+        Contact.filter({ franchise_id: evoId }, '-created_at', null, {
+          columns: 'id, nome, telefone, franchise_id',
+        }),
+      ]);
+      if (!mountedRef.current) return;
+      if (inv.status === "fulfilled") setInventoryItems(inv.value);
+      else console.warn("Falha ao carregar estoque:", inv.reason?.message);
+      if (itens.status === "fulfilled") setSaleItems(itens.value);
+      else console.warn("Falha ao carregar itens de venda:", itens.reason?.message);
+      if (cts.status === "fulfilled") setContacts(cts.value);
+      else console.warn("Falha ao carregar contatos:", cts.reason?.message);
+    } catch (error) {
+      console.error("Erro ao carregar dados da unidade:", error);
+    } finally {
+      if (mountedRef.current) setLoadingUnidade(false);
     }
   }, []);
 
+  const loadDadosDaUnidadeRef = useRef(null);
+  loadDadosDaUnidadeRef.current = loadDadosDaUnidade;
+
   useEffect(() => {
-    if (franchiseId) loadFranchiseContacts(franchiseId);
-  }, [franchiseId, loadFranchiseContacts]);
+    franchiseIdRef.current = franchiseId || null;
+    if (franchiseId) {
+      setLoadingUnidade(true);
+      loadDadosDaUnidade(franchiseId);
+    } else if (!loading) {
+      setLoadingUnidade(false); // sem unidade resolvida quem decide e o picker
+    }
+  }, [franchiseId, loadDadosDaUnidade, loading]);
 
   const franchiseContacts = useMemo(() => {
     if (!franchiseId) return [];
     return contacts.filter((c) => c.franchise_id === franchiseId);
   }, [contacts, franchiseId]);
 
-  if (loading) {
+  if (loading || (franchiseId && loadingUnidade)) {
     return (
       <div className="bg-[#fbf9fa] p-4 md:p-8 space-y-6">
         <Skeleton className="h-8 w-48" />

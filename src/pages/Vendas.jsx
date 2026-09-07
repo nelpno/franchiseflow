@@ -32,8 +32,11 @@ export default function Vendas() {
   const [inventoryItems, setInventoryItems] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  // fase 2: vendas/estoque/contatos so carregam DEPOIS que sabemos qual unidade e, filtrados por ela
+  const [loadingUnidade, setLoadingUnidade] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
+  const franchiseIdRef = useRef(null); // o polling le daqui, nao do render atual
 
   useEffect(() => {
     mountedRef.current = true;
@@ -46,27 +49,16 @@ export default function Vendas() {
       setLoading(true);
       setLoadError(null);
 
-      // 1 round único — user vem do AuthContext (useAuth)
-      const results = await Promise.allSettled([
-        Franchise.list(null, null, { columns: 'id, evolution_instance_id, name, city, owner_name' }),
-        Sale.list("-created_at", null, { columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() } }),
-        InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
-      ]);
+      // Fase 1: só as franquias (query barata) — user vem do AuthContext (useAuth).
+      // Vendas, estoque e contatos ficam para a fase 2, já com franchise_id explícito no WHERE:
+      // sem ele o PostgREST varria a tabela inteira e deixava a RLS peneirar, e franqueado com
+      // 2 unidades baixava as DUAS para descartar uma no client.
+      const franchisesData = await Franchise.list(null, null, {
+        columns: 'id, evolution_instance_id, name, city, owner_name',
+      });
       if (!mountedRef.current) return;
-
-      const getValue = (r) => r.status === "fulfilled" ? r.value : [];
-      const franchisesData = getValue(results[0]);
-      if (results[0].status === "rejected") throw new Error("Não foi possível carregar franquias");
       setCurrentUser(user);
       setFranchises(franchisesData);
-      setSales(getValue(results[1]));
-      setInventoryItems(getValue(results[2]));
-
-      const failed = results.slice(1).filter(r => r.status === "rejected");
-      if (failed.length > 0) {
-        console.warn("Algumas queries falharam:", failed.map(f => f.reason?.message));
-        toast.error("Alguns dados não carregaram. Tente recarregar.");
-      }
     } catch (error) {
       if (!mountedRef.current) return;
       if (retryCount < 1) {
@@ -83,38 +75,41 @@ export default function Vendas() {
     }
   };
 
-  // Load contacts scoped to franchise (scales independently of total contact count)
-  const loadFranchiseContacts = useCallback(async (evoId) => {
+  // Fase 2: tudo da unidade escolhida, sempre com franchise_id no WHERE.
+  const loadDadosDaUnidade = useCallback(async (evoId, { silencioso = false } = {}) => {
     if (!evoId) return;
+    if (!silencioso) setLoadingUnidade(true);
     try {
-      const data = await Contact.filter(
-        { franchise_id: evoId },
-        '-created_at',
-        null,
-        { columns: 'id, nome, telefone, status, franchise_id, endereco, bairro' }
-      );
-      if (mountedRef.current) setContacts(data);
-    } catch (err) {
-      console.error("Erro ao carregar contatos:", err);
-      if (mountedRef.current) toast.error("Erro ao carregar contatos.");
+      const resultados = await Promise.allSettled([
+        Sale.filter({ franchise_id: evoId }, "-created_at", null, {
+          columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() },
+        }),
+        InventoryItem.filter({ franchise_id: evoId }, "-updated_at", null, {
+          columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id',
+        }),
+        Contact.filter({ franchise_id: evoId }, '-created_at', null, {
+          columns: 'id, nome, telefone, status, franchise_id, endereco, bairro',
+        }),
+      ]);
+      if (!mountedRef.current) return;
+      const valor = (r) => (r.status === "fulfilled" ? r.value : []);
+      setSales(valor(resultados[0]));
+      setInventoryItems(valor(resultados[1]));
+      setContacts(valor(resultados[2]));
+      const falhou = resultados.filter((r) => r.status === "rejected");
+      if (falhou.length > 0) {
+        console.warn("Algumas queries falharam:", falhou.map((f) => f.reason?.message));
+        if (!silencioso) toast.error("Alguns dados não carregaram. Tente recarregar.");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados da unidade:", error);
+    } finally {
+      if (mountedRef.current) setLoadingUnidade(false);
     }
   }, []);
 
   const handleRefreshSales = async () => {
-    try {
-      const refreshResults = await Promise.allSettled([
-        Sale.list("-created_at", null, { columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() } }),
-        InventoryItem.list("-updated_at", null, { columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id' }),
-      ]);
-      if (!mountedRef.current) return;
-      const getVal = (r) => r.status === "fulfilled" ? r.value : [];
-      setSales(getVal(refreshResults[0]));
-      setInventoryItems(getVal(refreshResults[1]));
-      // Refresh contacts for current franchise
-      if (franchiseId) loadFranchiseContacts(franchiseId);
-    } catch (error) {
-      console.error("Erro ao recarregar vendas:", error);
-    }
+    if (franchiseIdRef.current) await loadDadosDaUnidade(franchiseIdRef.current, { silencioso: true });
   };
 
   useVisibilityPolling(handleRefreshSales, 300000);
@@ -131,10 +126,11 @@ export default function Vendas() {
 
   const franchiseId = primaryFranchise?.evolution_instance_id;
 
-  // Load contacts per franchise (not global) — scales regardless of total contact count
   useEffect(() => {
-    if (franchiseId) loadFranchiseContacts(franchiseId);
-  }, [franchiseId, loadFranchiseContacts]);
+    franchiseIdRef.current = franchiseId || null;
+    if (franchiseId) loadDadosDaUnidade(franchiseId);
+    else if (!loading) setLoadingUnidade(false); // sem unidade resolvida quem decide e o picker
+  }, [franchiseId, loadDadosDaUnidade, loading]);
 
   const franchiseSales = useMemo(() => {
     if (!franchiseId) return [];
@@ -151,7 +147,7 @@ export default function Vendas() {
     return contacts.filter((c) => c.franchise_id === franchiseId);
   }, [contacts, franchiseId]);
 
-  if (loading) {
+  if (loading || (franchiseId && loadingUnidade)) {
     return (
       <div className="bg-[#fbf9fa]">
         <div className="p-4 md:p-8 space-y-6">
