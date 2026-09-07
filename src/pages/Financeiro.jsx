@@ -7,7 +7,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { format, subMonths, addMonths, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { calculatePnL, isInMonth, groupByFranchiseAndMonth } from "@/lib/financialCalcs";
+import { calculatePnL, isInMonth, groupByFranchiseAndMonth, getSaleNetValue } from "@/lib/financialCalcs";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
 import { safeErrorMessage, safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
 import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
@@ -210,6 +210,12 @@ export default function Financeiro() {
       }
     }
 
+    const hoje = new Date();
+    const ehMesCorrente =
+      selectedMonth.getFullYear() === hoje.getFullYear() &&
+      selectedMonth.getMonth() === hoje.getMonth();
+    const diaDeHoje = hoje.getDate();
+
     let totalRecebidoAll = 0, lucroAll = 0;
     const data = [];
 
@@ -231,10 +237,21 @@ export default function Financeiro() {
         prevData.expenses
       );
 
+      // Comparativo honesto: se o mes selecionado e o CORRENTE, ele esta pela metade.
+      // Comparar 7 dias contra 31 do mes passado inventaria uma queda em toda a rede.
+      // Entao o mes anterior tambem e cortado no mesmo dia. Mes fechado compara inteiro.
+      const prevRecebidoComparavel = ehMesCorrente
+        ? prevData.sales
+            .filter((s) => Number(String(s.sale_date || s.created_at).slice(8, 10)) <= diaDeHoje)
+            .reduce((acc, s) => acc + getSaleNetValue(s), 0)
+        : prevPnl.totalRecebido;
+
       totalRecebidoAll += pnl.totalRecebido;
       lucroAll += pnl.lucroCaixa;
 
       data.push({
+        prevRecebidoComparavel,
+        comparativoParcial: ehMesCorrente,
         franchiseId: evoId,
         franchiseUUID: franchise.id,
         name: franchise.name,

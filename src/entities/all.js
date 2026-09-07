@@ -361,6 +361,17 @@ export async function getFranchiseHealthSignals({ signal } = {}) {
   return data || [];
 }
 
+// Dono e telefone de cada unidade, para o Mural do CS. RPC PROPRIA de proposito: a
+// get_franchise_health_signals que roda em producao tem regras que nao estao
+// versionadas no repo, entao nao se mexe nela (auditoria 07/09/2026, F0.2).
+export async function getCsFranchiseContacts({ signal } = {}) {
+  let query = supabase.rpc('get_cs_franchise_contacts');
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function deleteCsWorklistEvent(eventId) {
   // .select('id') detecta RLS silencioso (0 rows = sem permissão, não erro)
   const { data, error } = await withTimeout(

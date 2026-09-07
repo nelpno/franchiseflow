@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { classifySubscription, compareCobranca, SITUACAO, SITUACAO_LABEL } from "@/lib/subscriptionStatus";
+import { formatDateOnly } from "@/lib/dateOnly";
+import { formatBRL } from "@/lib/formatters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/api/supabaseClient";
@@ -92,50 +95,29 @@ function StatusBadge({ status, asaasId, cpfCnpj }) {
 }
 
 function SubscriptionBadge({ sub }) {
-  if (!sub) return <span className="text-xs text-gray-400">—</span>;
-  const status = sub.current_payment_status;
-  // Customer cadastrado mas assinatura ainda não criada
-  if (sub.asaas_customer_id && !sub.asaas_subscription_id && status !== "CANCELLED") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#775a19]">
-        <MaterialIcon icon="hourglass_empty" size={14} />
-        Aguardando criar
-      </span>
-    );
-  }
-  if (status === "PAID" || status === "RECEIVED" || status === "CONFIRMED") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#16a34a]/10 text-[#16a34a]">
-        <MaterialIcon icon="check_circle" size={14} />
-        Pago
-      </span>
-    );
-  }
-  if (status === "OVERDUE") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#dc2626]/10 text-[#dc2626]">
-        <MaterialIcon icon="error" size={14} />
-        Vencido
-      </span>
-    );
-  }
-  if (status === "PENDING") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#d4af37]/10 text-[#775a19]">
-        <MaterialIcon icon="schedule" size={14} />
-        Pendente
-      </span>
-    );
-  }
-  if (status === "CANCELLED") {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-        <MaterialIcon icon="block" size={14} />
-        Cancelada
-      </span>
-    );
-  }
-  return <span className="text-xs text-gray-400">{status || "—"}</span>;
+  const { situacao, diasAtraso } = classifySubscription(sub);
+  const estilo = {
+    [SITUACAO.PAGO]: { bg: "bg-[#16a34a]/10", fg: "text-[#15803d]", icon: "check_circle" },
+    [SITUACAO.VENCIDO]: { bg: "bg-[#dc2626]/10", fg: "text-[#dc2626]", icon: "error" },
+    [SITUACAO.PENDENTE]: { bg: "bg-[#d4af37]/10", fg: "text-[#775a19]", icon: "schedule" },
+    // "Sem cobranca" e o mais grave: nao existe assinatura, entao o cron de sync
+    // nunca vai olhar para esta unidade e ninguem vai cobrar. Antes aparecia como
+    // um travessao neutro.
+    [SITUACAO.SEM_COBRANCA]: { bg: "bg-[#dc2626]/15", fg: "text-[#991b1b]", icon: "money_off" },
+    [SITUACAO.AGUARDANDO]: { bg: "bg-[#d4af37]/10", fg: "text-[#775a19]", icon: "hourglass_empty" },
+    [SITUACAO.CANCELADA]: { bg: "bg-gray-100", fg: "text-gray-600", icon: "block" },
+  }[situacao];
+
+  const texto = situacao === SITUACAO.VENCIDO && diasAtraso > 0
+    ? `Vencido há ${diasAtraso} ${diasAtraso === 1 ? "dia" : "dias"}`
+    : SITUACAO_LABEL[situacao];
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${estilo.bg} ${estilo.fg}`}>
+      <MaterialIcon icon={estilo.icon} size={14} aria-hidden="true" />
+      {texto}
+    </span>
+  );
 }
 
 export default function AsaasSetupPanel() {
@@ -210,10 +192,28 @@ export default function AsaasSetupPanel() {
     return () => { mountedRef.current = false; };
   }, [loadData]);
 
+  const [situacaoFiltro, setSituacaoFiltro] = useState(null);
+
   const getConfig = (evoId) => configs.find(c => c.franchise_evolution_instance_id === evoId);
   const getSub = (evoId) => subscriptions.find(s => s.franchise_id === evoId);
 
   const activeFranchises = franchises.filter(f => f.status === "active");
+
+  // Uma passada so: classifica a mensalidade de cada unidade e ordena por urgencia de
+  // cobranca (sem cobranca -> maior atraso -> ... -> paga). Antes a tabela vinha na
+  // ordem do banco, com 67 linhas e nenhum jeito de achar quem deve.
+  const linhasCobranca = activeFranchises
+    .map(f => ({ f, cls: classifySubscription(getSub(f.evolution_instance_id)) }))
+    .sort((a, b) => compareCobranca(a.cls, b.cls));
+
+  const contagemSituacao = linhasCobranca.reduce((acc, { cls }) => {
+    acc[cls.situacao] = (acc[cls.situacao] || 0) + 1;
+    return acc;
+  }, {});
+
+  const linhasVisiveis = situacaoFiltro
+    ? linhasCobranca.filter(({ cls }) => cls.situacao === situacaoFiltro)
+    : linhasCobranca;
 
   const handleSaveEmail = async (franchise) => {
     const email = (editingEmail[franchise.id] || "").trim();
@@ -624,6 +624,50 @@ export default function AsaasSetupPanel() {
       </div>
 
       {/* Franchise table */}
+      {/* Chips de cobranca: contam PAGAMENTO (a linha de stats acima conta CADASTRO,
+          que e outra pergunta). Clicar filtra a tabela. */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          SITUACAO.SEM_COBRANCA,
+          SITUACAO.VENCIDO,
+          SITUACAO.AGUARDANDO,
+          SITUACAO.PENDENTE,
+          SITUACAO.PAGO,
+          SITUACAO.CANCELADA,
+        ].map((sit) => {
+          const n = contagemSituacao[sit] || 0;
+          if (n === 0) return null;
+          const ativo = situacaoFiltro === sit;
+          const urgente = sit === SITUACAO.SEM_COBRANCA || sit === SITUACAO.VENCIDO;
+          return (
+            <button
+              key={sit}
+              type="button"
+              onClick={() => setSituacaoFiltro(ativo ? null : sit)}
+              aria-pressed={ativo}
+              className={`px-3 min-h-[40px] rounded-lg border text-xs transition-colors ${
+                ativo
+                  ? "border-[#b91c1c] bg-[#b91c1c]/5 text-[#b91c1c] font-semibold"
+                  : urgente
+                    ? "border-[#dc2626]/30 bg-[#dc2626]/5 text-[#991b1b] font-medium hover:bg-[#dc2626]/10"
+                    : "border-[#291715]/10 bg-white text-[#4a3d3d] hover:bg-[#fbf9fa]"
+              }`}
+            >
+              {SITUACAO_LABEL[sit]} <span className="font-semibold">{n}</span>
+            </button>
+          );
+        })}
+        {situacaoFiltro && (
+          <button
+            type="button"
+            onClick={() => setSituacaoFiltro(null)}
+            className="px-3 min-h-[40px] rounded-lg text-xs text-[#7a6d6d] underline"
+          >
+            limpar filtro
+          </button>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -634,11 +678,12 @@ export default function AsaasSetupPanel() {
               <th className="pb-2 font-medium">Endereço</th>
               <th className="pb-2 font-medium">ASAAS</th>
               <th className="pb-2 font-medium">Assinatura</th>
+              <th className="pb-2 font-medium">Vencimento</th>
               <th className="pb-2 font-medium">Ação</th>
             </tr>
           </thead>
           <tbody>
-            {activeFranchises.map(f => {
+            {linhasVisiveis.map(({ f, cls }) => {
               const config = getConfig(f.evolution_instance_id);
               const sub = getSub(f.evolution_instance_id);
               const isEditingThis = f.id in editingCpf;
@@ -753,6 +798,18 @@ export default function AsaasSetupPanel() {
                   </td>
                   <td className="py-3">
                     <SubscriptionBadge sub={sub} />
+                  </td>
+                  <td className="py-3 whitespace-nowrap">
+                    {cls.vencimento ? (
+                      <span className={cls.diasAtraso > 0 ? "text-[#dc2626] font-medium" : "text-[#4a3d3d]"}>
+                        {formatDateOnly(cls.vencimento)}
+                        {cls.valor != null && (
+                          <span className="text-xs text-gray-500"> · {formatBRL(cls.valor)}</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
                   </td>
                   <td className="py-3">
                     {(() => {

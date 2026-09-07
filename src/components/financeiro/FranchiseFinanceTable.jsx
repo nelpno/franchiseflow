@@ -6,6 +6,32 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import FranchiseFinanceDrilldown from "./FranchiseFinanceDrilldown";
 import { formatBRLInteger } from "@/lib/formatters";
 
+/**
+ * Δ% do faturamento contra o mes anterior. O dado (`prevPnl`) SEMPRE existiu — era
+ * calculado para as 66 unidades e so aparecia abrindo uma linha por vez, o que fazia
+ * "quem caiu?" custar 66 cliques (auditoria 07/09/2026).
+ * `prevRecebidoComparavel` ja vem cortado no mesmo dia do mes quando o mes exibido e o
+ * corrente; sem isso, todo mes comecaria com a rede inteira "em queda".
+ */
+export function variacaoFaturamento(f) {
+  const anterior = Number(f.prevRecebidoComparavel ?? f.prevPnl?.totalRecebido ?? 0);
+  const atual = Number(f.pnl?.totalRecebido ?? 0);
+  if (anterior <= 0) return null; // sem base de comparacao: nao inventar percentual
+  return ((atual - anterior) / anterior) * 100;
+}
+
+function DeltaBadge({ valor }) {
+  if (valor === null) return <span className="text-xs text-[#cac0c0]">—</span>;
+  const caiu = valor < 0;
+  const forte = valor <= -10;
+  const cor = forte ? "text-[#dc2626] font-bold" : caiu ? "text-[#b45309]" : "text-[#15803d]";
+  return (
+    <span className={`text-sm ${cor}`}>
+      {caiu ? "▼" : "▲"} {Math.abs(valor).toFixed(0)}%
+    </span>
+  );
+}
+
 function MarginBadge({ margem }) {
   let colorClass = "bg-green-100 text-green-700";
   if (margem < 20) {
@@ -21,6 +47,7 @@ function MarginBadge({ margem }) {
 }
 
 const SORT_OPTIONS = [
+  { key: "queda", label: "Maior queda", icon: "trending_down" },
   { key: "margem", label: "Margem", icon: "percent" },
   { key: "lucro", label: "Lucro", icon: "trending_up" },
   { key: "faturamento", label: "Faturamento", icon: "payments" },
@@ -57,6 +84,14 @@ export default function FranchiseFinanceTable({
           va = a.pnl.margemCaixa;
           vb = b.pnl.margemCaixa;
           break;
+        case "queda": {
+          // sem base de comparacao vai para o fim, nao para o topo da "maior queda"
+          const da = variacaoFaturamento(a);
+          const db = variacaoFaturamento(b);
+          va = da === null ? Number.POSITIVE_INFINITY : da;
+          vb = db === null ? Number.POSITIVE_INFINITY : db;
+          break;
+        }
         case "lucro":
           va = a.pnl.lucroCaixa;
           vb = b.pnl.lucroCaixa;
@@ -84,7 +119,7 @@ export default function FranchiseFinanceTable({
       setSortAsc((prev) => !prev);
     } else {
       setSortBy(key);
-      setSortAsc(key === "margem"); // margem default asc (pior primeiro)
+      setSortAsc(key === "margem" || key === "queda"); // pior primeiro
     }
   };
 
@@ -150,7 +185,7 @@ export default function FranchiseFinanceTable({
                   onClick={() => setExpandedId(isExpanded ? null : f.franchiseId)}
                 >
                   {/* Desktop row */}
-                  <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_auto] items-center gap-2 px-4 py-3 hover:bg-[#fbf9fa] transition-colors">
+                  <div className="hidden md:grid md:grid-cols-[2fr_0.8fr_1fr_1fr_1fr_0.9fr_0.8fr_auto] items-center gap-2 px-4 py-3 hover:bg-[#fbf9fa] transition-colors">
                     <div className="min-w-0">
                       <p className="font-semibold text-sm text-[#1b1c1d] truncate">{f.name}</p>
                       <p className="text-xs text-[#7a6d6d] truncate">{f.city} &middot; {f.ownerName}</p>
@@ -178,6 +213,10 @@ export default function FranchiseFinanceTable({
                     <div className="text-right">
                       <MarginBadge margem={f.pnl.margemCaixa} />
                     </div>
+                    <div className="text-right">
+                      <p className="text-xs text-[#7a6d6d]">vs mês ant.</p>
+                      <DeltaBadge valor={variacaoFaturamento(f)} />
+                    </div>
                     <MaterialIcon
                       icon={isExpanded ? "expand_less" : "expand_more"}
                       size={20}
@@ -193,6 +232,7 @@ export default function FranchiseFinanceTable({
                         <p className="text-xs text-[#7a6d6d]">{f.city}</p>
                       </div>
                       <div className="flex items-center gap-2">
+                        <DeltaBadge valor={variacaoFaturamento(f)} />
                         <MarginBadge margem={f.pnl.margemCaixa} />
                         <MaterialIcon
                           icon={isExpanded ? "expand_less" : "expand_more"}

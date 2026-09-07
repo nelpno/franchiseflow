@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
-import { getFranchiseHealthSignals, getCsTasks, moveCsTask, reconcileCsAutoTasks, getNetworkFunnelRanking } from "@/entities/all";
+import { getFranchiseHealthSignals, getCsFranchiseContacts, getCsTasks, moveCsTask, reconcileCsAutoTasks, getNetworkFunnelRanking } from "@/entities/all";
 import NetworkFunnelPanel from "@/components/dashboard/NetworkFunnelPanel";
 import { format, startOfMonth } from "date-fns";
 import FranchiseDrawer from "@/components/customer-success/FranchiseDrawer";
@@ -18,6 +18,7 @@ export default function CustomerSuccess() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [signals, setSignals] = useState([]);
+  const [contatos, setContatos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tab, setTab] = useState("mural");
@@ -68,8 +69,14 @@ export default function CustomerSuccess() {
     setError(null);
     try {
       try { await reconcileCsAutoTasks(); } catch (e) { console.warn("[CustomerSuccess] reconcile", e); }
-      const [t, s] = await Promise.all([getCsTasks(), getFranchiseHealthSignals()]);
-      if (mountedRef.current) { setTasks(t); setSignals(s); }
+      // contatos em paralelo: sem dono e telefone, o Celso abre o cartao e ainda
+      // precisa procurar em outra tela com quem falar (auditoria 07/09/2026)
+      const [t, s, c] = await Promise.all([
+        getCsTasks(),
+        getFranchiseHealthSignals(),
+        getCsFranchiseContacts().catch(() => []),
+      ]);
+      if (mountedRef.current) { setTasks(t); setSignals(s); setContatos(c); }
     } catch (e) {
       console.error("[CustomerSuccess] load", e);
       if (mountedRef.current) setError("Não foi possível carregar o mural. Tente novamente.");
@@ -80,6 +87,11 @@ export default function CustomerSuccess() {
 
   useEffect(() => { load(); }, [load]);
   useVisibilityPolling(reloadTasks, 300000);
+
+  const contatosByFranchise = useMemo(
+    () => Object.fromEntries((contatos || []).map((c) => [c.franchise_id, c])),
+    [contatos],
+  );
 
   const signalsByFranchise = useMemo(
     () => Object.fromEntries((signals || []).map((s) => [s.franchise_id, s])),
@@ -193,6 +205,7 @@ export default function CustomerSuccess() {
       <FranchiseDrawer
         task={selectedTask}
         row={drawerRow}
+        contato={selectedTask?.franchise_id ? contatosByFranchise[selectedTask.franchise_id] : null}
         userId={user?.id}
         isAdmin={user?.role === "admin"}
         onClose={closeDrawer}

@@ -7,6 +7,8 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 import { marketingLiquid } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { safeHref } from "@/lib/safeHref";
+import { formatPhone } from "@/lib/whatsappUtils";
 import {
   getCsTaskEvents, addCsTaskEvent, updateCsTask, moveCsTask,
   deleteCsWorklistEvent, updateCsWorklistEventNote,
@@ -46,7 +48,7 @@ function Metric({ icon, label, value, hint, tone }) {
 //  - cartão de franquia  (task + row): por quê + registrar + histórico + raio-x (colapsável)
 //  - cartão geral        (task, sem row): registrar + histórico
 //  - preview do Radar     (row, sem task): por quê + raio-x + "Criar cartão"
-export default function FranchiseDrawer({ task, row, userId, isAdmin = false, onClose, onChanged, onCreateCard }) {
+export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = false, onClose, onChanged, onCreateCard }) {
   const [events, setEvents] = useState([]);
   const [note, setNote] = useState("");
   const [meetingMode, setMeetingMode] = useState(false);
@@ -237,6 +239,27 @@ export default function FranchiseDrawer({ task, row, userId, isAdmin = false, on
                 )}
               </DialogTitle>
               <p className="text-sm text-[#8a7e7e]">{headerSub}</p>
+              {/* Com quem falar. Sem isto o cartao dizia o QUE fazer e nao COM QUEM —
+                  o Celso abria e ia procurar o contato noutra tela. */}
+              {contato?.owner_name && (
+                <p className="text-sm text-[#4a3d3d] mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-medium">{contato.owner_name}</span>
+                  {contato.phone ? (
+                    <a
+                      href={safeHref(`https://wa.me/55${contato.phone}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-[#15803d] hover:underline"
+                    >
+                      <MaterialIcon icon="chat" size={14} aria-hidden="true" />
+                      {formatPhone(contato.phone)}
+                    </a>
+                  ) : (
+                    <span className="text-xs text-[#8a7e7e]">(sem telefone cadastrado)</span>
+                  )}
+                </p>
+              )}
               {tier && (
                 <span className={`inline-block w-fit text-xs px-2 py-0.5 rounded-full border ${TIER[tier].chip}`}>
                   {TIER[tier].label}
