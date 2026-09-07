@@ -8,6 +8,9 @@
     "build": "vite build",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
+    "lint:undef": "eslint -c eslint.strict.config.js src",
+    "verify:undef": "node scripts/verifica-guarda-undef.mjs",
+    "test:unit": "node src/lib/financialCalcs.test.mjs && node src/lib/franchiseUtils.test.mjs && node src/lib/addressUtils.test.mjs && node src/lib/documentUtils.test.mjs",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview"
   },

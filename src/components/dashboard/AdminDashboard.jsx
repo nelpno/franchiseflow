@@ -118,6 +118,17 @@ export default function AdminDashboard() {
         }
       };
 
+      // supabase.rpc() RESOLVE a promise mesmo quando o Postgres devolve erro — o erro
+      // vem em { data, error }. Sem este unwrap, Promise.allSettled marca a chamada como
+      // "fulfilled", o codigo faz `?.data || []` e a tela mostra card vazio em vez de
+      // erro. Foi assim que as 3 RPCs de bot ficaram em 500 por 24h sem ninguem ver
+      // (auditoria 07/09/2026). Lancar transforma em "rejected" e cai no toast de falha.
+      const rpc = async (name, args) => {
+        const { data, error } = await supabase.rpc(name, args).abortSignal(signal);
+        if (error) throw new Error(error.message || `RPC ${name} falhou`);
+        return data || [];
+      };
+
       // ═══ WAVE 1: Stats + Ranking (6 queries — aparece em ~1s) ═══
       const wave1 = await Promise.allSettled([
         fetchFranchises(),
@@ -125,7 +136,7 @@ export default function AdminDashboard() {
         DailyUniqueContact.filter({ date: today }, null, null, { columns: 'id, franchise_id, date', signal }),
         Sale.list('-sale_date', null, { columns: 'id, value, delivery_fee, discount_amount, franchise_id, sale_date, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } }),
         FranchiseConfiguration.list(null, null, { columns: 'franchise_evolution_instance_id, franchise_name', signal }),
-        supabase.rpc('get_bot_leads_daily', { p_since: cutoff90d }).abortSignal(signal),
+        rpc('get_bot_leads_daily', { p_since: cutoff90d }),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -145,9 +156,8 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Bot leads daily RPC (Wave 1[5])
-      const botLeadsRpc = wave1[5].status === "fulfilled" ? wave1[5].value : { data: [] };
-      const botLeadsDailyData = botLeadsRpc?.data || [];
+      // Bot leads daily RPC (Wave 1[5]) — `rpc()` ja devolve o array ou lanca
+      const botLeadsDailyData = getValue(wave1[5]);
 
       const w1Failed = wave1
         .map((r, i) => r.status === "rejected" ? ["franchises","summaries","todayContacts","allSales","configs","botLeadsDaily"][i] : null)
@@ -175,9 +185,13 @@ export default function AdminDashboard() {
       // Contact + InventoryItem + PurchaseOrder agora são lazy (loadCollapsedData)
       // BotConversation array bruto (28k rows / 20s pagination) substituído por
       // RPC get_bot_conversation_summary (~880 rows agregados / 1 round-trip).
+      // get_human_message_TOTALS (nao _counts): a versao antiga devolvia uma linha por
+      // CONVERSA — dezenas de milhares — e o PostgREST cortava em 1.000, entao o alerta
+      // de "intervencao humana excessiva" vinha truncado em silencio. A nova agrega por
+      // franquia no banco (62 linhas). O consumidor ja somava por franquia.
       const wave2 = await Promise.allSettled([
-        supabase.rpc('get_bot_conversation_summary', { p_since: cutoff90d }).abortSignal(signal),
-        supabase.rpc('get_human_message_counts', { p_since: cutoff90d }).abortSignal(signal),
+        rpc('get_bot_conversation_summary', { p_since: cutoff90d }),
+        rpc('get_human_message_totals', { p_since: cutoff90d }),
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -190,12 +204,8 @@ export default function AdminDashboard() {
         toast.error(safeFailedQueriesMessage(w2Failed));
       }
 
-      // Both RPCs return { data, error } directly from supabase.rpc()
-      const botSummaryRpc = wave2[0].status === "fulfilled" ? wave2[0].value : { data: [] };
-      const humanMsgsRpc = wave2[1].status === "fulfilled" ? wave2[1].value : { data: [] };
-
-      setBotSummary(botSummaryRpc?.data || []);
-      setHumanMsgCounts(humanMsgsRpc?.data || []);
+      setBotSummary(getValue(wave2[0]));
+      setHumanMsgCounts(getValue(wave2[1]));
       setIsLoadingWave2(false);
 
       // Polling-driven refresh do lazy data: se admin já expandiu seções colapsadas,
@@ -346,10 +356,11 @@ export default function AdminDashboard() {
     }
   }, [funnelRanking.fetched]);
 
-  // Build conversationMessages-compatible array from RPC counts for child components
+  // Build conversationMessages-compatible array from RPC totals for child components.
+  // Agora e 1 linha POR FRANQUIA (get_human_message_totals). O AlertsPanel filtra por
+  // franchise_id e soma `_count` — continua valendo, e sem o corte de 1.000 linhas.
   const conversationMessages = useMemo(() => {
     return humanMsgCounts.map(row => ({
-      conversation_id: row.conversation_id,
       franchise_id: row.franchise_id,
       direction: 'human',
       _count: row.msg_count,
