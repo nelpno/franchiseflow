@@ -62,7 +62,6 @@ const Franchises = lazy(() => import('./pages/Franchises'));
 const Gestao = lazy(() => import('./pages/Gestao'));
 const Marketing = lazy(() => import('./pages/Marketing'));
 const MinhaLoja = lazy(() => import('./pages/MinhaLoja'));
-const MyChecklist = lazy(() => import('./pages/MyChecklist'));
 const MyContacts = lazy(() => import('./pages/MyContacts'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
@@ -78,7 +77,6 @@ export const PAGES = {
     "Gestao": Gestao,
     "Marketing": Marketing,
     "MinhaLoja": MinhaLoja,
-    "MyChecklist": MyChecklist,
     "MyContacts": MyContacts,
     "Onboarding": Onboarding,
     "PurchaseOrders": PurchaseOrders,

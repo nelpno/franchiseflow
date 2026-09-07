@@ -201,7 +201,6 @@ export const DailyUniqueContact = createEntity('daily_unique_contacts');
 export const DailySummary = createEntity('daily_summaries');
 export const FranchiseConfiguration = createEntity('franchise_configurations');
 export const OnboardingChecklist = createEntity('onboarding_checklists');
-export const DailyChecklist = createEntity('daily_checklists');
 // Novas entidades (FASE 3)
 export const InventoryItem = createEntity('inventory_items');
 export const Contact = createEntity('contacts');

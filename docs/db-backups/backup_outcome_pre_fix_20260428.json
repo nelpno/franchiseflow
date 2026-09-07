@@ -1,0 +1,5749 @@
+[
+ {
+  "id": "304657e6-2942-47e1-9eb1-3ead63429e2e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T15:03:03.498954+00:00",
+  "updated_at": "2026-04-10T15:03:03.498954+00:00"
+ },
+ {
+  "id": "3bd6d1d5-8295-4e4c-886b-6519325d54ee",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:45:26.473414+00:00"
+ },
+ {
+  "id": "b8532f13-749f-46b2-aa15-2164fd8d80cc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:47:47.609064+00:00",
+  "updated_at": "2026-04-18T15:47:47.609064+00:00"
+ },
+ {
+  "id": "d87f1c1d-6c85-47c3-a5f4-b1485f10a12f",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T10:26:11.567186+00:00"
+ },
+ {
+  "id": "f76fd14e-fb8c-490f-a89a-ee67b0590dc6",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T11:58:57.438581+00:00"
+ },
+ {
+  "id": "9274cb11-cb17-47de-8937-c64530344109",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T12:18:07.075268+00:00"
+ },
+ {
+  "id": "37109ed0-cb71-4d37-bbfb-644a0788548b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T12:15:47.884431+00:00",
+  "updated_at": "2026-04-10T12:15:47.884431+00:00"
+ },
+ {
+  "id": "dc5c755f-d29e-49d3-9cd3-15d61c28437f",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T12:44:34.838438+00:00"
+ },
+ {
+  "id": "cc6a4865-6cf3-41e0-8363-330a8945e044",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "293ba774-cd3b-4e39-a045-4a0c8dd3e3db",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "d1498f3d-7d37-4eca-8f82-38d88c635ecf",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T15:33:15.041987+00:00",
+  "updated_at": "2026-04-10T15:33:15.041987+00:00"
+ },
+ {
+  "id": "4be6e832-7306-414d-9499-037d37a00f2b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T12:17:12.12445+00:00",
+  "updated_at": "2026-04-10T12:17:12.12445+00:00"
+ },
+ {
+  "id": "1efbf4f7-1d07-474c-956b-b9976171bc6c",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "cd5b58f7-5d0f-4fb2-ae9e-46bd1cef1708",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "b279d9e2-d3b8-48a3-b7e4-231baafbea83",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T13:13:27.453099+00:00",
+  "updated_at": "2026-04-10T13:13:27.453099+00:00"
+ },
+ {
+  "id": "16e3f201-3e4b-4e92-9ebc-ed80111af871",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T12:12:43.372442+00:00",
+  "updated_at": "2026-04-10T12:12:43.372442+00:00"
+ },
+ {
+  "id": "c53075f7-1d23-42d4-8af6-1e2380d18d50",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "59072d45-f697-405e-97f5-7f7195467ddd",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "e62497bc-0cd3-4910-9ef3-a8f290b94e62",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "17133f6f-f4ff-471f-9725-09033da42494",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "51b33e26-c968-4513-88c6-bcbd1ffcc2b8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T12:28:57.691004+00:00",
+  "updated_at": "2026-04-10T12:28:57.691004+00:00"
+ },
+ {
+  "id": "903ce3a1-36a1-4d81-8e4d-9ae2bdd30c19",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "acf75a0d-9422-4681-8146-af97256901ac",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "4dba544b-bb11-44fb-ae08-e23925783bd4",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "88a5e9d5-b09c-4491-8d9e-294cc8267629",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "d3813b6f-82f8-46df-bd34-72bf8ee05425",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "6a919070-9d4c-4c0e-b109-07383000a92f",
+  "outcome_old": "informational",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "bf665521-ef7d-4711-bcb6-2f82afe177e8",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "1f9538a7-563f-4298-be62-629dc0853882",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "494c5296-f1a5-4da8-8ef1-521a7d479b87",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "7f95d2cd-be23-45a9-9976-345f95144c52",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "620a476f-fc8b-424a-bad3-595be91b8c56",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T13:55:13.143676+00:00"
+ },
+ {
+  "id": "7721bbec-8cf9-42ab-9c59-8b58a0370f93",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T17:02:09.724735+00:00"
+ },
+ {
+  "id": "6595958b-1ee5-44e3-961d-858bf88b1bf5",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T16:30:17.384607+00:00"
+ },
+ {
+  "id": "4b57295e-ce6c-455d-87ef-855c3be61ff3",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T14:29:54.183389+00:00"
+ },
+ {
+  "id": "61161d33-da10-4d55-8087-1fb40f8ee870",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T16:34:55.845407+00:00"
+ },
+ {
+  "id": "7346c155-5eeb-4f63-b5bf-81b145650963",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T14:37:39.682126+00:00"
+ },
+ {
+  "id": "0a4f9fbe-a587-4137-b954-59c01e77d68e",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T14:38:31.02108+00:00"
+ },
+ {
+  "id": "ddff7686-6715-4328-88f5-70fb44eb8a68",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T15:15:23.024877+00:00"
+ },
+ {
+  "id": "9991707b-315a-4822-b51d-939e431fd2a7",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T15:23:36.864547+00:00"
+ },
+ {
+  "id": "0cb48457-56e5-41c5-9408-d99db1e62ef4",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T15:43:06.92246+00:00"
+ },
+ {
+  "id": "3bb58b90-564a-4d04-aaf7-6f93e3eb19c7",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T16:21:12.82478+00:00"
+ },
+ {
+  "id": "4c22b206-7c8c-49f5-b8ed-4a853503b59b",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T16:21:37.482146+00:00"
+ },
+ {
+  "id": "6ff90597-b161-447a-b49b-c80abbdcb16f",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T20:20:49.405336+00:00"
+ },
+ {
+  "id": "4c480da7-786f-4689-a8df-dfed6878c9f1",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-05T21:05:45.17644+00:00"
+ },
+ {
+  "id": "7535fbbb-1290-4c46-bfa4-cf96111987fb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T15:33:26.450577+00:00",
+  "updated_at": "2026-04-11T15:33:26.450577+00:00"
+ },
+ {
+  "id": "49c0cd23-287e-42e1-ba1a-b1016345d476",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "bfa717ac-2515-4b41-b1a5-f7cf748b97ee",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "07f9ec4b-a209-4c79-894c-f8fd847cc5b2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "f28e1613-0fd9-4da5-8eb1-32945be58ca1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "cf38befe-59f4-42fd-9684-a76cbd63c8d7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "991d9376-88cc-4e54-b475-7f836c983818",
+  "outcome_old": "informational",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-06T16:51:58.657883+00:00"
+ },
+ {
+  "id": "d4135e3c-8f9b-4088-8905-b2b6676c1191",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T01:14:16.507556+00:00",
+  "updated_at": "2026-04-16T01:14:16.507556+00:00"
+ },
+ {
+  "id": "134cb8af-35a9-440f-8513-bf1d0a402b5a",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-06T17:20:42.763185+00:00"
+ },
+ {
+  "id": "8d5e10eb-78d6-4877-9a6b-0e6e60dc0fed",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:25:46.381944+00:00",
+  "updated_at": "2026-04-19T14:25:46.381944+00:00"
+ },
+ {
+  "id": "2123c90f-8079-4170-935f-f825ee553bae",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:45:03.441313+00:00",
+  "updated_at": "2026-04-18T15:45:03.441313+00:00"
+ },
+ {
+  "id": "64cf62ae-793e-49fe-b158-4ecd7944bf76",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-06T22:13:07.276617+00:00"
+ },
+ {
+  "id": "4786fad4-1510-453d-b372-494d9dcb0584",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-06T23:33:10.731654+00:00"
+ },
+ {
+  "id": "cb2fcf61-1b1e-4e3f-bdbc-45087d593138",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T13:23:58.744325+00:00",
+  "updated_at": "2026-04-10T13:23:58.744325+00:00"
+ },
+ {
+  "id": "aa15f173-18a6-4c3a-9a03-68b2f15cfa8f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T16:08:34.473953+00:00",
+  "updated_at": "2026-04-10T16:08:34.473953+00:00"
+ },
+ {
+  "id": "c25b00a4-b414-4308-8b35-f9de55d076c6",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-06T22:43:47.04543+00:00"
+ },
+ {
+  "id": "7d3b061d-fc89-471c-8937-7a4c9bef9eed",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T17:26:29.056423+00:00",
+  "updated_at": "2026-04-21T17:26:29.056423+00:00"
+ },
+ {
+  "id": "6fe00d65-9d10-49a3-a596-7c6ff3cbcb85",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:24:03.711772+00:00",
+  "updated_at": "2026-04-19T14:24:03.711772+00:00"
+ },
+ {
+  "id": "ff4b2623-a7f4-4f55-9c90-6f5baa7ced06",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:49:25.274467+00:00",
+  "updated_at": "2026-04-18T15:49:25.274467+00:00"
+ },
+ {
+  "id": "e80089fa-bd25-4be5-bcd9-c520af2f4117",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T11:44:31.270686+00:00",
+  "updated_at": "2026-04-10T11:44:31.270686+00:00"
+ },
+ {
+  "id": "8a19f45a-f3fe-4792-be66-83d54bb8ef17",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T11:19:49.84076+00:00",
+  "updated_at": "2026-04-11T11:19:49.84076+00:00"
+ },
+ {
+  "id": "5f47a0f7-e0e3-4198-958a-4d16fcc506ae",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T13:28:35.549576+00:00",
+  "updated_at": "2026-04-10T13:28:35.549576+00:00"
+ },
+ {
+  "id": "17720bb5-b565-42e3-8a90-2f29d5cc77ad",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T12:56:49.491272+00:00",
+  "updated_at": "2026-04-10T12:56:49.491272+00:00"
+ },
+ {
+  "id": "16c3cd60-313b-45d0-bcfe-2b421f88d4d4",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T12:48:53.284917+00:00",
+  "updated_at": "2026-04-10T12:48:53.284917+00:00"
+ },
+ {
+  "id": "2a1ded85-48e6-4141-9f98-d7eeecc7fcb9",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-07T13:51:04.268354+00:00"
+ },
+ {
+  "id": "d8298632-fe57-4692-bfad-bac18c0fd4b9",
+  "outcome_old": "informational",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-07T14:16:58.93254+00:00"
+ },
+ {
+  "id": "e60f46e8-4365-486a-94bb-2cfe863b7d58",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T14:53:11.072893+00:00",
+  "updated_at": "2026-04-10T14:53:11.072893+00:00"
+ },
+ {
+  "id": "a235db40-3b8b-4cda-b9a0-5288428d2199",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-07T18:27:26.653801+00:00"
+ },
+ {
+  "id": "06aa53a6-c118-4ed3-9063-0631d9c8c11f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "9728a66d-c1e8-4bce-af58-ad02c601e7be",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T15:21:44.136001+00:00",
+  "updated_at": "2026-04-11T15:21:44.136001+00:00"
+ },
+ {
+  "id": "ae08c326-f502-4beb-998d-34431169d0d4",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:56:31.030812+00:00",
+  "updated_at": "2026-04-18T15:56:31.030812+00:00"
+ },
+ {
+  "id": "e5c21073-507f-4ac0-9165-46ba3c639b54",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:25:56.328814+00:00",
+  "updated_at": "2026-04-19T14:25:56.328814+00:00"
+ },
+ {
+  "id": "5a84ad85-9559-4ffe-abf4-de092b53006e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:56:34.356463+00:00",
+  "updated_at": "2026-04-18T15:56:34.356463+00:00"
+ },
+ {
+  "id": "38a29286-35ed-4f09-a4a9-c9599f7be239",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T00:52:02.167823+00:00"
+ },
+ {
+  "id": "d3a6bc78-bb0d-4eaf-bc66-d98438ea56ab",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T12:28:45.202734+00:00"
+ },
+ {
+  "id": "9e6937f5-9062-43e0-9108-ab395251003b",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T11:46:27.86105+00:00"
+ },
+ {
+  "id": "45cbcaa8-84cb-4609-98f1-53ecc9bc65f5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:59:51.854002+00:00",
+  "updated_at": "2026-04-18T15:59:51.854002+00:00"
+ },
+ {
+  "id": "f05ff95b-2663-4104-bf4c-7ce57614eeaa",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T14:17:35.73558+00:00",
+  "updated_at": "2026-04-10T14:17:35.73558+00:00"
+ },
+ {
+  "id": "6c64d62b-e3c6-4a11-bb29-c469cf9f98b8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T17:38:48.236081+00:00",
+  "updated_at": "2026-04-11T17:38:48.236081+00:00"
+ },
+ {
+  "id": "3920b486-57d5-4299-8f01-f67cdbce31d3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T15:21:32.139738+00:00",
+  "updated_at": "2026-04-10T15:21:32.139738+00:00"
+ },
+ {
+  "id": "3521123c-d1d5-491e-bc35-97f1e884738e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T17:54:07.015748+00:00",
+  "updated_at": "2026-04-18T17:54:07.015748+00:00"
+ },
+ {
+  "id": "453b5efc-9c34-4e12-b417-1dbc7ce0aaad",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T15:33:26.141354+00:00"
+ },
+ {
+  "id": "cae2b5c9-fc61-47b6-9fb0-dc9a031b5ba7",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T15:46:08.191468+00:00"
+ },
+ {
+  "id": "6c0bf52f-bc67-451a-8f67-7f78cf11a7be",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T17:10:38.86689+00:00"
+ },
+ {
+  "id": "6612ae19-072e-49bd-baef-f2502be0a501",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T13:25:40.672429+00:00",
+  "updated_at": "2026-04-11T13:25:40.672429+00:00"
+ },
+ {
+  "id": "5028eac8-895f-47e1-9025-05b5cfb15b9d",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T14:35:44.316062+00:00"
+ },
+ {
+  "id": "29197a03-ad4d-42aa-bc88-bba8a40de032",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T14:52:36.176584+00:00"
+ },
+ {
+  "id": "50bacd52-2dc6-4a36-be6e-1694c4f99354",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T15:39:36.297984+00:00",
+  "updated_at": "2026-04-10T15:39:36.297984+00:00"
+ },
+ {
+  "id": "74bb6eac-1803-409d-a20d-8471b71eb370",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T17:16:06.807715+00:00"
+ },
+ {
+  "id": "158cb416-da8b-4510-8924-4f48ed10242d",
+  "outcome_old": "informational",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T18:57:20.497994+00:00"
+ },
+ {
+  "id": "116a0715-ec9e-42f4-b8b6-7bedc99c5931",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T18:11:51.051768+00:00"
+ },
+ {
+  "id": "d91c0dfc-d0af-4458-a7f3-e8202a226e01",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T18:17:00.567268+00:00"
+ },
+ {
+  "id": "fb46faba-f131-4bb6-a9d0-25258c403e79",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T19:15:10.990868+00:00"
+ },
+ {
+  "id": "f1a28af6-b6c5-4352-a3be-59517f60a3bf",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T15:44:16.191636+00:00",
+  "updated_at": "2026-04-10T15:44:16.191636+00:00"
+ },
+ {
+  "id": "45cd0963-fe8d-4e35-8389-a6479f212a72",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T20:34:10.565857+00:00"
+ },
+ {
+  "id": "e83d0b35-81c9-4d2e-90e5-7adea95571b0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T16:38:47.85591+00:00",
+  "updated_at": "2026-04-10T16:38:47.85591+00:00"
+ },
+ {
+  "id": "1e55deb7-f5d0-4bf1-9cc1-129d4b2c73f5",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T21:25:19.58389+00:00"
+ },
+ {
+  "id": "3459d56a-4627-4f90-ba4c-c89c18a1d816",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T22:56:09.463765+00:00"
+ },
+ {
+  "id": "b98abe35-7d55-4456-856a-2de993f04696",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "941356d9-fac8-4a60-aa5a-9d4c76e0a04d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T11:51:09.538011+00:00",
+  "updated_at": "2026-04-19T11:51:09.538011+00:00"
+ },
+ {
+  "id": "a95d0aff-c34f-49cb-b9c2-ddc910b93d97",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-09T00:31:14.618904+00:00"
+ },
+ {
+  "id": "512feb0f-9c25-4761-a181-0c223fddc2ae",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "1c77f30c-2d35-43e4-b6ef-335fd6283d8e",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-08T23:46:48.284456+00:00"
+ },
+ {
+  "id": "0db86486-f5cb-46f1-88ee-61b5b5531fc2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "dfce2b5b-ec9e-4593-be84-b87735816f7e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "0f84e070-db91-494e-befa-5f63a9bb5d1c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "02c12cb0-a92c-48b1-990e-ad753a9707fe",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "0578d64b-8e86-46bb-978f-e86d11866757",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "07cd4055-ec3a-4c79-b7fe-71914f2c8d73",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "0821f4fb-39f0-442a-a113-e5c7be3320e1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "0e28fbd5-5b66-47d5-b1bf-de45ea55cf6d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "121f1490-0644-4113-b01b-ef3c4208aa02",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "126b4842-2d9d-44a2-858e-d1371ca285d2",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "15126278-2b4b-4156-bf5c-d9ccf4a5864e",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "1793cda0-4ea3-4cbe-832b-01ed0ac9d359",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "20174b59-d711-4c40-839c-c844c78da44b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "2299f343-f418-4817-8b69-391bdb39c5c1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "26244d3e-e547-4214-b808-d3d25d3b994a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "279c1876-bdbc-49a2-978c-239e6135e66a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "287f4fcc-9d8f-4a5a-ab71-7bd1e870a476",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "2b19dfba-8c9d-4d6d-b375-a0d5b36aa7d4",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "2bfa76aa-3d63-4e76-b81f-15e301b08bc9",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "31299e31-e920-441d-88d2-8ce8c2cf29d7",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "32be879c-626d-47c7-b635-774e7bcafbe0",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "34bcb415-e22d-4c81-b4b7-ad0b8383ae83",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "35d6a0ea-5000-4ab0-82e1-3d950027affe",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "36b66452-998a-480c-a7cc-09840104637a",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "3ce3d08a-e2fc-4d44-b7e7-368ce0a628e2",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "41627d0c-ed73-4496-89bc-0c2fc2106bf7",
+  "outcome_old": "informational",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "456e371f-1bb5-4c95-9bf7-324c59fec070",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "4b194db9-148e-4bc1-b4dd-89ec149a31fb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "4c0e0c67-1451-4e05-a944-c2e62e144e26",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "588d6651-ae15-4def-8329-1d93b9b96ffc",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "6027f5a2-5a42-4704-b1fa-141c65c7f312",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "61127923-2cc4-41bc-893d-4dca10f40f47",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "6884a34f-228c-4bcc-a7a0-58682e81066c",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "74abeb8c-7557-43fd-b2c4-ddbba2751d09",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "77beef57-426d-4673-abe9-6048985a1124",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "811ad6cf-811b-4a7c-a0bf-1da39ebb4166",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "c233aac2-176f-4336-bad4-6d7c9653ae06",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "874ed9ad-eb72-448f-a39b-8acce58cb5c6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "9d18c712-45de-46bd-8639-4e7d71255acd",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "a0df83c6-5d6f-43ee-9e68-0ec003d73011",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "a38c6984-1961-4f5c-93a6-bafbd64b45bb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "ad293461-511d-4226-8034-2b63507a4b88",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "adc5be6f-e3ec-448f-b178-ce64a59c39b2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "b29cb4bd-ff4b-44f6-b873-74bf7721649d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "b2a8dd44-d3f5-4677-9e34-8fb8b037dea5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "bbbda009-e1b9-4720-9ee1-a7a0524d5193",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "c3e73d2c-776a-4d10-9e9e-9c1854c198d8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "c92f66a8-1aee-4c94-80ce-b32a835218d1",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "d7d013a6-c906-43eb-b7d9-8436d0690fb7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "dee335cf-7582-4391-9d77-012acf5ace62",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "e2def6e2-1a67-4695-a216-7aea9a234551",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "ed6e1d5c-82de-472c-8751-dd6730290a20",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "ee9ad4b4-c616-46d0-aca4-0e4f73b0fc66",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "f45182af-1aa8-40a9-a92a-75db3b6661df",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-09T22:36:39.923336+00:00"
+ },
+ {
+  "id": "57e3e0fb-30a8-49df-b5dd-975ec330cdab",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T23:38:43.791006+00:00",
+  "updated_at": "2026-04-22T23:38:43.791006+00:00"
+ },
+ {
+  "id": "5abc1b55-e26a-4089-988b-8f5fd1138ed6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T22:19:06.628337+00:00",
+  "updated_at": "2026-04-10T22:19:06.628337+00:00"
+ },
+ {
+  "id": "ec380b06-0f4f-4526-9d8b-69b61ce7a18e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T20:57:23.351809+00:00",
+  "updated_at": "2026-04-10T20:57:23.351809+00:00"
+ },
+ {
+  "id": "549e6091-8d2b-4dc4-86e9-dbd9efb1753d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:08:54.340007+00:00",
+  "updated_at": "2026-04-12T14:08:54.340007+00:00"
+ },
+ {
+  "id": "d47fe72f-8f30-4ab0-a4d4-40a54c939c6b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T21:23:00.352753+00:00",
+  "updated_at": "2026-04-10T21:23:00.352753+00:00"
+ },
+ {
+  "id": "5ac17214-3c97-42c3-82b6-e43554a73e6d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T12:28:47.619272+00:00",
+  "updated_at": "2026-04-11T12:28:47.619272+00:00"
+ },
+ {
+  "id": "4464b5aa-b221-4263-a1b8-e44490bb4ea3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T17:38:12.226074+00:00",
+  "updated_at": "2026-04-10T17:38:12.226074+00:00"
+ },
+ {
+  "id": "a754edc4-568a-4be7-a0c3-02bf13077700",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T16:16:32.843411+00:00",
+  "updated_at": "2026-04-11T16:16:32.843411+00:00"
+ },
+ {
+  "id": "0d9a61c7-ac51-4aac-957d-87fcd4f5d850",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T13:54:03.60356+00:00",
+  "updated_at": "2026-04-11T13:54:03.60356+00:00"
+ },
+ {
+  "id": "189f97ea-5a40-4e66-a63e-515eeb8d9038",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:47:45.296174+00:00",
+  "updated_at": "2026-04-12T12:47:45.296174+00:00"
+ },
+ {
+  "id": "7b587590-608a-41fa-a320-9dd4ba0c031d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:22:27.948459+00:00",
+  "updated_at": "2026-04-11T20:22:27.948459+00:00"
+ },
+ {
+  "id": "c22eb806-f1ba-4303-ac16-3cf8852ba943",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T12:12:38.994206+00:00",
+  "updated_at": "2026-04-11T12:12:38.994206+00:00"
+ },
+ {
+  "id": "745cd642-a514-4abe-a09b-ae726f8a64a0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:22:13.615281+00:00",
+  "updated_at": "2026-04-25T15:22:13.615281+00:00"
+ },
+ {
+  "id": "2b03caf1-e14c-4710-a6c5-79619ce821be",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T12:08:38.820385+00:00",
+  "updated_at": "2026-04-11T12:08:38.820385+00:00"
+ },
+ {
+  "id": "02bf016a-8a1b-4950-88a4-6973891e49a9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T11:17:16.920352+00:00",
+  "updated_at": "2026-04-11T11:17:16.920352+00:00"
+ },
+ {
+  "id": "9a24cd2d-e332-479b-8ed7-9862cdaa7131",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T18:35:39.339379+00:00",
+  "updated_at": "2026-04-10T18:35:39.339379+00:00"
+ },
+ {
+  "id": "dfeca04b-b37a-4e87-97f1-17cb3264c87b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T21:02:36.549706+00:00",
+  "updated_at": "2026-04-10T21:02:36.549706+00:00"
+ },
+ {
+  "id": "8a3abd03-4fd6-4a70-b2dd-9b6621a7d254",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T15:22:49.988211+00:00",
+  "updated_at": "2026-04-11T15:22:49.988211+00:00"
+ },
+ {
+  "id": "322def75-219f-4611-a8f3-a92fa8ef13d0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-10T19:11:26.239515+00:00",
+  "updated_at": "2026-04-10T19:11:26.239515+00:00"
+ },
+ {
+  "id": "db76e312-a51b-4d01-b241-8b6f846c4b66",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:23:34.672202+00:00",
+  "updated_at": "2026-04-11T14:23:34.672202+00:00"
+ },
+ {
+  "id": "a484bc26-350a-4fe2-82f2-79cefc373ab9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:25:06.726216+00:00",
+  "updated_at": "2026-04-11T14:25:06.726216+00:00"
+ },
+ {
+  "id": "0a3e3e3e-ac11-4d12-bed4-556cb1d42058",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:56:33.688963+00:00",
+  "updated_at": "2026-04-12T12:56:33.688963+00:00"
+ },
+ {
+  "id": "8ba40b30-4259-4e9b-8483-d8f3509c15cb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:48:44.207969+00:00",
+  "updated_at": "2026-04-12T12:48:44.207969+00:00"
+ },
+ {
+  "id": "172dab63-5c90-4fd8-bb03-088e7ae5b424",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T13:45:48.059977+00:00",
+  "updated_at": "2026-04-11T13:45:48.059977+00:00"
+ },
+ {
+  "id": "19aeb296-2e2d-4950-9411-368586e93e46",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:40:49.402668+00:00",
+  "updated_at": "2026-04-11T14:40:49.402668+00:00"
+ },
+ {
+  "id": "ed839fa0-0e33-41d0-8358-4f3aa5a4ffe1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T14:46:47.880353+00:00",
+  "updated_at": "2026-04-27T14:46:47.880353+00:00"
+ },
+ {
+  "id": "06ca5307-fe57-485c-9030-9689d5dd11e9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T15:40:39.589492+00:00",
+  "updated_at": "2026-04-11T15:40:39.589492+00:00"
+ },
+ {
+  "id": "c880d016-336a-496c-b1fa-8f7819f55761",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:51:57.965011+00:00",
+  "updated_at": "2026-04-11T14:51:57.965011+00:00"
+ },
+ {
+  "id": "f767e015-4648-42f2-9a1a-6ef1fe6fe93c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T15:32:46.407975+00:00",
+  "updated_at": "2026-04-11T15:32:46.407975+00:00"
+ },
+ {
+  "id": "d99438c7-c77f-434f-8cc9-eb2645b41cf8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T19:43:54.777977+00:00",
+  "updated_at": "2026-04-11T19:43:54.777977+00:00"
+ },
+ {
+  "id": "2927df42-553e-43be-bd13-be1e015ba2af",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:32:21.522257+00:00",
+  "updated_at": "2026-04-11T20:32:21.522257+00:00"
+ },
+ {
+  "id": "1107d28a-db70-4e82-9ca4-c484af538145",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:03:18.359006+00:00",
+  "updated_at": "2026-04-11T20:03:18.359006+00:00"
+ },
+ {
+  "id": "0113bbde-f932-4671-98db-330beb167b81",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T17:13:21.497923+00:00",
+  "updated_at": "2026-04-11T17:13:21.497923+00:00"
+ },
+ {
+  "id": "7e4b5135-767d-4fec-b129-64db01e0cce4",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T15:13:12.644363+00:00",
+  "updated_at": "2026-04-11T15:13:12.644363+00:00"
+ },
+ {
+  "id": "932a884d-102a-424d-9c3d-1175bf9a4a5f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:45:05.409116+00:00",
+  "updated_at": "2026-04-11T14:45:05.409116+00:00"
+ },
+ {
+  "id": "97907fb7-2a09-405b-98ee-df9c2dceabb8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:01:01.144373+00:00",
+  "updated_at": "2026-04-11T14:01:01.144373+00:00"
+ },
+ {
+  "id": "d38eb8b1-da98-4cca-9356-b057d1e0eba1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-11T15:13:49.599574+00:00"
+ },
+ {
+  "id": "c1b4afa4-a213-47f4-bdcf-ed266841a748",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:12:39.916388+00:00",
+  "updated_at": "2026-04-11T20:12:39.916388+00:00"
+ },
+ {
+  "id": "6cede6a0-791f-4d83-9f66-20a739c2f365",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:08:33.179189+00:00",
+  "updated_at": "2026-04-11T14:08:33.179189+00:00"
+ },
+ {
+  "id": "ac73f59c-d520-487d-8e21-ebb16aa5d87c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T14:58:04.073793+00:00",
+  "updated_at": "2026-04-11T14:58:04.073793+00:00"
+ },
+ {
+  "id": "26f32bf1-f79a-4e72-9683-ab4d95728093",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:18:10.425406+00:00",
+  "updated_at": "2026-04-11T20:18:10.425406+00:00"
+ },
+ {
+  "id": "0825a640-4a74-487a-a3af-3f16f48a3123",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T18:08:22.560717+00:00",
+  "updated_at": "2026-04-11T18:08:22.560717+00:00"
+ },
+ {
+  "id": "daf5578f-8db1-4647-b6ba-9120e31affa6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:35:20.723174+00:00",
+  "updated_at": "2026-04-11T20:35:20.723174+00:00"
+ },
+ {
+  "id": "79c11b3b-f2b4-489e-9d4c-cf4416c972e7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T21:04:55.904892+00:00",
+  "updated_at": "2026-04-11T21:04:55.904892+00:00"
+ },
+ {
+  "id": "2fa5d314-63a8-4d14-9393-878a02288aa0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T21:12:28.913636+00:00",
+  "updated_at": "2026-04-11T21:12:28.913636+00:00"
+ },
+ {
+  "id": "611e3aaf-1c36-466a-a746-243cc5692296",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-11T21:07:34.139341+00:00"
+ },
+ {
+  "id": "107843ae-236e-435c-bf82-08cbe97d4cf2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:36:05.289632+00:00",
+  "updated_at": "2026-04-11T20:36:05.289632+00:00"
+ },
+ {
+  "id": "4422db96-272d-4bd9-b048-75d0b8916a00",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T21:09:21.188762+00:00",
+  "updated_at": "2026-04-11T21:09:21.188762+00:00"
+ },
+ {
+  "id": "dd3fada7-0742-43b2-a11c-9165a429b50b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T18:13:53.127157+00:00",
+  "updated_at": "2026-04-11T18:13:53.127157+00:00"
+ },
+ {
+  "id": "2179f9ae-a1eb-4209-a802-03a5d491db5f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T17:07:52.894484+00:00",
+  "updated_at": "2026-04-11T17:07:52.894484+00:00"
+ },
+ {
+  "id": "6e626825-8aac-43ff-a684-f32443fd68ec",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T16:12:44.265993+00:00",
+  "updated_at": "2026-04-11T16:12:44.265993+00:00"
+ },
+ {
+  "id": "121b3545-c02b-4e88-b8c7-49bc88100ebd",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T20:57:54.27793+00:00",
+  "updated_at": "2026-04-11T20:57:54.27793+00:00"
+ },
+ {
+  "id": "b80fee07-0db3-4986-957a-70f779c17425",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T18:26:25.991351+00:00",
+  "updated_at": "2026-04-11T18:26:25.991351+00:00"
+ },
+ {
+  "id": "7534ecc4-45e6-48d2-9aa4-0611c6e77a72",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T21:10:18.789661+00:00",
+  "updated_at": "2026-04-11T21:10:18.789661+00:00"
+ },
+ {
+  "id": "a4127805-7f14-4ad3-bfc2-d116accf2dad",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-11T21:49:15.841287+00:00"
+ },
+ {
+  "id": "74150138-253c-4d50-82b6-e5cbbd1316f8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T17:12:21.92058+00:00",
+  "updated_at": "2026-04-11T17:12:21.92058+00:00"
+ },
+ {
+  "id": "2be0edbd-bad7-4241-93af-04a71b569374",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T18:51:06.633344+00:00",
+  "updated_at": "2026-04-11T18:51:06.633344+00:00"
+ },
+ {
+  "id": "e0423aa2-92d5-4d38-8f3e-e04112a3b3a6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T16:18:38.749828+00:00",
+  "updated_at": "2026-04-11T16:18:38.749828+00:00"
+ },
+ {
+  "id": "69829889-02ab-4f43-b6c5-97da8faa6588",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T22:12:11.7123+00:00",
+  "updated_at": "2026-04-11T22:12:11.7123+00:00"
+ },
+ {
+  "id": "de145640-ba22-4ecd-994b-50b845d5a51e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:29:43.129475+00:00",
+  "updated_at": "2026-04-12T13:29:43.129475+00:00"
+ },
+ {
+  "id": "96b72229-0353-4bbf-84b9-3cc8ad17e1f1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-12T14:29:21.659898+00:00"
+ },
+ {
+  "id": "e281cf0f-7573-458d-ac27-957161f61769",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T12:41:01.765665+00:00",
+  "updated_at": "2026-04-13T12:41:01.765665+00:00"
+ },
+ {
+  "id": "1c9eee9b-4495-4d94-b88a-4cbe3891a7bc",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:26:12.21625+00:00",
+  "updated_at": "2026-04-12T12:26:12.21625+00:00"
+ },
+ {
+  "id": "dcc47124-a484-4068-a857-7d4ce7c470fd",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:21:14.47712+00:00",
+  "updated_at": "2026-04-12T14:21:14.47712+00:00"
+ },
+ {
+  "id": "c7f67809-6c8b-4f2d-b46f-08cda5963b36",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-12T11:24:29.018988+00:00"
+ },
+ {
+  "id": "deeaf608-17ea-4b4b-b5fd-ad65b41da887",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:32:11.831371+00:00",
+  "updated_at": "2026-04-12T14:32:11.831371+00:00"
+ },
+ {
+  "id": "c740580b-6e5a-4b7e-a838-3dc8a562b63f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-11T23:22:29.909806+00:00",
+  "updated_at": "2026-04-11T23:22:29.909806+00:00"
+ },
+ {
+  "id": "cd261d17-5cba-4de2-9646-a9148b90437d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T11:18:36.209784+00:00",
+  "updated_at": "2026-04-19T11:18:36.209784+00:00"
+ },
+ {
+  "id": "e7efe05f-f674-42a8-a351-f55a4d02c128",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:25:52.83307+00:00",
+  "updated_at": "2026-04-12T12:25:52.83307+00:00"
+ },
+ {
+  "id": "a52db6b4-eee2-4a51-b0e1-441a620bd378",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:51:24.808004+00:00",
+  "updated_at": "2026-04-12T12:51:24.808004+00:00"
+ },
+ {
+  "id": "93333071-8b87-41aa-b452-bcf907080faf",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:00:49.978788+00:00",
+  "updated_at": "2026-04-12T14:00:49.978788+00:00"
+ },
+ {
+  "id": "6d3f4ef3-9f94-4def-bf6f-d2365107bac7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:21:44.75187+00:00",
+  "updated_at": "2026-04-12T13:21:44.75187+00:00"
+ },
+ {
+  "id": "6251f895-2ad8-4db7-9465-14ec99c9b876",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:31:17.316803+00:00",
+  "updated_at": "2026-04-12T13:31:17.316803+00:00"
+ },
+ {
+  "id": "017e3cd5-5db4-44a4-a670-5069ae88d18d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-12T13:01:20.541412+00:00"
+ },
+ {
+  "id": "cdfae57e-6223-42dd-b146-7f3405a33fc9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-12T13:24:36.294307+00:00"
+ },
+ {
+  "id": "68a185db-f3da-48c4-8d1a-b03940ed842a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:51:23.597165+00:00",
+  "updated_at": "2026-04-12T13:51:23.597165+00:00"
+ },
+ {
+  "id": "da8161e6-634f-455f-ad76-aad73ac34f1e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:33:25.970207+00:00",
+  "updated_at": "2026-04-12T14:33:25.970207+00:00"
+ },
+ {
+  "id": "2de81d47-d5a1-4ca9-940f-16607bc3e683",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:02:36.245076+00:00",
+  "updated_at": "2026-04-12T15:02:36.245076+00:00"
+ },
+ {
+  "id": "8b51ac31-6efe-446e-8232-b8a092582620",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:04:04.296781+00:00",
+  "updated_at": "2026-04-12T13:04:04.296781+00:00"
+ },
+ {
+  "id": "e92676d3-692a-43c6-97d1-a2de45c782db",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T17:30:29.156641+00:00",
+  "updated_at": "2026-04-12T17:30:29.156641+00:00"
+ },
+ {
+  "id": "3e781558-6f15-40ef-9ca2-3ce22847c234",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T19:32:25.149616+00:00",
+  "updated_at": "2026-04-14T19:32:25.149616+00:00"
+ },
+ {
+  "id": "38820523-3ba8-4cae-bb53-af4e82d39b47",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:05:49.56694+00:00",
+  "updated_at": "2026-04-12T13:05:49.56694+00:00"
+ },
+ {
+  "id": "5f064193-3b37-4d53-b54d-39c533e6eda0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:06:43.062592+00:00",
+  "updated_at": "2026-04-12T15:06:43.062592+00:00"
+ },
+ {
+  "id": "c398f653-86dd-410f-ad77-b402e544e465",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T12:31:00.523977+00:00",
+  "updated_at": "2026-04-12T12:31:00.523977+00:00"
+ },
+ {
+  "id": "9cb6b9c8-a476-46c1-9c7d-39b0fc29b35e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:49:48.768515+00:00",
+  "updated_at": "2026-04-12T14:49:48.768515+00:00"
+ },
+ {
+  "id": "200fbd62-e7f3-4d62-8051-194105b938bf",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:33:28.226921+00:00",
+  "updated_at": "2026-04-12T14:33:28.226921+00:00"
+ },
+ {
+  "id": "9390eb20-98c7-4dc1-9da3-3c4d75c713ea",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:41:21.879153+00:00",
+  "updated_at": "2026-04-12T14:41:21.879153+00:00"
+ },
+ {
+  "id": "4880928e-dbcc-4b78-81cc-7f6e4c87de13",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:06:53.8927+00:00",
+  "updated_at": "2026-04-12T13:06:53.8927+00:00"
+ },
+ {
+  "id": "071cd740-ccba-44ec-8338-6c7ab0546ae2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:58:54.382629+00:00",
+  "updated_at": "2026-04-12T14:58:54.382629+00:00"
+ },
+ {
+  "id": "bee6ba2b-d947-4d92-a429-53ca3b09b3e7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-12T16:46:58.175161+00:00"
+ },
+ {
+  "id": "839d88f6-f220-4115-b7a4-255b4a2936da",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:08:56.732305+00:00",
+  "updated_at": "2026-04-12T15:08:56.732305+00:00"
+ },
+ {
+  "id": "914af749-3749-410e-ab56-0a1ba996de19",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:57:12.054874+00:00",
+  "updated_at": "2026-04-12T13:57:12.054874+00:00"
+ },
+ {
+  "id": "49b1b00f-4ba5-46fe-b5e5-c89d67418bda",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T13:58:52.909856+00:00",
+  "updated_at": "2026-04-12T13:58:52.909856+00:00"
+ },
+ {
+  "id": "42df62ed-c0b6-492d-8556-178d75506fbc",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:52:51.763228+00:00",
+  "updated_at": "2026-04-12T14:52:51.763228+00:00"
+ },
+ {
+  "id": "5b8122ed-ce1d-4ba3-8aaa-beccdf5ca28e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T23:06:56.676435+00:00",
+  "updated_at": "2026-04-12T23:06:56.676435+00:00"
+ },
+ {
+  "id": "9ce785d6-abce-480a-8fe1-21daa052f3ec",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:35:07.435996+00:00",
+  "updated_at": "2026-04-12T14:35:07.435996+00:00"
+ },
+ {
+  "id": "f4f6b245-1f5f-4427-aa59-6ca7c302c6b9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-12T16:45:25.055339+00:00"
+ },
+ {
+  "id": "9a90c243-22e6-452a-8235-527f0521815a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:02:27.468923+00:00",
+  "updated_at": "2026-04-12T15:02:27.468923+00:00"
+ },
+ {
+  "id": "5ebf566a-ff92-46e6-a6cd-0ae986283de2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:42:56.639683+00:00",
+  "updated_at": "2026-04-12T14:42:56.639683+00:00"
+ },
+ {
+  "id": "d6f97f8f-3428-402f-b121-622255b9e3a5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:03:29.361587+00:00",
+  "updated_at": "2026-04-12T15:03:29.361587+00:00"
+ },
+ {
+  "id": "b1009316-893d-48ec-8683-a6230df2221e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:43:26.610318+00:00",
+  "updated_at": "2026-04-12T14:43:26.610318+00:00"
+ },
+ {
+  "id": "da402f32-fc10-4f2a-8df7-2566e68a9e1c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T17:04:14.018515+00:00",
+  "updated_at": "2026-04-12T17:04:14.018515+00:00"
+ },
+ {
+  "id": "7c23ae85-17b2-4332-ae45-4ef4ed21a5f3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:37:54.2815+00:00",
+  "updated_at": "2026-04-12T14:37:54.2815+00:00"
+ },
+ {
+  "id": "319697fd-5b3a-46aa-b97d-cce8b884a94e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T17:21:44.968071+00:00",
+  "updated_at": "2026-04-13T17:21:44.968071+00:00"
+ },
+ {
+  "id": "1c77d332-03df-4bdb-b833-68ed67068ec9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T22:52:07.601428+00:00",
+  "updated_at": "2026-04-19T22:52:07.601428+00:00"
+ },
+ {
+  "id": "b17a3442-b399-4f4c-86e8-ca8c9ed276c6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T14:58:33.698548+00:00",
+  "updated_at": "2026-04-12T14:58:33.698548+00:00"
+ },
+ {
+  "id": "58d2c3c6-b6ea-4469-a4f8-456b2c0d0aca",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T19:37:18.944073+00:00",
+  "updated_at": "2026-04-14T19:37:18.944073+00:00"
+ },
+ {
+  "id": "56ee4bea-e389-4ce2-ac18-6e8642de98ae",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:12:34.736034+00:00",
+  "updated_at": "2026-04-12T15:12:34.736034+00:00"
+ },
+ {
+  "id": "45d5de63-82a2-482a-b781-7434be6f22b1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T15:32:51.460577+00:00",
+  "updated_at": "2026-04-12T15:32:51.460577+00:00"
+ },
+ {
+  "id": "ac1126bb-b8a2-4f08-a6b8-abe9525a58b5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-12T18:49:32.861358+00:00",
+  "updated_at": "2026-04-12T18:49:32.861358+00:00"
+ },
+ {
+  "id": "0c604065-5b4e-4eb0-8592-fa0fd74f6f11",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T11:30:06.813256+00:00",
+  "updated_at": "2026-04-13T11:30:06.813256+00:00"
+ },
+ {
+  "id": "7be16eb9-c101-435c-a669-7ce03079f459",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T10:35:36.27134+00:00",
+  "updated_at": "2026-04-13T10:35:36.27134+00:00"
+ },
+ {
+  "id": "69944cc3-0cfc-4a50-9bbd-d906b4b0442a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T13:41:35.056438+00:00",
+  "updated_at": "2026-04-13T13:41:35.056438+00:00"
+ },
+ {
+  "id": "ee21d175-2e19-439b-8e4c-8be95a0727d2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T12:02:40.909492+00:00",
+  "updated_at": "2026-04-14T12:02:40.909492+00:00"
+ },
+ {
+  "id": "3dd945dd-3a68-4222-8759-464f2bd9c97a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T20:53:13.025249+00:00",
+  "updated_at": "2026-04-13T20:53:13.025249+00:00"
+ },
+ {
+  "id": "9f8c0dcb-1923-45a0-ae90-710905cbf697",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T16:05:05.848379+00:00",
+  "updated_at": "2026-04-13T16:05:05.848379+00:00"
+ },
+ {
+  "id": "5eae9fdd-05b8-4ba0-930f-4b97f755b6cc",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T15:59:33.51249+00:00",
+  "updated_at": "2026-04-13T15:59:33.51249+00:00"
+ },
+ {
+  "id": "b7efdec5-c321-4e99-80f3-792d7cbaa5af",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T14:56:53.336058+00:00",
+  "updated_at": "2026-04-13T14:56:53.336058+00:00"
+ },
+ {
+  "id": "cddcfa4b-96a2-48cc-b911-ac41b35f9a82",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T14:44:14.206098+00:00",
+  "updated_at": "2026-04-13T14:44:14.206098+00:00"
+ },
+ {
+  "id": "79c150da-c0b4-4511-a00b-45f938631405",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T15:53:57.735016+00:00",
+  "updated_at": "2026-04-13T15:53:57.735016+00:00"
+ },
+ {
+  "id": "b14a5687-a640-4aa7-b680-f9cbef996284",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T16:33:48.034845+00:00",
+  "updated_at": "2026-04-13T16:33:48.034845+00:00"
+ },
+ {
+  "id": "7832d5b6-8c8e-40e2-82fe-6b71ad4dd846",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T16:31:43.011985+00:00",
+  "updated_at": "2026-04-13T16:31:43.011985+00:00"
+ },
+ {
+  "id": "69865830-3bc7-4f4b-b204-798609383729",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T16:34:39.486804+00:00",
+  "updated_at": "2026-04-13T16:34:39.486804+00:00"
+ },
+ {
+  "id": "c35ce68b-6869-424c-bb49-d8bf9aa6d028",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T16:08:28.006348+00:00",
+  "updated_at": "2026-04-22T16:08:28.006348+00:00"
+ },
+ {
+  "id": "94c18548-4bfc-43b6-b794-963487e78cf7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-13T21:31:41.493994+00:00",
+  "updated_at": "2026-04-13T21:31:41.493994+00:00"
+ },
+ {
+  "id": "1be37cc3-7cb6-4477-8772-01ee9a7e1dcb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T00:36:34.543685+00:00",
+  "updated_at": "2026-04-14T00:36:34.543685+00:00"
+ },
+ {
+  "id": "78cefe2e-d1a5-431d-aac2-55f64f59eadb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T11:18:50.734256+00:00",
+  "updated_at": "2026-04-14T11:18:50.734256+00:00"
+ },
+ {
+  "id": "690eddf2-8726-4409-8e99-6a260b74c67d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T01:37:56.609102+00:00",
+  "updated_at": "2026-04-14T01:37:56.609102+00:00"
+ },
+ {
+  "id": "6891a418-9ecc-485b-bb0a-c1dc29cc85ba",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T19:31:44.217572+00:00",
+  "updated_at": "2026-04-27T19:31:44.217572+00:00"
+ },
+ {
+  "id": "e4d0b381-54ba-4f3f-bd6b-aaa96a78e87b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T11:24:08.187568+00:00",
+  "updated_at": "2026-04-14T11:24:08.187568+00:00"
+ },
+ {
+  "id": "ca290531-80d0-41e6-9dba-a04a3d4614c6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T15:00:54.838509+00:00",
+  "updated_at": "2026-04-14T15:00:54.838509+00:00"
+ },
+ {
+  "id": "c4202a3e-62e0-475d-b744-aa2f9208eeff",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T16:32:08.961436+00:00",
+  "updated_at": "2026-04-14T16:32:08.961436+00:00"
+ },
+ {
+  "id": "81acdb6e-e151-4a8c-bdc2-c772da886780",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T14:09:12.144126+00:00",
+  "updated_at": "2026-04-14T14:09:12.144126+00:00"
+ },
+ {
+  "id": "4ab770d6-276b-49b6-8c4a-aa5a1e019d4f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T16:44:41.862575+00:00",
+  "updated_at": "2026-04-14T16:44:41.862575+00:00"
+ },
+ {
+  "id": "f6edf841-7064-4218-9cd2-ff4801628417",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T15:38:58.998178+00:00",
+  "updated_at": "2026-04-14T15:38:58.998178+00:00"
+ },
+ {
+  "id": "830808e2-117a-455f-98a3-099f00001e4c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T13:16:03.15806+00:00",
+  "updated_at": "2026-04-14T13:16:03.15806+00:00"
+ },
+ {
+  "id": "5373e63a-6701-4fca-b07f-3cb214b1426b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T13:41:17.551244+00:00",
+  "updated_at": "2026-04-14T13:41:17.551244+00:00"
+ },
+ {
+  "id": "2a73dac6-b34b-42c1-8aa3-4f942ef2c022",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T14:05:12.198364+00:00",
+  "updated_at": "2026-04-14T14:05:12.198364+00:00"
+ },
+ {
+  "id": "d7f81bd5-57ab-4eb2-b737-9c29ef3d8735",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T14:11:32.293415+00:00",
+  "updated_at": "2026-04-14T14:11:32.293415+00:00"
+ },
+ {
+  "id": "83aef5f0-9e2f-4959-b2cd-e5879f100e51",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T21:36:06.848883+00:00",
+  "updated_at": "2026-04-15T21:36:06.848883+00:00"
+ },
+ {
+  "id": "d7b81363-11ae-4cca-bd88-170cc80201a0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T17:57:01.976915+00:00",
+  "updated_at": "2026-04-14T17:57:01.976915+00:00"
+ },
+ {
+  "id": "02827cc0-2f14-4b0d-bd84-0a941005ebe6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T19:43:25.781384+00:00",
+  "updated_at": "2026-04-14T19:43:25.781384+00:00"
+ },
+ {
+  "id": "3290f728-f2fe-4188-ab48-46b739953dba",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T20:09:07.843343+00:00",
+  "updated_at": "2026-04-14T20:09:07.843343+00:00"
+ },
+ {
+  "id": "c2702351-c597-436c-8763-ccf20d384bd5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T14:10:53.063036+00:00",
+  "updated_at": "2026-04-14T14:10:53.063036+00:00"
+ },
+ {
+  "id": "74813e45-3a09-4eb5-b83b-a09ec0d0f814",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T15:06:22.933848+00:00",
+  "updated_at": "2026-04-14T15:06:22.933848+00:00"
+ },
+ {
+  "id": "0e0a23c4-25e7-40ea-90e5-d7c883faf202",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T18:45:30.263692+00:00",
+  "updated_at": "2026-04-14T18:45:30.263692+00:00"
+ },
+ {
+  "id": "ef731a92-7bfa-4d24-aebd-16346697cd69",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T19:01:01.589555+00:00",
+  "updated_at": "2026-04-14T19:01:01.589555+00:00"
+ },
+ {
+  "id": "4078c8fa-1efe-4ae1-bc62-bf61c6b081b3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T12:58:19.918058+00:00",
+  "updated_at": "2026-04-14T12:58:19.918058+00:00"
+ },
+ {
+  "id": "c3a404d5-2d54-46be-8427-8f226cc7c23c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T11:58:59.151473+00:00",
+  "updated_at": "2026-04-15T11:58:59.151473+00:00"
+ },
+ {
+  "id": "abdeda9f-f5dd-43c9-b9d6-5e8e95765dd7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T12:21:41.027033+00:00",
+  "updated_at": "2026-04-15T12:21:41.027033+00:00"
+ },
+ {
+  "id": "052ba085-aff9-421b-875f-4eebc6296559",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-15T11:56:03.260892+00:00"
+ },
+ {
+  "id": "fb8d2051-19af-49fa-9cf4-dad988f88cb9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T13:46:04.573933+00:00",
+  "updated_at": "2026-04-15T13:46:04.573933+00:00"
+ },
+ {
+  "id": "cf5743b9-9d85-405a-b0c8-ab08a8eb8080",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T13:48:52.450766+00:00",
+  "updated_at": "2026-04-15T13:48:52.450766+00:00"
+ },
+ {
+  "id": "342de632-4d54-40c5-91dd-e24d8ea23079",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T13:03:12.703559+00:00",
+  "updated_at": "2026-04-15T13:03:12.703559+00:00"
+ },
+ {
+  "id": "edc68858-9954-41ed-8b40-60d5509dca69",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T20:27:12.450322+00:00",
+  "updated_at": "2026-04-14T20:27:12.450322+00:00"
+ },
+ {
+  "id": "fff14833-3fe1-4f85-931e-c0483ff155d7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T11:40:07.340394+00:00",
+  "updated_at": "2026-04-15T11:40:07.340394+00:00"
+ },
+ {
+  "id": "c540fde0-0056-4dbc-9bad-54920e5ef43c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T14:36:21.983825+00:00",
+  "updated_at": "2026-04-15T14:36:21.983825+00:00"
+ },
+ {
+  "id": "9687e2d5-c829-4299-bfb7-54bbbd700fee",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T23:56:03.95801+00:00",
+  "updated_at": "2026-04-15T23:56:03.95801+00:00"
+ },
+ {
+  "id": "978fcbef-86be-47ae-8239-1f7553370381",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T14:35:09.059872+00:00",
+  "updated_at": "2026-04-15T14:35:09.059872+00:00"
+ },
+ {
+  "id": "21e93ce8-7144-4bb3-9ee1-3fdfbe76e2b9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T13:09:50.802351+00:00",
+  "updated_at": "2026-04-15T13:09:50.802351+00:00"
+ },
+ {
+  "id": "aa09564e-ea63-4e18-8e8f-ae8f348e82f0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T23:58:10.744386+00:00",
+  "updated_at": "2026-04-15T23:58:10.744386+00:00"
+ },
+ {
+  "id": "0b23a1d9-ed6b-4324-a85b-5e2fe6f71ee1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T16:51:42.271496+00:00",
+  "updated_at": "2026-04-16T16:51:42.271496+00:00"
+ },
+ {
+  "id": "b9bb5b56-af60-48dc-abf3-3132230ae74b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T14:00:54.723324+00:00",
+  "updated_at": "2026-04-15T14:00:54.723324+00:00"
+ },
+ {
+  "id": "7aa00020-fcf7-4cd1-9f51-905bc5b46823",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-14T22:36:11.439352+00:00",
+  "updated_at": "2026-04-14T22:36:11.439352+00:00"
+ },
+ {
+  "id": "d5adbac9-e995-4a4e-acf8-bae8e15a2491",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T12:47:23.015504+00:00",
+  "updated_at": "2026-04-15T12:47:23.015504+00:00"
+ },
+ {
+  "id": "a4f82d75-662f-4d51-a145-4f3564d8d43b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T00:20:32.670308+00:00",
+  "updated_at": "2026-04-15T00:20:32.670308+00:00"
+ },
+ {
+  "id": "fff586ac-6aeb-4c52-a674-0de8ca229d20",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T15:24:08.106879+00:00",
+  "updated_at": "2026-04-15T15:24:08.106879+00:00"
+ },
+ {
+  "id": "370a90a6-1103-456e-a673-5abd84749864",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T15:10:21.426657+00:00",
+  "updated_at": "2026-04-15T15:10:21.426657+00:00"
+ },
+ {
+  "id": "37438766-52df-4528-b4a6-4d71263e543d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T15:32:10.121602+00:00",
+  "updated_at": "2026-04-15T15:32:10.121602+00:00"
+ },
+ {
+  "id": "fdcba312-e584-4fb3-9b83-388f1058c9af",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T01:33:10.012169+00:00",
+  "updated_at": "2026-04-16T01:33:10.012169+00:00"
+ },
+ {
+  "id": "8c979a3a-1b52-4559-bbeb-dcce9245bbdb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T15:33:50.879175+00:00",
+  "updated_at": "2026-04-15T15:33:50.879175+00:00"
+ },
+ {
+  "id": "1ec4a82d-5171-4970-b7b9-0ec4fe931ddb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:34:49.369722+00:00",
+  "updated_at": "2026-04-15T20:34:49.369722+00:00"
+ },
+ {
+  "id": "0fc040eb-9eca-43de-91a9-9f0a6e95768d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T19:12:42.685505+00:00",
+  "updated_at": "2026-04-15T19:12:42.685505+00:00"
+ },
+ {
+  "id": "af56ba15-a2ee-442a-8b15-9e4c4863309b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T21:12:08.566759+00:00",
+  "updated_at": "2026-04-15T21:12:08.566759+00:00"
+ },
+ {
+  "id": "e27be9cf-d5e5-42e0-9f76-b8fc880fcf39",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T19:49:33.171377+00:00",
+  "updated_at": "2026-04-16T19:49:33.171377+00:00"
+ },
+ {
+  "id": "d115b030-9341-4500-a184-9c30cc880651",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:08:25.038794+00:00",
+  "updated_at": "2026-04-15T20:08:25.038794+00:00"
+ },
+ {
+  "id": "654f9dc2-cbd7-4b26-87a7-8c61fb7804fc",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:08:36.734818+00:00",
+  "updated_at": "2026-04-15T20:08:36.734818+00:00"
+ },
+ {
+  "id": "72b30a00-8b8c-47f8-8d27-71ff966c6440",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:27:14.127063+00:00",
+  "updated_at": "2026-04-15T20:27:14.127063+00:00"
+ },
+ {
+  "id": "cbe9d5c9-8f5f-42d8-af0f-2b8127e68905",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-16T01:49:28.642888+00:00"
+ },
+ {
+  "id": "c40d87df-6112-4296-a9f2-541f43807cc0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T21:15:08.722832+00:00",
+  "updated_at": "2026-04-15T21:15:08.722832+00:00"
+ },
+ {
+  "id": "7c6bab02-244f-470c-a2fb-846573cd160c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:21:20.361973+00:00",
+  "updated_at": "2026-04-15T18:21:20.361973+00:00"
+ },
+ {
+  "id": "1b07a191-2ec5-480a-b716-42ccb02fb9e7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T15:55:51.283159+00:00",
+  "updated_at": "2026-04-15T15:55:51.283159+00:00"
+ },
+ {
+  "id": "f7193a64-89ae-4f96-9d7e-24f252c608e2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:44:54.815391+00:00",
+  "updated_at": "2026-04-15T20:44:54.815391+00:00"
+ },
+ {
+  "id": "c1e20be3-23b5-4ba7-a1a5-73dd22312075",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:16:25.435112+00:00",
+  "updated_at": "2026-04-15T20:16:25.435112+00:00"
+ },
+ {
+  "id": "73ab035f-dd0c-4c3c-9514-3a3f6e51d1c8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:20:56.933941+00:00",
+  "updated_at": "2026-04-15T20:20:56.933941+00:00"
+ },
+ {
+  "id": "17e51c6b-215b-4235-b9b7-1d0eb7a46f91",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:45:49.961693+00:00",
+  "updated_at": "2026-04-15T18:45:49.961693+00:00"
+ },
+ {
+  "id": "f3b91d53-7543-4140-a27e-ebe1422c6029",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T13:19:50.935682+00:00",
+  "updated_at": "2026-04-16T13:19:50.935682+00:00"
+ },
+ {
+  "id": "a208adae-c98b-48c6-a622-c3818a10c695",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:52:57.624945+00:00",
+  "updated_at": "2026-04-15T18:52:57.624945+00:00"
+ },
+ {
+  "id": "7c2426a9-11b7-4174-b5d2-76ad09e76d04",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T22:16:59.97343+00:00",
+  "updated_at": "2026-04-15T22:16:59.97343+00:00"
+ },
+ {
+  "id": "edbcd538-d7fb-4fb0-a8f5-6dc1a5006cba",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T22:57:58.205884+00:00",
+  "updated_at": "2026-04-15T22:57:58.205884+00:00"
+ },
+ {
+  "id": "e5b816b8-7c8c-43a1-852b-002a3cec0134",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T11:58:43.78432+00:00",
+  "updated_at": "2026-04-16T11:58:43.78432+00:00"
+ },
+ {
+  "id": "101e127c-6f8a-445d-a8e2-3bd4ac7dd53a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:45:15.697696+00:00",
+  "updated_at": "2026-04-15T18:45:15.697696+00:00"
+ },
+ {
+  "id": "8e448923-d33d-4107-a75b-983033bcd4c7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:51:38.24666+00:00",
+  "updated_at": "2026-04-15T18:51:38.24666+00:00"
+ },
+ {
+  "id": "eab5e817-ae3f-4891-b751-ac911512aff6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:45:43.999366+00:00",
+  "updated_at": "2026-04-15T18:45:43.999366+00:00"
+ },
+ {
+  "id": "10482378-b25f-46c0-bd78-fb644517d558",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T22:02:04.758568+00:00",
+  "updated_at": "2026-04-16T22:02:04.758568+00:00"
+ },
+ {
+  "id": "7a894873-91f9-496d-813f-5bdec2fda85a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:54:44.82712+00:00",
+  "updated_at": "2026-04-15T18:54:44.82712+00:00"
+ },
+ {
+  "id": "c50d9047-2e8e-41e6-9a55-7a9fcfcce449",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:48:36.632265+00:00",
+  "updated_at": "2026-04-15T18:48:36.632265+00:00"
+ },
+ {
+  "id": "d0353aad-01d9-46dd-837b-d564454a85ca",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:59:10.852234+00:00",
+  "updated_at": "2026-04-15T18:59:10.852234+00:00"
+ },
+ {
+  "id": "117ade77-78e8-4caf-a6d4-69313a5f498f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T11:00:22.027402+00:00",
+  "updated_at": "2026-04-16T11:00:22.027402+00:00"
+ },
+ {
+  "id": "d7026e53-522a-4d97-9f15-2bb56507a90c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T22:04:48.086154+00:00",
+  "updated_at": "2026-04-15T22:04:48.086154+00:00"
+ },
+ {
+  "id": "8c2abb0e-88a2-41df-bc90-387755af85a5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T11:08:46.88605+00:00",
+  "updated_at": "2026-04-16T11:08:46.88605+00:00"
+ },
+ {
+  "id": "3ca1167a-cba9-40e9-83b2-3ad7f560c058",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T20:53:12.449471+00:00",
+  "updated_at": "2026-04-15T20:53:12.449471+00:00"
+ },
+ {
+  "id": "587c4789-3f83-4e67-bcf6-ac4d09cad276",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T15:30:14.036239+00:00",
+  "updated_at": "2026-04-16T15:30:14.036239+00:00"
+ },
+ {
+  "id": "8414d274-7d39-4b48-9094-e7cc8489faf8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T11:31:49.242415+00:00",
+  "updated_at": "2026-04-16T11:31:49.242415+00:00"
+ },
+ {
+  "id": "1283498f-ced5-4f4b-a8b2-68ee2a8e3961",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T11:18:21.727514+00:00",
+  "updated_at": "2026-04-16T11:18:21.727514+00:00"
+ },
+ {
+  "id": "3666f127-7bbc-4c60-b927-80ca511a5b6e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-15T18:39:02.34416+00:00",
+  "updated_at": "2026-04-15T18:39:02.34416+00:00"
+ },
+ {
+  "id": "804f39f6-9b5a-4455-abac-7f3a9d88464b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T17:36:57.947228+00:00",
+  "updated_at": "2026-04-18T17:36:57.947228+00:00"
+ },
+ {
+  "id": "d2f7ce3e-2b96-4239-a53a-5ddeb6ab71b4",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T16:34:09.231766+00:00",
+  "updated_at": "2026-04-16T16:34:09.231766+00:00"
+ },
+ {
+  "id": "862235af-c916-4aa5-b5db-522e5af43b84",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T17:02:17.314577+00:00",
+  "updated_at": "2026-04-16T17:02:17.314577+00:00"
+ },
+ {
+  "id": "c99ec017-60f2-4e87-ae7f-a6d804314900",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T16:50:15.69028+00:00",
+  "updated_at": "2026-04-16T16:50:15.69028+00:00"
+ },
+ {
+  "id": "11f9e469-568b-4ea5-a6ae-16ba577f1e1e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T20:08:51.405671+00:00",
+  "updated_at": "2026-04-16T20:08:51.405671+00:00"
+ },
+ {
+  "id": "1135409f-31ea-4f07-b1b3-2e4f77d8f25d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T23:58:36.132842+00:00",
+  "updated_at": "2026-04-16T23:58:36.132842+00:00"
+ },
+ {
+  "id": "f06328b4-b6cc-47da-95b0-5a49c301b96d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T03:25:55.529807+00:00",
+  "updated_at": "2026-04-17T03:25:55.529807+00:00"
+ },
+ {
+  "id": "a1fbb56d-0a13-4f18-a8e9-81d8fde11ac9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T13:02:05.405246+00:00",
+  "updated_at": "2026-04-18T13:02:05.405246+00:00"
+ },
+ {
+  "id": "368247a3-1e88-4dea-9480-4fc7cc395e03",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T16:47:42.903098+00:00",
+  "updated_at": "2026-04-16T16:47:42.903098+00:00"
+ },
+ {
+  "id": "44caeb49-08bf-4b74-9ec5-cee4dc8e90d4",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T17:47:48.303892+00:00",
+  "updated_at": "2026-04-16T17:47:48.303892+00:00"
+ },
+ {
+  "id": "64d9e865-c94b-4b6f-b148-d30a9e29300d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T14:07:17.636553+00:00",
+  "updated_at": "2026-04-16T14:07:17.636553+00:00"
+ },
+ {
+  "id": "aba6c443-7f80-47fc-ace2-85ee476a6247",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T16:05:34.347639+00:00",
+  "updated_at": "2026-04-16T16:05:34.347639+00:00"
+ },
+ {
+  "id": "eaebd9bd-08f0-4fcc-bef1-8b8bccbe6866",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T21:24:31.215272+00:00",
+  "updated_at": "2026-04-16T21:24:31.215272+00:00"
+ },
+ {
+  "id": "245253f7-f813-49ed-a15f-69f0cd3a64c2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T15:48:29.705087+00:00",
+  "updated_at": "2026-04-16T15:48:29.705087+00:00"
+ },
+ {
+  "id": "f821df65-df70-44f3-b46e-ae7154d6fa66",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T17:02:46.435206+00:00",
+  "updated_at": "2026-04-16T17:02:46.435206+00:00"
+ },
+ {
+  "id": "d21a6047-9ac4-4102-bce1-8ae6d06a1360",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T17:13:05.91535+00:00",
+  "updated_at": "2026-04-17T17:13:05.91535+00:00"
+ },
+ {
+  "id": "a7df909f-4ed5-49d5-b4d3-e79a3d3956e4",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T11:24:44.999592+00:00",
+  "updated_at": "2026-04-17T11:24:44.999592+00:00"
+ },
+ {
+  "id": "1278977e-41f3-47a4-93a5-f9f61a1ea013",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T19:41:20.935592+00:00",
+  "updated_at": "2026-04-16T19:41:20.935592+00:00"
+ },
+ {
+  "id": "25c55ed8-e56a-4e97-87fb-e88f390d38b0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T17:19:54.411002+00:00",
+  "updated_at": "2026-04-17T17:19:54.411002+00:00"
+ },
+ {
+  "id": "13223e74-f0ec-49f2-9b30-17cc4842e051",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T19:49:59.953489+00:00",
+  "updated_at": "2026-04-16T19:49:59.953489+00:00"
+ },
+ {
+  "id": "79d8e5ea-4553-4a81-b984-99283f72fd56",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T16:10:58.385059+00:00",
+  "updated_at": "2026-04-16T16:10:58.385059+00:00"
+ },
+ {
+  "id": "bb61b7bb-0c74-472b-af5d-1c564c260fe7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T18:42:02.69459+00:00",
+  "updated_at": "2026-04-16T18:42:02.69459+00:00"
+ },
+ {
+  "id": "cff8c945-e89f-4568-86c3-3fc6fcf07916",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-16T18:42:57.306584+00:00"
+ },
+ {
+  "id": "4a1f7250-f51d-4e4a-b3dd-23b62259d257",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T14:42:22.017989+00:00",
+  "updated_at": "2026-04-16T14:42:22.017989+00:00"
+ },
+ {
+  "id": "14f25b07-aa89-47e6-afba-f1b382db5e48",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T14:52:57.893714+00:00",
+  "updated_at": "2026-04-16T14:52:57.893714+00:00"
+ },
+ {
+  "id": "be9029bc-f3b6-4b27-b956-ca59f84c5328",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T01:16:54.424188+00:00",
+  "updated_at": "2026-04-17T01:16:54.424188+00:00"
+ },
+ {
+  "id": "0c848644-a6b4-4060-a6c5-b23f89d2a415",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T11:10:10.488191+00:00",
+  "updated_at": "2026-04-17T11:10:10.488191+00:00"
+ },
+ {
+  "id": "69aa818b-66f6-408c-99a2-c011ccd6a1dc",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T15:33:44.268423+00:00",
+  "updated_at": "2026-04-16T15:33:44.268423+00:00"
+ },
+ {
+  "id": "b079156e-4ea3-4064-97ae-ff96f6b46080",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T18:29:43.12742+00:00",
+  "updated_at": "2026-04-16T18:29:43.12742+00:00"
+ },
+ {
+  "id": "fbd541a4-34df-4f7a-8d2f-5fe8ff99413c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T15:37:00.051875+00:00",
+  "updated_at": "2026-04-16T15:37:00.051875+00:00"
+ },
+ {
+  "id": "7712e481-bd21-464f-96a4-0ecf409baa32",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T23:53:55.777134+00:00",
+  "updated_at": "2026-04-16T23:53:55.777134+00:00"
+ },
+ {
+  "id": "60ff2d10-423d-4c58-8926-4f3b4ac96689",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-16T14:57:42.304645+00:00",
+  "updated_at": "2026-04-16T14:57:42.304645+00:00"
+ },
+ {
+  "id": "3e830a1a-3c61-4283-8424-1f0f313fc0c7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T12:01:46.137039+00:00",
+  "updated_at": "2026-04-17T12:01:46.137039+00:00"
+ },
+ {
+  "id": "7700e97d-eaa3-4a7f-86b3-dd6c7822a4fb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T12:23:43.731512+00:00",
+  "updated_at": "2026-04-17T12:23:43.731512+00:00"
+ },
+ {
+  "id": "a5836719-8ecb-437a-b564-16c7a3ac43be",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T11:38:05.046165+00:00",
+  "updated_at": "2026-04-17T11:38:05.046165+00:00"
+ },
+ {
+  "id": "2a723e17-f07d-4b58-be12-80e9cd5c1548",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T13:43:00.10899+00:00",
+  "updated_at": "2026-04-17T13:43:00.10899+00:00"
+ },
+ {
+  "id": "378804a3-214a-4a7e-a09e-07411916f326",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T12:02:10.111815+00:00",
+  "updated_at": "2026-04-17T12:02:10.111815+00:00"
+ },
+ {
+  "id": "43c4c6be-284f-49f6-8cff-1c5366a50906",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T18:02:29.833901+00:00",
+  "updated_at": "2026-04-17T18:02:29.833901+00:00"
+ },
+ {
+  "id": "2213e85b-aba8-4059-9068-8c537f08695a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T16:25:55.725643+00:00",
+  "updated_at": "2026-04-17T16:25:55.725643+00:00"
+ },
+ {
+  "id": "1006620e-a3ab-4acc-83b9-76ec0bb9eccf",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-17T14:01:29.572573+00:00"
+ },
+ {
+  "id": "806c82b0-2590-4dda-91fc-44d1aa0b200a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T15:11:30.123696+00:00",
+  "updated_at": "2026-04-17T15:11:30.123696+00:00"
+ },
+ {
+  "id": "8575fa60-ca59-4656-9b92-408ae8735833",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T13:01:08.21957+00:00",
+  "updated_at": "2026-04-17T13:01:08.21957+00:00"
+ },
+ {
+  "id": "723f2483-602f-4353-a479-0177055c5ca8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T14:51:07.917171+00:00",
+  "updated_at": "2026-04-17T14:51:07.917171+00:00"
+ },
+ {
+  "id": "5fd59fbe-7af5-4582-9c9b-8425e530abc0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:05:05.417364+00:00",
+  "updated_at": "2026-04-20T15:05:05.417364+00:00"
+ },
+ {
+  "id": "32f4739e-6646-4c1b-bf32-12433e6a0235",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T15:47:16.440289+00:00",
+  "updated_at": "2026-04-17T15:47:16.440289+00:00"
+ },
+ {
+  "id": "e04fbb9f-31f5-45a6-8731-867dcb1c9add",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T16:27:32.780694+00:00",
+  "updated_at": "2026-04-17T16:27:32.780694+00:00"
+ },
+ {
+  "id": "6006d819-2a83-45b6-b686-05ae64dd4037",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T16:26:00.294358+00:00",
+  "updated_at": "2026-04-17T16:26:00.294358+00:00"
+ },
+ {
+  "id": "667b0bb7-4856-4c08-aea1-6a42edaa00e1",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T16:22:48.479436+00:00",
+  "updated_at": "2026-04-17T16:22:48.479436+00:00"
+ },
+ {
+  "id": "db538b11-2c8f-489e-93a4-94d51189dd58",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T16:48:59.309115+00:00",
+  "updated_at": "2026-04-23T16:48:59.309115+00:00"
+ },
+ {
+  "id": "75418e5a-d92b-42a6-834c-e2fee3d68722",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T17:47:33.778126+00:00",
+  "updated_at": "2026-04-17T17:47:33.778126+00:00"
+ },
+ {
+  "id": "718fd339-4659-4c54-bd1f-20011b6fc5ed",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T00:26:42.804512+00:00",
+  "updated_at": "2026-04-18T00:26:42.804512+00:00"
+ },
+ {
+  "id": "396f3a4f-c841-485b-aae3-25c2d7beb4bd",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T19:53:52.952142+00:00",
+  "updated_at": "2026-04-17T19:53:52.952142+00:00"
+ },
+ {
+  "id": "85310816-3dd8-443d-a3f9-c6371fbc7ba4",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T13:59:02.751119+00:00",
+  "updated_at": "2026-04-19T13:59:02.751119+00:00"
+ },
+ {
+  "id": "d662144d-a121-479e-ac7d-ef8534af78b9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T11:36:32.73428+00:00",
+  "updated_at": "2026-04-19T11:36:32.73428+00:00"
+ },
+ {
+  "id": "26560371-5adb-4bee-9a89-6204df205430",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T00:29:50.420611+00:00",
+  "updated_at": "2026-04-18T00:29:50.420611+00:00"
+ },
+ {
+  "id": "772d2785-a504-46aa-ab28-cd8669fc0ed8",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-18T10:08:21.555735+00:00"
+ },
+ {
+  "id": "d7039ae1-56cc-4586-a51e-a14e964bc0fb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T11:42:11.581224+00:00",
+  "updated_at": "2026-04-18T11:42:11.581224+00:00"
+ },
+ {
+  "id": "6b2d3e54-0de6-422b-a422-ff28557234a7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T19:57:06.341305+00:00",
+  "updated_at": "2026-04-17T19:57:06.341305+00:00"
+ },
+ {
+  "id": "9847b72d-d35d-497b-aaaf-c2756d82851c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T22:48:59.514012+00:00",
+  "updated_at": "2026-04-17T22:48:59.514012+00:00"
+ },
+ {
+  "id": "b6e2d70c-31e0-43c0-a919-ba1919d710cd",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T09:38:46.51249+00:00",
+  "updated_at": "2026-04-18T09:38:46.51249+00:00"
+ },
+ {
+  "id": "79f1a255-aedc-4dad-9382-62e13e128962",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T11:55:19.284765+00:00",
+  "updated_at": "2026-04-18T11:55:19.284765+00:00"
+ },
+ {
+  "id": "7edca5da-dc6a-4c20-b537-5a224024560e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T23:10:41.46012+00:00",
+  "updated_at": "2026-04-17T23:10:41.46012+00:00"
+ },
+ {
+  "id": "40c42a88-b515-4a4a-b284-5dea4d5e16ac",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T11:09:32.595375+00:00",
+  "updated_at": "2026-04-18T11:09:32.595375+00:00"
+ },
+ {
+  "id": "d3575f7d-199d-46f2-be62-988f86b3baa2",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T16:28:12.567241+00:00",
+  "updated_at": "2026-04-22T16:28:12.567241+00:00"
+ },
+ {
+  "id": "e0deb07a-b777-462e-9e9e-43e03d4dc907",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T00:23:56.126309+00:00",
+  "updated_at": "2026-04-18T00:23:56.126309+00:00"
+ },
+ {
+  "id": "607b4927-2539-44ce-baa8-f76503d99706",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T12:22:51.924574+00:00",
+  "updated_at": "2026-04-18T12:22:51.924574+00:00"
+ },
+ {
+  "id": "5aeaa194-2aeb-4212-92b6-b7bfa5ab77c9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T21:03:14.84935+00:00",
+  "updated_at": "2026-04-17T21:03:14.84935+00:00"
+ },
+ {
+  "id": "988d4e9b-0789-4210-bb07-30de4530d5aa",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T01:42:07.520099+00:00",
+  "updated_at": "2026-04-18T01:42:07.520099+00:00"
+ },
+ {
+  "id": "25fe9255-b77b-46df-8340-07e2d0f7096c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-17T21:48:28.314721+00:00"
+ },
+ {
+  "id": "46fc2962-a091-494b-bacb-9109bfee0e99",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T22:01:31.494202+00:00",
+  "updated_at": "2026-04-17T22:01:31.494202+00:00"
+ },
+ {
+  "id": "fc29b08d-f40d-42db-a8a3-b8140dad50a3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T22:08:36.715541+00:00",
+  "updated_at": "2026-04-17T22:08:36.715541+00:00"
+ },
+ {
+  "id": "bdfc7361-23b8-49a1-8164-13a10ff0849b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T11:45:59.085182+00:00",
+  "updated_at": "2026-04-19T11:45:59.085182+00:00"
+ },
+ {
+  "id": "14c53090-f049-4406-a2c2-cc256c03950e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T21:16:41.851301+00:00",
+  "updated_at": "2026-04-17T21:16:41.851301+00:00"
+ },
+ {
+  "id": "fa3ad9b7-5c0f-42ee-a451-21cebd45d180",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:06:06.065062+00:00",
+  "updated_at": "2026-04-19T14:06:06.065062+00:00"
+ },
+ {
+  "id": "967a3545-746c-4cf4-a1f9-cc20df920e9d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T10:50:07.388897+00:00",
+  "updated_at": "2026-04-18T10:50:07.388897+00:00"
+ },
+ {
+  "id": "3ea3dcca-fa0f-4cff-a812-9e25f18fb6e2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": null,
+  "updated_at": "2026-04-18T11:52:23.370572+00:00"
+ },
+ {
+  "id": "152a1751-9fb8-418c-9b3f-4f7f7790ecf9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T15:58:27.833685+00:00",
+  "updated_at": "2026-04-24T15:58:27.833685+00:00"
+ },
+ {
+  "id": "99282ca8-815a-4a0f-ad7f-6a6c6de5352e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T17:40:28.305286+00:00",
+  "updated_at": "2026-04-18T17:40:28.305286+00:00"
+ },
+ {
+  "id": "d17c377d-18c8-483f-b89b-37dcbce7bcce",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T11:47:59.805228+00:00",
+  "updated_at": "2026-04-18T11:47:59.805228+00:00"
+ },
+ {
+  "id": "ad02cc2c-6968-4ada-abba-c29a58520b1d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T21:16:49.396729+00:00",
+  "updated_at": "2026-04-17T21:16:49.396729+00:00"
+ },
+ {
+  "id": "318ce7e4-9542-4a80-b9e0-36917755c128",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T11:23:50.63918+00:00",
+  "updated_at": "2026-04-18T11:23:50.63918+00:00"
+ },
+ {
+  "id": "d191853d-c473-4a63-9481-941c3ed0980f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T16:33:13.946446+00:00",
+  "updated_at": "2026-04-22T16:33:13.946446+00:00"
+ },
+ {
+  "id": "588136e5-d898-4b72-beb6-a3f940de9ba5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T22:36:32.515477+00:00",
+  "updated_at": "2026-04-17T22:36:32.515477+00:00"
+ },
+ {
+  "id": "acb696c8-93f9-4851-935e-27a7cdf746a3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-17T22:11:15.847067+00:00",
+  "updated_at": "2026-04-17T22:11:15.847067+00:00"
+ },
+ {
+  "id": "03036803-32be-49fc-bd37-03e397c0bda6",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-19T12:58:47.671779+00:00",
+  "updated_at": "2026-04-19T12:58:47.671779+00:00"
+ },
+ {
+  "id": "ab3914d2-2b69-4477-860e-76bf6ea517ef",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T13:07:47.720811+00:00",
+  "updated_at": "2026-04-19T13:07:47.720811+00:00"
+ },
+ {
+  "id": "728a1e32-24ab-42fd-bc9a-0c6336476192",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-18T18:03:00.801403+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "3daa2a73-667d-4563-962c-49a0cd64609d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T11:51:41.544856+00:00",
+  "updated_at": "2026-04-19T11:51:41.544856+00:00"
+ },
+ {
+  "id": "3e06dfe4-1c65-4cd1-9c61-5bf749c5b159",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T09:40:18.912678+00:00",
+  "updated_at": "2026-04-20T09:40:18.912678+00:00"
+ },
+ {
+  "id": "b4d708a8-58f9-4129-bd77-84c93e8e332a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T19:41:01.956311+00:00",
+  "updated_at": "2026-04-18T19:41:01.956311+00:00"
+ },
+ {
+  "id": "adca2ff2-0e44-4d01-9301-b8103bfcc8b6",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:54:09.019958+00:00",
+  "updated_at": "2026-04-19T14:54:09.019958+00:00"
+ },
+ {
+  "id": "62d354c2-869f-490b-89ae-d4803e0d9077",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T21:53:33.62898+00:00",
+  "updated_at": "2026-04-18T21:53:33.62898+00:00"
+ },
+ {
+  "id": "309d2b0c-189b-4354-aae1-56e11921246a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T01:49:20.447572+00:00",
+  "updated_at": "2026-04-24T01:49:20.447572+00:00"
+ },
+ {
+  "id": "c6bcfd26-6836-4596-8748-7aeebd4826bc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T13:07:20.841638+00:00",
+  "updated_at": "2026-04-18T13:07:20.841638+00:00"
+ },
+ {
+  "id": "32529d1b-3191-4df8-98f4-760391ea87e7",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T13:22:46.071587+00:00",
+  "updated_at": "2026-04-19T13:22:46.071587+00:00"
+ },
+ {
+  "id": "dc82eb43-1198-4d52-a6f9-ba053c6c3a3e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:37:44.397309+00:00",
+  "updated_at": "2026-04-19T14:37:44.397309+00:00"
+ },
+ {
+  "id": "cdd4c7bd-c3de-4e6e-9e3a-4c91ea2cdb4d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T13:13:45.72547+00:00",
+  "updated_at": "2026-04-19T13:13:45.72547+00:00"
+ },
+ {
+  "id": "b3519006-0008-4f82-9131-916cb201ff22",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T16:29:51.358039+00:00",
+  "updated_at": "2026-04-18T16:29:51.358039+00:00"
+ },
+ {
+  "id": "172d72f7-4dc4-4c69-aab2-1fd35d1b249d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T19:54:12.579629+00:00",
+  "updated_at": "2026-04-18T19:54:12.579629+00:00"
+ },
+ {
+  "id": "d384e159-73f7-4a6d-808b-3751ad0320a5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:43:41.847885+00:00",
+  "updated_at": "2026-04-19T14:43:41.847885+00:00"
+ },
+ {
+  "id": "1269b010-6e68-42b1-88ad-d5d8b6bd3b99",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T18:15:07.459144+00:00",
+  "updated_at": "2026-04-18T18:15:07.459144+00:00"
+ },
+ {
+  "id": "f89bb705-cdb5-47ae-a682-f0896737892d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T13:21:40.132784+00:00",
+  "updated_at": "2026-04-18T13:21:40.132784+00:00"
+ },
+ {
+  "id": "7b6c0a05-b651-436b-8aa8-389bad08ab1f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T16:35:31.503932+00:00",
+  "updated_at": "2026-04-18T16:35:31.503932+00:00"
+ },
+ {
+  "id": "5c814e50-7e76-4a57-8748-ec58023bbc4f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T18:22:45.99178+00:00",
+  "updated_at": "2026-04-18T18:22:45.99178+00:00"
+ },
+ {
+  "id": "e3a98d1b-6b3c-4224-b0d1-d9d615e59b5e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:49:42.310861+00:00",
+  "updated_at": "2026-04-19T14:49:42.310861+00:00"
+ },
+ {
+  "id": "55ddf1f3-78d7-4739-b56e-e23fe1ee09b1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T16:57:04.230991+00:00",
+  "updated_at": "2026-04-19T16:57:04.230991+00:00"
+ },
+ {
+  "id": "16caae04-6be5-4c2a-9be0-ea984c0f18ef",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:47:38.472166+00:00",
+  "updated_at": "2026-04-19T14:47:38.472166+00:00"
+ },
+ {
+  "id": "c4760f17-497d-4bdb-9a3b-271a186d3a37",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T12:09:21.332615+00:00",
+  "updated_at": "2026-04-19T12:09:21.332615+00:00"
+ },
+ {
+  "id": "82860fc8-56e0-420d-a506-d57d765e907b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T15:06:13.40333+00:00",
+  "updated_at": "2026-04-19T15:06:13.40333+00:00"
+ },
+ {
+  "id": "2e7fbdc5-d988-4c1f-83cc-917996a3c26e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:56:21.586733+00:00",
+  "updated_at": "2026-04-19T14:56:21.586733+00:00"
+ },
+ {
+  "id": "6b300dc2-ba92-47a8-953c-dcb6316a8881",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-19T14:55:18.631992+00:00",
+  "updated_at": "2026-04-19T14:55:18.631992+00:00"
+ },
+ {
+  "id": "bc52b11b-7de4-4f93-8043-6a09705099aa",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T13:24:26.217277+00:00",
+  "updated_at": "2026-04-19T13:24:26.217277+00:00"
+ },
+ {
+  "id": "86d0b240-392a-4a5b-8b83-a4920fad7b66",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T21:47:09.367435+00:00",
+  "updated_at": "2026-04-27T21:47:09.367435+00:00"
+ },
+ {
+  "id": "4d41ecb2-0828-4249-bf16-15c2f37da3b0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:59:54.511183+00:00",
+  "updated_at": "2026-04-19T14:59:54.511183+00:00"
+ },
+ {
+  "id": "1849dd0f-19b1-4fa0-badc-aecd32a55e7e",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T12:15:50.68665+00:00",
+  "updated_at": "2026-04-18T12:15:50.68665+00:00"
+ },
+ {
+  "id": "c8f8698a-6863-4bf7-addb-666de375159a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T13:39:07.458699+00:00",
+  "updated_at": "2026-04-18T13:39:07.458699+00:00"
+ },
+ {
+  "id": "16976c44-5c4c-491b-b7d4-2c85eaceb00d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T16:27:10.237954+00:00",
+  "updated_at": "2026-04-18T16:27:10.237954+00:00"
+ },
+ {
+  "id": "b6aa340b-334d-46cf-a52a-2f294e74fe86",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:58:56.058951+00:00",
+  "updated_at": "2026-04-19T14:58:56.058951+00:00"
+ },
+ {
+  "id": "43ec82ed-9c1e-4d8c-9911-be6c50e3a41a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T13:36:51.227344+00:00",
+  "updated_at": "2026-04-19T13:36:51.227344+00:00"
+ },
+ {
+  "id": "8c187814-a0a8-4f40-9ef9-ff7eaa5a7514",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T15:03:35.511453+00:00",
+  "updated_at": "2026-04-19T15:03:35.511453+00:00"
+ },
+ {
+  "id": "790d3e2b-29a0-498c-bd9c-3d7005b6c920",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T22:13:07.080257+00:00",
+  "updated_at": "2026-04-18T22:13:07.080257+00:00"
+ },
+ {
+  "id": "021843ef-3eb5-4cb3-8bd2-6bea7fe819ad",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T12:21:04.44201+00:00",
+  "updated_at": "2026-04-19T12:21:04.44201+00:00"
+ },
+ {
+  "id": "cefe0008-a9c9-4395-843d-ffcb0a33f58c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T16:52:57.333253+00:00",
+  "updated_at": "2026-04-18T16:52:57.333253+00:00"
+ },
+ {
+  "id": "2e571061-9fb6-4c7c-9e95-046222ebc971",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T13:41:06.47694+00:00",
+  "updated_at": "2026-04-18T13:41:06.47694+00:00"
+ },
+ {
+  "id": "e346ee28-c3f3-4244-894c-dc1b1a64024b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T15:10:05.243198+00:00",
+  "updated_at": "2026-04-19T15:10:05.243198+00:00"
+ },
+ {
+  "id": "03a688bd-01b0-4713-8dec-1d33b35a60bb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T13:49:08.77328+00:00",
+  "updated_at": "2026-04-18T13:49:08.77328+00:00"
+ },
+ {
+  "id": "9a7cfe4d-7984-45df-8d43-de5df588b0e9",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T21:32:47.953727+00:00",
+  "updated_at": "2026-04-18T21:32:47.953727+00:00"
+ },
+ {
+  "id": "525655c2-da10-4841-8ec7-9e830c9110a8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T17:29:28.402269+00:00",
+  "updated_at": "2026-04-19T17:29:28.402269+00:00"
+ },
+ {
+  "id": "a3275453-2a17-47f6-87b3-d4625dc7ea34",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T17:01:19.383079+00:00",
+  "updated_at": "2026-04-18T17:01:19.383079+00:00"
+ },
+ {
+  "id": "fd8e4897-b050-4b43-8b2a-54951d64f7cd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T00:31:23.752654+00:00",
+  "updated_at": "2026-04-20T00:31:23.752654+00:00"
+ },
+ {
+  "id": "cdfb1231-49c4-47e9-a39e-802ba197a855",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T12:22:13.600669+00:00",
+  "updated_at": "2026-04-18T12:22:13.600669+00:00"
+ },
+ {
+  "id": "93065bbe-deb9-421f-b48f-2714ac8263dd",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-19T00:23:39.488871+00:00",
+  "updated_at": "2026-04-19T00:23:39.488871+00:00"
+ },
+ {
+  "id": "eb4f1561-cba6-4bb6-99f6-e00e3601f244",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T17:21:55.941714+00:00",
+  "updated_at": "2026-04-18T17:21:55.941714+00:00"
+ },
+ {
+  "id": "8bb2b22e-f83a-4df8-bfd8-701b17136d28",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T17:39:39.332898+00:00",
+  "updated_at": "2026-04-19T17:39:39.332898+00:00"
+ },
+ {
+  "id": "b0486988-6ee6-4a0a-9d5e-9ec3573b901a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T22:50:51.7295+00:00",
+  "updated_at": "2026-04-18T22:50:51.7295+00:00"
+ },
+ {
+  "id": "869efa99-f716-4573-9581-b77909fbaa25",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T12:22:46.782588+00:00",
+  "updated_at": "2026-04-18T12:22:46.782588+00:00"
+ },
+ {
+  "id": "b2ac367f-165b-46ce-9e86-73257b3d5bba",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T20:23:26.936201+00:00",
+  "updated_at": "2026-04-18T20:23:26.936201+00:00"
+ },
+ {
+  "id": "f60dfe56-80ab-4280-b2de-8b3686641ede",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-19T00:49:52.347013+00:00",
+  "updated_at": "2026-04-19T00:49:52.347013+00:00"
+ },
+ {
+  "id": "b336c04f-c9e3-4c8a-93c0-e36560cb97c7",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T14:19:44.329106+00:00",
+  "updated_at": "2026-04-18T14:19:44.329106+00:00"
+ },
+ {
+  "id": "56c58772-68d1-4aff-a460-caa08d2197b1",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-18T16:30:41.013922+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "121a6379-c155-4c34-820b-4d13f010b602",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T17:56:50.192874+00:00",
+  "updated_at": "2026-04-18T17:56:50.192874+00:00"
+ },
+ {
+  "id": "aa31464d-6618-49f2-b987-ba68a08d8598",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T20:56:19.960946+00:00",
+  "updated_at": "2026-04-20T20:56:19.960946+00:00"
+ },
+ {
+  "id": "6e96c0a7-89d0-4956-bb97-fffcb48dc23a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T19:10:56.680141+00:00",
+  "updated_at": "2026-04-18T19:10:56.680141+00:00"
+ },
+ {
+  "id": "1cf94143-84a0-46ec-bb38-6a1b9d1c2bf1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T14:31:15.054721+00:00",
+  "updated_at": "2026-04-18T14:31:15.054721+00:00"
+ },
+ {
+  "id": "047908ed-6490-430c-aafe-29570f4580e4",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T14:41:20.29526+00:00",
+  "updated_at": "2026-04-18T14:41:20.29526+00:00"
+ },
+ {
+  "id": "6c92470b-bbd7-41ac-8f96-0f8279119acc",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T20:38:26.334101+00:00",
+  "updated_at": "2026-04-18T20:38:26.334101+00:00"
+ },
+ {
+  "id": "e134b720-5813-4140-b792-8a0dcfcade53",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T14:47:26.819958+00:00",
+  "updated_at": "2026-04-18T14:47:26.819958+00:00"
+ },
+ {
+  "id": "c55a97ee-7e6c-4c87-a80c-6504fbe6e0e8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T17:22:30.534802+00:00",
+  "updated_at": "2026-04-18T17:22:30.534802+00:00"
+ },
+ {
+  "id": "1ed5d54a-92f7-4cbe-9928-e64598d8e6da",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T15:47:44.254645+00:00",
+  "updated_at": "2026-04-19T15:47:44.254645+00:00"
+ },
+ {
+  "id": "614e051f-efea-4c90-9e71-25f9128bf63d",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-19T19:07:31.908411+00:00",
+  "updated_at": "2026-04-19T19:07:31.908411+00:00"
+ },
+ {
+  "id": "780527bd-42f1-45d6-91a6-8f6fa7efcaac",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:08:04.604497+00:00",
+  "updated_at": "2026-04-18T15:08:04.604497+00:00"
+ },
+ {
+  "id": "a8434849-2a69-47e8-8fcf-6546e15f7235",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T19:25:14.676579+00:00",
+  "updated_at": "2026-04-18T19:25:14.676579+00:00"
+ },
+ {
+  "id": "2446e02f-7bb6-4b79-a39f-35015ce88995",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-18T17:32:03.983392+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "af1b8ef9-598e-4120-a288-b39dbbc365cd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:19:32.343124+00:00",
+  "updated_at": "2026-04-20T15:19:32.343124+00:00"
+ },
+ {
+  "id": "50beb96f-9368-4010-bbcc-bef0ccd740f1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T14:01:01.46597+00:00",
+  "updated_at": "2026-04-19T14:01:01.46597+00:00"
+ },
+ {
+  "id": "081b1a16-4408-452f-82f0-a2773f930111",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:10:01.66893+00:00",
+  "updated_at": "2026-04-18T15:10:01.66893+00:00"
+ },
+ {
+  "id": "7ddd88a4-84e2-4cde-b589-9fe5fb883cdb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:17:01.559091+00:00",
+  "updated_at": "2026-04-18T15:17:01.559091+00:00"
+ },
+ {
+  "id": "ee51a47e-a38b-4ca1-bf8c-17c4126bc217",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:37:39.386634+00:00",
+  "updated_at": "2026-04-18T15:37:39.386634+00:00"
+ },
+ {
+  "id": "af06ffaa-9472-413f-9297-f04630d58b5d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T13:08:19.01036+00:00",
+  "updated_at": "2026-04-21T13:08:19.01036+00:00"
+ },
+ {
+  "id": "ea1c63f3-3c06-4060-ae94-2dd72f067165",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-15T13:17:17.443269+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "b2a60658-a4e7-4ec1-a973-f3097be76614",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "a17db9cb-137f-48af-877e-28135140f6bb",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "03f9fbc6-4a0a-40c4-abe5-cbf0db5f4742",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "db94ecc2-f724-43f6-b80a-a8dc0f9fb922",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "18c58b25-0403-4850-b81b-b74beccf8a39",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:18:36.32172+00:00",
+  "updated_at": "2026-04-18T15:18:36.32172+00:00"
+ },
+ {
+  "id": "d4225125-fb9f-413d-b03d-387c82002c24",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-17T14:23:18.752737+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "b7d2a124-7318-4745-ae5b-b30ae01e18d6",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-12T16:25:22.982497+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "03a7de2d-7826-4517-a1ea-b52d7f37d314",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-16T12:43:14.973138+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "6697abed-7d7b-41fa-9d28-011784bfc3a1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:19:59.780151+00:00",
+  "updated_at": "2026-04-18T15:19:59.780151+00:00"
+ },
+ {
+  "id": "ded011ae-2f82-43f1-9734-83ee15f4a523",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:51:16.302055+00:00",
+  "updated_at": "2026-04-18T15:51:16.302055+00:00"
+ },
+ {
+  "id": "930e9579-c727-4b78-ad77-5ac64ebfe888",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-18T15:31:13.212879+00:00",
+  "updated_at": "2026-04-18T15:31:13.212879+00:00"
+ },
+ {
+  "id": "39e3ec0b-9cd5-484d-bdce-c29af5295413",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "88231bce-c2dd-4c2a-958e-bd22506a83f9",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-09T22:36:39.923336+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "7fcfdf6b-58f8-4e6a-929a-dc7aa9a73604",
+  "outcome_old": "escalated",
+  "status": "converted",
+  "converted_at": "2026-04-18T22:27:40.681461+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "3a3d4a21-6d8d-4328-8745-1dd5ea8404fb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T12:22:17.235794+00:00",
+  "updated_at": "2026-04-19T12:22:17.235794+00:00"
+ },
+ {
+  "id": "81650d18-23ba-49d9-906b-a1bcb2cb07e4",
+  "outcome_old": "abandoned",
+  "status": "converted",
+  "converted_at": "2026-04-18T17:11:09.925383+00:00",
+  "updated_at": "2026-04-19T03:08:20.540962+00:00"
+ },
+ {
+  "id": "7db65891-6bde-4c87-8aa0-435d5cbd569c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-18T23:37:58.733003+00:00",
+  "updated_at": "2026-04-18T23:37:58.733003+00:00"
+ },
+ {
+  "id": "d02122f5-82bb-4d5e-a132-1e839e5c06d8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-19T12:26:27.548301+00:00",
+  "updated_at": "2026-04-19T12:26:27.548301+00:00"
+ },
+ {
+  "id": "5a4133d5-cad8-4689-b19c-4610bd18e373",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T13:46:58.396646+00:00",
+  "updated_at": "2026-04-21T13:46:58.396646+00:00"
+ },
+ {
+  "id": "ebf205f5-a1eb-4ea7-bc58-b58d19200ce4",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T12:54:32.140804+00:00",
+  "updated_at": "2026-04-20T12:54:32.140804+00:00"
+ },
+ {
+  "id": "be62ad63-e78a-4f46-b745-75dfbcedd32d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T14:21:14.777916+00:00",
+  "updated_at": "2026-04-20T14:21:14.777916+00:00"
+ },
+ {
+  "id": "066b55b3-fffd-4560-82ac-457d9cec8cf8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T12:59:12.56542+00:00",
+  "updated_at": "2026-04-20T12:59:12.56542+00:00"
+ },
+ {
+  "id": "63c2efde-9fac-4118-aec9-ba2a53cd69e2",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T23:47:06.696444+00:00",
+  "updated_at": "2026-04-20T23:47:06.696444+00:00"
+ },
+ {
+  "id": "5ee1e6ed-c04c-4f5f-8547-4743863dc307",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-20T13:01:21.196803+00:00",
+  "updated_at": "2026-04-20T13:01:21.196803+00:00"
+ },
+ {
+  "id": "62855c1e-3b40-4d1a-ac87-e7a999a95e38",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T13:33:53.862347+00:00",
+  "updated_at": "2026-04-20T13:33:53.862347+00:00"
+ },
+ {
+  "id": "1f63e101-6645-4d97-9e1e-27bb2fdd5f32",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T13:22:23.414505+00:00",
+  "updated_at": "2026-04-20T13:22:23.414505+00:00"
+ },
+ {
+  "id": "a7c22df1-699b-4a63-b20c-111f8960588a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T13:32:21.201815+00:00",
+  "updated_at": "2026-04-20T13:32:21.201815+00:00"
+ },
+ {
+  "id": "8c8581ac-5549-46dd-94b4-4e4651573f5a",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-20T14:05:13.641297+00:00",
+  "updated_at": "2026-04-20T14:05:13.641297+00:00"
+ },
+ {
+  "id": "37123737-1e0c-4d39-8a0e-4d635fb52204",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:52:45.139878+00:00",
+  "updated_at": "2026-04-20T15:52:45.139878+00:00"
+ },
+ {
+  "id": "0737aaba-8023-46aa-ae70-5eaacec6a79a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:56:38.443626+00:00",
+  "updated_at": "2026-04-20T15:56:38.443626+00:00"
+ },
+ {
+  "id": "c0766239-5f2f-4102-bd3e-5575075ce129",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-20T14:25:57.63689+00:00",
+  "updated_at": "2026-04-20T14:25:57.63689+00:00"
+ },
+ {
+  "id": "5ee23d9d-4aa1-44be-88c2-ee6f611c8e19",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:29:36.316412+00:00",
+  "updated_at": "2026-04-20T15:29:36.316412+00:00"
+ },
+ {
+  "id": "d0f0f1e5-8c22-4028-88c3-385c6cd6b4bb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:04:46.256132+00:00",
+  "updated_at": "2026-04-20T15:04:46.256132+00:00"
+ },
+ {
+  "id": "cfee9be4-c718-4301-99cc-833a0f2a1d7e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:10:45.390333+00:00",
+  "updated_at": "2026-04-20T15:10:45.390333+00:00"
+ },
+ {
+  "id": "c4c3f2a4-4c10-4dc7-af15-48fa2f474801",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:37:26.352801+00:00",
+  "updated_at": "2026-04-20T15:37:26.352801+00:00"
+ },
+ {
+  "id": "6a739a4a-0396-4b5b-9407-88c3c399ee1e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:53:29.173972+00:00",
+  "updated_at": "2026-04-20T15:53:29.173972+00:00"
+ },
+ {
+  "id": "81b5f44c-1bed-41a7-9cb1-e7f890d3f22d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T15:05:46.659243+00:00",
+  "updated_at": "2026-04-20T15:05:46.659243+00:00"
+ },
+ {
+  "id": "014eed63-cb06-4291-94b9-50423b091ded",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T21:20:10.397754+00:00",
+  "updated_at": "2026-04-20T21:20:10.397754+00:00"
+ },
+ {
+  "id": "cdbb18dd-de6e-430d-b010-5a3180dee9c6",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T13:10:11.036069+00:00",
+  "updated_at": "2026-04-22T13:10:11.036069+00:00"
+ },
+ {
+  "id": "d33c9e6c-0082-4b15-996d-b9aefc3ad029",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T11:32:16.232311+00:00",
+  "updated_at": "2026-04-21T11:32:16.232311+00:00"
+ },
+ {
+  "id": "f9a6afcc-65ce-415b-a61c-b40132aff6ce",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T13:40:00.938097+00:00",
+  "updated_at": "2026-04-21T13:40:00.938097+00:00"
+ },
+ {
+  "id": "94db1237-f870-48c9-9cc1-9cb637e128f0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T12:38:34.647999+00:00",
+  "updated_at": "2026-04-21T12:38:34.647999+00:00"
+ },
+ {
+  "id": "df09025d-c352-407d-9698-c88d21117413",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T16:00:15.58679+00:00",
+  "updated_at": "2026-04-20T16:00:15.58679+00:00"
+ },
+ {
+  "id": "70766654-2d83-4f48-ad79-0b930456f292",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T19:58:25.610572+00:00",
+  "updated_at": "2026-04-20T19:58:25.610572+00:00"
+ },
+ {
+  "id": "0288fc18-997d-4a6b-bf58-dff432a01b2a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T14:08:32.922149+00:00",
+  "updated_at": "2026-04-21T14:08:32.922149+00:00"
+ },
+ {
+  "id": "9a64447c-f5f5-46c2-b6c5-b518e8c6bf1a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T20:05:14.460917+00:00",
+  "updated_at": "2026-04-20T20:05:14.460917+00:00"
+ },
+ {
+  "id": "a75b2b58-d952-493d-8101-c70166458ace",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T16:08:19.79668+00:00",
+  "updated_at": "2026-04-20T16:08:19.79668+00:00"
+ },
+ {
+  "id": "d37204bc-9930-483a-b99d-d813ed86aa06",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T16:30:28.391058+00:00",
+  "updated_at": "2026-04-20T16:30:28.391058+00:00"
+ },
+ {
+  "id": "394f58f4-bfdb-457b-87c8-c00b623be71b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T14:48:04.763447+00:00",
+  "updated_at": "2026-04-21T14:48:04.763447+00:00"
+ },
+ {
+  "id": "350e16e2-0c5c-4c23-85d8-7e1e27ae9605",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T11:42:40.71906+00:00",
+  "updated_at": "2026-04-21T11:42:40.71906+00:00"
+ },
+ {
+  "id": "7d17b31f-e88a-4765-9ee5-41cc12954910",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T14:18:11.474294+00:00",
+  "updated_at": "2026-04-21T14:18:11.474294+00:00"
+ },
+ {
+  "id": "bfa86f69-3e27-4f7d-b040-b0785fc60f62",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T17:08:50.190739+00:00",
+  "updated_at": "2026-04-20T17:08:50.190739+00:00"
+ },
+ {
+  "id": "a42a298d-319c-490a-be1d-597dc32e5a89",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T21:44:08.010588+00:00",
+  "updated_at": "2026-04-20T21:44:08.010588+00:00"
+ },
+ {
+  "id": "428851b4-c51c-40e5-aab6-fe58cf5d7b50",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-20T22:20:59.079054+00:00",
+  "updated_at": "2026-04-20T22:20:59.079054+00:00"
+ },
+ {
+  "id": "059f71f8-ad10-4a1c-aa05-e846deea36ec",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T17:43:17.573893+00:00",
+  "updated_at": "2026-04-20T17:43:17.573893+00:00"
+ },
+ {
+  "id": "3babd463-e418-4571-b192-2a6e36610de5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T10:50:25.038578+00:00",
+  "updated_at": "2026-04-21T10:50:25.038578+00:00"
+ },
+ {
+  "id": "41b34bfd-ba1d-408c-8205-cfc509731932",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-20T17:57:31.584487+00:00",
+  "updated_at": "2026-04-20T17:57:31.584487+00:00"
+ },
+ {
+  "id": "a42ef8d6-4ee3-40fa-a7a4-9043bdc0ac31",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-20T18:00:48.293737+00:00",
+  "updated_at": "2026-04-20T18:00:48.293737+00:00"
+ },
+ {
+  "id": "0a8f91c4-735a-436d-9550-e06c015a49cf",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T16:40:26.942114+00:00",
+  "updated_at": "2026-04-21T16:40:26.942114+00:00"
+ },
+ {
+  "id": "43f591fa-edbe-4752-8f79-982bd64b9101",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T14:26:50.051844+00:00",
+  "updated_at": "2026-04-22T14:26:50.051844+00:00"
+ },
+ {
+  "id": "efe8c484-8146-4e10-84af-139d21f33c90",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T14:48:52.204554+00:00",
+  "updated_at": "2026-04-21T14:48:52.204554+00:00"
+ },
+ {
+  "id": "d25c8151-bc82-4564-ba6c-880c063df43c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T14:59:04.18295+00:00",
+  "updated_at": "2026-04-21T14:59:04.18295+00:00"
+ },
+ {
+  "id": "b9a32302-2b8e-426a-a064-fa6ae72c7782",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T14:59:28.434311+00:00",
+  "updated_at": "2026-04-21T14:59:28.434311+00:00"
+ },
+ {
+  "id": "1b5f52d1-8b93-4cec-be02-260f87e5878b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-21T17:44:07.674871+00:00",
+  "updated_at": "2026-04-21T17:44:07.674871+00:00"
+ },
+ {
+  "id": "61ec40bd-5f45-459e-9aa7-2f558fb01cfc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T15:03:52.917755+00:00",
+  "updated_at": "2026-04-21T15:03:52.917755+00:00"
+ },
+ {
+  "id": "732ef42a-4b66-4cd2-b324-30d249adb6df",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-21T17:02:44.997564+00:00",
+  "updated_at": "2026-04-21T17:02:44.997564+00:00"
+ },
+ {
+  "id": "c2502f52-a303-47f5-88c4-c9e93c05c7a3",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-21T15:15:23.649349+00:00",
+  "updated_at": "2026-04-21T15:15:23.649349+00:00"
+ },
+ {
+  "id": "33888c5a-2ba2-46ca-948e-d089fa915e88",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T21:25:59.210907+00:00",
+  "updated_at": "2026-04-23T21:25:59.210907+00:00"
+ },
+ {
+  "id": "0c708fe4-4831-4de8-a869-f779d12084d5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T17:00:57.503111+00:00",
+  "updated_at": "2026-04-21T17:00:57.503111+00:00"
+ },
+ {
+  "id": "f97dc532-6c16-4fa4-8b9d-31c55c6ccc20",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-21T15:16:40.536719+00:00",
+  "updated_at": "2026-04-21T15:16:40.536719+00:00"
+ },
+ {
+  "id": "ef45e39b-effe-4d81-b184-a6aa31cebd9c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T15:34:58.343461+00:00",
+  "updated_at": "2026-04-22T15:34:58.343461+00:00"
+ },
+ {
+  "id": "ddb20c1d-fa36-4d1e-ba64-7b19870847cb",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-21T21:39:23.544986+00:00",
+  "updated_at": "2026-04-21T21:39:23.544986+00:00"
+ },
+ {
+  "id": "4ecf8ab9-68f0-4c00-af7e-9dd7285faa0a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T18:03:42.232559+00:00",
+  "updated_at": "2026-04-23T18:03:42.232559+00:00"
+ },
+ {
+  "id": "af404657-9fbd-475b-b481-d03ed918c04b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T17:55:31.615639+00:00",
+  "updated_at": "2026-04-21T17:55:31.615639+00:00"
+ },
+ {
+  "id": "8949acf8-27d3-4974-9b1b-7f6f14f803d7",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T15:37:05.542694+00:00",
+  "updated_at": "2026-04-21T15:37:05.542694+00:00"
+ },
+ {
+  "id": "2418fc8c-3ef6-4026-9d19-2ab3fea8ed83",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T17:57:55.483419+00:00",
+  "updated_at": "2026-04-21T17:57:55.483419+00:00"
+ },
+ {
+  "id": "6f331703-947c-4482-8f47-075d7f8be2aa",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T11:14:06.538165+00:00",
+  "updated_at": "2026-04-22T11:14:06.538165+00:00"
+ },
+ {
+  "id": "acdb8f39-03b1-4716-951c-f8b14afb84d9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T12:10:21.458112+00:00",
+  "updated_at": "2026-04-22T12:10:21.458112+00:00"
+ },
+ {
+  "id": "ab8d1e7a-0cc1-405a-9114-54e23a06bb6d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T16:00:02.687407+00:00",
+  "updated_at": "2026-04-21T16:00:02.687407+00:00"
+ },
+ {
+  "id": "0aceeee4-435d-4cab-847c-8239081c64f7",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T16:04:49.561945+00:00",
+  "updated_at": "2026-04-21T16:04:49.561945+00:00"
+ },
+ {
+  "id": "3b6cc8af-af75-49a6-9da9-3e47f3efcbcc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-21T16:04:06.667304+00:00",
+  "updated_at": "2026-04-21T16:04:06.667304+00:00"
+ },
+ {
+  "id": "cc9d92f2-60c0-4953-a301-0fbc51d70568",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T15:02:21.4609+00:00",
+  "updated_at": "2026-04-22T15:02:21.4609+00:00"
+ },
+ {
+  "id": "21ecb007-de28-4205-a068-ecec28b54048",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T10:48:44.915478+00:00",
+  "updated_at": "2026-04-22T10:48:44.915478+00:00"
+ },
+ {
+  "id": "2f46c919-d9d8-4de5-827e-6c5ba175b5ac",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T11:23:32.434657+00:00",
+  "updated_at": "2026-04-23T11:23:32.434657+00:00"
+ },
+ {
+  "id": "7a2eb0e4-8f25-4f74-8e4e-c418a62d422c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T15:31:55.058475+00:00",
+  "updated_at": "2026-04-23T15:31:55.058475+00:00"
+ },
+ {
+  "id": "9d3df228-b168-46af-b46c-cc9001754ff7",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-22T17:13:15.515683+00:00",
+  "updated_at": "2026-04-22T17:13:15.515683+00:00"
+ },
+ {
+  "id": "09c65776-c65c-4e1a-adff-93a3000f0784",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T16:39:20.459901+00:00",
+  "updated_at": "2026-04-23T16:39:20.459901+00:00"
+ },
+ {
+  "id": "2d053fa3-80d3-4c32-b69a-e15c886db53e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T11:30:46.235976+00:00",
+  "updated_at": "2026-04-23T11:30:46.235976+00:00"
+ },
+ {
+  "id": "532e615d-5406-4c15-a8bd-3f973c92b64f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:47:33.752265+00:00",
+  "updated_at": "2026-04-24T16:47:33.752265+00:00"
+ },
+ {
+  "id": "52fbf27d-f812-4666-acb7-04450d202352",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-23T12:23:47.183466+00:00",
+  "updated_at": "2026-04-23T12:23:47.183466+00:00"
+ },
+ {
+  "id": "b54eb16c-1755-4216-98e1-013f210b069c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:52:07.90047+00:00",
+  "updated_at": "2026-04-25T12:52:07.90047+00:00"
+ },
+ {
+  "id": "63a63fd8-65b1-406c-b9de-088d5d210fe0",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-22T18:32:29.19444+00:00",
+  "updated_at": "2026-04-22T18:32:29.19444+00:00"
+ },
+ {
+  "id": "be447ad1-2cdc-4767-95da-2ebf0249ce73",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T15:45:38.894015+00:00",
+  "updated_at": "2026-04-23T15:45:38.894015+00:00"
+ },
+ {
+  "id": "e3e249cd-3523-4317-906e-47946e4d8a83",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T18:09:24.218885+00:00",
+  "updated_at": "2026-04-23T18:09:24.218885+00:00"
+ },
+ {
+  "id": "55ea4acf-ca63-4f72-8e74-558ee39b4c42",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T11:42:58.221117+00:00",
+  "updated_at": "2026-04-23T11:42:58.221117+00:00"
+ },
+ {
+  "id": "a029ba2b-e581-4cc9-b882-dabdf3893054",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-23T14:24:23.686892+00:00",
+  "updated_at": "2026-04-23T14:24:23.686892+00:00"
+ },
+ {
+  "id": "8d055036-cf3b-4f0b-8278-98160d2b9675",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T17:10:12.263486+00:00",
+  "updated_at": "2026-04-23T17:10:12.263486+00:00"
+ },
+ {
+  "id": "c9a9867a-959f-4117-8a01-d3b8c9dbdade",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T13:18:02.42394+00:00",
+  "updated_at": "2026-04-23T13:18:02.42394+00:00"
+ },
+ {
+  "id": "d3aef1bf-bde6-4b13-b417-41b26d511d3f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T17:49:08.009727+00:00",
+  "updated_at": "2026-04-22T17:49:08.009727+00:00"
+ },
+ {
+  "id": "245bda04-7d6e-4140-930a-e0b1cd10f17c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T15:11:52.976182+00:00",
+  "updated_at": "2026-04-23T15:11:52.976182+00:00"
+ },
+ {
+  "id": "c49d89cf-ce41-4e20-85d5-926a58e40dfe",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T09:33:57.226047+00:00",
+  "updated_at": "2026-04-23T09:33:57.226047+00:00"
+ },
+ {
+  "id": "1cbae563-64e8-4f78-8e66-31d30cd6f27b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T21:07:53.339324+00:00",
+  "updated_at": "2026-04-22T21:07:53.339324+00:00"
+ },
+ {
+  "id": "205a9b95-dd70-4c4e-b48b-f24beaf31063",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T13:43:55.475359+00:00",
+  "updated_at": "2026-04-23T13:43:55.475359+00:00"
+ },
+ {
+  "id": "a33d722f-bc58-44c0-afc8-9e942e9de848",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T18:28:00.853659+00:00",
+  "updated_at": "2026-04-23T18:28:00.853659+00:00"
+ },
+ {
+  "id": "39599a8a-49cc-4744-bafd-79695461883d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T14:28:46.122782+00:00",
+  "updated_at": "2026-04-23T14:28:46.122782+00:00"
+ },
+ {
+  "id": "8cf316e6-2aa5-4dbf-b7b6-4e6b1a161d78",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-22T22:12:52.348895+00:00",
+  "updated_at": "2026-04-22T22:12:52.348895+00:00"
+ },
+ {
+  "id": "052ca9f9-f17d-4082-8c97-04212a4ae35a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T14:07:29.09471+00:00",
+  "updated_at": "2026-04-23T14:07:29.09471+00:00"
+ },
+ {
+  "id": "a344a127-001b-459e-9a4d-fc8f9fa696ba",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T20:28:47.754583+00:00",
+  "updated_at": "2026-04-22T20:28:47.754583+00:00"
+ },
+ {
+  "id": "cf8f5814-4e7d-4082-b234-9384f516c4cf",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T20:31:01.501193+00:00",
+  "updated_at": "2026-04-22T20:31:01.501193+00:00"
+ },
+ {
+  "id": "9b54edee-f356-4747-880b-58b0ddc11742",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T20:38:34.392117+00:00",
+  "updated_at": "2026-04-22T20:38:34.392117+00:00"
+ },
+ {
+  "id": "043ce1be-f747-4c46-ad3e-400cf2e6fc1f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T15:30:18.791987+00:00",
+  "updated_at": "2026-04-23T15:30:18.791987+00:00"
+ },
+ {
+  "id": "6d3b5bd8-824f-43b7-a365-95551a1c0177",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-22T21:08:34.932316+00:00",
+  "updated_at": "2026-04-22T21:08:34.932316+00:00"
+ },
+ {
+  "id": "cdcc4558-add1-4792-97c9-65ed01118266",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T14:51:00.292966+00:00",
+  "updated_at": "2026-04-24T14:51:00.292966+00:00"
+ },
+ {
+  "id": "fa5b17df-718f-4a2c-bbd5-35a8ec34bb90",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T11:52:15.283395+00:00",
+  "updated_at": "2026-04-24T11:52:15.283395+00:00"
+ },
+ {
+  "id": "5db52c7c-f016-4f3a-87b1-e1bc43c9c905",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T05:14:44.357457+00:00",
+  "updated_at": "2026-04-25T05:14:44.357457+00:00"
+ },
+ {
+  "id": "7485fc12-958e-4cfe-8dce-48dde7bfcfcd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T00:17:19.235209+00:00",
+  "updated_at": "2026-04-24T00:17:19.235209+00:00"
+ },
+ {
+  "id": "1d05101b-e643-4ff5-a438-23bebf4d95ea",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:35:36.70268+00:00",
+  "updated_at": "2026-04-25T15:35:36.70268+00:00"
+ },
+ {
+  "id": "2a23deea-868c-45e4-82be-332f0b9a4795",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:41:55.137035+00:00",
+  "updated_at": "2026-04-25T16:41:55.137035+00:00"
+ },
+ {
+  "id": "28dd5cf1-2ccc-46b5-beca-aba632f24d8c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T22:22:08.723719+00:00",
+  "updated_at": "2026-04-23T22:22:08.723719+00:00"
+ },
+ {
+  "id": "fb9ede70-562b-48c5-adf0-08097fd73436",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T11:40:38.187995+00:00",
+  "updated_at": "2026-04-24T11:40:38.187995+00:00"
+ },
+ {
+  "id": "e54bb001-f1f9-40cd-ac02-2961286d743e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T12:47:31.686237+00:00",
+  "updated_at": "2026-04-24T12:47:31.686237+00:00"
+ },
+ {
+  "id": "3b53b8e3-3c7d-4ed9-a398-4eb9fd737101",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T11:16:45.077506+00:00",
+  "updated_at": "2026-04-24T11:16:45.077506+00:00"
+ },
+ {
+  "id": "c337266d-821c-438d-bac7-b3e426ff16fe",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T20:27:16.38249+00:00",
+  "updated_at": "2026-04-23T20:27:16.38249+00:00"
+ },
+ {
+  "id": "b6584f1d-febe-49e5-a21a-d779a817c49e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:29:49.467371+00:00",
+  "updated_at": "2026-04-25T16:29:49.467371+00:00"
+ },
+ {
+  "id": "f00a26e1-0f81-4808-bd33-b7455add9a1a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T15:03:47.11068+00:00",
+  "updated_at": "2026-04-24T15:03:47.11068+00:00"
+ },
+ {
+  "id": "84fc5667-cd13-4a5e-afdd-83e6b2f32855",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:49:33.523299+00:00",
+  "updated_at": "2026-04-25T16:49:33.523299+00:00"
+ },
+ {
+  "id": "1d585033-b133-4055-953b-0465c529b2c5",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T12:27:49.285499+00:00",
+  "updated_at": "2026-04-24T12:27:49.285499+00:00"
+ },
+ {
+  "id": "c03fd6f9-f6a4-45b3-afdf-1ca405d34c7b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T19:13:53.905835+00:00",
+  "updated_at": "2026-04-23T19:13:53.905835+00:00"
+ },
+ {
+  "id": "29c6d65a-a812-4c22-bf1d-917a75ecbf15",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T20:07:03.467203+00:00",
+  "updated_at": "2026-04-23T20:07:03.467203+00:00"
+ },
+ {
+  "id": "25f46416-1225-46fd-aefe-7ddd3c2d237d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T20:08:46.985143+00:00",
+  "updated_at": "2026-04-23T20:08:46.985143+00:00"
+ },
+ {
+  "id": "4d7de169-5e5a-429d-a7cb-f4d725465c99",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T21:41:31.639669+00:00",
+  "updated_at": "2026-04-24T21:41:31.639669+00:00"
+ },
+ {
+  "id": "16726a64-ed64-4998-886a-c55f206f457a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T20:41:21.514828+00:00",
+  "updated_at": "2026-04-23T20:41:21.514828+00:00"
+ },
+ {
+  "id": "22cc8a32-ccc6-4e21-b4b5-916f6cbdbf2c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-23T20:57:23.694232+00:00",
+  "updated_at": "2026-04-23T20:57:23.694232+00:00"
+ },
+ {
+  "id": "11ea35d3-eb08-4aed-96e7-cc57ddc7ad37",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:35:07.343783+00:00",
+  "updated_at": "2026-04-25T16:35:07.343783+00:00"
+ },
+ {
+  "id": "9dc54cdb-e42f-440c-90ac-a30705caf807",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T13:12:47.546898+00:00",
+  "updated_at": "2026-04-24T13:12:47.546898+00:00"
+ },
+ {
+  "id": "d9424710-da43-4d8b-b3bd-60fc231c113f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T15:45:30.87194+00:00",
+  "updated_at": "2026-04-25T15:45:30.87194+00:00"
+ },
+ {
+  "id": "ed99368a-1f59-4b7d-bcef-6cabfa69597f",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T13:18:05.467605+00:00",
+  "updated_at": "2026-04-24T13:18:05.467605+00:00"
+ },
+ {
+  "id": "c138d66d-5058-48dc-b94c-19e1cac4bd3a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:29:52.316343+00:00",
+  "updated_at": "2026-04-25T16:29:52.316343+00:00"
+ },
+ {
+  "id": "7dfe7cab-df78-47bf-8d1a-e27bf9b9be82",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T23:11:33.002263+00:00",
+  "updated_at": "2026-04-25T23:11:33.002263+00:00"
+ },
+ {
+  "id": "52266078-1979-4655-9600-3ceb57d9a642",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T16:30:45.742569+00:00",
+  "updated_at": "2026-04-24T16:30:45.742569+00:00"
+ },
+ {
+  "id": "ccea4e4e-6313-42a7-b8be-12015d0876a5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T01:12:13.575797+00:00",
+  "updated_at": "2026-04-26T01:12:13.575797+00:00"
+ },
+ {
+  "id": "b4ff6559-53ef-4665-a3e6-d75a13667ac4",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T13:26:58.686202+00:00",
+  "updated_at": "2026-04-24T13:26:58.686202+00:00"
+ },
+ {
+  "id": "32266a19-e80d-4b1b-b647-ce3b8492750e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T15:35:39.334545+00:00",
+  "updated_at": "2026-04-24T15:35:39.334545+00:00"
+ },
+ {
+  "id": "9403433a-4351-4c20-b6a7-6c596eb62a88",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T19:42:25.364421+00:00",
+  "updated_at": "2026-04-25T19:42:25.364421+00:00"
+ },
+ {
+  "id": "7640d853-f16b-4141-b4e6-3b5b77a038f7",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:46:31.303759+00:00",
+  "updated_at": "2026-04-25T16:46:31.303759+00:00"
+ },
+ {
+  "id": "6b2cbe24-27b1-4de0-8120-66ff3d8c63dd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T15:34:48.297078+00:00",
+  "updated_at": "2026-04-24T15:34:48.297078+00:00"
+ },
+ {
+  "id": "2d3fe4b1-a433-46e6-8354-c72edfccec75",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:50:38.416452+00:00",
+  "updated_at": "2026-04-25T15:50:38.416452+00:00"
+ },
+ {
+  "id": "7507fe71-e414-4fb3-a0df-f03280296d6b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:57:09.111715+00:00",
+  "updated_at": "2026-04-24T16:57:09.111715+00:00"
+ },
+ {
+  "id": "ec8d7f56-45af-4693-ab63-bbd39e9d6a21",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:01:20.781077+00:00",
+  "updated_at": "2026-04-24T16:01:20.781077+00:00"
+ },
+ {
+  "id": "8f1fb045-2197-41ad-a4ee-43657c4f0823",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:19:55.185748+00:00",
+  "updated_at": "2026-04-24T16:19:55.185748+00:00"
+ },
+ {
+  "id": "99412834-ef26-4003-9d9e-d9d76edc0b4d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:18:46.470192+00:00",
+  "updated_at": "2026-04-24T16:18:46.470192+00:00"
+ },
+ {
+  "id": "2479cc32-6ef1-4ee6-97d3-a7d058accdaf",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T17:25:51.231241+00:00",
+  "updated_at": "2026-04-24T17:25:51.231241+00:00"
+ },
+ {
+  "id": "9a63f7f1-eed4-4b73-9773-f0b239ac611c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T13:36:27.518677+00:00",
+  "updated_at": "2026-04-24T13:36:27.518677+00:00"
+ },
+ {
+  "id": "834f45aa-e4e0-4dac-bea6-a4f70ce15305",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T13:49:53.031019+00:00",
+  "updated_at": "2026-04-24T13:49:53.031019+00:00"
+ },
+ {
+  "id": "db65a194-bac2-44cb-80be-61dbf1028f83",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T14:03:05.956411+00:00",
+  "updated_at": "2026-04-24T14:03:05.956411+00:00"
+ },
+ {
+  "id": "632402ad-f884-4ee0-a58c-dd8e30028e53",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:18:22.338494+00:00",
+  "updated_at": "2026-04-24T16:18:22.338494+00:00"
+ },
+ {
+  "id": "08d6c156-562a-41f0-8f6f-4c6334c8d91e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T14:14:19.179576+00:00",
+  "updated_at": "2026-04-24T14:14:19.179576+00:00"
+ },
+ {
+  "id": "f0b968c8-51e8-45d5-90ed-8d4e6b989b1f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T16:16:56.962333+00:00",
+  "updated_at": "2026-04-24T16:16:56.962333+00:00"
+ },
+ {
+  "id": "98b4132d-05ea-40fb-adf4-bca4f01775df",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-24T17:20:36.213919+00:00",
+  "updated_at": "2026-04-24T17:20:36.213919+00:00"
+ },
+ {
+  "id": "620edd29-7fc0-4ffa-8fbc-8257e2f4bd96",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T18:52:56.50101+00:00",
+  "updated_at": "2026-04-25T18:52:56.50101+00:00"
+ },
+ {
+  "id": "cbf64ec7-c63a-4069-b6ea-780b48c907bb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T20:58:10.769809+00:00",
+  "updated_at": "2026-04-24T20:58:10.769809+00:00"
+ },
+ {
+  "id": "7c7293fa-d3dd-4a84-913d-a1294ff829e6",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T19:20:49.337836+00:00",
+  "updated_at": "2026-04-24T19:20:49.337836+00:00"
+ },
+ {
+  "id": "c0490a9f-2fda-478a-9707-f94c1a744b30",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T17:54:49.61834+00:00",
+  "updated_at": "2026-04-24T17:54:49.61834+00:00"
+ },
+ {
+  "id": "08383991-e0ed-480f-9f71-1e71dccf6c69",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T17:59:55.049146+00:00",
+  "updated_at": "2026-04-24T17:59:55.049146+00:00"
+ },
+ {
+  "id": "52c15ae3-dd86-4918-9cd1-d8b511c5be06",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T20:54:49.020086+00:00",
+  "updated_at": "2026-04-24T20:54:49.020086+00:00"
+ },
+ {
+  "id": "55d414a6-3542-4f8f-bde1-9815bf32a70b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T11:17:08.032612+00:00",
+  "updated_at": "2026-04-26T11:17:08.032612+00:00"
+ },
+ {
+  "id": "33db437b-3c9a-40f8-b16c-1d3abf2186ce",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T18:12:28.358101+00:00",
+  "updated_at": "2026-04-24T18:12:28.358101+00:00"
+ },
+ {
+  "id": "727e2533-b28f-4486-8d50-559198bd3048",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T20:28:31.927427+00:00",
+  "updated_at": "2026-04-24T20:28:31.927427+00:00"
+ },
+ {
+  "id": "1ba4d1dc-a655-4e25-a6b8-389223698b36",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T22:00:38.378906+00:00",
+  "updated_at": "2026-04-24T22:00:38.378906+00:00"
+ },
+ {
+  "id": "051b0ed0-37b2-4c1f-aec4-15b96fe364e3",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:53:43.574504+00:00",
+  "updated_at": "2026-04-25T15:53:43.574504+00:00"
+ },
+ {
+  "id": "ceced757-addb-4245-8e03-bf923bd5044b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T11:09:09.157644+00:00",
+  "updated_at": "2026-04-25T11:09:09.157644+00:00"
+ },
+ {
+  "id": "5235b183-5c1a-47bc-8791-487f5a821c8a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T21:43:12.672159+00:00",
+  "updated_at": "2026-04-24T21:43:12.672159+00:00"
+ },
+ {
+  "id": "219d0846-b132-434c-8e85-defea75128af",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T21:31:50.394857+00:00",
+  "updated_at": "2026-04-24T21:31:50.394857+00:00"
+ },
+ {
+  "id": "8b8dcd53-16f7-4e39-bf28-f32bd0b3fca4",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T18:34:04.232174+00:00",
+  "updated_at": "2026-04-24T18:34:04.232174+00:00"
+ },
+ {
+  "id": "b6797df0-ee71-4f9d-9322-e3519426bdbd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T19:47:19.937821+00:00",
+  "updated_at": "2026-04-24T19:47:19.937821+00:00"
+ },
+ {
+  "id": "1cb141fc-967a-4db4-a681-c55f4c93ace7",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T19:24:07.875447+00:00",
+  "updated_at": "2026-04-24T19:24:07.875447+00:00"
+ },
+ {
+  "id": "18f15246-9c9f-4339-b7bd-37a3846885bc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T19:28:13.559947+00:00",
+  "updated_at": "2026-04-24T19:28:13.559947+00:00"
+ },
+ {
+  "id": "0c419f11-ba79-443f-9c12-55c57b5597be",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T20:21:18.565579+00:00",
+  "updated_at": "2026-04-25T20:21:18.565579+00:00"
+ },
+ {
+  "id": "bb9dcd3c-2287-4f99-a36b-dd7643e64a33",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:56:04.955515+00:00",
+  "updated_at": "2026-04-25T15:56:04.955515+00:00"
+ },
+ {
+  "id": "ee2eca56-18b5-4512-8312-3e72384ba979",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T11:15:23.873959+00:00",
+  "updated_at": "2026-04-26T11:15:23.873959+00:00"
+ },
+ {
+  "id": "b9485c99-6543-401f-a940-4f660f83fda1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:48:38.246585+00:00",
+  "updated_at": "2026-04-25T12:48:38.246585+00:00"
+ },
+ {
+  "id": "ad409a0e-ca8b-4dbc-af34-3a2fd5322a5c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T13:21:29.769484+00:00",
+  "updated_at": "2026-04-25T13:21:29.769484+00:00"
+ },
+ {
+  "id": "8ddef215-79d8-41e3-ac7a-2dbd8f7be2d2",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T13:37:00.240343+00:00",
+  "updated_at": "2026-04-25T13:37:00.240343+00:00"
+ },
+ {
+  "id": "550a7dc3-4a9f-465d-a951-79f9de2dd6e9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T11:18:32.226377+00:00",
+  "updated_at": "2026-04-26T11:18:32.226377+00:00"
+ },
+ {
+  "id": "cf1f1216-2be6-44a4-ac09-3e0a1fddfa0a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T19:27:36.871575+00:00",
+  "updated_at": "2026-04-25T19:27:36.871575+00:00"
+ },
+ {
+  "id": "263e2aa2-177e-445e-b315-14cc55713c9d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T14:37:34.661378+00:00",
+  "updated_at": "2026-04-25T14:37:34.661378+00:00"
+ },
+ {
+  "id": "8051e974-5d20-45f2-87bf-9a9ce2bed4d3",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T11:26:12.782919+00:00",
+  "updated_at": "2026-04-25T11:26:12.782919+00:00"
+ },
+ {
+  "id": "21deb143-a834-4f8b-a366-cf72ad5f3616",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T12:53:48.505655+00:00",
+  "updated_at": "2026-04-25T12:53:48.505655+00:00"
+ },
+ {
+  "id": "8a80dc51-9533-4a21-ab1c-6d742f3c1f64",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T11:47:49.035223+00:00",
+  "updated_at": "2026-04-25T11:47:49.035223+00:00"
+ },
+ {
+  "id": "30e2c508-8e4e-4759-bc67-5558573b1ce2",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T14:37:59.07073+00:00",
+  "updated_at": "2026-04-25T14:37:59.07073+00:00"
+ },
+ {
+  "id": "4b679e22-ac98-459c-a33c-020b9444236c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T14:43:52.276383+00:00",
+  "updated_at": "2026-04-25T14:43:52.276383+00:00"
+ },
+ {
+  "id": "588c3c8d-c277-4261-81ae-f874c27026cd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T18:57:02.424876+00:00",
+  "updated_at": "2026-04-25T18:57:02.424876+00:00"
+ },
+ {
+  "id": "df54c8c0-581c-4135-8919-b50248105a66",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T13:31:47.841329+00:00",
+  "updated_at": "2026-04-25T13:31:47.841329+00:00"
+ },
+ {
+  "id": "0d2af26b-0317-4cc7-81bb-f31ef2cb29cc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T22:22:40.565591+00:00",
+  "updated_at": "2026-04-24T22:22:40.565591+00:00"
+ },
+ {
+  "id": "9c517ad1-9030-46ae-95ac-1b8554f84b91",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:54:19.886916+00:00",
+  "updated_at": "2026-04-25T12:54:19.886916+00:00"
+ },
+ {
+  "id": "f1f5fb37-3afe-4de5-908f-fd4210207862",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:39:05.069723+00:00",
+  "updated_at": "2026-04-25T16:39:05.069723+00:00"
+ },
+ {
+  "id": "20b7a0a3-4881-4c9c-9e73-8ec405089579",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T12:04:43.344678+00:00",
+  "updated_at": "2026-04-25T12:04:43.344678+00:00"
+ },
+ {
+  "id": "e01d43fe-119f-4dd7-8ff0-301b11cd4d6c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:09:27.172383+00:00",
+  "updated_at": "2026-04-25T12:09:27.172383+00:00"
+ },
+ {
+  "id": "a8eac9fb-57e9-47be-ae28-58d68f9c1d2b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T03:47:07.825206+00:00",
+  "updated_at": "2026-04-26T03:47:07.825206+00:00"
+ },
+ {
+  "id": "5d15fcf9-07ae-452a-8b27-1a4fbb7c460d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T11:16:12.41191+00:00",
+  "updated_at": "2026-04-26T11:16:12.41191+00:00"
+ },
+ {
+  "id": "dc92afbf-978d-4fcc-816d-8e4d9844f771",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T11:16:39.417148+00:00",
+  "updated_at": "2026-04-26T11:16:39.417148+00:00"
+ },
+ {
+  "id": "e80a88dc-d783-483c-b622-d9202db4ea56",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T22:58:35.880223+00:00",
+  "updated_at": "2026-04-24T22:58:35.880223+00:00"
+ },
+ {
+  "id": "e683d294-4372-45c0-b3f4-382ff9da87c0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T23:07:01.806251+00:00",
+  "updated_at": "2026-04-24T23:07:01.806251+00:00"
+ },
+ {
+  "id": "4d378b5e-1690-4908-b329-9456ff611cdb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T11:32:55.510707+00:00",
+  "updated_at": "2026-04-25T11:32:55.510707+00:00"
+ },
+ {
+  "id": "925b5165-34e0-46f3-a7cd-896dd3ebe9aa",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T20:16:54.334968+00:00",
+  "updated_at": "2026-04-25T20:16:54.334968+00:00"
+ },
+ {
+  "id": "d58469b6-ff21-411d-b90f-a7ba84cd5a48",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:15:50.330194+00:00",
+  "updated_at": "2026-04-25T12:15:50.330194+00:00"
+ },
+ {
+  "id": "981162bb-d9c6-4687-a027-3742b19a451b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T20:34:38.696441+00:00",
+  "updated_at": "2026-04-25T20:34:38.696441+00:00"
+ },
+ {
+  "id": "6c90b4c9-a317-4d87-aca6-17ea8d46b0d2",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:21:29.564854+00:00",
+  "updated_at": "2026-04-25T12:21:29.564854+00:00"
+ },
+ {
+  "id": "f47cfc54-286b-4f37-8cf5-9b37f3aaf21b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:14:38.453883+00:00",
+  "updated_at": "2026-04-25T15:14:38.453883+00:00"
+ },
+ {
+  "id": "0e51fa65-6ae0-47c9-b346-9b9ee639cdbc",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:15:33.252348+00:00",
+  "updated_at": "2026-04-25T12:15:33.252348+00:00"
+ },
+ {
+  "id": "8b1ca0b1-0f50-4511-91d1-966e5f6049dd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:36:58.064393+00:00",
+  "updated_at": "2026-04-25T17:36:58.064393+00:00"
+ },
+ {
+  "id": "f57991e6-9619-4813-a19a-80122d561e89",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T16:39:09.10249+00:00",
+  "updated_at": "2026-04-25T16:39:09.10249+00:00"
+ },
+ {
+  "id": "ebd19e61-eac3-49f5-8b5a-d322efa56b62",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:22:15.840477+00:00",
+  "updated_at": "2026-04-25T12:22:15.840477+00:00"
+ },
+ {
+  "id": "b2101536-d02c-4128-8739-0d98f344ff27",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:04:04.465995+00:00",
+  "updated_at": "2026-04-25T15:04:04.465995+00:00"
+ },
+ {
+  "id": "6eef100f-1e36-490c-a37e-1e8c6d038744",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:20:08.124322+00:00",
+  "updated_at": "2026-04-25T12:20:08.124322+00:00"
+ },
+ {
+  "id": "e1fa9987-0c84-4208-a73e-28cc78a5304a",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:04:42.630552+00:00",
+  "updated_at": "2026-04-25T15:04:42.630552+00:00"
+ },
+ {
+  "id": "e728e448-03d5-451d-a7dc-9f6a85363a0e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T11:39:33.361921+00:00",
+  "updated_at": "2026-04-25T11:39:33.361921+00:00"
+ },
+ {
+  "id": "1d1ca748-afa5-4e21-831a-4018bdc74424",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-24T23:15:07.761238+00:00",
+  "updated_at": "2026-04-24T23:15:07.761238+00:00"
+ },
+ {
+  "id": "6e1febe1-e038-4b82-995a-a516b5d44ba3",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T13:15:18.907614+00:00",
+  "updated_at": "2026-04-25T13:15:18.907614+00:00"
+ },
+ {
+  "id": "a5760baa-1be7-4dd4-b218-501929149893",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:19:48.589265+00:00",
+  "updated_at": "2026-04-25T17:19:48.589265+00:00"
+ },
+ {
+  "id": "5c468cc0-45bf-4a70-bc50-dd9d72abd6ff",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T15:10:33.996783+00:00",
+  "updated_at": "2026-04-25T15:10:33.996783+00:00"
+ },
+ {
+  "id": "25c32bad-af58-4a84-a25c-066ee50fcb6b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:25:38.125586+00:00",
+  "updated_at": "2026-04-25T17:25:38.125586+00:00"
+ },
+ {
+  "id": "283fdedd-0f22-4c54-86d0-be30b48345c0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:36:04.198601+00:00",
+  "updated_at": "2026-04-25T17:36:04.198601+00:00"
+ },
+ {
+  "id": "36211ef2-9c8a-432a-83fb-fe87bb5ebb2d",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:29:54.773557+00:00",
+  "updated_at": "2026-04-25T17:29:54.773557+00:00"
+ },
+ {
+  "id": "40fd9834-592b-49dd-a4fd-9b963c71d8d0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T19:56:42.721669+00:00",
+  "updated_at": "2026-04-25T19:56:42.721669+00:00"
+ },
+ {
+  "id": "3a2d2e46-f799-4a6c-a47d-80ecdf4343f5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:02:29.47056+00:00",
+  "updated_at": "2026-04-25T17:02:29.47056+00:00"
+ },
+ {
+  "id": "68e8024c-76f7-4940-bc3a-220f2c58e4ad",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T19:34:52.458028+00:00",
+  "updated_at": "2026-04-25T19:34:52.458028+00:00"
+ },
+ {
+  "id": "6e8f116f-aef2-4ba9-9e68-5e07e194bcba",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:34:45.069352+00:00",
+  "updated_at": "2026-04-25T12:34:45.069352+00:00"
+ },
+ {
+  "id": "6d6176cc-b5ac-457c-a706-cd44b1556c65",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T19:08:25.909554+00:00",
+  "updated_at": "2026-04-25T19:08:25.909554+00:00"
+ },
+ {
+  "id": "4af71d1b-3650-4090-aa26-c05dd8e949e0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T14:20:25.688286+00:00",
+  "updated_at": "2026-04-25T14:20:25.688286+00:00"
+ },
+ {
+  "id": "759af95a-811d-433a-b046-2d7bbedfdcda",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T20:05:35.835464+00:00",
+  "updated_at": "2026-04-25T20:05:35.835464+00:00"
+ },
+ {
+  "id": "a70da9e7-5f55-41ec-83d0-3e7cbac0e8eb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T13:19:22.525492+00:00",
+  "updated_at": "2026-04-25T13:19:22.525492+00:00"
+ },
+ {
+  "id": "2e933281-4990-4b01-a558-e3ffada4540b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T14:20:10.833573+00:00",
+  "updated_at": "2026-04-25T14:20:10.833573+00:00"
+ },
+ {
+  "id": "cc051d99-9ccf-4f9a-a90b-9171408186a6",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T18:01:31.718711+00:00",
+  "updated_at": "2026-04-25T18:01:31.718711+00:00"
+ },
+ {
+  "id": "632545f6-afb9-4c36-9642-fc8d468a4bef",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T12:07:43.094301+00:00",
+  "updated_at": "2026-04-25T12:07:43.094301+00:00"
+ },
+ {
+  "id": "221ed414-3ab9-4883-93e1-e3479a223698",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T17:59:16.764196+00:00",
+  "updated_at": "2026-04-25T17:59:16.764196+00:00"
+ },
+ {
+  "id": "d48082f3-7f45-4baa-bf4e-f43340bfa7aa",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T01:14:29.887499+00:00",
+  "updated_at": "2026-04-25T01:14:29.887499+00:00"
+ },
+ {
+  "id": "293bb147-d96e-4d0e-bbe8-9315e2446cb2",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T20:21:08.092943+00:00",
+  "updated_at": "2026-04-25T20:21:08.092943+00:00"
+ },
+ {
+  "id": "52263d09-d774-4e79-910f-468fe54b35ea",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-27T16:20:24.103643+00:00",
+  "updated_at": "2026-04-27T16:20:24.103643+00:00"
+ },
+ {
+  "id": "9719f04c-d7cc-439e-953d-6daf3e050492",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T20:51:17.132755+00:00",
+  "updated_at": "2026-04-25T20:51:17.132755+00:00"
+ },
+ {
+  "id": "6d80c949-1f37-4e4e-b6ba-95929d5537ab",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T16:19:24.27692+00:00",
+  "updated_at": "2026-04-27T16:19:24.27692+00:00"
+ },
+ {
+  "id": "cead0d3b-7161-4c6b-873f-208cbe168cac",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T21:14:50.615989+00:00",
+  "updated_at": "2026-04-25T21:14:50.615989+00:00"
+ },
+ {
+  "id": "516e3650-e868-4cbe-90d0-719f5fc7a4f8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T12:09:47.250455+00:00",
+  "updated_at": "2026-04-26T12:09:47.250455+00:00"
+ },
+ {
+  "id": "e0fd80cd-abf7-478e-bda8-9330c4db41b1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T10:25:46.640436+00:00",
+  "updated_at": "2026-04-26T10:25:46.640436+00:00"
+ },
+ {
+  "id": "06851966-f37e-414c-a624-9bf39e424c7f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T21:25:09.216914+00:00",
+  "updated_at": "2026-04-25T21:25:09.216914+00:00"
+ },
+ {
+  "id": "0128a229-c16c-45f9-ac7c-0f04075e6e64",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T21:30:53.634315+00:00",
+  "updated_at": "2026-04-25T21:30:53.634315+00:00"
+ },
+ {
+  "id": "8a99eb7e-b166-47ff-a1d8-25221f039d21",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-25T21:31:54.46475+00:00",
+  "updated_at": "2026-04-25T21:31:54.46475+00:00"
+ },
+ {
+  "id": "b24cd3d3-6ec9-4862-a629-7428253f59c9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T22:24:59.859964+00:00",
+  "updated_at": "2026-04-25T22:24:59.859964+00:00"
+ },
+ {
+  "id": "bc58461f-d869-4538-ad2e-9da100f05157",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T22:35:27.963803+00:00",
+  "updated_at": "2026-04-25T22:35:27.963803+00:00"
+ },
+ {
+  "id": "8409f101-c183-48f0-9382-9463b19a99bd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T22:38:30.767651+00:00",
+  "updated_at": "2026-04-25T22:38:30.767651+00:00"
+ },
+ {
+  "id": "0e12782c-105a-4fe1-8a24-c86b54761b4c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T22:41:20.772198+00:00",
+  "updated_at": "2026-04-25T22:41:20.772198+00:00"
+ },
+ {
+  "id": "14d32d19-a423-4a62-b8b9-6fb46b54cb4b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-25T22:41:48.385961+00:00",
+  "updated_at": "2026-04-25T22:41:48.385961+00:00"
+ },
+ {
+  "id": "8d21da60-8fde-4b23-9f32-8319ee9197d0",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T20:01:20.633039+00:00",
+  "updated_at": "2026-04-27T20:01:20.633039+00:00"
+ },
+ {
+  "id": "4993c821-41c1-439d-88a1-c8f475c6b39c",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-26T16:54:49.238197+00:00",
+  "updated_at": "2026-04-26T16:54:49.238197+00:00"
+ },
+ {
+  "id": "f8bd0e50-b314-4053-98e5-c50caf54e8c8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T08:38:48.878266+00:00",
+  "updated_at": "2026-04-27T08:38:48.878266+00:00"
+ },
+ {
+  "id": "9e4c5686-597c-467e-8dfb-bcdc0e91af5c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T15:08:04.672217+00:00",
+  "updated_at": "2026-04-27T15:08:04.672217+00:00"
+ },
+ {
+  "id": "3a579a99-a68d-4c51-8979-9302f5ea593e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:58:33.74441+00:00",
+  "updated_at": "2026-04-26T13:58:33.74441+00:00"
+ },
+ {
+  "id": "455082cc-be36-464f-8c37-f3b5914fb0a5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:11:08.395876+00:00",
+  "updated_at": "2026-04-26T13:11:08.395876+00:00"
+ },
+ {
+  "id": "6af289a5-cc4a-4a17-90cf-415eacd9c6bb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T14:00:33.870696+00:00",
+  "updated_at": "2026-04-26T14:00:33.870696+00:00"
+ },
+ {
+  "id": "0d9f66de-c1c6-478e-9cd9-12b02f3f4fbf",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-26T13:06:37.900078+00:00",
+  "updated_at": "2026-04-26T13:06:37.900078+00:00"
+ },
+ {
+  "id": "2079b122-719f-43a8-8da6-befc01da6365",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:09:57.650033+00:00",
+  "updated_at": "2026-04-26T13:09:57.650033+00:00"
+ },
+ {
+  "id": "6af7e86d-2a85-47e0-b80a-d8c2189547f6",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:20:26.856715+00:00",
+  "updated_at": "2026-04-26T13:20:26.856715+00:00"
+ },
+ {
+  "id": "51d719a4-add8-47cd-90f2-f25253c436e5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T20:13:48.203988+00:00",
+  "updated_at": "2026-04-26T20:13:48.203988+00:00"
+ },
+ {
+  "id": "96df3c89-20cb-4cc9-8183-1b80b2509b1e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:26:02.715383+00:00",
+  "updated_at": "2026-04-26T13:26:02.715383+00:00"
+ },
+ {
+  "id": "1a6a493a-b34d-48a6-ab32-9b6a71bc06eb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:33:15.488589+00:00",
+  "updated_at": "2026-04-26T13:33:15.488589+00:00"
+ },
+ {
+  "id": "067b1d78-2277-49bb-8200-87f3a552a438",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T13:16:58.561723+00:00",
+  "updated_at": "2026-04-27T13:16:58.561723+00:00"
+ },
+ {
+  "id": "b081a2e6-72cb-4d02-8054-0568741c12eb",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T14:36:31.751624+00:00",
+  "updated_at": "2026-04-27T14:36:31.751624+00:00"
+ },
+ {
+  "id": "6c5496ed-4a13-48fb-9c0a-72da706d160e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T11:11:14.831598+00:00",
+  "updated_at": "2026-04-27T11:11:14.831598+00:00"
+ },
+ {
+  "id": "fe578471-aa0d-48b7-afb0-f211c5aed49c",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T14:36:45.854388+00:00",
+  "updated_at": "2026-04-27T14:36:45.854388+00:00"
+ },
+ {
+  "id": "fb805b08-db0d-4ef3-8cfc-a087ec4910e9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T14:32:36.965491+00:00",
+  "updated_at": "2026-04-27T14:32:36.965491+00:00"
+ },
+ {
+  "id": "08793baa-a74a-4051-9ea8-a2635c9005b3",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T11:22:08.741476+00:00",
+  "updated_at": "2026-04-27T11:22:08.741476+00:00"
+ },
+ {
+  "id": "7b16a0dc-3f0a-4211-85fa-ed1f6c6021c8",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T20:32:42.544426+00:00",
+  "updated_at": "2026-04-27T20:32:42.544426+00:00"
+ },
+ {
+  "id": "c0f1318e-0c48-4579-8877-0ed62eee9d3f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T13:45:11.769767+00:00",
+  "updated_at": "2026-04-26T13:45:11.769767+00:00"
+ },
+ {
+  "id": "4ee3d44d-a06e-4133-9620-491972700fd5",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T13:27:24.313796+00:00",
+  "updated_at": "2026-04-27T13:27:24.313796+00:00"
+ },
+ {
+  "id": "5e37e3e4-4064-4c0c-809c-8862afcdca86",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T13:24:52.749998+00:00",
+  "updated_at": "2026-04-27T13:24:52.749998+00:00"
+ },
+ {
+  "id": "ec4f73f0-3bcf-4357-bb3c-812e0b70f189",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T14:17:05.295743+00:00",
+  "updated_at": "2026-04-26T14:17:05.295743+00:00"
+ },
+ {
+  "id": "b5f326ad-10c6-4e3f-9126-4b00d5971562",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T14:30:51.460582+00:00",
+  "updated_at": "2026-04-26T14:30:51.460582+00:00"
+ },
+ {
+  "id": "0add6c4f-3855-4d26-977b-0240aac7d709",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-26T14:39:54.410559+00:00",
+  "updated_at": "2026-04-26T14:39:54.410559+00:00"
+ },
+ {
+  "id": "264af758-ac9b-4166-8bcd-37c3d20f61cd",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-26T14:55:27.281836+00:00",
+  "updated_at": "2026-04-26T14:55:27.281836+00:00"
+ },
+ {
+  "id": "e64a0465-3923-4683-ab3f-48e6a0cdafd9",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T18:42:23.836303+00:00",
+  "updated_at": "2026-04-26T18:42:23.836303+00:00"
+ },
+ {
+  "id": "776a3e8b-9284-448a-9f1b-30a9ed63230b",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-27T18:52:53.593857+00:00",
+  "updated_at": "2026-04-27T18:52:53.593857+00:00"
+ },
+ {
+  "id": "750e4ae0-dbcd-45ae-be59-87f0692043e1",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T14:42:38.075632+00:00",
+  "updated_at": "2026-04-26T14:42:38.075632+00:00"
+ },
+ {
+  "id": "d2ce7906-f180-4d9d-a233-9e09d7bb9018",
+  "outcome_old": "ongoing",
+  "status": "converted",
+  "converted_at": "2026-04-26T14:43:39.514984+00:00",
+  "updated_at": "2026-04-26T14:43:39.514984+00:00"
+ },
+ {
+  "id": "3fcb3cc5-1d1e-45e3-b930-a299b08fb372",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-28T00:36:35.348415+00:00",
+  "updated_at": "2026-04-28T00:36:35.348415+00:00"
+ },
+ {
+  "id": "321ade06-51a8-48d5-952e-258d153e82e4",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T14:53:06.433966+00:00",
+  "updated_at": "2026-04-26T14:53:06.433966+00:00"
+ },
+ {
+  "id": "9fa950c6-093c-4689-80bb-300e78bea2ae",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T15:03:35.561196+00:00",
+  "updated_at": "2026-04-26T15:03:35.561196+00:00"
+ },
+ {
+  "id": "fde4885f-2420-461e-8334-1b4be00c4946",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T15:00:51.034922+00:00",
+  "updated_at": "2026-04-26T15:00:51.034922+00:00"
+ },
+ {
+  "id": "9173c5e6-494f-4a81-b574-d5e46961f5db",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T17:15:36.380237+00:00",
+  "updated_at": "2026-04-27T17:15:36.380237+00:00"
+ },
+ {
+  "id": "6a4ca329-f4f3-4896-b861-d7802720293f",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T19:11:08.703794+00:00",
+  "updated_at": "2026-04-27T19:11:08.703794+00:00"
+ },
+ {
+  "id": "5df38116-f4e8-41d7-a1d9-9827163863dd",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T16:17:42.246739+00:00",
+  "updated_at": "2026-04-26T16:17:42.246739+00:00"
+ },
+ {
+  "id": "a595d511-bafa-4571-a353-710213338596",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-26T16:32:17.601304+00:00",
+  "updated_at": "2026-04-26T16:32:17.601304+00:00"
+ },
+ {
+  "id": "d64b9896-9b00-4351-b7e7-2fd2e624923b",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T12:17:30.371773+00:00",
+  "updated_at": "2026-04-27T12:17:30.371773+00:00"
+ },
+ {
+  "id": "98e52405-a23a-4830-93a6-d9129568391e",
+  "outcome_old": null,
+  "status": "converted",
+  "converted_at": "2026-04-27T14:52:51.123545+00:00",
+  "updated_at": "2026-04-27T14:52:51.123545+00:00"
+ }
+]
