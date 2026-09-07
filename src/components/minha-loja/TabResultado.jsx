@@ -46,6 +46,9 @@ import {
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
+import ErrorState from "@/components/shared/ErrorState";
+import { Skeleton } from "@/components/ui/skeleton";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 // --------------------------------------------------------------- helpers
 const formatBRL = (v) =>
@@ -766,6 +769,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
   const [inventoryItems, setInventoryItems] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [erroDeCarga, setErroDeCarga] = useState(null);
 
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -776,6 +780,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
   const loadData = useCallback(async () => {
     if (!franchiseId) return;
     setLoading(true);
+    setErroDeCarga(null);
     try {
       const results = await Promise.allSettled([
         Sale.filter(
@@ -822,10 +827,16 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
       setAuditLogs(get(results[3]));
 
       const failed = results.map((r, i) => r.status === "rejected" ? ["vendas", "despesas", "estoque", "auditoria"][i] : null).filter(Boolean);
-      if (failed.length) toast.error(`Alguns dados não carregaram: ${failed.join(", ")}`);
+      // Vendas é o que sustenta a tela inteira: sem ela, estado de erro — não um DRE zerado,
+      // que o franqueado leria como "não vendi nada".
+      if (results[0].status === "rejected") {
+        setErroDeCarga(safeErrorMessage(results[0].reason, "Não foi possível carregar as vendas do período."));
+      } else if (failed.length) {
+        toast.error(`Alguns dados não carregaram: ${failed.join(", ")}`);
+      }
     } catch (e) {
       console.error("Erro ao carregar dados:", e);
-      toast.error("Erro ao carregar dados do resultado.");
+      setErroDeCarga(safeErrorMessage(e, "Erro ao carregar os dados do resultado."));
     } finally {
       setLoading(false);
     }
@@ -1020,11 +1031,27 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
   const hasData = monthSales.length > 0 || monthExpenses.length > 0;
 
   if (loading) {
+    // Esqueleto no lugar do spinner: a tela demora e o esqueleto ja mostra o formato
     return (
-      <div className="flex items-center justify-center py-16">
-        <MaterialIcon icon="progress_activity" size={32} className="animate-spin text-brand" />
-        <span className="ml-3 text-ink-2">Carregando...</span>
+      <div className="space-y-5">
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-40 rounded-2xl" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24 rounded-2xl" />
+        </div>
+        <Skeleton className="h-56 rounded-2xl" />
       </div>
+    );
+  }
+
+  if (erroDeCarga) {
+    return (
+      <ErrorState
+        titulo="Não deu para carregar o resultado"
+        texto={erroDeCarga}
+        onTentarNovamente={loadData}
+      />
     );
   }
 

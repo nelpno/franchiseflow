@@ -27,6 +27,7 @@ import ConversionCard from "./ConversionCard";
 import ConversionDetailSheet from "./ConversionDetailSheet";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { generateSmartActions } from "@/lib/smartActions";
+import EmptyState from "@/components/shared/EmptyState";
 
 const MONTH_OFFSET_MIN = -2;
 
@@ -566,6 +567,22 @@ export default function FranchiseeDashboard() {
         );
       })()}
 
+      {stats.salesCount === 0 ? (
+        /* Sem venda no periodo, o grid de quatro zeros parece defeito. Melhor dizer o que
+           aconteceu e onde lancar a primeira. */
+        <section className="mb-6 rounded-2xl bg-white border border-surface-line">
+          <EmptyState
+            icone="point_of_sale"
+            titulo={period === "today" ? "Nenhuma venda hoje ainda" : "Nenhuma venda no período"}
+            texto={
+              period === "today"
+                ? "Assim que a primeira venda entrar, ela aparece aqui."
+                : "Troque o período acima ou lance a venda que faltou."
+            }
+            acao={{ rotulo: "Lançar venda", onClick: () => navigate("/Vendas?action=nova-venda") }}
+          />
+        </section>
+      ) : (
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
         <StatsCard
           title={period === "today" ? "Vendas Hoje" : "Vendas"}
@@ -597,6 +614,7 @@ export default function FranchiseeDashboard() {
           onClick={() => setFunnelOpen(true)}
         />
       </section>
+      )}
 
       {(period === "today" || (period === "month" && monthOffset === 0)) && (
         <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />

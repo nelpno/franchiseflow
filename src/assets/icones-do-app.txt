@@ -87,6 +87,7 @@ hourglass_empty
 http
 iframe
 image
+inbox
 info
 input
 inventory
