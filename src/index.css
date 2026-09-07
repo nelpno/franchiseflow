@@ -6,7 +6,22 @@ html, body, #root {
   height: 100%;
 }
 
-/* Material Symbols - Google Icons (Stitch design system) */
+/* Material Symbols - subset self-hosted (Stitch design system).
+   O Google servia a familia INTEIRA: 1.130.004 bytes de woff2 em TODO boot, para os 215 nomes
+   que este app pode usar. E com display=swap, ate a fonte chegar cada icone aparecia como a
+   PALAVRA ("wb_sunny"). Aqui vai so o subset (28.424 bytes, -97,5%), com o unico eixo variavel
+   que o app usa (FILL 0..1; wght/GRAD/opsz sao fixos) e font-display: block, que deixa o espaco
+   vazio em vez de escrever o nome do icone.
+   Regerar depois de usar um icone novo: npm run icons:build
+   Guarda contra icone fora do subset:   npm run icons:check */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('./assets/material-symbols-subset.woff2') format('woff2');
+}
+
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
