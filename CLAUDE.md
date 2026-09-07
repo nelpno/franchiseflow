@@ -438,3 +438,112 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **EXPLAIN de SQL function STABLE** mostra só `Function Scan` opaco (a função inlinea no plano externo mas não aparece). Para ver o plano real, copiar o body da função (`pg_get_functiondef`) e rodar `EXPLAIN ANALYZE` direto na query SQL inline
 - **`pg_get_functiondef(p.oid)` falha com `42809: "X" is an aggregate function`** quando `p.prokind='a'`. Ao iterar `pg_proc` (catálogo de funções), filtrar `WHERE p.prokind='f'`. NÃO usar `proisagg` — coluna removida em PG 11+
 - **Conferir backfill/UPDATE em query SEPARADA, nunca no mesmo CTE**: `WITH upd AS (UPDATE...RETURNING) SELECT count(*) FROM t WHERE...` — os SELECTs leem o snapshot PRÉ-update (semântica de CTE data-modifying do Postgres), parecendo que o UPDATE não fez efeito. Rodar a contagem de conferência num `execute_sql` à parte. Pegou no backfill customer_name 16/06 (mostrou "5748 restantes" falso; real ~0)
+
+## Auditoria 07/09/2026 — o que mudou (ondas 0 a 3)
+
+> Relatórios completos em [docs/auditoria-2026-09/](docs/auditoria-2026-09/) (6 frentes + consolidado).
+> Aqui só os fatos que mudam decisão em sessões futuras.
+
+### 🔴 A stack de produção NÃO usava o `nginx.conf` do repo — agora usa um equivalente
+Até 07/09 a stack 39 escrevia um nginx de 8 linhas por `echo`: **sem gzip e sem
+`Cache-Control`**. Medido no live: **2.226.597 bytes crus, 0% comprimido**. O compose agora
+escreve a config por heredoc, com `gzip on` nível 6, `/assets` `immutable` 1 ano, `index.html`
+`no-store` e 4 headers de segurança — mais `nginx -t` com **fallback** para a config mínima, para
+que um erro de sintaxe não derrube o site. Caminho crítico: **2.226.597 → 248.411 bytes (−88,8%)**.
+Conferir depois de qualquer mexida na stack:
+`curl -sID -H 'Accept-Encoding: gzip' https://app.maximassas.tech/assets/index-*.js | grep -iE 'content-encoding|cache-control'`.
+⚠️ O `Dockerfile` + `nginx.conf` do repo continuam **não sendo usados** pela stack (ela faz
+`git clone` + `npm ci` + `vite build` no entrypoint — daí os ~75 s de 502 por deploy).
+
+### `manualChunks` TEM de ser função, nunca objeto
+Na forma objeto o Rollup aloja no chunk manual também os módulos compartilhados que ele "toca
+primeiro": o `__vitePreload` caiu dentro de `export` (jspdf+xlsx, 856 KB) e o `clsx` do `cn()`
+dentro de `recharts` (415 KB) — tornando **os dois import ESTÁTICO do chunk de entrada**. O
+franqueado baixava 1,27 MB de PDF e gráficos para abrir a tela de vender. Verificação: o
+`dist/index.html` só pode ter `modulepreload` de `vendor/supabase/dates/ui`.
+
+### Guarda contra tela branca: `npm run lint:undef`
+`no-undef` e `react/jsx-no-undef` estão apagados no `eslint.config.js` (o bloco `rules:`
+sobrescreve o do `recommended`). `eslint.strict.config.js` liga só essas duas sobre `src/`
+inteiro — inclusive `ui/`, `App.jsx` e `pages.config.js`, que o lint normal ignora.
+`npm run verify:undef` prova a guarda com arquivo-canário (0 erros tanto pode ser código limpo
+quanto regra desligada). **Ela já pegou um caso real no mesmo dia**: um `formatBRL` não importado
+no `AsaasSetupPanel` que passava no build E no lint normal e deixaria o Financeiro em branco.
+
+### RLS: helpers uma vez por query, e trava de escalonamento
+- `conv_msg_select`, `bot_conv_select` e `bot_conv_update` passaram a usar `(select fn())`. As
+  funções são STABLE e rodavam **uma vez por linha** em 213 mil linhas. ⚠️ `franchise_id = any
+  ((select managed_franchise_ids())::text[])` — sem o cast o Postgres lê a subquery como conjunto
+  de linhas e dá `operator does not exist: text = text[]`.
+- 🔴 **`profiles_update` e `marketing_payments_update` tinham `WITH CHECK` nulo** — quando omitido,
+  o Postgres reusa o `USING`, e "a minha linha" continua minha depois de eu virar admin. Provado
+  executando como franqueada real: `role='admin'` passava, anexar unidade alheia dava acesso a 12
+  vendas de outro dono, e `status='confirmed'` auto-aprovava a própria verba. **Policy não resolve**
+  (WITH CHECK não vê OLD) e `REVOKE` por coluna quebraria o admin, que também é `authenticated`:
+  a trava são os triggers `trg_guard_profile_privilege_columns` e
+  `trg_guard_marketing_payment_approval`.
+- **50 → 21 funções SECURITY DEFINER expostas a `anon`.** 🔴 NUNCA revogar de `anon` os helpers
+  `is_admin`/`is_admin_or_manager`/`is_cs_or_admin`/`managed_franchise_ids`: as policies os chamam
+  no contexto de quem lê, e sem `EXECUTE` o deslogado recebe **500 em vez de zero linhas**.
+
+### `daily_summaries.conversion_rate` era `numeric(5,2)` e derrubava o cron inteiro
+Teto 999,99. Uma unidade com 11 vendas e 1 contato dá 1100% → `numeric field overflow` mata a
+execução de **todas** as franquias do dia. Falhou em 26/07, 30/07 e 07/09; a série ficou parada em
+05/09 e o ranking de 7/30 dias do Painel perdeu os dias. Agora `numeric(8,2)` + `LEAST`. A coluna
+tem **zero consumidores** no app. Reprocessar dia faltante: `select aggregate_daily_data('AAAA-MM-DD')`.
+
+### RPCs novas
+`get_franchise_bot_pulse(franchise_id)` (última conversa + 7d, 0,6 ms — duas subqueries de
+propósito; um agregado único sobre a unidade custa 297 ms) · `get_human_message_totals` (agrega por
+franquia; a antiga `get_human_message_counts` devolvia 1 linha por conversa e o PostgREST **cortava
+em 1.000**, truncando o alerta calado) · `get_cs_franchise_contacts` (dono + telefone do CS) ·
+`sentinela_diaria` + `sentinela_marketing_duplicado`.
+⚠️ `get_bot_conversation_summary` tinha um CTE varrendo as **938 mil** linhas de
+`conversation_messages` sem filtro de data: 12,6 s. Com a janela + o índice
+`idx_conv_msg_human_conv (created_at, conversation_id) where direction='human'` virou index-only e
+caiu para ~66 ms. **EXISTS correlacionado foi testado e é PIOR (38 s, 115 mil loops).**
+
+### `supabase.rpc()` resolve a promise mesmo com erro
+O erro vem em `{ data, error }`. Sem desembrulhar, `Promise.allSettled` marca como *fulfilled*, o
+código faz `?.data || []` e a tela mostra **card vazio em vez de erro** — foi assim que as 3 RPCs de
+bot ficaram em HTTP 500 por 24 h sem ninguém ver. O `AdminDashboard` tem um helper `rpc()` que lança.
+
+### Sentinela diária (`pg_cron` 08:10 BRT, jobid 5)
+Cron que falhou · `daily_summaries` sem o dia anterior · franquia que vende todo dia e parou 2+ dias ·
+marketing duplicado · unidade ativa sem cobrança · pedido da semana sem frete → `notify_admins()`.
+Desligar: `select cron.unschedule('sentinela-diaria')`. Ver sem gravar: rodar dentro de um `DO` que
+termina em `raise exception`.
+⚠️ **Regra de alarme nasce errada com facilidade**: "2+ despesas de marketing no mês" parecia certo e
+é LEGÍTIMO (verba do Meta + panfleto) — acusou 3 franquias corretas na 1ª execução. A assinatura de
+duplicata real é **mesmo valor + um manual + um automático**. Alarme falso diário treina a pessoa a
+ignorar a sentinela inteira.
+
+### Franqueado: "robô ativo" agora significa que ele CONVERSOU
+`botActive` era `!!(franchiseConfig && evoId)` — "existe linha de config", nunca ficava falso.
+Medido em 07/09: **8 franquias vendendo com o robô sem uma conversa há 7+ dias** viam "Tudo em dia!".
+Agora sai de `get_franchise_bot_pulse`, com cenário `bot_parado` no `PriorityAction` e guarda
+`hasRecentSales` para não alarmar unidade em implantação.
+
+### Outros fatos medidos que mudam decisão
+- **`daily_checklists` nunca teve uma linha na vida** e a home do franqueado a consultava em todo
+  load e todo poll (576 req/dia por nada). Query removida; a página `MyChecklist` é rota sem link.
+- **Tour de boas-vindas**: "não tem linha de checklist" ≠ "precisa de onboarding". 57 das 67 ativas
+  não têm linha, e **todas as 57 têm mais de 30 dias**. Como a decisão se apoiava só em
+  `localStorage`, todo celular novo jogava franqueada veterana nas 7 telas. Agora exige unidade
+  criada há menos de 30 dias.
+- **`delivery_fee_rules` está preenchida em 61 das 67** e só o robô lia. 622 entregas em 90 dias
+  saíram com frete R$ 0 (frete é receita no DRE). `lib/deliveryFeeRules.js` transforma em chips;
+  **não adivinha valor** — a venda manual não sabe a distância, então só preenche com 1 opção.
+- **`system_subscriptions`**: franquia SEM LINHA aparecia como travessão neutro (é o pior caso — o
+  cron de sync nunca a vê). E "PENDING" era o mesmo badge de quem venceu há 30 dias. Fonte única:
+  `lib/subscriptionStatus.js`.
+- **Comparativo mês a mês**: no mês CORRENTE o mês anterior tem de ser cortado no mesmo dia, senão
+  todo dia 2 a rede inteira aparece "em queda".
+- **Telefone da franqueada**: `franchises.phone_number` está vazio em **67 de 67**;
+  o número que presta é `franchise_configurations.personal_phone_for_summary` (62 de 67).
+- 🔴 **A `get_franchise_health_signals` e o `reconcile_cs_auto_tasks` que rodam em produção não
+  existem em `.sql` nenhum do ecossistema** — o `09-*.sql` do repo é mais velho e um
+  `CREATE OR REPLACE` com ele **regride o radar do Celso** (perde `giro_baixo`, `marketing_late`,
+  `cs_agreements`, cooldown, `parked_until`). Por isso o contato do CS virou RPC separada.
+- **`productWeight.test.mjs` tem ZERO asserts** e 3 dos 5 arquivos de teste não usam `test()` — a
+  cobertura no papel é maior que a real. `npm run test:unit` roda os 4 que de fato verificam.
