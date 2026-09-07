@@ -11,17 +11,21 @@ function StatsCard({ title, value, rawValue, previousValue, icon: Icon, trend, c
   const getTrendDisplay = () => {
     if (!trend) return null;
 
-    let percentageChange = 0;
-    if (previousValue > 0) {
-      percentageChange = ((numericValue - previousValue) / previousValue) * 100;
-    } else if (numericValue > 0 && previousValue === 0) {
-      percentageChange = 100;
-    }
+    // Sem base nao existe porcentagem. A versao anterior inventava "+100%" quando o
+    // periodo anterior era ZERO — e isso e o caso NORMAL, nao a excecao: nos ultimos
+    // 90 dias, 828 dos 3.169 dias com venda (26,1%), em 65 das 67 unidades, vinham de
+    // um dia sem venda nenhuma (segunda contra domingo fechado). O card dizia "+100%"
+    // toda segunda. Sem base, nao dizemos nada — que e o que o card do admin ja fazia
+    // e o que o CLAUDE.md ja descrevia. Auditoria 08/09/2026.
+    if (previousValue == null || previousValue <= 0) return null;
+
+    const percentageChange = ((numericValue - previousValue) / previousValue) * 100;
+    if (!Number.isFinite(percentageChange)) return null;
 
     const isUp = trend === 'up';
     return (
       <span className={`text-xs font-bold flex items-center gap-0.5 ${
-        isUp ? 'text-ok' : 'text-err'
+        isUp ? 'text-ok-ink' : 'text-err'
       }`}>
         <MaterialIcon icon={isUp ? "arrow_upward" : "arrow_downward"} size={14} />
         {isUp ? '+' : ''}{Math.abs(percentageChange).toFixed(0)}%
