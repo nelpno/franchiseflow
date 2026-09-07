@@ -268,6 +268,22 @@ export async function getFranchiseRankingMonthly(yearMonth, franchiseId, { signa
   return data?.[0] ?? null;
 }
 
+// Retorno da verba de marketing, por unidade e por mes.
+// O robo grava ctwa_clid/meta_ad_id no contato desde o primeiro "oi": 38.612 dos 57.096
+// contatos tem um dos dois, e em agosto/2026 as vendas ligadas a eles somaram R$ 119.264,93
+// de R$ 390.429,48 (30,5% da receita da rede). Nenhuma tela lia isso ate 07/09/2026.
+// A RPC devolve so o BRUTO: o liquido sai de MARKETING_TAX_RATE aqui no front, que e onde
+// a taxa do Meta mora (o banco nao a conhece). ~65 ms para a rede inteira.
+export async function getMarketingAttribution(yearMonth, franchiseId = null, { signal } = {}) {
+  let query = supabase.rpc('get_marketing_attribution', {
+    p_month: yearMonth,
+    p_franchise_id: franchiseId,
+  });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
 // Pulso do robô da unidade: quando foi a ÚLTIMA conversa e quantas houve em 7 dias.
 // Existe porque "robô ativo" no painel do franqueado significava apenas "existe linha em
 // franchise_configurations" — ou seja, nunca ficava falso. Medido em 07/09/2026: 8

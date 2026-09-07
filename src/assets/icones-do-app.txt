@@ -146,6 +146,7 @@ progress_activity
 psychology
 qr_code
 qr_code_2
+query_stats
 radar
 radio
 radio_button_unchecked

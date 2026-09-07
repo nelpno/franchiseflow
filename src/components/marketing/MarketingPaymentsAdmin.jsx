@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment, MarketingMetaDeposit } from "@/entities/all";
 import { safeHref } from "@/lib/safeHref";
+import MarketingRetornoPanel from "@/components/marketing/MarketingRetornoPanel";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
@@ -298,6 +299,11 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             {balance <= 0 && <p className="text-xs text-[#16a34a] mt-1">Tudo depositado</p>}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Retorno da verba: o que o anuncio devolveu, por unidade */}
+      <div className="pt-2">
+        <MarketingRetornoPanel month={selectedMonth} />
       </div>
 
       {/* ─── Depositos Meta ─── */}

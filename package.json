@@ -14,7 +14,8 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
     "icons:check": "node scripts/icones-usados.mjs --check",
-    "icons:build": "node scripts/baixa-icon-font.mjs"
+    "icons:build": "node scripts/baixa-icon-font.mjs",
+    "smoke:retorno": "node scripts/smoke-retorno-marketing.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
