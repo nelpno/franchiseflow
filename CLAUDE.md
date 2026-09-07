@@ -547,3 +547,84 @@ Agora sai de `get_franchise_bot_pulse`, com cenário `bot_parado` no `PriorityAc
   `cs_agreements`, cooldown, `parked_until`). Por isso o contato do CS virou RPC separada.
 - **`productWeight.test.mjs` tem ZERO asserts** e 3 dos 5 arquivos de teste não usam `test()` — a
   cobertura no papel é maior que a real. `npm run test:unit` roda os 4 que de fato verificam.
+
+## Onda 4 da auditoria — 07/09/2026 (noite): o que mudou de fato
+
+> Detalhe e numeros em [docs/auditoria-2026-09/ESTADO-2026-09-07-ONDA4.md](docs/auditoria-2026-09/ESTADO-2026-09-07-ONDA4.md).
+> Aqui so o que muda decisao numa sessao futura.
+
+### RLS: helper de policy SEMPRE dentro de (select fn())
+As 91 policies que faltavam foram reescritas. `is_admin()`, `is_admin_or_manager()`,
+`is_cs_or_admin()` e `managed_franchise_ids()` escritos crus rodam UMA VEZ POR LINHA.
+Medido como franqueado real: a soma de 10 consultas caiu de **2.324 ms para 91,5 ms**
+(Vendas 554 -> 13 ms, contatos 746 -> 33 ms). Policy nova nasce com o wrap, e
+`franchise_id = any((select managed_franchise_ids())::text[])` — **sem o cast `::text[]`**
+o Postgres le a subquery como conjunto de linhas e da `operator does not exist: text = text[]`.
+
+### A fonte de icones e um SUBSET self-hosted — nao mexa sem rodar a guarda
+O Google servia a familia inteira: **1.130.004 bytes em todo boot** para 219 nomes usados.
+Agora sao **28.748** (`src/assets/material-symbols-subset.woff2`, so o eixo FILL variavel,
+`font-display: block`). Icone que nao estiver no subset NAO some — aparece como a PALAVRA.
+`npm run icons:check` entra no pre-deploy (ja reprovou 2x no mesmo dia); `npm run icons:build`
+regera fonte e lista. A rede de deteccao e larga de proposito (qualquer string do src que
+seja nome valido do catalogo) porque ha **103 usos dinamicos** `icon={cfg.icon}`.
+
+### 30,5% da receita vem de anuncio — e agora tem tela
+`contacts.ctwa_clid`/`meta_ad_id` em 38.612 dos 57.096 contatos. Marketing > Investimento
+mostra o retorno por unidade (`get_marketing_attribution`, 65 ms). Agosto: R$ 122.677
+atribuidos sobre R$ 24.983 liquidos = **4,9x na rede**; Osasco 11,7x, Vila Maria 4,1x.
+⚠️ A RPC devolve so o BRUTO: a taxa do Meta vive em `MARKETING_TAX_RATE` no front e nao
+pode passar a existir em dois lugares. E `campaign_name` esta vazio em 100% dos contatos —
+da para dizer "veio de anuncio", nunca "de qual campanha".
+
+### Aba Fechamento no Financeiro
+`get_fechamento_mensal(p_month)` devolve, por unidade: faturamento, delta vs mes anterior,
+lucro em caixa, vendas sem baixa, verba e mensalidade. **O lucro e copia fiel de
+`calculatePnL`** — inclusive taxa repassada nao ser custo. Se divergir, a conversa de
+fechamento vira discussao sobre qual numero esta certo. No mes corrente o anterior e
+cortado no mesmo dia, e unidade com "teste" no nome fica de fora.
+
+### Paginacao do entity layer agora CRESCE (1, 2, 4, 6)
+`paginateAll` saiu para `src/lib/paginateAll.js` (8 testes, incluindo varredura de 0 a 350
+linhas provando que nada duplica nem some). Disparava 6 paginas de uma vez: 1.079 vendas
+custavam SETE requisicoes. Gestao > Resultado caiu de **42 para 21 requisicoes** com os
+mesmos numeros na tela.
+
+### Um sino so, e cache de franquias
+O Layout monta DOIS `NotificationBell` (topo desktop + mobile) e o AdminDashboard um
+terceiro: eram 2 buscas identicas por carregamento, de 2 em 2 minutos. Agora ha um store
+(`src/lib/notificationsStore.js`), colunas enxutas e 5 min — 60 -> 12 requisicoes/hora por
+aba. Mesma historia com a lista de franquias: vinha 2x por carregamento, 32.447 bytes cada
+(`src/lib/franchisesCache.js`, TTL 60 s). **Mutacao em Franqueados invalida o cache** —
+sem isso a franquia recem-criada nao apareceria por ate um minuto.
+
+### Cores em token
+`tailwind.config.js` tem `brand`, `ink`, `surface`, `ok`, `warn`, `err` com os hex que ja
+dominavam. 2.342 hex crus viraram token e 148 variacoes acidentais sumiram (4 vermelhos de
+marca, 2 pretos de texto, 3 cinzas). Codigo novo usa `text-ink-2`, `bg-brand/10`. ⚠️ O
+verde de texto `#16a34a` reprova AA (3,30:1) — o token `ok.ink` (#15803d) existe e ainda
+NAO foi aplicado.
+
+### Apagados: nao recriar
+`MyChecklist` + `components/checklist/` + tabela `daily_checklists` (ZERO linhas na vida) ·
+`optimizeConfig`, `getWhatsAppMessages`, `analyzeLead`, `generateSalesReportsAI` ·
+4 indices com 0-14 leituras em 7 meses (41 MB) · 6 tabelas de backup (exportadas em
+`docs/db-backups/*.json`) · `dist/` saiu do versionamento.
+⚠️ As 6 RPCs "sem consumidor" do relatorio **continuam vivas de proposito**: sem consumidor
+ali quer dizer sem consumidor no DASHBOARD, e o n8n tambem chama RPC.
+
+### Tres armadilhas de ferramenta que custaram tempo hoje
+- 🔴 **A Management API do Supabase devolve o ultimo resultset NAO-VAZIO**, nao o do ultimo
+  statement: com `set local role` + `set_config` + consulta vazia, voce recebe a linha do
+  `set_config` e acha que veio dado. Fechar em `select coalesce(json_agg(t),'[]'::json)`.
+- 🔴 **Heredoc de shell come a barra**: `"\b"` num `cat <<'EOF'` chega como `""`, que em
+  JS e BACKSPACE — a regex nunca casa, calada. Usar lookahead sem escape, ou gerar o
+  arquivo por Python/Write.
+- **`TabResultado` tem chunk proprio** (`TabResultado-*.js`), nao vive no chunk de `Gestao`:
+  verificar deploy por conteudo no chunk certo.
+
+### Telas franchiseeOnly: da para testar, com usuario de teste
+Criar pela Auth Admin API + escrever `profiles` (`role`, `managed_franchise_ids`), e apagar
+no fim. Para ver tela de admin, promover e reverter — `guard_profile_privilege_columns`
+deixa passar quando `auth.uid()` e nulo (service_role). **Reload completo obrigatorio depois
+de trocar o papel**: a navegacao SPA fica com o perfil antigo em memoria.
