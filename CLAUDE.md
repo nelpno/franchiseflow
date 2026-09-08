@@ -794,6 +794,36 @@ ter saído, **nenhum sinal novo apareceu**.
 ⚠️ O `_verifica-paridade-live.mjs` procura o delimitador `$func$`; o `pg_get_functiondef` gera
 `$function$`. Trocar os dois delimitadores não altera o corpo (o `prosrc` não os inclui).
 
+### Marketing: "pagou" e "subi a campanha" sao DUAS perguntas, e havia um campo so
+A skill `subir-orcamento-meta-mensal` documenta `marketing_payments.status` como
+`pending` = ainda nao subiu no Meta / `confirmed` = ja subiu. A tela do dashboard usa o MESMO
+campo com outro sentido: `confirmed` = recebi o pagamento. Enquanto as duas coisas andavam
+juntas ninguem via o conflito.
+
+Medido em 08/09/2026, contando confirmacoes que caem no MESMO minuto que outra (assinatura de
+confirmacao em lote — subir campanha no Meta nao leva segundos): **julho 21/48, agosto 31/54,
+setembro 39/55**. Setembro fechou com 55 confirmados e ZERO pendentes: pela leitura da skill
+tudo ja teria subido, e nao era o caso.
+
+Agora quem responde "ja subi?" e **`marketing_payments.campaign_raised_at`** (+
+`campaign_raised_by`). `status` volta a significar so o recebimento. Na tela: selo
+"Falta subir"/"Subida" AO LADO do status (nao no lugar), botao "Subi"/"Desfazer", filtro
+"Pagos — falta subir", e o card "Liquido Campanha" mostrando quantas faltam e quanto esperam.
+⚠️ O `guard_marketing_payment_approval` so protegia `status`, `amount`, `franchise_id` e
+`reference_month` — **coluna nova passa direto**. As duas entraram no guard; ao adicionar
+qualquer coluna sensivel nessa tabela, lembrar de acrescentar la.
+
+### `TAXA * 100` em ponto flutuante imprime 14.000000000000002
+Estava na tela em dois lugares do marketing ("ja sem os 14.000000000000002% do Meta"). A taxa
+de EXIBICAO virou `MARKETING_TAX_PCT` em `franchiseUtils.js`, arredondada uma vez onde a taxa e
+definida; a de CALCULO continua `MARKETING_TAX_RATE = 0.14`.
+
+### O `textContent` de um botao inclui o NOME do icone
+`<Button><MaterialIcon icon="campaign"/> Subi</Button>` tem `textContent === "campaignSubi"`.
+Morde em teste de navegador (`textContent.trim() === "Subi"` nao acha o botao) e e a mesma
+propriedade que faz o icone virar palavra quando o CSS quebra a ligadura. Em teste, usar
+`.endsWith(rotulo)`.
+
 ### 🔴 Ícone que vira PALAVRA: são DOIS modos de falha, e a guarda só pega um
 O nome do ícone é o **conteúdo** do `<span>` — a fonte Material Symbols desenha por
 **ligadura** do texto `payments`. Qualquer propriedade de texto herdada do container mexe nesse
