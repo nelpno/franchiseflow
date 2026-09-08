@@ -17,6 +17,10 @@ import TabResultado from "@/components/minha-loja/TabResultado";
 import FechamentoMensal from "@/components/financeiro/FechamentoMensal";
 import { listarFranquias } from "@/lib/franchisesCache";
 
+// Faturamento minimo no periodo para a unidade concorrer a "Menor Margem". Abaixo disso o
+// percentual e ruido: R$ 80 de venda contra uma compra a fabrica da -5657%.
+const PISO_MARGEM_COMPARAVEL = 2000;
+
 export default function Financeiro() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
@@ -270,12 +274,24 @@ export default function Financeiro() {
     const margemAll = totalRecebidoAll > 0 ? (lucroAll / totalRecebidoAll) * 100 : 0;
     const agg = { totalRecebido: totalRecebidoAll, lucro: lucroAll, margem: margemAll };
 
-    // Worst franchise by margin (only those with sales)
-    const withSales = data.filter((d) => d.pnl.salesCount > 0);
+    // Pior margem — so entra quem ja faturou o bastante para o percentual significar algo.
+    //
+    // A guarda antiga era `salesCount > 0`, e uma venda de R$ 80 bastava. Resultado medido
+    // em 08/09/2026: o card de destaque anunciava "Menor Margem: Vila dos Remedios
+    // -5657,8%" — R$ 80 recebidos contra R$ 4.606 de despesa, dos quais R$ 3.806 e compra
+    // a fabrica. Nao e margem ruim: e uma unidade que COMPROU e ainda nao vendeu, num mes
+    // de 7 dias. Percentual sobre denominador de R$ 80 nao e informacao.
+    //
+    // O piso e o mesmo que get_franchise_health_signals ja usa para calcular delta de
+    // faturamento (revprev >= 2000) — um piso so no ecossistema. Com ele o card passa a
+    // apontar Santos (-106,8%), que e caso real: R$ 4.463 de venda contra R$ 9.274 de custo.
+    const withSales = data.filter((d) => d.pnl.totalRecebido >= PISO_MARGEM_COMPARAVEL);
     const worst = withSales.length > 0
       ? withSales.reduce((min, d) => (d.pnl.margemCaixa < min.pnl.margemCaixa ? d : min))
       : null;
-    const worstInfo = worst ? { name: worst.name, margem: worst.pnl.margemCaixa } : null;
+    const worstInfo = worst
+      ? { name: worst.name, margem: worst.pnl.margemCaixa, recebido: worst.pnl.totalRecebido }
+      : null;
 
     // Inventory grouped by franchise
     const invByFranchise = {};

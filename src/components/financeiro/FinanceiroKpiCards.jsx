@@ -27,9 +27,14 @@ export default function FinanceiroKpiCards({ aggregated, worstFranchise }) {
       bgColor: aggregated.margem >= 40 ? "#f0fdf4" : aggregated.margem >= 20 ? "#fffbeb" : "#fef2f2",
     },
     {
+      // So concorre quem ja faturou o piso do periodo (ver PISO_MARGEM_COMPARAVEL em
+      // Financeiro.jsx). Sem isso o card mostrava -5657,8% de uma unidade com R$ 80 de
+      // venda e uma compra a fabrica dentro — extremo que nao e margem, e denominador.
       label: "Menor Margem",
       value: worstFranchise ? worstFranchise.name : "—",
-      subtitle: worstFranchise ? `${worstFranchise.margem.toFixed(1)}%` : null,
+      subtitle: worstFranchise
+        ? `${worstFranchise.margem.toFixed(1)}% · ${formatBRL(worstFranchise.recebido)}`
+        : "ninguém faturou o bastante ainda",
       icon: "warning",
       color: "#dc2626",
       bgColor: "#fef2f2",
