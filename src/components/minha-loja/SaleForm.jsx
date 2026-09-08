@@ -19,7 +19,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { parseDeliveryFeeOptions } from "@/lib/deliveryFeeRules";
 import { normalizePhone } from "@/lib/whatsappUtils";
-import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { safeErrorMessage, ehErroDeRegra } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { calcSale } from "@/lib/saleCalc";
@@ -75,6 +75,9 @@ async function withRetry(fn, { maxRetries = 2, baseDelay = 2000 } = {}) {
       return await fn();
     } catch (err) {
       lastError = err;
+      // Erro de REGRA (data fora da janela, RLS, duplicidade) nao muda com o tempo:
+      // retentar so gasta o tempo da franqueada e multiplica o request por 3.
+      if (ehErroDeRegra(err)) throw err;
       if (attempt < maxRetries) {
         const delay = baseDelay * Math.pow(2, attempt); // 2s, 4s
         toast.error(`Falha ao salvar. Tentando novamente em ${delay / 1000}s...`);
@@ -959,13 +962,22 @@ export default function SaleForm({
       if (!isEditing) {
         saveDraft(franchiseId, draftData);
       }
-      toast.error("Não foi possível salvar. Seu rascunho foi mantido.", {
-        action: {
-          label: "Tentar novamente",
-          onClick: () => handleSubmit({ preventDefault: () => {} }),
-        },
-        duration: 8000,
-      });
+      // Erro de REGRA tem motivo e a pessoa precisa dele: "nao foi possivel salvar"
+      // com botao "Tentar novamente" manda ela repetir o que nunca vai passar.
+      if (ehErroDeRegra(error)) {
+        toast.error(safeErrorMessage(error, "Não foi possível salvar esta venda."), {
+          description: "Corrija e registre de novo — o que você preencheu continua aqui.",
+          duration: 10000,
+        });
+      } else {
+        toast.error("Não foi possível salvar. Seu rascunho foi mantido.", {
+          action: {
+            label: "Tentar novamente",
+            onClick: () => handleSubmit({ preventDefault: () => {} }),
+          },
+          duration: 8000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
