@@ -22,11 +22,12 @@ const RAIZ = path.resolve(AQUI, "../..");
 const CATALOGO = path.join(RAIZ, "scripts/material-symbols-catalogo.json"); // 6.104 nomes do catalogo oficial
 const SUBSET = path.join(RAIZ, "src/assets/icones-do-app.txt");
 
-function arquivos(dir, acc = []) {
+function arquivos(dir, acc = [], padrao = /\.(jsx?|tsx?|html|css)$/) {
+  if (!fs.existsSync(dir)) return acc;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) arquivos(p, acc);
-    else if (/\.(jsx?|tsx?|html|css)$/.test(e.name)) acc.push(p);
+    if (e.isDirectory()) arquivos(p, acc, padrao);
+    else if (padrao.test(e.name)) acc.push(p);
   }
   return acc;
 }
@@ -37,9 +38,30 @@ export function icones() {
   const fontes = [...arquivos(path.join(RAIZ, "src")), path.join(RAIZ, "index.html")];
   for (const f of fontes) {
     const txt = fs.readFileSync(f, "utf8");
-    // rede larga: toda string literal que e um nome de icone valido
+    // rede larga: toda string literal que e um nome de icone valido. Funciona no JSX porque
+    // string solta ali quase sempre E um icone; o custo sao raros falsos positivos, que se
+    // resolvem reescrevendo o texto (ja aconteceu com uma crase em comentario).
     for (const m of txt.matchAll(/["'`]([a-z][a-z0-9_]{1,40})["'`]/g)) {
       if (catalogo.has(m[1])) usados.add(m[1]);
+    }
+  }
+
+  // Os .sql tambem gravam nome de icone: a `sentinela_diaria` chama
+  // `notify_admins(titulo, mensagem, tipo, ICONE, link)` e o valor vai para
+  // notifications.icon, que o NotificationBell renderiza. Varrendo so `src/`, esse nome nunca
+  // era visto — em 08/09/2026 a sentinela mandou `health_and_safety`, fora do subset, e o
+  // sino mostrou a PALAVRA "HEALTH_AND_SAFETY" com a guarda verde.
+  //
+  // Aqui a rede LARGA nao serve: em SQL, `key`, `mode`, `public`, `source` e `segment` sao
+  // palavras comuns que por acaso sao nomes de icone validos — deram 7 falsos positivos.
+  // Entao olhamos so DENTRO das chamadas a notify_admins, e sem os comentarios (a propria
+  // mencao a um icone num comentario `--` seria falso positivo).
+  for (const f of arquivos(path.join(RAIZ, "supabase"), [], /\.sql$/)) {
+    const txt = fs.readFileSync(f, "utf8").replace(/^\s*--[^\n]*$/gm, "");
+    for (const chamada of txt.matchAll(/notify_admins\s*\(([\s\S]{0,600}?)\)\s*;/g)) {
+      for (const m of chamada[1].matchAll(/'([a-z][a-z0-9_]{1,40})'/g)) {
+        if (catalogo.has(m[1])) usados.add(m[1]);
+      }
     }
   }
   return [...usados].sort();

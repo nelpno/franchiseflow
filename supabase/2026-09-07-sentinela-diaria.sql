@@ -1,3 +1,8 @@
+-- ⚠️ 08/09/2026: o icone era `health_and_safety`, que NAO esta no subset da fonte — a
+-- guarda `npm run icons:check` varre `src/` e nao os .sql, entao nome de icone gravado por
+-- funcao de banco escapava dela. Na tela virava a PALAVRA "HEALTH_AND_SAFETY" dentro do
+-- sino. Trocado por `monitor_heart`, que ja esta no subset. A guarda passou a varrer
+-- supabase/**.sql tambem.
 -- 2026-09-07 — Auditoria, Onda 3 — VIGILANCIA
 --
 -- O problema que isto resolve nao e nenhum bug especifico: e o fato de que NADA vigia.
@@ -129,7 +134,7 @@ begin
     format('Sentinela: %s ponto(s) para olhar', array_length(achados, 1)),
     array_to_string(achados, E'\n'),
     'warning',
-    'health_and_safety',
+    'monitor_heart',
     '/Dashboard'
   );
 
