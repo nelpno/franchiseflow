@@ -833,6 +833,14 @@ texto e a ligadura deixa de casar; aí o navegador desenha a palavra.
 - **Modo 2 — `text-transform: uppercase` no container.** A guarda **passa** (o ícone ESTÁ no
   subset) e a tela quebra igual. Foi o que aconteceu no raio-x do mural do CS em 08/09/2026: 11
   ícones viraram palavra (`PAYMENTS`, `LOCAL_SHIPPING`, `EXPAND_LESS`…).
+- **Modo 3 — o nome do ícone vem do BANCO.** `NotificationBell` faz `icon={n.icon}` e o valor
+  está em `notifications.icon`, gravado por `notify_admins(...)` dentro de função SQL. A guarda
+  varria só `src/`, então esse nome nunca existiu para ela e o subset nasceu sem ele: em
+  08/09/2026 o sino mostrou `HEALTH_AND_SAFETY` por inteiro. Dos 9 ícones gravados na tabela, 8
+  estavam no subset **por coincidência** — são os mesmos nomes que aparecem no código. A guarda
+  passou a varrer `supabase/**.sql`, mas **só dentro das chamadas a `notify_admins` e sem os
+  comentários**: em SQL a rede larga do JSX dá falso positivo em `key`, `mode`, `public`,
+  `source`, `segment`. Ao criar notificação por SQL, use ícone que já exista no código.
 
 **Diagnóstico em um comando** — a largura denuncia, porque ícone é quadrado e palavra é comprida:
 `[...document.querySelectorAll('span.material-symbols-outlined')].filter(s => s.getBoundingClientRect().width > 30)`.
