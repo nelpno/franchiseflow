@@ -180,17 +180,17 @@ function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }
           <div className="space-y-1.5 text-xs">
             <div className="flex items-center justify-between text-ink-2">
               <span>Custo</span>
-              <span className="font-mono-numbers font-medium">{formatBRL(estoque.custoTotal)}</span>
+              <span className="font-mono-numbers font-medium text-sm">{formatBRL(estoque.custoTotal)}</span>
             </div>
             <div className="flex items-center justify-between text-ink-2">
               <span>Markup médio</span>
-              <span className={`font-mono-numbers font-medium ${estoque.markupMedioPct >= 0 ? "text-ok-ink" : "text-err"}`}>
+              <span className={`font-mono-numbers font-medium text-sm ${estoque.markupMedioPct >= 0 ? "text-ok-ink" : "text-err"}`}>
                 {estoque.markupMedioPct >= 0 ? "+" : ""}{estoque.markupMedioPct}%
               </span>
             </div>
             <div className="flex items-center justify-between text-ink-2">
               <span>Produtos ativos</span>
-              <span className="font-mono-numbers font-medium">{estoque.qtdProdutosAtivos}</span>
+              <span className="font-mono-numbers font-medium text-sm">{estoque.qtdProdutosAtivos}</span>
             </div>
           </div>
 
@@ -250,11 +250,11 @@ function CardCaixa({ pnl, onLancarDespesa }) {
           {/* ENTROU detalhado */}
           <div className="space-y-1 text-xs mb-3">
             <div className="flex items-center justify-between text-ink">
-              <span className="flex items-center gap-1 font-semibold">
-                <MaterialIcon icon="arrow_upward" size={12} className="text-ok" />
+              <span className="flex items-center gap-1 font-semibold text-sm">
+                <MaterialIcon icon="arrow_upward" size={14} className="text-ok" />
                 Entrou
               </span>
-              <span className="font-mono-numbers font-bold text-ok-ink">{formatBRL(totalRecebido)}</span>
+              <span className="font-mono-numbers font-bold text-ok-ink text-sm">{formatBRL(totalRecebido)}</span>
             </div>
             <div className="flex items-center justify-between text-ink-2 pl-4">
               <span className="text-xs">└ Vendas</span>
@@ -277,11 +277,11 @@ function CardCaixa({ pnl, onLancarDespesa }) {
           {/* SAIU sumarizado */}
           <div className="space-y-1 text-xs">
             <div className="flex items-center justify-between text-ink">
-              <span className="flex items-center gap-1 font-semibold">
-                <MaterialIcon icon="arrow_downward" size={12} className="text-err" />
+              <span className="flex items-center gap-1 font-semibold text-sm">
+                <MaterialIcon icon="arrow_downward" size={14} className="text-err" />
                 Saiu
               </span>
-              <span className="font-mono-numbers font-bold text-err">-{formatBRL(saiu)}</span>
+              <span className="font-mono-numbers font-bold text-err text-sm">-{formatBRL(saiu)}</span>
             </div>
             <p className="text-xs text-ink-2/60 pl-4 italic">
               detalhe abaixo em "Onde foi o dinheiro"
