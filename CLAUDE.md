@@ -541,12 +541,18 @@ Agora sai de `get_franchise_bot_pulse`, com cenário `bot_parado` no `PriorityAc
   todo dia 2 a rede inteira aparece "em queda".
 - **Telefone da franqueada**: `franchises.phone_number` está vazio em **67 de 67**;
   o número que presta é `franchise_configurations.personal_phone_for_summary` (62 de 67).
-- 🔴 **A `get_franchise_health_signals` e o `reconcile_cs_auto_tasks` que rodam em produção não
-  existem em `.sql` nenhum do ecossistema** — o `09-*.sql` do repo é mais velho e um
-  `CREATE OR REPLACE` com ele **regride o radar do Celso** (perde `giro_baixo`, `marketing_late`,
-  `cs_agreements`, cooldown, `parked_until`). Por isso o contato do CS virou RPC separada.
-- **`productWeight.test.mjs` tem ZERO asserts** e 3 dos 5 arquivos de teste não usam `test()` — a
-  cobertura no papel é maior que a real. `npm run test:unit` roda os 4 que de fato verificam.
+- ⚠️ **RESOLVIDO em 08/09/2026 para a `get_franchise_health_signals`** (o aviso abaixo valia até
+  então e CONTINUA valendo para o `reconcile_cs_auto_tasks`): o fonte que roda em produção agora
+  está versionado em `supabase/cs-cockpit/10-health-signals-PRODUCAO-2026-09-08.sql` — é o
+  `pg_get_functiondef` da função viva, byte a byte, com paridade provada. Alterar o radar deixou
+  de ser proibido: parta do `10-*.sql`, não do `09-*.sql`. O aviso original: o `09-*.sql` do repo
+  é mais velho e um `CREATE OR REPLACE` com ele **regride o radar do Celso** (perde `giro_baixo`,
+  `marketing_late`, `cs_agreements`, cooldown, `parked_until`). O `reconcile_cs_auto_tasks`
+  segue sem fonte versionado — por isso o cron dele é um invólucro, não um replace.
+- ~~**`productWeight.test.mjs` tem ZERO asserts**~~ — **falso, medido na onda 5**: ele tem 16
+  verificações com um `eq()` próprio no lugar do `node:assert`, e sai com código 1 quando falha.
+  O problema real era outro: três arquivos de teste que verificam de verdade estavam fora do
+  `npm run test:unit`. Hoje a suíte roda 10 arquivos.
 
 ## Onda 4 da auditoria — 07/09/2026 (noite): o que mudou de fato
 
@@ -737,3 +743,58 @@ lugar.
   `icon={cfg.icon}`) — reescrever o comentario e o conserto, nao afrouxar a regra.
 - **`SaleForm` cai no chunk de ENTRADA** (`index-*.js`), nao em `Vendas-*.js`. Verificar deploy
   por conteudo no chunk certo.
+
+## Onda 6 — 08/09/2026: os números que mentiam sem estar errados
+
+> Veio de duas perguntas do Nelson sobre o mural do CS e o comparativo do Financeiro.
+> Detalhe em [docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA6.md](docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA6.md).
+
+### 🔴 Limiar de alarme colado na mediana faz metade da rede piscar
+O sinal "Faturamento −X%" do Radar tinha gatilho **fixo em −10%**. A mediana da rede, medida no
+mesmo dia, era **−10,3%**: por construção, metade das unidades cruzava o limiar — não por estarem
+mal, por serem a metade de baixo. Resultado: 23 das 46 comparáveis com bandeira e **55 das 67
+(82%) da rede em crítica ou atenção**. Agora o gatilho é `least(-10, mediana − 15)` e o rótulo
+carrega a referência: *"Faturamento −62.0% (rede −10.3%)"*. Críticas 18 → 14.
+**A lição vale para todo alarme novo**: antes de fixar um limiar, medir onde está a mediana da
+população — se o limiar cair perto dela, o alarme não distingue nada.
+
+### O comparativo "vs mês ant." do Financeiro está CERTO — o que suja é o dado
+Conferido contra o banco: quando o mês é corrente, o anterior É cortado no mesmo dia (onda 4). A
+prova barata está na própria tela — se comparasse 7 dias contra 31, a rede inteira estaria
+vermelha; havia 6 subindo e 3 caindo. **O que distorce são 3 vendas de Vila Maria datadas
+30/09/2026** (digitadas em 25/06, 07/08 e 19/08 — erro de mês): inflam setembro em R$ 1.279,80 e
+fazem a tela mostrar **▼18% onde o real é ▼30%** — escondendo uma queda pior, não inventando uma.
+São as únicas da rede; o trigger `sales_bloqueia_data_futura` foi criado depois delas. Lista para
+a franqueada e SQL de correção em `docs/auditoria-2026-09/vila-maria-3-vendas-data-errada.md`.
+**Ao investigar comparativo suspeito, cheque `max(sale_date)` antes de acusar o cálculo.**
+
+### Percentual precisa de piso no denominador
+"Menor Margem −5657,8%" eram **R$ 80 de venda contra R$ 4.606 de despesa** — unidade que comprou e
+ainda não vendeu, num mês de 7 dias. Não é margem, é denominador. O card agora exige **R$ 2.000**
+de faturamento no período (`PISO_MARGEM_COMPARAVEL` em `Financeiro.jsx`), o **mesmo piso** que a
+`get_franchise_health_signals` já usa para calcular delta — um piso só no ecossistema. Com ele o
+card aponta Santos (−106,8%), que é caso real. O subtítulo passa a mostrar o faturamento ao lado
+do percentual, para o número nunca aparecer sem a base.
+
+### 🔴 Aplicar `.sql` do Windows injeta `\r` DENTRO da função
+Medido: aplicar o arquivo com CRLF fez o Postgres guardar **246 caracteres CR no `prosrc`**,
+inchando a função em 246 bytes e quebrando a verificação de paridade dali em diante (o
+`_verifica-paridade-live.mjs` normaliza o ARQUIVO, mas o banco já estava sujo). Funciona, e é
+justamente por isso que passa despercebido. Usar `.tmp/audit-2026-09/q-lf.mjs`, que normaliza
+CRLF→LF antes de mandar. Conferir: `length(prosrc) - length(replace(prosrc, chr(13), ''))`.
+
+### Como alterar função de banco sem versão versionada
+A receita que funcionou, e que deixou o radar alterável: (1) extrair o `pg_get_functiondef` e
+versionar como o "antes", com md5 e tamanho no cabeçalho; (2) gerar a versão nova **a partir
+desse arquivo**, por script, para o diff ser só o que se quis mudar (aqui: 11 linhas de CTE e 1
+linha trocada); (3) clonar a de produção com outro nome, aplicar a nova e comparar as duas na
+MESMA query — pelo **conjunto** de flags, nunca pela sequência do `jsonb_agg`; (4) dropar a cópia.
+O pino provou: 67/67 unidades, o conjunto mudou em 9 e nas 9 a única diferença foi a flag esperada
+ter saído, **nenhum sinal novo apareceu**.
+⚠️ O `_verifica-paridade-live.mjs` procura o delimitador `$func$`; o `pg_get_functiondef` gera
+`$function$`. Trocar os dois delimitadores não altera o corpo (o `prosrc` não os inclui).
+
+### Console do Windows mente sobre acento — conferir os bytes
+`'Sem vender h� '` no `print` do Python parecia arquivo corrompido; os bytes eram `\xc3\xa1`, ou
+seja **á em UTF-8 correto**. É o cp1252 do console. Antes de "consertar" encoding, ler os bytes
+(`open(...,'rb')`) — e, no caso de função de banco, a paridade md5 já responde sozinha.
