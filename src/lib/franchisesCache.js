@@ -1,4 +1,5 @@
 import { Franchise } from "@/entities/all";
+import { queryClientInstance } from "@/lib/query-client";
 
 /**
  * Uma busca da lista de franquias por vez, para o app inteiro.
@@ -8,44 +9,39 @@ import { Franchise } from "@/entities/all";
  * 32.447 bytes cada — 64.894 bytes para a mesma lista de 67 unidades, que muda uma vez por
  * mês. São 13% de tudo que o boot baixa, gastos duas vezes.
  *
- * Aqui as chamadas concorrentes compartilham a MESMA promessa e o resultado vale por 60 s.
- * Quem chama continua recebendo um array e um `await` — nenhum fluxo de tela muda.
+ * A onda 4 resolveu isso com um cache escrito à mão (promessa em voo + TTL). Agora quem
+ * guarda é o react-query, que já era o cache do app (`useSubscriptionStatus`,
+ * `PageNotFound`) e cujo cliente é um singleton de módulo — dá para chamar `fetchQuery`
+ * fora de React. `fetchQuery` já faz as duas coisas que o código à mão fazia: chamadas
+ * concorrentes compartilham a MESMA busca, e o resultado vale enquanto estiver fresco.
  *
- * Por que não react-query (que é o que a auditoria sugeria): o provider já existe, mas
- * migrar os 13 pontos de chamada significa reescrever o `Promise.allSettled` e os estados
- * de loading de 8 páginas. Isto resolve a duplicação medida com uma linha por ponto de
- * chamada. A migração para react-query continua valendo, e fica mais fácil com um ponto
- * de entrada só.
+ * O ganho de trocar não é performance (o cache à mão media igual): é ter UM cache no app
+ * em vez de dois, e é a chave `["franquias"]` passar a existir — um componente novo pode
+ * fazer `useQuery({queryKey: ["franquias"]})` e reaproveitar a mesma lista, com estados de
+ * loading e erro de graça, sem nenhum dos 13 pontos de chamada mudar.
+ *
+ * A assinatura NÃO mudou: quem chama continua recebendo uma promessa de array.
  *
  * Cada chamador recebe uma CÓPIA do array — várias telas ordenam a lista no lugar, e
- * devolver a mesma referência faria uma tela embaralhar a lista da outra.
+ * devolver a mesma referência (que aqui é a que vive DENTRO do cache) faria uma tela
+ * embaralhar a lista da outra e, pior, corromper o que está guardado.
  */
 
+export const CHAVE_FRANQUIAS = ["franquias"];
 const TTL_MS = 60000;
 
-let cache = null;
-let carregadoEm = 0;
-let emVoo = null;
-
-export function listarFranquias({ force = false } = {}) {
-  if (!force && cache && Date.now() - carregadoEm < TTL_MS) {
-    return Promise.resolve([...cache]);
-  }
-  if (emVoo) return emVoo.then((linhas) => [...linhas]);
-  emVoo = Franchise.list()
-    .then((linhas) => {
-      cache = linhas;
-      carregadoEm = Date.now();
-      return linhas;
-    })
-    .finally(() => {
-      emVoo = null;
-    });
-  return emVoo.then((linhas) => [...linhas]);
+export async function listarFranquias({ force = false } = {}) {
+  if (force) queryClientInstance.removeQueries({ queryKey: CHAVE_FRANQUIAS });
+  const linhas = await queryClientInstance.fetchQuery({
+    queryKey: CHAVE_FRANQUIAS,
+    queryFn: () => Franchise.list(),
+    staleTime: TTL_MS,
+    gcTime: TTL_MS * 5,
+  });
+  return [...(linhas || [])];
 }
 
 /** Chamar depois de criar, editar ou excluir franquia. */
 export function invalidarFranquias() {
-  cache = null;
-  carregadoEm = 0;
+  queryClientInstance.invalidateQueries({ queryKey: CHAVE_FRANQUIAS });
 }
