@@ -231,7 +231,7 @@ Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **C
 - **`inventory_items.active=false` (oculto via 👁️ no TabEstoque) ≠ `quantity=0` (zerado)**: "oculto" = franquia decidiu não vender esse SKU (bot NÃO deve mencionar — filtra na view) | "zerado" = franquia vende mas falta agora (bot DEVE saber pra avisar "no momento estamos sem"). Regra de não oferecer quando `quantity=0` vive no `systemMessage` do `Estoque1` agentTool, NÃO no SQL — manter as duas camadas distintas
 
 ### KPI Cards & Daily Goal (fixes 11/04/2026)
-- KPI percentage: `percentageChange = null` quando `previousValue <= 0` — badge NÃO renderiza com null (evita +100% fake)
+- KPI percentage: `percentageChange = null` quando `previousValue <= 0` — badge NÃO renderiza com null (evita +100% fake). ⚠️ Isto valia só para o card inline do `AdminDashboard`; o `StatsCard` compartilhado (home do franqueado) fazia o CONTRÁRIO — `= 100` quando o anterior era zero. Corrigido em 08/09/2026: agora os dois somem sem base. Não era caso raro — 828 dos 3.169 dias com venda dos últimos 90 (26,1%), em 65 das 67 unidades, vinham de um dia zerado (segunda contra domingo fechado)
 - Daily goal (admin FranchiseRanking): avg 30 dias por data única + 10%. Fallback 7000 se <7 dias. SVG cap `Math.min(goalPercent, 100)`, texto mostra % real
 - Daily goal (franchisee): mesmo cálculo mas filtra por `evoId`. Retorna `null` se <7 dias — `DailyGoalProgress` esconde-se
 - Meta batida: mensagem verde "Meta batida! +R$ X" quando `remaining <= 0`
@@ -628,3 +628,112 @@ Criar pela Auth Admin API + escrever `profiles` (`role`, `managed_franchise_ids`
 no fim. Para ver tela de admin, promover e reverter — `guard_profile_privilege_columns`
 deixa passar quando `auth.uid()` e nulo (service_role). **Reload completo obrigatorio depois
 de trocar o papel**: a navegacao SPA fica com o perfil antigo em memoria.
+
+## Onda 5 da auditoria — 08/09/2026: o que mudou de fato
+
+> Detalhe e numeros em [docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA5.md](docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA5.md).
+> Aqui so o que muda decisao numa sessao futura. 10 dos 11 itens em producao (21/21 provas
+> no live); o item 8 (defaults de `ui/`) esta num canvas com o Nelson, esperando decisao.
+
+### 🔴 RPC tambem bate no teto de 1.000 linhas do PostgREST — e cala
+`get_bot_conversation_summary` devolve **4.089 linhas** (63 franquias x ~65 dias) e a tela
+recebia **1.000**. Sem `limit`/`offset` a resposta so chega curta, sem erro nenhum: o card
+"Performance Bot" somava um quarto da rede (1.603 conversas; o certo sao 7.244) e o alerta de
+robo parado acusava 13 quando eram 8. **Toda RPC que devolve linha por franquia-dia e
+candidata** — das 3 do painel so essa passa de 1.000 (`get_human_message_totals` tem 62,
+`get_bot_leads_daily` 92). E a mesma armadilha que a onda 4 corrigiu na RPC irma
+`get_human_message_counts`; esta ficou.
+Ao paginar RPC, dois fatos medidos contra a producao:
+- **`Range:` como CABECALHO nao pagina RPC** — 12 paginas voltaram as MESMAS 1.000 linhas.
+  Quem pagina e `limit`/`offset` na URL, que e o que o `.range()` do postgrest-js escreve.
+- **ORDER BY explicito e obrigatorio**: a funcao nao ordena, e sem `.order()` seria o bug
+  5333224 de novo. Com `(franchise_id, day)` — a chave do `group by` — 4.090 linhas e 4.090
+  chaves distintas, zero duplicada.
+
+### O endereco da entrega: quem escreve, e o no-op que engolia
+Medido: **4.362 de 6.539 entregas (66,7%)** dos ultimos 90 dias sem endereco em lugar nenhum.
+O relatorio dizia que "quem escreve e so o robo" e **isso e falso**: o trigger
+`sales_fill_customer_snapshot` JA copia `contacts.endereco/bairro` para a venda, e 1.393 das
+2.001 vendas com endereco sao manuais, vindas dai. O buraco e antes — so 1.805 dos 5.526
+contatos com entrega tem endereco, porque o `SaleForm` nunca pediu um. Agora pede em entrega,
+pre-preenche pelo contato e grava **na venda e no contato**.
+🔴 **`save_sale_with_items` ENUMERA as colunas que grava**: `customer_address` e
+`customer_neighborhood` nao estavam la, entao mandar os campos era **no-op silencioso** — a
+venda salvava "com sucesso" e o endereco sumia. Vale para qualquer coluna nova em `sales`:
+adicionar na tabela nao basta, tem de entrar na RPC. Versionado em
+`supabase/2026-09-08-save-sale-with-items-endereco.sql`, com os 6 comportamentos provados em
+transacao abortada. A chave so e considerada quando VEM no `p_sale_data`, entao venda de
+retirada nao apaga endereco ja gravado.
+
+### Verde de TEXTO: `text-ok` e so para icone
+`#16a34a` da **3,30:1** no branco e **2,96:1** dentro do proprio chip `bg-ok/10` — reprova AA
+(4,5:1) nos dois. O token `ok.ink` (`#15803d`) da 5,02:1 e 4,50:1. Trocado em 54 classes +
+9 hex crus. **`text-ok` continua valendo para `<MaterialIcon>`**: objeto grafico mede contra
+3:1 (WCAG 1.4.11) e 3,30 passa. Codigo novo com verde de TEXTO usa `text-ok-ink`.
+
+### Alertas leves no topo do Painel, e a regra unica
+"Parou de vender" e "robo parado" saem de `allSales` e `botSummary`, que ja estao em memoria —
+custam **zero requisicao**. Antes so existiam dentro da secao "Alertas", colapsada no fim, cuja
+abertura busca os 31 mil contatos. A regra vive em `lib/alertasLeves.js` (9 testes) e o
+`AlertsPanel` chama a MESMA funcao — nao ha copia. As duas decisoes que sao faceis de errar
+depois estao travadas por teste: quem NUNCA vendeu nao entra em "parou de vender" (implantacao
+nao e queda) e quem NUNCA teve conversa nao entra em "robo parado".
+⚠️ `bot_conversations` tem `franchise_id` **fantasma** (`helpcell`) que nao existe em
+`franchises`: contar direto na RPC da 9 robos parados, a tela cruza com a lista e mostra 8.
+
+### O reconcile do CS agora tem cron (job 6, 08:15 BRT)
+`reconcile_cs_auto_tasks()` so rodava quando alguem abria a pagina — estava **4,4 dias**
+parada e devia 6 cartoes. 🔴 A funcao de producao **nao foi tocada** (md5 do `prosrc` conferido
+antes e depois): o que entra e o involucro `cron_reconcile_cs_auto_tasks()`, que planta
+`request.jwt.claims` com um admin real antes de chamar — sem isso o guard `is_cs_or_admin()`
+barra em SILENCIO, devolvendo zero linha em vez de erro. Rollback:
+`cron.unschedule('reconcile-cs-auto-tasks')` + drop do involucro.
+
+### Erros silenciosos no registro de venda
+Em 90 dias: **39 vendas manuais a R$ 0**, **73 com pelo menos uma linha a R$ 0** (126 linhas) e
+**183 sem contato nenhum** — todas com "Venda registrada!" e nenhum aviso. Agora o valor zerado
+abre lembrete nomeando o produto sem preco (**nao bloqueia** — existe cortesia), e quando
+`resolveContactId` devolve null com nome digitado a franqueada e avisada de que o cliente nao
+foi vinculado.
+
+### Peso do lote nos Pedidos
+`purchase_orders.total_weight_kg` era gravado desde 01/07 e **nenhuma tela lia** — so a ficha de
+separacao. Card "Lote em aberto" + coluna Peso: 23 pedidos, R$ 64.483, 2.386 kg = 2 rotas de
+1.500 kg. Le a lista INTEIRA, nao a filtrada. ⚠️ O `CLAUDE.md` da logistica ainda diz
+"total_weight_kg hoje 0/215" — **esta velho**: os 22 pendentes tem peso, historico 170/385.
+
+### Tipografia: o problema nao estava nas tabelas
+Varredura de `getComputedStyle` em 430 px, tela por tela: no Estoque **152 de 247** numeros ja
+estao em 14 px e no Vendas **87 de 91** em 16 px — nao ha densidade de tabela em risco, ao
+contrario do que o relatorio dizia. O que resta abaixo de 14 nas tabelas e **exclusivamente
+`<Badge>`** (11 px), que e a decisao do item 8. O unico alvo real era o **DRE do franqueado**:
+17 numeros de dinheiro em 12 px, incluindo "Entrou" e "Saiu" em negrito. Subiram para 14 px o
+que RESUME o resultado; as sub-linhas (`└ Vendas`, `└ Frete`) e os % de participacao ficam em
+12 px de proposito, para nao achatar a hierarquia.
+
+### Cache de franquias virou react-query
+`listarFranquias()` mantem a assinatura (promessa de array, 13 call-sites intocados) mas quem
+guarda e o `queryClientInstance.fetchQuery` — o cliente e singleton de modulo, entao roda fora
+de React. A chave `["franquias"]` passa a existir: componente novo faz
+`useQuery({queryKey: ["franquias"]})` e reaproveita. **A copia do array na saida FICA** e agora
+importa mais — a referencia devolvida e a que vive DENTRO do cache, e varias telas ordenam no
+lugar.
+
+### `npm run test:unit` tem 10 arquivos, e reprova de verdade
+`deliveryFeeRules`, `productWeight` e `subscriptionStatus` verificavam e **nunca rodavam**.
+(O relatorio dizia que `productWeight.test.mjs` tem zero asserts — tem 16 verificacoes com um
+`eq()` proprio; o grep procurou `assert.` e nao achou o helper.) Provado com canario: divisor
+1000→1001 em `productWeight.js` reprova com rc=1; restaurado, rc=0.
+
+### Tres armadilhas de ferramenta desta rodada
+- **`franchises.status` e `'active'`, nao `'ativo'`** — duas consultas voltaram VAZIAS por isso,
+  sem erro. Confirmar valor de coluna de status antes de filtrar por string.
+- 🔴 **`current_date` e UTC no Supabase** (o `CLAUDE.md` ja dizia, e mordeu assim mesmo): as 21h
+  de Brasilia o banco ja virou o dia, e "8 unidades sem vender" viraram 5 quando medido em data
+  local. Em qualquer contagem de "dias desde", usar
+  `(now() at time zone 'America/Sao_Paulo')::date`.
+- **`npm run icons:check` reprova por CRASE em comentario**: `Usa \`orders\`` num comentario JSX
+  acusou `orders` como icone fora do subset. A rede e larga de proposito (103 usos dinamicos
+  `icon={cfg.icon}`) — reescrever o comentario e o conserto, nao afrouxar a regra.
+- **`SaleForm` cai no chunk de ENTRADA** (`index-*.js`), nao em `Vendas-*.js`. Verificar deploy
+  por conteudo no chunk certo.
