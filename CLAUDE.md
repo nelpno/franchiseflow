@@ -794,6 +794,28 @@ ter saído, **nenhum sinal novo apareceu**.
 ⚠️ O `_verifica-paridade-live.mjs` procura o delimitador `$func$`; o `pg_get_functiondef` gera
 `$function$`. Trocar os dois delimitadores não altera o corpo (o `prosrc` não os inclui).
 
+### 🔴 Ícone que vira PALAVRA: são DOIS modos de falha, e a guarda só pega um
+O nome do ícone é o **conteúdo** do `<span>` — a fonte Material Symbols desenha por
+**ligadura** do texto `payments`. Qualquer propriedade de texto herdada do container mexe nesse
+texto e a ligadura deixa de casar; aí o navegador desenha a palavra.
+
+- **Modo 1 — ícone fora do subset.** `npm run icons:check` pega. Já reprovou 3×.
+- **Modo 2 — `text-transform: uppercase` no container.** A guarda **passa** (o ícone ESTÁ no
+  subset) e a tela quebra igual. Foi o que aconteceu no raio-x do mural do CS em 08/09/2026: 11
+  ícones viraram palavra (`PAYMENTS`, `LOCAL_SHIPPING`, `EXPAND_LESS`…).
+
+**Diagnóstico em um comando** — a largura denuncia, porque ícone é quadrado e palavra é comprida:
+`[...document.querySelectorAll('span.material-symbols-outlined')].filter(s => s.getBoundingClientRect().width > 30)`.
+Prova que fecha o caso: `campaign` media **20px no menu e 76px dentro do diálogo** — mesmo ícone,
+mesma fonte, só muda o `text-transform`.
+
+Corrigido no `MaterialIcon` com `textTransform: "none"` + `letterSpacing: "normal"` **inline**, o
+que blinda os 15 pontos com `uppercase` sobre ícone (10 arquivos — não era só o mural: Início do
+franqueado, ranking do admin, Resultado 3×, Vendas, cadastro de franquia, login) e os futuros.
+Vai inline de propósito: `.uppercase` do Tailwind tem a mesma especificidade de
+`.material-symbols-outlined` e venceria por vir depois na folha. **Os `uppercase` continuam onde
+estavam** — eles são do rótulo, que deve mesmo ser maiúsculo; quem tinha de se proteger era o ícone.
+
 ### Console do Windows mente sobre acento — conferir os bytes
 `'Sem vender h� '` no `print` do Python parecia arquivo corrompido; os bytes eram `\xc3\xa1`, ou
 seja **á em UTF-8 correto**. É o cp1252 do console. Antes de "consertar" encoding, ler os bytes

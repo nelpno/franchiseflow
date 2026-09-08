@@ -6,10 +6,11 @@ anterior também, ver se não está comparando errado"* (Financeiro).
 
 **As duas hipóteses dele estavam erradas na letra e certas no espírito.** Nenhuma das duas telas
 compara mês parcial com mês fechado. Mas as duas mostram números que comunicam algo falso, por
-motivos diferentes — e a medição achou os três.
+motivos diferentes — e a medição achou os três. Depois, um quarto item entrou pelo print do
+raio-x do mural: ícone renderizado como palavra.
 
 Commits: `9f36e2a` (limiar relativo do Radar) · `56ccdb4` (piso do KPI de margem) · `f92fbf0`
-(as 3 vendas de Vila Maria).
+(as 3 vendas de Vila Maria) · `3d35f74` (ícone virando palavra).
 
 ---
 
@@ -115,6 +116,33 @@ foi escolhido por isso, não por gosto.
 
 ---
 
+## 4. Ícone virando palavra no raio-x do mural
+
+Print do Nelson mostrando `PAYMENTS`, `TRENDING_UP`, `LOCAL_SHIPPING`… no lugar dos desenhos.
+**Não era ícone faltando no subset** — a guarda `icons:check` passava. O nome do ícone é o
+conteúdo do `<span>` e a fonte desenha por **ligadura** do texto em minúsculo; o
+`text-transform: uppercase` do container (que existe para o RÓTULO ao lado) transformava
+`payments` em `PAYMENTS` e a ligadura deixava de casar.
+
+A prova é a largura, porque ícone é quadrado e palavra é comprida:
+
+| | largura |
+|---|---|
+| `campaign` no menu lateral | **20 px** (desenho) |
+| `campaign` dentro do diálogo | **76 px** (palavra) |
+| `local_shipping` quebrado | 128 px |
+| `expand_less` quebrado | 139 px |
+
+**11 ícones quebrados → 0**, todos de volta a 13–20 px. A varredura achou **15 pontos** com
+`uppercase` sobre ícone em **10 arquivos** — não era só o mural: Início do franqueado, ranking do
+admin, Gestão > Resultado (3×), Vendas, cadastro de franquia e a tela de login.
+
+Corrigido no `MaterialIcon` (`textTransform: "none"` + `letterSpacing: "normal"`, inline porque
+`.uppercase` do Tailwind vence a classe da fonte por vir depois na folha). Os `uppercase`
+continuam onde estavam — são do rótulo, que deve mesmo ser maiúsculo.
+
+---
+
 ## Armadilhas novas
 
 1. 🔴 **Aplicar `.sql` do Windows injeta `\r` DENTRO da função.** Medido: **246 CR** entraram no
@@ -132,7 +160,10 @@ foi escolhido por isso, não por gosto.
    que é o bom comportamento).
 5. **O heredoc comeu a barra invertida pela terceira vez na sessão**, agora num `verify-*.mjs` com
    regex. Qualquer arquivo com escape sai por `Write`, nunca por `cat <<'EOF'`.
-6. **Minifier escreve `2000` como `2e3`** e renomeia a constante. Prova por conteúdo robusta: achar
+6. 🔴 **Ícone virando palavra tem DOIS modos de falha com a mesma aparência**: fora do subset (a
+   guarda pega) e `uppercase` no container (a guarda passa e a tela quebra). Diagnóstico de um
+   comando: `[...document.querySelectorAll('span.material-symbols-outlined')].filter(s => s.getBoundingClientRect().width > 30)`.
+7. **Minifier escreve `2000` como `2e3`** e renomeia a constante. Prova por conteúdo robusta: achar
    o identificador usado no filtro e provar que **ele** é declarado com o valor (`Xs=2e3`), em vez
    de procurar o literal.
 
