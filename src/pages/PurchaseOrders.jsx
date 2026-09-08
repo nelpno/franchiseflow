@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { PurchaseOrder, PurchaseOrderItem, FranchiseConfiguration, addDefaultProduct, getProductWeightMap } from "@/entities/all";
+import LotePendenteCard from "@/components/minha-loja/LotePendenteCard";
 import { supabase } from "@/api/supabaseClient";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
@@ -741,6 +742,11 @@ export default function PurchaseOrders() {
         </Button>
       </div>
 
+      {/* O peso do lote decide quantas vans saem. `total_weight_kg` era gravado e ignorado
+          por todas as telas — so a ficha de separacao lia. Recebe a lista INTEIRA, nao a filtrada:
+          o lote e o lote, nao o que o filtro da tela deixou passar. */}
+      <LotePendenteCard orders={orders} />
+
       {/* Summary Stats */}
       {(() => {
         const monthOrders = filteredOrders;
@@ -949,6 +955,9 @@ export default function PurchaseOrders() {
                           Frete
                         </TableHead>
                         <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
+                          Peso
+                        </TableHead>
+                        <TableHead className="text-center text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
                           Status
                         </TableHead>
                         <TableHead className="text-right text-xs font-bold uppercase tracking-widest text-ink/60 font-plus-jakarta">
@@ -991,6 +1000,11 @@ export default function PurchaseOrders() {
                             <TableCell className="text-center text-sm text-ink-2">
                               {order.freight_cost != null && parseFloat(order.freight_cost) > 0
                                 ? formatBRL(order.freight_cost)
+                                : "\u2014"}
+                            </TableCell>
+                            <TableCell className="text-center text-sm text-ink-2 font-mono-numbers">
+                              {parseFloat(order.total_weight_kg) > 0
+                                ? `${Math.round(parseFloat(order.total_weight_kg))} kg`
                                 : "\u2014"}
                             </TableCell>
                             <TableCell className="text-center">
