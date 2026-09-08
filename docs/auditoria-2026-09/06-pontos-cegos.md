@@ -195,7 +195,11 @@ O Clarity mostra 0 erros de script. Os logs do Supabase mostram outra coisa. Cad
 
 ### 5.4 Venda com data de amanhã: 24 tentativas em 7 minutos
 - **Evidência:** user `e67b24d2` (**Cajamar**), 06/09 22:46→22:53 BRT: **24 × `POST /rpc/save_sale_with_items` 400**; `postgres_logs`: "A data da venda (07/09/2026) esta no futuro. Hoje e 06/09/2026." (trigger `sales_bloqueia_data_futura`). `SaleForm.jsx:819` faz `throw error` → toast; a pessoa insistiu 24 vezes.
-- **Leitura:** não é bug — é a regra "sem reserva sem pagamento" + ausência de campo "entregar em" (a venda de sábado à noite com entrega domingo). É a frente 04 quem decide o desenho; aqui o ponto é que **só o log sabe** que isso aconteceu. Um evento `sale_blocked_future_date` (Clarity/tabela) mostraria quantas franquias esbarram nisso por semana.
+- **Leitura (revista em 08/09/2026 — a primeira estava errada em dois pontos):**
+  1. **Não foram 24 tentativas dela: foram 8 cliques × 3.** O `withRetry` do `SaleForm` retentava um erro de regra com 2 s e 4 s de espera, cuspindo dois toasts "Tentando novamente em…" por rodada. Corrigido: `ehErroDeRegra()` (23xxx, 42501, P0001) corta o retry na hora.
+  2. **É bug, sim — a trava é larga demais.** Data futura não é só "reserva sem pagamento": boa parte da rede lança a venda com a data da ENTREGA para o pedido ficar no topo da lista do dia certo. Em 180 dias isso são **663 vendas de 30 franquias**, 628 delas ≤ 7 dias à frente. O trigger virou **janela de 14 dias** (`supabase/2026-09-08-sales-data-futura-janela-14-dias.sql`).
+  3. E **ninguém via o motivo**: `23514` não estava no `CODE_MAP` e o `catch` do `SaleForm` nem consultava o erro. Agora a mensagem do trigger chega inteira na tela (whitelist `PREFIXOS_SEGUROS`).
+- **Como apareceu:** não pelo log — pelos 3 áudios da franqueada do Guarujá em 08/09 (18:22, 18:24, 18:25). Um evento `sale_blocked_future_date` continua valendo para não depender de a pessoa reclamar.
 
 ### 5.5 Erros que o bot gera contra o banco (fora do dashboard, mas no mesmo projeto)
 - `service_role POST /rest/v1/contacts` → **804 × 409/dia**; `rpc/log_conversation_message` → **672 × 409/dia**. O n8n usa INSERT onde deveria ser UPSERT (`on_conflict`) — 1.476 erros/dia que contam como request e como log. ⚠️ NÃO VERIFICADO qual nó; escopo do bot.
