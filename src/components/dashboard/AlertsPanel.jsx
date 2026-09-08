@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { differenceInDays, parseISO, format } from "date-fns";
+import { differenceInDays } from "date-fns";
 import { createPageUrl } from "@/utils";
 import { useNavigate } from "react-router-dom";
 import { getFranchiseDisplayName } from "@/lib/franchiseUtils";
+import { unidadesSemVender, unidadesComRoboParado } from "@/lib/alertasLeves";
 
 const PREVIEW_NAMES = 3;
 
@@ -90,8 +91,11 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
   const navigate = useNavigate();
 
   const alertGroups = useMemo(() => {
-    const noSalesCritical = []; // 7+ dias sem venda
-    const noSalesWarning = [];  // 3-7 dias sem venda
+    // "sem vender" e "robo parado" moram em lib/alertasLeves.js: sao os dois alertas que
+    // custam ZERO requisicao (allSales e botSummary ja estao em memoria) e por isso a
+    // faixa do topo do Painel Geral tambem os usa. A regra e a mesma nos dois lugares.
+    const { criticas: noSalesCritical, atencao: noSalesWarning } =
+      unidadesSemVender({ franchises, configMap, allSales });
     const zeroStock = [];
     const lowStock = [];
     const noReorder = [];
@@ -114,23 +118,6 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
       const hasSales = franchiseSales.length > 0;
       const hasActiveInventory = inventory.some((i) => (parseFloat(i.quantity) || 0) > 0);
       if (!hasSales && !hasActiveInventory) continue;
-
-      // --- Sem vendas (usa dados reais, não cron) ---
-      if (hasSales) {
-        const lastSaleDate = franchiseSales.reduce((latest, s) => {
-          return s.sale_date > latest ? s.sale_date : latest;
-        }, "");
-        // parseISO trata como local time (evita off-by-1 em UTC-3)
-        const daysSinceLastSale = lastSaleDate
-          ? differenceInDays(now, parseISO(lastSaleDate))
-          : null;
-
-        if (daysSinceLastSale !== null && daysSinceLastSale >= 7) {
-          noSalesCritical.push({ name: fName, days: daysSinceLastSale });
-        } else if (daysSinceLastSale !== null && daysSinceLastSale >= 3) {
-          noSalesWarning.push({ name: fName, days: daysSinceLastSale });
-        }
-      }
 
       // --- Estoque inteligente (usa min_stock quando configurado) ---
       const managedItems = inventory.filter((i) => (parseFloat(i.min_stock) || 0) > 0);
@@ -173,11 +160,10 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
     }
 
     // --- Bot coaching alerts ---
-    const botInactive = [];
+    const botInactive = unidadesComRoboParado({ franchises, configMap, botSummary });
     const excessiveIntervention = [];
     const staleLeads = [];
     const sevenDaysAgoDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgoStr = format(sevenDaysAgoDate, "yyyy-MM-dd");
 
     for (const franchise of franchises) {
       const evoId = franchise.evolution_instance_id;
@@ -186,14 +172,7 @@ export default function AlertsPanel({ franchises, allSales, inventoryByFranchise
 
       // Filter botSummary aggregates por franquia
       const franchiseSummary = (botSummary || []).filter((s) => s.franchise_id === evoId);
-      const recent7dSummary = franchiseSummary.filter((s) => String(s.day) >= sevenDaysAgoStr);
-      const recentConvosCount = recent7dSummary.reduce((sum, s) => sum + Number(s.total || 0), 0);
       const hadBotEver = franchiseSummary.length > 0;
-
-      // Bot inactive: 0 conversations in 7 days mas teve bot algum dia
-      if (recentConvosCount === 0 && hadBotEver) {
-        botInactive.push({ name: fName });
-      }
 
       // Excessive human intervention: avg msgs humanas > 3 por conversa (90d window).
       // humanMsgCounts não tem started_at — usa janela 90d em vez de 7d (alert menos
