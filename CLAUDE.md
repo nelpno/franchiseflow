@@ -776,6 +776,33 @@ de faturamento no período (`PISO_MARGEM_COMPARAVEL` em `Financeiro.jsx`), o **m
 card aponta Santos (−106,8%), que é caso real. O subtítulo passa a mostrar o faturamento ao lado
 do percentual, para o número nunca aparecer sem a base.
 
+### 🔴 Trava de validação nasce larga demais — meça quantos LEGÍTIMOS ela pega
+O trigger `sales_bloqueia_data_futura` foi criado em 07/09/2026 para pegar 3 vendas datadas
+30/09 (erro de mês) e recusava **qualquer** data futura. Medido no dia seguinte, em 180 dias:
+**663 vendas de 30 franquias** cairiam nele — 628 até 7 dias à frente, **455 exatamente
+"amanhã"**. Não era engano: metade da rede lança a venda com a data da ENTREGA para o pedido
+ficar no topo da lista do dia certo. A cauda de erro real só começa em ~14 dias (16 casos: 31,
+37, 42, 54, 66, 97 dias). Hoje é **janela de 14 dias**
+(`supabase/2026-09-08-sales-data-futura-janela-14-dias.sql`). **A conta antes de subir qualquer
+validação nova é essa: quantas linhas históricas ela reprovaria, e quantas delas são o uso
+normal?** Apareceu por 3 áudios da franqueada do Guarujá, não pelo log — que já registrava o
+mesmo em Cajamar dois dias antes.
+
+### A mensagem do trigger só chega na tela se o errcode estiver mapeado
+`23514` não estava no `CODE_MAP` do [safeErrorMessage.js](src/lib/safeErrorMessage.js): o
+trigger explicava em português claro e a franqueada via *"Erro inesperado. Tente novamente."*
+Agora há `PREFIXOS_SEGUROS` — whitelist de prefixo, porque devolver a mensagem crua de um
+`23514` qualquer vazaria `violates check constraint "sales_value_check"`. **Trigger novo cuja
+mensagem é para o usuário ler precisa do prefixo cadastrado lá**, senão o texto morre no
+fallback genérico.
+
+### `ehErroDeRegra()`: o que NÃO se retenta
+Erro de regra (23xxx, 42501, P0001) não muda em 2 s nem em 4 min. O `withRetry` do `SaleForm`
+retentava mesmo assim — foi assim que **8 cliques da franqueada de Cajamar viraram 24 POSTs**,
+com dois toasts "Tentando novamente em 2s…" por rodada. Todo retry de escrita consulta
+`ehErroDeRegra` antes de repetir, e o `catch` mostra o MOTIVO em vez de "não foi possível
+salvar" — mensagem que manda a pessoa repetir o que nunca vai passar.
+
 ### 🔴 Aplicar `.sql` do Windows injeta `\r` DENTRO da função
 Medido: aplicar o arquivo com CRLF fez o Postgres guardar **246 caracteres CR no `prosrc`**,
 inchando a função em 246 bytes e quebrando a verificação de paridade dali em diante (o
