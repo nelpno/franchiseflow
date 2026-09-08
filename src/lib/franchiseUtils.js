@@ -187,6 +187,9 @@ export const WEEKDAYS = [
 // Marketing — taxa de imposto sobre valor arrecadado (14%)
 export const MARKETING_TAX_RATE = 0.14;
 export const marketingLiquid = (amount) => amount * (1 - MARKETING_TAX_RATE);
+// Para MOSTRAR na tela. `MARKETING_TAX_RATE * 100` em ponto flutuante da
+// 14.000000000000002, e isso estava impresso em duas telas de marketing.
+export const MARKETING_TAX_PCT = Math.round(MARKETING_TAX_RATE * 1000) / 10;
 
 /**
  * Mês-alvo de marketing: últimos 5 dias do mês → próximo mês, senão mês atual.

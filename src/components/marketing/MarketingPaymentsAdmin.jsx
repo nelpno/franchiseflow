@@ -41,7 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/formatters";
-import { MARKETING_TAX_RATE, marketingLiquid } from "@/lib/franchiseUtils";
+import { MARKETING_TAX_PCT, marketingLiquid } from "@/lib/franchiseUtils";
 import MetaDepositDialog from "./MetaDepositDialog";
 import { FranchiseConfiguration } from "@/entities/all";
 
@@ -331,7 +331,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             <p className="text-xs text-ink-3 mb-1">Liquido Campanha</p>
             <p className="text-lg font-bold text-ink">{formatBRL(totalLiquid)}</p>
             {confirmedPayments.length === 0 ? (
-              <p className="text-xs text-ink-3 mt-1">-{MARKETING_TAX_RATE * 100}% imposto</p>
+              <p className="text-xs text-ink-3 mt-1">-{MARKETING_TAX_PCT}% imposto</p>
             ) : faltaSubir.length === 0 ? (
               <p className="text-xs text-ok-ink mt-1 font-medium">
                 {subidas.length} subidas — nenhuma na fila

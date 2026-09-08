@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMarketingAttribution } from "@/entities/all";
-import { MARKETING_TAX_RATE, marketingLiquid } from "@/lib/franchiseUtils";
+import { MARKETING_TAX_PCT, marketingLiquid } from "@/lib/franchiseUtils";
 import { formatBRL, formatBRLInteger } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { Card, CardContent } from "@/components/ui/card";
@@ -207,7 +207,7 @@ export function RetornoDaVerba({ linhas, month }) {
           <CardContent className="p-4">
             <p className="text-xs text-ink-3 mb-1">Verba líquida</p>
             <p className="text-lg font-bold text-ink">{formatBRLInteger(total.liquido)}</p>
-            <p className="text-xs text-ink-3 mt-1">já sem os {MARKETING_TAX_RATE * 100}% do Meta</p>
+            <p className="text-xs text-ink-3 mt-1">já sem os {MARKETING_TAX_PCT}% do Meta</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
