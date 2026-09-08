@@ -12,6 +12,7 @@ import { safeFailedQueriesMessage, safeErrorMessage } from "@/lib/safeErrorMessa
 import AdminHeader from "./AdminHeader";
 import AlertsPanel from "./AlertsPanel";
 import AlertasLeves from "./AlertasLeves";
+import { paginateAll } from "@/lib/paginateAll";
 import FranchiseRanking from "./FranchiseRanking";
 import LastPurchaseOrderCard from "./LastPurchaseOrderCard";
 import DailyRevenueChart from "./DailyRevenueChart";
@@ -130,6 +131,24 @@ export default function AdminDashboard() {
         return data || [];
       };
 
+      // RPC tambem bate no teto de 1.000 linhas do PostgREST — e cala.
+      // Medido em 08/09/2026: get_bot_conversation_summary devolve 4.089 linhas
+      // (63 franquias x ~65 dias) e a tela recebia 1.000. 75,5% do dado do robo era
+      // descartado sem erro nenhum: o card "Performance Bot" somava um quarto da rede e
+      // o alerta de robo parado acusava 13 unidades quando a verdade eram 9. E a mesma
+      // armadilha que ja tinha mordido get_human_message_counts na onda 4, na RPC irma.
+      // O ORDER BY explicito e obrigatorio: sem ele a paginacao duplica e omite linhas
+      // (bug 5333224). (franchise_id, day) e a chave do group by, entao e unica.
+      const rpcPaginado = async (name, args, colunas) => {
+        return paginateAll(async (de, ate) => {
+          let q = supabase.rpc(name, args).select("*");
+          for (const c of colunas) q = q.order(c, { ascending: true });
+          const { data, error } = await q.range(de, ate).abortSignal(signal);
+          if (error) throw new Error(error.message || `RPC ${name} falhou`);
+          return data || [];
+        });
+      };
+
       // ═══ WAVE 1: Stats + Ranking (6 queries — aparece em ~1s) ═══
       const wave1 = await Promise.allSettled([
         fetchFranchises(),
@@ -191,7 +210,7 @@ export default function AdminDashboard() {
       // de "intervencao humana excessiva" vinha truncado em silencio. A nova agrega por
       // franquia no banco (62 linhas). O consumidor ja somava por franquia.
       const wave2 = await Promise.allSettled([
-        rpc('get_bot_conversation_summary', { p_since: cutoff90d }),
+        rpcPaginado('get_bot_conversation_summary', { p_since: cutoff90d }, ['franchise_id', 'day']),
         rpc('get_human_message_totals', { p_since: cutoff90d }),
       ]);
 
