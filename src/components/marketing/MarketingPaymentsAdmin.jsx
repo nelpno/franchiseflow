@@ -138,12 +138,29 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   const balance = totalCollected - totalDeposited;
   const paidCount = payments.filter((p) => p.status !== "rejected").length;
 
+  // A fila do mes: pagou e a campanha AINDA nao foi subida no Meta.
+  //
+  // "Confirmar o pagamento" e "subir a campanha" viraram dois momentos diferentes e o banco
+  // so tinha um campo para os dois. Medido em 08/09/2026: 39 das 55 confirmacoes de setembro
+  // cairam no MESMO minuto que outra — confirmacao em lote, e subir campanha no Meta nao leva
+  // segundos. Entao `confirmed` significa "recebi o pagamento", e quem responde "ja subi?" e
+  // o campaign_raised_at.
+  const subidas = confirmedPayments.filter((p) => p.campaign_raised_at);
+  const faltaSubir = confirmedPayments.filter((p) => !p.campaign_raised_at);
+  const liquidoFaltaSubir = marketingLiquid(
+    faltaSubir.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  );
+  const naoPagaramCount = franchises.length - paidCount;
+
   // ─── Merge franquias + pagamentos ───
   const franchiseRows = franchises.map((f) => {
     const payment = payments.find((p) => p.franchise_id === f.evolution_instance_id);
     let status = "not_paid";
     if (payment) status = payment.status;
-    return { franchise: f, payment, status };
+    // `subiu` NAO e um status: e uma segunda dimensao sobre o pagamento confirmado. Manter
+    // separado evita repetir o erro de um campo so respondendo duas perguntas.
+    const subiu = Boolean(payment?.campaign_raised_at);
+    return { franchise: f, payment, status, subiu };
   });
 
   // Sort: pending > confirmed > not_paid > rejected
@@ -151,9 +168,12 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
   franchiseRows.sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9));
 
   // Filter
-  const filteredRows = filterStatus === "all"
-    ? franchiseRows
-    : franchiseRows.filter((r) => r.status === filterStatus);
+  const filteredRows =
+    filterStatus === "all"
+      ? franchiseRows
+      : filterStatus === "falta_subir"
+        ? franchiseRows.filter((r) => r.status === "confirmed" && !r.subiu)
+        : franchiseRows.filter((r) => r.status === filterStatus);
 
   // ─── Acoes ───
   const handleConfirm = async (paymentId) => {
@@ -164,6 +184,23 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       await loadData();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao confirmar pagamento."));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleSubiu = async (payment) => {
+    setActionLoading(payment.id);
+    const jaSubiu = Boolean(payment.campaign_raised_at);
+    try {
+      await MarketingPayment.update(payment.id, {
+        campaign_raised_at: jaSubiu ? null : new Date().toISOString(),
+        campaign_raised_by: jaSubiu ? null : user?.id || null,
+      });
+      toast.success(jaSubiu ? "Voltou para a fila." : "Campanha marcada como subida.");
+      await loadData();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Nao foi possivel marcar a campanha."));
     } finally {
       setActionLoading(null);
     }
@@ -261,6 +298,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="pending">Pendentes</SelectItem>
             <SelectItem value="confirmed">Confirmados</SelectItem>
+            <SelectItem value="falta_subir">Pagos — falta subir</SelectItem>
             <SelectItem value="not_paid">Nao pagaram</SelectItem>
             <SelectItem value="rejected">Recusados</SelectItem>
           </SelectContent>
@@ -274,13 +312,44 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             <p className="text-xs text-ink-3 mb-1">Arrecadado</p>
             <p className="text-lg font-bold text-ink">{formatBRL(totalCollected)}</p>
             <p className="text-xs text-ink-3 mt-1">{paidCount} de {franchises.length} pagaram</p>
+            {naoPagaramCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setFilterStatus("not_paid")}
+                className="mt-1 text-xs font-semibold text-brand hover:underline min-h-[24px]"
+              >
+                ver {naoPagaramCount} que não pagaram
+              </button>
+            )}
           </CardContent>
         </Card>
+        {/* O card do liquido e o lugar semanticamente certo para a fila de subida: ele JA e
+            sobre quanto vai para campanha. Por isso nao entra card novo — a tela continua com
+            os mesmos 4. */}
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-xs text-ink-3 mb-1">Liquido Campanha</p>
             <p className="text-lg font-bold text-ink">{formatBRL(totalLiquid)}</p>
-            <p className="text-xs text-ink-3 mt-1">-{MARKETING_TAX_RATE * 100}% imposto</p>
+            {confirmedPayments.length === 0 ? (
+              <p className="text-xs text-ink-3 mt-1">-{MARKETING_TAX_RATE * 100}% imposto</p>
+            ) : faltaSubir.length === 0 ? (
+              <p className="text-xs text-ok-ink mt-1 font-medium">
+                {subidas.length} subidas — nenhuma na fila
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setFilterStatus("falta_subir")}
+                className="mt-1 text-left min-h-[24px]"
+              >
+                <span className="text-xs font-semibold text-brand hover:underline">
+                  falta subir {faltaSubir.length}
+                </span>
+                <span className="block text-xs text-ink-3">
+                  {formatBRL(liquidoFaltaSubir)} esperando
+                </span>
+              </button>
+            )}
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
@@ -374,7 +443,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
           ) : (
             <div className="divide-y divide-surface-line">
               {filteredRows.map((row) => {
-                const { franchise: f, payment: p, status } = row;
+                const { franchise: f, payment: p, status, subiu } = row;
                 const cfg = STATUS_CONFIG[status];
                 const amount = p ? parseFloat(p.amount) || 0 : 0;
                 const liquid = p ? marketingLiquid(amount) : 0;
@@ -407,8 +476,8 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                       </span>
                     </div>
 
-                    {/* Status */}
-                    <div className="md:col-span-2 md:text-center">
+                    {/* Status + se a campanha ja subiu (duas coisas diferentes) */}
+                    <div className="md:col-span-2 md:text-center flex flex-wrap md:justify-center items-center gap-1">
                       <span
                         className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
                         style={{
@@ -419,10 +488,47 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                         <MaterialIcon icon={cfg.icon} size={14} />
                         {cfg.label}
                       </span>
+                      {status === "confirmed" && (
+                        subiu ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-ok-ink bg-ok/10"
+                            title={
+                              p?.campaign_raised_at
+                                ? `Subida em ${format(new Date(p.campaign_raised_at), "dd/MM 'às' HH:mm")}`
+                                : undefined
+                            }
+                          >
+                            <MaterialIcon icon="campaign" size={14} />
+                            Subida
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-brand bg-brand/10">
+                            <MaterialIcon icon="pending" size={14} />
+                            Falta subir
+                          </span>
+                        )
+                      )}
                     </div>
 
                     {/* Acoes */}
                     <div className="md:col-span-3 flex items-center justify-center gap-1">
+                      {p && status === "confirmed" && (
+                        <Button
+                          size="sm"
+                          variant={subiu ? "ghost" : "outline"}
+                          className={
+                            subiu
+                              ? "h-8 px-2 text-xs text-ink-3 hover:bg-surface-2"
+                              : "h-8 px-2 text-xs border-brand text-brand hover:bg-brand/5"
+                          }
+                          onClick={() => handleToggleSubiu(p)}
+                          disabled={isLoading}
+                          title={subiu ? "Desmarcar — volta para a fila" : "Marcar que subi no Meta"}
+                        >
+                          <MaterialIcon icon={subiu ? "undo" : "campaign"} size={16} className="mr-1" />
+                          {subiu ? "Desfazer" : "Subi"}
+                        </Button>
+                      )}
                       {p && status === "pending" && (
                         <>
                           <Button
