@@ -442,6 +442,9 @@ remonta `{evo}/catalogo.jpg` por path fixo e mandaria a foto errada ao cliente f
   vai para o browser): `node supabase/scripts/limpar-instancia-zuck.mjs <evo_id> --apply`, que
   recusa instância conectada e franquia que ainda exista no banco. **Rodar ANTES de criar a
   unidade nova na mesma cidade**, senão ela herda a instância com o número do dono anterior.
+- **Fora do sistema, e a conta do Nelson faz à mão** (lembrado por ele em 09/09): **Instagram
+  e Facebook da unidade**. Não há nada no dashboard sobre isso — entra no checklist do
+  desligamento junto com a instância do Zuck.
 - **O cliente ASAAS (`asaas_customer_id`) fica de propósito** — é por CPF/CNPJ e o mesmo dono
   costuma ter outras unidades. Quem se cancela é a ASSINATURA.
 
