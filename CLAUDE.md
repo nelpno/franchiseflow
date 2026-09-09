@@ -403,6 +403,52 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - **Dono multi-unidade compartilha o cliente ASAAS: o `billing_email` da unidade que você mexer SOBRESCREVE o e-mail do cliente** (o `registerCustomer` sincroniza). Giuliana tem Americana (`alecrimdouradopasticcerie@`) e Nova Odessa (`giu.cpadela@`) no mesmo `cus_000173818508` → o último register vence e a NFe das duas sai nesse e-mail. Padronizar um e-mail por CNPJ evita o ping-pong.
 - **`asaas_customer_id` é por CPF/CNPJ, NÃO por unidade** — dono multi-unidade tem 1 cliente e N assinaturas (Emerson 4, Anderson 3). Ao apurar "pagou ou não", cruzar pelo `subscription` da fatura, NUNCA pelo cliente/nome: o pagamento de uma unidade aparece sob o nome da outra e vira falso "eu paguei" (Anderson pagou 2 de 3, Cataguases ficou vencida). ⚠️ Pior com CPF copiado errado entre DONOS diferentes: Vila Jardini (Fátima) carrega o CPF do Edgar — corrigir o CPF antes de recriar assinatura, senão cobrança e NFe saem no nome errado
 
+## Excluir franquia — o que o botão faz, e o que ele NÃO faz (09/09/2026)
+
+🔴 **`DROP TABLE` arma uma bomba em toda função plpgsql que a cita — e ela só explode em
+runtime.** A onda 4 dropou `daily_checklists` (zero linhas na vida) e a
+`delete_franchise_cascade` tinha um `DELETE FROM daily_checklists`: o deploy passou, o lint
+passou, e **excluir franquia virou "Erro interno de configuração"** (42P01) por dois dias.
+Antes de dropar qualquer tabela, varra o corpo das funções:
+`select proname from pg_proc where prokind='f' and prosrc ilike '%nome_da_tabela%'`.
+(Varredura feita em 09/09: nenhuma outra função referencia tabela inexistente.)
+
+🔴 **O `evolution_instance_id` é derivado da CIDADE e é REUTILIZADO.**
+`auto_generate_instance_id` monta `'franquia' || cidade sem acento` e só procura duplicata em
+`franchises` — que estará vazia daquela cidade depois da exclusão. Então **resíduo não é
+sujeira, é herança**: a unidade nova nasceria com a assinatura CANCELADA da anterior, os
+cartões velhos no mural do CS e, no Storage, o **catálogo da franqueada antiga** (o bot
+remonta `{evo}/catalogo.jpg` por path fixo e mandaria a foto errada ao cliente final).
+
+**Como a exclusão funciona hoje** ([2026-09-09-delete-franchise-cascade-v2.sql](supabase/2026-09-09-delete-franchise-cascade-v2.sql)):
+- A RPC **descobre as tabelas em tempo de execução** (toda `franchise_id` text no schema
+  public, menos `_backup_*`) em vez de listar à mão. Tabela nova entra sozinha; tabela dropada
+  some da lista. A lista fixa deixava para trás `system_subscriptions`, `cs_tasks`,
+  `cs_worklist`, `cs_worklist_events`, `cs_agreements`, `coach_actions` e `bot_reports` —
+  nenhuma tem FK para `franchises`, então ficavam para sempre, caladas.
+- ⚠️ **`sale_items` e `purchase_order_items` saem ANTES do laço**, pelos ids do pai: as duas
+  referenciam `inventory_items` com ON DELETE NO ACTION e o laço apaga em ordem alfabética.
+- ⚠️ **Segunda passada obrigatória**: `audit_logs` é limpa no começo (ordem alfabética) e
+  **volta a encher no meio do laço**, porque `audit_on_sale_delete` grava um registro por venda
+  apagada — sobravam 93 linhas. No fim há uma **conferência**: se restar uma linha, a função
+  levanta exceção e o Postgres desfaz tudo. Ou sai inteira, ou não sai.
+- **`p_dry_run` é o preflight**, e existe por um motivo concreto: o front cancela o ASAAS
+  ANTES de chamar o banco, então cascade quebrado deixa a franquia **viva e sem cobrança** (foi
+  o estado da Cataguases em 09/09). O diálogo roda o dry-run ao abrir, mostra quantos registros
+  somem e **quais contas de acesso serão apagadas**, e só libera o botão se passar.
+- **Storage é do front** (`limparStorageDaFranquia` em [franchiseTeardown.js](src/lib/franchiseTeardown.js)):
+  `{evo}/` nos 3 buckets, admin tem policy de DELETE nos três. Falha não desfaz a exclusão — avisa.
+- 🔴 **A instância do WhatsApp NÃO é apagada pelo app** (exige o admin token do Zuck, que não
+  vai para o browser): `node supabase/scripts/limpar-instancia-zuck.mjs <evo_id> --apply`, que
+  recusa instância conectada e franquia que ainda exista no banco. **Rodar ANTES de criar a
+  unidade nova na mesma cidade**, senão ela herda a instância com o número do dono anterior.
+- **O cliente ASAAS (`asaas_customer_id`) fica de propósito** — é por CPF/CNPJ e o mesmo dono
+  costuma ter outras unidades. Quem se cancela é a ASSINATURA.
+
+**Classe Tailwind com token inexistente não pinta e não reprova em lint nenhum**: escrevi
+`text-ink-1` em 3 lugares e o tema tem `ink`, `ink-2`, `ink-3`, `ink-4` — sem `ink-1`. Build
+verde, lint verde, texto sem cor. Conferir o token em `tailwind.config.js` ao usar um novo.
+
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx.
 
