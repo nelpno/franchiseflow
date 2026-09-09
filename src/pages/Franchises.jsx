@@ -27,6 +27,8 @@ import {
   separarUsuarios,
   limparStorageDaFranquia,
 } from "@/lib/franchiseTeardown";
+import { precisaSincronizarDocumento } from "@/lib/fiscalSync";
+import SincronizarDocAsaasDialog from "@/components/franchises/SincronizarDocAsaasDialog";
 
 
 /** Retorna nome legível da franquia: nome da loja (sem "Maxi Massas") ou cidade */
@@ -78,6 +80,8 @@ export default function Franchises() {
 
   // Delete franchise confirmation
   const [deletingFranchise, setDeletingFranchise] = useState(null);
+  // Documento mudou numa franquia que já tem cliente ASAAS -> perguntar o que fazer lá.
+  const [syncDocAsaas, setSyncDocAsaas] = useState(null);
   // Preflight da exclusão: o que a RPC diz que vai apagar (dry-run), ou o erro que ela deu.
   const [previewExclusao, setPreviewExclusao] = useState(null);
   const [erroPreview, setErroPreview] = useState(null);
@@ -292,9 +296,27 @@ export default function Franchises() {
         await Franchise.update(editingFiscal.franchise.id, namePatch);
       }
       toast.success("Dados atualizados!");
+
+      // Salvar no painel NUNCA propagou para o ASAAS — a NFe de Bragança e Cajamar saiu
+      // semanas no CPF da pessoa física com o CNPJ já cadastrado aqui (09/09/2026).
+      const docAntigo = editingFiscal.franchise.cpf_cnpj;
+      const docNovo = franchiseData.cpf_cnpj;
+      const franquiaSalva = editingFiscal.franchise;
       setEditingFiscal(null);
       invalidarFranquias();
       loadData(true);
+
+      if (precisaSincronizarDocumento({ docAntigo, docNovo, temClienteAsaas: true })) {
+        const subs = await SystemSubscription.filter(
+          { franchise_id: franquiaSalva.evolution_instance_id },
+          null,
+          1
+        );
+        if (subs[0]?.asaas_customer_id) {
+          setSyncDocAsaas({ franquia: franquiaSalva, docAntigo, docNovo });
+        }
+      }
+      return;
     } catch (error) {
       console.error("Erro ao salvar dados fiscais:", error);
       toast.error(safeErrorMessage(error, "Erro ao salvar dados fiscais."));
@@ -1220,6 +1242,15 @@ export default function Franchises() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {syncDocAsaas && (
+          <SincronizarDocAsaasDialog
+            franquia={syncDocAsaas.franquia}
+            docAntigo={syncDocAsaas.docAntigo}
+            docNovo={syncDocAsaas.docNovo}
+            onClose={() => setSyncDocAsaas(null)}
+          />
+        )}
 
         {/* Unlink User Confirmation Dialog */}
         <Dialog

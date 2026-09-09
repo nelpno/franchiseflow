@@ -193,6 +193,7 @@ storefront
 style
 support_agent
 sync
+sync_problem
 tab
 task
 task_alt

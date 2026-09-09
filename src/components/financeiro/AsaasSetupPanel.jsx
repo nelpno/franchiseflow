@@ -16,6 +16,8 @@ import { missingFiscalFields, saveFiscalData } from "@/lib/saveFiscalData";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { cpfCnpjError } from "@/lib/documentUtils";
+import { precisaSincronizarDocumento } from "@/lib/fiscalSync";
+import SincronizarDocAsaasDialog from "@/components/franchises/SincronizarDocAsaasDialog";
 
 /**
  * Chama a edge asaas-billing devolvendo o MOTIVO real da falha.
@@ -124,6 +126,7 @@ export default function AsaasSetupPanel() {
   const [franchises, setFranchises] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [syncDocAsaas, setSyncDocAsaas] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editingCpf, setEditingCpf] = useState({});
   const [savingCpf, setSavingCpf] = useState({});
@@ -246,10 +249,17 @@ export default function AsaasSetupPanel() {
     }
     setSavingCpf(prev => ({ ...prev, [franchise.id]: true }));
     try {
+      const docAntigo = franchise.cpf_cnpj;
       await Franchise.update(franchise.id, { cpf_cnpj: digits });
       setFranchises(prev => prev.map(f => f.id === franchise.id ? { ...f, cpf_cnpj: digits } : f));
       setEditingCpf(prev => { const n = { ...prev }; delete n[franchise.id]; return n; });
       toast.success(`CPF/CNPJ salvo para ${franchise.name}`);
+      // O ASAAS não acompanha o painel: se já existe cliente lá, perguntar o que fazer.
+      const sub = subscriptions.find(s => s.franchise_id === franchise.evolution_instance_id);
+      if (sub?.asaas_customer_id &&
+          precisaSincronizarDocumento({ docAntigo, docNovo: digits, temClienteAsaas: true })) {
+        setSyncDocAsaas({ franquia: franchise, docAntigo, docNovo: digits });
+      }
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao salvar."));
     } finally {
@@ -378,8 +388,16 @@ export default function AsaasSetupPanel() {
         }
       );
       toast.success("Dados fiscais atualizados!");
+      const docAntigo = editingFiscal.franchise.cpf_cnpj;
+      const franquiaSalva = editingFiscal.franchise;
+      const subSalva = subscriptions.find(x => x.franchise_id === franquiaSalva.evolution_instance_id);
       setEditingFiscal(null);
       loadData();
+      // O ASAAS não acompanha o painel (ver lib/fiscalSync.js).
+      if (subSalva?.asaas_customer_id &&
+          precisaSincronizarDocumento({ docAntigo, docNovo: franchiseData.cpf_cnpj, temClienteAsaas: true })) {
+        setSyncDocAsaas({ franquia: franquiaSalva, docAntigo, docNovo: franchiseData.cpf_cnpj });
+      }
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao salvar dados fiscais."));
     } finally {
@@ -1032,6 +1050,15 @@ export default function AsaasSetupPanel() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {syncDocAsaas && (
+        <SincronizarDocAsaasDialog
+          franquia={syncDocAsaas.franquia}
+          docAntigo={syncDocAsaas.docAntigo}
+          docNovo={syncDocAsaas.docNovo}
+          onClose={() => { setSyncDocAsaas(null); loadData(); }}
+        />
+      )}
     </div>
   );
 }

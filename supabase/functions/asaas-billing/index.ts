@@ -201,6 +201,81 @@ async function registerCustomer(franchiseId: string) {
   return { customerId, franchise: franchise.name };
 }
 
+/**
+ * Atualiza no ASAAS o documento do cliente JA VINCULADO a esta franquia.
+ *
+ * Por que existe uma action so para isso: trocar o CPF/CNPJ no painel significa DUAS
+ * coisas opostas, e nenhum codigo distingue as duas sozinho.
+ *   - a mesma empresa virou PJ  -> tem de ATUALIZAR o cliente (assinatura intacta)
+ *   - a franquia trocou de dono -> tem de CRIAR cliente novo, senao a cobranca sai no
+ *     nome do dono anterior (foi o conserto do caso Araras)
+ * `registerCustomer` faz o segundo: busca por cpfCnpj e, nao achando, cria. Esta funcao
+ * faz o primeiro, e quem escolhe e a pessoa, no dialogo do painel.
+ *
+ * Medido em 09/09/2026: Braganca (CNPJ no painel, CPF 06398291808 no ASAAS) e Cajamar
+ * (CNPJ no painel, CPF 27109189864) estavam assim ha semanas — cobranca certa, NFe no
+ * documento errado. Salvar o cadastro nunca propagou para o ASAAS.
+ */
+async function syncCustomerDocument(franchiseId: string) {
+  const { data: franchise, error: fErr } = await supabase
+    .from("franchises")
+    .select("name, cpf_cnpj, billing_email")
+    .eq("evolution_instance_id", franchiseId)
+    .single();
+  if (fErr || !franchise) throw new Error("Franquia não encontrada");
+  if (!franchise.cpf_cnpj) throw new Error("CPF/CNPJ não preenchido");
+  if (!isValidCpfCnpj(franchise.cpf_cnpj)) {
+    throw new Error(`CPF/CNPJ inválido no cadastro (${franchise.cpf_cnpj}) — confira os dígitos`);
+  }
+
+  const { data: sub } = await supabase
+    .from("system_subscriptions")
+    .select("asaas_customer_id, asaas_subscription_id")
+    .eq("franchise_id", franchiseId)
+    .single();
+  if (!sub?.asaas_customer_id) {
+    throw new Error("NO_CUSTOMER: esta franquia ainda não tem cliente no ASAAS — use Criar em Mensalidades");
+  }
+
+  const antes = await asaasRequest(`/v3/customers/${sub.asaas_customer_id}`);
+  const doAsaas = (antes.cpfCnpj || "").replace(/\D/g, "");
+  const doPainel = franchise.cpf_cnpj.replace(/\D/g, "");
+  if (doAsaas === doPainel) {
+    return { changed: false, customerId: sub.asaas_customer_id, cpfCnpj: doPainel, name: antes.name };
+  }
+
+  const patch: Record<string, string> = { cpfCnpj: doPainel };
+  if (franchise.billing_email && franchise.billing_email !== antes.email) {
+    patch.email = franchise.billing_email;
+  }
+  await asaasRequest(`/v3/customers/${sub.asaas_customer_id}`, {
+    method: "POST",
+    body: JSON.stringify(patch),
+  });
+
+  // Conferir por LEITURA, nunca pelo status do POST.
+  const depois = await asaasRequest(`/v3/customers/${sub.asaas_customer_id}`);
+  const agora = (depois.cpfCnpj || "").replace(/\D/g, "");
+  if (agora !== doPainel) {
+    throw new Error(`O ASAAS aceitou a chamada mas o documento continua ${agora}`);
+  }
+
+  await supabase
+    .from("system_subscriptions")
+    .update({ last_synced_at: new Date().toISOString() })
+    .eq("franchise_id", franchiseId);
+
+  return {
+    changed: true,
+    customerId: sub.asaas_customer_id,
+    subscriptionId: sub.asaas_subscription_id,
+    de: doAsaas,
+    para: agora,
+    name: depois.name,
+    franchise: franchise.name,
+  };
+}
+
 async function createSubscription(franchiseId: string, value: number = 150) {
   if (!Number.isFinite(value) || value < 5 || value > 5000) {
     throw new Error("Valor inválido (deve estar entre R$ 5 e R$ 5.000)");
@@ -739,6 +814,7 @@ Deno.serve(async (req) => {
       "cancel-subscription",
       "update-subscription-value",
       "check-payment-batch",
+      "sync-customer-document",
     ];
     if (adminActions.includes(action) && !isAdminOrManager(user)) {
       return new Response(JSON.stringify({ error: "Apenas administradores podem executar esta ação" }), {
@@ -768,6 +844,9 @@ Deno.serve(async (req) => {
         break;
       case "cancel-subscription":
         result = await cancelSubscription(body.franchise_id);
+        break;
+      case "sync-customer-document":
+        result = await syncCustomerDocument(body.franchise_id);
         break;
       case "update-subscription-value":
         result = await updateSubscriptionValue({
