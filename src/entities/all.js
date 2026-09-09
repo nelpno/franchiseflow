@@ -182,13 +182,19 @@ function createEntity(tableName) {
   };
 }
 
-// Cascade delete via server-side RPC (atomic transaction — rollback on any failure)
-async function deleteFranchiseCascade(franchiseId, evolutionInstanceId) {
-  const { error } = await supabase.rpc('delete_franchise_cascade', {
+// Cascade delete via server-side RPC (atomic transaction — rollback on any failure).
+// `dryRun: true` percorre o MESMO caminho contando em vez de apagar: é o preflight que
+// a tela roda ANTES de cancelar a cobrança no ASAAS. Sem ele, uma falha no banco deixa
+// a franquia viva e sem cobrança (foi o que aconteceu com Cataguases em 09/09/2026).
+// Devolve { dry_run, franquia, tabelas: {tabela: n}, usuarios: [{acao, nome, ...}] }.
+async function deleteFranchiseCascade(franchiseId, evolutionInstanceId, { dryRun = false } = {}) {
+  const { data, error } = await supabase.rpc('delete_franchise_cascade', {
     p_franchise_id: franchiseId,
     p_evolution_instance_id: evolutionInstanceId,
+    p_dry_run: dryRun,
   });
   if (error) throw error;
+  return data;
 }
 
 // Entidades com nomes de tabela Supabase

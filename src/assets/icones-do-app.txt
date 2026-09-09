@@ -131,6 +131,7 @@ percent
 person
 person_add
 person_off
+person_remove
 person_search
 phone
 picture_as_pdf

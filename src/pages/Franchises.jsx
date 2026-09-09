@@ -20,6 +20,13 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 import { listarFranquias, invalidarFranquias } from "@/lib/franchisesCache";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  resumirExclusao,
+  totalDeLinhas,
+  separarUsuarios,
+  limparStorageDaFranquia,
+} from "@/lib/franchiseTeardown";
 
 
 /** Retorna nome legível da franquia: nome da loja (sem "Maxi Massas") ou cidade */
@@ -71,6 +78,9 @@ export default function Franchises() {
 
   // Delete franchise confirmation
   const [deletingFranchise, setDeletingFranchise] = useState(null);
+  // Preflight da exclusão: o que a RPC diz que vai apagar (dry-run), ou o erro que ela deu.
+  const [previewExclusao, setPreviewExclusao] = useState(null);
+  const [erroPreview, setErroPreview] = useState(null);
   const [isDeletingFranchise, setIsDeletingFranchise] = useState(false);
   const [isDeletingStaff, setIsDeletingStaff] = useState(false);
 
@@ -293,21 +303,48 @@ export default function Franchises() {
     }
   };
 
+  // Roda o dry-run assim que o diálogo abre: mostra ao admin o que some e, principalmente,
+  // prova que a exclusão vai passar antes de qualquer efeito irreversível.
+  useEffect(() => {
+    if (!deletingFranchise) {
+      setPreviewExclusao(null);
+      setErroPreview(null);
+      return;
+    }
+    let ativo = true;
+    setPreviewExclusao(null);
+    setErroPreview(null);
+    Franchise.deleteCascade(deletingFranchise.id, deletingFranchise.evolution_instance_id, { dryRun: true })
+      .then((r) => ativo && setPreviewExclusao(r))
+      .catch((e) => {
+        console.error("Preflight da exclusão falhou:", e);
+        if (ativo) setErroPreview(safeErrorMessage(e, "Não consegui conferir o que seria apagado."));
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [deletingFranchise]);
+
   const handleDeleteFranchise = async () => {
     if (!deletingFranchise) return;
+    // O preflight (dry-run da RPC) tem de ter passado ANTES de tocar no ASAAS. É ele que
+    // impede o estado meio-excluído: em 09/09/2026 a Cataguases teve a cobrança cancelada
+    // e continuou viva, porque o cascade morreu depois do cancelamento.
+    if (!previewExclusao) {
+      toast.error("Espere a conferência terminar antes de excluir.");
+      return;
+    }
     setIsDeletingFranchise(true);
+    const evoId = deletingFranchise.evolution_instance_id;
+    const nome = getDisplayName(deletingFranchise);
     try {
-      // Cancela a cobrança ASAAS ANTES de apagar (a assinatura é deletada no cascade do banco,
-      // então não dá pra cancelar depois). Aborta a exclusão se o cancelamento falhar — assim
-      // nunca fica uma assinatura órfã cobrando uma franquia que não existe mais (caso Indaiatuba).
-      const subRows = await SystemSubscription.filter(
-        { franchise_id: deletingFranchise.evolution_instance_id },
-        null,
-        1
-      );
+      // Cancela a cobrança ASAAS ANTES de apagar (a linha some no cascade do banco, então
+      // não dá pra cancelar depois). Aborta a exclusão se o cancelamento falhar — assim
+      // nunca fica uma assinatura órfã cobrando uma franquia que não existe mais (Indaiatuba).
+      const subRows = await SystemSubscription.filter({ franchise_id: evoId }, null, 1);
       if (subRows[0]?.asaas_subscription_id) {
         const { error: cancelErr } = await supabase.functions.invoke("asaas-billing", {
-          body: { action: "cancel-subscription", franchise_id: deletingFranchise.evolution_instance_id },
+          body: { action: "cancel-subscription", franchise_id: evoId },
         });
         if (cancelErr) {
           toast.error(
@@ -317,8 +354,31 @@ export default function Franchises() {
           return;
         }
       }
-      await Franchise.deleteCascade(deletingFranchise.id, deletingFranchise.evolution_instance_id);
-      toast.success(`Franquia ${getDisplayName(deletingFranchise)} excluída e cobrança cancelada.`);
+
+      const resumo = await Franchise.deleteCascade(deletingFranchise.id, evoId);
+
+      // Storage não sai no cascade e o `evolution_instance_id` é derivado da CIDADE: uma
+      // franquia nova em Cataguases recebe o mesmo id e herdaria o catálogo desta aqui
+      // (o bot remonta a URL por path fixo). Falha aqui não desfaz a exclusão — avisa.
+      const { falhas } = await limparStorageDaFranquia(supabase, evoId);
+
+      const apagadas = separarUsuarios(resumo?.usuarios).apagados.length;
+      toast.success(`${nome} excluída — ${totalDeLinhas(resumo?.tabelas)} registros e cobrança cancelada.`, {
+        description: apagadas > 0 ? `${apagadas} conta(s) de acesso também foram apagadas.` : undefined,
+      });
+      if (falhas.length > 0) {
+        toast.warning("Sobraram arquivos no armazenamento.", {
+          description: `Apague à mão a pasta ${evoId}/ em: ${falhas.map((f) => f.bucket).join(", ")}.`,
+          duration: 12000,
+        });
+      }
+      // A instância do WhatsApp fica: apagá-la exige o token de admin do ZuckZapGo, que não
+      // pode ir para o browser. Script: supabase/scripts/limpar-instancia-zuck.mjs
+      toast.info("Falta apagar a instância do WhatsApp.", {
+        description: `A instância "${evoId}" continua no ZuckZapGo — peça para o suporte removê-la.`,
+        duration: 12000,
+      });
+
       setDeletingFranchise(null);
       setSelectedFranchise(null);
       invalidarFranquias();
@@ -1086,16 +1146,75 @@ export default function Franchises() {
                 Tem certeza que deseja excluir a franquia de{" "}
                 <strong>{getDisplayName(deletingFranchise)}</strong>? Esta ação não pode ser desfeita.
               </p>
+
+              {/* O que some. Conferido no banco antes de qualquer efeito. */}
+              {!previewExclusao && !erroPreview && (
+                <div className="mt-4 space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              )}
+
+              {erroPreview && (
+                <div className="mt-4 rounded-xl border border-err/30 bg-err/5 p-3">
+                  <p className="text-sm font-bold text-err">Não dá para excluir agora</p>
+                  <p className="text-sm text-ink-2 mt-1">{erroPreview}</p>
+                  <p className="text-xs text-ink-3 mt-2">
+                    Nada foi alterado — nem no painel, nem na cobrança.
+                  </p>
+                </div>
+              )}
+
+              {previewExclusao && (
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-xl bg-surface-2 p-3">
+                    <p className="text-sm font-bold text-ink">
+                      Vão ser apagados {totalDeLinhas(previewExclusao.tabelas).toLocaleString("pt-BR")} registros
+                    </p>
+                    <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                      {resumirExclusao(previewExclusao.tabelas).map((item) => (
+                        <li key={item.tabela} className="text-sm text-ink-2 flex justify-between gap-2">
+                          <span className="truncate">{item.rotulo}</span>
+                          <span className="font-bold text-ink tabular-nums">
+                            {item.quantidade.toLocaleString("pt-BR")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {separarUsuarios(previewExclusao.usuarios).apagados.length > 0 && (
+                    <div className="rounded-xl border border-warn/40 bg-warn/10 p-3">
+                      <p className="text-sm font-bold text-ink flex items-center gap-1">
+                        <MaterialIcon icon="person_remove" size={16} />
+                        Estas contas de acesso serão apagadas
+                      </p>
+                      <p className="text-sm text-ink-2 mt-1">
+                        {separarUsuarios(previewExclusao.usuarios)
+                          .apagados.map((u) => u.nome)
+                          .join(", ")}{" "}
+                        — não têm outra unidade. Vão precisar de convite novo.
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-ink-3">
+                    Também cancela a cobrança no ASAAS e apaga os arquivos da unidade. A instância do
+                    WhatsApp ({deletingFranchise?.evolution_instance_id}) precisa ser removida à parte.
+                  </p>
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="outline" onClick={() => setDeletingFranchise(null)} disabled={isDeletingFranchise} className="rounded-xl">
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleDeleteFranchise}
-                  disabled={isDeletingFranchise}
+                  disabled={isDeletingFranchise || !previewExclusao}
                   className="bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl min-w-[100px]"
                 >
-                  {isDeletingFranchise ? "Excluindo..." : "Excluir"}
+                  {isDeletingFranchise ? "Excluindo..." : previewExclusao ? "Excluir" : "Conferindo..."}
                 </Button>
               </div>
             </div>

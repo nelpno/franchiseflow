@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --fix",
     "lint:undef": "eslint -c eslint.strict.config.js src",
     "verify:undef": "node scripts/verifica-guarda-undef.mjs",
-    "test:unit": "node src/lib/financialCalcs.test.mjs && node src/lib/saleCalc.test.mjs && node src/lib/paginateAll.test.mjs && node src/lib/franchiseUtils.test.mjs && node src/lib/addressUtils.test.mjs && node src/lib/documentUtils.test.mjs && node src/lib/alertasLeves.test.mjs && node src/lib/deliveryFeeRules.test.mjs && node src/lib/productWeight.test.mjs && node src/lib/subscriptionStatus.test.mjs && node src/lib/safeErrorMessage.test.mjs",
+    "test:unit": "node src/lib/financialCalcs.test.mjs && node src/lib/saleCalc.test.mjs && node src/lib/paginateAll.test.mjs && node src/lib/franchiseUtils.test.mjs && node src/lib/addressUtils.test.mjs && node src/lib/documentUtils.test.mjs && node src/lib/alertasLeves.test.mjs && node src/lib/deliveryFeeRules.test.mjs && node src/lib/productWeight.test.mjs && node src/lib/subscriptionStatus.test.mjs && node src/lib/safeErrorMessage.test.mjs && node src/lib/franchiseTeardown.test.mjs",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
     "icons:check": "node scripts/icones-usados.mjs --check",
