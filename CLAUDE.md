@@ -403,6 +403,20 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - **Dono multi-unidade compartilha o cliente ASAAS: o `billing_email` da unidade que você mexer SOBRESCREVE o e-mail do cliente** (o `registerCustomer` sincroniza). Giuliana tem Americana (`alecrimdouradopasticcerie@`) e Nova Odessa (`giu.cpadela@`) no mesmo `cus_000173818508` → o último register vence e a NFe das duas sai nesse e-mail. Padronizar um e-mail por CNPJ evita o ping-pong.
 - **`asaas_customer_id` é por CPF/CNPJ, NÃO por unidade** — dono multi-unidade tem 1 cliente e N assinaturas (Emerson 4, Anderson 3). Ao apurar "pagou ou não", cruzar pelo `subscription` da fatura, NUNCA pelo cliente/nome: o pagamento de uma unidade aparece sob o nome da outra e vira falso "eu paguei" (Anderson pagou 2 de 3, Cataguases ficou vencida). ⚠️ Pior com CPF copiado errado entre DONOS diferentes: Vila Jardini (Fátima) carrega o CPF do Edgar — corrigir o CPF antes de recriar assinatura, senão cobrança e NFe saem no nome errado
 
+## Verificar o que voce mesmo acabou de fazer (09/09/2026)
+
+🔴 **Nao confie no relatorio da propria funcao destrutiva — conte de FORA, no mesmo bloco.**
+A `delete_franchise_cascade` devolvia um resumo com todas as tabelas zeradas e, na varredura
+independente logo depois, `audit_logs` tinha **93 linhas** (o trigger `audit_on_sale_delete`
+regrava enquanto a funcao roda). Padrao que pegou isso:
+`do $$ ... perform a_funcao(); <varre tudo de novo>; raise exception '%', sobrou; $$` — a
+excecao no fim desfaz o teste inteiro e o numero vem junto na mensagem.
+
+**"Deploy nao confirmado" pode ser bug do VERIFICADOR — cheque o tamanho do que baixou.**
+Meu regex tirava o ponto do nome do chunk (`Franchises-X.js` -> `Franchises-Xjs`), o fetch caia
+no index e devolvia **146 bytes**; 25 rodadas seguidas disseram "falta a string" com o deploy ja
+no ar. Chunk real tem dezenas de KB — tamanho de 3 digitos significa que voce baixou outra coisa.
+
 ## Excluir franquia — o que o botão faz, e o que ele NÃO faz (09/09/2026)
 
 🔴 **`DROP TABLE` arma uma bomba em toda função plpgsql que a cita — e ela só explode em
