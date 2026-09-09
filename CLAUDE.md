@@ -360,7 +360,7 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP (cidade também — IBGE autocomplete removido 17/04). Prop `mode` = `"create"` (admin) ou `"fiscal-only"` (gate onboarding + edição). `onSubmit` recebe 3o arg `addressExtras` (cep, street_address). Passar `billing_email` em `franchiseData`
 - Helper `@/lib/saveFiscalData.js`: grava fiscal fields em `franchises` + `franchise_configurations` atomicamente. `missingFiscalFields(franchise, config)` retorna array de campos faltantes para gate/badges
 - Gate onboarding: `components/onboarding/FiscalDataGate.jsx` — bloqueia franqueado sem email+CPF+endereço completos antes das 8 missões. Sem gate se admin (não-isAdmin check). Completar → unblocks
-- Editar dados fiscais existentes (admin): botão no detail sheet de `Franchises.jsx` → Dialog com `FranchiseForm mode="fiscal-only"` + aviso ASAAS não sincroniza automaticamente (precisa clicar "Criar" de novo em Mensalidades se customer já existe)
+- Editar dados fiscais existentes (admin): botão no detail sheet de `Franchises.jsx` → Dialog com `FranchiseForm mode="fiscal-only"`. Ao salvar um CPF/CNPJ **diferente** numa franquia que já tem cliente ASAAS, abre o `SincronizarDocAsaasDialog` (ver a seção própria abaixo). ⚠️ **NUNCA orientar "clicar Criar de novo"**: `registerCustomer` busca por `cpfCnpj`, não acha o documento novo e **cria cliente DUPLICADO**, com a assinatura ativa pendurada no antigo
 - ClickSign API: token como query param `?access_token=`, NÃO Bearer. Endpoint: `app.clicksign.com/api/v3/envelopes`
 - **Webhook ASAAS** (15/04/2026): registrado via action `register-webhook`, ID `c6485ea9`. Detecta formato nativo ASAAS (sem `action`, com `event` + `payment`). Token via body `access_token`, header `asaas-access-token`, ou query `?asaas_token=`. 7 eventos: PAYMENT_CREATED/UPDATED/DELETED/REFUNDED/OVERDUE/RECEIVED/CONFIRMED
 - **Edge Function auth**: `verify_jwt: false` (auth manual no código). Service role bypass via JWT `role` claim. Admin para billing actions, owner para check-payment. Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
@@ -372,7 +372,7 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
   - `subscribe-batch` aceita `value` opcional (default 150). UI passa `monthlyValue` do input
   - `createSubscription(franchiseId, value=150)` aceita valor — crítico: sem isso, recriar sub após mudar valor voltaria a R$ 150 hardcoded
 - **`SubscriptionBadge` states** (`AsaasSetupPanel`): "Aguardando criar" (amarelo, customer sem sub), "Pendente" (amarelo), "Pago" (verde), "Vencido" (vermelho), "Cancelada" (cinza block)
-- **Email sync no register**: se customer já existe no ASAAS (match por cpfCnpj) e `billing_email` local divergir → POST `/v3/customers/{id}` atualiza email (NFe fica correto). Outros campos (endereço/CPF/nome) NÃO sincronizam automático — admin precisa clicar "Criar" novamente OU recriar customer se precisar ampliar
+- **Email sync no register**: se customer já existe no ASAAS (match por cpfCnpj) e `billing_email` local divergir → POST `/v3/customers/{id}` atualiza email (NFe fica correto). **Endereço e nome continuam sem sincronizar.** O **CPF/CNPJ** tem caminho próprio desde 09/09/2026: action `sync-customer-document`, que atualiza o cliente VINCULADO (não busca por documento) e confere por leitura
 - **Estado assinaturas** — ⚠️ SNAPSHOT de 18/04/2026, **não é estado atual**: 11 franquias com customer ASAAS (10 aguardando criar sub + 1 teste Araraquara ativa), 36 sem CPF. Serve como histórico do onboarding, nunca como contagem. **Contagem viva:** `select count(*) filter (where cpf_cnpj is null or cpf_cnpj = '') as sem_cpf, count(*) as total from franchises` — medido em 31/08/2026: **0 sem CPF, 66 de 66 preenchidas** (o “36 pendentes” já foi resolvido há meses).
 - **Cobrança "Sua Equipe Digital"** (15/04/2026): `FinancialObligationsCard` substituiu `MarketingPaymentCard` na home — card unificado com linha subscription (ASAAS) + linha marketing. Nome UI: "Sua Equipe Digital" (NÃO "Mensalidade"). `SubscriptionPaymentSheet` (Sheet bottom): PIX QR + copiar código + boleto + "Já paguei"
 - PriorityAction: cenário `equipe_digital` dispara APENAS para OVERDUE (PENDING tratado pelo card). Suporta `onPress` callback (além de `navigateTo`) via flag `data.onPress`
@@ -386,6 +386,24 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - **Cron diário `sync-asaas-subscriptions` (jobid 4, `5 11 * * *` = 08:05 BRT)**: `pg_cron` → `public.cron_sync_asaas_subscriptions()` → `pg_net` POST na edge com `action:'check-payment-batch'`. A chave sai do **Vault** (`vault.decrypted_secrets` name `asaas_sync_key`), nunca do arquivo. SQL versionado em [supabase/cron-sync-asaas-subscriptions.sql](supabase/cron-sync-asaas-subscriptions.sql). Medido: 64/64 em ~40s, `net._http_response` 200 `{"total":64,"updated":64,"errors":[]}`. Desligar: `select cron.unschedule('sync-asaas-subscriptions')`.
 - **Enquanto o card mostra "Pago" (mês velho) ele NÃO tem botão de pagar** — o `FinancialObligationsCard` só abre o sheet quando não está pago. Então card congelado = franqueada sem como pagar até o roll-forward terminar (~3s após o mount). O cron elimina a janela para quem não abriu o painel.
 - **Baixa manual de quem pagou por fora**: `POST /v3/payments/{id}/receiveInCash {paymentDate, value, notifyCustomer:false}` → status `RECEIVED_IN_CASH` → rodar `check-payment` da franquia → o trigger `tr_subscription_payment_expense` lança a despesa `pacote_sistema` no DRE dela. Feito para Suzano em 01/09 (evitou estorno).
+
+### Trocar CPF/CNPJ tem DOIS significados opostos — por isso o painel PERGUNTA (09/09/2026)
+Bragança e Cajamar ficaram semanas com o CNPJ no cadastro e o **CPF da pessoa física no
+ASAAS**: assinatura ACTIVE, valor certo, e a **NFe saindo no documento errado** — nada na
+tela dizia. Salvar dado fiscal nunca propagou para o ASAAS.
+🔴 **E automatizar a propagação era a armadilha**, não a solução: o mesmo gesto significa
+duas coisas opostas e nenhum código distingue sozinho — *a mesma empresa virou PJ* pede
+**atualizar** o cliente (assinatura intacta); *a franquia trocou de dono* pede cliente
+**novo**, senão a cobrança sai no nome do anterior (é o conserto do caso Araras, e é o que
+`registerCustomer` faz de propósito). Então o painel mostra os dois números e pergunta
+([SincronizarDocAsaasDialog.jsx](src/components/franchises/SincronizarDocAsaasDialog.jsx),
+regra em [fiscalSync.js](src/lib/fiscalSync.js), ligado nos **3** pontos que editam
+documento). Só o caminho "mesma empresa" executa; troca de dono é orientada para
+Mensalidades — cancelar cobrança não é botão de atalho.
+**Auditar a rede inteira**: `node .tmp/asaas-doc-divergente.mjs` cruza `franchises.cpf_cnpj`
+com o `cpfCnpj` de cada cliente no ASAAS (67 assinaturas, 58 clientes distintos, ~40 s).
+⚠️ `npx supabase functions deploy` imprime **"WARNING: Docker is not running"** e funciona
+assim mesmo — o deploy é remoto; use `SUPABASE_ACCESS_TOKEN=$SUPABASE_MANAGEMENT_TOKEN`.
 
 ### ASAAS — roll-forward, troca de dono e exclusão (01/06/2026)
 - **Card de mensalidade ("Sua Equipe Digital") congela no mês pago**: `system_subscriptions.current_payment_*` trava na última fatura paga porque (a) o webhook IGNORA `PAYMENT_CREATED`/PENDING com vencimento >7d (guard anti-clobber intencional, [index.ts](supabase/functions/asaas-billing/index.ts) ~L347) e (b) NÃO há cron de re-sync (zero `pg_cron` de subscription). Resultado: card mostra "Maio Pago" em junho. Marketing NÃO sofre (é calendar-driven via `getMarketingTargetMonth`); subscription é data-driven (webhook). **Fix**: `checkPayment` seleciona a fatura do PERÍODO ATUAL — prioridade `arrears` (vencida não-paga, mantém paywall visível) → `current` (mais recente com vencimento ≤ hoje+7d) → `paid`; e [FinancialObligationsCard.jsx](src/components/dashboard/FinancialObligationsCard.jsx) dispara `checkPaymentNow()` sozinho (1× por mount, guard `due.slice(0,7) < yyyy-MM atual`) quando detecta fatura PAGA de mês anterior (roll-forward, owner-authed — não precisa cron). Re-sync em massa pontual: edge `check-payment-batch` (admin)
