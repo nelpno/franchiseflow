@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Sale, SaleItem, Expense, InventoryItem, AuditLog } from "@/entities/all";
+import { Sale, SaleItem, Expense, InventoryItem, AuditLog, getMarketingAttribution } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,9 @@ import { SALE_PNL_COLUMNS } from "@/entities/columns";
 import ErrorState from "@/components/shared/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { listarFranquias } from "@/lib/franchisesCache";
+import { montarRelatorioMensal, montarBlocoAnuncio } from "@/lib/monthlyReport";
+import { gerarRelatorioMensalPdf } from "@/lib/monthlyReportPdf";
 
 // --------------------------------------------------------------- helpers
 const formatBRL = (v) =>
@@ -69,7 +72,7 @@ const BANNER_COLORS = {
 };
 
 // --------------------------------------------------------------- HeroMetric
-function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurrentMonth }) {
+function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurrentMonth, onBaixarRelatorio, gerandoRelatorio }) {
   const lucro = pnl.lucroCaixa;
   const lucroAnterior = prevPnl?.lucroCaixa || 0;
   const deltaPct = lucroAnterior !== 0
@@ -136,6 +139,22 @@ function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurr
             </div>
           )}
         </div>
+
+        {/* No topo, e não junto do "Exportar vendas" lá embaixo: foi lá que a franqueada de
+            Itápolis procurou e só achou a lista de vendas (11/09/2026). */}
+        {onBaixarRelatorio && (
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={onBaixarRelatorio}
+              disabled={gerandoRelatorio}
+              className="rounded-xl gap-1.5 min-h-[44px]"
+            >
+              <MaterialIcon icon="picture_as_pdf" size={18} />
+              {gerandoRelatorio ? "Gerando relatório..." : "Baixar relatório do mês"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -776,6 +795,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [lancarCompraOpen, setLancarCompraOpen] = useState(false);
+  const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!franchiseId) return;
@@ -1009,6 +1029,36 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
   const handleLancarCompra = () => setLancarCompraOpen(true);
   const handleVerVendas = () => navigate("/Vendas");
 
+  // Relatório do mês em PDF: os mesmos dados que a tela já carregou (nenhuma consulta nova
+  // de venda/despesa) + o retorno do anúncio, buscado só no clique — 1 chamada leve por mês.
+  const handleBaixarRelatorio = async () => {
+    if (gerandoRelatorio) return;
+    setGerandoRelatorio(true);
+    try {
+      const relatorio = montarRelatorioMensal({ sales, saleItems, expenses, mesSelecionado: selectedMonth });
+      const [franquias, anuncio] = await Promise.all([
+        listarFranquias().catch(() => []),
+        // undefined = não carregou (o PDF avisa); null = a unidade não anunciou nesses meses
+        Promise.all(relatorio.meses.map((m) => getMarketingAttribution(m.chave, franchiseId).then((r) => r?.[0] || null)))
+          .then(montarBlocoAnuncio)
+          .catch(() => undefined),
+      ]);
+      const unidade = franquias.find((f) => f.evolution_instance_id === franchiseId);
+      await gerarRelatorioMensalPdf({
+        relatorio,
+        anuncio,
+        nomeUnidade: unidade?.name || "Maxi Massas",
+        mesSelecionado: selectedMonth,
+      });
+      toast.success("Relatório baixado!");
+    } catch (e) {
+      console.error("Erro ao gerar relatório:", e);
+      toast.error(safeErrorMessage(e, "Não foi possível gerar o relatório."));
+    } finally {
+      setGerandoRelatorio(false);
+    }
+  };
+
   // Fornecedores recentes para autocomplete
   const recentSuppliers = useMemo(() => {
     const set = new Set();
@@ -1061,6 +1111,8 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
         pnl={pnl}
         prevPnl={prevPnl}
         monthLabel={monthLabel}
+        onBaixarRelatorio={sales.length > 0 || expenses.length > 0 ? handleBaixarRelatorio : null}
+        gerandoRelatorio={gerandoRelatorio}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         isCurrentMonth={isCurrentMonth}
