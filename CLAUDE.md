@@ -15,23 +15,14 @@ node .tmp/deploy.mjs                   # force update do serviço no Portainer (
 Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **CONTEÚDO** no live (~75s de 502). ⚠️ `git push` puro TRAVA (GCM headless no Windows): `TOK=$(gh auth token); git -c credential.helper= push "https://x-access-token:$TOK@github.com/nelpno/franchiseflow.git" main` (mascarar o token na saída; `$LASTEXITCODE`/`PUSH_RC=0` é a prova, não a cor). ⚠️ **Push por URL com token NÃO atualiza `origin/main`** → `git status` segue dizendo *"ahead 1"* com o push já feito, e o sinal *"ahead = deploy nunca aconteceu"* do CLAUDE.md raiz passa a MENTIR. Provar com `git ls-remote origin main` (bate com `git rev-parse main`?) e rodar `git fetch origin` para ressincronizar.
 
 ## Stack & Deploy
-- React 18 + Vite 6 + Tailwind 3 + shadcn/ui + Supabase Cloud + @tanstack/react-query 5
-- Stack Portainer ID 39 | Service ID `2zb27nndn5sg8zweyie6wscpc`
-- GitHub: `nelpno/franchiseflow.git`
-- Deploy: `git push` → force update serviço Docker (incrementar ForceUpdate no TaskTemplate). Stack update sozinho NÃO recria container
-- **Verificação real de deploy live** (status 200 NÃO basta — container pode estar servindo bundle antigo durante rolling): comparar hash do bundle JS em `dist/index.html` local (`<script src="/assets/index-XXX.js">`) com `fetch('https://app.maximassas.tech/').text()`. Hashes iguais = deploy live. Script reusável em [.tmp/verify-deploy.mjs](.tmp/verify-deploy.mjs) (também valida `Spec.TaskTemplate.ForceUpdate` e tasks running no Portainer). Validado 28/05/2026 após deploy `2e5769b`. **Caveat (01/06/2026):** hash local×prod PODE divergir com código idêntico (build Windows ≠ build VPS — deploy `accc3a9` deu local `u_12l6td` vs prod `NJvDXGmC`). Se o hash de prod MUDOU vs o anterior mas não bate com o local, o deploy OCORREU — confirmar por **CONTEÚDO**: grep de strings únicas das mudanças nos chunks de prod ([.tmp/verify-content.mjs](.tmp/verify-content.mjs)). Lazy pages ficam em chunks próprios (`Franchises-*.js`, `Financeiro-*.js`), não no `index-*.js`. **Componentes compartilhados** (importados por ≥2 páginas, ex. `FranchiseForm` usado por Franchises + onboarding) também ganham chunk PRÓPRIO (`FranchiseForm-*.js`) separado do chunk da página — ao verificar por conteúdo, grep o chunk do COMPONENTE editado, não o da página. Achar o chunk certo: `Get-ChildItem dist/assets/*.js | ? { Select-String -Path $_ -Pattern '<string única>' -SimpleMatch -Quiet }`. Gotcha real 22/06/2026 (fix do CPF estava em `FranchiseForm-*.js`, não em `Franchises-*.js`). **Refino verify-content (28/06/2026):** se a string mudada JÁ existe noutro ponto do MESMO chunk (ex: `created_by_franchisee` já está em `Gestao-*.js` via TabEstoque), presença não distingue versão nova da velha — comparar a CONTAGEM de ocorrências local×live (`s.split(sub).length`). Componentes de `minha-loja` (TabReposicao/PurchaseOrderForm/TabEstoque/SaleForm) caem no chunk `Gestao-*.js`/`Vendas-*.js`, não em chunk próprio. Chunks lazy NÃO aparecem no `index.html` (referenciados dentro do JS de entrada) — achar o chunk local com `grep -l "<str única>" dist/assets/*.js` e fetchar o MESMO path no live (o build VPS frequentemente gera hash idêntico ao local — `Gestao-DgCmL5Fg.js` bateu). **Gotcha (30/06/2026): entity layer (`src/entities/all.js`) + libs compartilhadas caem no chunk de ENTRADA `index-*.js`, NÃO no chunk da página** — string de nome de RPC/função do entity (ex: `reconcile_cs_auto_tasks`) dá falso-negativo se greppar só o `<Page>-*.js` (peguei no deploy do Mural CS). Recipe que descobre o chunk lazy no LIVE quando o hash do VPS difere do local (fetch `index.html` → entry JS → regex `<Page>-[hash].js` → fetch e grep string única): scratchpad `verify-mural-live.mjs`
-- **Verificar mudança de CONSTANTE no live: grepe a constante-FONTE, não o valor derivado.** `MARKETING_TAX_RATE = 0.14` + `amount * (1 - RATE)` NÃO vira `0.86` no bundle — vira `Mu=.14,Jh=t=>t*(1-Mu)`, e o minifier ainda corta o zero à esquerda (então nem `0.14` casa). Grep por `0.86` devolve **zero e parece deploy falhado**. Âncora robusta a renomeação de variável = vizinho estável + a constante: `/label:"Dom"\}\],\s*\w+\s*=\s*0?\.14\s*,/`. Cai no chunk de ENTRADA `index-*.js` (lib compartilhada, mesmo caso do entity layer). Validado 31/07/2026 (deploy `40e15f4`, hash do VPS bateu com o local)
-- **Telas de auth (Login/SetPassword/OnboardingWelcome) são import ESTÁTICO no `App.jsx`** → caem no chunk de ENTRADA `index-*.js` (não existe `Login-*.js`). Ao verificar troca de TEXTO no live, exigir os DOIS lados: string nova presente **E** string antiga ausente — "nova presente" sozinha não distingue um bundle que contenha as duas
-- 502 por ~2min durante rebuild é normal. ctx_execute com JS para HTTP Portainer (NÃO shell+jq)
-- `npm run build` pode completar sem output visível (Windows). Verificar timestamp de `dist/index.html`
-- **Build verde ≠ app funciona** (incidente 29/05/2026): referência a variável indefinida em object literal — ex: deixar `"X": X` no objeto `PAGES` depois de remover `const X = lazy(...)` — compila/bundle OK mas dá `ReferenceError: X is not defined` em runtime → **tela BRANCA**. Rollup trata como global ref, não erro de build. SÓ smoke test runtime pega. Ao remover uma página de `pages.config.js`: deletar AMBOS o `const X = lazy(...)` E a entrada `"X": X` do `PAGES`
-- **Símbolo usado-mas-não-importado = a MESMA tela-branca** (auditoria 02/07): usar `safeErrorMessage`/`Skeleton`/etc SEM o `import` compila (Rollup vira global ref) e passa no build E no lint — **`no-undef` está DESLIGADO**: o bloco `rules:` do `eslint.config.js` sobrescreve o `rules` do `js.configs.recommended` (confirmado 05/08 com arquivo-canário: símbolo inexistente → 0 erros). Só quebra no render. Após edits em massa (ou de subagentes), varrer `src` por regex (uso `\bSimb\s*\(`/`<Simb` × `import ... Simb`) ANTES de deployar — pegou `safeErrorMessage` faltando no `Financeiro.jsx`. **Corolário — lint/typecheck verde ≠ coberto:** ESLint ignora `src/lib`/`entities`/`hooks` e não roda `react-hooks/exhaustive-deps`; `jsconfig include` casa ~1 arquivo → a camada de dinheiro/dados fica fora da verificação estática (só smoke runtime + testes unitários pegam)
-- **Smoke test runtime (Playwright)**: `npm run dev` no Windows/OneDrive NÃO imprime o banner do Vite (stdout bufferizado em não-TTY) mas o server sobe na `:5173` — navegar Playwright direto, não esperar a URL no log. Login autofilla o admin. Admin NÃO acessa telas `franchiseeOnly` (Vendas/Gestão redirecionam pra `/Dashboard`) — para exercitar `TabResultado`/`ExportButtons`, ir em Financeiro → aba "Por Unidade" → selecionar franquia. Export PDF se confirma pelo evento de download do Playwright. **Caveat (25/06):** o autofill do admin pode vir VAZIO num `npm run dev` limpo (sem dev creds no `.env`) → sem login não dá pra smoke de tela `franchiseeOnly`; nesse caso validar por build + content-check no live (`.tmp/verify-content.mjs`). **`PreviewResultado.jsx` é MOCK standalone OBSOLETO** (cópias próprias divergentes dos componentes + dados fake) — NÃO renderiza o `TabResultado` real, não usar pra validar visual; ele e `/Financeiro` são auth-gated (não há rota de preview sem login)
-- **Export PDF — jspdf-autotable v5**: `doc.autoTable()` foi REMOVIDO na v5; usar `const { default: autoTable } = await import("jspdf-autotable"); autoTable(doc, {...})` (padrão correto em `pickingSheetPdf.js` e `ExportButtons.jsx`). O uso antigo NÃO quebra o build — só explode em runtime
-- **`.tmp/` é gitignored desde 28/07/2026** (antes NÃO era): contém segredo em texto claro — `.tmp/deploy.mjs` traz a **API key do Portainer hardcoded**, e um `git add -A` distraído publicaria a chave no GitHub. Artefato que deve ser versionado vai em `docs/`/`supabase/`, nunca em `.tmp/`; manter `git add -u` + paths explícitos mesmo assim. Deploy validado 28/07: commit → `git push origin main` → `node .tmp/deploy.mjs` (force update do serviço) → verificar por **CONTEÚDO** no live (~75s de 502; o hash do VPS às vezes bate com o local, mas não conte com isso)
-- Vite build VPS: `NODE_OPTIONS=--max-old-space-size=4096`
-- Vite prod: `console.log`/`debugger` stripados (`esbuild.drop`). Manual chunks: recharts, export (jspdf/xlsx), vendor, ui, supabase, dates. CSS via lightningcss
-- Deps notáveis não-óbvias: `@hello-pangea/dnd` (drag-drop), `html2canvas` + `jspdf` (export PDF), `xlsx` (export Excel)
+> 📄 Verificação detalhada (qual chunk grepar, hash local × VPS, smoke Playwright, casos reais): [docs/claude/deploy-verificacao.md](docs/claude/deploy-verificacao.md). Movido do arquivo em 11/09/2026.
+- React 18 + Vite 6 + Tailwind 3 + shadcn/ui + Supabase Cloud + react-query 5. Stack Portainer 39 | service `2zb27nndn5sg8zweyie6wscpc` | GitHub `nelpno/franchiseflow`.
+- Deploy: `git push` → `node .tmp/deploy.mjs` (force update) → **verificar por CONTEÚDO** no live (~75 s de 502). Status 200 e hash do bundle não bastam.
+- Achar o chunk: página lazy = `<Page>-*.js`; componente compartilhado ganha chunk próprio (`TabResultado-*.js`, `FranchiseForm-*.js`); entity layer, libs compartilhadas, telas de auth e `SaleForm` = entrada `index-*.js`. Conferir o TAMANHO do que baixou (3 dígitos de bytes = index.html). Troca de texto: nova presente E antiga ausente; constante: grepar a constante-fonte, não o valor derivado.
+- **Build verde ≠ app funciona:** símbolo indefinido/não importado compila e dá tela BRANCA — `npm run lint:undef` antes de deployar.
+- `.tmp/` é gitignored e tem segredo (`deploy.mjs` com a API key do Portainer) — nunca `git add -A`.
+- jspdf-autotable v5: `autoTable(doc, opts)` por import dinâmico (o `doc.autoTable()` antigo só explode em runtime).
+- Build no VPS com `NODE_OPTIONS=--max-old-space-size=4096`; prod dropa `console.log`/`debugger`.
 
 ## Mapa do código (`src/`)
 - `pages/` — 1 arquivo por rota (`createPageUrl("X")`→`/X`): Dashboard, Vendas, Gestao, Financeiro, Franchises, Marketing, MyContacts, Onboarding, FranchiseSettings, CustomerSuccess…
@@ -111,28 +102,7 @@ Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **C
 - `get_franchise_ranking(date, franchise_id)` RPC: soma TEMPO REAL de `sales` (NÃO `daily_summaries`). `total_franchises` = só franquias com venda na data (não total ativas). Usada apenas por FranchiseeDashboard — admin tem ranking client-side próprio em `FranchiseRanking.jsx`. Fix 16/04: antes lia `daily_summaries` que é populado só pelo cron 02h
 - `aggregate_daily_data()` cron: roda `0 5 * * *` UTC (02h BRT) com default `target_date = ontem`. **NUNCA** popula `daily_summaries.date = hoje`. Qualquer query/RPC que dependa de `daily_summaries` para o dia atual retorna vazio até 02h BRT do dia seguinte
 
-**Normalização de telefone (fix 16/04/2026):**
-- `contacts.telefone`, `bot_conversations.contact_phone`, `conversation_messages.contact_phone`: SEMPRE canônicos (só dígitos, sem DDI 55). Triggers `BEFORE INSERT OR UPDATE OF <coluna>` garantem. Invariante: `telefone = public.normalize_phone_br(telefone)` sempre
-- Helper banco: `public.normalize_phone_br(text)` (IMMUTABLE, PARALLEL SAFE) — reusado por RPCs e triggers. Remove não-dígitos e tira DDI 55 quando `length >= 12`
-- RPCs normalizadas: `upsert_bot_contact`, `get_customer_intelligence`, `get_contact_by_phone`, `log_conversation_message`, `get_abandoned_for_followup`
-- Frontend canônico: [normalizePhone()](src/lib/whatsappUtils.js) — usar antes de qualquer `Contact.create`/`update`/`filter`/`search` que envolva telefone
-- Auditoria: `supabase/queries/audit-contact-phone-duplicates.sql` — esperado 0 linhas
-- Fix 16/04/2026: desduplicados 37 pares (164 com DDI 55 → 0), removido `idx_contacts_franchise_telefone` (redundante com UNIQUE partial) e coluna morta `contacts.tags`
-- `MyContacts.jsx:168`: usa `fetchAll: true` em vez de limit hardcoded (clientes antigos ficavam fora da lista quando franquia passava de 200 contatos — fix 16/04)
-- Merge de duplicados em tabela com UNIQUE: DELETE do row DROP **antes** do UPDATE do KEEP (senão UPDATE bate na UNIQUE com o DROP ainda existente). Ex: `supabase/scripts/dedup-contacts-by-phone.mjs`
-- Scripts de manutenção em `supabase/scripts/*.mjs`: padrão `--dry-run` default (relatório + backup JSON em `backups/`) / `--apply` / flag extra para casos que exigem revisão humana. TX por item, não TX gigante — resiliência em falha parcial
-
-**Database Linter Compliance (fix 15/04/2026):**
-- Funções SECURITY DEFINER: SEMPRE incluir `SET search_path = 'public'`
-- RLS policies com `auth.uid()`: SEMPRE usar `(select auth.uid())` (initplan perf)
-- NUNCA criar policy `FOR ALL` + policies específicas na mesma tabela (overlap = multiple_permissive)
-- NUNCA criar policy `USING(true)` para role padrão — service_role já bypassa RLS
-- Storage buckets públicos: leitura via URL pública funciona sem SELECT policy, MAS `upsert: true` da Storage API REQUER SELECT em `storage.objects` para verificar existência (sem ela: 403 row-level security em substituição). Manter SELECT policy em buckets onde franqueado/admin faz upload (catalog-images, marketing-comprovantes). Fix 16/04/2026: linter sugeriu dropar; reaplicado
-- Storage buckets onde admin precisa **apagar** arquivo (não só ler/escrever): policy `FOR DELETE USING (bucket_id='X' AND (SELECT public.is_admin_or_manager()))`. Sem ela, `supabase.storage.from(b).remove([])` falha silenciosamente — arquivo órfão. Aplicado em `marketing-comprovantes` (30/04/2026) quando admin ganhou cancelamento de pagamento
-- Debug 403 em upload Supabase Storage: checar `pg_policies WHERE schemaname='storage' AND tablename='objects'` ANTES de investigar código React/auth (root cause é quase sempre policy faltando ou mudada)
-- FKs novas: SEMPRE criar índice correspondente (`CREATE INDEX IF NOT EXISTS`)
-- Extensões: usar schema `extensions` (NÃO `public`)
-- **Trigger SQL que reage a estado vindo de edge function**: SEMPRE checar o estado **normalizado** que a edge persiste (após `mapXyzStatus()`), nunca o estado cru externo. Pre-flight obrigatório: ler a função de mapeamento da edge antes de escrever WHERE/IF do trigger. Bug em `tr_subscription_payment_expense` (01/05/2026): trigger checava status ASAAS crus (`RECEIVED/CONFIRMED/RECEIVED_IN_CASH`) enquanto edge `mapPaymentStatus()` normaliza tudo para `'PAID'` → trigger nunca disparou em produção (11 mensalidades sumiram do DRE até o fix)
+**Telefone canônico e linter** → [docs/claude/supabase-detalhes.md](docs/claude/supabase-detalhes.md) (movido em 11/09/2026). Essencial: telefone = só dígitos, sem DDI 55 (`normalize_phone_br()` no banco, `normalizePhone()` no front antes de todo create/filter); SECURITY DEFINER sempre com `SET search_path = 'public'`; policy com `(select auth.uid())`; FK nova com índice; nunca `FOR ALL` + policies específicas na mesma tabela; bucket com upsert precisa de SELECT policy.
 
 **Security helpers (usar em código novo):**
 - Toast errors: NUNCA `error.message` ou `error.details` direto — usar `safeErrorMessage(error, "fallback")` de `@/lib/safeErrorMessage`
@@ -141,61 +111,16 @@ Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **C
 - href dinâmico: `safeHref(url)` rejeita `javascript:` e protocolos perigosos (`@/lib/safeHref`)
 
 ### Frontend Patterns
-- `mountedRef` + cleanup obrigatório. `setIsLoading(false)` antes de early return
-- `ExportButtons` (shared/): retorna `null` se `data` vazio (sem disable manual). NÃO sanitiza — chamador deve pré-sanitizar com `sanitizeCSVCell`. Sem prop `summaryRow` — para linha de totais, append no array antes de passar
-- `TabResultado` aceita prop `contacts` (default `[]`) para resolver nome do cliente no export. Gestao.jsx carrega via `Contact.filter({ franchise_id })` no mesmo padrão de Vendas.jsx
-- Listas Supabase: SEMPRE sort explícito no frontend (ordem muda após updates)
-- Inline edit mobile: `onClick={e => e.stopPropagation()}` + `inputMode="numeric"`. `active:` (NÃO `hover:`)
-- Queries: tabelas que crescem (Sale, Expense, DailySummary, ConversationMessage) DEVEM usar `fetchAll: true` (pagina internamente de 1000 em 1000). Tabelas pequenas/fixas podem usar `limit` numérico
-- AdminDashboard: 10 queries paralelas `Promise.allSettled` — maioria com `fetchAll: true`. Auto-retry na query de franquias
-- AdminDashboard layout order: Stats → Mini-cards (Bot+Financeiro) → Ranking → Gráfico → Alertas (colapsado) → Health Score (colapsado). `CollapsibleSection` local usa Radix Collapsible
-- BotSummaryCard: SEMPRE filtrar `startOfMonth` (mês atual). Após refactor d1828d3, consome `botSummary` aggregates (per-franchise per-day) do RPC `get_bot_conversation_summary` em vez do array bruto de conversas
-- **`fetchAll: true` em tabela > 5k rows = pagination serial × 1000 × ~700ms**. `bot_conversations` (28k) = ~20s. Solução real: RPC server-side aggregate (commit d1828d3 — `get_bot_conversation_summary` cortou cold-load 22.7s → 8.5s)
-- **TIMESTAMPTZ em filtro `gte`/`lte`** precisa formato `${cutoff}T00:00:00.000Z` (boundary issue ~3h offset BRT). Colunas DATE aceitam só `YYYY-MM-DD`
-- **`limit N` em queries 1-row-por-franquia** vira teto silencioso quando rede crescer > N. Trocar por `fetchAll: true` para tabelas pequenas (Onboarding, FranchiseConfiguration etc)
-- **Padrão lazy-load Wave 2** (commit 7983f77): `CollapsibleSection({onFirstExpand})` idempotente via `useRef(defaultOpen)` + `lazyAbortRef` (separado do `abortControllerRef`) + `lazyFetchingRef` síncrono + polling refresh `loadCollapsedDataRef.current?.({force: true})` se `hasFetchedCollapsedRef.current`. Implementado em `AdminDashboard.jsx`
-- **Throttle 60s em `useVisibilityPolling`** (commit 5ad5166): previne burst ao voltar à aba. `lastRunRef = useRef(Date.now())` evita re-fire imediato após cold-load
-- **`fetchAll: true` em tela com `useVisibilityPolling`**: cada refresh refaz a query inteira. Janela tight obrigatória (`gte: { col: subMonths(today, N) }` com N=3-6). Sem isso, polling 5min × 12 meses × franquia top → banda explode. Padrão Vendas.jsx (01/05): 6 meses + fetchAll, polling 5min compartilha mesma query
-- Loading: `<Skeleton>` shadcn (NÃO spinner). PageFallback relativo (NUNCA `fixed inset-0`)
-- **Wizard multi-step auto-save**: `handleSubmit` retorna `true`/`false`; `nextStep` faz `if (isDirty) { const ok = await handleSubmit(); if (!ok) return; }` antes de advance. Botão "Próximo" ganha `disabled={isSubmitting}` + spinner. Aplicado em [FranchiseSettings.jsx:439](src/pages/FranchiseSettings.jsx#L439) (commit `1952391` 28/05/2026) — franqueados deixavam de salvar achando que "Próximo" já salvava. Toast por etapa confirma. Se save falha (rede/RLS), NÃO avança
-- **`maxLength` em campos já populados em produção é PERIGOSO**: HTML `maxLength` bloqueia digitação sem erro visual — usuário vê o texto existente mas teclado "não funciona" pra editar. Aconteceu em 1952391 (`promotions_combo maxLength=400`) — Limeira tinha 544 chars salvos e não conseguia editar. **SEMPRE** rodar SQL `MAX(LENGTH(col))` no banco ANTES de definir limite, e dar 25-30% de folga sobre o p100 atual. Validado em 28/05/2026 com `franchise_configurations.promotions_combo` (max 1061 → limite 1500). Fix: commit `609543b`
-- **Campos texto livre destinados ao prompt do bot são MAGNETO de poluição** (auditoria 28/05/2026 em `promotions_combo` × 30 franquias): franqueados colocam cumprimento ("Olá, aqui é a Melissa"), restrição ("não trabalhamos com molhos"), cobertura ("entregamos em Nova Odessa, Americana..."), endereço completo, aviso de folga, "sendo elaborado", "não temos no momento". **`NULL` é melhor que "Não temos"** — texto vazio retórico gasta tokens pra dizer NADA pro LLM. Defesa em 3 camadas: hint explícito ("Use SÓ pra X ATIVOS. DEIXE VAZIO se não houver"), warning visual em palavras-chave de poluição ("não temos", "sendo elaborado", "em breve"), placeholder com exemplo real (não slogan). Aplicado em [FranchiseSettings.jsx:1004](src/pages/FranchiseSettings.jsx#L1004) (commit `8e025f0`)
-- **Reescrita de texto para prompt LLM** (28/05/2026): cortar separadores decorativos `*****` `____`, markdown `**` excessivo, emojis duplicados em sequência, disclaimers triplos repetindo a mesma coisa. Manter info semântica intacta. Casos validados: São Miguel 1061→621 chars (-41%), Rio Claro 977→417 (-57%, cortado texto VIP que confundia bot vendedor comum), Mauá 746→563, Mogi 332→181 (cortado endereço hardcoded + instrução pra designer "número grande"). 4 reescritas economizaram ~460 tokens cumulativos
-- **agent_name (nome do bot) sem "Maxi Massas" redundante**: bot já cita a franquia em outro campo. Manter só nome pessoal/curto. Padrão da rede: nome próprio feminino (Ana, Carol, Vera, Helena, Lara, Bia, Olívia) ou genérico institucional ("Maxi", "MaxiBot", "Central", "Assistente"). Caso 28/05/2026: "JU DA MAXI MASSAS VILA SOCORRO !" → "Ju", "Paulinha Maxi Massas - Cotia" → "Paulinha", "assistente virtual Maxi Massas Imirim" → "Bia". Sempre `TRIM()` no UPDATE — vários tinham trailing space invisível
-- **`pix_holder_name` NÃO mexer sem confirmação do franqueado**: precisa bater EXATAMENTE com o nome registrado no banco da conta PIX. Divergência banco↔dashboard = cliente vê nome diferente no app PIX e desconfia ("não vou transferir, parece golpe"). Caso 28/05/2026: Osasco tinha "Eduardo Maxi Massas Osasco" no campo — tentação seria reduzir pra "Eduardo", mas se o titular da conta PJ no PagBank é "Maxi Massas Osasco LTDA", mudar quebraria a confiança
-- NUNCA `new Date().toISOString().split("T")[0]` — usar `format(new Date(), "yyyy-MM-dd")`
-- **`format(date, "MMM/yyyy", { locale: ptBR })`** retorna `"mai./2026"` (com ponto, minúsculo) — limpar com `.replace(".", "")` + capitalize primeira letra pra "Mai/2026". Helper `formatMonthLabel(offset)` em [TabLancar.jsx](src/components/minha-loja/TabLancar.jsx)
-- **Postgres DATE (sem hora)**: SEMPRE usar `formatDateOnly(value)` ou `parseDateOnly(value)` de [src/lib/dateOnly.js](src/lib/dateOnly.js). `new Date("2026-04-30")` interpreta como UTC midnight → em BRT (UTC-3) volta 1 dia → mostra 29/04. Aplicado a `purchase_orders.estimated_delivery`, `sales.sale_date`, `expenses.expense_date`, `marketing_payments.reference_month`. Exceção: TIMESTAMPTZ (`ordered_at`, `delivered_at`, `created_at`) usa `new Date()` normal
-- `useCallback` ordem importa (circular = tela branca). `useVisibilityPolling` substitui setInterval
-- Error handling: `error.message` real (NUNCA genérico). `getErrorMessage()` detecta JWT/RLS/FK/timeout
-- Rotas: `createPageUrl("PageName")` → `"/PageName"` (capitalizado)
-- Navegação programática: `useNavigate()` + `useSearchParams()` de `react-router-dom`. Query params para pré-seleção (ex: `/Onboarding?franchise=evo_id`)
-- Abrir detail sheet por URL: `/Franchises?id=<evolution_instance_id>&openSheet=1` → `useSearchParams` + `useEffect` em `Franchises.jsx` abre sheet da franquia match e limpa params com `setSearchParams({}, {replace:true})`. (A tabela de Reports usava isso, mas `Reports.jsx` foi REMOVIDO 03/07/2026.)
-- **Clique na franquia (admin) → Financeiro Por Unidade** (03/07/2026, deploy `fbabfe6`): `Financeiro.jsx` aceita deep-link `/Financeiro?tab=porunidade&franchise=<evolution_instance_id>` (via `useSearchParams` + lazy init da aba e da unidade). O ranking do Painel Geral (`FranchiseRanking`) e o card de últimos pedidos (`LastPurchaseOrderCard`) navegam pra lá. Usa **`evolution_instance_id` (NÃO UUID)** — o mesmo id do ranking. Antes ia pro `/Acompanhamento`, que IGNORAVA o param (fluxo estava furado).
-- Toast: sonner (importar de `"sonner"`, NÃO shadcn legado). NUNCA alert()/window.confirm()
-- Clickable card pattern: `cursor-pointer hover:shadow-md active:scale-[0.98] transition-all` (QuickAccessCards.jsx)
-- **Card-wide click pattern com filhos interativos**: `onClick={(e) => { if (e.target.closest('button, a')) return; openX(); }}` é mais limpo que espalhar `e.stopPropagation()` em todo botão filho. Aplicado em [MyContacts.jsx:637](src/pages/MyContacts.jsx#L637) (commit `2e5769b` 28/05/2026) após heatmap Clarity mostrar 51 dead clicks na linha do contato (modal Editar Contato funcionava, problema era a lista)
-- **Dois elementos visualmente idênticos lado a lado (input editável + display calculado) = dead clicks garantidos**. Differenciar o display read-only com `bg-[#f5f3f0] rounded-md cursor-default select-none` + `title="..."`. Aplicado em [SaleForm.jsx:1093](src/components/minha-loja/SaleForm.jsx#L1093) (commit `2e5769b`) — subtotal por linha resolvia 49 dead clicks em `SPAN.text-sm[2]` (franqueado clicava no subtotal achando ser input)
-- **Tap target mínimo 48px** (Apple/Google) em botões de seleção grupada (PIX/Crédito/etc): `p-3 min-h-[48px] border-2` + `font-bold` quando selecionado. Sem isso, heatmap mostra calor disperso ENTRE os botões. Aplicado em SaleForm Pagamento (commit `2e5769b`)
-- Clickable text pattern: `cursor-pointer hover:underline hover:text-[#b91c1c] transition-colors`
-- Cards navegáveis: usar `Link` condicional (não `onClick+navigate`) para a11y (Tab+Enter, right-click). Ex: StatsCard `href` prop
-- TabEstoque inline edit: NUNCA onClick na `<TableRow>` (conflita com handleCellClick em quantity/min_stock/sale_price). Apenas `product_name` clicável
-- TabEstoque card view (mobile): DEVE ter 3 botões (edit, ocultar, delete) — manter paridade com table view (desktop)
-- TabEstoque adicionar produto: autocomplete mostra produtos padrão da rede (RPC `get_standard_product_catalog`). Seleção preenche campos e marca `created_by_franchisee: false`
-- Dialog/Sheet Radix: dead clicks no overlay são comportamento normal (close on outside click). NÃO tentar "fixar"
-- **DialogContent/AlertDialogContent (shadcn)** têm `min-w-0 [&>*]:min-w-0 max-w-[calc(100vw-1rem)] sm:max-w-lg overflow-x-hidden` aplicados em [src/components/ui/dialog.jsx](src/components/ui/dialog.jsx) + [alert-dialog.jsx](src/components/ui/alert-dialog.jsx) — **NÃO REMOVER**. Sem essas classes, `display:grid` + filho com `min-content > max-width` (button whitespace-nowrap, fonte custom mais larga) faz o grid track ignorar `max-width` e extrapolar viewport mobile (bug reproduzido em iPhone 14 Pro Max 430px, 29/04/2026)
-- **Override de `max-w-*` em DialogContent shadcn**: `tailwind-merge` v3 NÃO trata `max-w-2xl` (sem prefixo) como conflito de `sm:max-w-lg` (com prefixo) — aplicam em breakpoints diferentes e o default vence em ≥sm. Para alargar dialog no desktop usar **`sm:max-w-2xl`** (com prefixo). Sintoma: dialog "parece" 672px no source mas renderiza 512px. Bug encontrado em TabLancar.jsx:922 e PurchaseOrders.jsx:1043 (fix 30/04/2026, commit 8a8d191)
-- **`[&>*]:min-w-0` afeta apenas filhos DIRETOS** do DialogContent — não descendentes profundos. Colapso de input/dropdown dentro de forms aninhados (ex: ProductSearch dentro de SaleForm) vem do próprio `flex-1 min-w-0` interno do form, não do dialog. Diagnóstico para inputs colapsando: começar pelo `min-w-0` do container imediato antes de culpar o dialog
-- Diagnóstico de overflow horizontal mobile (cole no DevTools console com elemento aberto): `[...document.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > window.innerWidth + 1).map(e => ({tag:e.tagName, cls:(e.className||'').toString().slice(0,80), right:Math.round(e.getBoundingClientRect().right), width:Math.round(e.getBoundingClientRect().width), vw:window.innerWidth}))`
-- Microsoft Clarity: `CLARITY_DATA_EXPORT_TOKEN` em `.env`. Máx 3 dias/req, 10 req/dia. Projeto `w6o3hwtbya`. Análise quinzenal
-- **Clarity API dimension matrix** (validado 28/05/2026): `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=1-3&dimension1=URL&dimension2=Device` retorna matriz URL × device pra todas as métricas (DeadClickCount, RageClickCount, QuickbackClick, EngagementTime, etc). `dimension1=Page` NÃO funciona (retorna agregado de 1 linha). Heatmap PIXEL data NÃO disponível via API — só via UI ou DevTools no browser logado
-- **Decodificar seletor Clarity `TAG.classe[N]`** em 30s: cole `document.querySelectorAll('tag.classe')[N]?.outerHTML` no DevTools console da página em questão. Resolveu `SPAN.text-sm[2]` (49 dead clicks) → era o `<span>` do subtotal em SaleForm. Mais barato que abrir gravação Clarity
-- **Priorizar fixes UX por VOLUME × RATE** (não só rate). Caso 28/05: quase pulei `/Vendas` (148 dead clicks PC, 25% rate) priorizando `/Gestao?tab=reposicao` (23 dead, 29% rate). Volume absoluto importa mais — Vendas ficou no top
-- **Dead clicks nesta app são predominantemente DESKTOP** (validado 28/05/2026): `/Vendas` PC 148 vs Mobile 12, `/FranchiseSettings` PC 47 vs Mobile 4, `/Gestao` PC 43 vs Mobile 7. Mobile UX está saudável. NÃO auto-priorizar mobile sem dados — contra a intuição padrão
-- Mensagens de UI com horário: usar "às 02h" (preposição = ponto no tempo), NUNCA "após 02h" (interpretado como "a cada 2 horas")
-- `getFranchiseDisplayName(f)` SEM passar `config` (segundo arg) cai em fallback `f.city`. Para dropdown/seleção sem config carregado, usar diretamente `f.name + ' — ' + f.city + '/' + f.state_uf`
-- `TabResultado.jsx:643` aceita prop `franchiseId` — fetcha sales/expenses/inventory/auditLogs da franquia. Reusável em admin (ex: /Financeiro tab "Por Unidade" passa franchiseId selecionado pra mostrar visão idêntica do franqueado, com poder de editar)
-- **`TabResultado` carrega o histórico INTEIRO** (`Sale`/`Expense`/`SaleItem`/`InventoryItem` com `fetchAll: true`, sem janela de data) → agregações cross-mês/ano saem client-side **sem RPC/query nova**. Card **"Acumulado em {ano}"** (`ResumoAnoCard`, commit `edc3f73` 25/06): soma `lucroCaixa` de jan→mês selecionado (segue o ano do mês navegado) + 3 stats (melhor mês / meses no azul / média) + mini-curva cumulativa (recharts `AreaChart` ancorado no zero, `domain={[min→Math.min(0,min), ...]}`); some sozinho com <2 meses de dado no ano. A "Evolução · 6 meses" continua como visão operacional separada (não fundir)
+> 📄 Detalhe e casos (Clarity e dead clicks, Dialog/Sheet shadcn, overflow mobile, texto livre que vai pro prompt do bot, lazy-load, filtros de mês): [docs/claude/frontend-ux.md](docs/claude/frontend-ux.md). Movido do arquivo em 11/09/2026.
+- `mountedRef` + cleanup; `setIsLoading(false)` antes de early return. Loading = `<Skeleton>` (nunca spinner, nunca `fixed inset-0`).
+- Lista do Supabase: sort explícito no front. Tabela que cresce: `fetchAll: true`, com janela (`gte`) quando houver polling; `limit N` vira teto calado.
+- Datas: NUNCA `toISOString().split("T")[0]` (use `format(d, "yyyy-MM-dd")`); coluna DATE → `formatDateOnly`/`parseDateOnly` (`lib/dateOnly.js`); filtro TIMESTAMPTZ com `T00:00:00.000Z`.
+- `useCallback` circular = tela branca; `useVisibilityPolling` no lugar de `setInterval`.
+- Toast = `sonner`, nunca `alert()`/`window.confirm()`; `return` de validação sempre com `toast.error`.
+- Rotas por `createPageUrl("X")`; deep-link admin `/Financeiro?tab=porunidade&franchise=<evolution_instance_id>`.
+- `maxLength` em campo já populado: medir `MAX(LENGTH(col))` antes (+25–30%). Texto livre que vai pro prompt do bot: NULL > "Não temos".
+- `pix_holder_name` NÃO mexer sem o franqueado (tem de bater com o titular da conta PIX).
+- Dialog shadcn: NÃO remover `min-w-0 [&>*]:min-w-0 max-w-[calc(100vw-1rem)]`; alargar com `sm:max-w-*` (com prefixo).
 
 ### Integração n8n / Bot
 - **Adicionar forma de pagamento toca dashboard + bot (não só dashboard)**: fonte única `PAYMENT_METHODS` em [franchiseUtils.js](src/lib/franchiseUtils.js) propaga chips de aceitação (→bot via `vw_dadosunidade`), botão SaleForm, grade de taxa e labels. Se tem taxa: incluir nas listas `feeableMethods`/fallback do SaleForm (3×). Se exige maquininha: 3 filtros `thirdPartyDisabledPayments` no FranchiseSettings. **No bot V4, 3 pontos que NÃO derivam disso**: `Cerebro Enxuto CB` map de tradução `{pix:'Pix'...}[p]||p` (2×, entrega+retirada), tool `EnviaPedidoFechado1` `$fromAI('pagamento')` (lista fechada de valores), e `Prepare Sale Data` payMap (sub-wf `RnF1Jh6nDUj0IRHI`) cujo **default é `pix`** → esquecer o payMap grava a venda como PIX em silêncio. `accepted_payment_methods` da view é só concatenação dos values crus (o prompt traduz). Ex: VR/Sodexo=`meal_voucher` (24/06). Detalhe: memória `project_add_payment_method_flow`
@@ -286,6 +211,11 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - **Backfill 26/08**: 21 `unit_address` gravados foram recompostos (2 estavam vazios, 6 ganharam o número, 5 trocaram placeholder pelo número real, 7 ganharam o complemento; nenhum perdeu informação). Importa porque **`unit_address` está na `vw_dadosunidade`** — é o endereço que o *bot* fala com o cliente. Backup: tabela `_backup_unit_address_2026_08_26`.
 - Testes: `node src/lib/addressUtils.test.mjs` (12 casos novos, todos com dado real). Smoke que renderiza o PDF em Node e extrai o texto com `fitz`: `.tmp/smoke-ficha-endereco.mjs` (o `doc.save()` do jsPDF grava o arquivo no Node; bundle com `esbuild --banner` de `createRequire`, senão o `require("fs")` interno morre). Controle positivo usado no fix: rodar o mesmo smoke contra `git show HEAD:src/lib/pickingSheetPdf.js` — ele **reproduz o defeito verbatim**.
 
+### Relatório do mês em PDF (11/09/2026, `ce61e6d`)
+- Botão no topo do Resultado (`HeroMetric`) → PDF de 1 página: 3 meses lado a lado, mais vendidos, anúncio. Lógica em `src/lib/monthlyReport.js` (+ `.test.mjs`), render em `monthlyReportPdf.js`. Reusa os dados da tela + `calculatePnL` (sem consulta nova); o anúncio (`get_marketing_attribution`) só no clique, e falha vira aviso no PDF, não bloqueia.
+- "Mais vendidos" ordena por QUANTIDADE, igual ao card da tela (item de kit sobe ao topo) — mudar para valor = mudar a tela junto.
+- Smoke com dado real: `node .tmp/smoke-relatorio-mes.mjs`. ⚠️ Em Node o `doc.save()` grava na RAIZ do repo e o override de `jsPDF.prototype.save` NÃO intercepta — procurar `Relatorio_*.pdf` na raiz.
+
 ### Impressão Térmica (Comprovantes) — refactor 21/04/2026 (commit `53751dd`)
 > 📄 **Detalhes completos: [docs/claude/impressao-termica.md](docs/claude/impressao-termica.md)** — ler ao mexer em [SaleReceipt.jsx](src/components/minha-loja/SaleReceipt.jsx) ou no fluxo de impressão.
 - **Essencial**: auto-adapta 58/80mm via `@page { size: auto; margin: 0 }` ([shareUtils.js:158](src/lib/shareUtils.js#L158)) — NUNCA fixar width em px nem `size: 80mm` (quebra 58mm). `@media print` força preto puro + `Courier New` + `font-weight:700` (cinza/peso<700/bg colorido somem no raster 1-bit 203dpi)
@@ -307,26 +237,11 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 
 ### Health Score — REMOVIDO 03/07/2026
 - O health score e a página **Acompanhamento** foram **REMOVIDOS** (Nelson: não usava mais; o **Mural do Customer Success** substituiu). Apagados: `pages/Acompanhamento.jsx`, `lib/healthScore.js`, `components/acompanhamento/` inteiro (`FranchiseHealthDetail`, `HealthScoreBar`, `FranchiseNotes`, `InventorySheet`). **NÃO recriar.** A `AlertsPanel` (Painel Geral) agora leva ao **Customer Success**, não ao Acompanhamento. Deploy `1b3eff1`.
-### Customer Success Cockpit (20/06/2026)
-Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem precisa de atenção, por quê, e worklist de ação. Tiers 🔴 crítico / 🟡 atenção / 🏆 destaque / 🟢 saudável / ⚪ dormente.
-
-> **⚠️ v2 — Mural Kanban (30/06/2026): os bullets ABAIXO descrevem o v1 (lista). O modelo mudou pra board de tarefas.**
-- **Modelo atual = `cs_tasks`** (N cartões/franquia + cartões sem franquia). A `cs_worklist` (1 status/franquia) ficou **deprecada** (mantida, não dropada; migrada 1:1 → `cs_tasks source='manual'`). `cs_worklist_events` ganhou `task_id` (eventos por cartão) + tipos `move/auto_open/auto_resolve`; `franchise_id` virou nullable.
-- **UI**: board de 4 colunas `a_fazer→em_andamento→aguardando_retorno→feito` (drag-drop `@hello-pangea/dnd` + "mover para" no mobile; coluna Feito recolhível) + aba **Radar** (reusa a lista por tier, preserva a visão rede-inteira). Detalhe do card = **Dialog central estilo Trello** (`FranchiseDrawer.jsx` — apesar do nome, é Dialog não Sheet; 3 modos franquia/geral/preview-Radar; raio-x colapsável). Componentes novos: `CsBoard/CsCard/QuickAddCard/CsRadarPanel` + `COLUMN_CONFIG` em `tierConfig.js`.
-- **Híbrido**: só 🔴 crítico vira **cartão automático** via RPC **`reconcile_cs_auto_tasks()`** (SECURITY DEFINER, guard `is_cs_or_admin()`, chamada 1×/load; idempotente por índice único parcial `cs_tasks_one_open_auto`; supressão 7d; arquiva feito 14d; snapshot do RPC de saúde em temp table `_h on commit drop` + `drop table if exists`). 🟡 atenção só no Radar. Manual pelo botão "Novo cartão". Migração NÃO chama reconcile (service_role tem `auth.uid()` null → a RPC exige is_cs_or_admin; roda no 1º load autenticado).
-- **Entity** (`all.js`): `getCsTasks/createCsTask/updateCsTask/moveCsTask/getCsTaskEvents/addCsTaskEvent/reconcileCsAutoTasks` — `userId` vai por ARG (não `auth.uid()` interno) → `created_by` (policy de eventos depende disso). SQL `supabase/cs-cockpit/05..08`. Spec/plano `docs/superpowers/{specs,plans}/2026-06-30-mural-cs-kanban*` (no ecossistema). Detalhe: memória `project_mural_cs_kanban`.
-- **Frontend**: página [src/pages/CustomerSuccess.jsx](src/pages/CustomerSuccess.jsx) + [components/customer-success/FranchiseDrawer.jsx](src/components/customer-success/FranchiseDrawer.jsx) + `tierConfig.js`. Supressão pós-contato 7d é no front (crítico reabre sozinho).
-- **Papel `customer_success`**: valor TEXT em `profiles.role`. Acesso via `CsRoute`+`CS_PAGES` em App.jsx (NÃO em `ADMIN_ONLY_PAGES`). Em Layout.jsx, CS é "staff": item de menu com `roles:[...]`, vê SÓ o item dele (gates `!isAdmin && !isCS` no bottom-nav/padding/onboarding-redirect). NÃO incluir CS em `is_admin_or_manager()` (abriria ~28 policies/telas).
-- **RPC `get_franchise_health_signals(p_since)`** (SECURITY DEFINER, guard `is_cs_or_admin()`): métricas+`flags`(jsonb)+`tier`+`is_standout` por franquia. Bot calculado direto de `vw_bot_conversations` (NÃO via `get_bot_conversation_summary`, cujo guard `is_admin_or_manager()` excluiria CS). Limiares provisórios (60d) em constantes inline — Celso afina. Trata venda futura (`greatest(0,...)`). SQL versionado em `supabase/cs-cockpit/`.
-- 🔴 **Cartão MANUAL nunca é reescrito pelo `reconcile_cs_auto_tasks()` — e isso é de propósito** (ele não sabe se a tarefa que o CS anotou terminou). Consequência: o TÍTULO que o Celso escreveu ("Bot parado, Pix não cadastrado…") continua no mural semanas depois e é lido como estado ATUAL — ele ligou para franqueado cobrando o que já estava resolvido (relatado 17/08/2026, cartão da Vila dos Remédios). Fix: `CsCard` mostra o bloco **"Hoje no radar"** com os `flags` VIVOS da franquia (o board já carregava `signalsByFranchise`, só o emoji de tier usava). Não aparece em cartão auto — a `description` dele já É essa lista. Sem flag o texto diz *"nada no radar hoje — confira antes de cobrar"*, **nunca "resolvido"**; tier `dormant` recebe texto próprio (senão unidade que nunca vendeu apareceria como saudável).
-- **Sinais de ROBÔ e PAGAMENTO no radar** (`09-health-signals-bot-pagamento.sql`, 17/08/2026): `bot_silent` (sem conversa há ≥7d) · `bot_never` · `payment_unset` · `pix_missing` (aceita PIX sem chave). Todos `med` de propósito — `med` não entra em `has_high_churn`, então **não abre cartão automático**, só sobe tier e entra na descrição. Antes disso o radar **não tinha sinal nenhum de robô**: Araras e Limeira apareciam 🟢 saudáveis com o robô parado há 38 e 28 dias, e a Limeira ainda estava marcada 🏆 **Destaque da rede**. Guarda `d_sale is not null` em todos (sem ela, unidade em onboarding entra como "robô parado"). ⚠️ `d_bot` sai de subquery CORRELACIONADA (casa `bot_conversations_lookup_idx`, 1,7ms); trocar por `group by` na view vira Seq Scan de 90k linhas = **1.402ms**.
-- ⚠️ **Antes de dar `CREATE OR REPLACE` em função do cockpit, prove que o arquivo versionado == o que roda**: `node supabase/cs-cockpit/_verifica-paridade-live.mjs <arq.sql> <md5_do_prosrc> <tam>` (md5 vem de `pg_proc`). Foi essa igualdade que autorizou o replace de 17/08. Corolário: **comentário `--` só no cabeçalho do arquivo, nunca dentro do corpo delimitado** — ele some no `apply_migration` e a paridade quebra. E não cite o delimitador literal em comentário: o extrator acha a menção e recorta errado (mordeu no mesmo dia).
-- **Rodar RPC com guard (`is_cs_or_admin()`/`is_admin()`) pelo MCP do Supabase**: `execute_sql` não tem `auth.uid()` → o guard barra e a função devolve **0 linhas, sem erro** (parece base vazia). Contorno: `with ctx as materialized (select set_config('request.jwt.claims', json_build_object('sub','<uuid de um profiles.role=admin>')::text, true)), h as materialized (select s.* from ctx, lateral <rpc>() s)`. 🔴 **Os dois `materialized` são obrigatórios** — CTE inlined é reavaliada fora do contexto: o mesmo `h` que conta 65 linhas dá **0 no join**, calado (custou uma medição inteira em 17/08). E `execute_sql` com vários statements devolve só o PRIMEIRO resultset, então `set_config` em statement separado não serve.
-- **Pino de não-regressão para função de banco**: antes do replace, clonar a de PRODUÇÃO com outro nome (`do $$ … execute format(...) $$` com `pg_get_function_result(oid)` + `prosrc`, seguido de `revoke all from public`), aplicar a nova e comparar as duas **na mesma query**. Foi o que provou "conjunto de flags idêntico em 65/65, tier mudou só em 2" antes do deploy de 17/08; dropar a cópia no fim. ⚠️ Comparar a SEQUÊNCIA do `jsonb_agg` dá falso alarme (14 "alteradas" que eram só reordenação de empate no `order by sev`) — comparar o CONJUNTO (`array_agg(... order by key)`).
-- **Tabelas `cs_worklist`(estado)+`cs_worklist_events`(log)**: chave TEXT `evolution_instance_id`, RLS `is_cs_or_admin()` (SELECT/INSERT/UPDATE) + delete só `is_admin()`. NÃO reusar `coach_actions` (CHECK action_type) nem `franchise_notes` (UUID FK + RLS só admin).
-- **`cs_tasks` usa `column_status`** (NÃO `status`) pra coluna do board. `cs_worklist_events.event_type` ∈ {contact, meeting, resolve, move, auto_open, auto_resolve} — base do monitoramento da atividade do Celso × delta de vendas (desde 01/07/2026; baseline+método na memória `project_monitoramento_celso_cs`, contato dele em `reference_celso_cs_contato`).
-- **Helper `is_cs_or_admin()`** = `role IN ('admin','manager','customer_success')`, dedicado às RPCs/tabelas do cockpit.
-- Calibração inicial 20/06: 15🔴/31🟡/4🟢/6⚪/1🏆. `engagement_low` via `auth.users.last_sign_in_at` (franqueado→franquia por `profiles.managed_franchise_ids`, que contém o evolution_instance_id). Treinamento adiado (sem dado). Spec+plano: `docs/superpowers/` do ecossistema.
+### Customer Success Cockpit / Mural (papel `customer_success`)
+> 📄 Detalhe (tiers, `cs_tasks`, reconcile, sinais do radar, calibração, pinos de não-regressão): [docs/claude/customer-success.md](docs/claude/customer-success.md). Movido do arquivo em 11/09/2026.
+- Página `CustomerSuccess.jsx` (board Kanban + aba Radar); acesso via `CsRoute`/`CS_PAGES`; helper `is_cs_or_admin()` — NÃO incluir CS em `is_admin_or_manager()`.
+- 🔴 **Rodar RPC com guard pelo MCP:** `with ctx as materialized (select set_config('request.jwt.claims', json_build_object('sub','<uuid admin>')::text, true)), h as materialized (select s.* from ctx, lateral <rpc>() s)` — os DOIS `materialized` são obrigatórios, senão volta 0 linhas calado.
+- Antes de `CREATE OR REPLACE` em função do cockpit, provar paridade arquivo × produção (`_verifica-paridade-live.mjs`); o fonte vivo do radar é `supabase/cs-cockpit/10-*.sql`. Cartão MANUAL nunca é reescrito pelo reconcile.
 
 ### Marketing
 - `marketing_payments`: 1 por franquia/mês. UNIQUE `(franchise_id, reference_month)`. CHECK `amount >= 200`
@@ -348,141 +263,21 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - Filtro híbrido `[Hoje][Semana][◀ Mês ▶][Personalizado]` em mobile: container precisa de `overflow-x-auto sm:w-fit` (sem `sm:w-fit` estica 100% no desktop). Botão "Personalizado" comprime pra só ícone em ≤640px (`<span className="hidden sm:inline">Personalizado</span>`) — senão estoura iPhone 14 Pro Max (430px)
 - **Sheet shadcn `side="bottom"` em desktop** estica full-width (≥sm). Pra centralizar tipo dialog, no `<SheetContent>`: `sm:max-w-lg sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-8 sm:rounded-2xl`. Padrão usado em [CustomDateRangeSheet.jsx](src/components/dashboard/CustomDateRangeSheet.jsx) (06/05/2026). Mobile mantém comportamento bottom-sheet padrão
 
-### ASAAS Billing (Cobrança Recorrente)
-- Edge Function: `supabase/functions/asaas-billing/index.ts` — actions: `register`, `register-batch`, `subscribe-batch` (accept `value` opcional), `cancel-subscription`, `update-subscription-value`, `check-payment`, `register-webhook`, `webhook`. Action `subscribe` (single) removida 18/04
-- Tabela: `system_subscriptions` (franchise_id UNIQUE, asaas_customer_id, asaas_subscription_id, subscription_status, current_payment_*, pix_payload, pix_qr_code_url, last_synced_at)
-- Colunas em `franchises`: `cpf_cnpj`, `state_uf`, `address_number`, `address_complement`, `neighborhood`, `billing_email`. `address_complement` é OPCIONAL (não bloqueia gate, fora de `missingFiscalFields`). Para alterar campos de endereço: tocar em FranchiseForm (state+input+submit), saveFiscalData (FRANCHISE_FIELDS), AsaasSetupPanel (columns enxuto + display), Franchises.jsx (handleSaveFiscal + initialData), FiscalDataGate (initialData + handleSubmit), asaas-billing edge (select + payload — ASAAS usa `complement`)
-- ASAAS API: `https://api.asaas.com` + `/v3/...`, header `access_token` (secret no Supabase)
-- `billingType: UNDEFINED` = franqueado escolhe boleto ou PIX
-- Paywall: `SubscriptionPaywall.jsx` — bloqueia APENAS `current_payment_status === 'OVERDUE'`, admin/manager isentos
-- Hook: `useSubscriptionStatus.js` — cache 24h (PAID) / 5min (OVERDUE), botão "Já paguei" via `supabase.functions.invoke`
-- Admin: tab Mensalidades em `Financeiro.jsx` → `AsaasSetupPanel.jsx` (input Mensalidade R$ + edit inline CPF/email, badges, botão Atualizar valor de todos, botão Cancelar por linha, revisão assinaturas)
-- FranchiseForm: CPF/CNPJ + endereço com auto-fill ViaCEP (cidade também — IBGE autocomplete removido 17/04). Prop `mode` = `"create"` (admin) ou `"fiscal-only"` (gate onboarding + edição). `onSubmit` recebe 3o arg `addressExtras` (cep, street_address). Passar `billing_email` em `franchiseData`
-- Helper `@/lib/saveFiscalData.js`: grava fiscal fields em `franchises` + `franchise_configurations` atomicamente. `missingFiscalFields(franchise, config)` retorna array de campos faltantes para gate/badges
-- Gate onboarding: `components/onboarding/FiscalDataGate.jsx` — bloqueia franqueado sem email+CPF+endereço completos antes das 8 missões. Sem gate se admin (não-isAdmin check). Completar → unblocks
-- Editar dados fiscais existentes (admin): botão no detail sheet de `Franchises.jsx` → Dialog com `FranchiseForm mode="fiscal-only"`. Ao salvar um CPF/CNPJ **diferente** numa franquia que já tem cliente ASAAS, abre o `SincronizarDocAsaasDialog` (ver a seção própria abaixo). ⚠️ **NUNCA orientar "clicar Criar de novo"**: `registerCustomer` busca por `cpfCnpj`, não acha o documento novo e **cria cliente DUPLICADO**, com a assinatura ativa pendurada no antigo
-- ClickSign API: token como query param `?access_token=`, NÃO Bearer. Endpoint: `app.clicksign.com/api/v3/envelopes`
-- **Webhook ASAAS** (15/04/2026): registrado via action `register-webhook`, ID `c6485ea9`. Detecta formato nativo ASAAS (sem `action`, com `event` + `payment`). Token via body `access_token`, header `asaas-access-token`, ou query `?asaas_token=`. 7 eventos: PAYMENT_CREATED/UPDATED/DELETED/REFUNDED/OVERDUE/RECEIVED/CONFIRMED
-- **Edge Function auth**: `verify_jwt: false` (auth manual no código). Service role bypass via JWT `role` claim. Admin para billing actions, owner para check-payment. Webhook usa `ASAAS_WEBHOOK_TOKEN` (fail-closed)
-- Edge Function deploy: `SUPABASE_ACCESS_TOKEN=sbp_... npx supabase functions deploy asaas-billing --no-verify-jwt --project-ref sulgicnqqopyhulglakd`
-- **`asaasRequest` fix 18/04/2026**: trata 204 No Content (DELETE retorna sem body) — antes causava SyntaxError em `res.json()` mesmo com sucesso no ASAAS. `if (res.status === 204) return {}` + `text()` + `JSON.parse(text)` tolera body vazio
-- **Cancel + Update valor (18/04/2026)**:
-  - `cancel-subscription`: DELETE `/v3/subscriptions/{id}` + DELETE payments PENDING da sub + update banco (limpa `asaas_subscription_id`, `current_payment_*`, `pix_*`; mantém `asaas_customer_id` para recriar fácil). Status → `subscription_status='CANCELLED'` + `current_payment_status='CANCELLED'`. 404 do ASAAS tolerado (sub já cancelada manual). NÃO desativa franquia (`franchises.status` intacto)
-  - `update-subscription-value { franchise_ids | all_active, new_value, apply_to_current }`: valida 5 ≤ value ≤ 5000. POST `/v3/subscriptions/{id}` com `{value}` atualiza próximos ciclos. `apply_to_current: true` → POST `/v3/payments/{current_id}` com `{value}` + refetch PIX (QR novo). Retorna `{total, updated, results[]}`
-  - `subscribe-batch` aceita `value` opcional (default 150). UI passa `monthlyValue` do input
-  - `createSubscription(franchiseId, value=150)` aceita valor — crítico: sem isso, recriar sub após mudar valor voltaria a R$ 150 hardcoded
-- **`SubscriptionBadge` states** (`AsaasSetupPanel`): "Aguardando criar" (amarelo, customer sem sub), "Pendente" (amarelo), "Pago" (verde), "Vencido" (vermelho), "Cancelada" (cinza block)
-- **Email sync no register**: se customer já existe no ASAAS (match por cpfCnpj) e `billing_email` local divergir → POST `/v3/customers/{id}` atualiza email (NFe fica correto). **Endereço e nome continuam sem sincronizar.** O **CPF/CNPJ** tem caminho próprio desde 09/09/2026: action `sync-customer-document`, que atualiza o cliente VINCULADO (não busca por documento) e confere por leitura
-- **Estado assinaturas** — ⚠️ SNAPSHOT de 18/04/2026, **não é estado atual**: 11 franquias com customer ASAAS (10 aguardando criar sub + 1 teste Araraquara ativa), 36 sem CPF. Serve como histórico do onboarding, nunca como contagem. **Contagem viva:** `select count(*) filter (where cpf_cnpj is null or cpf_cnpj = '') as sem_cpf, count(*) as total from franchises` — medido em 31/08/2026: **0 sem CPF, 66 de 66 preenchidas** (o “36 pendentes” já foi resolvido há meses).
-- **Cobrança "Sua Equipe Digital"** (15/04/2026): `FinancialObligationsCard` substituiu `MarketingPaymentCard` na home — card unificado com linha subscription (ASAAS) + linha marketing. Nome UI: "Sua Equipe Digital" (NÃO "Mensalidade"). `SubscriptionPaymentSheet` (Sheet bottom): PIX QR + copiar código + boleto + "Já paguei"
-- PriorityAction: cenário `equipe_digital` dispara APENAS para OVERDUE (PENDING tratado pelo card). Suporta `onPress` callback (além de `navigateTo`) via flag `data.onPress`
-- ASAAS `createSubscription` 1º vencimento (fix 01/06/2026): dia 5 do **MÊS CORRENTE** se `now.getDate() <= 5`, senão mês seguinte — `new Date(y, getMonth() + (day<=5?0:1), 5)`. Antes era sempre mês seguinte (15/04). NUNCA `getDate() >= 5 ? +2 : +1` (0-indexed pulava 2 meses, bug histórico)
-- RPCs `get_franchise_ranking` e `get_franchise_report_data`: guards `is_admin_or_manager() OR managed_franchise_ids()` — SECURITY DEFINER com ownership check
+### ASAAS (cobrança recorrente) — regras de bolso
+> 📄 Tudo (actions da edge, webhook, roll-forward, QR PIX, troca de CPF/dono, exclusão, casos reais): [docs/claude/asaas.md](docs/claude/asaas.md) — ler ANTES de mexer em cobrança. Movido do arquivo em 11/09/2026.
+- Edge `supabase/functions/asaas-billing/index.ts` (`verify_jwt: false`, auth manual); tabela `system_subscriptions`; painel admin = Financeiro → Mensalidades (`AsaasSetupPanel`); paywall só em `OVERDUE`.
+- 🔴 **Nunca orientar "clicar Criar de novo"** ao trocar CPF/CNPJ — cria cliente DUPLICADO. Documento diferente abre o `SincronizarDocAsaasDialog` (mesma empresa × troca de dono).
+- **Action em lote responde 200 com um resultado por item** — julgar por `results[]`, nunca pelo status HTTP; `functions.invoke` esconde a mensagem da função em `error.context`.
+- **`asaas_customer_id` é por CPF/CNPJ, não por unidade** — cruzar "pagou?" pelo `subscription` da fatura, nunca pelo nome do cliente.
+- **Apagar fatura/assinatura no painel do ASAAS não volta pro dashboard** — "Sincronizar com ASAAS" (`check-payment-batch`); assinatura apagada exige limpar no banco.
+- Bypass service_role da edge = chave `sb_secret_…` (Management API `api-keys?reveal=true`), não o JWT legado do `.env`.
 
-### 🔴 QR PIX morto: card travado no mês pago servia cobrança já liquidada (fix 01/09/2026)
-- A franqueada de Suzano recebeu **"O QR Code não é válido"** do banco e pagou R$ 150 por transferência direta. O card estava congelado na fatura de **agosto, já paga**, e o `pix_payload` guardado era o QR daquela cobrança. **O ASAAS responde HTTP 400 em `/v3/payments/{id}/pixQrCode` de fatura liquidada** — então o QR velho nunca era substituído, só herdado. Diagnóstico em 1 comando; `400` na fatura paga + `200` na do mês vigente é a assinatura do problema. **39 das 64 assinaturas** estavam assim.
-- Não era conexão: o webhook do ASAAS estava `enabled:true, interrupted:false`. O congelamento é **por desenho** (o guard ignora `PAYMENT_CREATED` com vencimento > 7d) — o que faltava era alguém re-sincronizar depois.
-- **`attachPixFields()` na edge é a fonte única e SEMPRE escreve os dois campos, inclusive com `null`.** Fatura paga fica sem QR; falha ao gerar zera e loga (`console.error`) em vez de herdar. Chamada nos 4 pontos (`checkPayment`, `handleWebhook`, `createSubscription`, `updateSubscriptionValue`). 🔴 **O `handleWebhook` só buscava PIX em `OVERDUE`**: um evento `PENDING` dentro da carência trocava o `current_payment_id` e mantinha o QR do ciclo anterior — card com o mês certo e QR morto.
-- **Cron diário `sync-asaas-subscriptions` (jobid 4, `5 11 * * *` = 08:05 BRT)**: `pg_cron` → `public.cron_sync_asaas_subscriptions()` → `pg_net` POST na edge com `action:'check-payment-batch'`. A chave sai do **Vault** (`vault.decrypted_secrets` name `asaas_sync_key`), nunca do arquivo. SQL versionado em [supabase/cron-sync-asaas-subscriptions.sql](supabase/cron-sync-asaas-subscriptions.sql). Medido: 64/64 em ~40s, `net._http_response` 200 `{"total":64,"updated":64,"errors":[]}`. Desligar: `select cron.unschedule('sync-asaas-subscriptions')`.
-- **Enquanto o card mostra "Pago" (mês velho) ele NÃO tem botão de pagar** — o `FinancialObligationsCard` só abre o sheet quando não está pago. Então card congelado = franqueada sem como pagar até o roll-forward terminar (~3s após o mount). O cron elimina a janela para quem não abriu o painel.
-- **Baixa manual de quem pagou por fora**: `POST /v3/payments/{id}/receiveInCash {paymentDate, value, notifyCustomer:false}` → status `RECEIVED_IN_CASH` → rodar `check-payment` da franquia → o trigger `tr_subscription_payment_expense` lança a despesa `pacote_sistema` no DRE dela. Feito para Suzano em 01/09 (evitou estorno).
-
-### Trocar CPF/CNPJ tem DOIS significados opostos — por isso o painel PERGUNTA (09/09/2026)
-Bragança e Cajamar ficaram semanas com o CNPJ no cadastro e o **CPF da pessoa física no
-ASAAS**: assinatura ACTIVE, valor certo, e a **NFe saindo no documento errado** — nada na
-tela dizia. Salvar dado fiscal nunca propagou para o ASAAS.
-🔴 **E automatizar a propagação era a armadilha**, não a solução: o mesmo gesto significa
-duas coisas opostas e nenhum código distingue sozinho — *a mesma empresa virou PJ* pede
-**atualizar** o cliente (assinatura intacta); *a franquia trocou de dono* pede cliente
-**novo**, senão a cobrança sai no nome do anterior (é o conserto do caso Araras, e é o que
-`registerCustomer` faz de propósito). Então o painel mostra os dois números e pergunta
-([SincronizarDocAsaasDialog.jsx](src/components/franchises/SincronizarDocAsaasDialog.jsx),
-regra em [fiscalSync.js](src/lib/fiscalSync.js), ligado nos **3** pontos que editam
-documento). Só o caminho "mesma empresa" executa; troca de dono é orientada para
-Mensalidades — cancelar cobrança não é botão de atalho.
-**Auditar a rede inteira**: `node .tmp/asaas-doc-divergente.mjs` cruza `franchises.cpf_cnpj`
-com o `cpfCnpj` de cada cliente no ASAAS (67 assinaturas, 58 clientes distintos, ~40 s).
-⚠️ `npx supabase functions deploy` imprime **"WARNING: Docker is not running"** e funciona
-assim mesmo — o deploy é remoto; use `SUPABASE_ACCESS_TOKEN=$SUPABASE_MANAGEMENT_TOKEN`.
-
-### ASAAS — roll-forward, troca de dono e exclusão (01/06/2026)
-- **Card de mensalidade ("Sua Equipe Digital") congela no mês pago**: `system_subscriptions.current_payment_*` trava na última fatura paga porque (a) o webhook IGNORA `PAYMENT_CREATED`/PENDING com vencimento >7d (guard anti-clobber intencional, [index.ts](supabase/functions/asaas-billing/index.ts) ~L347) e (b) NÃO há cron de re-sync (zero `pg_cron` de subscription). Resultado: card mostra "Maio Pago" em junho. Marketing NÃO sofre (é calendar-driven via `getMarketingTargetMonth`); subscription é data-driven (webhook). **Fix**: `checkPayment` seleciona a fatura do PERÍODO ATUAL — prioridade `arrears` (vencida não-paga, mantém paywall visível) → `current` (mais recente com vencimento ≤ hoje+7d) → `paid`; e [FinancialObligationsCard.jsx](src/components/dashboard/FinancialObligationsCard.jsx) dispara `checkPaymentNow()` sozinho (1× por mount, guard `due.slice(0,7) < yyyy-MM atual`) quando detecta fatura PAGA de mês anterior (roll-forward, owner-authed — não precisa cron). Re-sync em massa pontual: edge `check-payment-batch` (admin)
-- **`createSubscription` re-registra o cliente ASAAS ANTES de criar** (`registerCustomer`): troca de dono (CNPJ novo) → busca por `cpf_cnpj` atual, não acha, cria cliente NOVO → a sub cobra o dono certo. Sem isso usava o `asaas_customer_id` antigo (cobrava o dono anterior). `registerCustomer` quando o CPF JÁ existe só sincroniza EMAIL (não CPF/nome/endereço). Não-fatal (try/catch)
-- **`subscribe-batch` aceita `franchise_ids`** (subconjunto): UI "Criar Assinaturas" ([AsaasSetupPanel.jsx](src/components/financeiro/AsaasSetupPanel.jsx)) tem ✕ por linha pra excluir testes antes de confirmar (estado `excludedSubIds`, manda só `selectedIds`)
-- **Excluir franquia NÃO cancela ASAAS** (`delete_franchise_cascade` RPC é só banco): `handleDeleteFranchise` ([Franchises.jsx](src/pages/Franchises.jsx)) cancela a sub ASAAS (`cancel-subscription`) ANTES do `deleteCascade` (a row some no cascade) e **ABORTA** a exclusão se o cancel falhar — evita cobrança órfã (caso Indaiatuba: franquia excluída mas sub seguia cobrando 05/06)
-- **Criar franquia NÃO dispara ASAAS** (o texto "Cadastro ASAAS + assinatura mensal criados" no quadro do `FranchiseForm` é só descritivo): `handleCreateFranchise` ([Franchises.jsx:169](src/pages/Franchises.jsx#L169)) faz só `Franchise.create` (triggers populam config + 28 produtos) + `saveFiscalData` (billing_email/cep/street, não-bloqueante) + convite. A assinatura é criada DEPOIS na aba Financeiro → Mensalidades (`AsaasSetupPanel`)
-- **`FranchiseForm` esconde Nome da Franquia + Nome do Franqueado em `mode="fiscal-only"`**; prop `allowNameEdit` reexibe SÓ na edição admin (Franchises → Editar dados), não no gate de onboarding do franqueado. `saveFiscalData` não persiste name/owner_name — `handleSaveFiscal` faz `Franchise.update` separado
-- ✅ **Bypass de service_role da edge FUNCIONA — com a chave `sb_secret_…`, não com o JWT legado** (corrige a nota de 05/08 que dizia "não funciona, 401"). A edge compara o Bearer byte a byte com o `SUPABASE_SERVICE_ROLE_KEY` que a plataforma injeta NELA, e hoje esse valor é a chave **secret nova (41 chars)**, enquanto o `SUPABASE_SERVICE_ROLE_KEY` do `.env` local é o **JWT legado (219 chars)** — o teste de tamanho falha antes da comparação e vira 401. Pegar a certa: `GET https://api.supabase.com/v1/projects/{ref}/api-keys?reveal=true` (Bearer `SUPABASE_MANAGEMENT_TOKEN`) → item `type:'secret'`. Com ela, `check-payment`/`check-payment-batch` respondem 200 por script. O JWT legado segue válido no PostgREST — por isso engana. Validado 01/09/2026
-- **`registerCustomer` usa `franchise_invites` (convite MAIS RECENTE, SEM filtrar status) como fallback quando `billing_email` está vazio** → em franquia que trocou de dono, limpar o `billing_email` manda cobrança/NFe pro dono ANTIGO em silêncio (Araras ainda tem o convite da Rayane)
-- **Troca de dono: varrer os DOIS lados** — `franchises` (owner_name, billing_email, cpf_cnpj) E `franchise_configurations` (`pix_key_data`/`pix_holder_name`, `personal_phone_for_summary`, `agent_name`). Os fiscais são lembrados; PIX e telefone do resumo ficam para trás (Araras 05/08: PIX de terceiro + resumo diário indo pro número da ex-franqueada). NUNCA preencher PIX por dedução — pedir ao franqueado
-- **Auditar o ASAAS por fora (leitura), já que o bypass da edge dá 401**: a chave de produção da MESMA conta está em `bots/fiscal-bot/.env` (`ASAAS_API_KEY`) — script Node + `fetch` com header `access_token` e `dangerouslyDisableSandbox: true`. ⚠️ `/v3/subscriptions?limit=100` devolve **só ACTIVE** e `?status=INACTIVE` devolve **0**: assinatura apagada só aparece em `?customer={id}&includeDeleted=true`, e fatura apagada só em `GET /v3/payments/{id}` (`deleted=true`). Achar as mortas = cruzar os `asaas_subscription_id` do banco contra a lista de ativas
-- **Apagar no painel do ASAAS não volta pro dashboard.** Fatura apagada: o `current_payment_*` já copiado vence, vira OVERDUE e o paywall bloqueia quem não deve nada → Financeiro → Mensalidades → **"Sincronizar com ASAAS"** (`check-payment-batch`) relê a assinatura e cai na última paga. Assinatura apagada: o batch **NÃO** conserta (lê a assinatura morta e congela o card no último pago) → limpar `asaas_subscription_id` + `subscription_status='CANCELLED'` no banco pra voltar a "Aguardando criar". Casos 06/08/2026: Iracemápolis (fatura) e Sorocaba Vila Jardini (assinatura, 2 meses sem cobrar)
-- 🔴 **"Criar assinaturas" mostrava sucesso com ZERO criada — e o motivo era um dígito do CNPJ (fix 19/08/2026, commit `647595b`).** A Americana ficou de maio a agosto sem mensalidade: `cpf_cnpj` estava `42259662000119` (o CNPJ real da dona, que também tem Nova Odessa, é `45259662000119` — DV não fecha), o `registerCustomer` dentro do `createSubscription` morria em *"O CPF/CNPJ informado é inválido"* dentro de um `catch` **não-fatal**, o código seguia com o `asaas_customer_id` do dono ANTERIOR (deletado no ASAAS) e o POST da assinatura falhava. `subscribe-batch`/`register-batch` respondem **HTTP 200 com um resultado por item**, e o painel só olhava o `error` do invoke → toast verde. Três correções: validação de DV (`src/lib/documentUtils.js`, use `cpfCnpjError()` em todo campo de documento), o painel lê `results[]` e **nomeia quem falhou**, e a edge confere se o cliente ASAAS ainda existe antes de criar. **Regra:** action em lote da edge nunca se julga pelo status HTTP; e `supabase.functions.invoke` esconde a mensagem da função em `error.context` (helper `invokeAsaas` no `AsaasSetupPanel`).
-- **Dono multi-unidade compartilha o cliente ASAAS: o `billing_email` da unidade que você mexer SOBRESCREVE o e-mail do cliente** (o `registerCustomer` sincroniza). Giuliana tem Americana (`alecrimdouradopasticcerie@`) e Nova Odessa (`giu.cpadela@`) no mesmo `cus_000173818508` → o último register vence e a NFe das duas sai nesse e-mail. Padronizar um e-mail por CNPJ evita o ping-pong.
-- **`asaas_customer_id` é por CPF/CNPJ, NÃO por unidade** — dono multi-unidade tem 1 cliente e N assinaturas (Emerson 4, Anderson 3). Ao apurar "pagou ou não", cruzar pelo `subscription` da fatura, NUNCA pelo cliente/nome: o pagamento de uma unidade aparece sob o nome da outra e vira falso "eu paguei" (Anderson pagou 2 de 3, Cataguases ficou vencida). ⚠️ Pior com CPF copiado errado entre DONOS diferentes: Vila Jardini (Fátima) carrega o CPF do Edgar — corrigir o CPF antes de recriar assinatura, senão cobrança e NFe saem no nome errado
-
-## Verificar o que voce mesmo acabou de fazer (09/09/2026)
-
-🔴 **Nao confie no relatorio da propria funcao destrutiva — conte de FORA, no mesmo bloco.**
-A `delete_franchise_cascade` devolvia um resumo com todas as tabelas zeradas e, na varredura
-independente logo depois, `audit_logs` tinha **93 linhas** (o trigger `audit_on_sale_delete`
-regrava enquanto a funcao roda). Padrao que pegou isso:
-`do $$ ... perform a_funcao(); <varre tudo de novo>; raise exception '%', sobrou; $$` — a
-excecao no fim desfaz o teste inteiro e o numero vem junto na mensagem.
-
-**"Deploy nao confirmado" pode ser bug do VERIFICADOR — cheque o tamanho do que baixou.**
-Meu regex tirava o ponto do nome do chunk (`Franchises-X.js` -> `Franchises-Xjs`), o fetch caia
-no index e devolvia **146 bytes**; 25 rodadas seguidas disseram "falta a string" com o deploy ja
-no ar. Chunk real tem dezenas de KB — tamanho de 3 digitos significa que voce baixou outra coisa.
-
-## Excluir franquia — o que o botão faz, e o que ele NÃO faz (09/09/2026)
-
-🔴 **`DROP TABLE` arma uma bomba em toda função plpgsql que a cita — e ela só explode em
-runtime.** A onda 4 dropou `daily_checklists` (zero linhas na vida) e a
-`delete_franchise_cascade` tinha um `DELETE FROM daily_checklists`: o deploy passou, o lint
-passou, e **excluir franquia virou "Erro interno de configuração"** (42P01) por dois dias.
-Antes de dropar qualquer tabela, varra o corpo das funções:
-`select proname from pg_proc where prokind='f' and prosrc ilike '%nome_da_tabela%'`.
-(Varredura feita em 09/09: nenhuma outra função referencia tabela inexistente.)
-
-🔴 **O `evolution_instance_id` é derivado da CIDADE e é REUTILIZADO.**
-`auto_generate_instance_id` monta `'franquia' || cidade sem acento` e só procura duplicata em
-`franchises` — que estará vazia daquela cidade depois da exclusão. Então **resíduo não é
-sujeira, é herança**: a unidade nova nasceria com a assinatura CANCELADA da anterior, os
-cartões velhos no mural do CS e, no Storage, o **catálogo da franqueada antiga** (o bot
-remonta `{evo}/catalogo.jpg` por path fixo e mandaria a foto errada ao cliente final).
-
-**Como a exclusão funciona hoje** ([2026-09-09-delete-franchise-cascade-v2.sql](supabase/2026-09-09-delete-franchise-cascade-v2.sql)):
-- A RPC **descobre as tabelas em tempo de execução** (toda `franchise_id` text no schema
-  public, menos `_backup_*`) em vez de listar à mão. Tabela nova entra sozinha; tabela dropada
-  some da lista. A lista fixa deixava para trás `system_subscriptions`, `cs_tasks`,
-  `cs_worklist`, `cs_worklist_events`, `cs_agreements`, `coach_actions` e `bot_reports` —
-  nenhuma tem FK para `franchises`, então ficavam para sempre, caladas.
-- ⚠️ **`sale_items` e `purchase_order_items` saem ANTES do laço**, pelos ids do pai: as duas
-  referenciam `inventory_items` com ON DELETE NO ACTION e o laço apaga em ordem alfabética.
-- ⚠️ **Segunda passada obrigatória**: `audit_logs` é limpa no começo (ordem alfabética) e
-  **volta a encher no meio do laço**, porque `audit_on_sale_delete` grava um registro por venda
-  apagada — sobravam 93 linhas. No fim há uma **conferência**: se restar uma linha, a função
-  levanta exceção e o Postgres desfaz tudo. Ou sai inteira, ou não sai.
-- **`p_dry_run` é o preflight**, e existe por um motivo concreto: o front cancela o ASAAS
-  ANTES de chamar o banco, então cascade quebrado deixa a franquia **viva e sem cobrança** (foi
-  o estado da Cataguases em 09/09). O diálogo roda o dry-run ao abrir, mostra quantos registros
-  somem e **quais contas de acesso serão apagadas**, e só libera o botão se passar.
-- **Storage é do front** (`limparStorageDaFranquia` em [franchiseTeardown.js](src/lib/franchiseTeardown.js)):
-  `{evo}/` nos 3 buckets, admin tem policy de DELETE nos três. Falha não desfaz a exclusão — avisa.
-- 🔴 **A instância do WhatsApp NÃO é apagada pelo app** (exige o admin token do Zuck, que não
-  vai para o browser): `node supabase/scripts/limpar-instancia-zuck.mjs <evo_id> --apply`, que
-  recusa instância conectada e franquia que ainda exista no banco. **Rodar ANTES de criar a
-  unidade nova na mesma cidade**, senão ela herda a instância com o número do dono anterior.
-- **Fora do sistema, e a conta do Nelson faz à mão** (lembrado por ele em 09/09): **Instagram
-  e Facebook da unidade**. Não há nada no dashboard sobre isso — entra no checklist do
-  desligamento junto com a instância do Zuck.
-- **O cliente ASAAS (`asaas_customer_id`) fica de propósito** — é por CPF/CNPJ e o mesmo dono
-  costuma ter outras unidades. Quem se cancela é a ASSINATURA.
-
-**Classe Tailwind com token inexistente não pinta e não reprova em lint nenhum**: escrevi
-`text-ink-1` em 3 lugares e o tema tem `ink`, `ink-2`, `ink-3`, `ink-4` — sem `ink-1`. Build
-verde, lint verde, texto sem cor. Conferir o token em `tailwind.config.js` ao usar um novo.
+## Excluir franquia e verificar o que você mesmo fez (09/09/2026)
+> 📄 Como a exclusão funciona, o que ela NÃO faz e o checklist manual: [docs/claude/excluir-franquia.md](docs/claude/excluir-franquia.md). Movido do arquivo em 11/09/2026.
+- 🔴 **`DROP TABLE` arma bomba em toda função plpgsql que cita a tabela** (só explode em runtime) — antes: `select proname from pg_proc where prokind='f' and prosrc ilike '%tabela%'`.
+- 🔴 **`evolution_instance_id` deriva da cidade e é REUTILIZADO** — resíduo vira herança da unidade nova. `delete_franchise_cascade` (com `p_dry_run`) apaga tudo ou nada; a instância do Zuck sai só por `node supabase/scripts/limpar-instancia-zuck.mjs <evo> --apply` (ANTES de recriar na mesma cidade); Instagram/Facebook da unidade é à mão.
+- **Não confie no relatório da própria função destrutiva** — conte de fora no mesmo bloco (`do $$ … raise exception $$` desfaz o teste e traz o número).
+- **Classe Tailwind com token inexistente** (`text-ink-1`) não pinta e passa em todo lint — conferir o token no `tailwind.config.js`.
 
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx.
@@ -520,449 +315,21 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **`pg_get_functiondef(p.oid)` falha com `42809: "X" is an aggregate function`** quando `p.prokind='a'`. Ao iterar `pg_proc` (catálogo de funções), filtrar `WHERE p.prokind='f'`. NÃO usar `proisagg` — coluna removida em PG 11+
 - **Conferir backfill/UPDATE em query SEPARADA, nunca no mesmo CTE**: `WITH upd AS (UPDATE...RETURNING) SELECT count(*) FROM t WHERE...` — os SELECTs leem o snapshot PRÉ-update (semântica de CTE data-modifying do Postgres), parecendo que o UPDATE não fez efeito. Rodar a contagem de conferência num `execute_sql` à parte. Pegou no backfill customer_name 16/06 (mostrou "5748 restantes" falso; real ~0)
 
-## Auditoria 07/09/2026 — o que mudou (ondas 0 a 3)
-
-> Relatórios completos em [docs/auditoria-2026-09/](docs/auditoria-2026-09/) (6 frentes + consolidado).
-> Aqui só os fatos que mudam decisão em sessões futuras.
-
-### 🔴 A stack de produção NÃO usava o `nginx.conf` do repo — agora usa um equivalente
-Até 07/09 a stack 39 escrevia um nginx de 8 linhas por `echo`: **sem gzip e sem
-`Cache-Control`**. Medido no live: **2.226.597 bytes crus, 0% comprimido**. O compose agora
-escreve a config por heredoc, com `gzip on` nível 6, `/assets` `immutable` 1 ano, `index.html`
-`no-store` e 4 headers de segurança — mais `nginx -t` com **fallback** para a config mínima, para
-que um erro de sintaxe não derrube o site. Caminho crítico: **2.226.597 → 248.411 bytes (−88,8%)**.
-Conferir depois de qualquer mexida na stack:
-`curl -sID -H 'Accept-Encoding: gzip' https://app.maximassas.tech/assets/index-*.js | grep -iE 'content-encoding|cache-control'`.
-⚠️ O `Dockerfile` + `nginx.conf` do repo continuam **não sendo usados** pela stack (ela faz
-`git clone` + `npm ci` + `vite build` no entrypoint — daí os ~75 s de 502 por deploy).
-
-### `manualChunks` TEM de ser função, nunca objeto
-Na forma objeto o Rollup aloja no chunk manual também os módulos compartilhados que ele "toca
-primeiro": o `__vitePreload` caiu dentro de `export` (jspdf+xlsx, 856 KB) e o `clsx` do `cn()`
-dentro de `recharts` (415 KB) — tornando **os dois import ESTÁTICO do chunk de entrada**. O
-franqueado baixava 1,27 MB de PDF e gráficos para abrir a tela de vender. Verificação: o
-`dist/index.html` só pode ter `modulepreload` de `vendor/supabase/dates/ui`.
-
-### Guarda contra tela branca: `npm run lint:undef`
-`no-undef` e `react/jsx-no-undef` estão apagados no `eslint.config.js` (o bloco `rules:`
-sobrescreve o do `recommended`). `eslint.strict.config.js` liga só essas duas sobre `src/`
-inteiro — inclusive `ui/`, `App.jsx` e `pages.config.js`, que o lint normal ignora.
-`npm run verify:undef` prova a guarda com arquivo-canário (0 erros tanto pode ser código limpo
-quanto regra desligada). **Ela já pegou um caso real no mesmo dia**: um `formatBRL` não importado
-no `AsaasSetupPanel` que passava no build E no lint normal e deixaria o Financeiro em branco.
-
-### RLS: helpers uma vez por query, e trava de escalonamento
-- `conv_msg_select`, `bot_conv_select` e `bot_conv_update` passaram a usar `(select fn())`. As
-  funções são STABLE e rodavam **uma vez por linha** em 213 mil linhas. ⚠️ `franchise_id = any
-  ((select managed_franchise_ids())::text[])` — sem o cast o Postgres lê a subquery como conjunto
-  de linhas e dá `operator does not exist: text = text[]`.
-- 🔴 **`profiles_update` e `marketing_payments_update` tinham `WITH CHECK` nulo** — quando omitido,
-  o Postgres reusa o `USING`, e "a minha linha" continua minha depois de eu virar admin. Provado
-  executando como franqueada real: `role='admin'` passava, anexar unidade alheia dava acesso a 12
-  vendas de outro dono, e `status='confirmed'` auto-aprovava a própria verba. **Policy não resolve**
-  (WITH CHECK não vê OLD) e `REVOKE` por coluna quebraria o admin, que também é `authenticated`:
-  a trava são os triggers `trg_guard_profile_privilege_columns` e
-  `trg_guard_marketing_payment_approval`.
-- **50 → 21 funções SECURITY DEFINER expostas a `anon`.** 🔴 NUNCA revogar de `anon` os helpers
-  `is_admin`/`is_admin_or_manager`/`is_cs_or_admin`/`managed_franchise_ids`: as policies os chamam
-  no contexto de quem lê, e sem `EXECUTE` o deslogado recebe **500 em vez de zero linhas**.
-
-### `daily_summaries.conversion_rate` era `numeric(5,2)` e derrubava o cron inteiro
-Teto 999,99. Uma unidade com 11 vendas e 1 contato dá 1100% → `numeric field overflow` mata a
-execução de **todas** as franquias do dia. Falhou em 26/07, 30/07 e 07/09; a série ficou parada em
-05/09 e o ranking de 7/30 dias do Painel perdeu os dias. Agora `numeric(8,2)` + `LEAST`. A coluna
-tem **zero consumidores** no app. Reprocessar dia faltante: `select aggregate_daily_data('AAAA-MM-DD')`.
-
-### RPCs novas
-`get_franchise_bot_pulse(franchise_id)` (última conversa + 7d, 0,6 ms — duas subqueries de
-propósito; um agregado único sobre a unidade custa 297 ms) · `get_human_message_totals` (agrega por
-franquia; a antiga `get_human_message_counts` devolvia 1 linha por conversa e o PostgREST **cortava
-em 1.000**, truncando o alerta calado) · `get_cs_franchise_contacts` (dono + telefone do CS) ·
-`sentinela_diaria` + `sentinela_marketing_duplicado`.
-⚠️ `get_bot_conversation_summary` tinha um CTE varrendo as **938 mil** linhas de
-`conversation_messages` sem filtro de data: 12,6 s. Com a janela + o índice
-`idx_conv_msg_human_conv (created_at, conversation_id) where direction='human'` virou index-only e
-caiu para ~66 ms. **EXISTS correlacionado foi testado e é PIOR (38 s, 115 mil loops).**
-
-### `supabase.rpc()` resolve a promise mesmo com erro
-O erro vem em `{ data, error }`. Sem desembrulhar, `Promise.allSettled` marca como *fulfilled*, o
-código faz `?.data || []` e a tela mostra **card vazio em vez de erro** — foi assim que as 3 RPCs de
-bot ficaram em HTTP 500 por 24 h sem ninguém ver. O `AdminDashboard` tem um helper `rpc()` que lança.
-
-### Sentinela diária (`pg_cron` 08:10 BRT, jobid 5)
-Cron que falhou · `daily_summaries` sem o dia anterior · franquia que vende todo dia e parou 2+ dias ·
-marketing duplicado · unidade ativa sem cobrança · pedido da semana sem frete → `notify_admins()`.
-Desligar: `select cron.unschedule('sentinela-diaria')`. Ver sem gravar: rodar dentro de um `DO` que
-termina em `raise exception`.
-⚠️ **Regra de alarme nasce errada com facilidade**: "2+ despesas de marketing no mês" parecia certo e
-é LEGÍTIMO (verba do Meta + panfleto) — acusou 3 franquias corretas na 1ª execução. A assinatura de
-duplicata real é **mesmo valor + um manual + um automático**. Alarme falso diário treina a pessoa a
-ignorar a sentinela inteira.
-
-### Franqueado: "robô ativo" agora significa que ele CONVERSOU
-`botActive` era `!!(franchiseConfig && evoId)` — "existe linha de config", nunca ficava falso.
-Medido em 07/09: **8 franquias vendendo com o robô sem uma conversa há 7+ dias** viam "Tudo em dia!".
-Agora sai de `get_franchise_bot_pulse`, com cenário `bot_parado` no `PriorityAction` e guarda
-`hasRecentSales` para não alarmar unidade em implantação.
-
-### Outros fatos medidos que mudam decisão
-- **`daily_checklists` nunca teve uma linha na vida** e a home do franqueado a consultava em todo
-  load e todo poll (576 req/dia por nada). Query removida; a página `MyChecklist` é rota sem link.
-- **Tour de boas-vindas**: "não tem linha de checklist" ≠ "precisa de onboarding". 57 das 67 ativas
-  não têm linha, e **todas as 57 têm mais de 30 dias**. Como a decisão se apoiava só em
-  `localStorage`, todo celular novo jogava franqueada veterana nas 7 telas. Agora exige unidade
-  criada há menos de 30 dias.
-- **`delivery_fee_rules` está preenchida em 61 das 67** e só o robô lia. 622 entregas em 90 dias
-  saíram com frete R$ 0 (frete é receita no DRE). `lib/deliveryFeeRules.js` transforma em chips;
-  **não adivinha valor** — a venda manual não sabe a distância, então só preenche com 1 opção.
-- **`system_subscriptions`**: franquia SEM LINHA aparecia como travessão neutro (é o pior caso — o
-  cron de sync nunca a vê). E "PENDING" era o mesmo badge de quem venceu há 30 dias. Fonte única:
-  `lib/subscriptionStatus.js`.
-- **Comparativo mês a mês**: no mês CORRENTE o mês anterior tem de ser cortado no mesmo dia, senão
-  todo dia 2 a rede inteira aparece "em queda".
-- **Telefone da franqueada**: `franchises.phone_number` está vazio em **67 de 67**;
-  o número que presta é `franchise_configurations.personal_phone_for_summary` (62 de 67).
-- ⚠️ **RESOLVIDO em 08/09/2026 para a `get_franchise_health_signals`** (o aviso abaixo valia até
-  então e CONTINUA valendo para o `reconcile_cs_auto_tasks`): o fonte que roda em produção agora
-  está versionado em `supabase/cs-cockpit/10-health-signals-PRODUCAO-2026-09-08.sql` — é o
-  `pg_get_functiondef` da função viva, byte a byte, com paridade provada. Alterar o radar deixou
-  de ser proibido: parta do `10-*.sql`, não do `09-*.sql`. O aviso original: o `09-*.sql` do repo
-  é mais velho e um `CREATE OR REPLACE` com ele **regride o radar do Celso** (perde `giro_baixo`,
-  `marketing_late`, `cs_agreements`, cooldown, `parked_until`). O `reconcile_cs_auto_tasks`
-  segue sem fonte versionado — por isso o cron dele é um invólucro, não um replace.
-- ~~**`productWeight.test.mjs` tem ZERO asserts**~~ — **falso, medido na onda 5**: ele tem 16
-  verificações com um `eq()` próprio no lugar do `node:assert`, e sai com código 1 quando falha.
-  O problema real era outro: três arquivos de teste que verificam de verdade estavam fora do
-  `npm run test:unit`. Hoje a suíte roda 10 arquivos.
-
-## Onda 4 da auditoria — 07/09/2026 (noite): o que mudou de fato
-
-> Detalhe e numeros em [docs/auditoria-2026-09/ESTADO-2026-09-07-ONDA4.md](docs/auditoria-2026-09/ESTADO-2026-09-07-ONDA4.md).
-> Aqui so o que muda decisao numa sessao futura.
-
-### RLS: helper de policy SEMPRE dentro de (select fn())
-As 91 policies que faltavam foram reescritas. `is_admin()`, `is_admin_or_manager()`,
-`is_cs_or_admin()` e `managed_franchise_ids()` escritos crus rodam UMA VEZ POR LINHA.
-Medido como franqueado real: a soma de 10 consultas caiu de **2.324 ms para 91,5 ms**
-(Vendas 554 -> 13 ms, contatos 746 -> 33 ms). Policy nova nasce com o wrap, e
-`franchise_id = any((select managed_franchise_ids())::text[])` — **sem o cast `::text[]`**
-o Postgres le a subquery como conjunto de linhas e da `operator does not exist: text = text[]`.
-
-### A fonte de icones e um SUBSET self-hosted — nao mexa sem rodar a guarda
-O Google servia a familia inteira: **1.130.004 bytes em todo boot** para 219 nomes usados.
-Agora sao **28.748** (`src/assets/material-symbols-subset.woff2`, so o eixo FILL variavel,
-`font-display: block`). Icone que nao estiver no subset NAO some — aparece como a PALAVRA.
-`npm run icons:check` entra no pre-deploy (ja reprovou 2x no mesmo dia); `npm run icons:build`
-regera fonte e lista. A rede de deteccao e larga de proposito (qualquer string do src que
-seja nome valido do catalogo) porque ha **103 usos dinamicos** `icon={cfg.icon}`.
-
-### 30,5% da receita vem de anuncio — e agora tem tela
-`contacts.ctwa_clid`/`meta_ad_id` em 38.612 dos 57.096 contatos. Marketing > Investimento
-mostra o retorno por unidade (`get_marketing_attribution`, 65 ms). Agosto: R$ 122.677
-atribuidos sobre R$ 24.983 liquidos = **4,9x na rede**; Osasco 11,7x, Vila Maria 4,1x.
-⚠️ A RPC devolve so o BRUTO: a taxa do Meta vive em `MARKETING_TAX_RATE` no front e nao
-pode passar a existir em dois lugares. E `campaign_name` esta vazio em 100% dos contatos —
-da para dizer "veio de anuncio", nunca "de qual campanha".
-
-### Aba Fechamento no Financeiro
-`get_fechamento_mensal(p_month)` devolve, por unidade: faturamento, delta vs mes anterior,
-lucro em caixa, vendas sem baixa, verba e mensalidade. **O lucro e copia fiel de
-`calculatePnL`** — inclusive taxa repassada nao ser custo. Se divergir, a conversa de
-fechamento vira discussao sobre qual numero esta certo. No mes corrente o anterior e
-cortado no mesmo dia, e unidade com "teste" no nome fica de fora.
-
-### Paginacao do entity layer agora CRESCE (1, 2, 4, 6)
-`paginateAll` saiu para `src/lib/paginateAll.js` (8 testes, incluindo varredura de 0 a 350
-linhas provando que nada duplica nem some). Disparava 6 paginas de uma vez: 1.079 vendas
-custavam SETE requisicoes. Gestao > Resultado caiu de **42 para 21 requisicoes** com os
-mesmos numeros na tela.
-
-### Um sino so, e cache de franquias
-O Layout monta DOIS `NotificationBell` (topo desktop + mobile) e o AdminDashboard um
-terceiro: eram 2 buscas identicas por carregamento, de 2 em 2 minutos. Agora ha um store
-(`src/lib/notificationsStore.js`), colunas enxutas e 5 min — 60 -> 12 requisicoes/hora por
-aba. Mesma historia com a lista de franquias: vinha 2x por carregamento, 32.447 bytes cada
-(`src/lib/franchisesCache.js`, TTL 60 s). **Mutacao em Franqueados invalida o cache** —
-sem isso a franquia recem-criada nao apareceria por ate um minuto.
-
-### Cores em token
-`tailwind.config.js` tem `brand`, `ink`, `surface`, `ok`, `warn`, `err` com os hex que ja
-dominavam. 2.342 hex crus viraram token e 148 variacoes acidentais sumiram (4 vermelhos de
-marca, 2 pretos de texto, 3 cinzas). Codigo novo usa `text-ink-2`, `bg-brand/10`. ⚠️ O
-verde de texto `#16a34a` reprova AA (3,30:1) — o token `ok.ink` (#15803d) existe e ainda
-NAO foi aplicado.
-
-### Apagados: nao recriar
-`MyChecklist` + `components/checklist/` + tabela `daily_checklists` (ZERO linhas na vida) ·
-`optimizeConfig`, `getWhatsAppMessages`, `analyzeLead`, `generateSalesReportsAI` ·
-4 indices com 0-14 leituras em 7 meses (41 MB) · 6 tabelas de backup (exportadas em
-`docs/db-backups/*.json`) · `dist/` saiu do versionamento.
-⚠️ As 6 RPCs "sem consumidor" do relatorio **continuam vivas de proposito**: sem consumidor
-ali quer dizer sem consumidor no DASHBOARD, e o n8n tambem chama RPC.
-
-### Tres armadilhas de ferramenta que custaram tempo hoje
-- 🔴 **A Management API do Supabase devolve o ultimo resultset NAO-VAZIO**, nao o do ultimo
-  statement: com `set local role` + `set_config` + consulta vazia, voce recebe a linha do
-  `set_config` e acha que veio dado. Fechar em `select coalesce(json_agg(t),'[]'::json)`.
-- 🔴 **Heredoc de shell come a barra**: `"\b"` num `cat <<'EOF'` chega como `""`, que em
-  JS e BACKSPACE — a regex nunca casa, calada. Usar lookahead sem escape, ou gerar o
-  arquivo por Python/Write.
-- **`TabResultado` tem chunk proprio** (`TabResultado-*.js`), nao vive no chunk de `Gestao`:
-  verificar deploy por conteudo no chunk certo.
-
-### Telas franchiseeOnly: da para testar, com usuario de teste
-Criar pela Auth Admin API + escrever `profiles` (`role`, `managed_franchise_ids`), e apagar
-no fim. Para ver tela de admin, promover e reverter — `guard_profile_privilege_columns`
-deixa passar quando `auth.uid()` e nulo (service_role). **Reload completo obrigatorio depois
-de trocar o papel**: a navegacao SPA fica com o perfil antigo em memoria.
-
-## Onda 5 da auditoria — 08/09/2026: o que mudou de fato
-
-> Detalhe e numeros em [docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA5.md](docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA5.md).
-> Aqui so o que muda decisao numa sessao futura. 10 dos 11 itens em producao (21/21 provas
-> no live); o item 8 (defaults de `ui/`) esta num canvas com o Nelson, esperando decisao.
-
-### 🔴 RPC tambem bate no teto de 1.000 linhas do PostgREST — e cala
-`get_bot_conversation_summary` devolve **4.089 linhas** (63 franquias x ~65 dias) e a tela
-recebia **1.000**. Sem `limit`/`offset` a resposta so chega curta, sem erro nenhum: o card
-"Performance Bot" somava um quarto da rede (1.603 conversas; o certo sao 7.244) e o alerta de
-robo parado acusava 13 quando eram 8. **Toda RPC que devolve linha por franquia-dia e
-candidata** — das 3 do painel so essa passa de 1.000 (`get_human_message_totals` tem 62,
-`get_bot_leads_daily` 92). E a mesma armadilha que a onda 4 corrigiu na RPC irma
-`get_human_message_counts`; esta ficou.
-Ao paginar RPC, dois fatos medidos contra a producao:
-- **`Range:` como CABECALHO nao pagina RPC** — 12 paginas voltaram as MESMAS 1.000 linhas.
-  Quem pagina e `limit`/`offset` na URL, que e o que o `.range()` do postgrest-js escreve.
-- **ORDER BY explicito e obrigatorio**: a funcao nao ordena, e sem `.order()` seria o bug
-  5333224 de novo. Com `(franchise_id, day)` — a chave do `group by` — 4.090 linhas e 4.090
-  chaves distintas, zero duplicada.
-
-### O endereco da entrega: quem escreve, e o no-op que engolia
-Medido: **4.362 de 6.539 entregas (66,7%)** dos ultimos 90 dias sem endereco em lugar nenhum.
-O relatorio dizia que "quem escreve e so o robo" e **isso e falso**: o trigger
-`sales_fill_customer_snapshot` JA copia `contacts.endereco/bairro` para a venda, e 1.393 das
-2.001 vendas com endereco sao manuais, vindas dai. O buraco e antes — so 1.805 dos 5.526
-contatos com entrega tem endereco, porque o `SaleForm` nunca pediu um. Agora pede em entrega,
-pre-preenche pelo contato e grava **na venda e no contato**.
-🔴 **`save_sale_with_items` ENUMERA as colunas que grava**: `customer_address` e
-`customer_neighborhood` nao estavam la, entao mandar os campos era **no-op silencioso** — a
-venda salvava "com sucesso" e o endereco sumia. Vale para qualquer coluna nova em `sales`:
-adicionar na tabela nao basta, tem de entrar na RPC. Versionado em
-`supabase/2026-09-08-save-sale-with-items-endereco.sql`, com os 6 comportamentos provados em
-transacao abortada. A chave so e considerada quando VEM no `p_sale_data`, entao venda de
-retirada nao apaga endereco ja gravado.
-
-### Verde de TEXTO: `text-ok` e so para icone
-`#16a34a` da **3,30:1** no branco e **2,96:1** dentro do proprio chip `bg-ok/10` — reprova AA
-(4,5:1) nos dois. O token `ok.ink` (`#15803d`) da 5,02:1 e 4,50:1. Trocado em 54 classes +
-9 hex crus. **`text-ok` continua valendo para `<MaterialIcon>`**: objeto grafico mede contra
-3:1 (WCAG 1.4.11) e 3,30 passa. Codigo novo com verde de TEXTO usa `text-ok-ink`.
-
-### Alertas leves no topo do Painel, e a regra unica
-"Parou de vender" e "robo parado" saem de `allSales` e `botSummary`, que ja estao em memoria —
-custam **zero requisicao**. Antes so existiam dentro da secao "Alertas", colapsada no fim, cuja
-abertura busca os 31 mil contatos. A regra vive em `lib/alertasLeves.js` (9 testes) e o
-`AlertsPanel` chama a MESMA funcao — nao ha copia. As duas decisoes que sao faceis de errar
-depois estao travadas por teste: quem NUNCA vendeu nao entra em "parou de vender" (implantacao
-nao e queda) e quem NUNCA teve conversa nao entra em "robo parado".
-⚠️ `bot_conversations` tem `franchise_id` **fantasma** (`helpcell`) que nao existe em
-`franchises`: contar direto na RPC da 9 robos parados, a tela cruza com a lista e mostra 8.
-
-### O reconcile do CS agora tem cron (job 6, 08:15 BRT)
-`reconcile_cs_auto_tasks()` so rodava quando alguem abria a pagina — estava **4,4 dias**
-parada e devia 6 cartoes. 🔴 A funcao de producao **nao foi tocada** (md5 do `prosrc` conferido
-antes e depois): o que entra e o involucro `cron_reconcile_cs_auto_tasks()`, que planta
-`request.jwt.claims` com um admin real antes de chamar — sem isso o guard `is_cs_or_admin()`
-barra em SILENCIO, devolvendo zero linha em vez de erro. Rollback:
-`cron.unschedule('reconcile-cs-auto-tasks')` + drop do involucro.
-
-### Erros silenciosos no registro de venda
-Em 90 dias: **39 vendas manuais a R$ 0**, **73 com pelo menos uma linha a R$ 0** (126 linhas) e
-**183 sem contato nenhum** — todas com "Venda registrada!" e nenhum aviso. Agora o valor zerado
-abre lembrete nomeando o produto sem preco (**nao bloqueia** — existe cortesia), e quando
-`resolveContactId` devolve null com nome digitado a franqueada e avisada de que o cliente nao
-foi vinculado.
-
-### Peso do lote nos Pedidos
-`purchase_orders.total_weight_kg` era gravado desde 01/07 e **nenhuma tela lia** — so a ficha de
-separacao. Card "Lote em aberto" + coluna Peso: 23 pedidos, R$ 64.483, 2.386 kg = 2 rotas de
-1.500 kg. Le a lista INTEIRA, nao a filtrada. ⚠️ O `CLAUDE.md` da logistica ainda diz
-"total_weight_kg hoje 0/215" — **esta velho**: os 22 pendentes tem peso, historico 170/385.
-
-### Tipografia: o problema nao estava nas tabelas
-Varredura de `getComputedStyle` em 430 px, tela por tela: no Estoque **152 de 247** numeros ja
-estao em 14 px e no Vendas **87 de 91** em 16 px — nao ha densidade de tabela em risco, ao
-contrario do que o relatorio dizia. O que resta abaixo de 14 nas tabelas e **exclusivamente
-`<Badge>`** (11 px), que e a decisao do item 8. O unico alvo real era o **DRE do franqueado**:
-17 numeros de dinheiro em 12 px, incluindo "Entrou" e "Saiu" em negrito. Subiram para 14 px o
-que RESUME o resultado; as sub-linhas (`└ Vendas`, `└ Frete`) e os % de participacao ficam em
-12 px de proposito, para nao achatar a hierarquia.
-
-### Cache de franquias virou react-query
-`listarFranquias()` mantem a assinatura (promessa de array, 13 call-sites intocados) mas quem
-guarda e o `queryClientInstance.fetchQuery` — o cliente e singleton de modulo, entao roda fora
-de React. A chave `["franquias"]` passa a existir: componente novo faz
-`useQuery({queryKey: ["franquias"]})` e reaproveita. **A copia do array na saida FICA** e agora
-importa mais — a referencia devolvida e a que vive DENTRO do cache, e varias telas ordenam no
-lugar.
-
-### `npm run test:unit` tem 10 arquivos, e reprova de verdade
-`deliveryFeeRules`, `productWeight` e `subscriptionStatus` verificavam e **nunca rodavam**.
-(O relatorio dizia que `productWeight.test.mjs` tem zero asserts — tem 16 verificacoes com um
-`eq()` proprio; o grep procurou `assert.` e nao achou o helper.) Provado com canario: divisor
-1000→1001 em `productWeight.js` reprova com rc=1; restaurado, rc=0.
-
-### Tres armadilhas de ferramenta desta rodada
-- **`franchises.status` e `'active'`, nao `'ativo'`** — duas consultas voltaram VAZIAS por isso,
-  sem erro. Confirmar valor de coluna de status antes de filtrar por string.
-- 🔴 **`current_date` e UTC no Supabase** (o `CLAUDE.md` ja dizia, e mordeu assim mesmo): as 21h
-  de Brasilia o banco ja virou o dia, e "8 unidades sem vender" viraram 5 quando medido em data
-  local. Em qualquer contagem de "dias desde", usar
-  `(now() at time zone 'America/Sao_Paulo')::date`.
-- **`npm run icons:check` reprova por CRASE em comentario**: `Usa \`orders\`` num comentario JSX
-  acusou `orders` como icone fora do subset. A rede e larga de proposito (103 usos dinamicos
-  `icon={cfg.icon}`) — reescrever o comentario e o conserto, nao afrouxar a regra.
-- **`SaleForm` cai no chunk de ENTRADA** (`index-*.js`), nao em `Vendas-*.js`. Verificar deploy
-  por conteudo no chunk certo.
-
-## Onda 6 — 08/09/2026: os números que mentiam sem estar errados
-
-> Veio de duas perguntas do Nelson sobre o mural do CS e o comparativo do Financeiro.
-> Detalhe em [docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA6.md](docs/auditoria-2026-09/ESTADO-2026-09-08-ONDA6.md).
-
-### 🔴 Limiar de alarme colado na mediana faz metade da rede piscar
-O sinal "Faturamento −X%" do Radar tinha gatilho **fixo em −10%**. A mediana da rede, medida no
-mesmo dia, era **−10,3%**: por construção, metade das unidades cruzava o limiar — não por estarem
-mal, por serem a metade de baixo. Resultado: 23 das 46 comparáveis com bandeira e **55 das 67
-(82%) da rede em crítica ou atenção**. Agora o gatilho é `least(-10, mediana − 15)` e o rótulo
-carrega a referência: *"Faturamento −62.0% (rede −10.3%)"*. Críticas 18 → 14.
-**A lição vale para todo alarme novo**: antes de fixar um limiar, medir onde está a mediana da
-população — se o limiar cair perto dela, o alarme não distingue nada.
-
-### O comparativo "vs mês ant." do Financeiro está CERTO — o que suja é o dado
-Conferido contra o banco: quando o mês é corrente, o anterior É cortado no mesmo dia (onda 4). A
-prova barata está na própria tela — se comparasse 7 dias contra 31, a rede inteira estaria
-vermelha; havia 6 subindo e 3 caindo. **O que distorce são 3 vendas de Vila Maria datadas
-30/09/2026** (digitadas em 25/06, 07/08 e 19/08 — erro de mês): inflam setembro em R$ 1.279,80 e
-fazem a tela mostrar **▼18% onde o real é ▼30%** — escondendo uma queda pior, não inventando uma.
-São as únicas da rede; o trigger `sales_bloqueia_data_futura` foi criado depois delas. Lista para
-a franqueada e SQL de correção em `docs/auditoria-2026-09/vila-maria-3-vendas-data-errada.md`.
-**Ao investigar comparativo suspeito, cheque `max(sale_date)` antes de acusar o cálculo.**
-
-### Percentual precisa de piso no denominador
-"Menor Margem −5657,8%" eram **R$ 80 de venda contra R$ 4.606 de despesa** — unidade que comprou e
-ainda não vendeu, num mês de 7 dias. Não é margem, é denominador. O card agora exige **R$ 2.000**
-de faturamento no período (`PISO_MARGEM_COMPARAVEL` em `Financeiro.jsx`), o **mesmo piso** que a
-`get_franchise_health_signals` já usa para calcular delta — um piso só no ecossistema. Com ele o
-card aponta Santos (−106,8%), que é caso real. O subtítulo passa a mostrar o faturamento ao lado
-do percentual, para o número nunca aparecer sem a base.
-
-### 🔴 Trava de validação nasce larga demais — meça quantos LEGÍTIMOS ela pega
-O trigger `sales_bloqueia_data_futura` foi criado em 07/09/2026 para pegar 3 vendas datadas
-30/09 (erro de mês) e recusava **qualquer** data futura. Medido no dia seguinte, em 180 dias:
-**663 vendas de 30 franquias** cairiam nele — 628 até 7 dias à frente, **455 exatamente
-"amanhã"**. Não era engano: metade da rede lança a venda com a data da ENTREGA para o pedido
-ficar no topo da lista do dia certo. A cauda de erro real só começa em ~14 dias (16 casos: 31,
-37, 42, 54, 66, 97 dias). Hoje é **janela de 14 dias**
-(`supabase/2026-09-08-sales-data-futura-janela-14-dias.sql`). **A conta antes de subir qualquer
-validação nova é essa: quantas linhas históricas ela reprovaria, e quantas delas são o uso
-normal?** Apareceu por 3 áudios da franqueada do Guarujá, não pelo log — que já registrava o
-mesmo em Cajamar dois dias antes.
-
-### A mensagem do trigger só chega na tela se o errcode estiver mapeado
-`23514` não estava no `CODE_MAP` do [safeErrorMessage.js](src/lib/safeErrorMessage.js): o
-trigger explicava em português claro e a franqueada via *"Erro inesperado. Tente novamente."*
-Agora há `PREFIXOS_SEGUROS` — whitelist de prefixo, porque devolver a mensagem crua de um
-`23514` qualquer vazaria `violates check constraint "sales_value_check"`. **Trigger novo cuja
-mensagem é para o usuário ler precisa do prefixo cadastrado lá**, senão o texto morre no
-fallback genérico.
-
-### `ehErroDeRegra()`: o que NÃO se retenta
-Erro de regra (23xxx, 42501, P0001) não muda em 2 s nem em 4 min. O `withRetry` do `SaleForm`
-retentava mesmo assim — foi assim que **8 cliques da franqueada de Cajamar viraram 24 POSTs**,
-com dois toasts "Tentando novamente em 2s…" por rodada. Todo retry de escrita consulta
-`ehErroDeRegra` antes de repetir, e o `catch` mostra o MOTIVO em vez de "não foi possível
-salvar" — mensagem que manda a pessoa repetir o que nunca vai passar.
-
-### 🔴 Aplicar `.sql` do Windows injeta `\r` DENTRO da função
-Medido: aplicar o arquivo com CRLF fez o Postgres guardar **246 caracteres CR no `prosrc`**,
-inchando a função em 246 bytes e quebrando a verificação de paridade dali em diante (o
-`_verifica-paridade-live.mjs` normaliza o ARQUIVO, mas o banco já estava sujo). Funciona, e é
-justamente por isso que passa despercebido. Usar `.tmp/audit-2026-09/q-lf.mjs`, que normaliza
-CRLF→LF antes de mandar. Conferir: `length(prosrc) - length(replace(prosrc, chr(13), ''))`.
-
-### Como alterar função de banco sem versão versionada
-A receita que funcionou, e que deixou o radar alterável: (1) extrair o `pg_get_functiondef` e
-versionar como o "antes", com md5 e tamanho no cabeçalho; (2) gerar a versão nova **a partir
-desse arquivo**, por script, para o diff ser só o que se quis mudar (aqui: 11 linhas de CTE e 1
-linha trocada); (3) clonar a de produção com outro nome, aplicar a nova e comparar as duas na
-MESMA query — pelo **conjunto** de flags, nunca pela sequência do `jsonb_agg`; (4) dropar a cópia.
-O pino provou: 67/67 unidades, o conjunto mudou em 9 e nas 9 a única diferença foi a flag esperada
-ter saído, **nenhum sinal novo apareceu**.
-⚠️ O `_verifica-paridade-live.mjs` procura o delimitador `$func$`; o `pg_get_functiondef` gera
-`$function$`. Trocar os dois delimitadores não altera o corpo (o `prosrc` não os inclui).
-
-### Marketing: "pagou" e "subi a campanha" sao DUAS perguntas, e havia um campo so
-A skill `subir-orcamento-meta-mensal` documenta `marketing_payments.status` como
-`pending` = ainda nao subiu no Meta / `confirmed` = ja subiu. A tela do dashboard usa o MESMO
-campo com outro sentido: `confirmed` = recebi o pagamento. Enquanto as duas coisas andavam
-juntas ninguem via o conflito.
-
-Medido em 08/09/2026, contando confirmacoes que caem no MESMO minuto que outra (assinatura de
-confirmacao em lote — subir campanha no Meta nao leva segundos): **julho 21/48, agosto 31/54,
-setembro 39/55**. Setembro fechou com 55 confirmados e ZERO pendentes: pela leitura da skill
-tudo ja teria subido, e nao era o caso.
-
-Agora quem responde "ja subi?" e **`marketing_payments.campaign_raised_at`** (+
-`campaign_raised_by`). `status` volta a significar so o recebimento. Na tela: selo
-"Falta subir"/"Subida" AO LADO do status (nao no lugar), botao "Subi"/"Desfazer", filtro
-"Pagos — falta subir", e o card "Liquido Campanha" mostrando quantas faltam e quanto esperam.
-⚠️ O `guard_marketing_payment_approval` so protegia `status`, `amount`, `franchise_id` e
-`reference_month` — **coluna nova passa direto**. As duas entraram no guard; ao adicionar
-qualquer coluna sensivel nessa tabela, lembrar de acrescentar la.
-
-### `TAXA * 100` em ponto flutuante imprime 14.000000000000002
-Estava na tela em dois lugares do marketing ("ja sem os 14.000000000000002% do Meta"). A taxa
-de EXIBICAO virou `MARKETING_TAX_PCT` em `franchiseUtils.js`, arredondada uma vez onde a taxa e
-definida; a de CALCULO continua `MARKETING_TAX_RATE = 0.14`.
-
-### O `textContent` de um botao inclui o NOME do icone
-`<Button><MaterialIcon icon="campaign"/> Subi</Button>` tem `textContent === "campaignSubi"`.
-Morde em teste de navegador (`textContent.trim() === "Subi"` nao acha o botao) e e a mesma
-propriedade que faz o icone virar palavra quando o CSS quebra a ligadura. Em teste, usar
-`.endsWith(rotulo)`.
-
-### 🔴 Ícone que vira PALAVRA: são DOIS modos de falha, e a guarda só pega um
-O nome do ícone é o **conteúdo** do `<span>` — a fonte Material Symbols desenha por
-**ligadura** do texto `payments`. Qualquer propriedade de texto herdada do container mexe nesse
-texto e a ligadura deixa de casar; aí o navegador desenha a palavra.
-
-- **Modo 1 — ícone fora do subset.** `npm run icons:check` pega. Já reprovou 3×.
-- **Modo 2 — `text-transform: uppercase` no container.** A guarda **passa** (o ícone ESTÁ no
-  subset) e a tela quebra igual. Foi o que aconteceu no raio-x do mural do CS em 08/09/2026: 11
-  ícones viraram palavra (`PAYMENTS`, `LOCAL_SHIPPING`, `EXPAND_LESS`…).
-- **Modo 3 — o nome do ícone vem do BANCO.** `NotificationBell` faz `icon={n.icon}` e o valor
-  está em `notifications.icon`, gravado por `notify_admins(...)` dentro de função SQL. A guarda
-  varria só `src/`, então esse nome nunca existiu para ela e o subset nasceu sem ele: em
-  08/09/2026 o sino mostrou `HEALTH_AND_SAFETY` por inteiro. Dos 9 ícones gravados na tabela, 8
-  estavam no subset **por coincidência** — são os mesmos nomes que aparecem no código. A guarda
-  passou a varrer `supabase/**.sql`, mas **só dentro das chamadas a `notify_admins` e sem os
-  comentários**: em SQL a rede larga do JSX dá falso positivo em `key`, `mode`, `public`,
-  `source`, `segment`. Ao criar notificação por SQL, use ícone que já exista no código.
-
-**Diagnóstico em um comando** — a largura denuncia, porque ícone é quadrado e palavra é comprida:
-`[...document.querySelectorAll('span.material-symbols-outlined')].filter(s => s.getBoundingClientRect().width > 30)`.
-Prova que fecha o caso: `campaign` media **20px no menu e 76px dentro do diálogo** — mesmo ícone,
-mesma fonte, só muda o `text-transform`.
-
-Corrigido no `MaterialIcon` com `textTransform: "none"` + `letterSpacing: "normal"` **inline**, o
-que blinda os 15 pontos com `uppercase` sobre ícone (10 arquivos — não era só o mural: Início do
-franqueado, ranking do admin, Resultado 3×, Vendas, cadastro de franquia, login) e os futuros.
-Vai inline de propósito: `.uppercase` do Tailwind tem a mesma especificidade de
-`.material-symbols-outlined` e venceria por vir depois na folha. **Os `uppercase` continuam onde
-estavam** — eles são do rótulo, que deve mesmo ser maiúsculo; quem tinha de se proteger era o ícone.
-
-### Console do Windows mente sobre acento — conferir os bytes
-`'Sem vender h� '` no `print` do Python parecia arquivo corrompido; os bytes eram `\xc3\xa1`, ou
-seja **á em UTF-8 correto**. É o cp1252 do console. Antes de "consertar" encoding, ler os bytes
-(`open(...,'rb')`) — e, no caso de função de banco, a paridade md5 já responde sozinha.
+## Auditoria set/2026 (ondas 0 a 6) — regras que ficaram
+> 📄 Relato completo, números e casos: [docs/claude/auditoria-2026-09.md](docs/claude/auditoria-2026-09.md) + relatórios em [docs/auditoria-2026-09/](docs/auditoria-2026-09/). Movido do arquivo em 11/09/2026.
+- **RLS: helper SEMPRE como `(select fn())`** — cru roda 1×/linha (10 consultas: 2.324 → 91 ms). `franchise_id = any((select managed_franchise_ids())::text[])` — sem o cast dá `text = text[]`. NUNCA revogar `EXECUTE` de `anon` nos helpers de policy (deslogado leva 500 em vez de 0 linhas).
+- **Escalonamento de privilégio é barrado por trigger** (`trg_guard_profile_privilege_columns`, `trg_guard_marketing_payment_approval`) — coluna sensível nova nessas tabelas precisa entrar no guard.
+- **`supabase.rpc()` resolve a promise com o erro dentro** — desembrulhar `{ error }` (helper `rpc()` do AdminDashboard); senão vira card vazio em vez de erro.
+- **RPC também bate no teto de 1.000 linhas do PostgREST, calada** — paginar com `.range()` (limit/offset na URL; header `Range` não pagina RPC) + `.order()` pela chave do group by.
+- **`manualChunks` TEM de ser função** — o `dist/index.html` só pode ter modulepreload de `vendor/supabase/dates/ui`.
+- **`npm run lint:undef` antes de deploy** — o lint normal deixa passar símbolo não importado (tela branca); `npm run verify:undef` prova a guarda.
+- **Ícones = subset self-hosted:** `npm run icons:check` antes de deploy; ícone fora do subset vira PALAVRA (nome vindo do banco via `notify_admins` também). Diagnóstico: span de ícone com largura > 30 px.
+- **`save_sale_with_items` ENUMERA as colunas** — coluna nova em `sales` precisa entrar na RPC, senão é no-op calado.
+- **Verde de TEXTO = `text-ok-ink`** (`text-ok` reprova AA; só para ícone). Cores em token (`brand`, `ink`, `surface`, `ok`, `warn`, `err`).
+- **`marketing_payments.status` = recebimento; "já subi a campanha" = `campaign_raised_at`** (+ `campaign_raised_by`, ambos no guard).
+- **Mensagem de trigger só chega à tela com prefixo em `PREFIXOS_SEGUROS`** (`safeErrorMessage.js`); erro de regra (23xxx/42501/P0001) não se retenta (`ehErroDeRegra`).
+- **Antes de subir validação ou alarme, meça:** quantas linhas legítimas a trava reprovaria (a de data futura pegava 663) e onde está a mediana (limiar colado nela acende metade da rede). Percentual precisa de piso no denominador (`PISO_MARGEM_COMPARAVEL` = R$ 2.000).
+- **SQL do Windows:** `.sql` com CRLF injeta `\r` no `prosrc` — normalizar antes (`.tmp/audit-2026-09/q-lf.mjs`). Alterar função sem fonte versionado: extrair `pg_get_functiondef`, gerar a nova a partir dele e comparar clone × nova na mesma query, pelo CONJUNTO.
+- **Management API devolve o último resultset NÃO-vazio** — fechar em `select coalesce(json_agg(t),'[]'::json)`. `current_date` é UTC: usar `(now() at time zone 'America/Sao_Paulo')::date`. `franchises.status` é `'active'`.
+- **Crons de banco:** `sync-asaas-subscriptions` (jobid 4, 08:05), `sentinela-diaria` (5, 08:10), `reconcile-cs-auto-tasks` (6, 08:15, via invólucro). Desligar: `select cron.unschedule('<nome>')`.
+- **Tela `franchiseeOnly` dá para testar** com usuário de teste criado pela Auth Admin API + `profiles` (apagar no fim); reload completo depois de trocar o papel.
