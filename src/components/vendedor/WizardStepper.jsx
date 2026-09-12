@@ -6,7 +6,7 @@ const STEPS = [
   { num: 2, label: "Entrega e retirada", icon: "local_shipping" },
   { num: 3, label: "Pagamento", icon: "payments" },
   { num: 4, label: "Vendedor", icon: "smart_toy" },
-  { num: 5, label: "Revisão", icon: "checklist" },
+  { num: 5, label: "Como o robô responde", icon: "chat" },
 ];
 
 export { STEPS };

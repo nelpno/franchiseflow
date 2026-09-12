@@ -50,7 +50,8 @@ export function findConflicts(loadedRow, currentRow, patch) {
 // o grupo inteiro (a cópia antiga de delivery_fee_rules sobrescreveria a nova, por exemplo).
 const GRUPOS = [
   ["delivery_schedule", "delivery_fee_rules", "delivery_start_time", "order_cutoff_time",
-    "charges_delivery_fee", "operating_hours", "opening_hours", "working_days"],
+    "charges_delivery_fee", "operating_hours", "opening_hours", "working_days",
+    "delivery_pricing", "_frete_modelo", "max_delivery_radius_km", "avg_prep_time_minutes"],
   ["unit_address", "street_address", "neighborhood", "city", "cep"],
 ];
 
@@ -64,6 +65,10 @@ export function camposDoRascunhoADescartar(conflitos) {
 const NOME_CAMPO = {
   delivery_schedule: "horários e taxas de entrega",
   delivery_fee_rules: "horários e taxas de entrega",
+  delivery_pricing: "horários e taxas de entrega",
+  charges_delivery_fee: "horários e taxas de entrega",
+  opening_hours: "horários e taxas de entrega",
+  working_days: "horários e taxas de entrega",
   promotions_combo: "promoções",
   pix_key_data: "chave Pix",
   pix_holder_name: "titular do Pix",

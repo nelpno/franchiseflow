@@ -11,6 +11,7 @@
  *   - corte de pedidos igual ao início da entrega é a operação da Bauru — só barra corte DEPOIS do fim.
  */
 import { validateDeliverySchedule, rotuloDias } from "./configSave.js";
+import { modoDoFrete, legadoParaModelo, problemasDoModelo } from "./freteModelo.js";
 
 const digitos = (v) => String(v ?? "").replace(/\D/g, "");
 const vazio = (v) => v === null || v === undefined || String(v).trim() === "";
@@ -122,11 +123,23 @@ const REGRAS = [
   {
     etapa: 2, campos: ["delivery_schedule"],
     checar: (f) => {
-      const p = entrega(f) ? validateDeliverySchedule(f.delivery_schedule) : [];
+      const p = entrega(f) && modoDoFrete(f) === "modalidade" ? validateDeliverySchedule(f.delivery_schedule) : [];
       return p.length > 0 && `Frete: ${p[0]}${p.length > 1 ? ` (e mais ${p.length - 1})` : ""}. Preencha ou apague a linha.`;
     },
   },
-  { etapa: 2, campos: ["delivery_schedule"], checar: (f) => entrega(f) && corteDepoisDoFim(f.delivery_schedule) },
+  { etapa: 2, campos: ["delivery_schedule"], checar: (f) => entrega(f) && modoDoFrete(f) === "modalidade" && corteDepoisDoFim(f.delivery_schedule) },
+  // Cartão "Entrega" (frete por km/valor único e frete calculado): a regra lê o que a tela mostra.
+  {
+    etapa: 2, campos: ["_frete_modelo", "delivery_pricing", "delivery_schedule", "avg_prep_time_minutes"],
+    checar: (f) => {
+      if (!entrega(f)) return null;
+      const modo = modoDoFrete(f);
+      if (modo === "modalidade") return null;
+      const modelo = modo === "estruturado" ? f.delivery_pricing : f._frete_modelo || legadoParaModelo(f);
+      const p = problemasDoModelo(modelo, { estruturado: modo === "estruturado" });
+      return p.length > 0 && `${p[0].msg}${p.length > 1 ? ` (e mais ${p.length - 1})` : ""}`;
+    },
+  },
   { etapa: 2, campos: ["pickup_schedule", "has_custom_pickup_hours", "has_pickup"], checar: (f) => !!f.has_pickup && retiradaInvertida(f.pickup_schedule) },
 
   // Etapa 3 — Pagamento

@@ -197,6 +197,18 @@ async function deleteFranchiseCascade(franchiseId, evolutionInstanceId, { dryRun
   return data;
 }
 
+// Frete calculado (cartão "Entrega", plano de frete 12/09/2026): o delivery_pricing só muda pelo servidor.
+// A RPC grava o frete e os campos derivados juntos, confere permissão e conflito contra o que a tela
+// carregou (esperado). Conflito volta como erro 40001 com a mensagem "CONFLITO_FRETE:col1,col2".
+export async function salvarFreteEstruturado(configId, campos, esperado) {
+  const { data, error } = await withTimeout(
+    supabase.rpc('salvar_frete_estruturado', { p_config_id: configId, p_campos: campos, p_esperado: esperado }),
+    30000
+  );
+  if (error) throw error;
+  return data;
+}
+
 // Entidades com nomes de tabela Supabase
 export const Franchise = {
   ...createEntity('franchises'),

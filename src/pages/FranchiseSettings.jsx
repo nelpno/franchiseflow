@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { FranchiseConfiguration, User } from "@/entities/all";
+import { FranchiseConfiguration, User, salvarFreteEstruturado } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,7 @@ import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
 import { diffPatch, findConflicts, nomesDosCampos, camposDoRascunhoADescartar } from "@/lib/configSave";
 import { validarEtapa, validarTudo } from "@/lib/vendedorValidation";
+import { modoDoFrete, legadoParaModelo, modeloParaLegado, problemasDoModelo, limparPricing, modeloInicial } from "@/lib/freteModelo";
 import { buscarCep, formatarCep, normalizarCep, ruaJaContem } from "@/lib/cep";
 
 import FranchisePicker from "@/components/shared/FranchisePicker";
@@ -19,7 +20,8 @@ import WizardStepper from "@/components/vendedor/WizardStepper";
 import WizardStep from "@/components/vendedor/WizardStep";
 import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor";
 import PaymentMatrix from "@/components/vendedor/PaymentMatrix";
-import ReviewSummary from "@/components/vendedor/ReviewSummary";
+import ComoRoboResponde from "@/components/vendedor/ComoRoboResponde";
+import EntregaCard from "@/components/vendedor/EntregaCard";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
 import { ToggleCard, RadioCards } from "@/components/vendedor/WizardFields";
@@ -101,6 +103,11 @@ const CAMPOS_DE_TEXTO = ['franchise_name', 'street_address', 'neighborhood', 'ci
 // Entrega e retirada dividem a etapa 2: nenhuma etapa é pulada.
 const SEM_ETAPAS_PULADAS = [];
 
+// Unidade no frete calculado: estas colunas vão juntas pela RPC salvar_frete_estruturado (o delivery_pricing
+// só muda pelo servidor; o trigger descarta, calado, o que chega pela via comum).
+const COLUNAS_FRETE = ['delivery_pricing', 'delivery_schedule', 'delivery_fee_rules', 'charges_delivery_fee',
+  'max_delivery_radius_km', 'opening_hours', 'working_days'];
+
 function avisarErros(erros) {
   const mais = erros.length > 1 ? ` (e mais ${erros.length - 1})` : '';
   toast.error(`${erros[0]}${mais}`, { duration: 8000 });
@@ -126,7 +133,8 @@ function AvisosDaEtapa({ avisos }) {
 // vai salvar. A diferença entre as duas é exatamente o que a pessoa mudou.
 function buildDbPayload(form) {
   // Strip UI-only / read-only fields before sending to DB
-  const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = form;
+  // _frete_modelo = o que o cartão "Entrega" está editando (só da tela; vira os campos de frete abaixo)
+  const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, _frete_modelo, ...dbFields } = form;
 
   // Monta o unit_address pelo helper compartilhado (mesmo formato do fluxo fiscal).
   // O campo "Rua e número" do wizard já traz o número embutido -> number vazio aqui.
@@ -161,6 +169,10 @@ function buildDbPayload(form) {
     finalData.pickup_is_store = false;
     finalData.has_custom_pickup_hours = false;
     finalData.pickup_schedule = [];
+  }
+  // Frete calculado: tira linha em branco e normaliza números (idempotente com o que veio do banco)
+  if (finalData.delivery_pricing && typeof finalData.delivery_pricing === 'object') {
+    finalData.delivery_pricing = limparPricing(finalData.delivery_pricing);
   }
   return finalData;
 }
@@ -490,8 +502,35 @@ function FranchiseSettingsContent() {
             );
             return false;
           }
-          const salvo = await FranchiseConfiguration.update(editingConfig.id, patch);
-          loadedRowRef.current = { ...loadedRowRef.current, ...salvo };
+          // Frete calculado: o frete e os campos que saem dele vão juntos pela RPC, que confere conflito de novo,
+          // agora dentro da transação. O resto segue pela via comum; delivery_pricing nunca vai por ela.
+          const estruturado = modoDoFrete(loadedRowRef.current) === 'estruturado';
+          const patchFrete = estruturado ? Object.fromEntries(Object.entries(patch).filter(([k]) => COLUNAS_FRETE.includes(k))) : {};
+          const patchResto = Object.fromEntries(Object.entries(patch).filter(([k]) => k !== 'delivery_pricing' && !(k in patchFrete)));
+          let salvo = {};
+          if (Object.keys(patchFrete).length > 0) {
+            const esperado = Object.fromEntries(Object.keys(patchFrete).map((k) => [k, loadedRowRef.current?.[k] ?? null]));
+            try {
+              salvo = await salvarFreteEstruturado(editingConfig.id, patchFrete, esperado);
+            } catch (err) {
+              if (err?.code === '40001' || String(err?.message || '').startsWith('CONFLITO_FRETE')) {
+                const cols = String(err?.message || '').split(':')[1]?.split(',').filter(Boolean) || Object.keys(patchFrete);
+                descartarDoRascunho(cols);
+                toast.error(
+                  `Nada foi salvo. Enquanto esta tela estava aberta, alguém (outra aba ou o suporte) mudou: ${nomesDosCampos(cols)}. Recarregue para ver a versão atual e refaça só essa parte.`,
+                  { duration: 15000, action: { label: 'Recarregar', onClick: () => window.location.reload() } }
+                );
+                return false;
+              }
+              throw err;
+            }
+            loadedRowRef.current = { ...loadedRowRef.current, ...salvo };
+          }
+          if (Object.keys(patchResto).length > 0) {
+            const resto = await FranchiseConfiguration.update(editingConfig.id, patchResto);
+            salvo = { ...salvo, ...resto };
+            loadedRowRef.current = { ...loadedRowRef.current, ...resto };
+          }
           updateConfigurationStatus(editingConfig.id, salvo);
         }
         baselineRef.current = finalData;
@@ -531,9 +570,12 @@ function FranchiseSettingsContent() {
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field, value) => aplicarCampos({ [field]: value });
+
+  // Vários campos numa mudança só (o cartão "Entrega" mexe em 6-8 de uma vez): um render e um rascunho.
+  const aplicarCampos = (patch) => {
     setFormData((prev) => {
-      const updated = { ...prev, [field]: value };
+      const updated = { ...prev, ...patch };
       // Auto-save draft to localStorage only for franchisees (admin edits directly)
       if (currentUser?.role !== 'admin') {
         const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
@@ -579,6 +621,22 @@ function FranchiseSettingsContent() {
     }
     handleInputChange('opening_hours', val.map((r) => `${r.days.join(',')}: ${r.delivery_start}-${r.delivery_end}`).join(' | '));
     handleInputChange('working_days', [...new Set(val.flatMap((r) => r.days))].join(','));
+  };
+
+  // Cartão "Entrega" (plano de frete 12/09/2026, Fase 5b). O modelo que a tela edita vira os campos antigos —
+  // no modo simples o robô continua lendo o texto das faixas, como antes — e, no frete calculado, também o
+  // delivery_pricing. Frete em texto livre ("por modalidade") fica no editor antigo (modeloFrete = null).
+  const modoFrete = modoDoFrete(formData);
+  const modeloFrete = modoFrete === 'estruturado'
+    ? formData.delivery_pricing
+    : modoFrete === 'simples'
+      ? formData._frete_modelo || (formData.delivery_schedule?.length > 0 ? legadoParaModelo(formData) : modeloInicial(formData.max_delivery_radius_km))
+      : null;
+  const semHorarioSalvo = modoFrete === 'simples' && !(formData.delivery_schedule?.length > 0);
+  const problemasFrete = modeloFrete ? problemasDoModelo(modeloFrete, { estruturado: modoFrete === 'estruturado' }) : [];
+  const handleFreteChange = (novo) => {
+    const estruturado = modoFrete === 'estruturado';
+    aplicarCampos({ [estruturado ? 'delivery_pricing' : '_frete_modelo']: novo, ...modeloParaLegado(novo, { estruturado }) });
   };
 
   const configuredInstanceIds = configurations.map((c) => c.franchise_evolution_instance_id);
@@ -634,6 +692,10 @@ function FranchiseSettingsContent() {
   const validacaoEtapa = useMemo(
     () => validarEtapa(currentStep, formData, alterados, { novo: !editingConfig }),
     [currentStep, formData, alterados, editingConfig]
+  );
+  const validacaoTudo = useMemo(
+    () => validarTudo(formData, alterados, { novo: !editingConfig }),
+    [formData, alterados, editingConfig]
   );
 
   const goToStep = (step) => {
@@ -937,8 +999,28 @@ function FranchiseSettingsContent() {
                 checked={hasDelivery}
                 onChange={(val) => handleInputChange('has_delivery', val)}
               />
-              {hasDelivery && (
+              {hasDelivery && modeloFrete && (
+                <div className="sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
+                  <EntregaCard
+                    modelo={modeloFrete}
+                    onChange={handleFreteChange}
+                    estruturado={modoFrete === 'estruturado'}
+                    minOrder={formData.min_order_value}
+                    onMinOrderChange={(v) => handleInputChange('min_order_value', v)}
+                    problemas={problemasFrete}
+                    semHorarioSalvo={semHorarioSalvo}
+                    onUsarSugestao={() => handleFreteChange(modeloFrete)}
+                  />
+                </div>
+              )}
+              {hasDelivery && !modeloFrete && (
                 <div className="space-y-4 sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                    <MaterialIcon icon="info" size={16} className="text-amber-700 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-800">
+                      Seu frete está em texto livre ("por modalidade"). O cartão novo, com tipos de entrega e bairros com taxa própria, entra quando o suporte passar o seu frete para o formato novo com você.
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className={labelClass}>Raio máximo (km)<RequiredDot /></label>
@@ -1235,8 +1317,8 @@ function FranchiseSettingsContent() {
 
           {/* Step 5: Revisão */}
           {currentStep === 5 && (
-            <WizardStep icon="checklist" title="Revisão" subtitle="Confira todos os dados antes de salvar">
-              <ReviewSummary formData={formData} onGoToStep={goToStep} />
+            <WizardStep icon="chat" title="Como o robô vai responder" subtitle="Confira antes de deixar o robô atender.">
+              <ComoRoboResponde formData={formData} erros={validacaoTudo.erros} avisos={validacaoTudo.avisos} onGoToStep={goToStep} />
             </WizardStep>
           )}
         </form>

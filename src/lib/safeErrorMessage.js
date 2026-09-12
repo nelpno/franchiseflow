@@ -24,7 +24,7 @@ const CODE_MAP = {
  * a data da entrega. O trigger `sales_bloqueia_data_futura` explicava o motivo e a
  * tela mostrava "Erro inesperado. Tente novamente."
  */
-const PREFIXOS_SEGUROS = ["A data da venda"];
+const PREFIXOS_SEGUROS = ["A data da venda", "Frete:", "Sem permissão para alterar esta unidade"];
 
 const MESSAGE_MAP = [
   { match: "Invalid login credentials", msg: "Email ou senha incorretos." },

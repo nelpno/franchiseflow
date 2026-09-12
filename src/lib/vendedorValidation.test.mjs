@@ -43,7 +43,16 @@ const corteTarde = [{ ...base.delivery_schedule[0], order_cutoff: "20:00" }];
 assert.match(validarEtapa(2, { ...base, delivery_schedule: corteTarde }, ["delivery_schedule"]).erros[0], /passa do fim da entrega/);
 // linha de frete pela metade (regra do configSave, agora dentro da etapa)
 const metade = [{ ...base.delivery_schedule[0], fee_rules: [{ max_km: "5", fee: "8" }, { max_km: "10", fee: "" }] }];
-assert.match(validarEtapa(2, { ...base, delivery_schedule: metade }, ["delivery_schedule"]).erros[0], /^Frete: Seg a Sex, linha 2: falta o valor/);
+assert.match(validarEtapa(2, { ...base, delivery_schedule: metade }, ["delivery_schedule"]).erros[0], /^Seg a Sex, faixa 2: falta o valor\./);
+// frete em texto livre ("por modalidade") segue no editor antigo, com a regra antiga
+const modal = [{ ...base.delivery_schedule[0], fee_rules: { mode: "modality", rules: [{ label: "Centro", fee: "" }] } }];
+assert.match(validarEtapa(2, { ...base, delivery_schedule: modal }, ["delivery_schedule"]).erros[0], /^Frete: Seg a Sex, linha 1: falta o valor/);
+// cartão novo: o que a tela mostra (modelo em edição) é o que vale
+const editando = { ...base, _frete_modelo: { raio_km: 15, zonas: [], grupos: [{ dias: ["seg"], tipos: [{ nome: "Entrega", inicio: "10:00", fim: "18:00", corte: "", promessa: "minutos", minutos: "", taxa: { modo: "fixa", valor: 8 } }] }] } };
+assert.match(validarEtapa(2, editando, ["_frete_modelo"]).erros[0], /^Seg: diga em até quantos minutos/);
+// frete calculado: bairro sem valor barra
+const calculado = { ...base, delivery_pricing: { raio_km: 15, grupos: editando._frete_modelo.grupos.map((g) => ({ ...g, tipos: [{ ...g.tipos[0], promessa: "janela" }] })), zonas: [{ nomes: ["Centro"], valor: "" }] } };
+assert.match(validarEtapa(2, calculado, ["delivery_pricing"]).erros[0], /^Bairros com taxa diferente, linha 1: falta o valor/);
 // retirada que fecha antes de abrir
 const retirada = { ...base, has_pickup: true, has_custom_pickup_hours: true, payment_pickup: ["pix"], pickup_schedule: [{ days: ["sab"], open: "14:00", close: "12:00" }] };
 assert.match(validarEtapa(2, retirada, ["pickup_schedule"]).erros[0], /fechamento tem de ser depois/);
