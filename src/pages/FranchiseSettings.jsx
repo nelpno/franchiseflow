@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { FranchiseConfiguration, User } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -8,6 +8,7 @@ import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES, resolveActiveFranchis
 import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
+import { diffPatch, findConflicts, validateDeliverySchedule, sameValue, nomesDosCampos, camposDoRascunhoADescartar } from "@/lib/configSave";
 
 import FranchisePicker from "@/components/shared/FranchisePicker";
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
@@ -91,6 +92,44 @@ function RequiredDot() {
   return <span className="text-brand ml-0.5">*</span>;
 }
 
+// O que vai ao banco a partir do formulário. Roda 2x: no que a tela abriu (baseline) e no que ela
+// vai salvar. A diferença entre as duas é exatamente o que a pessoa mudou.
+function buildDbPayload(form) {
+  // Strip UI-only / read-only fields before sending to DB
+  const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = form;
+
+  // Monta o unit_address pelo helper compartilhado (mesmo formato do fluxo fiscal).
+  // O campo "Rua e número" do wizard já traz o número embutido -> number vazio aqui.
+  const assembledAddress = assembleUnitAddress({
+    street: dbFields.street_address,
+    neighborhood: dbFields.neighborhood,
+    city: dbFields.city,
+    cep: dbFields.cep,
+  });
+
+  const finalData = {
+    ...dbFields,
+    unit_address: assembledAddress,
+    accepted_payment_methods: typeof dbFields.accepted_payment_methods === 'string' ?
+      dbFields.accepted_payment_methods :
+      Array.isArray(dbFields.accepted_payment_methods) ?
+        dbFields.accepted_payment_methods.join(', ') : '',
+    address_reference: dbFields.address_reference || '',
+    personal_phone_for_summary: dbFields.personal_phone_for_summary
+      ? dbFields.personal_phone_for_summary.replace(/\D/g, '')
+      : ''
+  };
+
+  // Safety net: nunca persistir maquininha/dinheiro em entrega third_party
+  if (finalData.delivery_method === 'third_party' && Array.isArray(finalData.payment_delivery)) {
+    finalData.payment_delivery = finalData.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash' && p !== 'meal_voucher');
+  }
+
+  // Coerência: sem loja não persiste endereço de loja órfão
+  if (!finalData.pickup_is_store) finalData.pickup_address = '';
+  return finalData;
+}
+
 function FranchiseSettingsContent() {
   const { selectedFranchise, setSelectedFranchise } = useAuth();
   const [configurations, setConfigurations] = useState([]);
@@ -105,6 +144,11 @@ function FranchiseSettingsContent() {
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedConfigId, setSelectedConfigId] = useState(null);
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  // O que a tela abriu (ou como ficou no último salvar): é contra isso que o salvar calcula o que
+  // mudou e confere se alguém mexeu nas mesmas colunas no banco. Ver src/lib/configSave.js.
+  const loadedRowRef = useRef(null);    // linha do banco
+  const baselineRef = useRef(null);     // o mesmo, no formato que vai ao banco
+  const baselineFormRef = useRef(null); // o mesmo, no formato do formulário (base do rascunho)
   const [pickupAddrMode, setPickupAddrMode] = useState('same');
   useEffect(() => {
     setPickupAddrMode(formData.pickup_address ? 'other' : 'same');
@@ -293,6 +337,10 @@ function FranchiseSettingsContent() {
       payment_fees: config.payment_fees || null,
     };
 
+    loadedRowRef.current = config;
+    baselineFormRef.current = baseData;
+    baselineRef.current = buildDbPayload(baseData);
+
     // Restore draft from localStorage only for franchisees (admin edits directly, no drafts)
     if (currentUser?.role !== 'admin') {
       const draftKey = `wizard_draft_${config.franchise_evolution_instance_id}`;
@@ -305,7 +353,8 @@ function FranchiseSettingsContent() {
           // If updated_at missing, treat config as "just now" to avoid stale drafts overriding
           const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : Date.now();
 
-          if (draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
+          // v2 = só o que a pessoa mudou. O formato antigo (tela inteira) traria valores velhos de volta.
+          if (draft.v === 2 && draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
             setFormData({ ...baseData, ...draft.data });
             setCurrentStep(draft.step || 1);
             setIsDirty(true);
@@ -354,6 +403,20 @@ function FranchiseSettingsContent() {
     if (target && target.id !== selectedConfigId) handleSelectConfig(target.id);
   }, [activeFranchise?.evolution_instance_id, displayConfigurations, selectedConfigId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Conflito: tira do rascunho local só o que outra pessoa mudou (e o que é gravado junto). Depois
+  // de recarregar, a tela mostra a versão do banco nesses campos e mantém o resto do que foi feito.
+  const descartarDoRascunho = (campos) => {
+    const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id}`;
+    try {
+      const draftRaw = localStorage.getItem(draftKey);
+      if (!draftRaw) return;
+      const draft = JSON.parse(draftRaw);
+      for (const c of camposDoRascunhoADescartar(campos)) delete draft.data?.[c];
+      draft.savedAt = Date.now();
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch { /* ignore */ }
+  };
+
   const handleSubmit = async (e) => {
     e?.preventDefault();
     if (isSubmitting) return false; // Prevent double-click
@@ -364,43 +427,42 @@ function FranchiseSettingsContent() {
       toast.info("Salvamento em andamento... A conexão está lenta.");
     }, 8000);
 
-    // Strip UI-only / read-only fields before sending to DB
-    const { id, created_at, updated_at, franchise, whatsapp_status, whatsapp_qr, ...dbFields } = formData;
+    const finalData = buildDbPayload(formData);
 
-    // Monta o unit_address pelo helper compartilhado (mesmo formato do fluxo fiscal).
-    // O campo "Rua e número" do wizard já traz o número embutido -> number vazio aqui.
-    const assembledAddress = assembleUnitAddress({
-      street: dbFields.street_address,
-      neighborhood: dbFields.neighborhood,
-      city: dbFields.city,
-      cep: dbFields.cep,
-    });
-
-    const finalData = {
-      ...dbFields,
-      unit_address: assembledAddress,
-      accepted_payment_methods: typeof dbFields.accepted_payment_methods === 'string' ?
-        dbFields.accepted_payment_methods :
-        Array.isArray(dbFields.accepted_payment_methods) ?
-          dbFields.accepted_payment_methods.join(', ') : '',
-      address_reference: dbFields.address_reference || '',
-      personal_phone_for_summary: dbFields.personal_phone_for_summary
-        ? dbFields.personal_phone_for_summary.replace(/\D/g, '')
-        : ''
-    };
-
-    // Safety net: nunca persistir maquininha/dinheiro em entrega third_party
-    if (finalData.delivery_method === 'third_party' && Array.isArray(finalData.payment_delivery)) {
-      finalData.payment_delivery = finalData.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash' && p !== 'meal_voucher');
+    // Linha de frete pela metade some calada no robô. Só barra quando esta tela mexeu no frete:
+    // quem veio salvar outra coisa não fica preso por um problema antigo.
+    const mexeuNoFrete = !editingConfig || !sameValue(baselineRef.current?.delivery_schedule, finalData.delivery_schedule);
+    const problemasFrete = finalData.has_delivery !== false && mexeuNoFrete ? validateDeliverySchedule(finalData.delivery_schedule) : [];
+    if (problemasFrete.length > 0) {
+      clearTimeout(slowTimer);
+      setIsSubmitting(false);
+      const mais = problemasFrete.length > 1 ? ` (e mais ${problemasFrete.length - 1})` : '';
+      toast.error(`Frete incompleto. ${problemasFrete[0]}${mais}. Preencha ou apague a linha.`, { duration: 8000 });
+      return false;
     }
-
-    // Coerência: sem loja não persiste endereço de loja órfão
-    if (!finalData.pickup_is_store) finalData.pickup_address = '';
 
     try {
       if (editingConfig) {
-        await FranchiseConfiguration.update(editingConfig.id, finalData);
-        updateConfigurationStatus(editingConfig.id, finalData);
+        // Só as colunas que esta tela mudou, e só se ninguém mudou as mesmas no banco depois que ela abriu.
+        const patch = diffPatch(baselineRef.current, finalData);
+        const colunas = Object.keys(patch);
+        if (colunas.length > 0) {
+          const [atual] = await FranchiseConfiguration.filter({ id: editingConfig.id }, null, 1, { columns: colunas.join(',') });
+          const conflitos = findConflicts(loadedRowRef.current, atual, patch);
+          if (conflitos.length > 0) {
+            descartarDoRascunho(conflitos);
+            toast.error(
+              `Nada foi salvo. Enquanto esta tela estava aberta, alguém (outra aba ou o suporte) mudou: ${nomesDosCampos(conflitos)}. Recarregue para ver a versão atual e refaça só essa parte.`,
+              { duration: 15000, action: { label: 'Recarregar', onClick: () => window.location.reload() } }
+            );
+            return false;
+          }
+          const salvo = await FranchiseConfiguration.update(editingConfig.id, patch);
+          loadedRowRef.current = { ...loadedRowRef.current, ...salvo };
+          updateConfigurationStatus(editingConfig.id, salvo);
+        }
+        baselineRef.current = finalData;
+        baselineFormRef.current = formData;
       } else {
         const newConfig = await FranchiseConfiguration.create(finalData);
         setConfigurations((prev) => [...prev, newConfig]);
@@ -447,12 +509,13 @@ function FranchiseSettingsContent() {
       if (currentUser?.role !== 'admin') {
         const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
         try {
-          const draftData = { ...updated };
+          // só o que mudou desde que a tela abriu (restaurar a tela inteira desfaria correção do suporte)
+          const draftData = diffPatch(baselineFormRef.current || {}, updated);
           delete draftData.pix_key;
           delete draftData.cpf_cnpj;
           delete draftData.asaas_customer_id;
           delete draftData.asaas_subscription_id;
-          localStorage.setItem(draftKey, JSON.stringify({ data: draftData, step: currentStep, savedAt: Date.now() }));
+          localStorage.setItem(draftKey, JSON.stringify({ v: 2, data: draftData, step: currentStep, savedAt: Date.now() }));
         } catch { /* quota exceeded — ignore */ }
       }
       return updated;
