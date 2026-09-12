@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { WEEKDAYS } from "@/lib/franchiseUtils";
 import { rotuloDias } from "@/lib/configSave";
@@ -49,12 +49,21 @@ function Taxa({ taxa, onChange, marcas, prefixo }) {
   const faixas = taxa?.faixas?.length ? taxa.faixas : [{ ate: "", valor: "" }];
   const semNenhuma = marcas.has(`${prefixo}.taxa`);
   const setFaixa = (i, k, v) => onChange({ modo: "faixas", faixas: faixas.map((f, j) => (j === i ? { ...f, [k]: v } : f)) });
+  // O que estava em cada opção antes da troca: voltar para ela devolve as faixas ou o valor. Antes voltava em
+  // branco, e só olhar "Grátis" apagava a tabela inteira (Tatuapé, 7 faixas, 12/09). Vale enquanto a tela está
+  // aberta; o que vai para o banco continua sendo só a opção escolhida na hora de salvar.
+  const antes = useRef({});
+  const trocar = (novo, emBranco) => {
+    if (modo === novo) return;
+    antes.current[modo] = taxa;
+    onChange(antes.current[novo] || emBranco);
+  };
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        <button type="button" className={pill(modo === "fixa")} onClick={() => modo !== "fixa" && onChange({ modo: "fixa", valor: "" })}>Valor único</button>
-        <button type="button" className={pill(modo === "faixas")} onClick={() => modo !== "faixas" && onChange({ modo: "faixas", faixas: [{ ate: "", valor: "" }] })}>Por distância</button>
-        <button type="button" className={pill(modo === "gratis")} onClick={() => modo !== "gratis" && onChange({ modo: "fixa", valor: 0 })}>Grátis</button>
+        <button type="button" className={pill(modo === "fixa")} onClick={() => trocar("fixa", { modo: "fixa", valor: "" })}>Valor único</button>
+        <button type="button" className={pill(modo === "faixas")} onClick={() => trocar("faixas", { modo: "faixas", faixas: [{ ate: "", valor: "" }] })}>Por distância</button>
+        <button type="button" className={pill(modo === "gratis")} onClick={() => trocar("gratis", { modo: "fixa", valor: 0 })}>Grátis</button>
       </div>
       {modo === "outro" && (
         <p className="text-[11px] text-[#3d4a42]/80">
@@ -102,7 +111,8 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1.5">
-        <button type="button" className={pill(!emMin)} onClick={() => emMin && onChange({ promessa: "janela", minutos: undefined })}>Dentro da janela</button>
+        {/* os minutos ficam guardados: voltar para "Em até X min" devolve o número (só essa opção grava prazo) */}
+        <button type="button" className={pill(!emMin)} onClick={() => emMin && onChange({ promessa: "janela" })}>Dentro da janela</button>
         <button type="button" className={pill(emMin)} onClick={() => !emMin && onChange({ promessa: "minutos", minutos: numero(minutos) || 60 })}>Em até X min</button>
         {emMin && (
           <span className="flex items-center gap-1.5">
