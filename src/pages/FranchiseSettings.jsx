@@ -4,11 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { PAYMENT_METHODS, DELIVERY_METHODS, PIX_KEY_TYPES, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { PAYMENT_METHODS, PIX_KEY_TYPES, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
-import { diffPatch, findConflicts, validateDeliverySchedule, sameValue, nomesDosCampos, camposDoRascunhoADescartar } from "@/lib/configSave";
+import { diffPatch, findConflicts, nomesDosCampos, camposDoRascunhoADescartar } from "@/lib/configSave";
+import { validarEtapa, validarTudo } from "@/lib/vendedorValidation";
+import { buscarCep, formatarCep, normalizarCep, ruaJaContem } from "@/lib/cep";
 
 import FranchisePicker from "@/components/shared/FranchisePicker";
 import WhatsAppConnectionModal from "../components/whatsapp/WhatsAppConnectionModal";
@@ -16,10 +18,11 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import WizardStepper from "@/components/vendedor/WizardStepper";
 import WizardStep from "@/components/vendedor/WizardStep";
 import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor";
+import PaymentMatrix from "@/components/vendedor/PaymentMatrix";
 import ReviewSummary from "@/components/vendedor/ReviewSummary";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
-import { ToggleCard, RadioCards, PaymentChipsMulti } from "@/components/vendedor/WizardFields";
+import { ToggleCard, RadioCards } from "@/components/vendedor/WizardFields";
 import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
 import { listarFranquias } from "@/lib/franchisesCache";
 
@@ -92,6 +95,33 @@ function RequiredDot() {
   return <span className="text-brand ml-0.5">*</span>;
 }
 
+const CAMPOS_DE_TEXTO = ['franchise_name', 'street_address', 'neighborhood', 'city', 'cep', 'address_reference', 'agent_name',
+  'pix_key_data', 'pix_holder_name', 'pix_bank', 'payment_link', 'pickup_address', 'promotions_combo', 'facebook_page_id'];
+
+// Entrega e retirada dividem a etapa 2: nenhuma etapa é pulada.
+const SEM_ETAPAS_PULADAS = [];
+
+function avisarErros(erros) {
+  const mais = erros.length > 1 ? ` (e mais ${erros.length - 1})` : '';
+  toast.error(`${erros[0]}${mais}`, { duration: 8000 });
+}
+
+// Problema que já estava no cadastro e que esta tela não criou: aparece em amarelo, sem travar.
+function AvisosDaEtapa({ avisos }) {
+  if (!avisos || avisos.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1">
+      <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+        <MaterialIcon icon="warning" size={14} />
+        Vale corrigir
+      </p>
+      {avisos.map((a) => (
+        <p key={a} className="text-xs text-amber-800">{a}</p>
+      ))}
+    </div>
+  );
+}
+
 // O que vai ao banco a partir do formulário. Roda 2x: no que a tela abriu (baseline) e no que ela
 // vai salvar. A diferença entre as duas é exatamente o que a pessoa mudou.
 function buildDbPayload(form) {
@@ -120,13 +150,18 @@ function buildDbPayload(form) {
       : ''
   };
 
-  // Safety net: nunca persistir maquininha/dinheiro em entrega third_party
-  if (finalData.delivery_method === 'third_party' && Array.isArray(finalData.payment_delivery)) {
-    finalData.payment_delivery = finalData.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash' && p !== 'meal_voucher');
+  // Texto que vai ao cliente sem espaço sobrando (um "Itaú " cortado ia literal na mensagem)
+  for (const campo of CAMPOS_DE_TEXTO) {
+    if (typeof finalData[campo] === 'string') finalData[campo] = finalData[campo].trim();
   }
-
-  // Coerência: sem loja não persiste endereço de loja órfão
-  if (!finalData.pickup_is_store) finalData.pickup_address = '';
+  // Link sem protocolo vira https:// (o robô manda o link como está)
+  if (finalData.payment_link && !/^https?:\/\//i.test(finalData.payment_link)) finalData.payment_link = `https://${finalData.payment_link}`;
+  // Sem retirada, sem loja nem horário próprio de retirada (loja exige retirada ligada)
+  if (finalData.has_pickup === false) {
+    finalData.pickup_is_store = false;
+    finalData.has_custom_pickup_hours = false;
+    finalData.pickup_schedule = [];
+  }
   return finalData;
 }
 
@@ -149,6 +184,7 @@ function FranchiseSettingsContent() {
   const loadedRowRef = useRef(null);    // linha do banco
   const baselineRef = useRef(null);     // o mesmo, no formato que vai ao banco
   const baselineFormRef = useRef(null); // o mesmo, no formato do formulário (base do rascunho)
+  const [cepStatus, setCepStatus] = useState('');
   const [pickupAddrMode, setPickupAddrMode] = useState('same');
   useEffect(() => {
     setPickupAddrMode(formData.pickup_address ? 'other' : 'same');
@@ -429,15 +465,12 @@ function FranchiseSettingsContent() {
 
     const finalData = buildDbPayload(formData);
 
-    // Linha de frete pela metade some calada no robô. Só barra quando esta tela mexeu no frete:
-    // quem veio salvar outra coisa não fica preso por um problema antigo.
-    const mexeuNoFrete = !editingConfig || !sameValue(baselineRef.current?.delivery_schedule, finalData.delivery_schedule);
-    const problemasFrete = finalData.has_delivery !== false && mexeuNoFrete ? validateDeliverySchedule(finalData.delivery_schedule) : [];
-    if (problemasFrete.length > 0) {
+    // Regras da tela (lib/vendedorValidation.js): barram só o que esta tela mexeu; o resto vira aviso.
+    const { erros } = validarTudo(formData, Object.keys(diffPatch(baselineFormRef.current || {}, formData)), { novo: !editingConfig });
+    if (erros.length > 0) {
       clearTimeout(slowTimer);
       setIsSubmitting(false);
-      const mais = problemasFrete.length > 1 ? ` (e mais ${problemasFrete.length - 1})` : '';
-      toast.error(`Frete incompleto. ${problemasFrete[0]}${mais}. Preencha ou apague a linha.`, { duration: 8000 });
+      avisarErros(erros);
       return false;
     }
 
@@ -501,10 +534,6 @@ function FranchiseSettingsContent() {
   const handleInputChange = (field, value) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
-      // Cleanup: third_party nao aceita maquininha nem dinheiro na entrega
-      if (field === 'delivery_method' && value === 'third_party' && Array.isArray(updated.payment_delivery)) {
-        updated.payment_delivery = updated.payment_delivery.filter((p) => p !== 'card_machine' && p !== 'cash' && p !== 'meal_voucher');
-      }
       // Auto-save draft to localStorage only for franchisees (admin edits directly)
       if (currentUser?.role !== 'admin') {
         const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id || 'new'}`;
@@ -512,6 +541,7 @@ function FranchiseSettingsContent() {
           // só o que mudou desde que a tela abriu (restaurar a tela inteira desfaria correção do suporte)
           const draftData = diffPatch(baselineFormRef.current || {}, updated);
           delete draftData.pix_key;
+          delete draftData.pix_key_data; // a chave Pix não fica guardada no navegador
           delete draftData.cpf_cnpj;
           delete draftData.asaas_customer_id;
           delete draftData.asaas_subscription_id;
@@ -523,6 +553,33 @@ function FranchiseSettingsContent() {
     setIsDirty(true);
   };
 
+
+  // CEP -> ViaCEP preenche bairro e cidade. A rua só muda se o CEP for de outra rua (preserva o número).
+  const handleCepChange = async (valor) => {
+    handleInputChange('cep', formatarCep(valor));
+    if (normalizarCep(valor).length !== 8) { setCepStatus(''); return; }
+    setCepStatus('Buscando o CEP...');
+    const achado = await buscarCep(valor);
+    if (!achado) { setCepStatus('CEP não encontrado. Confira ou preencha rua, bairro e cidade à mão.'); return; }
+    if (achado.rua && !ruaJaContem(formData.street_address, achado.rua)) handleInputChange('street_address', `${achado.rua}, `);
+    if (achado.bairro) handleInputChange('neighborhood', achado.bairro);
+    if (achado.cidade) handleInputChange('city', achado.cidade);
+    setCepStatus(achado.rua ? 'Endereço preenchido pelo CEP. Confira o número da casa.' : 'CEP geral da cidade: preencha a rua e o bairro.');
+  };
+
+  // Horários de entrega e o que ainda é derivado deles: opening_hours e working_days (robô e checagem do QR)
+  // e delivery_fee_rules (venda manual, 1º grupo). "Cobra frete" = algum grupo cobra: antes vinha só do
+  // 1º grupo, e um grupo grátis anunciava frete grátis para a semana toda. operating_hours,
+  // delivery_start_time e order_cutoff_time não têm leitor e deixaram de ser gravados.
+  const handleScheduleChange = (val) => {
+    handleInputChange('delivery_schedule', val);
+    if (val.length > 0) {
+      handleInputChange('charges_delivery_fee', val.some((r) => r.charges_fee !== false));
+      handleInputChange('delivery_fee_rules', val[0].fee_rules || [{ max_km: '', fee: '' }]);
+    }
+    handleInputChange('opening_hours', val.map((r) => `${r.days.join(',')}: ${r.delivery_start}-${r.delivery_end}`).join(' | '));
+    handleInputChange('working_days', [...new Set(val.flatMap((r) => r.days))].join(','));
+  };
 
   const configuredInstanceIds = configurations.map((c) => c.franchise_evolution_instance_id);
   const franchisesWithoutConfig = availableFranchisesForUser.filter((f) => !configuredInstanceIds.includes(f.evolution_instance_id));
@@ -552,30 +609,32 @@ function FranchiseSettingsContent() {
   // Determine which steps to skip
   const hasDelivery = formData.has_delivery ?? true;
   const hasPickup = formData.has_pickup ?? false;
-  const skippedSteps = [
-    ...(!hasDelivery ? [3] : []),
-  ];
+  const skippedSteps = SEM_ETAPAS_PULADAS;
 
   // Determine completed steps (basic validation)
   const completedSteps = useMemo(() => {
     const done = [];
     if (formData.franchise_name && formData.street_address && formData.neighborhood && formData.city) done.push(1);
-    // Step 2: Operação e Pagamentos
-    const deliveryPaymentOk = !hasDelivery || (formData.payment_delivery?.length > 0);
-    const pickupPaymentOk = !hasPickup || (formData.payment_pickup?.length > 0);
-    if (formData.has_delivery !== undefined && deliveryPaymentOk && pickupPaymentOk) done.push(2);
-    // Step 3: Entrega (only when hasDelivery — pickup hours moved to Step 2)
-    if (hasDelivery) {
-      if (formData.max_delivery_radius_km) done.push(3);
-    } else {
-      done.push(3); // Skipped step counts as done
-    }
+    // Etapa 2: entrega e retirada
+    if ((hasDelivery || hasPickup) && (!hasDelivery || (formData.max_delivery_radius_km && formData.delivery_schedule?.length > 0))) done.push(2);
+    // Etapa 3: pagamento
+    if ((!hasDelivery || formData.payment_delivery?.length > 0) && (!hasPickup || formData.payment_pickup?.length > 0)) done.push(3);
     if (formData.agent_name) done.push(4);
     // Etapa 5 (Revisão) fica "concluída" visualmente quando todas as anteriores estão ok
     const requiredSteps = [1, 2, 3, 4].filter(n => !skippedSteps.includes(n));
     if (requiredSteps.every(n => done.includes(n))) done.push(5);
     return done;
   }, [formData, hasDelivery, hasPickup, skippedSteps]);
+
+  // Campos que esta tela mudou desde que abriu (ou desde o último salvar): as regras só barram o que depende deles.
+  const alterados = useMemo(
+    () => Object.keys(diffPatch(baselineFormRef.current || {}, formData)),
+    [formData, lastSavedAt] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const validacaoEtapa = useMemo(
+    () => validarEtapa(currentStep, formData, alterados, { novo: !editingConfig }),
+    [currentStep, formData, alterados, editingConfig]
+  );
 
   const goToStep = (step) => {
     if (skippedSteps.includes(step)) return;
@@ -596,6 +655,9 @@ function FranchiseSettingsContent() {
   };
 
   const nextStep = async () => {
+    // Regras da etapa: barram o que esta tela mexeu; problema antigo aparece só como aviso.
+    const { erros } = validarEtapa(currentStep, formData, alterados, { novo: !editingConfig });
+    if (erros.length > 0) { avisarErros(erros); return; }
     if (isDirty) {
       const ok = await handleSubmit();
       if (!ok) return;
@@ -611,10 +673,13 @@ function FranchiseSettingsContent() {
     if (prev >= 1) goToStep(prev);
   };
 
-  // Disabled payment methods for third-party delivery
-  const thirdPartyDisabledPayments = formData.delivery_method === 'third_party'
-    ? ['card_machine', 'cash', 'meal_voucher']
-    : [];
+  // Formas marcadas em alguma modalidade ligada: Pix, link e taxa só aparecem quando fazem sentido.
+  const metodosMarcados = PAYMENT_METHODS.filter((pm) =>
+    (hasDelivery && (formData.payment_delivery || []).includes(pm.value)) ||
+    (hasPickup && (formData.payment_pickup || []).includes(pm.value)));
+  const usaPix = metodosMarcados.some((pm) => pm.value === 'pix');
+  const usaLink = metodosMarcados.some((pm) => pm.value === 'payment_link');
+  const metodosComTaxa = metodosMarcados.filter((pm) => pm.value !== 'cash');
 
   if (isLoading) {
     return (
@@ -803,181 +868,158 @@ function FranchiseSettingsContent() {
         {/* Step Content */}
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
 
-          {/* Step 1: Sua Unidade */}
+          {/* Etapa 1: Sua unidade — o CEP preenche rua, bairro e cidade */}
           {currentStep === 1 && (
-            <WizardStep icon="storefront" title="Sua Unidade" subtitle="Dados básicos da sua franquia — o bot usa essas informações para atender clientes">
-              <div>
-                <label className={labelClass}>Como os clientes conhecem sua unidade?<RequiredDot /></label>
-                <input className={inputClass} type="text" value={formData.franchise_name}
-                  onChange={(e) => handleInputChange('franchise_name', e.target.value)}
-                  placeholder="Ex: Maxi Massas - Itaim Bibi" />
-                <FieldHint text="Esse nome aparece nas mensagens do bot para o cliente." />
-              </div>
-              <div>
-                <label className={labelClass}>Rua e número<RequiredDot /></label>
-                <input className={inputClass} type="text" value={formData.street_address}
-                  onChange={(e) => handleInputChange('street_address', e.target.value)}
-                  placeholder="Ex: Rua das Flores, 123" />
-              </div>
+            <WizardStep icon="storefront" title="Sua unidade" subtitle="Onde fica e como falar com você. O robô usa o endereço para calcular a distância até o cliente.">
+              <AvisosDaEtapa avisos={validacaoEtapa.avisos} />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
+                  <label className={labelClass}>CEP</label>
+                  <input className={`${inputClass} font-mono`} type="text" inputMode="numeric" value={formData.cep || ''}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="00000-000" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Rua e número<RequiredDot /></label>
+                  <input className={inputClass} type="text" value={formData.street_address || ''}
+                    onChange={(e) => handleInputChange('street_address', e.target.value)}
+                    placeholder="Ex: Rua das Flores, 123" />
+                </div>
+              </div>
+              <FieldHint text={cepStatus || 'Digite o CEP: rua, bairro e cidade vêm sozinhos. Depois confira o número.'} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <label className={labelClass}>Bairro<RequiredDot /></label>
-                  <input className={inputClass} type="text" value={formData.neighborhood}
+                  <input className={inputClass} type="text" value={formData.neighborhood || ''}
                     onChange={(e) => handleInputChange('neighborhood', e.target.value)}
                     placeholder="Ex: Centro" />
                 </div>
                 <div>
                   <label className={labelClass}>Cidade<RequiredDot /></label>
-                  <input className={inputClass} type="text" value={formData.city}
+                  <input className={inputClass} type="text" value={formData.city || ''}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     placeholder="Ex: São João da Boa Vista" />
                 </div>
-                <div>
-                  <label className={labelClass}>CEP</label>
-                  <input className={inputClass} type="text" value={formData.cep}
-                    onChange={(e) => handleInputChange('cep', e.target.value)}
-                    placeholder="00000-000" />
-                </div>
               </div>
-              <FieldHint text="O bot usa esse endereço para calcular frete e informar o ponto de retirada." />
+              <div>
+                <label className={labelClass}>Como os clientes conhecem sua unidade?<RequiredDot /></label>
+                <input className={inputClass} type="text" value={formData.franchise_name || ''}
+                  onChange={(e) => handleInputChange('franchise_name', e.target.value)}
+                  placeholder="Ex: Maxi Massas - Itaim Bibi" />
+                <FieldHint text="Esse nome aparece nas mensagens do robô para o cliente." />
+              </div>
               <div>
                 <label className={labelClass}>Ponto de referência para clientes</label>
-                <textarea className={`${inputClass} resize-none`} rows={2} maxLength={400} value={formData.address_reference}
+                <textarea className={`${inputClass} resize-none`} rows={2} maxLength={400} value={formData.address_reference || ''}
                   onChange={(e) => handleInputChange('address_reference', e.target.value)}
                   placeholder="Ex: Próximo à praça, casa com portão azul..." />
                 <FieldHint text={`SÓ ponto de referência (Ex: "casa azul ao lado do mercado"). NÃO coloque horários, endereço completo nem promoções. (${(formData.address_reference || '').length}/400)`} />
               </div>
               <div>
-                <label className={labelClass}>Seu WhatsApp pessoal (recebe relatório quinzenal)</label>
+                <label className={labelClass}>Seu WhatsApp (recebe cada pedido fechado e os avisos do robô)<RequiredDot /></label>
                 <input className={inputClass} type="tel" inputMode="numeric"
                   value={formData.personal_phone_for_summary?.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3').replace(/^(\d{2})(\d{1,5})$/, '($1) $2').replace(/^(\d{1,2})$/, '($1') || ''}
                   onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder="(11) 98765-4321" />
-                <FieldHint text="NÃO é o número que o bot atende clientes (esse fica no card &quot;WhatsApp ativo&quot; no topo). Esse é só pra você receber o relatório quinzenal. Formato: DDD + 9 dígitos." />
+                <FieldHint text="Não é o número que atende os clientes (esse fica no card do WhatsApp, no topo). É para onde o robô manda os pedidos fechados e pede ajuda. DDD + número." />
               </div>
             </WizardStep>
           )}
 
-          {/* Step 2: Horários */}
-          {/* Step 2: Operação e Pagamentos */}
+          {/* Etapa 2: Entrega e retirada — como o cliente recebe */}
           {currentStep === 2 && (
-            <WizardStep icon="settings" title="Operação e Pagamentos" subtitle="Entrega, retirada e formas de pagamento">
-              {/* Delivery toggle + options */}
+            <WizardStep icon="local_shipping" title="Entrega e retirada" subtitle="Como o cliente recebe o pedido. O robô só oferece o que estiver ligado aqui.">
+              <AvisosDaEtapa avisos={validacaoEtapa.avisos} />
               <ToggleCard
                 icon="delivery_dining"
                 label="Sua unidade faz ENTREGA?"
-                description="Clientes recebem os pedidos em casa"
-                checked={formData.has_delivery ?? true}
+                description="O cliente recebe o pedido em casa"
+                checked={hasDelivery}
                 onChange={(val) => handleInputChange('has_delivery', val)}
               />
-              {(formData.has_delivery ?? true) && (
-                <>
-                  <div>
-                    <label className={labelClass}>Método de entrega</label>
-                    <RadioCards
-                      options={DELIVERY_METHODS}
-                      value={formData.delivery_method}
-                      onChange={(val) => handleInputChange('delivery_method', val)}
-                    />
-                    {formData.delivery_method === 'third_party' && (
-                      <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                        <MaterialIcon icon="info" size={14} />
-                        Se usa Uber/Flash, o motoboy NÃO leva máquina de cartão
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className={labelClass}>Pagamento aceito na ENTREGA</label>
-                    <PaymentChipsMulti
-                      options={PAYMENT_METHODS}
-                      value={formData.payment_delivery || []}
-                      onChange={(val) => handleInputChange('payment_delivery', val)}
-                      disabledValues={thirdPartyDisabledPayments}
-                      disabledTooltip="Motoboy terceirizado não leva máquina"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Pickup toggle + options */}
-              <ToggleCard
-                icon="store"
-                label="Aceita RETIRADA no local?"
-                description="Clientes buscam o pedido na sua unidade"
-                checked={formData.has_pickup ?? false}
-                onChange={(val) => handleInputChange('has_pickup', val)}
-              />
-              {(formData.has_pickup ?? false) && (
-                <div className="ml-4 mt-2 space-y-3">
-                  <label className={labelClass}>Como funciona a sua retirada?</label>
-                  <RadioCards
-                    options={PICKUP_TYPES}
-                    value={formData.pickup_is_store ? 'store' : 'simple'}
-                    onChange={(val) => {
-                      const isStore = val === 'store';
-                      handleInputChange('pickup_is_store', isStore);
-                      if (!isStore) { handleInputChange('pickup_address', ''); setPickupAddrMode('same'); }
-                    }}
-                  />
-                  {(formData.pickup_is_store ?? false) && (
-                    <div className="space-y-2">
-                      <label className={labelClass}>Endereço da loja</label>
-                      <RadioCards
-                        options={[
-                          { value: 'same', label: 'Mesmo do cadastro', description: cadastroAddress || 'Preencha o endereço no passo "Sua Unidade"' },
-                          { value: 'other', label: 'Outro endereço', description: 'A loja fica em outro lugar.' },
-                        ]}
-                        value={pickupAddrMode}
-                        onChange={(val) => {
-                          setPickupAddrMode(val);
-                          if (val === 'same') handleInputChange('pickup_address', '');
-                        }}
-                      />
-                      {pickupAddrMode === 'other' && (
-                        <input className={inputClass} type="text" value={formData.pickup_address}
-                          onChange={(e) => handleInputChange('pickup_address', e.target.value)}
-                          placeholder="Ex: Av. Brasil, 500 - Centro" />
-                      )}
-                      <p className="text-[11px] text-ink-2/70 mt-1 flex items-start gap-1">
-                        <MaterialIcon icon="chat" size={12} className="mt-0.5 shrink-0" />
-                        <span>O bot vai dizer: "Você pode retirar na nossa loja: {(pickupAddrMode === 'other' ? formData.pickup_address : cadastroAddress) || '<endereço do cadastro>'}"</span>
-                      </p>
+              {hasDelivery && (
+                <div className="space-y-4 rounded-2xl border border-[#bccac0]/20 p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className={labelClass}>Raio máximo (km)<RequiredDot /></label>
+                      <input className={`${inputClass} font-mono`} type="number" min="1" max="60"
+                        value={formData.max_delivery_radius_km ?? ''}
+                        onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
+                        placeholder="7" />
                     </div>
-                  )}
+                    <div>
+                      <label className={labelClass}>Pedido mínimo (R$)</label>
+                      <input className={`${inputClass} font-mono`} type="number" min="0"
+                        value={formData.min_order_value ?? ''}
+                        onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
+                        placeholder="Sem mínimo" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Prazo de entrega (min)</label>
+                      <input className={`${inputClass} font-mono`} type="number" min="0"
+                        value={formData.avg_prep_time_minutes ?? ''}
+                        onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
+                        placeholder="Vazio" />
+                    </div>
+                  </div>
+                  <FieldHint text='O robô recusa endereço fora do raio. Prazo: ele diz "em até X min" depois de confirmado. Se você entrega por janela de horário, deixe vazio.' />
+                  <div>
+                    <label className={labelClass}>Dias, horários e taxas de entrega</label>
+                    <DeliveryScheduleEditor value={formData.delivery_schedule} onChange={handleScheduleChange} />
+                  </div>
                 </div>
               )}
-              {(formData.has_pickup ?? false) && (
-                <div className="ml-4 mt-2 mb-3">
+
+              <ToggleCard
+                icon="store"
+                label="Aceita RETIRADA?"
+                description="O cliente busca o pedido com você"
+                checked={hasPickup}
+                onChange={(val) => handleInputChange('has_pickup', val)}
+              />
+              {hasPickup && (
+                <div className="space-y-4 rounded-2xl border border-[#bccac0]/20 p-4">
+                  <div className="space-y-2">
+                    <label className={labelClass}>Como funciona a retirada?</label>
+                    <RadioCards
+                      options={PICKUP_TYPES}
+                      value={formData.pickup_is_store ? 'store' : 'simple'}
+                      onChange={(val) => handleInputChange('pickup_is_store', val === 'store')}
+                    />
+                  </div>
                   <ToggleCard
                     icon="calendar_clock"
-                    label="Somente retirada agendada"
-                    description="O bot vai pedir pro cliente combinar dia e horário antes de vir buscar."
+                    label="Só com hora combinada"
+                    description="O robô pede para o cliente combinar dia e horário antes de vir buscar. Desligue se o cliente pode chegar sem avisar."
                     checked={formData.pickup_requires_scheduling ?? true}
                     onChange={(val) => handleInputChange('pickup_requires_scheduling', val)}
                   />
-                  <p className="text-xs text-ink-3 mt-1 ml-1">
-                    Desative se você tem um espaço onde o cliente pode chegar e comprar sem precisar agendar.
-                  </p>
-                </div>
-              )}
-              {(formData.has_pickup ?? false) && (
-                <>
-                  <div>
-                    <label className={labelClass}>Pagamento aceito na RETIRADA</label>
-                    <PaymentChipsMulti
-                      options={PAYMENT_METHODS}
-                      value={formData.payment_pickup || []}
-                      onChange={(val) => handleInputChange('payment_pickup', val)}
+                  <div className="space-y-2">
+                    <label className={labelClass}>Endereço de retirada</label>
+                    <RadioCards
+                      options={[
+                        { value: 'same', label: 'O da unidade', description: cadastroAddress || 'Preencha o endereço na etapa "Sua unidade"' },
+                        { value: 'other', label: 'Outro endereço', description: 'A retirada é em outro lugar.' },
+                      ]}
+                      value={pickupAddrMode}
+                      onChange={(val) => {
+                        setPickupAddrMode(val);
+                        if (val === 'same') handleInputChange('pickup_address', '');
+                      }}
                     />
+                    {pickupAddrMode === 'other' && (
+                      <input className={inputClass} type="text" value={formData.pickup_address || ''}
+                        onChange={(e) => handleInputChange('pickup_address', e.target.value)}
+                        placeholder="Ex: Av. Brasil, 500 - Centro" />
+                    )}
+                    <FieldHint text="Só o endereço, sem instrução de acesso (portão, interfone): o robô não passa isso ao cliente." />
                   </div>
-
-                  {/* Pickup hours — only when both delivery and pickup are enabled */}
-                  {(formData.has_delivery ?? true) ? (
-                    <div className="mt-2">
+                  {hasDelivery ? (
+                    <div>
                       <ToggleCard
                         icon="schedule"
                         label="Horário de retirada diferente da entrega?"
-                        description="Se desligado, a retirada segue o mesmo horário da entrega"
+                        description="Desligado, a retirada segue o horário da entrega"
                         checked={formData.has_custom_pickup_hours ?? false}
                         onChange={(val) => {
                           handleInputChange('has_custom_pickup_hours', val);
@@ -995,229 +1037,164 @@ function FranchiseSettingsContent() {
                       )}
                     </div>
                   ) : (
-                    <div className="mt-2">
+                    <div>
                       <label className={labelClass}>Horários de retirada</label>
-                      <p className="text-[11px] text-ink-2/70 mb-3 flex items-start gap-1">
-                        <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
-                        <span>Defina quando sua unidade aceita retirada. Esses horários também definem quando sua unidade funciona.</span>
-                      </p>
-                      <OperatingHoursEditor
-                        value={formData.pickup_schedule?.length > 0 ? formData.pickup_schedule : (formData.operating_hours || [])}
-                        onChange={(val) => {
-                          handleInputChange('pickup_schedule', val);
-                          handleInputChange('has_custom_pickup_hours', true);
-                          handleInputChange('operating_hours', val);
-                          // Só atualiza opening_hours se NÃO tem delivery (pickup-only = horário geral)
-                          if (!formData.has_delivery) {
-                            const summary = val.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
+                      <FieldHint text="Quando o cliente pode buscar. Sem entrega, esses horários também são o horário de funcionamento da unidade." />
+                      <div className="mt-3">
+                        <OperatingHoursEditor
+                          value={formData.pickup_schedule?.length > 0 ? formData.pickup_schedule : (formData.operating_hours || [])}
+                          onChange={(val) => {
+                            handleInputChange('pickup_schedule', val);
+                            handleInputChange('has_custom_pickup_hours', true);
+                            const summary = val.map((r) => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
                             handleInputChange('opening_hours', summary);
-                            handleInputChange('working_days', [...new Set(val.flatMap(r => r.days))].join(','));
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Política de pedidos — regras que valem pra entrega E retirada */}
-              <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
-                <h4 className="text-xs font-bold text-[#3d4a42] mb-3 flex items-center gap-1.5">
-                  <MaterialIcon icon="rule" size={14} />
-                  Política de Pedidos
-                </h4>
-                <ToggleCard
-                  icon="event_available"
-                  label="Aceitar reserva para data futura sem pagamento antecipado?"
-                  description="Vale pra entrega e retirada. Quando ativado, o bot pode aceitar pedidos para outro dia sem cobrar pagamento na hora — e avisa você automaticamente para preparar e confirmar."
-                  checked={formData.accepts_reservation_without_payment ?? false}
-                  onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
-                />
-                <p className="text-xs text-ink-3 mt-1 ml-1">
-                  Desativado por padrão. Ative apenas se você confia em separar produto antes de receber pagamento — você assume o risco do cliente sumir.
-                </p>
-                <div className="mt-3">
-                  <ToggleCard
-                    icon="request_quote"
-                    label="Repassar taxa de cartão ao cliente?"
-                    description="Quando ativo, a taxa de crédito/débito/link é somada ao total que o cliente paga. Vale para vendas do bot e como padrão no caixa manual (você pode mudar por venda)."
-                    checked={formData.charges_card_fee_to_customer ?? false}
-                    onChange={(val) => handleInputChange('charges_card_fee_to_customer', val)}
-                  />
-                  <p className="text-xs text-ink-3 mt-1 ml-1">
-                    Desativado por padrão. Ative apenas se quiser que o cliente pague a taxa (em vez da franquia absorver). Cadastre as taxas por método na seção abaixo antes de ativar.
-                  </p>
-                </div>
-              </div>
-
-              {/* Payment fees per method */}
-              <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
-                <h4 className="text-xs font-bold text-[#3d4a42] mb-3 flex items-center gap-1.5">
-                  <MaterialIcon icon="percent" size={14} />
-                  Taxa por Forma de Pagamento
-                </h4>
-                <p className="text-[11px] text-ink-2/70 mb-3">
-                  Defina a taxa (%) cobrada pela operadora em cada forma de pagamento. Usado no cálculo automático de vendas.
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {PAYMENT_METHODS.map((pm) => (
-                    <div key={pm.value}>
-                      <label className="text-xs font-medium text-ink-2 flex items-center gap-1 mb-1">
-                        <MaterialIcon icon={pm.icon} size={14} />
-                        {pm.label}
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          placeholder="0"
-                          className="w-full bg-surface-line border-none rounded-xl px-3 py-2 pr-8 text-sm text-right font-mono"
-                          value={formData.payment_fees?.[pm.value] ?? ""}
-                          onChange={(e) => {
-                            const val = e.target.value === "" ? null : parseFloat(e.target.value);
-                            const updated = { ...(formData.payment_fees || {}), [pm.value]: val };
-                            handleInputChange('payment_fees', updated);
+                            handleInputChange('working_days', [...new Set(val.flatMap((r) => r.days))].join(','));
                           }}
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-2/50">%</span>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              )}
+            </WizardStep>
+          )}
 
-              {/* Shared payment data */}
-              <div className="border-t border-[#bccac0]/10 pt-4 mt-2">
-                <h4 className="text-xs font-bold text-[#3d4a42] mb-3 flex items-center gap-1.5">
-                  <MaterialIcon icon="payments" size={14} />
-                  Dados de Pagamento
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>Tipo da chave PIX</label>
-                    <select
-                      className={inputClass}
-                      value={formData.pix_key_type}
-                      onChange={(e) => handleInputChange('pix_key_type', e.target.value)}
-                    >
-                      <option value="">Selecione...</option>
-                      {PIX_KEY_TYPES.map((t) => (
-                        <option key={t.value} value={t.value}>{t.label}</option>
-                      ))}
-                    </select>
-                    <FieldHint text="Tipo da sua chave PIX para receber pagamentos." />
+          {/* Etapa 3: Pagamento — uma tabela forma × entrega/retirada */}
+          {currentStep === 3 && (
+            <WizardStep icon="payments" title="Pagamento" subtitle="O que o cliente pode usar em cada caso. O robô só oferece o que estiver marcado.">
+              <AvisosDaEtapa avisos={validacaoEtapa.avisos} />
+              <PaymentMatrix
+                methods={PAYMENT_METHODS}
+                entrega={hasDelivery ? (formData.payment_delivery || []) : null}
+                retirada={hasPickup ? (formData.payment_pickup || []) : null}
+                onChangeEntrega={(val) => handleInputChange('payment_delivery', val)}
+                onChangeRetirada={(val) => handleInputChange('payment_pickup', val)}
+              />
+
+              {(usaPix || formData.pix_key_data) && (
+                <div className="border-t border-[#bccac0]/10 pt-4 space-y-4">
+                  <h4 className="text-xs font-bold text-[#3d4a42] flex items-center gap-1.5">
+                    <MaterialIcon icon="qr_code_2" size={14} />
+                    Pix
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Tipo da chave</label>
+                      <select
+                        className={inputClass}
+                        value={formData.pix_key_type || ''}
+                        onChange={(e) => handleInputChange('pix_key_type', e.target.value)}
+                      >
+                        <option value="">Selecione...</option>
+                        {PIX_KEY_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Chave Pix{usaPix && <RequiredDot />}</label>
+                      <input className={inputClass} type="text" value={formData.pix_key_data || ''}
+                        onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
+                        placeholder="Chave Pix" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Nome do titular</label>
+                      <input className={inputClass} type="text" value={formData.pix_holder_name || ''}
+                        onChange={(e) => handleInputChange('pix_holder_name', e.target.value)}
+                        placeholder="Ex: Nelson Pulitano" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Banco</label>
+                      <input className={inputClass} type="text" value={formData.pix_bank || ''}
+                        onChange={(e) => handleInputChange('pix_bank', e.target.value)}
+                        placeholder="Ex: Itaú, Nubank..." />
+                    </div>
                   </div>
-                  <div>
-                    <label className={labelClass}>Sua chave PIX</label>
-                    <input className={inputClass} type="text" value={formData.pix_key_data}
-                      onChange={(e) => handleInputChange('pix_key_data', e.target.value)}
-                      placeholder="Chave PIX" />
-                    <FieldHint text="Sua chave PIX (CPF, email, telefone ou aleatória)." />
-                  </div>
+                  <FieldHint text="O robô manda a chave exatamente como está aqui, com o titular e o banco, para o cliente conferir para quem está pagando." />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className={labelClass}>Nome do titular</label>
-                    <input className={inputClass} type="text" value={formData.pix_holder_name}
-                      onChange={(e) => handleInputChange('pix_holder_name', e.target.value)}
-                      placeholder="Ex: Nelson Pulitano" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Banco</label>
-                    <input className={inputClass} type="text" value={formData.pix_bank}
-                      onChange={(e) => handleInputChange('pix_bank', e.target.value)}
-                      placeholder="Ex: Itaú, Nubank..." />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className={labelClass}>Link de pagamento (se usar)</label>
-                  <input className={inputClass} type="url" value={formData.payment_link}
+              )}
+
+              {(usaLink || formData.payment_link) && (
+                <div className="border-t border-[#bccac0]/10 pt-4">
+                  <label className={labelClass}>Link de pagamento (opcional)</label>
+                  <input className={inputClass} type="url" value={formData.payment_link || ''}
                     onChange={(e) => handleInputChange('payment_link', e.target.value)}
                     placeholder="https://..." />
+                  <FieldHint text="Sem link fixo aqui, o robô diz que a unidade envia o link na hora. É o normal." />
                 </div>
-              </div>
-            </WizardStep>
-          )}
+              )}
 
-          {/* Step 3: Entrega + Horários (pickup-only mostra só horários) */}
-          {currentStep === 3 && hasDelivery && (
-            <WizardStep icon="delivery_dining" title="Entrega" subtitle="Configure raio, horários, taxas e regras — o bot usa isso para calcular frete automaticamente">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Raio maximo de entrega (km)</label>
-                  <input className={`${inputClass} font-mono`} type="number"
-                    value={formData.max_delivery_radius_km ?? ''}
-                    onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
-                    placeholder="7" />
-                  <FieldHint text="O bot recusa pedidos fora desse raio automaticamente." />
-                </div>
-                <div>
-                  <label className={labelClass}>Pedido minimo para entrega (R$)</label>
-                  <input className={`${inputClass} font-mono`} type="number"
-                    value={formData.min_order_value ?? ''}
-                    onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
-                    placeholder="45" />
-                  <FieldHint text="Valor mínimo do pedido para o bot aceitar entrega. Abaixo disso, o cliente precisa aumentar o pedido ou retirar no local." />
-                </div>
-                <div>
-                  <label className={labelClass}>Tempo médio de entrega (minutos)</label>
-                  <input className={`${inputClass} font-mono`} type="number"
-                    value={formData.avg_prep_time_minutes ?? ''}
-                    onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
-                    placeholder="40" />
-                  <FieldHint text="Tempo total desde o pedido fechado até o cliente receber: separar, chamar motoboy e entregar." />
-                </div>
-              </div>
-
-              <div className="mt-2">
-                <label className={labelClass}>Horários e taxas de entrega</label>
-                <p className="text-[11px] text-ink-2/70 mb-3 flex items-start gap-1">
-                  <MaterialIcon icon="info" size={12} className="mt-0.5 shrink-0" />
-                  <span>Configure horários e fretes diferentes por dia da semana. Esses horários também definem quando sua unidade funciona.</span>
-                </p>
-                <DeliveryScheduleEditor
-                  value={formData.delivery_schedule}
-                  onChange={(val) => {
-                    handleInputChange('delivery_schedule', val);
-                    // Sync legacy delivery fields from first range
-                    if (val.length > 0) {
-                      const first = val[0];
-                      handleInputChange('delivery_start_time', first.delivery_start || '');
-                      handleInputChange('order_cutoff_time', first.delivery_end || '');
-                      handleInputChange('charges_delivery_fee', first.charges_fee !== false);
-                      handleInputChange('delivery_fee_rules', first.fee_rules || [{ max_km: '', fee: '' }]);
-                    }
-                    // Derive operating_hours from delivery_schedule
-                    const opHours = val.map(r => ({
-                      days: r.days,
-                      open: r.delivery_start,
-                      close: r.delivery_end,
-                    }));
-                    handleInputChange('operating_hours', opHours);
-                    const summary = opHours.map(r => `${r.days.join(',')}: ${r.open}-${r.close}`).join(' | ');
-                    handleInputChange('opening_hours', summary);
-                    handleInputChange('working_days', [...new Set(val.flatMap(r => r.days))].join(','));
-                  }}
+              <div className="border-t border-[#bccac0]/10 pt-4 space-y-3">
+                <ToggleCard
+                  icon="request_quote"
+                  label="Repassar a taxa de cartão ao cliente?"
+                  description="Ligado, a taxa é somada ao total que o cliente paga, no robô e no caixa (dá para mudar em cada venda)."
+                  checked={formData.charges_card_fee_to_customer ?? false}
+                  onChange={(val) => handleInputChange('charges_card_fee_to_customer', val)}
                 />
+                {metodosComTaxa.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-[#3d4a42] mb-1 flex items-center gap-1.5">
+                      <MaterialIcon icon="percent" size={14} />
+                      Taxa da operadora (%)
+                    </h4>
+                    <p className="text-[11px] text-ink-2/70 mb-3">
+                      Só das formas que você marcou. Entra no cálculo do caixa; com "repassar" ligado, é somada ao total do cliente.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {metodosComTaxa.map((pm) => (
+                        <div key={pm.value}>
+                          <label className="text-xs font-medium text-ink-2 flex items-center gap-1 mb-1">
+                            <MaterialIcon icon={pm.icon} size={14} />
+                            {pm.label}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              placeholder="0"
+                              className="w-full bg-surface-line border-none rounded-xl px-3 py-2 pr-8 text-sm text-right font-mono"
+                              value={formData.payment_fees?.[pm.value] ?? ""}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                                handleInputChange('payment_fees', { ...(formData.payment_fees || {}), [pm.value]: val });
+                              }}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-2/50">%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </WizardStep>
           )}
 
-          {/* Step 4: Seu Vendedor */}
+          {/* Etapa 4: Seu vendedor */}
           {currentStep === 4 && (
-            <WizardStep icon="smart_toy" title="Seu Vendedor" subtitle="Configure a personalidade e as mensagens do seu assistente virtual de vendas">
+            <WizardStep icon="smart_toy" title="Seu vendedor" subtitle="Nome, catálogo, promoções e reservas: o que o robô usa para vender.">
+              <AvisosDaEtapa avisos={validacaoEtapa.avisos} />
               <div>
-                <label className={labelClass}>Nome do assistente virtual<RequiredDot /></label>
-                <input className={inputClass} type="text" value={formData.agent_name}
+                <label className={labelClass}>Nome da atendente (ex.: Ana)<RequiredDot /></label>
+                <input className={inputClass} type="text" value={formData.agent_name || ''}
                   onChange={(e) => handleInputChange('agent_name', e.target.value)}
                   placeholder="Ex: Ana" />
-                <FieldHint text="O bot se apresenta com esse nome ao atender clientes no WhatsApp." />
+                <FieldHint text='É o nome com que o robô se apresenta no WhatsApp. Use nome de pessoa, sem "bot", "IA" ou "assistente".' />
               </div>
               <div>
-                <label className={labelClass}>Promoções ativas (o bot oferece automaticamente)</label>
-                <textarea className={`${inputClass} resize-y min-h-[120px]`} rows={5} maxLength={1500} value={formData.promotions_combo}
+                <label className={labelClass}>Catálogo / Cardápio (imagem que o robô envia ao cliente)</label>
+                <CatalogUpload
+                  value={formData.catalog_image_url}
+                  onChange={(url) => handleInputChange('catalog_image_url', url)}
+                  franchiseId={editingConfig?.franchise_evolution_instance_id || 'default'}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa)</label>
+                <textarea className={`${inputClass} resize-y min-h-[120px]`} rows={5} maxLength={1500} value={formData.promotions_combo || ''}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: COMBO 1 (serve 5): 1 nhoque muçarela + 1 canelone brócolis — R$ 74,90&#10;COMBO 2 (serve 8): ... — R$ 99,90&#10;Pagamento via PIX." />
                 <FieldHint text={`Use SÓ para promoções e combos ATIVOS. Avisos de horário, endereço, restrições, cumprimentos vão em outros campos. DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
@@ -1227,28 +1204,32 @@ function FranchiseSettingsContent() {
                   return flag ? (
                     <p className="text-xs text-amber-700 mt-1 flex items-start gap-1">
                       <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
-                      <span>Esse texto não é uma promoção — apague o campo (deixe vazio). Texto "não temos promoção" polui o bot e gasta tokens à toa.</span>
+                      <span>Esse texto não é uma promoção — apague o campo (deixe vazio). Texto "não temos promoção" polui o robô e gasta tokens à toa.</span>
                     </p>
                   ) : null;
                 })()}
               </div>
+              <div>
+                <ToggleCard
+                  icon="event_available"
+                  label="Aceitar reserva para outro dia sem pagamento antecipado?"
+                  description="Vale para entrega e retirada. Ligado, o robô aceita pedido para outro dia sem cobrar na hora e avisa você para separar e confirmar."
+                  checked={formData.accepts_reservation_without_payment ?? false}
+                  onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
+                />
+                <p className="text-xs text-ink-3 mt-1 ml-1">
+                  Desligado por padrão. Ligue só se você aceita separar produto antes de receber: o risco do cliente sumir é seu.
+                </p>
+              </div>
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <div>
                 <label className={labelClass}>ID da Página do Facebook (Meta Ads)</label>
-                <input className={inputClass} type="text" value={formData.facebook_page_id}
+                <input className={inputClass} type="text" value={formData.facebook_page_id || ''}
                   onChange={(e) => handleInputChange('facebook_page_id', e.target.value)}
                   placeholder="Ex: 123456789012345" />
                 <FieldHint text="Necessário para rastrear conversões via WhatsApp (CAPI). Encontre em: Página do Facebook → Sobre → ID da Página." />
               </div>
               )}
-              <div>
-                <label className={labelClass}>Catálogo / Cardápio (imagem que o bot envia ao cliente)</label>
-                <CatalogUpload
-                  value={formData.catalog_image_url}
-                  onChange={(url) => handleInputChange('catalog_image_url', url)}
-                  franchiseId={editingConfig?.franchise_evolution_instance_id || 'default'}
-                />
-              </div>
             </WizardStep>
           )}
 

@@ -48,6 +48,9 @@ function formatFeeRulesSummary(chargesFee, feeRules) {
 }
 
 export default function DeliveryScheduleEditor({ value = [], onChange }) {
+  // Sem horário salvo, a faixa abaixo é só SUGESTÃO: antes ela aparecia como se estivesse salva,
+  // a franqueada terminava as etapas e o QR do WhatsApp não gerava (working_days vazio).
+  const semHorarioSalvo = value.length === 0;
   const ranges = value.length > 0
     ? value
     : [{ days: ["seg", "ter", "qua", "qui", "sex", "sab", "dom"], delivery_start: "06:00", delivery_end: "23:00", charges_fee: true, fee_rules: [{ max_km: "", fee: "" }] }];
@@ -108,6 +111,20 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
 
   return (
     <div className="space-y-4">
+      {semHorarioSalvo && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-800 flex-1">
+            Ainda não há horário de entrega salvo. O de baixo é só uma sugestão: ajuste ou use como está.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange(ranges)}
+            className="px-3 py-2 rounded-lg bg-brand text-white text-xs font-bold hover:bg-brand-dark whitespace-nowrap"
+          >
+            Usar este horário
+          </button>
+        </div>
+      )}
       {ranges.map((range, index) => (
         <div key={index} className="bg-white rounded-xl p-4 border border-[#bccac0]/10 space-y-3">
           <div className="flex items-center justify-between">

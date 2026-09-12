@@ -3,8 +3,8 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const STEPS = [
   { num: 1, label: "Sua Unidade", icon: "storefront" },
-  { num: 2, label: "Operação", icon: "settings" },
-  { num: 3, label: "Entrega", icon: "delivery_dining" },
+  { num: 2, label: "Entrega e retirada", icon: "local_shipping" },
+  { num: 3, label: "Pagamento", icon: "payments" },
   { num: 4, label: "Vendedor", icon: "smart_toy" },
   { num: 5, label: "Revisão", icon: "checklist" },
 ];
@@ -83,7 +83,7 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                     )}
                   </div>
                   <span
-                    className={`text-[11px] font-medium leading-tight text-center w-16 ${
+                    className={`text-[11px] font-medium leading-tight text-center w-20 ${
                       isActive
                         ? "text-brand font-bold"
                         : isCompleted
