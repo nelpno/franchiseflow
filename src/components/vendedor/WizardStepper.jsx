@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
 const STEPS = [
-  { num: 1, label: "Sua Unidade", icon: "storefront" },
+  { num: 1, label: "Sua unidade", icon: "storefront" },
   { num: 2, label: "Entrega e retirada", icon: "local_shipping" },
   { num: 3, label: "Pagamento", icon: "payments" },
   { num: 4, label: "Vendedor", icon: "smart_toy" },

@@ -938,7 +938,7 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_delivery', val)}
               />
               {hasDelivery && (
-                <div className="space-y-4 rounded-2xl border border-[#bccac0]/20 p-4">
+                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className={labelClass}>Raio máximo (km)<RequiredDot /></label>
@@ -978,7 +978,7 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_pickup', val)}
               />
               {hasPickup && (
-                <div className="space-y-4 rounded-2xl border border-[#bccac0]/20 p-4">
+                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
                   <div className="space-y-2">
                     <label className={labelClass}>Como funciona a retirada?</label>
                     <RadioCards

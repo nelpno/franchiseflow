@@ -5,8 +5,8 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 // fica intacto no array: marcar e desmarcar mexe só no que a tela mostra.
 export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntrega, onChangeRetirada }) {
   const colunas = [
-    entrega !== null && { chave: "entrega", rotulo: "Na entrega", valor: entrega, mudar: onChangeEntrega },
-    retirada !== null && { chave: "retirada", rotulo: "Na retirada", valor: retirada, mudar: onChangeRetirada },
+    entrega !== null && { chave: "entrega", rotulo: "Entrega", valor: entrega, mudar: onChangeEntrega },
+    retirada !== null && { chave: "retirada", rotulo: "Retirada", valor: retirada, mudar: onChangeRetirada },
   ].filter(Boolean);
 
   if (colunas.length === 0) {
@@ -25,9 +25,9 @@ export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntr
       <table className="w-full text-sm">
         <thead className="bg-surface">
           <tr>
-            <th className="text-left px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">Forma</th>
+            <th className="text-left px-3 sm:px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">Forma</th>
             {colunas.map((c) => (
-              <th key={c.chave} className="px-3 py-2 w-28 text-center text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">
+              <th key={c.chave} className="px-1 sm:px-3 py-2 w-[4.5rem] sm:w-28 text-center text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">
                 {c.rotulo}
               </th>
             ))}
@@ -36,8 +36,8 @@ export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntr
         <tbody>
           {methods.map((m) => (
             <tr key={m.value} className="border-t border-[#bccac0]/10">
-              <td className="px-4 py-2.5">
-                <span className="flex items-center gap-2 text-[#3d4a42]">
+              <td className="px-3 sm:px-4 py-2.5">
+                <span className="flex items-center gap-2 text-[#3d4a42] text-[13px] sm:text-sm">
                   <MaterialIcon icon={m.icon} size={16} className="text-[#3d4a42]/50" />
                   {m.label}
                 </span>
@@ -45,7 +45,7 @@ export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntr
               {colunas.map((c) => {
                 const marcado = c.valor.includes(m.value);
                 return (
-                  <td key={c.chave} className="px-3 py-2.5 text-center">
+                  <td key={c.chave} className="px-1 sm:px-3 py-2.5 text-center">
                     <button
                       type="button"
                       role="checkbox"

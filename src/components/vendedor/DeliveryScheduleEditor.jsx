@@ -126,7 +126,7 @@ export default function DeliveryScheduleEditor({ value = [], onChange }) {
         </div>
       )}
       {ranges.map((range, index) => (
-        <div key={index} className="bg-white rounded-xl p-4 border border-[#bccac0]/10 space-y-3">
+        <div key={index} className="bg-white rounded-xl p-3 sm:p-4 border border-[#bccac0]/10 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[#3d4a42]">
               {generateLabel(range.days) || `Faixa ${index + 1}`}

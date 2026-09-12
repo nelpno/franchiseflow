@@ -87,9 +87,9 @@ export default function DeliveryFeeEditor({ value, onChange }) {
         <>
           {rules.map((row, i) => (
             <div key={i} className="space-y-1">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <input
-                  className={`${inputClass} flex-1${marca(i, "descrição")}`}
+                  className={`${inputClass} flex-1 min-w-0${marca(i, "descrição")}`}
                   type="text"
                   value={row.label}
                   aria-invalid={faltando.get(i) === "descrição" || undefined}
@@ -98,7 +98,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
                 />
                 <span className="text-xs text-[#3d4a42]/60 whitespace-nowrap">R$</span>
                 <input
-                  className={`${inputClass} !w-24 font-mono text-center${marca(i, "valor")}`}
+                  className={`${inputClass} !w-[4.5rem] sm:!w-24 !px-2 sm:!px-4 font-mono text-center${marca(i, "valor")}`}
                   type="number"
                   step="0.5"
                   value={row.fee}
@@ -125,10 +125,10 @@ export default function DeliveryFeeEditor({ value, onChange }) {
         <>
           {rules.map((row, i) => (
             <div key={i} className="space-y-1">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <span className="text-xs text-[#3d4a42]/60 whitespace-nowrap">Até</span>
                 <input
-                  className={`${inputClass} !w-20 font-mono text-center${marca(i, "km")}`}
+                  className={`${inputClass} !w-14 sm:!w-20 !px-2 sm:!px-4 font-mono text-center${marca(i, "km")}`}
                   type="number"
                   value={row.max_km}
                   aria-invalid={faltando.get(i) === "km" || undefined}
@@ -137,7 +137,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
                 />
                 <span className="text-xs text-[#3d4a42]/60 whitespace-nowrap">km: R$</span>
                 <input
-                  className={`${inputClass} !w-24 font-mono text-center${marca(i, "valor")}`}
+                  className={`${inputClass} !w-[4.5rem] sm:!w-24 !px-2 sm:!px-4 font-mono text-center${marca(i, "valor")}`}
                   type="number"
                   step="0.5"
                   value={row.fee}
