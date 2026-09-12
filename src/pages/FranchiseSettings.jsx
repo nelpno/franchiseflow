@@ -8,7 +8,7 @@ import { PAYMENT_METHODS, PIX_KEY_TYPES, resolveActiveFranchise } from "@/lib/fr
 import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
-import { diffPatch, findConflicts, nomesDosCampos, camposDoRascunhoADescartar } from "@/lib/configSave";
+import { diffPatch, findConflicts, nomesDosCampos, camposDoRascunhoADescartar, sameValue } from "@/lib/configSave";
 import { validarEtapa, validarTudo } from "@/lib/vendedorValidation";
 import { modoDoFrete, legadoParaModelo, modeloParaLegado, problemasDoModelo, limparPricing, modeloInicial } from "@/lib/freteModelo";
 import { buscarCep, formatarCep, normalizarCep, ruaJaContem } from "@/lib/cep";
@@ -196,6 +196,9 @@ function FranchiseSettingsContent() {
   const loadedRowRef = useRef(null);    // linha do banco
   const baselineRef = useRef(null);     // o mesmo, no formato que vai ao banco
   const baselineFormRef = useRef(null); // o mesmo, no formato do formulário (base do rascunho)
+  // Campos que bateram de frente com outra pessoa: ficam fora do rascunho até recarregar. Sem isso o rascunho,
+  // reescrito a cada tecla, traria o valor velho de volta e o próximo salvar gravaria por cima da correção.
+  const foraDoRascunhoRef = useRef(new Set());
   const [cepStatus, setCepStatus] = useState('');
   const [pickupAddrMode, setPickupAddrMode] = useState('same');
   useEffect(() => {
@@ -454,6 +457,7 @@ function FranchiseSettingsContent() {
   // Conflito: tira do rascunho local só o que outra pessoa mudou (e o que é gravado junto). Depois
   // de recarregar, a tela mostra a versão do banco nesses campos e mantém o resto do que foi feito.
   const descartarDoRascunho = (campos) => {
+    for (const c of camposDoRascunhoADescartar(campos)) foraDoRascunhoRef.current.add(c);
     const draftKey = `wizard_draft_${editingConfig?.franchise_evolution_instance_id}`;
     try {
       const draftRaw = localStorage.getItem(draftKey);
@@ -492,8 +496,16 @@ function FranchiseSettingsContent() {
         const patch = diffPatch(baselineRef.current, finalData);
         const colunas = Object.keys(patch);
         if (colunas.length > 0) {
-          const [atual] = await FranchiseConfiguration.filter({ id: editingConfig.id }, null, 1, { columns: colunas.join(',') });
+          // delivery_pricing sempre entra na leitura: se o suporte ligou ou desligou o frete calculado depois que a
+          // tela abriu, salvar o frete no formato em que ela abriu gravaria campos que não batem com o robô.
+          const lidas = [...new Set([...colunas, 'delivery_pricing'])];
+          const [atual] = await FranchiseConfiguration.filter({ id: editingConfig.id }, null, 1, { columns: lidas.join(',') });
           const conflitos = findConflicts(loadedRowRef.current, atual, patch);
+          const mexeuNoFrete = colunas.some((k) => COLUNAS_FRETE.includes(k) || k === 'avg_prep_time_minutes');
+          if (mexeuNoFrete && !conflitos.includes('delivery_pricing') &&
+              !sameValue(loadedRowRef.current?.delivery_pricing ?? null, atual?.delivery_pricing ?? null)) {
+            conflitos.push('delivery_pricing');
+          }
           if (conflitos.length > 0) {
             descartarDoRascunho(conflitos);
             toast.error(
@@ -527,9 +539,21 @@ function FranchiseSettingsContent() {
             loadedRowRef.current = { ...loadedRowRef.current, ...salvo };
           }
           if (Object.keys(patchResto).length > 0) {
-            const resto = await FranchiseConfiguration.update(editingConfig.id, patchResto);
-            salvo = { ...salvo, ...resto };
-            loadedRowRef.current = { ...loadedRowRef.current, ...resto };
+            try {
+              const resto = await FranchiseConfiguration.update(editingConfig.id, patchResto);
+              salvo = { ...salvo, ...resto };
+              loadedRowRef.current = { ...loadedRowRef.current, ...resto };
+            } catch (err) {
+              if (Object.keys(patchFrete).length === 0) throw err;
+              // O frete já está gravado: a tela passa a considerá-lo salvo (senão o próximo salvar acusaria
+              // conflito com a própria franqueada) e diz com clareza o que faltou.
+              const gravadas = Object.keys(patchFrete);
+              baselineRef.current = { ...baselineRef.current, ...Object.fromEntries(gravadas.map((k) => [k, finalData[k]])) };
+              baselineFormRef.current = { ...baselineFormRef.current, ...Object.fromEntries(gravadas.map((k) => [k, formData[k]])) };
+              updateConfigurationStatus(editingConfig.id, salvo);
+              toast.error(`O frete foi salvo, mas o resto não: ${safeErrorMessage(err, 'falha de conexão')}. Tente salvar de novo.`, { duration: 10000 });
+              return false;
+            }
           }
           updateConfigurationStatus(editingConfig.id, salvo);
         }
@@ -587,6 +611,7 @@ function FranchiseSettingsContent() {
           delete draftData.cpf_cnpj;
           delete draftData.asaas_customer_id;
           delete draftData.asaas_subscription_id;
+          for (const c of foraDoRascunhoRef.current) delete draftData[c];
           localStorage.setItem(draftKey, JSON.stringify({ v: 2, data: draftData, step: currentStep, savedAt: Date.now() }));
         } catch { /* quota exceeded — ignore */ }
       }

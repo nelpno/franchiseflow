@@ -43,7 +43,10 @@ begin
     if not (v_chave = any(v_permitidas)) then
       raise exception 'Frete: campo não permitido (%).', v_chave using errcode = 'P0001';
     end if;
-    if (v_atual -> v_chave) is distinct from (coalesce(p_esperado, '{}'::jsonb) -> v_chave) then
+    -- conflito = mudou no banco depois que a tela abriu E para um valor diferente do que ela quer gravar
+    -- (mesma regra do findConflicts do painel; cobre o timeout do cliente com o commit já feito no servidor)
+    if (v_atual -> v_chave) is distinct from (coalesce(p_esperado, '{}'::jsonb) -> v_chave)
+       and (v_atual -> v_chave) is distinct from (p_campos -> v_chave) then
       v_conflitos := v_conflitos || v_chave;
     end if;
   end loop;
