@@ -103,6 +103,24 @@ assert.deepEqual(limpo.zonas, [{ nomes: ["Acapulco"], valor: 20 }]);
 // regra que a tela não conhece (do suporte) passa intacta
 assert.equal(limparPricing({ ...GUARUJA, zonas: [{ nomes: ["Ilha"], especial: "barco" }] }).zonas[0].especial, "barco");
 
+// ---- bairro com dias e valor por dia (Cordeirópolis, São Vicente) e grupo grátis com cidade vizinha que cobra
+const ITAPOLIS = { raio_km: 10, grupos: [{ dias: ["seg"], tipos: [{ nome: "Entrega", inicio: "18:00", fim: "19:30", promessa: "janela", taxa: { modo: "fixa", valor: 0 } }] }],
+  zonas: [{ nomes: ["Ibitinga"], valor: 15 }] };
+const legI = modeloParaLegado(ITAPOLIS, { estruturado: true });
+assert.equal(legI.delivery_schedule[0].charges_fee, true, "grátis na cidade, mas Ibitinga cobra");
+assert.ok(legI.delivery_fee_rules.rules.some((r) => r.label.includes("Ibitinga") && r.fee === "15.00"));
+const CORD = { raio_km: null,
+  grupos: [
+    { dias: ["seg"], tipos: [{ nome: "Entrega", inicio: "11:00", fim: "15:00", promessa: "janela", taxa: { modo: "especial", texto: "x" } }] },
+    { dias: ["dom"], tipos: [{ nome: "Entrega", inicio: "09:00", fim: "12:00", promessa: "janela", taxa: { modo: "fixa", valor: 12 } }] }],
+  zonas: [{ nomes: ["Cordeirópolis"], valor: 12, dias: ["qui", "sab"] }, { nomes: ["São Vicente"], valor: 12, por_dia: { dom: 15 } }, { nomes: ["Figueira"], especial: "y" }] };
+const legC = modeloParaLegado(CORD, { estruturado: true });
+assert.ok(!legC.delivery_schedule[0].fee_rules.rules.some((r) => r.label.includes("Cordeirópolis")), "fora dos dias do bairro");
+assert.equal(legC.delivery_schedule[1].fee_rules.rules.find((r) => r.label.includes("São Vicente")).fee, "15.00");
+assert.deepEqual(problemasDoModelo(CORD, { estruturado: true }), [], "bairro com regra especial não precisa de valor");
+assert.deepEqual(limparPricing(CORD).zonas[0].dias, ["qui", "sab"], "a limpeza não perde os dias do bairro");
+assert.deepEqual(limparPricing(CORD).zonas[1].por_dia, { dom: 15 });
+
 // ---- o que impede salvar
 const chaves = (mod, opts) => problemasDoModelo(mod, opts).map((p) => p.chave);
 const umTipo = (t) => ({ raio_km: 10, grupos: [{ dias: ["seg"], tipos: [{ nome: "Entrega", inicio: "10:00", fim: "18:00", corte: "", promessa: "janela", taxa: { modo: "fixa", valor: 8 }, ...t }] }], zonas: [] });

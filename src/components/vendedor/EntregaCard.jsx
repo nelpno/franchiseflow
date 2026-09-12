@@ -44,7 +44,8 @@ function Dinheiro({ value, onChange, invalido, placeholder = "0,00", ariaLabel }
 
 function Taxa({ taxa, onChange, marcas, prefixo }) {
   const modo = ehGratis(taxa) ? "gratis" : taxa?.modo === "faixas" ? "faixas" : taxa?.modo === "fixa" ? "fixa" : "outro";
-  if (modo === "outro") return <p className="text-xs text-[#3d4a42]/70">Taxa com regra especial, cadastrada pelo suporte.</p>;
+  // "outro" = regra especial cadastrada pelo suporte (R$/km com valor do pedido, bairro fora da lista...): a tela mostra
+  // o texto e deixa trocar por uma das três opções.
   const faixas = taxa?.faixas?.length ? taxa.faixas : [{ ate: "", valor: "" }];
   const semNenhuma = marcas.has(`${prefixo}.taxa`);
   const setFaixa = (i, k, v) => onChange({ modo: "faixas", faixas: faixas.map((f, j) => (j === i ? { ...f, [k]: v } : f)) });
@@ -55,6 +56,11 @@ function Taxa({ taxa, onChange, marcas, prefixo }) {
         <button type="button" className={pill(modo === "faixas")} onClick={() => modo !== "faixas" && onChange({ modo: "faixas", faixas: [{ ate: "", valor: "" }] })}>Por distância</button>
         <button type="button" className={pill(modo === "gratis")} onClick={() => modo !== "gratis" && onChange({ modo: "fixa", valor: 0 })}>Grátis</button>
       </div>
+      {modo === "outro" && (
+        <p className="text-[11px] text-[#3d4a42]/80">
+          Regra especial{taxa?.texto ? `: ${taxa.texto}` : ""}. O robô diz ao cliente que a unidade confirma a taxa e avisa você. Para trocar, escolha uma das opções acima.
+        </p>
+      )}
       {modo === "fixa" && (
         <Dinheiro value={taxa.valor} onChange={(v) => onChange({ ...taxa, modo: "fixa", valor: v })} invalido={semNenhuma} ariaLabel="Valor da taxa" />
       )}
@@ -249,6 +255,17 @@ function NomesBairro({ nomes, onChange, invalido }) {
   );
 }
 
+// o que o suporte cadastrou e a tela ainda não edita (dias, valor num dia, regra especial): aparece escrito
+const DIA_CURTO = { seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb", dom: "Dom" };
+function detalheDaZona(z) {
+  const partes = [];
+  if (z.fora_da_cidade) partes.push("vale para endereço fora da cidade");
+  if (z.dias?.length) partes.push(`entrega só ${rotuloDias(z.dias)}`);
+  for (const [d, v] of Object.entries(z.por_dia || {})) partes.push(`${DIA_CURTO[d] || d}: ${dinheiro(v)}`);
+  if (z.especial) partes.push(`o robô diz que a unidade confirma a taxa (${z.especial})`);
+  return partes.length ? `${partes.join(" · ")}. Para mudar isso, fale com o suporte.` : "";
+}
+
 function Bairros({ zonas, onChange, marcas, problemas }) {
   const set = (i, z) => onChange(zonas.map((x, j) => (j === i ? z : x)));
   const erros = problemas.filter((p) => p.chave.startsWith("z"));
@@ -259,12 +276,12 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
         <p className={dica}>Vale em qualquer tipo e em qualquer dia, e substitui a taxa normal. O robô usa o bairro que o cliente escreve e o que o mapa encontra.</p>
       </div>
       {zonas.map((z, i) => (
-        <div key={i} className="rounded-xl bg-surface p-2.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div key={i} className="rounded-xl bg-surface p-2.5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
           <div className="flex-1 min-w-0">
             <NomesBairro nomes={z.nomes || []} onChange={(nomes) => set(i, { ...z, nomes })} invalido={marcas.has(`z${i}.nomes`)} />
           </div>
           <div className="flex items-center gap-3">
-            {z.nao_atende ? <span className="text-xs text-[#3d4a42]/60 w-28 px-1">sem entrega</span> : (
+            {z.nao_atende ? <span className="text-xs text-[#3d4a42]/60 w-28 px-1">sem entrega</span> : z.especial ? <span className="text-xs text-[#3d4a42]/60 w-28 px-1">regra especial</span> : (
               <Dinheiro value={z.valor} onChange={(v) => set(i, { ...z, valor: v })} invalido={marcas.has(`z${i}.valor`)} ariaLabel="Taxa do bairro" />
             )}
             <label className="flex items-center gap-2 text-xs text-[#3d4a42] cursor-pointer whitespace-nowrap">
@@ -276,6 +293,7 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
               <MaterialIcon icon="close" size={18} />
             </button>
           </div>
+          {detalheDaZona(z) && <p className="text-[11px] text-[#3d4a42]/70 sm:basis-full">{detalheDaZona(z)}</p>}
         </div>
       ))}
       {erros.length > 0 && <p className="text-[11px] text-red-600">{erros[0].msg}</p>}

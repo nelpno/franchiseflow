@@ -132,8 +132,11 @@ function rotulosDoGrupo(grupo, zonas) {
     }
   }
   for (const z of zonas || []) {
-    if (z.nao_atende || numero(z.valor) === null) continue;
-    for (const n of z.nomes || []) rules.push({ label: `Bairro ${n} (taxa fixa em qualquer janela)`, fee: valorTexto(z.valor) });
+    if (z.nao_atende || z.especial || numero(z.valor) === null) continue;
+    // mesma regra do motor: bairro atendido só em alguns dias (dias) e valor próprio num dia (por_dia)
+    if (z.dias?.length && !(grupo.dias || []).some((d) => z.dias.includes(d))) continue;
+    const doDia = (grupo.dias || []).map((d) => z.por_dia?.[d]).find((v) => numero(v) !== null);
+    for (const n of z.nomes || []) rules.push({ label: `Bairro ${n} (taxa fixa em qualquer janela)`, fee: valorTexto(doDia ?? z.valor) });
   }
   return { mode: "modality", rules };
 }
@@ -146,7 +149,9 @@ export function modeloParaLegado(modelo, { estruturado = false } = {}) {
   const raio = numero(modelo?.raio_km);
   const delivery_schedule = (modelo?.grupos || []).map((g) => {
     const tipos = g.tipos || [];
-    const cobra = !tipos.every((t) => ehGratis(t.taxa));
+    // grupo grátis na cidade ainda cobra quando há bairro/cidade vizinha com taxa (Itápolis grátis, Ibitinga R$ 15)
+    const cobra = !tipos.every((t) => ehGratis(t.taxa)) ||
+      (estruturado && (modelo?.zonas || []).some((z) => !z.nao_atende && !z.especial && numero(z.valor) > 0));
     const semCorte = tipos.every((t) => !preenchido(t.corte));
     return {
       days: ordenarDias(g.dias),
@@ -293,7 +298,7 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
     (modelo?.zonas || []).forEach((z, zi) => {
       const nomes = (z.nomes || []).map((n) => String(n).trim()).filter(Boolean);
       if (!nomes.length) out.push({ chave: `z${zi}.nomes`, msg: `Bairros com taxa diferente, linha ${zi + 1}: falta o nome do bairro.` });
-      if (!z.nao_atende && numero(z.valor) === null) out.push({ chave: `z${zi}.valor`, msg: `Bairros com taxa diferente, linha ${zi + 1}: falta o valor.` });
+      if (!z.nao_atende && !z.especial && numero(z.valor) === null) out.push({ chave: `z${zi}.valor`, msg: `Bairros com taxa diferente, linha ${zi + 1}: falta o valor.` });
       for (const n of nomes) {
         const key = n.toLowerCase();
         if (vistos.has(key) && vistos.get(key) !== zi) out.push({ chave: `z${zi}.nomes`, msg: `O bairro ${n} está em duas linhas de "Bairros com taxa diferente".` });

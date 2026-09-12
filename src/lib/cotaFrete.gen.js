@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: f9f744a881e874b33268d344cddcd19c93710d73b775584b201860839f4a669d
+// sha256 da fonte: a1d6a8c6b403019abf1e684e76394b00f64ae55eec229f1cc768211bd8dd6bb4
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -19,6 +19,8 @@
 //   - bairro que o CLIENTE escreveu decide; se só o MAPA aponta bairro com taxa e o cliente escreveu
 //     outro, o robô confirma o bairro uma vez (evita cobrar errado para os dois lados);
 //   - tipo sem valor = sem_preco (a unidade confirma), nunca "grátis".
+//   - bairro com taxa pode ter valor por dia (por_dia: { dom: 15 }) e dias de atendimento (dias: ['qui','sab']);
+//     cidade vizinha atendida (São Vicente, Ibitinga) casa pelo nome IGUAL ao da cidade que o mapa devolve.
 
 var COTA_DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
 var COTA_ORDEM = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
@@ -112,6 +114,34 @@ function cotaAcharZona(zonas, texto) {
   return melhor;
 }
 
+// Cidade vizinha atendida com taxa própria (ex.: São Vicente, para Santos): o cliente nem sempre escreve a cidade,
+// mas o mapa diz qual é. Aqui o nome tem de ser IGUAL ao da cidade — sem tirar prefixo, senão "Vila Nova" casaria
+// com "Nova Odessa".
+function cotaZonaDaCidade(zonas, cidade) {
+  var c = cotaNorm(cidade);
+  if (!c) return null;
+  for (var i = 0; i < (zonas || []).length; i++) {
+    var z = zonas[i];
+    if (z.fora_da_cidade) continue;
+    var nomes = z.nomes || [];
+    for (var j = 0; j < nomes.length; j++) if (cotaNorm(nomes[j]) === c) return { zona: z, nome: nomes[j], k: c };
+  }
+  return null;
+}
+// valor do bairro no grupo de dias: por_dia sobrepõe o padrão (ex.: São Vicente R$ 12, domingo R$ 15)
+function cotaValorZona(z, dias) {
+  var pd = z.por_dia || {};
+  for (var i = 0; i < dias.length; i++) {
+    var v = pd[dias[i]];
+    if (v !== undefined && v !== null && v !== '') return Number(v);
+  }
+  return Number(z.valor);
+}
+// bairro atendido só em alguns dias (ex.: Cordeirópolis às quintas e sábados)
+function cotaZonaAtende(z, dias) {
+  return !z.dias || !z.dias.length || dias.some(function (d) { return z.dias.indexOf(d) !== -1; });
+}
+
 function cotaTaxaDoTipo(tipo, km, raio, estimado) {
   var tx = tipo.taxa || {};
   if (tx.modo === 'fixa') {
@@ -178,6 +208,7 @@ function cotarFrete(pricing, destino, agora, extra) {
       };
     }
     zona = zc || zm;
+    if (!zona) zona = cotaZonaDaCidade(zonas, destino.cidade_mapa);
   }
   if (zona && zona.zona.nao_atende) {
     return { estado: 'fora_da_area', bairro: zona.nome, instrucao: 'A unidade não entrega em ' + zona.nome + '. Ofereça retirada, se houver.' };
@@ -194,13 +225,14 @@ function cotarFrete(pricing, destino, agora, extra) {
   var bloqueio = null, aproximado = false;
   var grupos = pricing.grupos.map(function (g) {
     var opcoes = [];
-    g.tipos.forEach(function (t) {
-      var tx = zona ? { valor: Number(zona.zona.valor) } : cotaTaxaDoTipo(t, km, raio, destino.estimado);
+    var foraDoDia = !!zona && !cotaZonaAtende(zona.zona, g.dias);
+    if (!foraDoDia) g.tipos.forEach(function (t) {
+      var tx = zona ? { valor: cotaValorZona(zona.zona, g.dias) } : cotaTaxaDoTipo(t, km, raio, destino.estimado);
       if (tx.estado) { if (!bloqueio) bloqueio = tx; return; }
       if (tx.aproximado) aproximado = true;
       opcoes.push(cotaOpcao(t, tx.valor));
     });
-    return { dias: cotaRotuloDias(g.dias), _dias: g.dias, opcoes: opcoes };
+    return { dias: cotaRotuloDias(g.dias), _dias: g.dias, opcoes: opcoes, _foraDoDia: foraDoDia };
   });
   if (!grupos.some(function (g) { return g.opcoes.length; })) {
     var b = bloqueio || { estado: 'sem_preco' };
@@ -215,11 +247,12 @@ function cotarFrete(pricing, destino, agora, extra) {
   // 3. hoje (corte) e próximo dia com entrega
   var hojeDia = cotaDiaDaSemana(agora.data);
   var gHoje = pricing.grupos.find(function (g) { return g.dias.indexOf(hojeDia) !== -1; });
-  var abertosHoje = gHoje ? cotaTiposAbertos(gHoje, cotaMin(agora.hora)) : [];
+  var hojeForaDoDia = grupos.some(function (g) { return g._foraDoDia && g._dias.indexOf(hojeDia) !== -1; });
+  var abertosHoje = gHoje && !hojeForaDoDia ? cotaTiposAbertos(gHoje, cotaMin(agora.hora)) : [];
   var proximo = null;
   for (var i = 1; i <= 7 && !proximo; i++) {
     var d = cotaSomaDias(agora.data, i);
-    if (pricing.grupos.some(function (g) { return g.dias.indexOf(cotaDiaDaSemana(d)) !== -1; })) proximo = cotaDataCurta(d);
+    if (grupos.some(function (g) { return g.opcoes.length && g._dias.indexOf(cotaDiaDaSemana(d)) !== -1; })) proximo = cotaDataCurta(d);
   }
 
   var saida = {
@@ -228,10 +261,10 @@ function cotarFrete(pricing, destino, agora, extra) {
     hoje: {
       dia: cotaDataCurta(agora.data),
       ainda_da_para: abertosHoje,
-      observacao: !gHoje ? 'hoje não tem entrega' : (abertosHoje.length ? '' : 'os pedidos de hoje já fecharam')
+      observacao: !gHoje ? 'hoje não tem entrega' : hojeForaDoDia ? 'hoje não tem entrega para esse endereço' : (abertosHoje.length ? '' : 'os pedidos de hoje já fecharam')
     },
     proximo_dia_com_entrega: proximo,
-    grupos: grupos.map(function (g) { return { dias: g.dias, opcoes: g.opcoes }; }),
+    grupos: grupos.filter(function (g) { return g.opcoes.length; }).map(function (g) { return { dias: g.dias, opcoes: g.opcoes }; }),
     instrucao: 'Use a taxa e o prazo da opção do DIA DA ENTREGA combinado (cada grupo de dias tem a sua tabela). Para hoje, só os tipos em hoje.ainda_da_para. Não calcule nem misture linhas.'
   };
 
@@ -241,7 +274,7 @@ function cotarFrete(pricing, destino, agora, extra) {
     var g = grupos.find(function (x) { return x._dias.indexOf(dia) !== -1; });
     var opc = g ? g.opcoes : [];
     if (g && extra.dataEntrega === agora.data) opc = opc.filter(function (o) { return abertosHoje.indexOf(o.tipo) !== -1; });
-    saida.data_pedida = { dia: cotaDataCurta(extra.dataEntrega), opcoes: opc, observacao: !g ? 'sem entrega nesse dia' : (opc.length ? '' : 'os pedidos para esse dia já fecharam') };
+    saida.data_pedida = { dia: cotaDataCurta(extra.dataEntrega), opcoes: opc, observacao: !g ? 'sem entrega nesse dia' : g._foraDoDia ? 'sem entrega nesse dia para esse endereço' : (opc.length ? '' : 'os pedidos para esse dia já fecharam') };
   }
   if (aproximado) saida.aviso = 'Distância estimada perto do limite de uma faixa: diga que a unidade confirma o valor.';
   return saida;
