@@ -105,6 +105,7 @@ Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **C
 - `aggregate_daily_data()` cron: roda `0 5 * * *` UTC (02h BRT) com default `target_date = ontem`. **NUNCA** popula `daily_summaries.date = hoje`. Qualquer query/RPC que dependa de `daily_summaries` para o dia atual retorna vazio até 02h BRT do dia seguinte
 
 **Telefone canônico e linter** → [docs/claude/supabase-detalhes.md](docs/claude/supabase-detalhes.md) (movido em 11/09/2026). Essencial: telefone = só dígitos, sem DDI 55 (`normalize_phone_br()` no banco, `normalizePhone()` no front antes de todo create/filter); SECURITY DEFINER sempre com `SET search_path = 'public'`; policy com `(select auth.uid())`; FK nova com índice; nunca `FOR ALL` + policies específicas na mesma tabela; bucket com upsert precisa de SELECT policy.
+- **Telefone estrangeiro = dígitos COM o DDI** (o robô grava assim; quem digita `+1 …` também). `isInternationalPhone` ([whatsappUtils.js](src/lib/whatsappUtils.js)): 11 dígitos sem o 9 depois do DDD, ou 12+, é de fora (DDD 1x não confunde: NANP não usa 9 no meio do código de área); `0…` segue BR. `formatPhone` mostra `+<dígitos>` e `getWhatsAppLink` não prefixa 55. NUNCA criar máscara de telefone local — foi a cópia do SaleForm que mostrava EUA como "(13) 21438-4841" (Tatuapé, 16/09/2026, `1fee649`). Testes: `node src/lib/whatsappUtils.test.mjs`
 
 **Security helpers (usar em código novo):**
 - Toast errors: NUNCA `error.message` ou `error.details` direto — usar `safeErrorMessage(error, "fallback")` de `@/lib/safeErrorMessage`
