@@ -56,6 +56,23 @@ assert.match(validarEtapa(2, calculado, ["delivery_pricing"]).erros[0], /^Bairro
 // retirada que fecha antes de abrir
 const retirada = { ...base, has_pickup: true, has_custom_pickup_hours: true, payment_pickup: ["pix"], pickup_schedule: [{ days: ["sab"], open: "14:00", close: "12:00" }] };
 assert.match(validarEtapa(2, retirada, ["pickup_schedule"]).erros[0], /fechamento tem de ser depois/);
+// Imirim 16/09: apagou o horário da terça ("--:--") para dizer que não entrega. A mensagem tem de dizer QUAL dia e
+// como fechar, e não o genérico "Defina os dias" (que ela lia na etapa 1 sem ver nada errado).
+const semTerca = [base.delivery_schedule[0], { ...base.delivery_schedule[0], days: ["ter"], delivery_start: "", delivery_end: "" }]
+  .map((g, i) => (i === 0 ? { ...g, days: ["seg", "qua", "qui", "sex"] } : g));
+const imirim = validarEtapa(2, { ...base, delivery_schedule: semTerca }, ["delivery_schedule", "_frete_modelo"]);
+assert.equal(imirim.erros.length, 1, JSON.stringify(imirim.erros));
+assert.match(imirim.erros[0], /^Ter: preencha a janela de entrega/);
+assert.match(imirim.erros[0], /Remover estes dias/);
+assert.equal(validarTudo({ ...base, delivery_schedule: semTerca }, ["delivery_schedule"]).etapaErro, 2);
+// grupo único sem horário: não existe o botão "Remover estes dias", então a dica não aparece
+const unicoSemHora = validarEtapa(2, { ...base, delivery_schedule: [{ ...base.delivery_schedule[0], delivery_start: "" }] }, ["delivery_schedule"]);
+assert.equal(unicoSemHora.erros.length, 1, JSON.stringify(unicoSemHora.erros));
+assert.doesNotMatch(unicoSemHora.erros[0], /Remover/);
+// frete por modalidade (editor antigo) continua com a regra genérica
+assert.match(validarEtapa(2, { ...base, delivery_schedule: [{ ...modal[0], delivery_start: "" }] }, ["delivery_schedule"]).erros[0], /Defina os dias e o horário/);
+// sem erro, etapaErro vem nulo
+assert.equal(validarTudo(base, Object.keys(base)).etapaErro, null);
 // só retirada, sem entrega: raio e horário de entrega não importam
 assert.ok(ok(validarEtapa(2, { ...base, has_delivery: false, has_pickup: true, max_delivery_radius_km: null, delivery_schedule: [] }, ["has_delivery"])));
 

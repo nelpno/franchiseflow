@@ -482,11 +482,14 @@ function FranchiseSettingsContent() {
     const finalData = buildDbPayload(formData);
 
     // Regras da tela (lib/vendedorValidation.js): barram só o que esta tela mexeu; o resto vira aviso.
-    const { erros } = validarTudo(formData, Object.keys(diffPatch(baselineFormRef.current || {}, formData)), { novo: !editingConfig });
+    const { erros, etapaErro } = validarTudo(formData, Object.keys(diffPatch(baselineFormRef.current || {}, formData)), { novo: !editingConfig });
     if (erros.length > 0) {
       clearTimeout(slowTimer);
       setIsSubmitting(false);
       avisarErros(erros);
+      // O erro pode ser de outra etapa (o "Próximo" salva a tela inteira): leva a pessoa até ele. Sem isso a Imirim
+      // ficou presa na etapa 1 com um aviso da etapa 2, que voltava a cada recarga pelo rascunho (16/09/2026).
+      if (etapaErro && etapaErro !== currentStep) goToStep(etapaErro);
       return false;
     }
 

@@ -269,7 +269,10 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
         nomes.add(nome);
       }
       const ini = minutosDe(t.inicio), fim = minutosDe(t.fim), corte = minutosDe(t.corte);
-      if (ini === null || fim === null) out.push({ chave: `${k}.janela`, msg: `${rot}: preencha a janela de entrega (das __ às __).` });
+      // quem apaga o horário quer, em geral, dizer que não entrega nesse dia (Imirim 16/09): o jeito é remover o grupo
+      const fechar = (modelo.grupos || []).length > 1 && (g.tipos || []).length === 1
+        ? ' Se não entrega nesse dia, toque em "Remover estes dias".' : "";
+      if (ini === null || fim === null) out.push({ chave: `${k}.janela`, msg: `${rot}: preencha a janela de entrega (das __ às __).${fechar}` });
       else if (ini >= fim) out.push({ chave: `${k}.janela`, msg: `${rot}: a entrega termina (${t.fim}) antes de começar (${t.inicio}).` });
       if (corte !== null && fim !== null && corte > fim) {
         out.push({ chave: `${k}.corte`, msg: `${rot}: o limite de pedidos (${t.corte}) passa do fim da entrega (${t.fim}).` });

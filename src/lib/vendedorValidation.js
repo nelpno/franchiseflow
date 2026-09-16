@@ -118,7 +118,16 @@ const REGRAS = [
   },
   {
     etapa: 2, campos: ["has_delivery", "delivery_schedule"],
-    checar: (f) => entrega(f) && !temHorario(f.delivery_schedule) && "Defina os dias e o horário de entrega (sem isso o WhatsApp não conecta).",
+    checar: (f) => {
+      if (!entrega(f)) return null;
+      const s = f.delivery_schedule;
+      // No cartão "Entrega", janela em branco sai pela regra do cartão, com o dia e como fechar o dia (Imirim 16/09:
+      // a mensagem genérica vinha na frente e não dizia que era a terça em "--:--").
+      const falta = modoDoFrete(f) === "modalidade"
+        ? !temHorario(s)
+        : !(Array.isArray(s) && s.length > 0 && s.every((g) => (g?.days || []).length > 0));
+      return falta && "Defina os dias e o horário de entrega (sem isso o WhatsApp não conecta).";
+    },
   },
   {
     etapa: 2, campos: ["delivery_schedule"],
@@ -178,20 +187,22 @@ const REGRAS = [
  * @param {object} form        formData da tela
  * @param {string[]} alterados campos que esta tela mudou desde que abriu
  * @param {{novo?: boolean}} opts novo = configuração ainda não existe (tudo barra)
- * @returns {{erros: string[], avisos: string[]}}
+ * @returns {{erros: string[], avisos: string[], etapaErro: number|null}} etapaErro = etapa do primeiro erro
  */
 export function validarEtapa(etapa, form, alterados = [], { novo = false } = {}) {
   const mexeu = new Set(alterados);
   const erros = [];
   const avisos = [];
+  let etapaErro = null;
   for (const regra of REGRAS) {
     if (etapa && regra.etapa !== etapa) continue;
     const msg = regra.checar(form || {});
     if (!msg) continue;
     const barra = !regra.soAviso && (novo || regra.campos.some((c) => mexeu.has(c)));
+    if (barra && etapaErro === null) etapaErro = regra.etapa;
     (barra ? erros : avisos).push(msg);
   }
-  return { erros, avisos };
+  return { erros, avisos, etapaErro };
 }
 
 export function validarTudo(form, alterados, opts) {
