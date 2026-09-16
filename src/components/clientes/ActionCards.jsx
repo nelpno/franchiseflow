@@ -135,14 +135,13 @@ export function ActionCard({ item, message, onCall, onSkip, animationDelay }) {
       </p>
 
       {detalhes.length > 0 && (
-        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 pl-6 text-xs text-ink-3">
-          {detalhes.map((d, i) => (
-            <span key={d.key} className="inline-flex min-w-0 items-center gap-1.5">
-              {i > 0 && <span aria-hidden="true">·</span>}
+        <ul className="mt-1 min-w-0 space-y-0.5 pl-6 text-xs text-ink-3">
+          {detalhes.map((d) => (
+            <li key={d.key} className="flex min-w-0">
               {d.node}
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       <div className="mt-3 ml-6 min-w-0">

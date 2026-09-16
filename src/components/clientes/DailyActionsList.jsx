@@ -299,10 +299,11 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-surface-2 px-3 py-2 text-sm text-ink-2">
             <MaterialIcon icon="phone_disabled" size={18} className="text-ink-3" />
             <span className="min-w-0 flex-1">
-              <span className="font-mono-numbers">{data.sem_telefone_90d}</span>{" "}
-              {data.sem_telefone_90d === 1
-                ? "cliente comprou nos últimos 90 dias sem telefone cadastrado e não entra na lista."
-                : "clientes compraram nos últimos 90 dias sem telefone cadastrado e não entram na lista."}
+              <strong className="font-semibold text-ink">
+                <span className="font-mono-numbers">{data.sem_telefone_90d}</span>{" "}
+                {data.sem_telefone_90d === 1 ? "cliente sem telefone" : "clientes sem telefone"}
+              </strong>{" "}
+              {data.sem_telefone_90d === 1 ? "ficou" : "ficaram"} fora da lista (compraram nos últimos 90 dias).
             </span>
             {onVerSemTelefone && (
               <button type="button" onClick={onVerSemTelefone} className="min-h-11 font-semibold text-brand">
