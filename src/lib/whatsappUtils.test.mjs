@@ -43,4 +43,10 @@ assert.equal(formatPhone(""), "");
 assert.equal(getWhatsAppLink(null), "#");
 assert.equal(isInternationalPhone(null), false);
 
-console.log("whatsappUtils: ok");
+const text = "Olá, você! 😊";
+assert.equal(getWhatsAppLink("11986509681", text), "https://wa.me/5511986509681?text=Ol%C3%A1%2C%20voc%C3%AA!%20%F0%9F%98%8A");
+assert.equal(getWhatsAppLink("13214384841", text), "https://wa.me/13214384841?text=" + encodeURIComponent(text));
+assert.equal(getWhatsAppLink("11986509681", ""), getWhatsAppLink("11986509681"));
+assert.equal(getWhatsAppLink("13214384841", null), getWhatsAppLink("13214384841"));
+assert.equal(getWhatsAppLink(null, text), "#");
+console.log("whatsappUtils: ok (30 testes)");

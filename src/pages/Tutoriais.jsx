@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import {
   Dialog,
@@ -23,7 +24,7 @@ const TUTORIAL_VIDEOS = [
       "Início — seu painel com resumo do dia.",
       "Vendas — onde você registra cada venda.",
       "Gestão — seu financeiro, estoque e reposição.",
-      "Meus Clientes — todos os contatos dos seus clientes.",
+      "Meus Clientes — quem chamar hoje e todos os seus clientes.",
       "Marketing — materiais e ferramentas de divulgação.",
       "Meu Vendedor — configura o robô do WhatsApp.",
       "Tutoriais — esses tutoriais que você está lendo agora.",
@@ -132,24 +133,24 @@ const TUTORIAL_VIDEOS = [
   },
   {
     id: "clientes",
-    title: "Gerenciando seus Clientes",
-    description: "Pipeline de status, adicionar contatos, filtrar e ações rápidas direto para venda.",
-    duration: "3 min",
+    title: "Quem chamar hoje",
+    description: "Todo dia o app mostra quem vale a pena chamar no WhatsApp, com a mensagem pronta.",
+    duration: "Guia",
     icon: "people",
-    youtubeId: "us5HqjrEgio",
+    youtubeId: null,
     isShort: true,
     steps: [
-      "Vá em \"Meus Clientes\". Aqui ficam todos os seus clientes — os que compraram e os que o robô captou.",
-      "Use as abas para filtrar por status:",
-      "\"Todos\" — lista completa de contatos.",
-      "\"Responder\" — leads novos que ainda não foram atendidos.",
-      "\"Negociando\" — clientes em conversa.",
-      "\"Clientes\" — quem já comprou pelo menos uma vez.",
-      "\"Fiéis\" — clientes recorrentes.",
-      "\"Sumidos\" — faz tempo que não compram (oportunidade de remarketing!).",
-      "Toque no botão \"+\" para adicionar um contato manualmente.",
-      "Toque em um cliente para ver detalhes: compras, valor total e última compra.",
-      "Dica: o robô do WhatsApp já salva os contatos automaticamente aqui!",
+      "Todo dia o app separa quem vale a pena chamar. Aparece em \"Quem chamar hoje\", na tela Início, e na aba \"Hoje\" de Meus Clientes.",
+      "Cada cartão diz o motivo: voltou a falar e não comprou, quase comprou, hora de repetir, primeira compra ou sumido.",
+      "A mensagem já vem pronta, com o nome do cliente e o produto que ele mais pede. Toque em \"Chamar no WhatsApp\": o WhatsApp abre com o texto, e você pode mudar o que quiser antes de enviar.",
+      "Mande pelo WhatsApp da unidade (o mesmo número do robô). Quando você escreve, o robô pausa e deixa a conversa com você. Fique de olho na resposta!",
+      "Ao tocar em \"Chamar\", o cartão fica marcado como feito. Tocou sem querer? Use \"Desfazer\".",
+      "Não é hora de chamar? Toque em \"Pular\" e escolha \"Só hoje\". Se o cliente pediu para não receber mensagens, escolha \"Não chamar mais\".",
+      "A lista tem no máximo 8 pessoas por dia. É de propósito: mensagem pessoal, uma de cada vez, vende mais e protege o seu número.",
+      "No topo você vê o resultado do mês: quantas pessoas você chamou e quantas compraram até 7 dias depois.",
+      "Na aba \"Todos\" ficam todos os clientes. O selo mostra quem é Fiel, Voltou, Novo ou Nunca comprou, e a bolinha colorida mostra há quanto tempo a pessoa comprou (verde, amarelo ou vermelho).",
+      "Use os filtros para achar quem está sumido ou sem telefone. Cliente sem telefone não entra na lista do dia: toque nele e complete o número.",
+      "Dica: o robô do WhatsApp já salva os contatos sozinho aqui.",
     ],
   },
   {
@@ -245,14 +246,28 @@ function StepGuide({ video, onClose }) {
 
       {/* Steps */}
       <div className="px-6 py-4 space-y-3">
-        {video.steps.map((step, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="w-6 h-6 rounded-full bg-[#fdf8f8] border border-[#f2e7e7] flex items-center justify-center shrink-0 mt-0.5">
-              <span className="text-xs font-bold text-brand">{i + 1}</span>
+        {video.steps.map((step, i) => {
+          const text = typeof step === "string" ? step : step.text;
+          const image = typeof step === "string" ? null : step.image;
+          return (
+            <div key={i} className="flex gap-3">
+              <div className="w-6 h-6 rounded-full bg-[#fdf8f8] border border-[#f2e7e7] flex items-center justify-center shrink-0 mt-0.5">
+                <span className="text-xs font-bold text-brand">{i + 1}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-ink-2 leading-relaxed pt-0.5">{text}</p>
+                {image && (
+                  <img
+                    src={image}
+                    alt=""
+                    loading="lazy"
+                    className="mt-2 w-full max-w-[320px] rounded-xl border border-[#f2e7e7]"
+                  />
+                )}
+              </div>
             </div>
-            <p className="text-sm text-ink-2 leading-relaxed pt-0.5">{step}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Footer */}
@@ -271,10 +286,18 @@ function StepGuide({ video, onClose }) {
 export default function Tutoriais() {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [readingVideo, setReadingVideo] = useState(null);
+  const [searchParams] = useSearchParams();
+  const abrir = searchParams.get("abrir");
+
+  useEffect(() => {
+    if (!abrir) return;
+    const alvo = TUTORIAL_VIDEOS.find((v) => v.id === abrir);
+    if (alvo) setReadingVideo(alvo);
+  }, [abrir]);
 
   const handleVideoClick = (video) => {
     if (!video.youtubeId) {
-      setSelectedVideo(video);
+      setReadingVideo(video);
       return;
     }
     localStorage.setItem(`tutorial_watched_${video.id}`, "true");

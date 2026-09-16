@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, InventoryItem, Contact, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, InventoryItem, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,7 +17,8 @@ import FranchiseeGreeting from "./FranchiseeGreeting";
 import DailyGoalProgress from "./DailyGoalProgress";
 import MiniRevenueChart from "./MiniRevenueChart";
 import RankingStreak from "./RankingStreak";
-import SmartActions from "./SmartActions";
+import DailyActionsList from "@/components/clientes/DailyActionsList";
+import { cidadeDaUnidade } from "@/lib/customerActions";
 import FinancialObligationsCard from "./FinancialObligationsCard";
 import PriorityAction from "./PriorityAction";
 import OpenOrderStrip from "./OpenOrderStrip";
@@ -26,7 +27,6 @@ import CustomDateRangeSheet from "./CustomDateRangeSheet";
 import ConversionCard from "./ConversionCard";
 import ConversionDetailSheet from "./ConversionDetailSheet";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
-import { generateSmartActions } from "@/lib/smartActions";
 import EmptyState from "@/components/shared/EmptyState";
 
 const MONTH_OFFSET_MIN = -2;
@@ -49,7 +49,6 @@ export default function FranchiseeDashboard() {
   const [allSales, setAllSales] = useState([]);
   const [summaries, setSummaries] = useState([]);
   const [ranking, setRanking] = useState(null);
-  const [contacts, setContacts] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [botPulse, setBotPulse] = useState(null);
@@ -133,9 +132,7 @@ export default function FranchiseeDashboard() {
           : Promise.resolve([]),                          // [2] inventory
         evoId ? getFranchiseBotPulse(evoId, { signal }) : Promise.resolve(null),
                                                           // [3] pulso do robô (última conversa)
-        evoId ? Contact.filter({ franchise_id: evoId }, "-last_contact_at", 200,
-          { columns: 'id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at', signal })
-          : Promise.resolve([]),                          // [4] contacts
+        Promise.resolve([]),                              // [4] livre (contatos saíram em 17/09/2026: a lista do dia tem RPC própria)
         evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null), // [5] ranking
         evoId ? PurchaseOrder.filter({ franchise_id: evoId }, "-ordered_at", 50, { signal })
           : Promise.resolve([]),                          // [6] purchase orders (health: reposição)
@@ -153,7 +150,6 @@ export default function FranchiseeDashboard() {
       const allSalesData = getValue(0);
       const summariesData = getValue(1);
       const inventoryData = getValue(2);
-      const contactsData = getValue(4);
 
       const queryNames = ["vendas","resumos","estoque","robô","contatos","ranking","pedidos","onboarding","config","marketing"];
       const failedQueries = results
@@ -167,7 +163,6 @@ export default function FranchiseeDashboard() {
       setAllSales(allSalesData);
       setSummaries(summariesData);
 
-      setContacts(contactsData);
       setInventory(inventoryData);
 
       setBotPulse(results[3].status === "fulfilled" ? results[3].value : null);
@@ -388,22 +383,6 @@ export default function FranchiseeDashboard() {
     return allSales.some(sale => sale.sale_date >= cutoff);
   }, [allSales]);
 
-  // Smart actions for contacts (bot active = suppress "responder" since bot handles first contact)
-  const actions = useMemo(
-    () => generateSmartActions(contacts, 5, { botActive }),
-    [contacts, botActive]
-  );
-
-  // Which priority type is active (to exclude from SmartActions "Outras Ações")
-  const activePriorityType = useMemo(() => {
-    const lowStock = inventory.some(i => (i.quantity || 0) === 0);
-    if (lowStock) return 'repor_estoque';
-    if (actions.some(a => a.type === 'responder')) return 'responder';
-    if (!marketingPayment || marketingPayment.status === 'rejected') return 'marketing';
-    if (!botConfigured || !botActive) return 'bot_inativo';
-    return null;
-  }, [inventory, actions, marketingPayment, botActive, botConfigured]);
-
   if (isLoading) {
     return (
       <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
@@ -623,7 +602,6 @@ export default function FranchiseeDashboard() {
       <OpenOrderStrip purchaseOrders={purchaseOrders} />
 
       <PriorityAction
-        smartActions={actions}
         marketingPayment={marketingPayment}
         botActive={botActive}
         botConfigured={botConfigured}
@@ -632,6 +610,9 @@ export default function FranchiseeDashboard() {
         subscription={subscription}
         onOpenPaymentSheet={() => setPrioritySheetOpen(true)}
       />
+
+      {/* Quem chamar hoje: carrega sozinho (fora do polling de 5 min) */}
+      <DailyActionsList variant="compact" franchiseId={evoId} cidade={cidadeDaUnidade(franchise)} />
 
       <RankingStreak
         ranking={ranking}
@@ -691,8 +672,6 @@ export default function FranchiseeDashboard() {
           setPeriod("today");
         }}
       />
-
-      <SmartActions contacts={contacts} franchiseId={evoId} excludeType={activePriorityType} botActive={botActive} />
 
       {/* CTA — hidden on mobile (FAB "Vender" in bottom nav handles it) */}
       <div className="hidden md:flex fixed bottom-10 right-10 z-50">

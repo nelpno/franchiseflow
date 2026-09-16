@@ -21,6 +21,7 @@ auto_fix_high
 autorenew
 badge
 bar_chart
+bedtime
 block
 bolt
 brush
@@ -69,10 +70,11 @@ error_outline
 event
 event_available
 event_busy
+event_repeat
 expand_less
 expand_more
 fact_check
-favorite
+fiber_new
 filter_alt
 filter_alt_off
 folder_open
@@ -81,6 +83,7 @@ gif
 group
 groups
 handshake
+help
 help_outline
 history
 home_work
@@ -134,6 +137,7 @@ person_off
 person_remove
 person_search
 phone
+phone_disabled
 picture_as_pdf
 pie_chart
 pin_drop
@@ -213,6 +217,7 @@ verified
 view_kanban
 visibility
 visibility_off
+volunteer_activism
 warning
 warning_amber
 waving_hand

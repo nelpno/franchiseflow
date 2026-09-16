@@ -108,7 +108,9 @@ AS $$
     (SELECT COUNT(*) FILTER (WHERE pp.did_buy)::int FROM prev_people pp)   AS prev_converted,
     (COUNT(*) >= 20)                                                       AS has_bot_data
   FROM cur_people cp
-  HAVING p_franchise_id IS NOT NULL;
+  HAVING p_franchise_id IS NOT NULL
+     -- 17/09/2026: so a propria unidade (antes qualquer logado lia o funil de qualquer uma)
+     AND ((SELECT is_admin_or_manager()) OR p_franchise_id = ANY ((SELECT managed_franchise_ids())::text[]));
 $$;
 
 REVOKE ALL ON FUNCTION public.get_franchise_funnel_stats(text, date, date) FROM PUBLIC;

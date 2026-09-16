@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Contact } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
@@ -16,6 +16,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { Skeleton } from "@/components/ui/skeleton";
+import DailyActionsList from "@/components/clientes/DailyActionsList";
+import ContactFilterChips from "@/components/clientes/ContactFilterChips";
+import { CustomerMark, Recency } from "@/components/clientes/CustomerBadges";
+import { cidadeDaUnidade, diasEntre, filtrarClientes, marcaDoCliente } from "@/lib/customerActions";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink, isInternationalPhone } from "@/lib/whatsappUtils";
@@ -25,58 +31,12 @@ import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { listarFranquias } from "@/lib/franchisesCache";
 
-const STATUS_CONFIG = {
-  novo_lead: {
-    label: "Responder",
-    badgeLabel: "Contato Novo",
-    bg: "bg-brand/10",
-    text: "text-brand",
-  },
-  em_negociacao: {
-    label: "Negociando",
-    badgeLabel: "Interessado",
-    bg: "bg-brand-gold/10",
-    text: "text-brand-gold-ink",
-  },
-  cliente: {
-    label: "Clientes",
-    badgeLabel: "Cliente",
-    bg: "bg-ok/10",
-    text: "text-ok-ink",
-  },
-  recorrente: {
-    label: "Fiéis",
-    badgeLabel: "Cliente Fiel",
-    bg: "bg-[#6b38d4]/10",
-    text: "text-[#6b38d4]",
-  },
-  remarketing: {
-    label: "Clientes Sumidos",
-    badgeLabel: "Clientes Sumidos",
-    bg: "bg-brand-gold-ink/10",
-    text: "text-brand-gold-ink",
-  },
-  perdido: {
-    label: "Perdido",
-    badgeLabel: "Perdido",
-    bg: "bg-surface-line",
-    text: "text-ink-2",
-  },
-};
-
-const FILTER_TABS = [
-  { key: "todos", label: "Todos", status: null },
-  { key: "novo_lead", label: "Responder", status: "novo_lead" },
-  { key: "em_negociacao", label: "Negociando", status: "em_negociacao" },
-  { key: "cliente", label: "Clientes", status: "cliente" },
-  { key: "recorrente", label: "Fiéis", status: "recorrente" },
-  { key: "remarketing", label: "Sumidos", status: "remarketing" },
-];
+// Aba Todos: cartões renderizados de 50 em 50 (há unidade com 3 mil contatos)
+const PAGE_SIZE = 50;
 
 const SOURCE_CONFIG = {
   manual: { label: "Manual", bg: "bg-surface-line", text: "text-ink-2" },
   bot: { label: "Bot", bg: "bg-ok/10", text: "text-ok-ink" },
-  whatsapp: { label: "WhatsApp", bg: "bg-[#075e54]/10", text: "text-[#075e54]" },
 };
 
 function timeAgo(dateStr) {
@@ -101,6 +61,8 @@ function formatCurrency(value) {
 export default function MyContacts() {
   const { user: currentUser, selectedFranchise } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [contacts, setContacts] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -148,7 +110,7 @@ export default function MyContacts() {
     if (msg.includes("Tempo limite")) {
       return "Servidor demorou para responder. Tente novamente.";
     }
-    return msg || "Erro desconhecido";
+    return safeErrorMessage(error, "Não deu para salvar o contato. Tente novamente.");
   };
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
@@ -165,9 +127,27 @@ export default function MyContacts() {
     [franchises, currentUser, selectedFranchise]
   );
   const activeEvoId = activeFranchise?.evolution_instance_id;
+  // "Hoje" (quem chamar) é a aba padrão do franqueado. Admin sem unidade escolhida só tem "Todos".
+  const abaParam = searchParams.get("aba");
+  const activeTab =
+    activeEvoId && (abaParam === "hoje" || (!isAdmin && abaParam !== "todos")) ? "hoje" : "todos";
+  const changeTab = (tab) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("aba", tab);
+        return next;
+      },
+      { replace: true }
+    );
+  const cidade = cidadeDaUnidade(activeFranchise);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeFilter, searchTerm, dateFilter, sourceFilter, sortBy, activeEvoId]);
 
   const CONTACT_COLUMNS =
-    'id, franchise_id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas';
+    'id, franchise_id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas, do_not_contact_at';
 
   const loadContacts = useCallback(async (retryCount = 0) => {
     abortControllerRef.current?.abort();
@@ -189,21 +169,21 @@ export default function MyContacts() {
             columns: CONTACT_COLUMNS,
             signal: controller.signal,
           });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || controller.signal.aborted) return;
       setContacts(data);
     } catch (error) {
-      if (error?.name === 'AbortError') return;
+      if (error?.name === 'AbortError' || controller.signal.aborted) return;
       if (!mountedRef.current) return;
       if (retryCount < 1) {
         await new Promise(r => setTimeout(r, 1000));
-        if (mountedRef.current) return loadContacts(retryCount + 1);
+        if (mountedRef.current && !controller.signal.aborted) return loadContacts(retryCount + 1);
         return;
       }
       console.error("Erro ao carregar contatos:", error);
-      setLoadError("Erro ao carregar contatos. Tente novamente.");
+      setLoadError(safeErrorMessage(error, "Erro ao carregar contatos. Tente novamente."));
       toast.error("Erro ao carregar contatos");
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current && !controller.signal.aborted) setLoading(false);
     }
   }, [isAdmin, activeEvoId]);  
 
@@ -214,7 +194,7 @@ export default function MyContacts() {
       .catch((error) => {
         console.error("Erro ao carregar franquias:", error);
         if (!mountedRef.current) return;
-        setLoadError("Erro ao carregar suas unidades. Tente novamente.");
+        setLoadError(safeErrorMessage(error, "Erro ao carregar suas unidades. Tente novamente."));
         setLoading(false);
       });
     return () => {
@@ -235,21 +215,11 @@ export default function MyContacts() {
     loadContacts();
   }, [isAdmin, activeEvoId, franchises.length, loadContacts]);
 
-  const statusCounts = useMemo(() => {
-    const counts = {};
-    for (const status of Object.keys(STATUS_CONFIG)) {
-      counts[status] = contacts.filter((c) => c.status === status).length;
-    }
-    return counts;
-  }, [contacts]);
-
   const filteredContacts = useMemo(() => {
     let result = contacts;
 
-    // Filter by status tab
-    if (activeFilter !== "todos") {
-      result = result.filter((c) => c.status === activeFilter);
-    }
+    // Chips: Todos / Fiéis / Nunca compraram / Sumidos / Sem telefone / Não chamar
+    result = filtrarClientes(result, activeFilter);
 
     // Filter by search term
     if (searchTerm.trim()) {
@@ -309,6 +279,7 @@ export default function MyContacts() {
       endereco: contact.endereco || "",
       bairro: contact.bairro || "",
       notas: contact.notas || "",
+      do_not_contact_at: contact.do_not_contact_at || null,
     });
   };
 
@@ -360,6 +331,10 @@ export default function MyContacts() {
         bairro: capitalize(editForm.bairro) || null,
         notas: editForm.notas?.trim() || null,
       };
+      // Só grava "não chamar" se a pessoa mexeu na caixa (a lista pode estar velha)
+      if ((editForm.do_not_contact_at || null) !== (editingContact.do_not_contact_at || null)) {
+        updateData.do_not_contact_at = editForm.do_not_contact_at || null;
+      }
       await Contact.update(editingContact.id, updateData);
       toast.success("Contato atualizado");
       setEditingContact(null);
@@ -399,8 +374,6 @@ export default function MyContacts() {
   const getContactPhone = (contact) =>
     contact.telefone || contact.contact_phone || "";
 
-  const getContactStatus = (contact) => contact.status || "novo_lead";
-
   const navigateToSales = (contact) => {
     const params = new URLSearchParams({ action: "nova-venda" });
     if (contact.id) params.set("contact_id", contact.id);
@@ -410,27 +383,27 @@ export default function MyContacts() {
   };
 
   // Loading skeleton
-  if (loading) {
+  if (loading && activeTab !== "hoje") {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-48 bg-surface-line rounded-xl animate-pulse" />
+          <Skeleton className="h-8 w-48 rounded-xl motion-reduce:animate-none" />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-9 w-28 bg-surface-line rounded-xl animate-pulse shrink-0" />
+            <Skeleton key={i} className="h-11 w-28 rounded-xl shrink-0 motion-reduce:animate-none" />
           ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-40 bg-white rounded-2xl border border-ink-shadow/5 animate-pulse" />
+            <Skeleton key={i} className="h-40 rounded-2xl motion-reduce:animate-none" />
           ))}
         </div>
       </div>
     );
   }
 
-  if (loadError) {
+  if (loadError && activeTab !== "hoje") {
     return (
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
         <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -480,6 +453,54 @@ export default function MyContacts() {
           <span className="hidden sm:inline">Novo Cliente</span>
         </Button>
       </div>
+
+      {/* Hoje = quem chamar hoje · Todos = a lista completa */}
+      <div className="flex gap-2" role="tablist" aria-label="Listas de clientes">
+        {[
+          activeEvoId && { key: "hoje", label: "Hoje", icon: "campaign" },
+          { key: "todos", label: "Todos", icon: "people", count: contacts.length },
+        ]
+          .filter(Boolean)
+          .map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => changeTab(tab.key)}
+                className={`flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-brand text-white shadow-sm"
+                    : "border border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface"
+                }`}
+              >
+                <MaterialIcon icon={tab.icon} size={18} />
+                {tab.label}
+                {tab.count != null && <span className="font-mono-numbers opacity-80">{tab.count}</span>}
+              </button>
+            );
+          })}
+      </div>
+
+      {activeTab === "hoje" && (
+        <DailyActionsList
+          variant="full"
+          franchiseId={activeEvoId}
+          cidade={cidade}
+          onContactChanged={(id, patch) =>
+            setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
+          }
+          onVerSemTelefone={() => {
+            setActiveFilter("sem_telefone");
+            setSearchTerm("");
+            setSourceFilter("all");
+            setDateFilter("all");
+            changeTab("todos");
+          }}
+        />
+      )}
 
       {/* Create Contact Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
@@ -551,35 +572,8 @@ export default function MyContacts() {
         </DialogContent>
       </Dialog>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {FILTER_TABS.map((tab) => {
-          const count = tab.status ? statusCounts[tab.status] || 0 : contacts.length;
-          const isActive = activeFilter === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveFilter(tab.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
-                isActive
-                  ? "bg-brand text-white shadow-sm"
-                  : "bg-white text-ink-2 border border-ink-shadow/10 hover:bg-surface"
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
-                  isActive
-                    ? "bg-white/20 text-white"
-                    : "bg-surface-line text-ink-2"
-                }`}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {activeTab === "todos" && <>
+      <ContactFilterChips contacts={contacts} activeFilter={activeFilter} onChange={setActiveFilter} />
 
       {/* Search + Filters */}
       <FilterBar
@@ -596,7 +590,6 @@ export default function MyContacts() {
               { value: "all", label: "Todas origens" },
               { value: "manual", label: "Manual" },
               { value: "bot", label: "Bot" },
-              { value: "whatsapp", label: "WhatsApp" },
             ],
           },
           {
@@ -633,7 +626,7 @@ export default function MyContacts() {
             size="sm"
             className="gap-1.5 text-xs h-8 rounded-xl border-ink-shadow/10"
             onClick={() => {
-              const headers = ["Nome", "Telefone", "Status", "Origem", "Total Compras", "Valor Total", "Último Contato", "Endereço", "Bairro"];
+              const headers = ["Nome", "Telefone", "Marca", "Origem", "Total Compras", "Valor Total", "Última Compra", "Último Contato", "Não Chamar", "Endereço", "Bairro"];
               const escape = (v) => {
                 const s = String(v ?? "");
                 return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
@@ -641,11 +634,13 @@ export default function MyContacts() {
               const rows = filteredContacts.map((c) => [
                 escape(sanitizeCSVCell(c.nome || c.customer_name || "")),
                 escape(sanitizeCSVCell(c.telefone ? formatPhone(c.telefone) : "")),
-                escape(sanitizeCSVCell(c.status || "")),
+                escape(sanitizeCSVCell(marcaDoCliente(c.purchase_count).label)),
                 escape(sanitizeCSVCell(c.source || "manual")),
                 c.purchase_count ?? 0,
-                (parseFloat(c.total_spent) || 0).toFixed(2).replace(".", ","),
+                escape((parseFloat(c.total_spent) || 0).toFixed(2).replace(".", ",")),
+                c.last_purchase_at ? format(new Date(c.last_purchase_at), "dd/MM/yyyy") : "",
                 c.last_contact_at ? c.last_contact_at.substring(0, 10).split("-").reverse().join("/") : "",
+                c.do_not_contact_at ? "Sim" : "",
                 escape(sanitizeCSVCell(c.endereco || "")),
                 escape(sanitizeCSVCell(c.bairro || "")),
               ].join(","));
@@ -683,11 +678,9 @@ export default function MyContacts() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredContacts.map((contact) => {
+          {filteredContacts.slice(0, visibleCount).map((contact) => {
             const name = getContactName(contact);
             const phone = getContactPhone(contact);
-            const status = getContactStatus(contact);
-            const config = STATUS_CONFIG[status] || STATUS_CONFIG.novo_lead;
             const hasPurchases = (contact.purchase_count || 0) > 0;
 
             return (
@@ -702,14 +695,14 @@ export default function MyContacts() {
                 {/* Top row: name, phone, badge */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-ink truncate text-base">
+                    <h3 className="font-plus-jakarta font-semibold text-ink truncate text-base">
                       {name}
                     </h3>
-                    <p className="text-sm text-ink-2 font-mono-numbers">
+                    <p className="truncate text-sm text-ink-2 font-mono-numbers">
                       {formatPhone(phone)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex shrink-0 flex-col items-end gap-1">
                     {(() => {
                       const src = contact.source || "manual";
                       const srcCfg = SOURCE_CONFIG[src] || SOURCE_CONFIG.manual;
@@ -719,13 +712,17 @@ export default function MyContacts() {
                         </span>
                       );
                     })()}
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${config.bg} ${config.text}`}
-                    >
-                      {config.badgeLabel}
-                    </span>
+                    <CustomerMark purchases={contact.purchase_count} />
+                    {contact.do_not_contact_at && (
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-surface-line px-2 py-1 text-xs text-ink-3">
+                        <MaterialIcon icon="block" size={14} />
+                        Não chamar
+                      </span>
+                    )}
                   </div>
                 </div>
+
+                <Recency days={diasEntre(contact.last_purchase_at)} />
 
                 {/* Purchase info or lead info */}
                 <div className="text-sm text-ink-2">
@@ -736,16 +733,13 @@ export default function MyContacts() {
                         {contact.purchase_count}{" "}
                         {contact.purchase_count === 1 ? "compra" : "compras"}
                         {contact.total_spent ? ` · ${formatCurrency(contact.total_spent)} total` : ""}
-                        {contact.last_purchase_at
-                          ? ` · última há ${timeAgo(contact.last_purchase_at)}`
-                          : ""}
                       </span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <MaterialIcon icon="schedule" size={16} className="text-ink-2 shrink-0" />
                       <span>
-                        Novo lead
+                        Chegou
                         {contact.created_at
                           ? ` · há ${timeAgo(contact.created_at)}`
                           : ""}
@@ -779,7 +773,7 @@ export default function MyContacts() {
                         href={getWhatsAppLink(phone)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
+                        className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
                       >
                         <MaterialIcon icon="chat" size={16} />
                         <span className="hidden sm:inline">WhatsApp</span>
@@ -789,7 +783,7 @@ export default function MyContacts() {
                   ) : (
                     <button
                       onClick={() => openEdit(contact)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
+                      className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
                       title="Adicionar telefone para usar WhatsApp"
                     >
                       <MaterialIcon icon="phone" size={16} />
@@ -799,7 +793,7 @@ export default function MyContacts() {
                   )}
                   <button
                     onClick={() => navigateToSales(contact)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-brand-gold/10 text-brand-gold-ink hover:bg-brand-gold/20 transition-colors"
+                    className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-brand-gold/10 text-brand-gold-ink hover:bg-brand-gold/20 transition-colors"
                   >
                     <MaterialIcon icon="point_of_sale" size={16} />
                     <span className="hidden sm:inline">+ Venda</span>
@@ -807,7 +801,7 @@ export default function MyContacts() {
                   </button>
                   <button
                     onClick={() => openEdit(contact)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-surface-line text-ink-2 hover:bg-surface-line/80 transition-colors ml-auto"
+                    className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-surface-line text-ink-2 hover:bg-surface-line/80 transition-colors ml-auto"
                     title="Editar contato"
                   >
                     <MaterialIcon icon="edit" size={16} />
@@ -819,6 +813,20 @@ export default function MyContacts() {
           })}
         </div>
       )}
+
+      {filteredContacts.length > visibleCount && (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          className="min-h-11 w-full rounded-xl border border-ink-shadow/10 bg-white px-4 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface"
+        >
+          Mostrar mais{" "}
+          <span className="font-mono-numbers text-ink-3">
+            (faltam {filteredContacts.length - visibleCount})
+          </span>
+        </button>
+      )}
+      </>}
 
       {/* Edit Dialog */}
       <Dialog
@@ -879,6 +887,25 @@ export default function MyContacts() {
                 className="bg-surface-line border-none rounded-xl"
               />
             </div>
+
+            {/* Cliente pediu para não receber mensagem: sai de "Quem chamar hoje" */}
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-ink-shadow/10 p-3 text-sm text-ink">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+                checked={!!editForm.do_not_contact_at}
+                onChange={(event) =>
+                  setEditForm({
+                    ...editForm,
+                    do_not_contact_at: event.target.checked ? new Date().toISOString() : null,
+                  })
+                }
+              />
+              <span>
+                <span className="block font-medium">Não chamar mais</span>
+                <span className="block text-xs text-ink-3">Não aparece em &quot;Quem chamar hoje&quot;.</span>
+              </span>
+            </label>
 
             {/* Notas */}
             <div className="space-y-1.5">

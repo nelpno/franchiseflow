@@ -56,11 +56,12 @@ export function formatPhone(phone) {
   return phone;
 }
 
-export function getWhatsAppLink(phone) {
+export function getWhatsAppLink(phone, text) {
   if (!phone) return "#";
   const digits = phone.replace(/\D/g, "");
-  if (isInternationalPhone(digits)) return `https://wa.me/${digits}`;
+  const suffix = text ? `?text=${encodeURIComponent(text)}` : "";
+  if (isInternationalPhone(digits)) return `https://wa.me/${digits}${suffix}`;
   // DDD 55 (RS) is a valid local number: only 12+ digits already carry the 55
   const number = digits.startsWith("55") && digits.length >= 12 ? digits : `55${digits}`;
-  return `https://wa.me/${number}`;
+  return `https://wa.me/${number}${suffix}`;
 }

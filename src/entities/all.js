@@ -500,3 +500,24 @@ export const User = {
     })(), QUERY_TIMEOUT_MS, signal);
   }
 };
+
+// "Quem chamar hoje" (supabase/2026-09-17-crm-quem-chamar-hoje.sql).
+// A RPC devolve null para unidade que o usuário não enxerga.
+export async function getDailyCustomerActions(franchiseId, limit = 8) {
+  const { data, error } = await withTimeout(supabase.rpc('get_daily_customer_actions', {
+    p_franchise_id: franchiseId,
+    p_limit: limit,
+  }), QUERY_TIMEOUT_MS);
+  if (error) throw error;
+  return data ?? null;
+}
+
+// status: 'sent' | 'skipped' | null (null desfaz a ação de hoje)
+export async function registrarAcaoCliente(contactId, actionType, status) {
+  const { error } = await withTimeout(supabase.rpc('registrar_acao_cliente', {
+    p_contact_id: contactId,
+    p_action_type: actionType,
+    p_status: status,
+  }), 30000);
+  if (error) throw error;
+}

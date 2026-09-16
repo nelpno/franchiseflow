@@ -32,22 +32,6 @@ const SCENARIOS = [
     },
   },
   {
-    key: "leads",
-    check: ({ smartActions }) => smartActions?.some(a => a.type === "responder"),
-    render: ({ smartActions }) => {
-      const leads = smartActions.filter(a => a.type === "responder");
-      const names = leads.slice(0, 2).map(a => a.contact?.nome || a.contact?.telefone).filter(Boolean).join(", ");
-      return {
-        icon: "chat",
-        title: `${leads.length} ${leads.length === 1 ? "cliente aguardando" : "clientes aguardando"} resposta`,
-        subtitle: names || "Leads sem retorno há mais de 1 dia",
-        cta: "Responder",
-        navigateTo: "/MyContacts",
-        colors: { bg: "#fff7ed", border: "#fed7aa", button: "#d97706" },
-      };
-    },
-  },
-  {
     key: "frete",
     check: ({ coachActions }) => coachActions?.some(a => a.type === "revisar_frete"),
     render: ({ coachActions }) => {
@@ -126,10 +110,10 @@ const SCENARIOS = [
   },
 ];
 
-export default function PriorityAction({ healthResult, smartActions, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription, onOpenPaymentSheet }) {
+export default function PriorityAction({ healthResult, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription, onOpenPaymentSheet }) {
   const navigate = useNavigate();
 
-  const ctx = { healthResult, smartActions, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription };
+  const ctx = { healthResult, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription };
   const activeScenario = SCENARIOS.find(s => s.check(ctx));
 
   if (!activeScenario) {
