@@ -18,7 +18,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
 import FilterBar from "@/components/shared/FilterBar";
-import { formatPhone, normalizePhone, getWhatsAppLink } from "@/lib/whatsappUtils";
+import { formatPhone, normalizePhone, getWhatsAppLink, isInternationalPhone } from "@/lib/whatsappUtils";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
@@ -300,10 +300,12 @@ export default function MyContacts() {
   }, [contacts, activeFilter, searchTerm, dateFilter, sourceFilter, sortBy]);
 
   const openEdit = (contact) => {
+    const telefone = contact.telefone || contact.contact_phone || "";
     setEditingContact(contact);
     setEditForm({
       nome: contact.nome || contact.customer_name || "",
-      telefone: contact.telefone || contact.contact_phone || "",
+      // Estrangeiro abre com "+" para a franquia reconhecer o DDI (salvar tira o "+" de novo)
+      telefone: isInternationalPhone(telefone) ? "+" + telefone : telefone,
       endereco: contact.endereco || "",
       bairro: contact.bairro || "",
       notas: contact.notas || "",
@@ -503,6 +505,7 @@ export default function MyContacts() {
                 placeholder="(14) 99999-9999"
                 className="bg-surface-line border-none rounded-xl"
               />
+              <p className="text-xs text-ink-2/70">De outro país? Comece com + e o código do país (ex.: +1 321 438 4841).</p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-ink">Endereço</Label>
@@ -637,7 +640,7 @@ export default function MyContacts() {
               };
               const rows = filteredContacts.map((c) => [
                 escape(sanitizeCSVCell(c.nome || c.customer_name || "")),
-                escape(c.telefone ? formatPhone(c.telefone) : ""),
+                escape(sanitizeCSVCell(c.telefone ? formatPhone(c.telefone) : "")),
                 escape(sanitizeCSVCell(c.status || "")),
                 escape(sanitizeCSVCell(c.source || "manual")),
                 c.purchase_count ?? 0,
@@ -850,6 +853,7 @@ export default function MyContacts() {
                 placeholder="(11) 99999-9999"
                 className="bg-surface-line border-none rounded-xl"
               />
+              <p className="text-xs text-ink-2/70">De outro país? Comece com + e o código do país (ex.: +1 321 438 4841).</p>
             </div>
 
             {/* Endereco */}

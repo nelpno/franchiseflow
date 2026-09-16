@@ -18,7 +18,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { parseDeliveryFeeOptions } from "@/lib/deliveryFeeRules";
-import { normalizePhone } from "@/lib/whatsappUtils";
+import { normalizePhone, formatPhone } from "@/lib/whatsappUtils";
 import { safeErrorMessage, ehErroDeRegra } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -206,20 +206,6 @@ const formatCurrency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     value || 0
   );
-
-// Format phone for display
-function formatPhone(phone) {
-  if (!phone) return "";
-  const digits = phone.replace(/\D/g, "");
-  const local = digits.startsWith("55") ? digits.slice(2) : digits;
-  if (local.length === 11) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
-  }
-  if (local.length === 10) {
-    return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
-  }
-  return phone;
-}
 
 // ---------------------------------------------------------------------------
 // ContactAutocomplete — server-side search with debounce
