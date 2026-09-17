@@ -224,6 +224,14 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - **Link vencido** (`otp_expired`): o `AuthContext` lê o erro no hash/query ANTES do `type=invite`, limpa só os parâmetros de erro e guarda `auth_link_error` no sessionStorage; o Login mostra o aviso. Com sessão ativa, o flag é apagado.
 - **Rio Grande - RS (`riogranders`) é unidade de TESTE** (como "teste nelson"), sem "Teste" no nome: tirar de qualquer métrica.
 
+### Primeiros passos — Fase 2: trilha de 5 passos (no ar 17/09/2026)
+> SQL: [2026-09-16-onboarding-facts.sql](supabase/2026-09-16-onboarding-facts.sql), [2026-09-16-onboarding-item.sql](supabase/2026-09-16-onboarding-item.sql). Conteúdo das tarefas: `src/components/onboarding/journeySteps.js` (links em `materiais.js`); estado: `src/lib/onboardingJourney.js` (`montarJornada`, testado).
+- **O que o sistema vê marca sozinho** (`get_onboarding_facts`: 1º pedido, entrega, resposta do robô, venda, estoque, cardápio); o físico fecha com "Marcar como feito" (`p_*`); a Maxi marca os `maxi_*` (legado `4-4`/`8-1`/`9-3` ainda conta como feito).
+- **Item grava sozinho** (`set_onboarding_item`, INVOKER): nunca reenviar o mapa `items` inteiro (quem abriu antes apagava o que o outro marcou).
+- 🔴 **Percentual/status só a sincronização automática grava**, e ela espera: fatos lidos com sucesso (`factsOk`), nenhuma confirmação salvando (`salvandoItens`) e checklist da MESMA unidade da tela. Sem isso, falha de rede regredia o % e troca de unidade gravava na anterior. Resposta atrasada se descarta por `loadSeqRef`/`aplicarLinha`.
+- **RPC SECURITY DEFINER com `not (a or b)`: embrulhar em `coalesce(…, false)`** — sem perfil o helper devolve NULL, `not NULL` cai no `else` e entrega os dados (a `get_onboarding_facts` vazava assim até 17/09).
+- A % que o admin vê só se atualiza quando a franqueada abre a trilha. Prévia sem login: `npx vite --config .tmp/harness-onboarding/vite.config.mjs` → `:5197/Onboarding?cenario=novo|passo2|pedido|quase|concluido|fiscal|admin` (+ `falha=fatos|item`, `lento=1`, `legado=1`); limpar o sessionStorage entre cenários (senão aparece o toast "Pronto… Próximo").
+
 ### Quem chamar hoje — CRM do franqueado (17/09/2026)
 > 📄 Design e números que o justificam: [docs/superpowers/specs/2026-09-16-quem-chamar-hoje-design.md](docs/superpowers/specs/2026-09-16-quem-chamar-hoje-design.md). SQL: [supabase/2026-09-17-crm-quem-chamar-hoje.sql](supabase/2026-09-17-crm-quem-chamar-hoje.sql).
 - Lista diária de até 8 clientes para chamar no WhatsApp: cartão na **Início** (3 primeiros) + aba **Hoje** de Meus Clientes (abre por padrão; `?aba=hoje|todos`). Substituiu o `SmartActions` ("Outras ações").
