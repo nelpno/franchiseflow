@@ -512,6 +512,25 @@ export async function getDailyCustomerActions(franchiseId, limit = 8) {
   return data ?? null;
 }
 
+// Primeiros passos: única porta para concluir ('approved') ou reabrir ('in_progress').
+// Só admin/gerente; o banco recusa o resto (guard em onboarding_checklists).
+export async function setOnboardingStatus(franchiseId, status) {
+  const { data, error } = await withTimeout(supabase.rpc('set_onboarding_status', {
+    p_franchise_id: franchiseId,
+    p_status: status,
+  }), 30000);
+  if (error) throw error;
+  return data ?? null;
+}
+
+// Pedido modelo da Maxi para o 1º pedido: [{ product_name, quantidade }].
+// Quantidades ficam em catalog_products.qtd_pedido_modelo.
+export async function getPedidoModelo() {
+  const { data, error } = await withTimeout(supabase.rpc('get_pedido_modelo'), QUERY_TIMEOUT_MS);
+  if (error) throw error;
+  return data ?? [];
+}
+
 // status: 'sent' | 'skipped' | null (null desfaz a ação de hoje)
 export async function registrarAcaoCliente(contactId, actionType, status) {
   const { error } = await withTimeout(supabase.rpc('registrar_acao_cliente', {

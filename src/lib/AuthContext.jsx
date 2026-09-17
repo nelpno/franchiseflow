@@ -117,11 +117,58 @@ export const AuthProvider = ({ children }) => {
   }, [loadUserProfile]);
 
   useEffect(() => {
-    // Detect invite/recovery tokens in URL hash OR search params (PKCE flow)
+    // Link vencido/usado manda o erro no HASH (fluxo implícito, ex:
+    // #error=access_denied&error_code=otp_expired&...) OU na QUERY (fluxo PKCE,
+    // ?error=...&error_code=...). Tem que ser lido ANTES da detecção de
+    // type=invite|recovery abaixo: desde que o convite passou a cair em
+    // /set-password?type=invite, um link vencido chega como
+    // "/set-password?type=invite#error=access_denied&error_code=otp_expired..." e,
+    // sem essa guarda, o bloco de baixo ligaria needsPasswordSetup mesmo sem sessão
+    // nenhuma criada.
+    //
+    // Momento da limpeza da URL: aqui mesmo, síncrono, ANTES de qualquer await deste
+    // efeito (getSession, exchangeCodeForSession) — então não corre contra o próprio
+    // código deste componente. E só mexe nas chaves DE ERRO (+ "type", que veio junto
+    // do link vencido); access_token/refresh_token/code nunca são tocados quando não
+    // há erro — o supabase-js (detectSessionInUrl default true, ver
+    // src/api/supabaseClient.js) ainda precisa deles pra criar a sessão, e no caminho
+    // de ERRO ele não tem sessão pra salvar, então não reescreve a URL sozinho — hoje
+    // o hash de erro fica pendurado ali pra sempre, e é esse resíduo que este bloco
+    // resolve.
     const hash = window.location.hash;
+    const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
     const searchParams = new URLSearchParams(window.location.search);
-    const hashType = hash.match(/type=(invite|recovery)/)?.[1];
-    const searchType = searchParams.get('type');
+
+    const linkErrorCode = hashParams.get('error_code') || searchParams.get('error_code');
+    const linkError = hashParams.get('error') || searchParams.get('error');
+    const linkErrorDescription = hashParams.get('error_description') || searchParams.get('error_description');
+    const hasLinkError = Boolean(linkErrorCode || linkError || linkErrorDescription);
+
+    if (hasLinkError) {
+      sessionStorage.setItem('auth_link_error', linkErrorCode || linkError || 'unknown_error');
+      try {
+        window.clarity?.('event', 'link_vencido_detectado');
+      } catch {
+        // Analytics nunca pode travar o auth
+      }
+
+      ['error', 'error_code', 'error_description', 'sb', 'type'].forEach((key) => {
+        hashParams.delete(key);
+        searchParams.delete(key);
+      });
+      const newSearch = searchParams.toString();
+      const newHash = hashParams.toString();
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname + (newSearch ? `?${newSearch}` : '') + (newHash ? `#${newHash}` : '')
+      );
+    }
+
+    // Detect invite/recovery tokens in URL hash OR search params (PKCE flow) —
+    // pulado quando há erro (link vencido não deve ligar needsPasswordSetup)
+    const hashType = !hasLinkError ? hash.match(/type=(invite|recovery)/)?.[1] : null;
+    const searchType = !hasLinkError ? searchParams.get('type') : null;
     const type = hashType || searchType;
 
     if (type === 'invite' || type === 'recovery') {
@@ -154,6 +201,9 @@ export const AuthProvider = ({ children }) => {
 
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          // Link velho reaberto por quem já está logada (o caso real medido no
+          // Clarity): segue normal e o aviso não fica guardado para um logout futuro.
+          sessionStorage.removeItem('auth_link_error');
           await loadUserProfile(session.user);
         } else {
           setIsLoading(false);

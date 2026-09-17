@@ -34,6 +34,11 @@ export async function saveFiscalData(franchiseId, evolutionInstanceId, data) {
   const franchisePatch = pick(data, FRANCHISE_FIELDS);
   const configPatch = pick(data, CONFIG_FIELDS);
 
+  // Guarda ANTES de mexer no configPatch (que ainda ganha o unit_address montado
+  // mais abaixo): "tem campo de configuração no patch" é sobre o que o CHAMADOR
+  // pediu, não sobre o efeito colateral do assembly de endereço.
+  const hasExplicitConfigFields = Object.keys(configPatch).length > 0;
+
   // Normaliza: strings vazias viram null (evita CHECK constraint e lixo no banco)
   for (const k of Object.keys(franchisePatch)) {
     if (franchisePatch[k] === "") franchisePatch[k] = null;
@@ -60,6 +65,13 @@ export async function saveFiscalData(franchiseId, evolutionInstanceId, data) {
     currentFranchise = rows[0] || null;
   } catch {
     // leitura opcional: sem ela o endereço sai só com o que veio no patch
+  }
+
+  // Sem isso, o patch de franquia gravava normal e o de configuração sumia em
+  // silêncio (currentConfig null => o `if (... && currentConfig)` mais abaixo
+  // nunca disparava) — quem chamou achava que salvou tudo.
+  if (hasExplicitConfigFields && !currentConfig) {
+    throw new Error("Configuração da unidade não encontrada");
   }
 
   const assembledAddress = resolveDeliveryAddress(

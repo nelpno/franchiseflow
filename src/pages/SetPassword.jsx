@@ -13,7 +13,7 @@ export default function SetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { clearPasswordSetup } = useAuth();
+  const { clearPasswordSetup, user } = useAuth();
   const navigate = useNavigate();
 
   const isRecovery = sessionStorage.getItem('password_setup_type') === 'recovery';
@@ -44,7 +44,11 @@ export default function SetPassword() {
       toast.success(isRecovery ? 'Senha redefinida com sucesso!' : 'Senha criada com sucesso! Bem-vindo!');
       clearPasswordSetup();
       sessionStorage.removeItem('password_setup_type');
-      navigate(isRecovery ? '/' : '/OnboardingWelcome');
+      // Só franqueado passa pelo onboarding guiado; admin/gerente/CS (e papel ainda
+      // desconhecido, caso o perfil não tenha carregado a tempo) vão direto pro painel —
+      // o Layout já redireciona franqueado novo pras boas-vindas quando é o caso.
+      const isFranchisee = user?.role === 'franchisee';
+      navigate(isRecovery ? '/' : (isFranchisee ? '/OnboardingWelcome' : '/'));
     } catch (error) {
       toast.error(safeErrorMessage(error, "Erro ao definir senha."));
     } finally {

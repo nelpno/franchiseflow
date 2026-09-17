@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, getPedidoModelo } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
+import { quantidadesDoModelo } from "@/lib/pedidoModelo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ export default function PurchaseOrderForm({
   inventoryItems,
   saleItems,
   initialQuantities,
+  primeiroPedido = false,
   onSave,
   onCancel,
 }) {
@@ -157,7 +159,52 @@ export default function PurchaseOrderForm({
 
   const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
 
+  // Pedido modelo da Maxi (1º pedido): busca ao abrir; falha aqui NÃO bloqueia o formulário,
+  // só não mostra a faixa. `modeloAplicadoRef` alimenta o evento de Clarity no envio.
+  const [pedidoModeloItens, setPedidoModeloItens] = useState(null);
+  const modeloAplicadoUmaVezRef = useRef(false);
+  const modeloAplicadoRef = useRef(false);
+  // Se ela já mexeu nas quantidades enquanto o modelo carregava, o modelo não sobrescreve.
+  const usuarioMexeuRef = useRef(false);
+
+  useEffect(() => {
+    if (!primeiroPedido) return;
+    let alive = true;
+    getPedidoModelo()
+      .then((modelo) => { if (alive && modelo?.length > 0) setPedidoModeloItens(modelo); })
+      .catch(() => { /* sem modelo: formulário segue normal, sem a faixa */ });
+    return () => { alive = false; };
+  }, [primeiroPedido]);
+
+  const aplicarModelo = useCallback(() => {
+    if (!pedidoModeloItens || standardProducts.length === 0) return;
+    const { quantidades, naoCasados } = quantidadesDoModelo(standardProducts, pedidoModeloItens);
+    if (typeof import.meta !== "undefined" && import.meta.env?.DEV && naoCasados.length > 0) {
+      console.warn(
+        "[PurchaseOrderForm] produtos do pedido modelo sem item correspondente no catálogo da unidade:",
+        naoCasados
+      );
+    }
+    const next = {};
+    standardProducts.forEach((item) => { next[item.id] = quantidades[item.id] || 0; });
+    setQuantities(next);
+    modeloAplicadoRef.current = true;
+  }, [pedidoModeloItens, standardProducts]);
+
+  // Preenche automaticamente UMA vez ao carregar — só se não houver rascunho com quantidade
+  // (rascunho > modelo, mesma prioridade que já vale para initialQuantities).
+  useEffect(() => {
+    if (!pedidoModeloItens || standardProducts.length === 0) return;
+    if (modeloAplicadoUmaVezRef.current) return;
+    modeloAplicadoUmaVezRef.current = true;
+    if (usuarioMexeuRef.current) return;
+    const draftTemQuantidade = draft.current?.quantities
+      && Object.values(draft.current.quantities).some((v) => v > 0);
+    if (!draftTemQuantidade) aplicarModelo();
+  }, [pedidoModeloItens, standardProducts, aplicarModelo]);
+
   const setQty = (itemId, value) => {
+    usuarioMexeuRef.current = true;
     if (value === "" || value === undefined) {
       setQuantities((prev) => ({ ...prev, [itemId]: "" }));
       return;
@@ -170,6 +217,7 @@ export default function PurchaseOrderForm({
   };
 
   const handleUseSuggestions = () => {
+    usuarioMexeuRef.current = true;
     const newQtys = { ...quantities };
     standardProducts.forEach((item) => {
       const sug = getSuggestion(item);
@@ -267,6 +315,9 @@ export default function PurchaseOrderForm({
       } catch { /* notificação é bonus, pedido já foi criado */ }
 
       clearDraft();
+      if (modeloAplicadoRef.current) {
+        try { window.clarity?.('event', 'pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }
+      }
       toast.success("Pedido enviado com sucesso!", { id: toastId });
       // NÃO resetar submittingRef — componente vai desmontar via onSave
       if (onSave) onSave();
@@ -288,6 +339,31 @@ export default function PurchaseOrderForm({
 
   return (
     <div className="space-y-4">
+      {/* Pedido modelo da Maxi (1º pedido) */}
+      {primeiroPedido && pedidoModeloItens && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-[#fbf6e6] border border-[#ecdca8]">
+          <MaterialIcon icon="star" size={20} className="text-brand-gold-ink shrink-0" />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-brand-gold-ink font-plus-jakarta">
+              Pedido modelo da Maxi
+            </h3>
+            <p className="text-xs text-ink-2 mt-0.5">
+              Já preenchemos com a sugestão da Maxi para começar com variedade. Mude o que quiser antes de enviar.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={aplicarModelo}
+            className="gap-2 border-brand-gold text-brand-gold-ink font-bold rounded-xl hover:bg-brand-gold/10 min-h-[40px] shrink-0"
+          >
+            <MaterialIcon icon="replay" size={16} />
+            Voltar ao modelo
+          </Button>
+        </div>
+      )}
+
       {/* Draft restored indicator */}
       {draft.current && !initialQuantities && (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-sm text-brand-gold-ink">

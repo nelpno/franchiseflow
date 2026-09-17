@@ -11,7 +11,7 @@ export const ITEM_DETAILS = {
   },
   "1-3": {
     text: "O Drive contém todos os vídeos de treinamento. Se não conseguir acessar, peça ao franqueador para liberar seu e-mail.",
-    links: [{ label: "Acessar Drive de Treinamento", url: "https://drive.google.com/drive/u/1/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
+    links: [{ label: "Acessar Drive de Treinamento", url: "https://drive.google.com/drive/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh" }],
   },
 
   // === MISSÃO 2: Conheça Seus Produtos ===
@@ -38,7 +38,7 @@ export const ITEM_DETAILS = {
     links: [{ label: "Artes da sacola (Google Drive)", url: "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9?usp=drive_link" }],
   },
   "3-4": {
-    text: "Os uniformes são fornecidos diretamente pelo franqueador.\n\nInforme ao franqueador a quantidade de uniformes necessários (camisetas, aventais, etc.) para que ele providencie a encomenda.",
+    text: "O uniforme custa R$ 60 e vai junto com a entrega do seu pedido.\n\nAvise a equipe Maxi o tamanho e a quantidade antes do primeiro pedido.",
   },
 
   // === MISSÃO 4: Configure o WhatsApp ===
@@ -49,7 +49,7 @@ export const ITEM_DETAILS = {
     text: "No WhatsApp Business → Configurações → Perfil comercial, preencha:\n- Foto: logo da Maxi Massas\n- Nome: Maxi Massas [Sua Cidade]\n- Categoria: Restaurante\n- Descrição: Massas artesanais congeladas prontas em minutos!\n- Endereço e horário de funcionamento",
   },
   "4-3": {
-    text: "Crie 5 etiquetas no WhatsApp Business usando as cores padrão. Elas casam com o pipeline de 'Meus Clientes' no app:\n\n🟢 Novo — Acabou de chegar, responder rápido!\n🔵 Negociando — Respondeu mas ainda não fechou. Follow-up em 24h.\n🟡 Cliente — Já comprou pelo menos 1 vez.\n🟠 VIP — Comprou 3+ vezes. Tratamento especial!\n🔴 Reativar — Sumiu há 15+ dias. Mandar oferta!",
+    text: "Crie 5 etiquetas no WhatsApp Business. São as mesmas marcas que aparecem em Meus Clientes:\n\n⚪ Nunca comprou — conversou, mas ainda não comprou.\n🟢 Novo — comprou 1 vez.\n🔵 Voltou — comprou de novo (2 a 4 vezes).\n🟡 Fiel — 5 compras ou mais.\n🔴 Sumido — mais de 30 dias sem comprar. Hora de chamar!",
   },
   "4-4": {
     text: "Este item é responsabilidade do franqueador. Será marcado quando seu WhatsApp for adicionado ao grupo oficial.",
@@ -61,17 +61,17 @@ export const ITEM_DETAILS = {
     links: [{ label: "Abrir template no Canva", url: "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton" }],
   },
   "5-2": {
-    text: "Essa é a missão mais importante! No menu lateral, clique em 'Meu Vendedor' e preencha o formulário completo (6 passos).\n\nEle configura de uma vez:\n- Dados da sua unidade\n- Horários de funcionamento\n- Formas de pagamento e PIX\n- Raio e taxa de entrega\n- Catálogo de produtos (foto JPG do cardápio que você criou no Canva)\n\nQuando terminar, seu robô de vendas estará pronto para atender clientes 24h!\n\nEste item marca automaticamente quando o formulário estiver completo.",
+    text: "Essa é a missão mais importante! No menu lateral, clique em 'Meu Vendedor' e preencha o formulário completo (5 etapas).\n\nEle configura de uma vez:\n- Dados da sua unidade\n- Horários de funcionamento\n- Formas de pagamento e PIX\n- Raio e taxa de entrega\n- Catálogo de produtos (foto JPG do cardápio que você criou no Canva)\n\nQuando terminar, seu robô de vendas estará pronto para atender clientes 24h!\n\nEste item marca automaticamente quando o formulário estiver completo.\n\nReferência da rede: o raio de entrega mais comum fica entre 15 e 25 km e o pedido mínimo, perto de R$ 30. Dá para aceitar vale-refeição na etapa de pagamento.",
     links: [{ label: "Abrir Meu Vendedor", url: "/FranchiseSettings" }],
   },
 
   // === MISSÃO 6: Faça Seu Primeiro Pedido ===
   "6-1": {
-    text: "Hora de abastecer! Clique no botão abaixo para ir direto à tela de Reposição.\n\nLá você vai ver todos os 28 produtos organizados por tipo. É só:\n1. Escolher os produtos que quer pedir\n2. Definir as quantidades\n3. Clicar em \"Enviar Pedido\"\n\nO franqueador recebe na hora e você acompanha o status por aqui. Este item marca automaticamente quando seu primeiro pedido for enviado.",
+    text: "Hora de abastecer! Clique no botão abaixo para ir direto à tela de Reposição.\n\nLá você vai ver todos os 28 produtos organizados por tipo. É só:\n1. Escolher os produtos que quer pedir\n2. Definir as quantidades\n3. Clicar em \"Enviar Pedido\"\n\nO franqueador recebe na hora e você acompanha o status por aqui. Este item marca automaticamente quando seu primeiro pedido for enviado.\n\nOs pedidos fecham no domingo e a entrega leva uns 10 dias. No primeiro pedido, a tela já vem preenchida com o pedido modelo da Maxi — mude o que quiser.",
     links: [{ label: "Fazer Meu Primeiro Pedido", url: "/Gestao?tab=reposicao" }],
   },
   "6-2": {
-    text: "Quando o pedido chegar, confira tudo:\n- Quantidades batem?\n- Produtos bem embalados e congelados?\n- Datas de validade ok?\n\nSe algo estiver errado, registre com foto e avise o franqueador.\n\nVocê pode acompanhar o status do pedido (pendente, confirmado, em rota, entregue) na tela de Reposição.",
+    text: "Quando o pedido chegar, confira tudo:\n- Quantidades batem?\n- Produtos bem embalados e congelados?\n- Datas de validade ok?\n\nSe algo estiver errado, registre com foto e avise o franqueador.\n\nVocê pode acompanhar o status do pedido (pendente, confirmado, entregue) na tela de Reposição.\n\nVocê só paga depois de conferir: a equipe Maxi confirma e você faz o PIX.",
     links: [{ label: "Acompanhar meu pedido", url: "/Gestao?tab=reposicao" }],
   },
   "6-3": {
@@ -82,7 +82,7 @@ export const ITEM_DETAILS = {
   // === MISSÃO 7: Treinamento ===
   "7-1": {
     text: "Assista os 3 vídeos no Drive:\n1. Configuração do WhatsApp Business\n2. Como usar o Meta Business Suite\n3. Como funciona o Robô de Atendimento\n\nDura cerca de 45 minutos no total. Pode assistir no seu ritmo!",
-    links: [{ label: "Acessar Drive", url: "https://drive.google.com/drive/u/1/folders/1DwQLHOKo2Lf8RJ83-ADAqJcIYmi5m-VH" }],
+    links: [{ label: "Acessar Drive", url: "https://drive.google.com/drive/folders/1DwQLHOKo2Lf8RJ83-ADAqJcIYmi5m-VH" }],
   },
   "7-2": {
     text: "Envie uma mensagem de outro celular para o número do WhatsApp Business. O robô deve responder automaticamente. Verifique se a saudação, cardápio e informações estão corretos.\n\nSe algo estiver errado, ajuste em Meu Vendedor no app.",
@@ -116,6 +116,6 @@ export const ITEM_DETAILS = {
     text: "O CS verifica tudo: WhatsApp Business, freezer (foto com termômetro), estoque no app, redes sociais, PIX testado e Meu Vendedor preenchido.",
   },
   "9-4": {
-    text: "Quando o franqueador marca este item, seus anúncios serão ativados em até 48h. A partir daí, leads reais vão chegar pelo WhatsApp. O robô responde automaticamente, mas você dá continuidade às conversas!",
+    text: "Quando a equipe Maxi marca este item, os anúncios da unidade são ligados. A partir daí, clientes de verdade chegam pelo WhatsApp: o robô responde e você continua a conversa.",
   },
 };

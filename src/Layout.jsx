@@ -22,7 +22,7 @@ import {
 import { DailyUniqueContact, Sale, OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format } from "date-fns";
-import { getAvailableFranchises, getPrimaryFranchise } from "@/lib/franchiseUtils";
+import { getAvailableFranchises, getPrimaryFranchise, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
 import { listarFranquias } from "@/lib/franchisesCache";
 
@@ -139,26 +139,37 @@ export default function Layout({ children, currentPageName }) {
   const [hasActiveOnboarding, setHasActiveOnboarding] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const [needsOnboardingWelcome, setNeedsOnboardingWelcome] = useState(false);
+  const [onboardingChangeTick, setOnboardingChangeTick] = useState(0);
   const [availableFranchises, setAvailableFranchises] = useState([]);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
+    // Marca desta execução: resposta atrasada de uma unidade anterior é descartada.
+    let cancelado = false;
     if (!currentUser) return;
+
+    // Zera a cada nova avaliação (usuário OU unidade mudou, ou chegou o evento
+    // onboarding-status-changed) — senão o item "Onboarding" e o redirect de
+    // boas-vindas ficam grudados no estado da unidade anterior ao trocar de
+    // franquia no seletor, ou depois que a equipe Maxi conclui pelo admin.
+    setOnboardingApproved(false);
+    setHasActiveOnboarding(false);
+    setNeedsOnboardingWelcome(false);
 
     if (currentUser.role === "admin" || currentUser.role === "manager") {
       loadQuickStats();
       setOnboardingLoaded(true);
-      return () => { mountedRef.current = false; };
+      return () => { cancelado = true; mountedRef.current = false; };
     }
     if (currentUser.managed_franchise_ids?.length > 0) {
       // Guardado fora da cadeia porque o `.then` seguinte precisa saber a IDADE da
       // unidade para decidir se mostra o tour de boas-vindas.
-      let primaryFranchiseForOnboarding = null;
+      let activeFranchiseForOnboarding = null;
       listarFranquias()
         .then((allFranchises) => {
-          if (!mountedRef.current) return;
+          if (cancelado) return;
           const userFranchises = getAvailableFranchises(allFranchises, currentUser);
           setAvailableFranchises(userFranchises);
 
@@ -169,17 +180,21 @@ export default function Layout({ children, currentPageName }) {
             setSelectedFranchise(savedFranchise || userFranchises[0] || null);
           }
 
-          const primaryFranchise = getPrimaryFranchise(allFranchises, currentUser);
-          primaryFranchiseForOnboarding = primaryFranchise;
-          const franchiseId = primaryFranchise?.evolution_instance_id;
+          // Unidade ativa = a do seletor do topo (FranchiseSelector); só cai na
+          // primária quando ainda não há seleção válida.
+          const activeFranchise =
+            resolveActiveFranchise(allFranchises, currentUser, selectedFranchise) ||
+            getPrimaryFranchise(allFranchises, currentUser);
+          activeFranchiseForOnboarding = activeFranchise;
+          const franchiseId = activeFranchise?.evolution_instance_id;
           if (!franchiseId) {
-            if (mountedRef.current) setOnboardingLoaded(true);
+            if (!cancelado) setOnboardingLoaded(true);
             return;
           }
           return OnboardingChecklist.filter({ franchise_id: franchiseId });
         })
         .then((obs) => {
-          if (!mountedRef.current) return;
+          if (cancelado) return;
           if (!obs) {
             // Sem evolution_instance_id nao da para dizer nada sobre o onboarding
             // desta unidade — e mandar para o tour com base so em localStorage era o
@@ -208,8 +223,8 @@ export default function Layout({ children, currentPageName }) {
           // decisao se apoiava so em localStorage, qualquer celular ou navegador novo
           // jogava uma franqueada veterana nas 7 telas de boas-vindas.
           // So e "unidade nova" quem foi criada ha pouco.
-          const criadaEm = primaryFranchiseForOnboarding?.created_at
-            ? new Date(primaryFranchiseForOnboarding.created_at)
+          const criadaEm = activeFranchiseForOnboarding?.created_at
+            ? new Date(activeFranchiseForOnboarding.created_at)
             : null;
           const unidadeNova =
             criadaEm && Date.now() - criadaEm.getTime() < 30 * 24 * 60 * 60 * 1000;
@@ -221,7 +236,7 @@ export default function Layout({ children, currentPageName }) {
         })
         .catch((error) => {
           console.error("Erro ao carregar onboarding:", error);
-          if (mountedRef.current) setOnboardingLoaded(true);
+          if (!cancelado) setOnboardingLoaded(true);
         });
     } else {
       // Novo franqueado sem franchise vinculada ainda — mostrar onboarding welcome
@@ -233,14 +248,24 @@ export default function Layout({ children, currentPageName }) {
       setOnboardingLoaded(true);
     }
 
-    return () => { mountedRef.current = false; };
-  }, [currentUser]);
+    return () => { cancelado = true; mountedRef.current = false; };
+    // selectedFranchise entra só pelo id: o objeto pode trocar de referência (novo
+    // fetch) sem trocar de unidade, e isso reavaliaria à toa.
+  }, [currentUser, selectedFranchise?.evolution_instance_id, selectedFranchise?.id, onboardingChangeTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for onboarding-started event from Onboarding page
   useEffect(() => {
     const handler = () => setHasActiveOnboarding(true);
     window.addEventListener("onboarding-started", handler);
     return () => window.removeEventListener("onboarding-started", handler);
+  }, []);
+
+  // Admin concluiu/reabriu os primeiros passos (Onboarding.jsx) — reavaliar o
+  // efeito acima (o item do menu e o redirect de boas-vindas usam esse estado).
+  useEffect(() => {
+    const handler = () => setOnboardingChangeTick((t) => t + 1);
+    window.addEventListener("onboarding-status-changed", handler);
+    return () => window.removeEventListener("onboarding-status-changed", handler);
   }, []);
 
   const loadQuickStats = async () => {

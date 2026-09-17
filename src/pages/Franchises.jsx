@@ -93,7 +93,7 @@ export default function Franchises() {
   const [isUnlinking, setIsUnlinking] = useState(false);
 
   // Onboarding progress
-  const [onboardingMap, setOnboardingMap] = useState({}); // { franchise_evo_id: completion_percentage }
+  const [onboardingMap, setOnboardingMap] = useState({}); // { franchise_evo_id: { pct, status } }
 
   useEffect(() => {
     mountedRef.current = true;
@@ -126,7 +126,7 @@ export default function Franchises() {
       const onboardingData = getValue(results[4]);
       const obMap = {};
       onboardingData.forEach(ob => {
-        if (ob.franchise_id) obMap[ob.franchise_id] = ob.completion_percentage || 0;
+        if (ob.franchise_id) obMap[ob.franchise_id] = { pct: ob.completion_percentage || 0, status: ob.status };
       });
       setOnboardingMap(obMap);
 
@@ -214,7 +214,9 @@ export default function Franchises() {
         });
       } catch (addrErr) {
         console.error("Erro ao salvar dados fiscais:", addrErr);
-        // Não bloqueia — franqueado completa depois via onboarding ou AsaasSetupPanel
+        // Não bloqueia — franqueado completa depois via onboarding ou AsaasSetupPanel.
+        // Mas precisa AVISAR: antes só logava e a tela seguia como se tivesse dado tudo certo.
+        toast.error(safeErrorMessage(addrErr, "A unidade foi criada, mas os dados fiscais não foram salvos. Complete no cadastro da unidade."));
       }
 
       // Franquia criada — fechar form e atualizar lista imediatamente
@@ -892,10 +894,11 @@ export default function Franchises() {
                       </div>
                     )}
 
-                    {/* Onboarding Progress — only show if not completed */}
+                    {/* Onboarding Progress — só mostra enquanto não aprovado */}
                     {(() => {
-                      const pct = onboardingMap[franchise.evolution_instance_id];
-                      if (pct === undefined || pct >= 100) return null;
+                      const ob = onboardingMap[franchise.evolution_instance_id];
+                      if (!ob || ob.status === "approved") return null;
+                      const pct = ob.pct;
                       return (
                         <div className="flex items-center gap-2">
                           <MaterialIcon icon="school" size={14} className="text-brand-gold" />
@@ -1580,23 +1583,32 @@ export default function Franchises() {
 
                 {/* Onboarding */}
                 <div className="space-y-3 pt-4 border-t border-ink-shadow/5">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-ink-2 uppercase tracking-wider">
-                      Onboarding
-                    </h3>
-                    <span className="text-sm font-semibold text-ink-2">
-                      {onboardingMap[selectedFranchise.evolution_instance_id] ?? 0}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full transition-all"
-                      style={{
-                        width: `${onboardingMap[selectedFranchise.evolution_instance_id] ?? 0}%`,
-                        backgroundColor: (onboardingMap[selectedFranchise.evolution_instance_id] ?? 0) === 100 ? '#16a34a' : '#b91c1c',
-                      }}
-                    />
-                  </div>
+                  {(() => {
+                    const ob = onboardingMap[selectedFranchise.evolution_instance_id];
+                    const isApproved = ob?.status === "approved";
+                    const pct = isApproved ? 100 : (ob?.pct ?? 0);
+                    return (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-bold text-ink-2 uppercase tracking-wider">
+                            Onboarding
+                          </h3>
+                          <span className="text-sm font-semibold text-ink-2">
+                            {isApproved ? "Concluído" : `${pct}%`}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div
+                            className="h-2 rounded-full transition-all"
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: isApproved ? '#16a34a' : '#b91c1c',
+                            }}
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
                   <Button
                     variant="outline"
                     className="w-full rounded-xl border-ink-shadow/10"

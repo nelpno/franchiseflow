@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem } from "@/entities/all";
+import { User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem, setOnboardingStatus } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import GateBlock from "@/components/onboarding/GateBlock";
 import ProgressRing from "@/components/onboarding/ProgressRing";
 import FiscalDataGate from "@/components/onboarding/FiscalDataGate";
 import { missingFiscalFields } from "@/lib/saveFiscalData";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { useAuth } from "@/lib/AuthContext";
 import FranchisePicker from "@/components/shared/FranchisePicker";
 import { listarFranquias } from "@/lib/franchisesCache";
@@ -34,6 +35,17 @@ function computeCounts(items) {
 
 function blocks1to8Complete(items) {
   return BLOCKS.every(block => block.items.every(item => items[item.key]));
+}
+
+// Itens que só a equipe Maxi marca (o banco preserva o valor dele se a franqueada mandar outro).
+const CHAVES_MAXI = ["4-4", "8-1", "9-2", "9-3", "9-4"];
+
+// "approved" só muda pela RPC set_onboarding_status; aqui é só in_progress <-> pending_approval.
+function proximoStatus(statusAtual, blocosCompletos) {
+  if (statusAtual === "approved") return statusAtual;
+  if (blocosCompletos && statusAtual === "in_progress") return "pending_approval";
+  if (!blocosCompletos && statusAtual === "pending_approval") return "in_progress";
+  return statusAtual;
 }
 
 function StatusBadge({ status }) {
@@ -75,8 +87,8 @@ export default function Onboarding() {
   const [isSaving, setIsSaving] = useState(false);
   const [allChecklists, setAllChecklists] = useState([]);
   const [configsByEvoId, setConfigsByEvoId] = useState({});
-  const [celebrated, setCelebrated] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingStatusAction, setConfirmingStatusAction] = useState(false);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
   const [completedBlocks, setCompletedBlocks] = useState(new Set());
   const mountedRef = useRef(true);
@@ -223,7 +235,7 @@ export default function Onboarding() {
         const localBackup = localStorage.getItem(storageKey);
         if (localBackup) {
           const localItems = JSON.parse(localBackup);
-          const localTrueKeys = Object.keys(localItems).filter(k => localItems[k] && k !== "9-1");
+          const localTrueKeys = Object.keys(localItems).filter(k => localItems[k] && k !== "9-1" && !CHAVES_MAXI.includes(k));
           const dbTrueKeys = Object.keys(mergedItems).filter(k => mergedItems[k] && k !== "9-1");
           // If localStorage has items not in DB, recover them
           const missingInDb = localTrueKeys.filter(k => !mergedItems[k]);
@@ -241,8 +253,16 @@ export default function Onboarding() {
       // Save recovered/auto-detected changes if any new items were found
       const hasNewAuto = Object.keys(autoItems).some(k => !(cl.items || {})[k] && autoItems[k]);
       if (hasNewAuto || recoveredFromLocal) {
-        const counts = computeCounts({ ...mergedItems, "9-1": blocks1to8Complete(mergedItems) });
-        OnboardingChecklist.update(cl.id, { items: mergedItems, ...counts }).catch(() => {});
+        // Item automático também pode fechar a última missão: aplica a mesma transição
+        // de status do save manual (senão o aviso para a equipe não sai).
+        const b18 = blocks1to8Complete(mergedItems);
+        const itensParaSalvar = { ...mergedItems, "9-1": b18 };
+        const patch = { items: itensParaSalvar, ...computeCounts(itensParaSalvar) };
+        const novoStatus = proximoStatus(cl.status, b18);
+        if (novoStatus !== cl.status) patch.status = novoStatus;
+        OnboardingChecklist.update(cl.id, patch)
+          .then((atualizado) => { if (mountedRef.current && atualizado) setChecklist(atualizado); })
+          .catch(() => {});
         if (recoveredFromLocal) {
           toast.success("Progresso recuperado! Seus itens foram restaurados.", { duration: 5000 });
         }
@@ -292,6 +312,40 @@ export default function Onboarding() {
     setItems({});
     setSelectedFranchise(null);
     setConfirmingDelete(false);
+  };
+
+  const handleSetOnboardingStatus = async (newStatus) => {
+    if (!checklist) return;
+    if (!confirmingStatusAction) {
+      setConfirmingStatusAction(true);
+      return;
+    }
+    setConfirmingStatusAction(false);
+    // Grava AGORA o que estava no debounce (500ms, handleToggle) e só depois muda o
+    // status. Descartar perderia a marcação feita segundos antes; deixar o timer
+    // correr regravaria o status antigo por cima do "approved".
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const pendente = pendingSaveRef.current;
+    pendingSaveRef.current = null;
+    try {
+      if (pendente) await saveItems(pendente.items, pendente.checklist);
+      const updated = await setOnboardingStatus(checklist.franchise_id, newStatus);
+      if (updated) setChecklist(updated);
+      toast.success(
+        newStatus === "approved"
+          ? "Primeiros passos concluídos. Some da tela da franqueada."
+          : "Primeiros passos reabertos."
+      );
+      window.dispatchEvent(new CustomEvent("onboarding-status-changed", {
+        detail: { franchiseId: checklist.franchise_id, status: newStatus },
+      }));
+    } catch (error) {
+      console.error("Erro ao atualizar status do onboarding:", error);
+      toast.error(safeErrorMessage(error, "Não foi possível atualizar."));
+    }
   };
 
   const handleStartOnboarding = async () => {
@@ -345,7 +399,7 @@ export default function Onboarding() {
           if (pc) {
             const b18 = blocks1to8Complete(pi);
             const fi = { ...pi, "9-1": b18 };
-            OnboardingChecklist.update(pc.id, { items: fi, ...computeCounts(fi), status: pc.status }).catch(() => {});
+            OnboardingChecklist.update(pc.id, { items: fi, ...computeCounts(fi), status: proximoStatus(pc.status, b18) }).catch(() => {});
           }
           pendingSaveRef.current = null;
         }
@@ -367,7 +421,7 @@ export default function Onboarding() {
     }
   }, [ctxFranchise?.evolution_instance_id, franchises, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const saveItems = useCallback(async (newItems, currentChecklist, user) => {
+  const saveItems = useCallback(async (newItems, currentChecklist) => {
     if (!currentChecklist) return;
     setIsSaving(true);
     try {
@@ -376,27 +430,15 @@ export default function Onboarding() {
 
       const counts = computeCounts(finalItems);
 
-      let status = currentChecklist.status;
-      if (finalItems["9-4"] && user?.role === "admin") {
-        status = "approved";
-      } else if (b18Complete && status === "in_progress") {
-        status = "pending_approval";
-      } else if (!b18Complete && status === "pending_approval") {
-        status = "in_progress";
-      }
+      // Status "approved" é território exclusivo da RPC set_onboarding_status; o banco
+      // mantém "approved" mesmo se um save antigo mandar outro valor.
+      const status = proximoStatus(currentChecklist.status, b18Complete);
 
       const updateData = {
         items: finalItems,
         ...counts,
         status,
       };
-
-      if (status === "approved" && currentChecklist.status !== "approved" && user?.role === "admin") {
-        updateData.approved_at = new Date().toISOString();
-        updateData.approved_by = user.full_name || user.email;
-        setCelebrated(true);
-        setTimeout(() => setCelebrated(false), 5000);
-      }
 
       const updated = await OnboardingChecklist.update(currentChecklist.id, updateData);
       setChecklist(updated);
@@ -467,7 +509,7 @@ export default function Onboarding() {
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveItems(newItems, checklist, currentUser);
+      saveItems(newItems, checklist);
     }, 500);
   };
 
@@ -739,6 +781,42 @@ export default function Onboarding() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
                     {isSaving && <span className="text-xs text-ink-2/70 animate-pulse">Salvando...</span>}
+                    {isAdmin && !confirmingStatusAction && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleSetOnboardingStatus(checklist.status === "approved" ? "in_progress" : "approved")}
+                        className={`min-h-[40px] rounded-lg px-3 text-xs font-semibold ${
+                          checklist.status === "approved"
+                            ? "bg-white border border-ink-shadow/20 text-ink-2 hover:bg-ink-shadow/5"
+                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                        }`}
+                      >
+                        <MaterialIcon icon={checklist.status === "approved" ? "replay" : "task_alt"} size={16} />
+                        {checklist.status === "approved" ? "Reabrir" : "Concluir primeiros passos"}
+                      </Button>
+                    )}
+                    {isAdmin && confirmingStatusAction && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-ink-2">
+                          {checklist.status === "approved" ? "Reabrir?" : "Concluir?"}
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSetOnboardingStatus(checklist.status === "approved" ? "in_progress" : "approved")}
+                          className="min-h-[40px] text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          Sim
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmingStatusAction(false)}
+                          className="min-h-[40px] text-xs text-ink-2"
+                        >
+                          Não
+                        </Button>
+                      </div>
+                    )}
                     {isAdmin && !confirmingDelete && (
                       <Button
                         variant="ghost"
@@ -808,10 +886,10 @@ export default function Onboarding() {
                 </div>
 
                 {/* Celebration banner */}
-                {(celebrated || checklist.status === "approved") && (
+                {checklist.status === "approved" && (
                   <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
                     <p className="text-emerald-700 font-bold text-lg">Parabéns! Onboarding completo!</p>
-                    <p className="text-emerald-600 text-sm mt-1">O tráfego pago será ativado em breve.</p>
+                    <p className="text-emerald-600 text-sm mt-1">A equipe Maxi concluiu seus primeiros passos.</p>
                     {checklist.approved_by && (
                       <p className="text-emerald-500 text-xs mt-1">Aprovado por {checklist.approved_by}</p>
                     )}
@@ -848,10 +926,7 @@ export default function Onboarding() {
                     Parabéns! Você está pronto para vender!
                   </h3>
                   <p className="text-emerald-600 text-sm mb-1">
-                    O CS foi notificado e vai validar suas configurações.
-                  </p>
-                  <p className="text-emerald-500 text-xs">
-                    Tráfego pago ativado em até 48h.
+                    A equipe Maxi foi avisada e vai conferir tudo com você.
                   </p>
                 </CardContent>
               </Card>

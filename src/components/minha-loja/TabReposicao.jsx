@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,25 @@ export default function TabReposicao({
   const [lastOrder, setLastOrder] = useState(null);
   const [loadingLastOrder, setLoadingLastOrder] = useState(true);
   const abortControllerRef = useRef(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modeloParamHandledRef = useRef(false);
+
+  // Unidade nunca fez pedido à fábrica (dado que a tela já busca pra "Repetir Ultimo") →
+  // é o 1º pedido dela: PurchaseOrderForm mostra a faixa do pedido modelo da Maxi.
+  const primeiroPedido = !loadingLastOrder && !lastOrder;
+
+  // Link da trilha de onboarding (/Gestao?tab=reposicao&modelo=1): abre o formulário
+  // automaticamente uma vez e limpa o parâmetro da URL (não fica reabrindo em F5/back).
+  useEffect(() => {
+    if (modeloParamHandledRef.current) return;
+    if (searchParams.get("modelo") !== "1") return;
+    modeloParamHandledRef.current = true;
+    setInitialQuantities(null);
+    setShowOrderDialog(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("modelo");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Load last order for "Repetir Ultimo"
   useEffect(() => {
@@ -295,6 +315,7 @@ export default function TabReposicao({
             inventoryItems={inventoryItems}
             saleItems={saleItems}
             initialQuantities={initialQuantities}
+            primeiroPedido={primeiroPedido}
             onSave={() => {
               setShowOrderDialog(false);
               setInitialQuantities(null);

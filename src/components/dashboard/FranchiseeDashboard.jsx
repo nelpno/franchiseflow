@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, InventoryItem, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, OnboardingChecklist, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, InventoryItem, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -52,7 +52,6 @@ export default function FranchiseeDashboard() {
   const [inventory, setInventory] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [botPulse, setBotPulse] = useState(null);
-  const [onboardingChecklist, setOnboardingChecklist] = useState(null);
   const [franchiseConfig, setFranchiseConfig] = useState(null);
   const [marketingPayment, setMarketingPayment] = useState(null);
   const [period, setPeriod] = useState("today");
@@ -136,12 +135,10 @@ export default function FranchiseeDashboard() {
         evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null), // [5] ranking
         evoId ? PurchaseOrder.filter({ franchise_id: evoId }, "-ordered_at", 50, { signal })
           : Promise.resolve([]),                          // [6] purchase orders (health: reposição)
-        evoId ? OnboardingChecklist.filter({ franchise_id: evoId }, null, 1, { signal })
-          : Promise.resolve([]),                          // [7] onboarding (health: setup)
         evoId ? FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, { signal })
-          : Promise.resolve([]),                          // [8] config (health: setup/whatsapp)
+          : Promise.resolve([]),                          // [7] config (health: setup/whatsapp)
         evoId ? MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 1, { signal })
-          : Promise.resolve([]),                          // [9] marketing payment (priority action)
+          : Promise.resolve([]),                          // [8] marketing payment (priority action)
       ]);
 
       if (!mountedRef.current || signal.aborted) return;
@@ -151,7 +148,7 @@ export default function FranchiseeDashboard() {
       const summariesData = getValue(1);
       const inventoryData = getValue(2);
 
-      const queryNames = ["vendas","resumos","estoque","robô","contatos","ranking","pedidos","onboarding","config","marketing"];
+      const queryNames = ["vendas","resumos","estoque","robô","contatos","ranking","pedidos","config","marketing"];
       const failedQueries = results
         .map((r, i) => r.status === "rejected" ? queryNames[i] : null)
         .filter(Boolean);
@@ -167,9 +164,8 @@ export default function FranchiseeDashboard() {
 
       setBotPulse(results[3].status === "fulfilled" ? results[3].value : null);
       setPurchaseOrders(getValue(6));
-      setOnboardingChecklist(getValue(7)?.[0] || null);
-      setFranchiseConfig(getValue(8)?.[0] || null);
-      setMarketingPayment(getValue(9)?.[0] || null);
+      setFranchiseConfig(getValue(7)?.[0] || null);
+      setMarketingPayment(getValue(8)?.[0] || null);
 
 
 

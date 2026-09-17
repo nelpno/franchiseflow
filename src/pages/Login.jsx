@@ -18,8 +18,28 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [showLinkError, setShowLinkError] = useState(false);
 
   const isLockedOut = lockoutSeconds > 0;
+
+  // Aviso de link de convite/recuperação vencido ou já usado — a flag é gravada pelo
+  // AuthContext (ver auth_link_error) quando o /set-password chega com ?error=... ou
+  // #error=... na URL. Dispara o evento de exibição só 1x, ao montar.
+  useEffect(() => {
+    if (sessionStorage.getItem('auth_link_error')) {
+      setShowLinkError(true);
+      try {
+        window.clarity?.('event', 'link_vencido_exibido');
+      } catch {
+        // Analytics nunca pode travar a tela
+      }
+    }
+  }, []);
+
+  const dismissLinkError = useCallback(() => {
+    sessionStorage.removeItem('auth_link_error');
+    setShowLinkError(false);
+  }, []);
 
   useEffect(() => {
     if (lockoutSeconds <= 0) return;
@@ -45,6 +65,8 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
       if (error) throw error;
       setFailedAttempts(0);
+      sessionStorage.removeItem('auth_link_error');
+      setShowLinkError(false);
       // Reset local loading — AuthContext.onAuthStateChange('SIGNED_IN') takes over
       setIsLoading(false);
     } catch (error) {
@@ -121,6 +143,27 @@ export default function Login() {
                 {isResetMode ? 'Enviaremos um link para você redefinir a senha' : 'Acesse o painel da sua franquia'}
               </p>
             </div>
+
+            {showLinkError && (
+              <div
+                role="status"
+                className="mb-6 flex items-start gap-3 bg-warn-soft text-warn-ink rounded-xl p-3"
+              >
+                <MaterialIcon icon="info" size={20} className="mt-0.5 shrink-0" />
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold">Esse link já foi usado ou venceu.</p>
+                  <p>Entre com seu e-mail e senha. Ainda não tem senha? Digite seu e-mail e toque em Primeiro acesso.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissLinkError}
+                  aria-label="Fechar aviso"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-warn-ink/70 hover:text-warn-ink transition-colors -mt-1 -mr-1"
+                >
+                  <MaterialIcon icon="close" size={18} />
+                </button>
+              </div>
+            )}
 
             <form onSubmit={isResetMode ? handleResetPassword : handleLogin} className="space-y-6">
               <div className="space-y-2">
