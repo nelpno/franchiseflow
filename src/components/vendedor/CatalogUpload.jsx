@@ -3,6 +3,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { CANVA_CARDAPIO } from "@/components/onboarding/materiais";
 
 /**
  * Upload de imagem do catálogo para Supabase Storage.
@@ -12,7 +13,6 @@ import { safeErrorMessage } from "@/lib/safeErrorMessage";
  */
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const CANVA_TEMPLATE_URL = "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 const MAX_DIMENSION = 1600; // WhatsApp não precisa mais que isso
 
@@ -193,7 +193,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
               </li>
             </ol>
             <a
-              href={CANVA_TEMPLATE_URL}
+              href={CANVA_CARDAPIO}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-brand-gold-ink text-white text-sm font-bold rounded-lg hover:bg-brand-gold-ink transition-colors"

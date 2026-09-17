@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { useNavigate } from "react-router-dom";
-import { Sale, DailySummary, InventoryItem, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, FranchiseConfiguration, MarketingPayment } from "@/entities/all";
+import { Sale, DailySummary, InventoryItem, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, FranchiseConfiguration, MarketingPayment, OnboardingChecklist, getOnboardingFacts } from "@/entities/all";
+import { montarJornada } from "@/lib/onboardingJourney";
 import { useAuth } from "@/lib/AuthContext";
 import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,6 +21,7 @@ import RankingStreak from "./RankingStreak";
 import DailyActionsList from "@/components/clientes/DailyActionsList";
 import { cidadeDaUnidade } from "@/lib/customerActions";
 import FinancialObligationsCard from "./FinancialObligationsCard";
+import FirstStepsCard from "./FirstStepsCard";
 import PriorityAction from "./PriorityAction";
 import OpenOrderStrip from "./OpenOrderStrip";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
@@ -59,6 +61,8 @@ export default function FranchiseeDashboard() {
   const [customRange, setCustomRange] = useState(null);
   const [customSheetOpen, setCustomSheetOpen] = useState(false);
   const [monthlyRanking, setMonthlyRanking] = useState(null);
+  const [onboardingChecklist, setOnboardingChecklist] = useState(null);
+  const [onboardingFacts, setOnboardingFacts] = useState(null);
   const [funnel, setFunnel] = useState(null);
   const [funnelLoading, setFunnelLoading] = useState(true);
   const [funnelOpen, setFunnelOpen] = useState(false);
@@ -199,6 +203,49 @@ export default function FranchiseeDashboard() {
   useVisibilityPolling(loadData, 300000);
 
   const evoId = franchise?.evolution_instance_id;
+
+  // Primeiros passos: efeito LEVE e separado, fora do polling de 5min (status do
+  // checklist não muda nesse ritmo). Só para franqueada — CS também cai no
+  // FranchiseeDashboard (Dashboard.jsx: "!isAdmin"), mas a trilha é da franquia dela,
+  // não da equipe. Falha aqui NUNCA trava a Início — sem checklist, sem cartão.
+  useEffect(() => {
+    if (!evoId || user?.role !== "franchisee") {
+      setOnboardingChecklist(null);
+      setOnboardingFacts(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [checklists, facts] = await Promise.all([
+          OnboardingChecklist.filter({ franchise_id: evoId }, null, 1),
+          getOnboardingFacts(evoId),
+        ]);
+        if (cancelled) return;
+        setOnboardingChecklist(checklists?.[0] || null);
+        setOnboardingFacts(facts);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn("Primeiros passos: falha ao carregar checklist/fatos", err);
+        setOnboardingChecklist(null);
+        setOnboardingFacts(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [evoId, user?.role]);
+
+  const primeirosPassosAtivo = !!onboardingChecklist && onboardingChecklist.status !== "approved";
+  const modoReduzidoPrimeirosPassos = primeirosPassosAtivo && !onboardingFacts?.first_sale_at;
+
+  const jornadaPrimeirosPassos = useMemo(() => {
+    if (!primeirosPassosAtivo) return null;
+    return montarJornada({
+      franchise,
+      config: franchiseConfig,
+      facts: onboardingFacts,
+      items: onboardingChecklist?.items,
+    });
+  }, [primeirosPassosAtivo, franchise, franchiseConfig, onboardingFacts, onboardingChecklist]);
 
   // Helper: compute revenue from sales array
   const calcRevenue = useCallback((sales) =>
@@ -451,6 +498,29 @@ export default function FranchiseeDashboard() {
         </div>
       </div>
 
+      {primeirosPassosAtivo && <FirstStepsCard jornada={jornadaPrimeirosPassos} />}
+
+      {modoReduzidoPrimeirosPassos && (
+        // Unidade ainda não vendeu: a Início normal (KPIs zerados, ranking, Quem chamar
+        // hoje...) só confunde quem ainda está montando a loja. Fica só o essencial +
+        // uma dica de para onde olhar quando a 1ª venda chegar.
+        <div className="mb-4 rounded-2xl bg-surface-2 p-3.5 flex items-center gap-3">
+          <span className="w-11 h-11 rounded-2xl bg-white text-brand flex items-center justify-center shrink-0">
+            <MaterialIcon icon="arrow_downward" size={22} />
+          </span>
+          <p className="text-[15px] leading-relaxed text-ink-2">
+            <span className="md:hidden">
+              Quando chegar a primeira venda, toque em <strong className="text-ink">Vender</strong>, aqui embaixo.
+            </span>
+            <span className="hidden md:inline">
+              Quando chegar a primeira venda, toque no botão <strong className="text-ink">Nova Venda</strong>.
+            </span>
+          </p>
+        </div>
+      )}
+
+      {!modoReduzidoPrimeirosPassos && (
+      <>
       {(() => {
         const monthLabel = formatMonthLabel(monthOffset);
         const prevDisabled = monthOffset <= MONTH_OFFSET_MIN;
@@ -636,9 +706,13 @@ export default function FranchiseeDashboard() {
         monthOffset={monthOffset}
         customRange={customRange}
       />
+      </>
+      )}
 
       <FinancialObligationsCard marketingPayment={marketingPayment} />
 
+      {!modoReduzidoPrimeirosPassos && (
+      <>
       <SubscriptionPaymentSheet
         open={prioritySheetOpen}
         onOpenChange={setPrioritySheetOpen}
@@ -668,6 +742,8 @@ export default function FranchiseeDashboard() {
           setPeriod("today");
         }}
       />
+      </>
+      )}
 
       {/* CTA — hidden on mobile (FAB "Vender" in bottom nav handles it) */}
       <div className="hidden md:flex fixed bottom-10 right-10 z-50">

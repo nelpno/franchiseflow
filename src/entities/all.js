@@ -523,6 +523,30 @@ export async function setOnboardingStatus(franchiseId, status) {
   return data ?? null;
 }
 
+// Fatos da trilha "Primeiros passos" de UMA unidade (null sem acesso):
+// { stock_now, has_catalog, first_order_at, first_delivered_at, first_bot_reply_at,
+//   first_sale_at, first_sale_with_contact_at }
+export async function getOnboardingFacts(franchiseId) {
+  const { data, error } = await withTimeout(supabase.rpc('get_onboarding_facts', {
+    p_franchise_id: franchiseId,
+  }), QUERY_TIMEOUT_MS);
+  if (error) throw error;
+  return data ?? null;
+}
+
+// Marca/desmarca UM item da trilha (p_* da franqueada, maxi_* da equipe) sem reenviar o
+// mapa inteiro — quem abriu a tela antes não apaga o que o outro marcou depois.
+// Devolve a linha atualizada (o banco ignora maxi_* vindo da franqueada).
+export async function setOnboardingItem(franchiseId, key, done) {
+  const { data, error } = await withTimeout(supabase.rpc('set_onboarding_item', {
+    p_franchise_id: franchiseId,
+    p_key: key,
+    p_done: done,
+  }), 30000);
+  if (error) throw error;
+  return data ?? null;
+}
+
 // Pedido modelo da Maxi para o 1º pedido: [{ product_name, quantidade }].
 // Quantidades ficam em catalog_products.qtd_pedido_modelo.
 export async function getPedidoModelo() {

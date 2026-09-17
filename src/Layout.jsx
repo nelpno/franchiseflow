@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { getAvailableFranchises, getPrimaryFranchise, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
 import { listarFranquias } from "@/lib/franchisesCache";
+import VoltarTrilhaBar from "@/components/onboarding/VoltarTrilhaBar";
 
 // Navigation items with admin section grouping
 const navigationItems = [
@@ -92,9 +93,9 @@ const navigationItems = [
     adminSection: "Administração",
   },
   {
-    title: "Onboarding",
+    title: "Primeiros passos",
     url: createPageUrl("Onboarding"),
-    materialIcon: "school",
+    materialIcon: "rocket_launch",
     showOnboarding: true,
     adminSection: "Administração",
   },
@@ -132,7 +133,7 @@ const mobileBottomNav = [
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
-  const { logout, user: currentUser, selectedFranchise, setSelectedFranchise } = useAuth();
+  const { logout, user: currentUser, selectedFranchise, setSelectedFranchise, welcomeSeen } = useAuth();
   const [todaySales, setTodaySales] = useState(0);
   const [todayContacts, setTodayContacts] = useState(0);
   const [onboardingApproved, setOnboardingApproved] = useState(false);
@@ -164,9 +165,6 @@ export default function Layout({ children, currentPageName }) {
       return () => { cancelado = true; mountedRef.current = false; };
     }
     if (currentUser.managed_franchise_ids?.length > 0) {
-      // Guardado fora da cadeia porque o `.then` seguinte precisa saber a IDADE da
-      // unidade para decidir se mostra o tour de boas-vindas.
-      let activeFranchiseForOnboarding = null;
       listarFranquias()
         .then((allFranchises) => {
           if (cancelado) return;
@@ -185,7 +183,6 @@ export default function Layout({ children, currentPageName }) {
           const activeFranchise =
             resolveActiveFranchise(allFranchises, currentUser, selectedFranchise) ||
             getPrimaryFranchise(allFranchises, currentUser);
-          activeFranchiseForOnboarding = activeFranchise;
           const franchiseId = activeFranchise?.evolution_instance_id;
           if (!franchiseId) {
             if (!cancelado) setOnboardingLoaded(true);
@@ -203,9 +200,6 @@ export default function Layout({ children, currentPageName }) {
             setOnboardingLoaded(true);
             return;
           }
-          const skipped = localStorage.getItem("onboarding_skipped") === "true";
-          const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
-
           if (obs.length > 0 && obs[0].status === "approved") {
             setOnboardingApproved(true);
           }
@@ -213,24 +207,16 @@ export default function Layout({ children, currentPageName }) {
             setHasActiveOnboarding(true);
           }
 
-          // If onboarding not approved AND welcome not yet seen AND not skipped => show welcome
-          if (obs.length > 0 && obs[0].status !== "approved" && !welcomeSeen && !skipped) {
+          // If onboarding not approved AND welcome not yet seen => show welcome
+          if (obs.length > 0 && obs[0].status !== "approved" && !welcomeSeen) {
             setNeedsOnboardingWelcome(true);
           }
-          // Sem linha de checklist: isso NAO quer dizer "precisa de onboarding".
-          // Medido em 07/09/2026: 57 das 67 unidades ativas nao tem linha nenhuma —
-          // e as 57 tem MAIS de 30 dias (o checklist nasceu depois delas). Como a
-          // decisao se apoiava so em localStorage, qualquer celular ou navegador novo
-          // jogava uma franqueada veterana nas 7 telas de boas-vindas.
-          // So e "unidade nova" quem foi criada ha pouco.
-          const criadaEm = activeFranchiseForOnboarding?.created_at
-            ? new Date(activeFranchiseForOnboarding.created_at)
-            : null;
-          const unidadeNova =
-            criadaEm && Date.now() - criadaEm.getTime() < 30 * 24 * 60 * 60 * 1000;
-          if (obs.length === 0 && unidadeNova && !welcomeSeen && !skipped) {
-            setNeedsOnboardingWelcome(true);
-          }
+          // Sem linha de checklist = unidade de ANTES do trigger de Primeiros Passos
+          // (16/09/2026): toda franquia nova nasce com checklist agora
+          // (trg_franchise_onboarding_checklist), então "sem linha" não é mais sinal de
+          // "unidade nova" — era essa a premissa da antiga heurística de 30 dias, que
+          // jogava franqueada veterana nas telas de boas-vindas em todo aparelho novo
+          // (auditoria 07/09/2026). Sem checklist agora = veterana mesmo; não mostra.
 
           setOnboardingLoaded(true);
         })
@@ -240,9 +226,7 @@ export default function Layout({ children, currentPageName }) {
         });
     } else {
       // Novo franqueado sem franchise vinculada ainda — mostrar onboarding welcome
-      const welcomeSeen = localStorage.getItem("onboarding_welcome_seen") === "true";
-      const skipped = localStorage.getItem("onboarding_skipped") === "true";
-      if (currentUser.role === "franchisee" && !welcomeSeen && !skipped) {
+      if (currentUser.role === "franchisee" && !welcomeSeen) {
         setNeedsOnboardingWelcome(true);
       }
       setOnboardingLoaded(true);
@@ -251,7 +235,7 @@ export default function Layout({ children, currentPageName }) {
     return () => { cancelado = true; mountedRef.current = false; };
     // selectedFranchise entra só pelo id: o objeto pode trocar de referência (novo
     // fetch) sem trocar de unidade, e isso reavaliaria à toa.
-  }, [currentUser, selectedFranchise?.evolution_instance_id, selectedFranchise?.id, onboardingChangeTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentUser, selectedFranchise?.evolution_instance_id, selectedFranchise?.id, onboardingChangeTick, welcomeSeen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for onboarding-started event from Onboarding page
   useEffect(() => {
@@ -318,6 +302,16 @@ export default function Layout({ children, currentPageName }) {
         ? item.adminLabel || item.title
         : item.franchiseeLabel || item.title,
     }));
+
+  // Franqueada com primeiros passos ativos: o item vai pro TOPO da lista (é a
+  // próxima ação dela) — admin mantém a ordem normal (seção "Administração").
+  if (!isAdmin && hasActiveOnboarding) {
+    const onboardingIdx = filteredNavigationItems.findIndex((item) => item.showOnboarding);
+    if (onboardingIdx > 0) {
+      const [onboardingItem] = filteredNavigationItems.splice(onboardingIdx, 1);
+      filteredNavigationItems.unshift(onboardingItem);
+    }
+  }
 
   // Get current page title for top bar
   const currentPageTitle = filteredNavigationItems.find(
@@ -553,6 +547,7 @@ export default function Layout({ children, currentPageName }) {
           <div className={`flex-1 min-h-0 overflow-auto ${
             isAdmin && location.pathname === createPageUrl("Dashboard") ? "" : "md:pt-20"
           } ${!isAdmin && !isCS ? "pb-20 md:pb-0" : ""}`}>
+            <VoltarTrilhaBar />
             <div className="max-w-6xl mx-auto w-full">
               {children}
             </div>

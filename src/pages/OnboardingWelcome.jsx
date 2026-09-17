@@ -1,314 +1,127 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import { FranchiseConfiguration } from "@/entities/all";
+import { getAvailableFranchises } from "@/lib/franchiseUtils";
+import { listarFranquias } from "@/lib/franchisesCache";
+import { JOURNEY_STEPS } from "@/components/onboarding/journeySteps.js";
+import { VIDEO_BOAS_VINDAS } from "@/components/onboarding/materiais.js";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from "@/components/ui/button";
 import logoImg from "@/assets/logo-maxi-massas-optimized.png";
 import { toast } from "sonner";
 
-const STEPS = [
-  {
-    icon: "waving_hand",
-    title: "Bem-vindo à Maxi Massas!",
-    description:
-      "Estamos muito felizes em ter você como franqueado! Este guia rápido vai te mostrar tudo que você precisa para começar a vender.",
-    detail:
-      "Em poucos minutos você vai conhecer as ferramentas que vão te ajudar a gerenciar sua franquia de forma simples e eficiente.",
-    color: "#d4af37",
-    bgGradient: "from-brand-gold/10 to-brand-gold/5",
-  },
-  {
-    icon: "point_of_sale",
-    title: "Vendas",
-    description:
-      "Registre cada venda com poucos cliques e acompanhe seus resultados em tempo real.",
-    detail:
-      "Na tela de Vendas você lança vendas rapidamente, seleciona produtos do estoque, aplica frete e taxas de cartão. Tudo calculado automaticamente.",
-    color: "#b91c1c",
-    bgGradient: "from-brand/10 to-brand/5",
-    features: [
-      { icon: "add_shopping_cart", label: "Lançamento Rápido", desc: "Selecione produtos e registre em segundos" },
-      { icon: "receipt_long", label: "Comprovante", desc: "Compartilhe o comprovante pelo WhatsApp" },
-      { icon: "person_search", label: "Vincular Cliente", desc: "Conecte vendas aos clientes e acompanhe histórico, recorrência e valor total de cada um" },
-    ],
-  },
-  {
-    icon: "bar_chart",
-    title: "Gestão",
-    description:
-      "Acompanhe o resultado financeiro, controle seu estoque e peça reposição direto para a fábrica.",
-    detail: null,
-    color: "#b91c1c",
-    bgGradient: "from-brand/10 to-brand/5",
-    features: [
-      { icon: "analytics", label: "Resultado", desc: "Lucro, despesas e faturamento do período" },
-      { icon: "inventory_2", label: "Estoque", desc: "Controle produtos e quantidades disponíveis" },
-      { icon: "local_shipping", label: "Reposição", desc: "Peça produtos direto para a fábrica" },
-    ],
-  },
-  {
-    icon: "people",
-    title: "Meus Clientes",
-    description:
-      "Gerencie seus contatos e acompanhe cada cliente no pipeline de vendas.",
-    detail:
-      "Do primeiro contato até a fidelização, você acompanha toda a jornada do cliente. O sistema sugere ações inteligentes como reativar clientes inativos ou enviar ofertas.",
-    color: "#0288D1",
-    bgGradient: "from-[#0288D1]/10 to-[#0288D1]/5",
-    features: [
-      { icon: "person_add", label: "Contatos Novos", desc: "Contatos que chegam pelo WhatsApp" },
-      { icon: "handshake", label: "Organização", desc: "Acompanhe cada etapa da negociação" },
-      { icon: "auto_awesome", label: "Ações Inteligentes", desc: "Sugestões automáticas de follow-up" },
-    ],
-  },
-  {
-    icon: "smart_toy",
-    title: "Meu Vendedor",
-    description:
-      "Seu assistente virtual no WhatsApp que atende clientes 24 horas por dia.",
-    detail:
-      "Configure o bot da sua unidade. Ele responde dúvidas, envia o cardápio, calcula frete e fecha pedidos automaticamente.",
-    color: "#43A047",
-    bgGradient: "from-[#43A047]/10 to-[#43A047]/5",
-    features: [
-      { icon: "chat", label: "Atendimento Automático", desc: "Responde clientes mesmo de madrugada" },
-      { icon: "menu_book", label: "Envia Cardápio", desc: "Mostra produtos e preços automaticamente" },
-      { icon: "delivery_dining", label: "Calcula Entrega", desc: "Informa taxa de entrega por distância" },
-    ],
-  },
-  {
-    icon: "campaign",
-    title: "Marketing",
-    description:
-      "Materiais prontos para divulgar sua franquia nas redes sociais e no bairro.",
-    detail:
-      "Acesse artes profissionais, textos para posts e estratégias de divulgação preparadas pela equipe Maxi Massas.",
-    color: "#8E24AA",
-    bgGradient: "from-[#8E24AA]/10 to-[#8E24AA]/5",
-    features: [
-      { icon: "brush", label: "Artes Prontas", desc: "Posts para Instagram e Facebook" },
-      { icon: "share", label: "Redes Sociais", desc: "Estratégias de conteúdo" },
-      { icon: "local_offer", label: "Promoções", desc: "Modelos de ofertas que funcionam" },
-    ],
-  },
-  {
-    icon: "rocket_launch",
-    title: "Pronto para começar!",
-    description:
-      "Você já conhece todas as ferramentas. Agora vamos preparar tudo para sua primeira venda!",
-    detail:
-      "Ao clicar em 'Começar', você será direcionado para o Checklist de Iniciação — um passo a passo com tudo que precisa estar pronto antes de ativar as campanhas de tráfego pago. Seu consultor de franquias vai te acompanhar nesse processo.",
-    color: "#b91c1c",
-    bgGradient: "from-brand/10 to-brand-gold/5",
-  },
-];
+// Tour de 1 tela (substituiu os 7 slides, 16/09/2026) — quem quer ver como o app
+// funciona de verdade assiste ao vídeo; aqui só o roteiro dos 5 passos e o "Começar".
+// Descrição curta de cada passo, só pra esta tela (o texto completo vive em
+// journeySteps.js, lido pela trilha /Onboarding).
+const DESCRICOES_PASSO = {
+  dados: "uns 3 minutos",
+  robo: "uns 15 minutos",
+  espaco: "freezer, embalagens e preço de venda",
+  pedido: "com o pedido modelo da Maxi",
+  lancamento: "divulgue e lance pelo botão Vender",
+};
 
 export default function OnboardingWelcome() {
-  const { user } = useAuth();
+  const { user, markWelcomeSeen } = useAuth();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [unidadeNome, setUnidadeNome] = useState(null);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [animating, setAnimating] = useState(false);
 
-  const step = STEPS[currentStep];
-  const isLastStep = currentStep === STEPS.length - 1;
-  const isFirstStep = currentStep === 0;
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
-
-  const goToStep = (nextStep) => {
-    setAnimating(true);
-    setTimeout(() => {
-      setCurrentStep(nextStep);
-      setAnimating(false);
-    }, 200);
-  };
-
-  const handleNext = () => {
-    if (isLastStep) {
-      handleComplete();
-    } else {
-      goToStep(currentStep + 1);
+  useEffect(() => {
+    let cancelled = false;
+    async function carregarUnidade() {
+      try {
+        const todas = await listarFranquias();
+        const franquia = getAvailableFranchises(todas, user)[0];
+        if (!franquia) return;
+        const configs = await FranchiseConfiguration.filter({
+          franchise_evolution_instance_id: franquia.evolution_instance_id,
+        });
+        if (!cancelled) {
+          setUnidadeNome(configs[0]?.franchise_name || franquia.owner_name || null);
+        }
+      } catch {
+        // Nome da unidade é só um detalhe desta tela — sem ele, a tela segue igual
+      }
     }
-  };
+    if (user) carregarUnidade();
+    return () => { cancelled = true; };
+  }, [user]);
 
-  const handlePrev = () => {
-    if (!isFirstStep) {
-      goToStep(currentStep - 1);
-    }
-  };
+  const primeiroNome = (user?.full_name || "").split(" ")[0] || "";
+  const passos = JOURNEY_STEPS.map((s) => ({ numero: s.numero, titulo: s.titulo, tempo: DESCRICOES_PASSO[s.id] }));
 
-  const handleSkip = () => {
-    localStorage.setItem("onboarding_skipped", "true");
-    toast.success("Você pode acessar o onboarding a qualquer momento pelo menu.");
-    navigate("/Onboarding", { replace: true });
-  };
-
-  const handleComplete = async () => {
+  const handleComecar = async () => {
     setIsCompleting(true);
     try {
-      // Mark onboarding welcome as seen
-      localStorage.setItem("onboarding_welcome_seen", "true");
-      toast.success("Agora vamos preparar tudo para sua primeira venda!");
+      await markWelcomeSeen();
       navigate("/Onboarding", { replace: true });
     } catch (error) {
-      console.error("Erro ao completar onboarding:", error);
+      console.error("Erro ao concluir boas-vindas:", error);
       toast.error("Erro ao salvar. Tente novamente.");
+      setIsCompleting(false);
     }
-    setIsCompleting(false);
   };
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col max-h-screen overflow-hidden">
-      {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-1.5 bg-surface-line">
-        <div
-          className="h-full bg-gradient-to-r from-brand to-brand-gold transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+    <div className="min-h-screen bg-surface flex flex-col">
+      <div className="flex-1 flex flex-col px-6 py-7 max-w-lg w-full mx-auto">
+        <img src={logoImg} alt="Maxi Massas" className="h-9 w-auto object-contain self-start mb-6" />
 
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 md:px-8 py-4 pt-6">
-        <img src={logoImg} alt="Maxi Massas" className="h-12 w-auto object-contain" />
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-ink-2/70 font-medium">
-            {currentStep + 1} de {STEPS.length}
-          </span>
-          <button
-            onClick={handleSkip}
-            className="text-sm text-ink-2/80 hover:text-brand transition-colors underline"
+        <span className="text-[13px] font-extrabold tracking-[0.12em] text-brand-gold-ink mb-2">BEM-VINDA</span>
+        <h1 className="font-plus-jakarta font-extrabold text-3xl sm:text-4xl leading-tight tracking-tight text-ink mb-2">
+          Olá, {primeiroNome}!
+        </h1>
+        {unidadeNome && <span className="text-base font-semibold text-ink-2 mb-3">{unidadeNome}</span>}
+        <p className="text-[17px] leading-relaxed text-ink mt-1 mb-6">
+          Em 5 passos sua unidade fica pronta para a primeira venda. A equipe Maxi vai junto em cada um.
+        </p>
+
+        <ol className="flex flex-col mb-2">
+          {passos.map((p, idx) => (
+            <li key={p.numero} className="flex items-stretch gap-3.5">
+              <div className="w-10 flex flex-col items-center shrink-0">
+                <span className="w-10 h-10 rounded-full bg-brand-soft text-brand font-plus-jakarta font-extrabold text-[17px] flex items-center justify-center shrink-0">
+                  {p.numero}
+                </span>
+                {idx < passos.length - 1 && <span className="w-0.5 flex-1 min-h-[12px] bg-surface-line" />}
+              </div>
+              <div className="flex flex-col gap-0.5 pb-3.5 pt-2">
+                <span className="text-[17px] font-bold text-ink leading-tight">{p.titulo}</span>
+                <span className="text-sm text-ink-3">{p.tempo}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mt-auto flex flex-col gap-1.5 pt-6">
+          <Button
+            onClick={handleComecar}
+            disabled={isCompleting}
+            className="min-h-[58px] rounded-2xl bg-brand hover:bg-brand-dark text-white text-[18px] font-bold shadow-lg shadow-brand/20 flex items-center justify-center gap-2.5"
           >
-            Pular por agora
-          </button>
-        </div>
-      </header>
-
-      {/* Step indicators (dots) */}
-      <div className="flex items-center justify-center gap-2 px-4 py-2">
-        {STEPS.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => goToStep(idx)}
-            aria-label={`Passo ${idx + 1} de ${STEPS.length}`}
-            className={`transition-all duration-300 rounded-full ${
-              idx === currentStep
-                ? "w-8 h-2 bg-brand"
-                : idx < currentStep
-                ? "w-2 h-2 bg-brand/40"
-                : "w-2 h-2 bg-surface-line"
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-4 py-4 overflow-y-auto">
-        <div
-          className={`max-w-lg w-full transition-all duration-200 ${
-            animating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
-          }`}
-        >
-          {/* Icon */}
-          <div className="flex justify-center mb-6">
-            <div
-              className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${step.bgGradient} flex items-center justify-center`}
-            >
-              <MaterialIcon icon={step.icon} filled size={40} style={{ color: step.color }} />
-            </div>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-ink text-center mb-3">
-            {step.title}
-          </h1>
-
-          {/* Description */}
-          <p className="text-sm md:text-base text-ink-2 text-center leading-relaxed mb-6">
-            {step.description}
-          </p>
-
-          {/* Features grid (if present) */}
-          {step.features && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              {step.features.map((feature) => (
-                <div
-                  key={feature.label}
-                  className="bg-white rounded-xl border border-ink-shadow/5 p-4 text-center shadow-sm"
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center"
-                    style={{ backgroundColor: `${step.color}10` }}
-                  >
-                    <MaterialIcon icon={feature.icon} size={20} style={{ color: step.color }} />
-                  </div>
-                  <h4 className="text-sm font-bold text-ink mb-1">{feature.label}</h4>
-                  <p className="text-xs text-ink-2/80 leading-snug">{feature.desc}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Detail text */}
-          {step.detail && (
-            <div className="bg-white rounded-xl border border-ink-shadow/5 p-4 mb-6 shadow-sm">
-              <p className="text-sm text-ink-2/90 leading-relaxed text-center">
-                {step.detail}
-              </p>
-            </div>
-          )}
-
-          {/* Logo on first step */}
-          {isFirstStep && (
-            <div className="flex justify-center mb-6">
-              <img src={logoImg} alt="Maxi Massas" className="h-24 w-auto object-contain opacity-80" />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation buttons */}
-      <footer className="px-4 md:px-8 py-6 pb-8">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
-          <div className="w-28">
-            {!isFirstStep && (
-              <Button
-                variant="outline"
-                onClick={handlePrev}
-                className="flex items-center gap-1.5 rounded-xl border-brand text-brand hover:bg-brand/5"
-              >
-                <MaterialIcon icon="arrow_back" size={16} />
-                Voltar
-              </Button>
+            {isCompleting ? (
+              <MaterialIcon icon="progress_activity" size={20} className="animate-spin" />
+            ) : (
+              <>
+                Começar
+                <MaterialIcon icon="arrow_forward" size={20} />
+              </>
             )}
-          </div>
-
-          <div className="w-36 flex justify-end">
-            <Button
-              onClick={handleNext}
-              disabled={isCompleting}
-              className={`flex items-center gap-1.5 rounded-xl font-bold shadow-lg transition-all ${
-                isLastStep
-                  ? "bg-brand hover:bg-brand-dark text-white shadow-brand/20 px-8"
-                  : "bg-brand hover:bg-brand-dark text-white shadow-brand/20"
-              }`}
-            >
-              {isCompleting ? (
-                <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
-              ) : isLastStep ? (
-                <>
-                  Começar
-                  <MaterialIcon icon="rocket_launch" size={16} />
-                </>
-              ) : (
-                <>
-                  Próximo
-                  <MaterialIcon icon="arrow_forward" size={16} />
-                </>
-              )}
-            </Button>
-          </div>
+          </Button>
+          <a
+            href={VIDEO_BOAS_VINDAS.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="min-h-[48px] flex items-center justify-center gap-2 text-[16px] font-semibold text-brand hover:text-brand-dark"
+          >
+            <MaterialIcon icon="play_circle" size={20} />
+            Ver vídeo de boas-vindas · 2 min
+          </a>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -18,7 +18,10 @@ module.exports = {
   				DEFAULT: '#b91c1c',
   				dark: '#991b1b',
   				gold: '#d4af37',      // fundo/borda/icone decorativo — NUNCA texto (2,10:1)
-  				'gold-ink': '#775a19' // gold como TEXTO (6,44:1)
+  				'gold-ink': '#775a19', // gold como TEXTO (6,44:1)
+  				soft: '#fbeaea',      // fundo de icone/numero da acao principal (Primeiros passos)
+  				'gold-soft': '#fbf6e6', // fundo do que a equipe Maxi faz
+  				'gold-line': '#ecdca8'  // borda do bloco dourado
   			},
   			ink: {
   				DEFAULT: '#1b1c1d',   // texto principal

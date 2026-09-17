@@ -10,6 +10,7 @@ import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
 import { diffPatch, findConflicts, nomesDosCampos, camposDoRascunhoADescartar, sameValue } from "@/lib/configSave";
 import { validarEtapa, validarTudo } from "@/lib/vendedorValidation";
+import { etapasVendedor } from "@/lib/vendedorCompleteness";
 import { modoDoFrete, legadoParaModelo, modeloParaLegado, problemasDoModelo, limparPricing, modeloInicial } from "@/lib/freteModelo";
 import { buscarCep, formatarCep, normalizarCep, ruaJaContem } from "@/lib/cep";
 
@@ -697,20 +698,20 @@ function FranchiseSettingsContent() {
   const hasPickup = formData.has_pickup ?? false;
   const skippedSteps = SEM_ETAPAS_PULADAS;
 
-  // Determine completed steps (basic validation)
+  // Determine completed steps — mesma regra de src/lib/vendedorCompleteness.js
+  // (etapasVendedor), reusada pela trilha "Primeiros passos" (Passo 2, sinal
+  // "vendedor"). Mudar a completude do wizard é mudar SÓ lá — ver o comentário no topo
+  // daquele arquivo.
   const completedSteps = useMemo(() => {
+    const { identidade, entrega, pagamento, vendedor, completo } = etapasVendedor(formData, { skippedSteps });
     const done = [];
-    if (formData.franchise_name && formData.street_address && formData.neighborhood && formData.city) done.push(1);
-    // Etapa 2: entrega e retirada
-    if ((hasDelivery || hasPickup) && (!hasDelivery || (formData.max_delivery_radius_km && formData.delivery_schedule?.length > 0))) done.push(2);
-    // Etapa 3: pagamento
-    if ((!hasDelivery || formData.payment_delivery?.length > 0) && (!hasPickup || formData.payment_pickup?.length > 0)) done.push(3);
-    if (formData.agent_name) done.push(4);
-    // Etapa 5 (Revisão) fica "concluída" visualmente quando todas as anteriores estão ok
-    const requiredSteps = [1, 2, 3, 4].filter(n => !skippedSteps.includes(n));
-    if (requiredSteps.every(n => done.includes(n))) done.push(5);
+    if (identidade) done.push(1);
+    if (entrega) done.push(2);
+    if (pagamento) done.push(3);
+    if (vendedor) done.push(4);
+    if (completo) done.push(5);
     return done;
-  }, [formData, hasDelivery, hasPickup, skippedSteps]);
+  }, [formData, skippedSteps]);
 
   // Campos que esta tela mudou desde que abriu (ou desde o último salvar): as regras só barram o que depende deles.
   const alterados = useMemo(

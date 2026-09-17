@@ -3,6 +3,21 @@ import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
+// Primeiros passos: "viu as boas-vindas" vem do user_metadata (vale em qualquer
+// dispositivo) com fallback pro localStorage antigo (quem já tinha pulado/visto
+// antes desta migração 16/09/2026 não vê de novo).
+function computeWelcomeSeen(authUser) {
+  if (authUser?.user_metadata?.onboarding_welcome_seen) return true;
+  try {
+    return (
+      localStorage.getItem('onboarding_welcome_seen') === 'true' ||
+      localStorage.getItem('onboarding_skipped') === 'true'
+    );
+  } catch {
+    return false;
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,6 +27,7 @@ export const AuthProvider = ({ children }) => {
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(
     () => sessionStorage.getItem('needs_password_setup') === 'true'
   );
+  const [welcomeSeen, setWelcomeSeenState] = useState(false);
   const lastAuthUserRef = React.useRef(null);
   const lastSignedInTimeRef = React.useRef(0);
   const loginSafetyTimerRef = React.useRef(null);
@@ -61,6 +77,8 @@ export const AuthProvider = ({ children }) => {
       });
       setIsAuthenticated(true);
 
+      setWelcomeSeenState(computeWelcomeSeen(authUser));
+
       // Identify user in Microsoft Clarity for analytics segmentation
       if (window.clarity) {
         window.clarity("identify", authUser.id, null, null, profile?.role || 'franchisee');
@@ -86,6 +104,7 @@ export const AuthProvider = ({ children }) => {
           managed_franchise_ids: retryProfile?.managed_franchise_ids || [],
         });
         setIsAuthenticated(true);
+        setWelcomeSeenState(computeWelcomeSeen(authUser));
       } catch (retryErr) {
         console.error('[Auth] Retry failed, showing retry UI:', retryErr);
         setProfileLoadFailed(true);
@@ -115,6 +134,20 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   }, [loadUserProfile]);
+
+  const markWelcomeSeen = useCallback(async () => {
+    setWelcomeSeenState(true);
+    try {
+      localStorage.setItem('onboarding_welcome_seen', 'true');
+    } catch {
+      // localStorage pode falhar (modo privado); o metadata do Supabase é a fonte real
+    }
+    try {
+      await supabase.auth.updateUser({ data: { onboarding_welcome_seen: true } });
+    } catch (e) {
+      console.error('[Auth] markWelcomeSeen failed:', e);
+    }
+  }, []);
 
   useEffect(() => {
     // Link vencido/usado manda o erro no HASH (fluxo implícito, ex:
@@ -263,6 +296,12 @@ export const AuthProvider = ({ children }) => {
             clearTimeout(loginSafetyTimerRef.current);
             loginSafetyTimerRef.current = null;
           }
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          // Metadata mudou (ex: markWelcomeSeen) — não é login novo, só recomputa o
+          // sinal derivado. Não mexe em isLoading/profile: role e managed_franchise_ids
+          // vêm de profiles, não do metadata do auth.
+          lastAuthUserRef.current = session.user;
+          setWelcomeSeenState(computeWelcomeSeen(session.user));
         } else if (event === 'SIGNED_OUT') {
           // Guard: ignore stale SIGNED_OUT if a SIGNED_IN fired recently (race condition)
           const msSinceSignIn = Date.now() - lastSignedInTimeRef.current;
@@ -323,8 +362,10 @@ export const AuthProvider = ({ children }) => {
     setSelectedFranchise,
     logout,
     navigateToLogin,
+    welcomeSeen,
+    markWelcomeSeen,
     checkAppState: () => {}
-  }), [user, isAuthenticated, isLoading, needsPasswordSetup, clearPasswordSetup, profileLoadFailed, retryProfile, selectedFranchise, setSelectedFranchise, logout, navigateToLogin]);
+  }), [user, isAuthenticated, isLoading, needsPasswordSetup, clearPasswordSetup, profileLoadFailed, retryProfile, selectedFranchise, setSelectedFranchise, logout, navigateToLogin, welcomeSeen, markWelcomeSeen]);
 
   return (
     <AuthContext.Provider value={contextValue}>

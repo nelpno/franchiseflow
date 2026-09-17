@@ -1,107 +1,132 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
-import { User, OnboardingChecklist, FranchiseConfiguration, PurchaseOrder, InventoryItem, setOnboardingStatus } from "@/entities/all";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  User,
+  OnboardingChecklist,
+  FranchiseConfiguration,
+  setOnboardingStatus,
+  setOnboardingItem,
+  getOnboardingFacts,
+} from "@/entities/all";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { BLOCKS, GATE_BLOCK, TOTAL_ITEMS } from "@/components/onboarding/ONBOARDING_BLOCKS";
-import OnboardingBlock from "@/components/onboarding/OnboardingBlock";
-import GateBlock from "@/components/onboarding/GateBlock";
-import ProgressRing from "@/components/onboarding/ProgressRing";
 import FiscalDataGate from "@/components/onboarding/FiscalDataGate";
-import { missingFiscalFields } from "@/lib/saveFiscalData";
+import NextActionCard from "@/components/onboarding/NextActionCard";
+import JourneyStep from "@/components/onboarding/JourneyStep";
+import MaxiDoesList from "@/components/onboarding/MaxiDoesList";
+import { montarJornada } from "@/lib/onboardingJourney";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { useAuth } from "@/lib/AuthContext";
 import FranchisePicker from "@/components/shared/FranchisePicker";
 import { listarFranquias } from "@/lib/franchisesCache";
+import { createPageUrl } from "@/utils";
 
-const ALL_BLOCK_KEYS = [
-  ...BLOCKS.flatMap(b => b.items.map(i => i.key)),
-  ...GATE_BLOCK.items.map(i => i.key),
-];
+// "Primeiros passos" — trilha de 5 passos (substituiu os 9 blocos do onboarding
+// antigo, 16/09/2026). A lógica de estado vive em src/lib/onboardingJourney.js
+// (montarJornada); este arquivo só carrega os dados, grava as ações da franqueada/
+// admin e desenha a UI. Ver CLAUDE.md raiz do dashboard, "Primeiros passos".
 
-const STORAGE_KEY_PREFIX = 'onboarding_items_';
-
-function computeCounts(items) {
-  const count = ALL_BLOCK_KEYS.filter(k => items[k]).length;
-  return {
-    completed_count: count,
-    completion_percentage: Math.round((count / TOTAL_ITEMS) * 100),
-  };
+function formatarData(iso) {
+  if (!iso) return "";
+  try {
+    return format(new Date(iso), "dd/MM", { locale: ptBR });
+  } catch {
+    return "";
+  }
 }
 
-function blocks1to8Complete(items) {
-  return BLOCKS.every(block => block.items.every(item => items[item.key]));
+function contarFeitas(jornada) {
+  return jornada.passos.reduce((soma, p) => soma + p.feitas, 0);
 }
-
-// Itens que só a equipe Maxi marca (o banco preserva o valor dele se a franqueada mandar outro).
-const CHAVES_MAXI = ["4-4", "8-1", "9-2", "9-3", "9-4"];
 
 // "approved" só muda pela RPC set_onboarding_status; aqui é só in_progress <-> pending_approval.
-function proximoStatus(statusAtual, blocosCompletos) {
+function proximoStatus(statusAtual, completo) {
   if (statusAtual === "approved") return statusAtual;
-  if (blocosCompletos && statusAtual === "in_progress") return "pending_approval";
-  if (!blocosCompletos && statusAtual === "pending_approval") return "in_progress";
+  if (completo && statusAtual === "in_progress") return "pending_approval";
+  if (!completo && statusAtual === "pending_approval") return "in_progress";
   return statusAtual;
 }
 
 function StatusBadge({ status }) {
-  if (status === "approved") return <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200">Aprovado</Badge>;
-  if (status === "pending_approval") return <Badge className="bg-brand-gold/10 text-brand-gold-ink border border-brand-gold/30">Aguardando</Badge>;
-  return <Badge className="bg-brand/5 text-brand border border-brand/20">Em andamento</Badge>;
+  if (status === "approved") return <Badge className="bg-ok-soft text-ok-ink border border-ok/30">Aprovado</Badge>;
+  if (status === "pending_approval") return <Badge className="bg-brand-gold-soft text-brand-gold-ink border border-brand-gold-line">Aguardando</Badge>;
+  return <Badge className="bg-brand-soft text-brand border border-brand/20">Em andamento</Badge>;
 }
-
-// Find the first block that is not 100% complete
-function findActiveBlockId(items) {
-  for (const block of BLOCKS) {
-    const allChecked = block.items.every(i => items[i.key]);
-    if (!allChecked) return block.id;
-  }
-  return 9; // gate block
-}
-
-const BLOCK_CELEBRATION = [
-  "Primeiros passos feitos! Bora!",
-  "Você já conhece todos os produtos!",
-  "Espaço pronto! Operação tomando forma!",
-  "WhatsApp configurado! Agora sim!",
-  "Vendedor ativado! Seu robô está pronto!",
-  "Primeiro pedido feito! Estoque a caminho!",
-  "Treinamento completo! Você está craque!",
-  "Redes sociais no ar! Quase lá!",
-];
 
 export default function Onboarding() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { selectedFranchise: ctxFranchise } = useAuth();
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
   const [selectedFranchise, setSelectedFranchise] = useState(null);
   const [checklist, setChecklist] = useState(null);
   const [items, setItems] = useState({});
+  const [facts, setFacts] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [allChecklists, setAllChecklists] = useState([]);
   const [configsByEvoId, setConfigsByEvoId] = useState({});
+  const [openStepId, setOpenStepId] = useState(null);
+  const [adminNotesDraft, setAdminNotesDraft] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingStatusAction, setConfirmingStatusAction] = useState(false);
-  const [expandedBlockId, setExpandedBlockId] = useState(null);
-  const [completedBlocks, setCompletedBlocks] = useState(new Set());
   const mountedRef = useRef(true);
-  const saveTimerRef = useRef(null);
-  const celebrationTimerRef = useRef(null);
-  const blockRefs = useRef({});
-  const pendingSaveRef = useRef(null);
+  const stepRefs = useRef({});
+  const syncedPercentRef = useRef(new Set());
+  const syncedToastRef = useRef(new Set());
 
-  const loadData = useCallback(async () => {
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
+  const config = selectedFranchise ? configsByEvoId[selectedFranchise.evolution_instance_id] : null;
+
+  const jornada = useMemo(
+    () => montarJornada({ franchise: selectedFranchise, config, facts, items }),
+    [selectedFranchise, config, facts, items]
+  );
+
+  // Mantém a lista do admin igual ao que acabou de ser gravado (senão, ao voltar para a
+  // lista e reabrir a unidade, a tela mostrava o estado antigo).
+  const atualizarCache = (row) => {
+    if (!row?.franchise_id) return;
+    setAllChecklists((lista) => {
+      const existe = lista.some((c) => c.franchise_id === row.franchise_id);
+      return existe
+        ? lista.map((c) => (c.franchise_id === row.franchise_id ? row : c))
+        : [...lista, row];
+    });
+  };
+
+  const loadFranchiseChecklist = async (franchise) => {
+    // Sempre do banco: a lista em memória pode estar velha (outra pessoa marcou algo).
+    const [existingResult, factsResult] = await Promise.allSettled([
+      OnboardingChecklist.filter({ franchise_id: franchise.evolution_instance_id }),
+      getOnboardingFacts(franchise.evolution_instance_id),
+    ]);
+    const existing = existingResult.status === "fulfilled" ? existingResult.value : [];
+    const factsData = factsResult.status === "fulfilled" ? factsResult.value : null;
+    if (!mountedRef.current) return;
+    setFacts(factsData);
+    if (existing.length > 0) {
+      setChecklist(existing[0]);
+      setItems(existing[0].items || {});
+      setAdminNotesDraft(existing[0].admin_notes || "");
+    } else {
+      setChecklist(null);
+      setItems({});
+      setAdminNotesDraft("");
+    }
+  };
+
+  const loadData = async () => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      // Parallel: user + franchises + configs (saves round trips)
       const [userResult, franchisesResult, configsResult] = await Promise.allSettled([
         User.me(),
         listarFranquias(),
@@ -114,15 +139,14 @@ export default function Onboarding() {
       if (!mountedRef.current) return;
       setCurrentUser(user);
 
-      // Enrich franchises with franchise_name from configs
       const configMap = {};
       const fullConfigMap = {};
-      configs.forEach(c => {
+      configs.forEach((c) => {
         if (c.franchise_name) configMap[c.franchise_evolution_instance_id] = c.franchise_name;
         fullConfigMap[c.franchise_evolution_instance_id] = c;
       });
       setConfigsByEvoId(fullConfigMap);
-      const enriched = allFranchises.map(f => ({
+      const enriched = allFranchises.map((f) => ({
         ...f,
         franchise_name: configMap[f.evolution_instance_id] || null,
       }));
@@ -133,10 +157,9 @@ export default function Onboarding() {
         if (!mountedRef.current) return;
         setAllChecklists(allOb);
 
-        // Pre-select franchise from URL query param ?franchise=evo_id
         const urlFranchiseId = searchParams.get("franchise");
         if (urlFranchiseId) {
-          const match = enriched.find(f => f.evolution_instance_id === urlFranchiseId);
+          const match = enriched.find((f) => f.evolution_instance_id === urlFranchiseId);
           if (match) {
             setSelectedFranchise(match);
             await loadFranchiseChecklist(match);
@@ -144,159 +167,170 @@ export default function Onboarding() {
         }
       } else {
         const ids = user.managed_franchise_ids || [];
-        const myFranchises = enriched.filter(f =>
-          ids.includes(f.evolution_instance_id) || ids.includes(f.id)
-        );
+        const myFranchises = enriched.filter((f) => ids.includes(f.evolution_instance_id) || ids.includes(f.id));
         setFranchises(myFranchises);
-
         // Só resolve sozinho quando há UMA unidade. Com 2+, quem manda é o seletor
-        // do topo (efeito de sincronia abaixo) — "a primeira da lista" abria o
-        // onboarding da unidade errada (bug 05/08/2026).
+        // do topo (efeito abaixo) — "a primeira da lista" abria a unidade errada
+        // (bug 05/08/2026).
         if (myFranchises.length === 1) {
           setSelectedFranchise(myFranchises[0]);
           await loadFranchiseChecklist(myFranchises[0]);
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar onboarding:", error);
+      console.error("Erro ao carregar primeiros passos:", error);
       if (mountedRef.current) setLoadError("Erro ao carregar dados.");
     } finally {
       if (mountedRef.current) setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    mountedRef.current = true;
+    loadData();
+    return () => { mountedRef.current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-detect completed items from system data
-  const detectAutoItems = async (evoId) => {
-    const auto = { "1-1": true, "1-2": true }; // Always done when franchisee has access
+  // Franqueado com 2+ unidades: a trilha segue o seletor do topo.
+  useEffect(() => {
+    if (!currentUser || currentUser.role === "admin" || currentUser.role === "manager") return;
+    if (!ctxFranchise || franchises.length === 0) return;
+    const match = franchises.find((f) => f.evolution_instance_id === ctxFranchise.evolution_instance_id);
+    if (match && match.evolution_instance_id !== selectedFranchise?.evolution_instance_id) {
+      setSelectedFranchise(match);
+      loadFranchiseChecklist(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctxFranchise?.evolution_instance_id, franchises, currentUser]);
+
+  // Passo aberto por padrão = o atual (1º incompleto); ao completar tudo, o último.
+  // Só reavalia quando TROCA de checklist/unidade — "toque abre/fecha" manda depois.
+  useEffect(() => {
+    if (!checklist) {
+      setOpenStepId(null);
+      return;
+    }
+    const atual = jornada.passos.find((p) => !p.pronto);
+    setOpenStepId(atual ? atual.id : jornada.passos[jornada.passos.length - 1]?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklist?.id]);
+
+  // Se os fatos automáticos já fecharam tudo (ou avançaram) mas o percentual salvo
+  // ficou pra trás, sincroniza UMA vez — é isso que dispara o aviso pra equipe Maxi
+  // quando a franqueada nem tocou em nada nesta visita.
+  // Vale para qualquer mudança dos valores calculados (dados fiscais salvos agora, trilha
+  // reaberta já completa...). Nunca reenvia `items` — só números e status. A assinatura
+  // evita repetir a mesma gravação (inclusive se ela falhar).
+  useEffect(() => {
+    if (!checklist || isAdmin) return;
+    const completedCount = contarFeitas(jornada);
+    const novoStatus = proximoStatus(checklist.status, jornada.completo);
+    const precisaSincronizar =
+      checklist.completion_percentage !== jornada.porcentagem
+      || checklist.completed_count !== completedCount
+      || novoStatus !== checklist.status;
+    if (!precisaSincronizar) return;
+    const assinatura = `${checklist.id}|${jornada.porcentagem}|${completedCount}|${novoStatus}`;
+    if (syncedPercentRef.current.has(assinatura)) return;
+    syncedPercentRef.current.add(assinatura);
+    const patch = { completed_count: completedCount, completion_percentage: jornada.porcentagem };
+    if (novoStatus !== checklist.status) patch.status = novoStatus;
+    OnboardingChecklist.update(checklist.id, patch)
+      .then((atualizado) => { if (mountedRef.current && atualizado) setChecklist(atualizado); })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklist?.id, checklist?.status, checklist?.completion_percentage, checklist?.completed_count, jornada.porcentagem, jornada.completo]);
+
+  // "Pronto: X. Próximo: Y" — compara com a última visita (sessionStorage) pra
+  // avisar quando algo terminou sozinho enquanto ela estava em outra tela.
+  useEffect(() => {
+    if (!checklist || isAdmin || !selectedFranchise) return;
+    if (syncedToastRef.current.has(checklist.id)) return;
+    syncedToastRef.current.add(checklist.id);
+    const storageKey = `primeiros_passos_feitas_${selectedFranchise.evolution_instance_id}`;
+    const feitasAgora = jornada.passos.flatMap((p) =>
+      p.tarefas.filter((t) => (t.tipo === "auto" || t.tipo === "confirmacao") && t.feita).map((t) => t.id)
+    );
+    let anteriores = [];
     try {
-      const autoResults = await Promise.allSettled([
-        FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }),
-        PurchaseOrder.filter({ franchise_id: evoId }),
-        InventoryItem.filter({ franchise_id: evoId }),
-      ]);
-      const configs = autoResults[0].status === "fulfilled" ? autoResults[0].value : [];
-      const orders = autoResults[1].status === "fulfilled" ? autoResults[1].value : [];
-      const inventory = autoResults[2].status === "fulfilled" ? autoResults[2].value : [];
-      // 5-2: "Meu Vendedor" preenchido por completo — espelha a conclusão do
-      // wizard em FranchiseSettings.jsx (completedSteps). PIX é OPCIONAL no
-      // wizard, então NÃO entra aqui (a detecção antiga exigia pix_key_data e
-      // travava franquias que só configuraram o resto). Mantém em sincronia com
-      // os steps: 1) identidade, 2) operação+pagamentos, 3) raio (se entrega),
-      // 4) agente. has_delivery/has_pickup têm os mesmos defaults do form.
-      const cfg = configs[0];
-      if (cfg) {
-        const hasDelivery = cfg.has_delivery ?? true;
-        const hasPickup = cfg.has_pickup ?? false;
-        const step1 = Boolean(cfg.franchise_name && cfg.street_address && cfg.neighborhood && cfg.city);
-        const step2 = (!hasDelivery || (cfg.payment_delivery?.length > 0))
-          && (!hasPickup || (cfg.payment_pickup?.length > 0));
-        const step3 = !hasDelivery || cfg.max_delivery_radius_km != null;
-        const step4 = Boolean(cfg.agent_name);
-        if (step1 && step2 && step3 && step4) {
-          auto["5-2"] = true;
-        }
-      }
-      // 6-1: Has at least one purchase order
-      if (orders.length > 0) {
-        auto["6-1"] = true;
-      }
-      // 6-3: Has any inventory with stock > 0
-      if (inventory.some(i => (i.quantity || 0) > 0)) {
-        auto["6-3"] = true;
-      }
-    } catch (err) {
-      console.error("Auto-detect error (non-fatal):", err);
+      anteriores = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
+    } catch {
+      anteriores = [];
     }
-    return auto;
-  };
-
-  const loadFranchiseChecklist = async (franchise) => {
-    // Parallel: checklist + auto-detect (saves ~1 round trip)
-    // Admin: use cached allChecklists to avoid redundant DB query
-    const cachedForAdmin = allChecklists.filter(c => c.franchise_id === franchise.evolution_instance_id);
-    const [existingResult, autoItemsResult] = await Promise.allSettled([
-      cachedForAdmin.length > 0
-        ? Promise.resolve(cachedForAdmin)
-        : OnboardingChecklist.filter({ franchise_id: franchise.evolution_instance_id }),
-      detectAutoItems(franchise.evolution_instance_id),
-    ]);
-    const existing = existingResult.status === "fulfilled" ? existingResult.value : [];
-    const autoItems = autoItemsResult.status === "fulfilled" ? autoItemsResult.value : {};
-
-    if (existing.length > 0) {
-      const cl = existing[0];
-      // Merge auto-detected items into saved items
-      let mergedItems = { ...(cl.items || {}), ...autoItems };
-
-      // Recover from localStorage backup (crash/session-expiry recovery)
-      let recoveredFromLocal = false;
-      const storageKey = STORAGE_KEY_PREFIX + franchise.evolution_instance_id;
-      try {
-        const localBackup = localStorage.getItem(storageKey);
-        if (localBackup) {
-          const localItems = JSON.parse(localBackup);
-          const localTrueKeys = Object.keys(localItems).filter(k => localItems[k] && k !== "9-1" && !CHAVES_MAXI.includes(k));
-          const dbTrueKeys = Object.keys(mergedItems).filter(k => mergedItems[k] && k !== "9-1");
-          // If localStorage has items not in DB, recover them
-          const missingInDb = localTrueKeys.filter(k => !mergedItems[k]);
-          if (missingInDb.length > 0) {
-            missingInDb.forEach(k => { mergedItems[k] = true; });
-            recoveredFromLocal = true;
-          }
-          localStorage.removeItem(storageKey);
-        }
-      } catch {}
-
-      setChecklist(cl);
-      setItems(mergedItems);
-
-      // Save recovered/auto-detected changes if any new items were found
-      const hasNewAuto = Object.keys(autoItems).some(k => !(cl.items || {})[k] && autoItems[k]);
-      if (hasNewAuto || recoveredFromLocal) {
-        // Item automático também pode fechar a última missão: aplica a mesma transição
-        // de status do save manual (senão o aviso para a equipe não sai).
-        const b18 = blocks1to8Complete(mergedItems);
-        const itensParaSalvar = { ...mergedItems, "9-1": b18 };
-        const patch = { items: itensParaSalvar, ...computeCounts(itensParaSalvar) };
-        const novoStatus = proximoStatus(cl.status, b18);
-        if (novoStatus !== cl.status) patch.status = novoStatus;
-        OnboardingChecklist.update(cl.id, patch)
-          .then((atualizado) => { if (mountedRef.current && atualizado) setChecklist(atualizado); })
-          .catch(() => {});
-        if (recoveredFromLocal) {
-          toast.success("Progresso recuperado! Seus itens foram restaurados.", { duration: 5000 });
-        }
+    const novas = feitasAgora.filter((id) => !anteriores.includes(id));
+    if (anteriores.length > 0 && novas.length > 0) {
+      const tarefaFeita = jornada.passos.flatMap((p) => p.tarefas).find((t) => t.id === novas[0]);
+      const titulo = tarefaFeita?.titulo || "Tarefa concluída";
+      if (jornada.agora) {
+        toast.success(`Pronto: ${titulo}. Próximo: ${jornada.agora.titulo}`);
+      } else {
+        toast.success(`Pronto: ${titulo}`);
       }
-
-      // Set initial expanded block
-      const activeId = findActiveBlockId(mergedItems);
-      setExpandedBlockId(activeId);
-      // Track already completed blocks
-      const done = new Set();
-      BLOCKS.forEach(b => {
-        if (b.items.every(i => mergedItems[i.key])) done.add(b.id);
-      });
-      setCompletedBlocks(done);
-    } else {
-      setChecklist(null);
-      setItems({});
-      setExpandedBlockId(1);
-      setCompletedBlocks(new Set());
     }
-  };
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(feitasAgora));
+    } catch {
+      // sessionStorage pode falhar (modo privado) — só perde o aviso, não trava nada
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checklist?.id]);
 
   const handleSelectFranchise = async (franchiseId) => {
-    const franchise = franchises.find(f => f.evolution_instance_id === franchiseId);
+    const franchise = franchises.find((f) => f.evolution_instance_id === franchiseId);
     if (!franchise) return;
+    setConfirmingDelete(false);
+    setConfirmingStatusAction(false);
     setSelectedFranchise(franchise);
     setIsLoading(true);
     try {
       await loadFranchiseChecklist(franchise);
     } catch (error) {
       console.error("Erro ao carregar checklist:", error);
-      toast.error("Erro ao carregar onboarding.");
+      toast.error(safeErrorMessage(error, "Erro ao carregar primeiros passos."));
     } finally {
       if (mountedRef.current) setIsLoading(false);
+    }
+  };
+
+  const handleBackToList = () => {
+    setSelectedFranchise(null);
+    setChecklist(null);
+    setItems({});
+    setFacts(null);
+    setConfirmingDelete(false);
+    setConfirmingStatusAction(false);
+  };
+
+  const handleFiscalReady = () => {
+    loadData();
+  };
+
+  const handleStartOnboarding = async () => {
+    if (!selectedFranchise) {
+      toast.error("Selecione uma franquia primeiro.");
+      return;
+    }
+    try {
+      const factsData = await getOnboardingFacts(selectedFranchise.evolution_instance_id).catch(() => null);
+      const cfg = configsByEvoId[selectedFranchise.evolution_instance_id];
+      const jornadaInicial = montarJornada({ franchise: selectedFranchise, config: cfg, facts: factsData, items: {} });
+      const created = await OnboardingChecklist.create({
+        franchise_id: selectedFranchise.evolution_instance_id,
+        status: "in_progress",
+        items: {},
+        completed_count: contarFeitas(jornadaInicial),
+        completion_percentage: jornadaInicial.porcentagem,
+      });
+      setChecklist(created);
+      setItems({});
+      setFacts(factsData);
+      setAdminNotesDraft("");
+      toast.success("Primeiros passos iniciados.");
+      window.dispatchEvent(new Event("onboarding-started"));
+    } catch (error) {
+      console.error("Erro ao iniciar primeiros passos:", error);
+      toast.error(safeErrorMessage(error, "Erro ao iniciar. Verifique as permissões."));
     }
   };
 
@@ -306,12 +340,18 @@ export default function Onboarding() {
       setConfirmingDelete(true);
       return;
     }
-    await OnboardingChecklist.delete(checklist.id);
-    setAllChecklists(prev => prev.filter(c => c.id !== checklist.id));
-    setChecklist(null);
-    setItems({});
-    setSelectedFranchise(null);
-    setConfirmingDelete(false);
+    try {
+      await OnboardingChecklist.delete(checklist.id);
+      setAllChecklists((prev) => prev.filter((c) => c.id !== checklist.id));
+      setChecklist(null);
+      setItems({});
+      setSelectedFranchise(null);
+      setFacts(null);
+    } catch (error) {
+      toast.error(safeErrorMessage(error, "Não foi possível excluir."));
+    } finally {
+      setConfirmingDelete(false);
+    }
   };
 
   const handleSetOnboardingStatus = async (newStatus) => {
@@ -321,19 +361,12 @@ export default function Onboarding() {
       return;
     }
     setConfirmingStatusAction(false);
-    // Grava AGORA o que estava no debounce (500ms, handleToggle) e só depois muda o
-    // status. Descartar perderia a marcação feita segundos antes; deixar o timer
-    // correr regravaria o status antigo por cima do "approved".
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = null;
-    }
-    const pendente = pendingSaveRef.current;
-    pendingSaveRef.current = null;
     try {
-      if (pendente) await saveItems(pendente.items, pendente.checklist);
       const updated = await setOnboardingStatus(checklist.franchise_id, newStatus);
-      if (updated) setChecklist(updated);
+      if (updated) {
+        setChecklist(updated);
+        atualizarCache(updated);
+      }
       toast.success(
         newStatus === "approved"
           ? "Primeiros passos concluídos. Some da tela da franqueada."
@@ -343,217 +376,137 @@ export default function Onboarding() {
         detail: { franchiseId: checklist.franchise_id, status: newStatus },
       }));
     } catch (error) {
-      console.error("Erro ao atualizar status do onboarding:", error);
+      console.error("Erro ao atualizar status:", error);
       toast.error(safeErrorMessage(error, "Não foi possível atualizar."));
     }
   };
 
-  const handleStartOnboarding = async () => {
-    if (!selectedFranchise) {
-      toast.error("Selecione uma franquia primeiro.");
+  const handleToggleConfirmacao = async (passoId, tarefaId) => {
+    if (!checklist || isAdmin) return;
+    const previousItems = items;
+    const previousChecklist = checklist;
+    const isFeito = Boolean(items[tarefaId]);
+    const newItems = { ...items };
+    if (isFeito) delete newItems[tarefaId];
+    else newItems[tarefaId] = new Date().toISOString();
+
+    setItems(newItems);
+    setChecklist((prev) => prev && { ...prev, items: newItems });
+
+    try {
+      // Só a chave tocada vai para o banco; números e status saem do que o banco devolveu.
+      const linha = await setOnboardingItem(checklist.franchise_id, tarefaId, !isFeito);
+      if (!mountedRef.current || !linha) return;
+      const itensSalvos = linha.items || {};
+      const novaJornada = montarJornada({ franchise: selectedFranchise, config, facts, items: itensSalvos });
+      const completedCount = contarFeitas(novaJornada);
+      const novoStatus = proximoStatus(linha.status, novaJornada.completo);
+      setItems(itensSalvos);
+      const updated = await OnboardingChecklist.update(checklist.id, {
+        completed_count: completedCount,
+        completion_percentage: novaJornada.porcentagem,
+        status: novoStatus,
+      });
+      if (mountedRef.current && updated) setChecklist(updated);
+    } catch (error) {
+      if (!mountedRef.current) return;
+      setItems(previousItems);
+      setChecklist(previousChecklist);
+      toast.error(safeErrorMessage(error, "Não foi possível salvar. Tente novamente."));
+    }
+  };
+
+  const handleToggleMaxi = async (itemId) => {
+    if (!checklist || !isAdmin) return;
+    const previousItems = items;
+    const previousChecklist = checklist;
+    const isFeito = Boolean(items[itemId]);
+    const newItems = { ...items };
+    if (isFeito) delete newItems[itemId];
+    else newItems[itemId] = new Date().toISOString();
+
+    setItems(newItems);
+    setChecklist((prev) => prev && { ...prev, items: newItems });
+
+    try {
+      // Um item por vez: não apaga a confirmação que a franqueada fez depois que esta tela abriu.
+      // Desmarcar também tira a chave legada equivalente (4-4, 8-1, 9-3) no banco.
+      const updated = await setOnboardingItem(checklist.franchise_id, itemId, !isFeito);
+      if (mountedRef.current && updated) {
+        setChecklist(updated);
+        setItems(updated.items || {});
+        atualizarCache(updated);
+      }
+    } catch (error) {
+      if (!mountedRef.current) return;
+      setItems(previousItems);
+      setChecklist(previousChecklist);
+      toast.error(safeErrorMessage(error, "Não foi possível salvar."));
+    }
+  };
+
+  const handleAdminNotesBlur = async () => {
+    if (!checklist || !isAdmin) return;
+    if (adminNotesDraft === (checklist.admin_notes || "")) return;
+    try {
+      const updated = await OnboardingChecklist.update(checklist.id, { admin_notes: adminNotesDraft });
+      if (mountedRef.current && updated) {
+        setChecklist(updated);
+        atualizarCache(updated);
+      }
+    } catch (error) {
+      toast.error(safeErrorMessage(error, "Não foi possível salvar a anotação."));
+    }
+  };
+
+  const handleDestino = (destino, passoId) => {
+    if (!destino) return;
+    if (destino.tipo === "app") {
+      navigate(destino.href);
       return;
     }
-    try {
-      // Auto-detect items before creating
-      const autoItems = await detectAutoItems(selectedFranchise.evolution_instance_id);
-      const counts = computeCounts(autoItems);
-
-      const created = await OnboardingChecklist.create({
-        franchise_id: selectedFranchise.evolution_instance_id,
-        status: "in_progress",
-        items: autoItems,
-        ...counts,
-      });
-      setChecklist(created);
-      setItems(autoItems);
-      const activeId = findActiveBlockId(autoItems);
-      setExpandedBlockId(activeId);
-
-      // Track already completed blocks from auto-detect
-      const done = new Set();
-      BLOCKS.forEach(b => {
-        if (b.items.every(i => autoItems[i.key])) done.add(b.id);
-      });
-      setCompletedBlocks(done);
-
-      const autoCount = Object.values(autoItems).filter(Boolean).length;
-      toast.success(`Missões iniciadas! ${autoCount} itens já marcados automaticamente.`);
-      // Notify Layout to show Onboarding in sidebar
-      window.dispatchEvent(new Event("onboarding-started"));
-    } catch (error) {
-      console.error("Erro ao iniciar onboarding:", error);
-      toast.error("Erro ao iniciar onboarding. Verifique as permissões.");
+    if (destino.tipo === "acao") {
+      setOpenStepId(passoId);
+      return;
     }
+    window.open(destino.href, "_blank", "noopener,noreferrer");
   };
 
-  useEffect(() => {
-    mountedRef.current = true;
-    loadData();
-    return () => {
-      mountedRef.current = false;
-      // Flush pending save instead of discarding (prevents data loss on navigation)
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        if (pendingSaveRef.current) {
-          const { items: pi, checklist: pc } = pendingSaveRef.current;
-          if (pc) {
-            const b18 = blocks1to8Complete(pi);
-            const fi = { ...pi, "9-1": b18 };
-            OnboardingChecklist.update(pc.id, { items: fi, ...computeCounts(fi), status: proximoStatus(pc.status, b18) }).catch(() => {});
-          }
-          pendingSaveRef.current = null;
-        }
-      }
-      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-    };
-  }, [loadData]);
-
-  // Franqueado com 2+ unidades: o onboarding segue o seletor do topo.
-  useEffect(() => {
-    if (!currentUser || currentUser.role === "admin" || currentUser.role === "manager") return;
-    if (!ctxFranchise || franchises.length === 0) return;
-    const match = franchises.find(
-      (f) => f.evolution_instance_id === ctxFranchise.evolution_instance_id
-    );
-    if (match && match.evolution_instance_id !== selectedFranchise?.evolution_instance_id) {
-      setSelectedFranchise(match);
-      loadFranchiseChecklist(match);
-    }
-  }, [ctxFranchise?.evolution_instance_id, franchises, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const saveItems = useCallback(async (newItems, currentChecklist) => {
-    if (!currentChecklist) return;
-    setIsSaving(true);
+  const handleAgoraAction = (destino, passoId) => {
     try {
-      const b18Complete = blocks1to8Complete(newItems);
-      const finalItems = { ...newItems, "9-1": b18Complete };
-
-      const counts = computeCounts(finalItems);
-
-      // Status "approved" é território exclusivo da RPC set_onboarding_status; o banco
-      // mantém "approved" mesmo se um save antigo mandar outro valor.
-      const status = proximoStatus(currentChecklist.status, b18Complete);
-
-      const updateData = {
-        items: finalItems,
-        ...counts,
-        status,
-      };
-
-      const updated = await OnboardingChecklist.update(currentChecklist.id, updateData);
-      setChecklist(updated);
-      pendingSaveRef.current = null;
-      // Clear localStorage backup (DB is now in sync)
-      try { localStorage.removeItem(STORAGE_KEY_PREFIX + currentChecklist.franchise_id); } catch {}
-    } catch (error) {
-      console.error("Erro ao salvar checklist:", error);
-      const msg = error?.message || "";
-      if (msg.includes("JWT") || msg.includes("token") || msg.includes("expired") || msg.includes("refresh_token")) {
-        toast.error("Sessão expirada. Recarregue a página e faça login novamente.", { duration: 8000 });
-      } else if (msg.includes("Tempo limite")) {
-        toast.error("Tempo limite ao salvar. Verifique sua conexão.", { duration: 5000 });
-      } else {
-        toast.error(`Erro ao salvar: ${msg || "Tente novamente."}`, { duration: 5000 });
-      }
-    } finally {
-      setIsSaving(false);
+      window.clarity?.("event", "primeiros_passos_continuar");
+    } catch {
+      // Analytics nunca pode travar a navegação
     }
-  }, []);
+    handleDestino(destino, passoId);
+  };
 
-  const handleToggle = (key) => {
-    const newItems = { ...items, [key]: !items[key] };
-    setItems(newItems);
-
-    // Persist to localStorage immediately as crash-recovery backup
-    const evoId = selectedFranchise?.evolution_instance_id || franchises[0]?.evolution_instance_id;
-    if (evoId) {
-      try { localStorage.setItem(STORAGE_KEY_PREFIX + evoId, JSON.stringify(newItems)); } catch {}
-    }
-
-    // Check if any block just became complete
-    BLOCKS.forEach((block, idx) => {
-      const wasComplete = completedBlocks.has(block.id);
-      const isNowComplete = block.items.every(i => newItems[i.key]);
-
-      if (!wasComplete && isNowComplete) {
-        // Block just completed! Celebrate and move to next
-        const newCompleted = new Set(completedBlocks);
-        newCompleted.add(block.id);
-        setCompletedBlocks(newCompleted);
-
-        toast.success(BLOCK_CELEBRATION[idx] || "Missão completa!", {
-          duration: 3000,
-          icon: "🎉",
-        });
-
-        // Auto-expand next incomplete block after celebration (3.4s)
-        if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
-        celebrationTimerRef.current = setTimeout(() => {
-          const nextActiveId = findActiveBlockId(newItems);
-          setExpandedBlockId(nextActiveId);
-
-          // Auto-scroll to next block
-          setTimeout(() => {
-            const nextRef = blockRefs.current[nextActiveId];
-            if (nextRef) {
-              nextRef.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
-          }, 150);
-          celebrationTimerRef.current = null;
-        }, 3400);
-      }
+  const handleVerPasso = (passoId) => {
+    setOpenStepId(passoId);
+    requestAnimationFrame(() => {
+      stepRefs.current[passoId]?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-
-    // Track pending save for flush-on-unmount
-    pendingSaveRef.current = { items: newItems, checklist, user: currentUser };
-
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveItems(newItems, checklist);
-    }, 500);
   };
 
-  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
-  const b18Complete = blocks1to8Complete(items);
-  const liveCounts = checklist ? computeCounts(items) : { completed_count: 0, completion_percentage: 0 };
-  const progressPct = liveCounts.completion_percentage;
-
-  // Count completed blocks
-  const completedBlockCount = BLOCKS.filter(b => b.items.every(i => items[i.key])).length;
-
-  // Next active block (first incomplete)
-  const nextActiveBlockId = useMemo(() => findActiveBlockId(items), [items]);
-
-  // Motivational message
-  const motivationalMessage = useMemo(() => {
-    if (progressPct === 0) return "Vamos começar! Sua primeira missão já está esperando.";
-    if (progressPct <= 25) return "Ótimo começo! Continue assim.";
-    if (progressPct <= 50) return "Quase na metade! Você está voando.";
-    if (progressPct <= 75) return "Mais da metade! A reta final está perto.";
-    if (progressPct < 100) return "Falta pouco! Você está quase lá!";
-    return "Todas as missões completas! 🎉";
-  }, [progressPct]);
-
-  // Manual block toggle — cancels celebration auto-expand timer
-  const handleManualToggle = (blockId) => {
-    if (celebrationTimerRef.current) {
-      clearTimeout(celebrationTimerRef.current);
-      celebrationTimerRef.current = null;
-    }
-    setExpandedBlockId(expandedBlockId === blockId ? null : blockId);
-  };
-
-  // Admin summary counts
-  const inProgressCount = allChecklists.filter(c => c.status === "in_progress").length;
-  const pendingCount = allChecklists.filter(c => c.status === "pending_approval").length;
-  const approvedCount = allChecklists.filter(c => c.status === "approved").length;
+  const unidadesEmAndamento = useMemo(
+    () =>
+      franchises.filter((f) => {
+        const ob = allChecklists.find((c) => c.franchise_id === f.evolution_instance_id);
+        return ob && ob.status !== "approved";
+      }),
+    [franchises, allChecklists]
+  );
 
   if (isLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
-        <div className="text-center text-ink-2">
-          <MaterialIcon icon="rocket_launch" size={40} className="mx-auto mb-3 animate-pulse text-brand-gold" />
-          Carregando onboarding...
+      <div className="p-4 md:p-8 bg-surface">
+        <div className="max-w-3xl mx-auto flex flex-col gap-4">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-28 w-full rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-[22px]" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
         </div>
       </div>
     );
@@ -566,236 +519,186 @@ export default function Onboarding() {
           <MaterialIcon icon="error_outline" size={48} className="mx-auto mb-3 text-brand/40" />
           <p className="text-ink-2 mb-4">{loadError}</p>
           <Button onClick={loadData} className="bg-brand hover:bg-brand-dark text-white rounded-xl">
-            Tentar novamente
+            Tentar de novo
           </Button>
         </div>
       </div>
     );
   }
 
-  if (currentUser && !isAdmin) {
-    if (franchises.length === 0) {
-      return (
-        <div className="p-8 text-center">
-          <MaterialIcon icon="store" size={48} className="mx-auto mb-3 text-ink-shadow/20" />
-          <h1 className="text-xl font-bold text-ink">Nenhuma franquia associada</h1>
-          <p className="text-ink-2 mt-2">Entre em contato com o administrador.</p>
-        </div>
-      );
-    }
-    // 2+ unidades e nenhuma escolhida: perguntar. Antes caía em franchises[0] e
-    // as missões (e o gate fiscal) eram marcadas na unidade errada.
-    if (!selectedFranchise && franchises.length > 1) {
-      return <FranchisePicker franchises={franchises} title="Onboarding de qual unidade?" />;
-    }
-  }
-
   return (
     <div className="p-4 md:p-8 bg-surface">
       <div className="max-w-3xl mx-auto">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold font-plus-jakarta text-ink flex items-center gap-2 sm:gap-3">
-            <MaterialIcon icon="rocket_launch" size={28} className="text-brand-gold shrink-0" />
-            Suas Missões
-          </h1>
-          <p className="text-sm sm:text-base text-ink-2 mt-1">Complete as missões e prepare tudo para sua primeira venda</p>
-        </div>
-
-        {/* Admin summary */}
-        {isAdmin && (
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-            <Card className="bg-brand-gold/5 border-brand-gold/20 border">
-              <CardContent className="p-3 sm:p-4 text-center">
-                <div className="text-2xl font-bold text-brand-gold-ink">{inProgressCount}</div>
-                <div className="text-xs text-ink-2/70 leading-tight">Em andamento</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-amber-50 border-amber-200 border">
-              <CardContent className="p-3 sm:p-4 text-center">
-                <div className="text-2xl font-bold text-amber-700">{pendingCount}</div>
-                <div className="text-xs text-ink-2/70 leading-tight">Aguardando</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-emerald-50 border-emerald-200 border">
-              <CardContent className="p-3 sm:p-4 text-center">
-                <div className="text-2xl font-bold text-emerald-700">{approvedCount}</div>
-                <div className="text-xs text-ink-2/70 leading-tight">Aprovados</div>
-              </CardContent>
-            </Card>
+        {/* Franqueado sem franquia */}
+        {!isAdmin && currentUser && franchises.length === 0 && (
+          <div className="p-8 text-center">
+            <MaterialIcon icon="store" size={48} className="mx-auto mb-3 text-ink-4" />
+            <h1 className="text-xl font-bold text-ink">Nenhuma franquia associada</h1>
+            <p className="text-ink-2 mt-2">Entre em contato com o administrador.</p>
           </div>
         )}
 
-        {/* Admin franchisee list */}
-        {isAdmin && !selectedFranchise && (
-          <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
-            <CardContent className="p-0">
-              {franchises.filter(f => allChecklists.find(c => c.franchise_id === f.evolution_instance_id)).length === 0 ? (
-                <div className="p-8 text-center text-ink-2/70">
-                  <MaterialIcon icon="groups" size={40} className="mx-auto mb-2 opacity-40" />
-                  <p>Nenhum franqueado iniciou o onboarding ainda.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-ink-shadow/5">
-                  {franchises
-                    .filter(f => allChecklists.find(c => c.franchise_id === f.evolution_instance_id))
-                    .map(f => {
-                      const ob = allChecklists.find(c => c.franchise_id === f.evolution_instance_id);
-                      const pct = ob?.completion_percentage || 0;
-                      const status = ob?.status || "in_progress";
+        {/* Franqueado com 2+ unidades e nenhuma escolhida */}
+        {!isAdmin && !selectedFranchise && franchises.length > 1 && (
+          <FranchisePicker franchises={franchises} title="Primeiros passos de qual unidade?" />
+        )}
+
+        {/* ADMIN */}
+        {isAdmin && (
+          <>
+            <div className="mb-6">
+              <h1 className="font-plus-jakarta font-extrabold text-2xl sm:text-3xl text-ink flex items-center gap-2.5">
+                <MaterialIcon icon="rocket_launch" size={28} className="text-brand-gold shrink-0" />
+                Primeiros passos
+              </h1>
+              <p className="text-sm sm:text-base text-ink-2 mt-1">
+                Acompanhe a jornada de cada unidade nova até a primeira venda.
+              </p>
+            </div>
+
+            {!selectedFranchise && unidadesEmAndamento.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap mb-4">
+                <span className="text-sm font-semibold text-ink-3 mr-1">Em primeiros passos:</span>
+                {unidadesEmAndamento.map((f) => {
+                  const ob = allChecklists.find((c) => c.franchise_id === f.evolution_instance_id);
+                  const prontaParaConferir = ob?.status === "pending_approval";
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => handleSelectFranchise(f.evolution_instance_id)}
+                      className={`h-9 rounded-full px-3.5 flex items-center gap-2 text-sm font-semibold ${
+                        prontaParaConferir
+                          ? "bg-ok-soft border border-ok/30 text-ok-ink"
+                          : "bg-white border border-surface-line text-ink-2"
+                      }`}
+                    >
+                      {prontaParaConferir && <span className="w-2 h-2 rounded-full bg-ok" />}
+                      {f.franchise_name || f.owner_name} · {ob?.completion_percentage ?? 0}%
+                      {prontaParaConferir && " · pronta para conferir"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {!selectedFranchise && (
+              <div className="bg-white rounded-2xl border border-surface-line p-4 mb-6">
+                <label className="text-sm font-medium text-ink-2 mb-2 flex items-center gap-2">
+                  <MaterialIcon icon="person_add" size={16} /> Iniciar primeiros passos para um franqueado
+                </label>
+                <Select value="" onValueChange={handleSelectFranchise}>
+                  <SelectTrigger className="w-full md:w-96 mt-2">
+                    <SelectValue placeholder="Escolha um franqueado..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {franchises.map((f) => {
+                      const ob = allChecklists.find((c) => c.franchise_id === f.evolution_instance_id);
                       return (
-                        <button
-                          key={f.id}
-                          onClick={() => handleSelectFranchise(f.evolution_instance_id)}
-                          className="w-full flex items-center gap-4 px-5 py-4 hover:bg-brand-gold/5 transition-colors text-left"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-ink text-sm">{f.franchise_name || f.owner_name}</div>
-                            <div className="text-xs text-ink-2/70">{f.owner_name}{f.city ? ` · ${f.city}` : ""}</div>
-                          </div>
-                          <div className="w-24 sm:w-32">
-                            <div className="bg-ink-shadow/5 rounded-full h-2 overflow-hidden">
-                              <div
-                                className="h-2 rounded-full transition-all"
-                                style={{
-                                  width: `${pct}%`,
-                                  backgroundColor: pct === 100 ? "#10b981" : "#d4af37",
-                                }}
-                              />
-                            </div>
-                            <div className="text-xs text-ink-2/70 mt-1 text-right">{pct}%</div>
-                          </div>
-                          <StatusBadge status={status} />
-                        </button>
+                        <SelectItem key={f.id} value={f.evolution_instance_id}>
+                          <span className="font-medium">{f.franchise_name || f.owner_name}</span>
+                          <span className="text-ink-3 ml-2">{f.city}</span>
+                          {ob && <span className="ml-2 text-xs text-ink-3">{ob.completion_percentage}%</span>}
+                        </SelectItem>
                       );
                     })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-        {/* Back button when a franchise is selected */}
-        {isAdmin && selectedFranchise && (
-          <button
-            onClick={() => { setSelectedFranchise(null); setChecklist(null); setItems({}); }}
-            className="mb-4 flex items-center gap-2 text-sm text-ink-2 hover:text-ink transition-colors"
-          >
-            <MaterialIcon icon="arrow_back" size={16} /> Voltar para a lista
-          </button>
-        )}
+            {!selectedFranchise && (
+              <div className="bg-white rounded-2xl border border-surface-line overflow-hidden mb-6">
+                {franchises.filter((f) => allChecklists.find((c) => c.franchise_id === f.evolution_instance_id)).length === 0 ? (
+                  <div className="p-8 text-center text-ink-3">
+                    <MaterialIcon icon="groups" size={40} className="mx-auto mb-2 opacity-40" />
+                    <p>Nenhum franqueado iniciou os primeiros passos ainda.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-surface-line">
+                    {franchises
+                      .filter((f) => allChecklists.find((c) => c.franchise_id === f.evolution_instance_id))
+                      .map((f) => {
+                        const ob = allChecklists.find((c) => c.franchise_id === f.evolution_instance_id);
+                        const pct = ob?.completion_percentage || 0;
+                        const status = ob?.status || "in_progress";
+                        return (
+                          <button
+                            key={f.id}
+                            onClick={() => handleSelectFranchise(f.evolution_instance_id)}
+                            className="w-full flex items-center gap-4 px-5 py-4 hover:bg-brand-soft/40 transition-colors text-left"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-ink text-sm">{f.franchise_name || f.owner_name}</div>
+                              <div className="text-xs text-ink-3">{f.owner_name}{f.city ? ` · ${f.city}` : ""}</div>
+                            </div>
+                            <div className="w-24 sm:w-32">
+                              <div className="bg-surface-2 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="h-2 rounded-full transition-all"
+                                  style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#16a34a" : "#d4af37" }}
+                                />
+                              </div>
+                              <div className="text-xs text-ink-3 mt-1 text-right">{pct}%</div>
+                            </div>
+                            <StatusBadge status={status} />
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            )}
 
-        {/* Admin selector - to start onboarding for any franchisee */}
-        {isAdmin && !selectedFranchise && (
-          <Card className="mb-6 border-0 shadow-sm">
-            <CardContent className="p-4">
-              <label className="text-sm font-medium text-ink-2 mb-2 flex items-center gap-2">
-                <MaterialIcon icon="person_add" size={16} /> Iniciar onboarding para novo franqueado
-              </label>
-              <Select value="" onValueChange={handleSelectFranchise}>
-                <SelectTrigger className="w-full md:w-96 mt-2">
-                  <SelectValue placeholder="Escolha um franqueado..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {franchises.map(f => {
-                    const ob = allChecklists.find(c => c.franchise_id === f.evolution_instance_id);
-                    return (
-                      <SelectItem key={f.id} value={f.evolution_instance_id}>
-                        <span className="font-medium">{f.franchise_name || f.owner_name}</span>
-                        <span className="text-ink-2/70 ml-2">{f.city}</span>
-                        {ob && <span className="ml-2 text-xs text-ink-2/70">{ob.completion_percentage}%</span>}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-        )}
+            {selectedFranchise && (
+              <button
+                onClick={handleBackToList}
+                className="mb-4 flex items-center gap-2 text-sm text-ink-2 hover:text-ink transition-colors"
+              >
+                <MaterialIcon icon="arrow_back" size={16} /> Voltar para a lista
+              </button>
+            )}
 
-        {/* Gate fiscal — franqueado precisa completar dados antes de acessar missões */}
-        {!isAdmin && selectedFranchise && (() => {
-          const config = configsByEvoId[selectedFranchise.evolution_instance_id];
-          const missing = missingFiscalFields(selectedFranchise, config);
-          if (missing.length === 0) return null;
-          return (
-            <FiscalDataGate
-              franchise={selectedFranchise}
-              onReady={() => loadData()}
-            />
-          );
-        })()}
+            {selectedFranchise && !checklist && (
+              <div className="text-center border-2 border-dashed border-brand-gold-line bg-brand-gold-soft rounded-2xl p-8 mb-6">
+                <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-brand-gold" />
+                <h3 className="font-bold text-ink text-lg mb-1">Nenhum checklist iniciado</h3>
+                <p className="text-ink-2 text-sm mb-4">Este franqueado ainda não tem uma trilha de primeiros passos.</p>
+                <Button onClick={handleStartOnboarding} className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl px-6 py-3">
+                  Iniciar primeiros passos
+                </Button>
+              </div>
+            )}
 
-        {/* No checklist yet (franchisee) */}
-        {!isAdmin && franchises.length > 0 && !checklist && !isLoading
-          && missingFiscalFields(
-              selectedFranchise || franchises[0],
-              configsByEvoId[(selectedFranchise || franchises[0])?.evolution_instance_id]
-            ).length === 0 && (
-          <Card className="mb-6 text-center border-2 border-dashed border-brand-gold/40 bg-brand-gold/5">
-            <CardContent className="p-8">
-              <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-brand-gold" />
-              <h3 className="font-bold text-ink text-lg mb-1">Vamos preparar tudo!</h3>
-              <p className="text-ink-2 text-sm mb-4">8 missões rápidas para deixar sua franquia pronta para vender.</p>
-              <Button onClick={() => handleStartOnboarding()} className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl px-6 py-3 text-base">
-                Começar Missões
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* No checklist yet (admin) */}
-        {isAdmin && selectedFranchise && !checklist && (
-          <Card className="mb-6 text-center border-2 border-dashed border-brand-gold/40 bg-brand-gold/5">
-            <CardContent className="p-8">
-              <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-brand-gold" />
-              <h3 className="font-bold text-ink text-lg mb-1">Nenhum onboarding iniciado</h3>
-              <p className="text-ink-2 text-sm mb-4">Este franqueado ainda não tem um onboarding.</p>
-              <Button onClick={handleStartOnboarding} className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl px-6 py-3">
-                Iniciar Onboarding
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Checklist content — franqueado só vê após passar pelo gate fiscal */}
-        {checklist && (isAdmin || missingFiscalFields(
-          selectedFranchise || franchises[0],
-          configsByEvoId[(selectedFranchise || franchises[0])?.evolution_instance_id]
-        ).length === 0) && (
-          <>
-            {/* Franchise info + overall progress */}
-            <Card className="mb-6 bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
-              <CardContent className="p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            {selectedFranchise && checklist && (
+              <>
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
                   <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-ink">
-                      {selectedFranchise?.franchise_name || selectedFranchise?.owner_name || franchises[0]?.franchise_name || franchises[0]?.owner_name}
+                    <h2 className="font-plus-jakarta font-extrabold text-2xl text-ink">
+                      {selectedFranchise.franchise_name || selectedFranchise.owner_name}
                     </h2>
                     <p className="text-ink-2 text-sm">
-                      {selectedFranchise?.owner_name || franchises[0]?.owner_name}
-                      {(selectedFranchise?.city || franchises[0]?.city) ? ` · ${selectedFranchise?.city || franchises[0]?.city}` : ""}
+                      {selectedFranchise.owner_name}
+                      {selectedFranchise.city ? ` · ${selectedFranchise.city}` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <StatusBadge status={checklist.status} />
-                    {isSaving && <span className="text-xs text-ink-2/70 animate-pulse">Salvando...</span>}
-                    {isAdmin && !confirmingStatusAction && (
+                    {!confirmingStatusAction && (
                       <Button
                         size="sm"
                         onClick={() => handleSetOnboardingStatus(checklist.status === "approved" ? "in_progress" : "approved")}
                         className={`min-h-[40px] rounded-lg px-3 text-xs font-semibold ${
                           checklist.status === "approved"
-                            ? "bg-white border border-ink-shadow/20 text-ink-2 hover:bg-ink-shadow/5"
-                            : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            ? "bg-white border border-surface-line text-ink-2 hover:bg-surface-2"
+                            : "bg-ok hover:bg-ok-ink text-white"
                         }`}
                       >
                         <MaterialIcon icon={checklist.status === "approved" ? "replay" : "task_alt"} size={16} />
                         {checklist.status === "approved" ? "Reabrir" : "Concluir primeiros passos"}
                       </Button>
                     )}
-                    {isAdmin && confirmingStatusAction && (
+                    {confirmingStatusAction && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-ink-2">
                           {checklist.status === "approved" ? "Reabrir?" : "Concluir?"}
@@ -803,155 +706,200 @@ export default function Onboarding() {
                         <Button
                           size="sm"
                           onClick={() => handleSetOnboardingStatus(checklist.status === "approved" ? "in_progress" : "approved")}
-                          className="min-h-[40px] text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          className="min-h-[40px] text-xs bg-ok hover:bg-ok-ink text-white"
                         >
                           Sim
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setConfirmingStatusAction(false)}
-                          className="min-h-[40px] text-xs text-ink-2"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => setConfirmingStatusAction(false)} className="min-h-[40px] text-xs text-ink-2">
                           Não
                         </Button>
                       </div>
                     )}
-                    {isAdmin && !confirmingDelete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDeleteOnboarding}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        title="Excluir onboarding"
-                      >
+                    {!confirmingDelete && (
+                      <Button variant="ghost" size="sm" onClick={handleDeleteOnboarding} className="text-err hover:text-err hover:bg-err-soft" title="Excluir onboarding">
                         <MaterialIcon icon="delete" size={16} />
                       </Button>
                     )}
-                    {isAdmin && confirmingDelete && (
+                    {confirmingDelete && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-red-600">Excluir?</span>
-                        <Button variant="ghost" size="sm" onClick={handleDeleteOnboarding} className="text-red-600 hover:text-red-800 hover:bg-red-50 text-xs h-7">Sim</Button>
+                        <span className="text-xs text-err">Excluir?</span>
+                        <Button variant="ghost" size="sm" onClick={handleDeleteOnboarding} className="text-err hover:bg-err-soft text-xs h-7">Sim</Button>
                         <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)} className="text-ink-2 text-xs h-7">Não</Button>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Overall progress with ProgressRing */}
-                <div className="flex items-center gap-4">
-                  <div className="sm:hidden">
-                    <ProgressRing
-                      size={48}
-                      progress={progressPct}
-                      isComplete={progressPct === 100}
-                      icon="rocket_launch"
-                      color="#d4af37"
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex-1 bg-surface-2 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="h-2.5 rounded-full bg-ok transition-all duration-500"
+                      style={{ width: `${checklist.completion_percentage || 0}%` }}
                     />
                   </div>
-                  <div className="hidden sm:block">
-                    <ProgressRing
-                      size={56}
-                      progress={progressPct}
-                      isComplete={progressPct === 100}
-                      icon="rocket_launch"
-                      color="#d4af37"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <div className="flex-1 bg-ink-shadow/5 rounded-full h-3 overflow-hidden">
-                        <div
-                          className="h-3 rounded-full transition-all duration-700"
-                          style={{
-                            width: `${progressPct}%`,
-                            background: progressPct === 100
-                              ? "#10b981"
-                              : "linear-gradient(90deg, #b91c1c 0%, #d4af37 50%, #10b981 100%)",
-                            backgroundSize: "300% 100%",
-                            backgroundPosition: `${100 - progressPct}% 0`,
-                          }}
-                        />
-                      </div>
-                      <span className="font-bold text-ink text-sm whitespace-nowrap">
-                        {progressPct}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs text-ink-2/70">
-                      <span>{completedBlockCount} de 8 missões completas</span>
-                      <span>{liveCounts.completed_count}/{TOTAL_ITEMS} itens</span>
-                    </div>
-                    <p className="text-xs text-ink-2 mt-1.5 italic">{motivationalMessage}</p>
-                  </div>
+                  <span className="text-sm font-bold text-ink whitespace-nowrap">{checklist.completion_percentage || 0}%</span>
                 </div>
 
-                {/* Celebration banner */}
-                {checklist.status === "approved" && (
-                  <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-                    <p className="text-emerald-700 font-bold text-lg">Parabéns! Onboarding completo!</p>
-                    <p className="text-emerald-600 text-sm mt-1">A equipe Maxi concluiu seus primeiros passos.</p>
-                    {checklist.approved_by && (
-                      <p className="text-emerald-500 text-xs mt-1">Aprovado por {checklist.approved_by}</p>
-                    )}
+                <div className="flex flex-col gap-2.5 mb-5">
+                  {jornada.passos.map((passo) => (
+                    <JourneyStep
+                      key={passo.id}
+                      passo={passo}
+                      isOpen={openStepId === passo.id}
+                      onToggleOpen={() => setOpenStepId((prev) => (prev === passo.id ? null : passo.id))}
+                      onDestino={() => {}}
+                      onToggleConfirmacao={() => {}}
+                      readOnly
+                    />
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-4 mb-5">
+                  <div className="bg-brand-gold-soft border border-brand-gold-line rounded-[20px] p-5 flex flex-col gap-3">
+                    <div>
+                      <h3 className="font-plus-jakarta font-extrabold text-[17px] text-ink">A Maxi faz</h3>
+                      <p className="text-sm text-ink-2">A franqueada vê esta lista, só para leitura.</p>
+                    </div>
+                    <div className="flex flex-col divide-y divide-brand-gold-line/60">
+                      {jornada.passos.flatMap((p) => p.maxi).map((m) => (
+                        <label key={m.id} className="min-h-[44px] flex items-center gap-3 py-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={m.feito}
+                            onChange={() => handleToggleMaxi(m.id)}
+                            className="w-5 h-5 accent-brand-gold-ink shrink-0"
+                          />
+                          <span className="flex-1 text-[15px] text-ink">{m.nome}</span>
+                          {m.feitoEm && <span className="text-xs font-semibold text-brand-gold-ink">{formatarData(m.feitoEm)}</span>}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
 
-            {/* Blocks 1-8 as accordion */}
-            <div className="space-y-3 mb-4">
-              {BLOCKS.map(block => (
-                <OnboardingBlock
-                  key={block.id}
-                  block={block}
-                  items={items}
-                  onToggle={handleToggle}
-                  isAdmin={isAdmin}
-                  disabled={checklist.status === "approved"}
-                  isExpanded={expandedBlockId === block.id}
-                  onToggleExpand={() => handleManualToggle(block.id)}
-                  isNextActive={block.id === nextActiveBlockId}
-                  blockRef={el => { blockRefs.current[block.id] = el; }}
-                />
-              ))}
-            </div>
-
-            {/* Franchisee: peak-end celebration when all 8 missions done */}
-            {!isAdmin && b18Complete && checklist.status !== "approved" && (
-              <Card className="mb-4 overflow-hidden rounded-2xl border-2 border-emerald-200"
-                    style={{ background: "linear-gradient(135deg, #ecfdf5 0%, #fef9e7 100%)" }}>
-                <CardContent className="p-5 sm:p-8 text-center">
-                  <MaterialIcon icon="celebration" size={64} className="mx-auto mb-3 text-brand-gold animate-bounce" />
-                  <h3 className="text-xl font-bold text-emerald-700 font-plus-jakarta mb-2">
-                    Parabéns! Você está pronto para vender!
-                  </h3>
-                  <p className="text-emerald-600 text-sm mb-1">
-                    A equipe Maxi foi avisada e vai conferir tudo com você.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Admin only: Gate Block 9 */}
-            {isAdmin && (
-              <div ref={el => { blockRefs.current[9] = el; }}>
-                <GateBlock
-                  items={{ ...items, "9-1": b18Complete }}
-                  onToggle={handleToggle}
-                  isAdmin={isAdmin}
-                  blocks1to8Complete={b18Complete}
-                />
-              </div>
+                  <div className="bg-white border border-surface-line rounded-[20px] p-5 flex flex-col gap-2">
+                    <label htmlFor="admin-notes" className="text-[15px] font-bold text-ink">Anotações da equipe</label>
+                    <textarea
+                      id="admin-notes"
+                      rows={3}
+                      value={adminNotesDraft}
+                      onChange={(e) => setAdminNotesDraft(e.target.value)}
+                      onBlur={handleAdminNotesBlur}
+                      className="border border-surface-line rounded-xl px-3 py-2.5 text-[15px] bg-surface resize-y focus:outline-none focus:ring-2 focus:ring-brand/30"
+                    />
+                    <p className="text-xs text-ink-3">Ao concluir, o menu e o cartão somem para a franqueada. Dá para reabrir.</p>
+                  </div>
+                </div>
+              </>
             )}
           </>
         )}
 
-        {/* Nothing selected yet (admin) */}
-        {isAdmin && !selectedFranchise && (
-          <div className="text-center py-12 text-ink-2/70">
-            <MaterialIcon icon="task_alt" size={48} className="mx-auto mb-3 opacity-30" />
-            <p>Selecione um franqueado acima para ver o onboarding</p>
+        {/* FRANQUEADA */}
+        {!isAdmin && selectedFranchise && !checklist && (
+          <div className="text-center py-16 px-4">
+            <MaterialIcon icon="rocket_launch" size={48} className="mx-auto mb-3 text-ink-4" />
+            <h3 className="font-bold text-ink text-lg mb-1">Nenhuma trilha ativa</h3>
+            <p className="text-ink-2 text-sm">Fale com a equipe Maxi se precisar retomar seus primeiros passos.</p>
           </div>
+        )}
+
+        {!isAdmin && selectedFranchise && checklist && (
+          <>
+            <div className="flex flex-col gap-2 mb-5">
+              <span className="text-sm font-semibold text-ink-3">
+                {selectedFranchise.franchise_name || selectedFranchise.owner_name}
+              </span>
+              <h1 className="font-plus-jakarta font-extrabold text-2xl sm:text-[28px] text-ink leading-tight">
+                {jornada.completo ? "Primeiros passos completos" : `Passo ${jornada.agora?.passoNumero ?? 5} de 5`}
+              </h1>
+              <div
+                role="img"
+                aria-label={`${jornada.prontos} de 5 passos prontos`}
+                className="grid grid-cols-5 gap-1.5 mt-1"
+              >
+                {jornada.passos.map((p) => {
+                  const atual = jornada.agora?.passoId === p.id;
+                  return (
+                    <span
+                      key={p.id}
+                      className={`h-2 rounded-full ${p.pronto ? "bg-ok" : atual ? "bg-brand" : "bg-surface-line"}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {jornada.avisos?.length > 0 && (
+              <div className="bg-warn-soft border border-warn/30 rounded-2xl p-4 flex items-start gap-3 mb-4">
+                <MaterialIcon icon="info" size={20} className="text-warn-ink mt-0.5 shrink-0" />
+                <div className="flex flex-col gap-1">
+                  {jornada.avisos.map((aviso, i) => (
+                    <p key={i} className="text-sm text-warn-ink">{aviso}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!jornada.completo && (
+              <div className="mb-5">
+                <NextActionCard
+                  agora={jornada.agora}
+                  passoTitulo={jornada.passos.find((p) => p.id === jornada.agora?.passoId)?.titulo}
+                  onAction={handleAgoraAction}
+                  onVerPasso={handleVerPasso}
+                />
+              </div>
+            )}
+
+            {jornada.completo && checklist.status !== "approved" && (
+              <div className="mb-5 bg-gradient-to-br from-ok-soft to-brand-gold-soft border-2 border-ok/30 rounded-[22px] p-6 sm:p-8 text-center flex flex-col items-center gap-2">
+                <span className="w-16 h-16 rounded-full bg-ok text-white flex items-center justify-center">
+                  <MaterialIcon icon="celebration" size={34} />
+                </span>
+                <h3 className="font-plus-jakarta font-extrabold text-xl text-ink">Tudo pronto!</h3>
+                <p className="text-ok-ink text-sm">A equipe Maxi foi avisada e vai conferir tudo com você.</p>
+              </div>
+            )}
+
+            {checklist.status === "approved" && (
+              <div className="mb-5 bg-ok-soft border border-ok/30 rounded-[22px] p-6 text-center">
+                <p className="text-ok-ink font-bold text-lg">A equipe Maxi concluiu seus primeiros passos.</p>
+                {checklist.approved_by && <p className="text-ok-ink/80 text-xs mt-1">Aprovado por {checklist.approved_by}</p>}
+              </div>
+            )}
+
+            <h2 className="font-plus-jakarta font-extrabold text-lg text-ink mb-2">Seus 5 passos</h2>
+            <div className="flex flex-col gap-2.5 mb-5">
+              {jornada.passos.map((passo) => (
+                <div key={passo.id} ref={(el) => { stepRefs.current[passo.id] = el; }}>
+                  <JourneyStep
+                    passo={passo}
+                    isOpen={openStepId === passo.id}
+                    onToggleOpen={() => setOpenStepId((prev) => (prev === passo.id ? null : passo.id))}
+                    onDestino={(destino) => handleDestino(destino, passo.id)}
+                    onToggleConfirmacao={handleToggleConfirmacao}
+                    fiscalGate={
+                      passo.id === "dados"
+                        ? <FiscalDataGate franchise={selectedFranchise} onReady={handleFiscalReady} />
+                        : null
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-5">
+              <MaxiDoesList passos={jornada.passos} />
+            </div>
+
+            <Link
+              to={createPageUrl("Tutoriais")}
+              className="flex items-center justify-center gap-2 min-h-[44px] text-brand font-semibold text-sm"
+            >
+              Ver o guia
+              <MaterialIcon icon="arrow_forward" size={16} />
+            </Link>
+          </>
         )}
       </div>
     </div>

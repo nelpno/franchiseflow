@@ -111,9 +111,33 @@ export default function Login() {
     }
   };
 
+  const handlePrimeiroAcesso = () => {
+    if (!email) {
+      toast.error('Digite seu email primeiro');
+      return;
+    }
+    setIsResetMode(true);
+  };
+
   return (
-    <div className="bg-surface text-ink min-h-[100dvh] flex flex-col items-center justify-center p-4 md:p-8">
-      <main className="w-full max-w-6xl flex bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(220, 38, 38,0.08)]">
+    <div className="bg-surface text-ink min-h-[100dvh] flex flex-col lg:items-center lg:justify-center lg:p-8">
+      {/* Faixa vermelha "cozinha de massa fresca" — só mobile. No desktop o AuthHero
+          cumpre esse papel de vitrine, então a faixa some (lg:hidden). */}
+      <div className="lg:hidden bg-brand bg-farinha px-6 pt-12 pb-16 flex flex-col gap-4">
+        <div className="self-start bg-white rounded-2xl px-3 py-2">
+          <img src={logoMaxiMassas} alt="Maxi Massas" className="h-9 w-auto block" />
+        </div>
+        <div>
+          <h1 className="font-plus-jakarta font-extrabold text-[28px] leading-[1.15] tracking-tight text-white">
+            Sua unidade<br />na palma da mão.
+          </h1>
+          <p className="mt-2 text-base leading-snug text-white/90">
+            Vendas, estoque e clientes num lugar só.
+          </p>
+        </div>
+      </div>
+
+      <main className="w-full lg:max-w-6xl lg:flex lg:bg-white lg:rounded-3xl lg:overflow-hidden lg:shadow-[0_20px_50px_rgba(220,38,38,0.08)]">
         <AuthHero
           headline={
             <>
@@ -123,31 +147,14 @@ export default function Login() {
           subtitle="Vendas, estoque, financeiro e o robô vendedor — tudo num lugar só."
         />
 
-        {/* Right Side: Login Form */}
-        <section className="w-full lg:w-2/5 p-6 md:p-16 flex flex-col justify-center">
-          <div className="max-w-md mx-auto w-full">
-            {/* Mobile Logo */}
-            <div className="lg:hidden flex justify-center mb-6">
-              <img
-                src={logoMaxiMassas}
-                alt="Maxi Massas Logo"
-                className="h-16 w-auto"
-              />
-            </div>
-
-            <div className="mb-6 md:mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-bold text-ink tracking-tight mb-2">
-                {isResetMode ? 'Recuperar senha' : 'Bem-vindo de volta'}
-              </h2>
-              <p className="text-[#3d4a42]">
-                {isResetMode ? 'Enviaremos um link para você redefinir a senha' : 'Acesse o painel da sua franquia'}
-              </p>
-            </div>
-
+        {/* Right Side: Login Form — no mobile, cartão branco sobreposto à faixa vermelha
+            (margem negativa); no desktop, painel do layout de duas colunas. */}
+        <section className="w-full lg:w-2/5 px-4 -mt-12 lg:mt-0 lg:px-16 lg:py-16 pb-10 lg:pb-0 flex flex-col lg:justify-center">
+          <div className="w-full max-w-md mx-auto bg-white rounded-3xl lg:rounded-none shadow-[0_16px_40px_rgba(41,23,21,0.12)] lg:shadow-none p-5 lg:p-0 flex flex-col gap-4">
             {showLinkError && (
               <div
                 role="status"
-                className="mb-6 flex items-start gap-3 bg-warn-soft text-warn-ink rounded-xl p-3"
+                className="flex items-start gap-3 bg-warn-soft text-warn-ink rounded-2xl p-3"
               >
                 <MaterialIcon icon="info" size={20} className="mt-0.5 shrink-0" />
                 <div className="flex-1 text-sm">
@@ -165,55 +172,62 @@ export default function Login() {
               </div>
             )}
 
-            <form onSubmit={isResetMode ? handleResetPassword : handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-[#3d4a42] ml-1">
+            <div>
+              <h2 className="font-plus-jakarta font-extrabold text-2xl lg:text-3xl tracking-tight text-ink">
+                {isResetMode ? 'Recuperar senha' : 'Entrar'}
+              </h2>
+              <p className="mt-1 text-[15px] lg:text-base text-ink-2">
+                {isResetMode ? 'Enviaremos um link para você redefinir a senha' : 'Acesse o painel da sua franquia'}
+              </p>
+            </div>
+
+            <form onSubmit={isResetMode ? handleResetPassword : handleLogin} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="email" className="text-[15px] font-semibold text-ink-2">
                   E-mail
                 </label>
-                <div className="relative">
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-3.5 bg-surface-line rounded-xl border-none focus:ring-2 focus:ring-err/20 transition-all text-ink placeholder:text-[#6d7a72]/60 outline-none"
-                  />
-                </div>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="h-[52px] px-4 bg-surface rounded-2xl border border-surface-line focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all text-[17px] text-ink placeholder:text-ink-3 outline-none"
+                />
               </div>
 
               {!isResetMode && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center ml-1">
-                    <label htmlFor="password" className="block text-sm font-medium text-[#3d4a42]">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center">
+                    <label htmlFor="password" className="text-[15px] font-semibold text-ink-2">
                       Senha
                     </label>
                     <button
                       type="button"
                       onClick={() => setIsResetMode(true)}
-                      className="text-sm font-semibold text-err hover:underline"
+                      className="min-h-[44px] text-[15px] font-semibold text-brand hover:underline"
                     >
-                      Esqueci minha senha
+                      Esqueci a senha
                     </button>
                   </div>
-                  <div className="relative">
+                  <div className="relative flex">
                     <input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
+                      placeholder="Sua senha"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="w-full px-4 py-3.5 bg-surface-line rounded-xl border-none focus:ring-2 focus:ring-err/20 transition-all text-ink placeholder:text-[#6d7a72]/60 outline-none"
+                      className="flex-grow h-[52px] pl-4 pr-14 bg-surface rounded-2xl border border-surface-line focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all text-[17px] text-ink placeholder:text-ink-3 outline-none"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-[#3d4a42] hover:text-err transition-colors"
+                      className="absolute right-1 top-1 h-11 w-11 flex items-center justify-center rounded-xl text-ink-3 hover:text-brand transition-colors"
                     >
-                      {showPassword ? <MaterialIcon icon="visibility_off" size={20} /> : <MaterialIcon icon="visibility" size={20} />}
+                      <MaterialIcon icon={showPassword ? 'visibility_off' : 'visibility'} size={20} />
                     </button>
                   </div>
                 </div>
@@ -228,7 +242,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading || (isLockedOut && !isResetMode)}
-                className="w-full h-12 bg-err text-white font-bold rounded-xl shadow-lg shadow-err/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-[#e5e3e4] disabled:text-[#9a9394] disabled:shadow-none disabled:cursor-not-allowed"
+                className="h-14 rounded-2xl bg-brand text-white font-bold text-[17px] shadow-lg shadow-brand/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-ink-4 disabled:text-white/70 disabled:shadow-none disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : isLockedOut ? `Aguarde ${lockoutSeconds}s` : 'Entrar'}
               </button>
@@ -238,42 +252,42 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setIsResetMode(false)}
-                    className="text-sm font-semibold text-err hover:underline"
+                    className="text-[15px] font-semibold text-brand hover:underline"
                   >
                     Voltar ao login
                   </button>
                 </div>
               )}
-
             </form>
 
-            <div className="mt-6 md:mt-12 text-center space-y-2">
-              <p className="text-sm text-[#3d4a42]">
-                Primeiro acesso?{' '}
+            {!isResetMode && (
+              <>
+                <div className="flex items-center gap-3 text-ink-3 text-sm">
+                  <span className="flex-1 h-px bg-surface-line" aria-hidden="true" />
+                  ou
+                  <span className="flex-1 h-px bg-surface-line" aria-hidden="true" />
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    if (!email) {
-                      toast.error('Digite seu email primeiro');
-                      return;
-                    }
-                    setIsResetMode(true);
-                  }}
-                  className="text-err font-bold hover:underline"
+                  onClick={handlePrimeiroAcesso}
+                  className="h-[52px] rounded-2xl border-[1.5px] border-brand text-brand font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-brand-soft transition-colors"
                 >
-                  Defina sua senha aqui
+                  <MaterialIcon icon="mail" size={20} />
+                  Primeiro acesso? Receber link
                 </button>
-              </p>
-              <p className="text-xs text-ink-2">
-                Não possui acesso? Solicite ao administrador
-              </p>
-            </div>
+              </>
+            )}
           </div>
+
+          <p className="mt-6 text-center text-sm text-ink-3 max-w-md mx-auto w-full px-1">
+            Não tem acesso? Fale com a equipe Maxi Massas.
+          </p>
         </section>
       </main>
 
       {/* Footer Meta */}
-      <footer className="mt-4 md:fixed md:bottom-6 md:left-0 md:right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
+      <footer className="mt-4 lg:fixed lg:bottom-6 lg:left-0 lg:right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
         <p className="text-[10px] tracking-widest uppercase font-bold text-ink">
           &copy; 2026 Maxi Massas
         </p>

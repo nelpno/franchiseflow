@@ -1,5 +1,8 @@
 import { Franchise, FranchiseConfiguration } from "@/entities/all";
 import { resolveDeliveryAddress } from "@/lib/addressUtils";
+// missingFiscalFields é regra pura (sem @/entities/all) — mora em fiscalFields.js e é
+// reexportada aqui para quem já importava de "@/lib/saveFiscalData" continuar igual.
+export { missingFiscalFields } from "@/lib/fiscalFields";
 
 // Campos que vão para franchises
 const FRANCHISE_FIELDS = [
@@ -89,17 +92,6 @@ export async function saveFiscalData(franchiseId, evolutionInstanceId, data) {
   }
 }
 
-// Retorna array de campos que faltam para a franquia ser considerada "fiscalmente completa"
-// Usado pelo AsaasSetupPanel e FiscalDataGate.
-export function missingFiscalFields(franchise, config) {
-  const missing = [];
-  if (!franchise?.billing_email) missing.push("email de cobrança");
-  if (!franchise?.cpf_cnpj) missing.push("CPF/CNPJ");
-  if (!config?.cep) missing.push("CEP");
-  if (!config?.street_address) missing.push("rua");
-  if (!franchise?.address_number) missing.push("número");
-  if (!franchise?.neighborhood) missing.push("bairro");
-  if (!franchise?.city) missing.push("cidade");
-  if (!franchise?.state_uf) missing.push("UF");
-  return missing;
-}
+// missingFiscalFields agora vive em src/lib/fiscalFields.js (extraída 16/09/2026: regra
+// pura, sem @/entities/all, para poder rodar em `node onboardingJourney.test.mjs` fora
+// do Vite). Reexportada no topo deste arquivo — quem importava daqui não muda nada.
