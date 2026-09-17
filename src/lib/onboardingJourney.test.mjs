@@ -249,4 +249,17 @@ test("tudo feito: completo=true, agora=null, porcentagem=100, sem aviso", () => 
   assert.equal(jornada.avisos.length, 0);
 });
 
+test("toda tarefa tem resumo curto (a tela mostra só ele; o texto longo fica em Como fazer)", () => {
+  const jornada = montarJornada({ franchise: {}, config: {}, facts: {}, items: {} });
+  for (const passo of jornada.passos) {
+    for (const tarefa of passo.tarefas) {
+      assert.ok(tarefa.resumo, `sem resumo: ${tarefa.id}`);
+      assert.ok(tarefa.resumo.length <= 80, `resumo longo (${tarefa.resumo.length}): ${tarefa.id}`);
+      assert.doesNotMatch(tarefa.resumo + tarefa.titulo, /franqueador|[Cc]lique/, `texto antigo em ${tarefa.id}`);
+    }
+  }
+  const comAgora = montarJornada({ franchise: {}, config: {}, facts: {}, items: {} });
+  if (comAgora.agora) assert.ok(comAgora.agora.resumo, "agora sem resumo");
+});
+
 console.log(`${passed} testes de onboardingJourney passaram.`);

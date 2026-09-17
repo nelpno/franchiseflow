@@ -111,15 +111,17 @@ export default function OnboardingWelcome() {
               </>
             )}
           </Button>
-          <a
-            href={VIDEO_BOAS_VINDAS.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="min-h-[48px] flex items-center justify-center gap-2 text-[16px] font-semibold text-brand hover:text-brand-dark"
-          >
-            <MaterialIcon icon="play_circle" size={20} />
-            Ver vídeo de boas-vindas · 2 min
-          </a>
+          {VIDEO_BOAS_VINDAS?.url && (
+            <a
+              href={VIDEO_BOAS_VINDAS.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="min-h-[48px] flex items-center justify-center gap-2 text-[16px] font-semibold text-brand hover:text-brand-dark"
+            >
+              <MaterialIcon icon="play_circle" size={20} />
+              Ver vídeo de boas-vindas
+            </a>
+          )}
         </div>
       </div>
     </div>

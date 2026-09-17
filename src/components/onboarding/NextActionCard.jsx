@@ -8,9 +8,8 @@ export default function NextActionCard({ agora, passoTitulo, onAction, onVerPass
   if (!agora) return null;
 
   const icon = PASSO_ICONES[agora.passoId] || "task_alt";
-  // Resumo curto pro cartão — a tarefa completa (com listas e quebras de linha)
-  // fica no passo aberto logo abaixo; aqui só a 1ª linha do texto.
-  const resumo = (agora.texto || "").split("\n")[0];
+  // Resumo curto pro cartão — o texto completo fica no "Como fazer" do passo.
+  const resumo = agora.resumo || (agora.texto || "").split("\n")[0];
   const destinoPrincipal = agora.destinos?.[0];
 
   return (

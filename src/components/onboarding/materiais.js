@@ -14,7 +14,6 @@ export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeu
 // antes de implementar": Canva > Compartilhar > "Link de modelo").
 export const CANVA_CARDAPIO = "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
-export const VIDEO_BOAS_VINDAS = {
-  youtubeId: "EH-zq8NzvjQ",
-  url: "https://www.youtube.com/shorts/EH-zq8NzvjQ",
-};
+// Vídeo de boas-vindas: o Short EH-zq8NzvjQ (tour do menu) NÃO é o vídeo certo para esta
+// tela (Nelson, 16/09/2026). Fica null até gravar o novo; a tela esconde o link.
+export const VIDEO_BOAS_VINDAS = null;

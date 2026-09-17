@@ -107,6 +107,7 @@ export function montarJornada({ franchise, config, facts, items } = {}) {
         passoNumero: passoAtual.numero,
         tarefaId: tarefaAgora.id,
         titulo: tarefaAgora.titulo,
+        resumo: tarefaAgora.resumo,
         texto: tarefaAgora.texto,
         destinos: tarefaAgora.destinos,
       };

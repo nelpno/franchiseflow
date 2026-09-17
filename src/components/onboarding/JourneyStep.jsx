@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -92,7 +93,7 @@ function ConfirmacaoToggle({ tarefa, readOnly, onToggle }) {
       }`}
     >
       <MaterialIcon icon={tarefa.feita ? "check_circle" : "radio_button_unchecked"} size={20} filled={tarefa.feita} />
-      {tarefa.feita ? "Confirmado — toque para desfazer" : tarefa.titulo}
+      {tarefa.feita ? "Feito · toque para desfazer" : "Marcar como feito"}
     </button>
   );
 }
@@ -113,6 +114,15 @@ export default function JourneyStep({
 }) {
   const icon = PASSO_ICONES[passo.id] || "task_alt";
   let contador = 0;
+  // Cada tarefa mostra só título + resumo; o texto completo abre em "Como fazer".
+  const [tarefasAbertas, setTarefasAbertas] = useState(() => new Set());
+  const alternarTarefa = (id) =>
+    setTarefasAbertas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(id)) proximo.delete(id);
+      else proximo.add(id);
+      return proximo;
+    });
 
   return (
     <div className="bg-white border border-surface-line rounded-[18px] overflow-hidden">
@@ -152,13 +162,32 @@ export default function JourneyStep({
             if (conta) contador += 1;
             const destinosVisiveis = (tarefa.destinos || []).filter((d) => d.tipo !== "acao");
 
+            const aberta = tarefasAbertas.has(tarefa.id);
+            const temDetalhe = Boolean(tarefa.texto) && tarefa.texto !== tarefa.resumo;
+
             return (
               <div key={tarefa.id} className="flex gap-3">
                 <SinalTarefa tarefa={tarefa} numero={contador} />
                 <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                   <span className="text-[15px] font-bold text-ink leading-snug">{tarefa.titulo}</span>
-                  {tarefa.texto && (
-                    <span className="text-sm text-ink-2 leading-relaxed whitespace-pre-line">{tarefa.texto}</span>
+                  {tarefa.resumo && (
+                    <span className="text-sm text-ink-2 leading-snug">{tarefa.resumo}</span>
+                  )}
+                  {temDetalhe && (
+                    <button
+                      type="button"
+                      onClick={() => alternarTarefa(tarefa.id)}
+                      aria-expanded={aberta}
+                      className="self-start min-h-[36px] -ml-1 px-1 flex items-center gap-1 text-sm font-semibold text-ink-2 hover:text-ink"
+                    >
+                      Como fazer
+                      <MaterialIcon icon={aberta ? "expand_less" : "expand_more"} size={18} />
+                    </button>
+                  )}
+                  {temDetalhe && aberta && (
+                    <span className="text-sm text-ink-2 leading-relaxed whitespace-pre-line bg-surface-2 rounded-xl px-3 py-2.5">
+                      {tarefa.texto}
+                    </span>
                   )}
 
                   {tarefa.id === "fiscal" && fiscalGate}

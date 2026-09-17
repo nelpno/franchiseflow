@@ -43,6 +43,7 @@ export const JOURNEY_STEPS = [
         id: "fiscal",
         tipo: "auto",
         titulo: "Confirmar os dados da unidade e de cobrança",
+        resumo: "CPF ou CNPJ, endereço e e-mail de cobrança.",
         texto:
           "Confira o e-mail de cobrança, o CPF/CNPJ e o endereço completo da unidade. " +
           "É esse endereço que o robô usa para calcular a distância da entrega — por isso ele precisa estar certo.",
@@ -52,6 +53,7 @@ export const JOURNEY_STEPS = [
         id: "numero_dedicado",
         tipo: "dica",
         titulo: "Separe um número só para a unidade",
+        resumo: "Um chip só da unidade, separado do seu número pessoal.",
         texto:
           "Separe um número de celular só para a unidade (pode ser um chip novo). Não use o seu pessoal.",
         destinos: [],
@@ -60,6 +62,7 @@ export const JOURNEY_STEPS = [
         id: "materiais_franquia",
         tipo: "material",
         titulo: "Materiais da franquia",
+        resumo: "Materiais e vídeos da franquia, no Drive.",
         texto:
           "No Drive estão os materiais e os vídeos de treinamento da franquia. " +
           "Se ele não abrir, avise a equipe Maxi o e-mail que você usa no Google.",
@@ -81,6 +84,7 @@ export const JOURNEY_STEPS = [
         id: "whatsapp_perfil",
         tipo: "dica",
         titulo: "WhatsApp Business no número da unidade",
+        resumo: "Instale e preencha foto, nome, endereço e horário.",
         texto:
           "Baixe o WhatsApp Business (ícone verde com B) e configure com um número exclusivo. " +
           "Pode ser um chip pré-pago novo.\n\n" +
@@ -97,6 +101,7 @@ export const JOURNEY_STEPS = [
         id: "whatsapp_etiquetas",
         tipo: "dica",
         titulo: "Criar as 5 etiquetas",
+        resumo: "Nunca comprou, Novo, Voltou, Fiel e Sumido.",
         texto:
           "Crie 5 etiquetas no WhatsApp Business. São as mesmas marcas que aparecem em Meus Clientes:\n\n" +
           "⚪ Nunca comprou — conversou, mas ainda não comprou.\n" +
@@ -110,6 +115,7 @@ export const JOURNEY_STEPS = [
         id: "videos_treinamento",
         tipo: "material",
         titulo: "Vídeos de treinamento",
+        resumo: "Três vídeos, uns 45 minutos, no seu ritmo.",
         texto:
           "Assista os 3 vídeos no Drive:\n" +
           "1. Configuração do WhatsApp Business\n" +
@@ -122,6 +128,7 @@ export const JOURNEY_STEPS = [
         id: "cardapio",
         tipo: "auto",
         titulo: "Fazer o cardápio no Canva",
+        resumo: "Faça uma cópia do modelo e troque cidade e telefone.",
         texto:
           "Você tem um modelo pronto de cardápio no Canva! Siga os passos:\n\n" +
           '1. Abra o link abaixo (precisa ter conta no Canva — é grátis)\n' +
@@ -136,6 +143,7 @@ export const JOURNEY_STEPS = [
         id: "vendedor",
         tipo: "auto",
         titulo: "Preencher o Meu Vendedor",
+        resumo: "Unidade, entrega, pagamento, nome do vendedor e respostas.",
         texto:
           "É o que faz o robô atender seus clientes. Em Meu Vendedor, preencha as 5 etapas:\n" +
           "- sua unidade (nome e endereço)\n" +
@@ -151,6 +159,7 @@ export const JOURNEY_STEPS = [
         id: "robo_respondeu",
         tipo: "auto",
         titulo: "Conectar o WhatsApp e testar",
+        resumo: "De outro celular, mande “oi” e peça um produto.",
         texto:
           "Envie uma mensagem de outro celular para o número do WhatsApp Business. O robô deve responder automaticamente. " +
           "Verifique se a saudação, cardápio e informações estão corretos.\n\n" +
@@ -161,6 +170,7 @@ export const JOURNEY_STEPS = [
         id: "p_whatsapp_ok",
         tipo: "confirmacao",
         titulo: "Meu WhatsApp Business está pronto (perfil e etiquetas)",
+        resumo: "Toque quando o perfil e as etiquetas estiverem prontos.",
         texto: "Confirme quando o perfil comercial e as 5 etiquetas estiverem prontos no seu WhatsApp Business.",
         destinos: [],
       },
@@ -190,6 +200,7 @@ export const JOURNEY_STEPS = [
         id: "freezer",
         tipo: "dica",
         titulo: "Freezer na temperatura certa",
+        resumo: "A -18 °C, com termômetro, em lugar ventilado.",
         texto:
           "Recomendamos um freezer horizontal de 540 litros — é o tamanho ideal para o estoque inicial. Freezer vertical também funciona!\n\n" +
           "Mantenha sempre em -18°C ou menos. Produto descongelado = produto perdido.\n\n" +
@@ -204,6 +215,7 @@ export const JOURNEY_STEPS = [
         id: "organizacao_fifo",
         tipo: "dica",
         titulo: "Organizar por categoria e usar FIFO",
+        resumo: "Separe por tipo; os mais antigos ficam na frente.",
         texto:
           "Organize por categoria: Massas | Molhos | Outros.\n\n" +
           "No app, o estoque já separa os tipos (Canelone, Rondelli, Nhoque, etc.) em abas — aqui no freezer, basta agrupar por categoria geral.\n\n" +
@@ -214,6 +226,7 @@ export const JOURNEY_STEPS = [
         id: "sacolas",
         tipo: "material",
         titulo: "Sacolas e embalagens",
+        resumo: "Sacola boca de palhaço, 30×40 ou 35×45.",
         texto:
           "Use sacolas Boca de Palhaço para boa apresentação e segurança dos produtos.\n\n" +
           "Tamanhos recomendados:\n" +
@@ -228,6 +241,7 @@ export const JOURNEY_STEPS = [
         id: "uniforme",
         tipo: "dica",
         titulo: "Uniforme",
+        resumo: "Custa R$ 60 e vai junto com o seu pedido.",
         texto:
           "O uniforme custa R$ 60 e vai junto com a entrega do seu pedido.\n\n" +
           "Avise a equipe Maxi o tamanho e a quantidade antes do primeiro pedido.",
@@ -237,6 +251,7 @@ export const JOURNEY_STEPS = [
         id: "produtos",
         tipo: "dica",
         titulo: "Conheça os 28 produtos e prove pelo menos 3",
+        resumo: "Conheça o cardápio para indicar com segurança.",
         texto:
           "São 28 produtos em 8 categorias. Você vai se apaixonar!\n\n" +
           "- Canelone (700g): 4 Queijos, Brócolis/Muss., Frango/Requeijão, Presunto/Muss.\n" +
@@ -256,6 +271,7 @@ export const JOURNEY_STEPS = [
         id: "preco_venda",
         tipo: "dica",
         titulo: "Conferir o preço de venda",
+        resumo: "Já vem com o dobro do custo; ajuste se quiser.",
         texto:
           "Seus preços de revenda já vêm pré-configurados com margem de 100% sobre o custo (preço de venda = custo x 2). " +
           "Confira e ajuste se necessário em Gestão → Estoque.",
@@ -265,6 +281,7 @@ export const JOURNEY_STEPS = [
         id: "p_espaco_ok",
         tipo: "confirmacao",
         titulo: "Meu espaço está pronto",
+        resumo: "Toque quando freezer, organização e sacolas estiverem prontos.",
         texto: "Confirme quando o freezer, a organização e as sacolas estiverem prontos.",
         destinos: [],
       },
@@ -281,6 +298,7 @@ export const JOURNEY_STEPS = [
         id: "pedido_enviado",
         tipo: "auto",
         titulo: "Fazer o primeiro pedido",
+        resumo: "Já vem preenchido com o pedido modelo. Mude o que quiser.",
         texto:
           "A tela já vem preenchida com o pedido modelo da Maxi (225 unidades, com variedade). " +
           "Mude o que quiser e toque em Enviar pedido.\n\n" +
@@ -291,6 +309,7 @@ export const JOURNEY_STEPS = [
         id: "pedido_entregue",
         tipo: "auto",
         titulo: "Pedido entregue",
+        resumo: "A equipe Maxi marca na entrega e o estoque entra sozinho.",
         texto: "A equipe Maxi marca na entrega e os produtos entram no seu estoque.",
         destinos: [{ tipo: "app", href: "/Gestao?tab=estoque&de=primeiros-passos", rotulo: "Abrir Estoque" }],
       },
@@ -298,6 +317,7 @@ export const JOURNEY_STEPS = [
         id: "p_pedido_ok",
         tipo: "confirmacao",
         titulo: "Conferi o pedido",
+        resumo: "Confira quantidades, embalagem e validade.",
         texto:
           "Quando o pedido chegar, confira:\n" +
           "- as quantidades;\n" +
@@ -310,6 +330,7 @@ export const JOURNEY_STEPS = [
         id: "freezer_ligado",
         tipo: "dica",
         titulo: "Freezer ligado e frio",
+        resumo: "Ligue o freezer antes de o pedido chegar.",
         texto: "Freezer ligado e a -18 °C antes de o pedido chegar.",
         destinos: [],
       },
@@ -326,6 +347,7 @@ export const JOURNEY_STEPS = [
         id: "meta_business",
         tipo: "material",
         titulo: "Aprender o Meta Business Suite",
+        resumo: "Quatro vídeos curtos sobre posts e anúncios.",
         texto:
           "No Drive tem uma pasta com vídeos tutoriais do Meta Business Suite. Assista na ordem:\n\n" +
           "1. Meta Business Suite — visão geral da ferramenta\n" +
@@ -342,6 +364,7 @@ export const JOURNEY_STEPS = [
         id: "posts_do_mes",
         tipo: "material",
         titulo: "Programar o primeiro mês de posts",
+        resumo: "Artes prontas do mês, no app e no Drive.",
         texto:
           "Você tem dois lugares com artes prontas:\n\n" +
           "📱 Marketing no app — aqui ficam as postagens do mês atual. Abra, baixe e poste!\n\n" +
@@ -362,6 +385,7 @@ export const JOURNEY_STEPS = [
         id: "avise_conhecidos",
         tipo: "dica",
         titulo: "Avise seus conhecidos",
+        resumo: "Conte que a unidade abriu e poste no status.",
         texto: "Avise conhecidos e poste as artes no status do WhatsApp.",
         destinos: [],
       },
@@ -369,6 +393,7 @@ export const JOURNEY_STEPS = [
         id: "primeira_venda",
         tipo: "auto",
         titulo: "Lançar a primeira venda",
+        resumo: "Lance pelo botão Vender e vincule o cliente.",
         texto:
           "Lance pelo botão Vender e vincule o cliente: é assim que a lista Quem chamar hoje começa a funcionar.",
         destinos: [{ tipo: "app", href: "/Vendas?action=nova-venda&de=primeiros-passos", rotulo: "Lançar venda" }],
