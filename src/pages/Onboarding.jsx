@@ -69,6 +69,10 @@ export default function Onboarding() {
   const [checklist, setChecklist] = useState(null);
   const [items, setItems] = useState({});
   const [facts, setFacts] = useState(null);
+  // false = a leitura dos fatos falhou: a tela mostra, mas não grava progresso (senão regredia o %).
+  const [factsOk, setFactsOk] = useState(false);
+  // Confirmações ainda sem resposta do banco: a sincronização automática espera por elas.
+  const [salvandoItens, setSalvandoItens] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [allChecklists, setAllChecklists] = useState([]);
@@ -81,6 +85,8 @@ export default function Onboarding() {
   const stepRefs = useRef({});
   const syncedPercentRef = useRef(new Set());
   const syncedToastRef = useRef(new Set());
+  // Sobe a cada troca de unidade: resposta de uma leitura/gravação anterior é descartada.
+  const loadSeqRef = useRef(0);
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
   const config = selectedFranchise ? configsByEvoId[selectedFranchise.evolution_instance_id] : null;
@@ -102,16 +108,28 @@ export default function Onboarding() {
     });
   };
 
+  // Só troca se a tela ainda mostra a mesma linha (resposta atrasada de outra unidade não entra).
+  const aplicarLinha = (row) => {
+    if (!row?.id) return;
+    setChecklist((atual) => (atual && atual.id === row.id ? row : atual));
+  };
+
   const loadFranchiseChecklist = async (franchise) => {
+    const seq = ++loadSeqRef.current;
     // Sempre do banco: a lista em memória pode estar velha (outra pessoa marcou algo).
     const [existingResult, factsResult] = await Promise.allSettled([
       OnboardingChecklist.filter({ franchise_id: franchise.evolution_instance_id }),
       getOnboardingFacts(franchise.evolution_instance_id),
     ]);
     const existing = existingResult.status === "fulfilled" ? existingResult.value : [];
+    // A RPC só devolve null sem acesso; para a própria unidade, null = a leitura falhou.
     const factsData = factsResult.status === "fulfilled" ? factsResult.value : null;
-    if (!mountedRef.current) return;
+    if (!mountedRef.current || seq !== loadSeqRef.current) return;
     setFacts(factsData);
+    setFactsOk(factsData !== null);
+    if (factsData === null) {
+      toast.error("Não deu para conferir todo o seu progresso agora. Abra esta tela de novo em instantes.");
+    }
     if (existing.length > 0) {
       setChecklist(existing[0]);
       setItems(existing[0].items || {});
@@ -197,9 +215,12 @@ export default function Onboarding() {
     if (!currentUser || currentUser.role === "admin" || currentUser.role === "manager") return;
     if (!ctxFranchise || franchises.length === 0) return;
     const match = franchises.find((f) => f.evolution_instance_id === ctxFranchise.evolution_instance_id);
-    if (match && match.evolution_instance_id !== selectedFranchise?.evolution_instance_id) {
+    if (!match) return;
+    if (match.evolution_instance_id !== selectedFranchise?.evolution_instance_id) {
+      handleSelectFranchise(match.evolution_instance_id);
+    } else if (match !== selectedFranchise) {
+      // Mesma unidade, lista recarregada (ex.: dados fiscais salvos): usa o cadastro novo.
       setSelectedFranchise(match);
-      loadFranchiseChecklist(match);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctxFranchise?.evolution_instance_id, franchises, currentUser]);
@@ -223,7 +244,9 @@ export default function Onboarding() {
   // reaberta já completa...). Nunca reenvia `items` — só números e status. A assinatura
   // evita repetir a mesma gravação (inclusive se ela falhar).
   useEffect(() => {
-    if (!checklist || isAdmin) return;
+    if (!checklist || isAdmin || !factsOk || salvandoItens > 0) return;
+    // Na troca de unidade, jornada (unidade nova) e checklist (antiga) ficam misturados por um instante.
+    if (checklist.franchise_id !== selectedFranchise?.evolution_instance_id) return;
     const completedCount = contarFeitas(jornada);
     const novoStatus = proximoStatus(checklist.status, jornada.completo);
     const precisaSincronizar =
@@ -237,15 +260,27 @@ export default function Onboarding() {
     const patch = { completed_count: completedCount, completion_percentage: jornada.porcentagem };
     if (novoStatus !== checklist.status) patch.status = novoStatus;
     OnboardingChecklist.update(checklist.id, patch)
-      .then((atualizado) => { if (mountedRef.current && atualizado) setChecklist(atualizado); })
+      .then((atualizado) => {
+        if (!mountedRef.current || !atualizado) return;
+        // Gravou o que pediu: libera a assinatura para uma volta legítima (marca, desmarca, marca).
+        if (
+          atualizado.completion_percentage === patch.completion_percentage
+          && atualizado.completed_count === patch.completed_count
+          && atualizado.status === novoStatus
+        ) {
+          syncedPercentRef.current.delete(assinatura);
+        }
+        aplicarLinha(atualizado);
+      })
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checklist?.id, checklist?.status, checklist?.completion_percentage, checklist?.completed_count, jornada.porcentagem, jornada.completo]);
+  }, [checklist?.id, checklist?.status, checklist?.completion_percentage, checklist?.completed_count, jornada.porcentagem, jornada.completo, factsOk, salvandoItens, selectedFranchise?.evolution_instance_id]);
 
   // "Pronto: X. Próximo: Y" — compara com a última visita (sessionStorage) pra
   // avisar quando algo terminou sozinho enquanto ela estava em outra tela.
   useEffect(() => {
-    if (!checklist || isAdmin || !selectedFranchise) return;
+    if (!checklist || isAdmin || !selectedFranchise || !factsOk) return;
+    if (checklist.franchise_id !== selectedFranchise.evolution_instance_id) return;
     if (syncedToastRef.current.has(checklist.id)) return;
     syncedToastRef.current.add(checklist.id);
     const storageKey = `primeiros_passos_feitas_${selectedFranchise.evolution_instance_id}`;
@@ -282,22 +317,31 @@ export default function Onboarding() {
     setConfirmingDelete(false);
     setConfirmingStatusAction(false);
     setSelectedFranchise(franchise);
+    setChecklist(null);
+    setItems({});
+    setFacts(null);
+    setFactsOk(false);
     setIsLoading(true);
+    const carregando = loadFranchiseChecklist(franchise);
+    const seq = loadSeqRef.current;
     try {
-      await loadFranchiseChecklist(franchise);
+      await carregando;
     } catch (error) {
       console.error("Erro ao carregar checklist:", error);
-      toast.error(safeErrorMessage(error, "Erro ao carregar primeiros passos."));
+      if (seq === loadSeqRef.current) toast.error(safeErrorMessage(error, "Erro ao carregar primeiros passos."));
     } finally {
-      if (mountedRef.current) setIsLoading(false);
+      // Troca rápida (A -> B): quem desliga o carregando é a leitura de B.
+      if (mountedRef.current && seq === loadSeqRef.current) setIsLoading(false);
     }
   };
 
   const handleBackToList = () => {
+    loadSeqRef.current += 1;
     setSelectedFranchise(null);
     setChecklist(null);
     setItems({});
     setFacts(null);
+    setFactsOk(false);
     setConfirmingDelete(false);
     setConfirmingStatusAction(false);
   };
@@ -325,6 +369,7 @@ export default function Onboarding() {
       setChecklist(created);
       setItems({});
       setFacts(factsData);
+      setFactsOk(factsData !== null);
       setAdminNotesDraft("");
       toast.success("Primeiros passos iniciados.");
       window.dispatchEvent(new Event("onboarding-started"));
@@ -340,13 +385,18 @@ export default function Onboarding() {
       setConfirmingDelete(true);
       return;
     }
+    const seq = loadSeqRef.current;
     try {
       await OnboardingChecklist.delete(checklist.id);
       setAllChecklists((prev) => prev.filter((c) => c.id !== checklist.id));
+      // Já abriu outra unidade enquanto excluía: não mexe na tela dela.
+      if (seq !== loadSeqRef.current) return;
+      loadSeqRef.current += 1;
       setChecklist(null);
       setItems({});
       setSelectedFranchise(null);
       setFacts(null);
+      setFactsOk(false);
     } catch (error) {
       toast.error(safeErrorMessage(error, "Não foi possível excluir."));
     } finally {
@@ -364,7 +414,7 @@ export default function Onboarding() {
     try {
       const updated = await setOnboardingStatus(checklist.franchise_id, newStatus);
       if (updated) {
-        setChecklist(updated);
+        aplicarLinha(updated);
         atualizarCache(updated);
       }
       toast.success(
@@ -383,62 +433,70 @@ export default function Onboarding() {
 
   const handleToggleConfirmacao = async (passoId, tarefaId) => {
     if (!checklist || isAdmin) return;
-    const previousItems = items;
-    const previousChecklist = checklist;
-    const isFeito = Boolean(items[tarefaId]);
-    const newItems = { ...items };
-    if (isFeito) delete newItems[tarefaId];
-    else newItems[tarefaId] = new Date().toISOString();
+    const valorAnterior = items[tarefaId];
+    const isFeito = Boolean(valorAnterior);
+    // Mexe só nesta chave (ida e volta): outro toque ainda salvando não é desfeito junto.
+    const trocar = (mapa, volta) => {
+      const novo = { ...(mapa || {}) };
+      if (isFeito === volta) novo[tarefaId] = volta ? valorAnterior : new Date().toISOString();
+      else delete novo[tarefaId];
+      return novo;
+    };
 
-    setItems(newItems);
-    setChecklist((prev) => prev && { ...prev, items: newItems });
+    setItems((atual) => trocar(atual, false));
+    setChecklist((prev) => prev && { ...prev, items: trocar(prev.items, false) });
+    const seq = loadSeqRef.current;
+    setSalvandoItens((n) => n + 1);
 
+    let linha = null;
     try {
-      // Só a chave tocada vai para o banco; números e status saem do que o banco devolveu.
-      const linha = await setOnboardingItem(checklist.franchise_id, tarefaId, !isFeito);
-      if (!mountedRef.current || !linha) return;
-      const itensSalvos = linha.items || {};
-      const novaJornada = montarJornada({ franchise: selectedFranchise, config, facts, items: itensSalvos });
-      const completedCount = contarFeitas(novaJornada);
-      const novoStatus = proximoStatus(linha.status, novaJornada.completo);
-      setItems(itensSalvos);
-      const updated = await OnboardingChecklist.update(checklist.id, {
-        completed_count: completedCount,
-        completion_percentage: novaJornada.porcentagem,
-        status: novoStatus,
-      });
-      if (mountedRef.current && updated) setChecklist(updated);
+      // Só a chave tocada vai para o banco. Números e status: a sincronização automática
+      // grava depois, a partir do que o banco devolveu (nunca de um clique que pode falhar).
+      linha = await setOnboardingItem(checklist.franchise_id, tarefaId, !isFeito);
     } catch (error) {
-      if (!mountedRef.current) return;
-      setItems(previousItems);
-      setChecklist(previousChecklist);
-      toast.error(safeErrorMessage(error, "Não foi possível salvar. Tente novamente."));
+      if (mountedRef.current && seq === loadSeqRef.current) {
+        setItems((atual) => trocar(atual, true));
+        setChecklist((prev) => prev && { ...prev, items: trocar(prev.items, true) });
+        toast.error(safeErrorMessage(error, "Não foi possível salvar. Tente novamente."));
+      }
+      return;
+    } finally {
+      if (mountedRef.current) setSalvandoItens((n) => n - 1);
     }
+    if (!mountedRef.current || !linha || seq !== loadSeqRef.current) return;
+    // Ação nova dela: uma sincronização que falhou antes pode (e deve) ser tentada de novo.
+    syncedPercentRef.current.clear();
+    aplicarLinha(linha);
+    setItems(linha.items || {});
   };
 
-  const handleToggleMaxi = async (itemId) => {
+  // feitoAtual = o que a tela mostra (inclui a chave legada 4-4/8-1/9-3), não só items[itemId].
+  const handleToggleMaxi = async (itemId, feitoAtual) => {
     if (!checklist || !isAdmin) return;
     const previousItems = items;
     const previousChecklist = checklist;
-    const isFeito = Boolean(items[itemId]);
+    const isFeito = typeof feitoAtual === "boolean" ? feitoAtual : Boolean(items[itemId]);
     const newItems = { ...items };
     if (isFeito) delete newItems[itemId];
     else newItems[itemId] = new Date().toISOString();
 
     setItems(newItems);
     setChecklist((prev) => prev && { ...prev, items: newItems });
+    const seq = loadSeqRef.current;
 
     try {
       // Um item por vez: não apaga a confirmação que a franqueada fez depois que esta tela abriu.
       // Desmarcar também tira a chave legada equivalente (4-4, 8-1, 9-3) no banco.
       const updated = await setOnboardingItem(checklist.franchise_id, itemId, !isFeito);
       if (mountedRef.current && updated) {
-        setChecklist(updated);
-        setItems(updated.items || {});
         atualizarCache(updated);
+        if (seq === loadSeqRef.current) {
+          aplicarLinha(updated);
+          setItems(updated.items || {});
+        }
       }
     } catch (error) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || seq !== loadSeqRef.current) return;
       setItems(previousItems);
       setChecklist(previousChecklist);
       toast.error(safeErrorMessage(error, "Não foi possível salvar."));
@@ -451,7 +509,7 @@ export default function Onboarding() {
     try {
       const updated = await OnboardingChecklist.update(checklist.id, { admin_notes: adminNotesDraft });
       if (mountedRef.current && updated) {
-        setChecklist(updated);
+        aplicarLinha(updated);
         atualizarCache(updated);
       }
     } catch (error) {
@@ -766,7 +824,7 @@ export default function Onboarding() {
                           <input
                             type="checkbox"
                             checked={m.feito}
-                            onChange={() => handleToggleMaxi(m.id)}
+                            onChange={() => handleToggleMaxi(m.id, m.feito)}
                             className="w-5 h-5 accent-brand-gold-ink shrink-0"
                           />
                           <span className="flex-1 text-[15px] text-ink">{m.nome}</span>

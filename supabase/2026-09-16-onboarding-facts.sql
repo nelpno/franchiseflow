@@ -11,10 +11,12 @@ security definer
 set search_path = 'public'
 as $$
   select case
+    -- coalesce: sem linha em profiles o helper devolve NULL, e "not NULL" cairia no else (17/09).
     when p_franchise_id is null
-      or not (
+      or not coalesce(
         public.is_admin_or_manager()
-        or p_franchise_id = any ((select public.managed_franchise_ids())::text[])
+        or p_franchise_id = any ((select public.managed_franchise_ids())::text[]),
+        false
       )
     then null
     else jsonb_build_object(

@@ -90,7 +90,7 @@ export default function FiscalDataGate({ franchise, onReady }) {
             <p className="font-semibold">Antes de começar, precisamos dos seus dados fiscais.</p>
             <p className="mt-1">
               São usados na mensalidade (ASAAS) e na emissão de notas fiscais.
-              Complete para liberar as missões.
+              Complete para seguir para os próximos passos.
             </p>
           </div>
         </CardContent>
