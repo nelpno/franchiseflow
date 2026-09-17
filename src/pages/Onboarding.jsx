@@ -24,7 +24,8 @@ import { montarJornada } from "@/lib/onboardingJourney";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { useAuth } from "@/lib/AuthContext";
 import FranchisePicker from "@/components/shared/FranchisePicker";
-import { listarFranquias } from "@/lib/franchisesCache";
+import { listarFranquias, invalidarFranquias } from "@/lib/franchisesCache";
+import { tarefasFeitas, mensagemPronto, lerFeitas, gravarFeitas } from "@/lib/primeirosPassosAviso";
 import { createPageUrl } from "@/utils";
 
 // "Primeiros passos" — trilha de 5 passos (substituiu os 9 blocos do onboarding
@@ -278,38 +279,21 @@ export default function Onboarding() {
 
   // "Pronto: X. Próximo: Y" — compara com a última visita (sessionStorage) pra
   // avisar quando algo terminou sozinho enquanto ela estava em outra tela.
+  // Avisa só na chegada; enquanto ela está aqui, a lista guardada acompanha o que ela mesma
+  // fez (senão a faixa das outras telas avisaria de novo algo que ela acabou de ver).
+  const feitasChave = tarefasFeitas(jornada).join("|");
   useEffect(() => {
     if (!checklist || isAdmin || !selectedFranchise || !factsOk) return;
-    if (checklist.franchise_id !== selectedFranchise.evolution_instance_id) return;
-    if (syncedToastRef.current.has(checklist.id)) return;
-    syncedToastRef.current.add(checklist.id);
-    const storageKey = `primeiros_passos_feitas_${selectedFranchise.evolution_instance_id}`;
-    const feitasAgora = jornada.passos.flatMap((p) =>
-      p.tarefas.filter((t) => (t.tipo === "auto" || t.tipo === "confirmacao") && t.feita).map((t) => t.id)
-    );
-    let anteriores = [];
-    try {
-      anteriores = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
-    } catch {
-      anteriores = [];
+    const evoId = selectedFranchise.evolution_instance_id;
+    if (checklist.franchise_id !== evoId) return;
+    if (!syncedToastRef.current.has(checklist.id)) {
+      syncedToastRef.current.add(checklist.id);
+      const mensagem = mensagemPronto(jornada, lerFeitas(evoId));
+      if (mensagem) toast.success(mensagem);
     }
-    const novas = feitasAgora.filter((id) => !anteriores.includes(id));
-    if (anteriores.length > 0 && novas.length > 0) {
-      const tarefaFeita = jornada.passos.flatMap((p) => p.tarefas).find((t) => t.id === novas[0]);
-      const titulo = tarefaFeita?.titulo || "Tarefa concluída";
-      if (jornada.agora) {
-        toast.success(`Pronto: ${titulo}. Próximo: ${jornada.agora.titulo}`);
-      } else {
-        toast.success(`Pronto: ${titulo}`);
-      }
-    }
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify(feitasAgora));
-    } catch {
-      // sessionStorage pode falhar (modo privado) — só perde o aviso, não trava nada
-    }
+    gravarFeitas(evoId, tarefasFeitas(jornada));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [checklist?.id]);
+  }, [checklist?.id, factsOk, feitasChave]);
 
   const handleSelectFranchise = async (franchiseId) => {
     const franchise = franchises.find((f) => f.evolution_instance_id === franchiseId);
@@ -347,6 +331,8 @@ export default function Onboarding() {
   };
 
   const handleFiscalReady = () => {
+    // A lista de franquias fica 60 s em cache: sem isto, o passo 1 seguia "faltando".
+    invalidarFranquias();
     loadData();
   };
 
@@ -951,7 +937,7 @@ export default function Onboarding() {
             </div>
 
             <Link
-              to={createPageUrl("Tutoriais")}
+              to={`${createPageUrl("Tutoriais")}?abrir=primeiros-passos`}
               className="flex items-center justify-center gap-2 min-h-[44px] text-brand font-semibold text-sm"
             >
               Ver o guia

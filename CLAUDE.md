@@ -222,7 +222,7 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - Aviso real: `trg_onboarding_notifica` chama `notify_admins` quando o status vira `pending_approval` (1 por dia por unidade). O texto "O CS foi notificado" era falso até aqui.
 - **Pedido modelo**: `catalog_products.qtd_pedido_modelo` (225 un, a planilha que foi para Uberaba) + RPC `get_pedido_modelo()`. O `PurchaseOrderForm` pré-preenche o 1º pedido (`primeiroPedido`, casamento por nome em `src/lib/pedidoModelo.js`); rascunho e digitação dela ganham do modelo. `/Gestao?tab=reposicao&modelo=1` abre o formulário. Mudar o modelo = UPDATE nas quantidades.
 - **Link vencido** (`otp_expired`): o `AuthContext` lê o erro no hash/query ANTES do `type=invite`, limpa só os parâmetros de erro e guarda `auth_link_error` no sessionStorage; o Login mostra o aviso. Com sessão ativa, o flag é apagado.
-- **Rio Grande - RS (`riogranders`) é unidade de TESTE** (como "teste nelson"), sem "Teste" no nome: tirar de qualquer métrica.
+- **Unidades de teste: filtrar por `franchises.is_test`** (hoje 2: "Maxi Teste 2" `franquiariogranders`, cidade Rio Grande - RS, e "Maxi Massas Teste Nelson" `franquiaararaquarasp`, cidade Araraquara). Pela cidade elas parecem unidades reais: tirar de qualquer métrica.
 
 ### Primeiros passos — Fase 2: trilha de 5 passos (no ar 17/09/2026)
 > SQL: [2026-09-16-onboarding-facts.sql](supabase/2026-09-16-onboarding-facts.sql), [2026-09-16-onboarding-item.sql](supabase/2026-09-16-onboarding-item.sql). Conteúdo das tarefas: `src/components/onboarding/journeySteps.js` (links em `materiais.js`); estado: `src/lib/onboardingJourney.js` (`montarJornada`, testado).
@@ -230,6 +230,8 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - **Item grava sozinho** (`set_onboarding_item`, INVOKER): nunca reenviar o mapa `items` inteiro (quem abriu antes apagava o que o outro marcou).
 - 🔴 **Percentual/status só a sincronização automática grava**, e ela espera: fatos lidos com sucesso (`factsOk`), nenhuma confirmação salvando (`salvandoItens`) e checklist da MESMA unidade da tela. Sem isso, falha de rede regredia o % e troca de unidade gravava na anterior. Resposta atrasada se descarta por `loadSeqRef`/`aplicarLinha`.
 - **RPC SECURITY DEFINER com `not (a or b)`: embrulhar em `coalesce(…, false)`** — sem perfil o helper devolve NULL, `not NULL` cai no `else` e entrega os dados (a `get_onboarding_facts` vazava assim até 17/09).
+- **Aviso "Pronto: X. Próximo: Y"** (`src/lib/primeirosPassosAviso.js`, testado): a trilha avisa ao chegar; a faixa `VoltarTrilhaBar` (no Layout, só franqueada, só enquanto visível) confere a cada 20 s e só ACRESCENTA à lista da sessão. Guia: `/Tutoriais?abrir=primeiros-passos` (imagens `public/tutoriais/primeiros-passos-*.webp`). Métricas da coorte: [onboarding-metricas.sql](supabase/onboarding-metricas.sql) (rodar em 16/10 e 15/11). Roteiro do vídeo: `docs/roteiro-tutoriais.md`, VIDEO 2.
+- Salvou dado fiscal? `invalidarFranquias()` antes de recarregar: a lista fica 60 s no cache e o passo 1 seguia "faltando".
 - A % que o admin vê só se atualiza quando a franqueada abre a trilha. Prévia sem login: `npx vite --config .tmp/harness-onboarding/vite.config.mjs` → `:5197/Onboarding?cenario=novo|passo2|pedido|quase|concluido|fiscal|admin` (+ `falha=fatos|item`, `lento=1`, `legado=1`); limpar o sessionStorage entre cenários (senão aparece o toast "Pronto… Próximo").
 
 ### Quem chamar hoje — CRM do franqueado (17/09/2026)
@@ -318,6 +320,8 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx.
 
 **Removidos 17/09/2026:** `components/dashboard/SmartActions.jsx` ("Outras ações") e `lib/smartActions.js` — regras por `contacts.status`/`last_contact_at` (2 das 5 nunca disparavam; o "Feito" se confundia com o robô). Substituídos por "Quem chamar hoje". **NÃO recriar.**
+
+**Removidos 16–17/09/2026 (onboarding antigo de 9 blocos/28 checkboxes → trilha "Primeiros passos"):** `components/onboarding/GateBlock.jsx`, `OnboardingBlock.jsx`, `ONBOARDING_BLOCKS.jsx`, `ITEM_DETAILS.jsx`, `ProgressRing.jsx`, as 7 telas de boas-vindas e o vídeo "Completando seu Onboarding" (`nnPNlIF26Ic`) de Tutoriais. O conteúdo deles vive em `journeySteps.js`. **NÃO recriar.**
 
 **Removidos 29/05/2026 (auditoria multi-agente — eram código morto, 0 imports):** `BotIntelligence.jsx` (página + rota + link "Ver detalhes" do BotSummaryCard — admin não usava; funil dependia de status inexistentes `catalog_sent`/`checkout_started`; varria 28k conversas sem janela), `FranchiseHealthScore.jsx`, `BotPerformanceCard.jsx`, `MessagesTrend.jsx`, `SaudeDoNegocioCard.jsx`, `DiagnosticoSheet.jsx`, `PeriodComparisonCard.jsx`, `ResultadoCharts.jsx`, `MarketingPaymentCard.jsx`, `QuickAccessCards.jsx`, `UserNotRegisteredError.jsx`, `lib/app-params.js`. **NÃO recriar.** Relatório: [docs/auditoria-dashboard-2026-05-29.md](docs/auditoria-dashboard-2026-05-29.md)
 

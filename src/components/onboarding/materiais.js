@@ -9,11 +9,12 @@ export const DRIVE_SACOLA = "https://drive.google.com/drive/folders/1GrhGrvR7x1t
 export const DRIVE_META_BUSINESS = "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU";
 export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC";
 
-// TODO: trocar pelo link de modelo quando o Nelson enviar (hoje é link de EDIÇÃO do
-// Canva — ver plano ~/.claude/plans/buzzing-jumping-mango.md, "O que preciso de você
-// antes de implementar": Canva > Compartilhar > "Link de modelo").
+// Link para a franqueada COPIAR o cardápio (Nelson, 17/09/2026). É um link de edição: a
+// trilha pede "Faça uma cópia do modelo" antes de trocar cidade e telefone. Se alguém
+// mexer no original, o "Link de modelo" do Canva (cópia automática) resolve.
 export const CANVA_CARDAPIO = "https://www.canva.com/design/DAHAY6s9N14/jD40oAe1dD47Ie-hEJ0adQ/edit?utm_content=DAHAY6s9N14&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 // Vídeo de boas-vindas: o Short EH-zq8NzvjQ (tour do menu) NÃO é o vídeo certo para esta
 // tela (Nelson, 16/09/2026). Fica null até gravar o novo; a tela esconde o link.
+// Roteiro: docs/roteiro-tutoriais.md, VIDEO 2. Formato: { url: "https://www.youtube.com/shorts/<ID>" }.
 export const VIDEO_BOAS_VINDAS = null;

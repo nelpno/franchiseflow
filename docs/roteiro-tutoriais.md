@@ -20,9 +20,10 @@
 4. Mostre o menu hambúrguer (3 risquinhos no canto) — abra o sidebar
 5. Passe por cada item do menu explicando em uma frase:
    - "Início — seu painel com resumo do dia"
+   - "Primeiros passos — a trilha para abrir sua unidade (só aparece enquanto ela está começando)"
    - "Vendas — onde você registra cada venda"
    - "Gestão — seu financeiro, estoque e reposição"
-   - "Meus Clientes — todos os contatos dos seus clientes"
+   - "Meus Clientes — quem chamar hoje e todos os seus clientes"
    - "Marketing — materiais e ferramentas de divulgação"
    - "Meu Vendedor — configura o robô do WhatsApp"
    - "Tutoriais — esses vídeos que você tá assistindo agora"
@@ -32,27 +33,39 @@
 
 ---
 
-## VIDEO 2 — Completando seu Onboarding (3 min)
+## VIDEO 2 — Primeiros passos (2 min) · também é o vídeo de boas-vindas
 
-**Objetivo:** Franqueado entende as missões e sabe marcar como feito.
+> Substituiu "Completando seu Onboarding" (`nnPNlIF26Ic`, os 28 checkboxes) em 17/09/2026.
 
-**Roteiro:**
-1. Abra o Onboarding pelo menu lateral
-2. Mostre a visão geral — "Aqui estão todas as missões pra você começar bem"
-3. Mostre o anel de progresso — "Essa porcentagem mostra quanto você já completou"
-4. Abra o primeiro bloco (Primeiros Passos) — "Cada bloco é um tema"
-5. Mostre que alguns itens já vêm marcados automaticamente
-6. Marque um item como exemplo — clique no checkbox
-7. Explique: "Quando completar um bloco inteiro, aparece uma mensagem de parabéns"
-8. Passe rapidamente pelos blocos mostrando os títulos:
-   - "Conheça Seus Produtos"
-   - "Prepare Seu Espaço"
-   - "Configure WhatsApp"
-   - "Configure Seu Vendedor"
-   - "Faça Seu Primeiro Pedido"
-   - "Treinamento"
-   - "Redes Sociais"
-9. Explique: "Não precisa fazer tudo de uma vez. Vá no seu ritmo, o progresso fica salvo"
+**Objetivo:** a franqueada nova sabe onde está a trilha, o que fazer agora e o que a Maxi faz junto com ela.
+
+**Onde aparece:** na tela de boas-vindas (link "Ver vídeo de boas-vindas") e no guia "Primeiros passos" em Tutoriais.
+
+**Antes de gravar:**
+- Use a unidade de teste "Maxi Teste 2" com a trilha **em andamento** (não conclua a trilha dela antes de gravar).
+- Grave no celular, na vertical (sai como Short).
+- Nada de dado de unidade real na tela.
+
+**Roteiro (fala entre aspas, cerca de 2 minutos):**
+1. **0:00, tela Início com o cartão vermelho.** "Oi, seja bem-vinda à Maxi Massas! Neste vídeo eu mostro por onde começar. Tudo o que falta para abrir sua unidade está aqui no app, em 5 passos."
+2. **0:10, toque em Continuar.** "Toque em Continuar. Esta é a sua trilha. Lá em cima você vê em que passo está."
+3. **0:20, cartão Agora.** "O cartão Agora mostra a próxima tarefa. Toque no botão vermelho, e o app leva você direto para a tela certa."
+4. **0:30, role pelos 5 passos.** "São 5 passos, nesta ordem:
+   - primeiro, seus dados;
+   - depois, o robô vendedor, que atende seus clientes no WhatsApp;
+   - depois, seu espaço e seus preços;
+   - o primeiro pedido para a fábrica;
+   - e, por último, o lançamento e a primeira venda."
+5. **0:50, abra um passo e toque em Como fazer.** "Dentro de cada passo estão as tarefas. Cada uma tem um resumo e um botão. Ficou com dúvida? Toque em Como fazer."
+6. **1:00, toque num botão que abre outra tela e mostre a faixa escura no topo.** "Quando a trilha leva você para outra tela, aparece esta faixa: Voltar aos Primeiros passos. Terminou? Toque nela."
+7. **1:10, volte à trilha e mostre Marcar como feito.** "O que o app consegue ver, ele marca sozinho: o cardápio, o robô respondendo, o pedido. O que acontece fora do app, como o seu WhatsApp Business pronto, você marca aqui, em Marcar como feito."
+8. **1:25, passo 4 aberto.** "No primeiro pedido, a lista já vem preenchida com o pedido modelo da Maxi. É uma referência: ajuste as quantidades do seu jeito antes de enviar."
+9. **1:40, bloco dourado.** "E neste bloco dourado você acompanha o que a equipe Maxi faz com você: o contrato, a reunião de início, as redes sociais, o grupo das franquias, um pedido de teste no robô e os anúncios."
+10. **1:52, fechamento.** "Quando os 5 passos estiverem prontos, a equipe Maxi é avisada e confere tudo com você. Qualquer dúvida, fale com a gente. Boas vendas!"
+
+**Depois de subir:** o link vai em dois lugares.
+- `VIDEO_BOAS_VINDAS = { url: "https://www.youtube.com/shorts/<ID>" }` em `src/components/onboarding/materiais.js`.
+- `youtubeId: "<ID>"` no item `primeiros-passos` de `src/pages/Tutoriais.jsx`.
 
 ---
 
@@ -157,6 +170,8 @@
 
 ## VIDEO 7 — Gerenciando seus Clientes (3 min)
 
+> ⚠️ Desatualizado: Meus Clientes mudou em 16/09/2026 (abas Hoje e Todos). Hoje quem explica é o guia ilustrado "Quem chamar hoje" em Tutoriais; regravar só se for preciso.
+
 **Objetivo:** Franqueado usa o CRM de clientes.
 
 **Roteiro:**
@@ -197,7 +212,7 @@
 Grave nessa ordem (segue a jornada do franqueado novo):
 
 1. Bem-vindo ao App
-2. Completando seu Onboarding
+2. Primeiros passos (também é o vídeo de boas-vindas)
 3. Configurando o Meu Vendedor
 4. Registrando uma Venda
 5. Estoque e Reposição (gravar ANTES do financeiro — faz mais sentido no fluxo)
