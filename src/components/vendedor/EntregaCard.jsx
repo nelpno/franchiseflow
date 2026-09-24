@@ -42,10 +42,15 @@ function Dinheiro({ value, onChange, invalido, placeholder = "0,00", ariaLabel }
   );
 }
 
-function Taxa({ taxa, onChange, marcas, prefixo }) {
+const TEXTO_CONFIRMA = "a unidade confirma a taxa";
+
+function Taxa({ taxa, onChange, marcas, prefixo, estruturado, temBairros }) {
   const modo = ehGratis(taxa) ? "gratis" : taxa?.modo === "faixas" ? "faixas" : taxa?.modo === "fixa" ? "fixa" : "outro";
-  // "outro" = regra especial cadastrada pelo suporte (R$/km com valor do pedido, bairro fora da lista...): a tela mostra
-  // o texto e deixa trocar por uma das três opções.
+  // "outro" = regra especial: o robô diz que a unidade confirma a taxa e avisa a franqueada. Desde 24/09 ela mesma
+  // escolhe ("A unidade confirma", só no frete calculado: o motor lê; no modo simples o robô lê as faixas). Antes só
+  // o suporte gravava, e quem cobra só por bairro inventava um valor para conseguir salvar (Ubatuba).
+  // Texto escrito pelo suporte (Nova Odessa, R$/km com valor do pedido) aparece e volta se ela trocar e desistir.
+  const textoSuporte = modo === "outro" && taxa?.texto && taxa.texto !== TEXTO_CONFIRMA && taxa.texto !== "bairro fora da lista da unidade" ? taxa.texto : "";
   const faixas = taxa?.faixas?.length ? taxa.faixas : [{ ate: "", valor: "" }];
   const semNenhuma = marcas.has(`${prefixo}.taxa`);
   const setFaixa = (i, k, v) => onChange({ modo: "faixas", faixas: faixas.map((f, j) => (j === i ? { ...f, [k]: v } : f)) });
@@ -64,10 +69,16 @@ function Taxa({ taxa, onChange, marcas, prefixo }) {
         <button type="button" className={pill(modo === "fixa")} onClick={() => trocar("fixa", { modo: "fixa", valor: "" })}>Valor único</button>
         <button type="button" className={pill(modo === "faixas")} onClick={() => trocar("faixas", { modo: "faixas", faixas: [{ ate: "", valor: "" }] })}>Por distância</button>
         <button type="button" className={pill(modo === "gratis")} onClick={() => trocar("gratis", { modo: "fixa", valor: 0 })}>Grátis</button>
+        {(estruturado || modo === "outro") && (
+          <button type="button" className={pill(modo === "outro")}
+            onClick={() => trocar("outro", { modo: "especial", texto: temBairros ? "bairro fora da lista da unidade" : TEXTO_CONFIRMA })}>
+            A unidade confirma
+          </button>
+        )}
       </div>
       {modo === "outro" && (
         <p className="text-[11px] text-[#3d4a42]/80">
-          Regra especial{taxa?.texto ? `: ${taxa.texto}` : ""}. O robô diz ao cliente que a unidade confirma a taxa e avisa você. Para trocar, escolha uma das opções acima.
+          {textoSuporte ? `Regra combinada com o suporte: ${textoSuporte}. ` : ""}O robô diz ao cliente que você confirma a taxa e te avisa no WhatsApp.
         </p>
       )}
       {modo === "fixa" && (
@@ -130,7 +141,7 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
   );
 }
 
-function Tipo({ tipo, prefixo, estruturado, podeRemover, onChange, onRemove, marcas, erroMsg }) {
+function Tipo({ tipo, prefixo, estruturado, temBairros, podeRemover, onChange, onRemove, marcas, erroMsg }) {
   const set = (patch) => onChange({ ...tipo, ...patch });
   return (
     <div className="rounded-xl bg-surface p-3 space-y-3">
@@ -167,8 +178,9 @@ function Tipo({ tipo, prefixo, estruturado, podeRemover, onChange, onRemove, mar
         </div>
       </div>
       <div>
-        <span className={rotulo}>Taxa</span>
-        <Taxa taxa={tipo.taxa} onChange={(taxa) => set({ taxa })} marcas={marcas} prefixo={prefixo} />
+        <span className={rotulo}>{temBairros ? "Taxa para bairro fora da lista" : "Taxa"}</span>
+        {temBairros && <p className={`${dica} -mt-1 mb-1.5`}>Os bairros da lista, lá em cima, têm o valor próprio.</p>}
+        <Taxa taxa={tipo.taxa} onChange={(taxa) => set({ taxa })} marcas={marcas} prefixo={prefixo} estruturado={estruturado} temBairros={temBairros} />
       </div>
       {estruturado && (
         <div>
@@ -189,7 +201,8 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
     onChange({ ...grupo, dias });
   };
   const setTipo = (ti, t) => onChange({ ...grupo, tipos: grupo.tipos.map((x, j) => (j === ti ? t : x)) });
-  const frase = fraseDoGrupo(grupo);
+  const temBairros = estruturado && (modelo.zonas || []).some((z) => (z.nomes || []).length);
+  const frase = fraseDoGrupo(grupo, { temBairros });
   return (
     <div className="rounded-xl border border-[#bccac0]/30 bg-white p-3 sm:p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -214,7 +227,7 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
         })}
       </div>
       {grupo.tipos.map((t, ti) => (
-        <Tipo key={ti} tipo={t} prefixo={`g${gi}.t${ti}`} estruturado={estruturado} podeRemover={grupo.tipos.length > 1}
+        <Tipo key={ti} tipo={t} prefixo={`g${gi}.t${ti}`} estruturado={estruturado} temBairros={temBairros} podeRemover={grupo.tipos.length > 1}
           onChange={(nt) => setTipo(ti, nt)} onRemove={() => onChange({ ...grupo, tipos: grupo.tipos.filter((_, j) => j !== ti) })}
           marcas={marcas} erroMsg={problemas.find((p) => p.chave.startsWith(`g${gi}.t${ti}.`))?.msg} />
       ))}
@@ -280,10 +293,10 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
   const set = (i, z) => onChange(zonas.map((x, j) => (j === i ? z : x)));
   const erros = problemas.filter((p) => p.chave.startsWith("z"));
   return (
-    <div className="space-y-3 border-t border-[#bccac0]/20 pt-4">
+    <div className="space-y-3 border-b border-[#bccac0]/20 pb-4">
       <div>
-        <p className="text-sm font-bold text-[#3d4a42] flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa diferente</p>
-        <p className={dica}>Vale em qualquer tipo e em qualquer dia, e substitui a taxa normal. O robô usa o bairro que o cliente escreve e o que o mapa encontra.</p>
+        <p className="text-sm font-bold text-[#3d4a42] flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria</p>
+        <p className={dica}>Cada bairro com o seu valor, em qualquer dia. Bairro que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
       </div>
       {zonas.map((z, i) => (
         <div key={i} className="rounded-xl bg-surface p-2.5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
@@ -466,6 +479,8 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
 
   return (
     <div className="space-y-4">
+      {/* Bairros primeiro: para quem cobra por bairro é a regra principal, e no fim do cartão ninguém achava (Ubatuba, 24/09) */}
+      {estruturado && <Bairros zonas={modelo.zonas || []} onChange={(zonas) => onChange({ ...modelo, zonas })} marcas={marcas} problemas={problemas} />}
       <div>
         <p className="text-sm font-bold text-[#3d4a42]">Dias, horários e taxas</p>
         <p className={dica}>
@@ -497,9 +512,7 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
           <ComoChega promessa={t0.promessa} minutos={t0.minutos} onChange={comoChegaTodos} invalido={[...marcas].some((k) => k.endsWith(".minutos"))} />
         </div>
       )}
-      {estruturado ? (
-        <Bairros zonas={modelo.zonas || []} onChange={(zonas) => onChange({ ...modelo, zonas })} marcas={marcas} problemas={problemas} />
-      ) : (
+      {!estruturado && (
         <p className="text-[11px] text-[#3d4a42]/70 flex items-start gap-1.5">
           <MaterialIcon icon="lightbulb" size={14} className="mt-0.5 shrink-0 text-[#775a19]" />
           Cobra valor diferente por bairro, ou tem mais de um tipo de entrega no mesmo dia (ex.: programada e imediata)? Fale com o suporte para ligar o frete calculado na sua unidade.
@@ -510,7 +523,7 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
           <label className={rotulo}>Raio máximo de entrega (km)</label>
           <input className={`${campo} w-full font-mono`} type="number" min="1" max="60" inputMode="decimal"
             value={modelo.raio_km ?? ""} onChange={(e) => onChange({ ...modelo, raio_km: e.target.value === "" ? null : Number(e.target.value) })} placeholder="7" />
-          <p className={dica}>{estruturado ? "O robô recusa endereço além do raio. Os bairros listados acima valem mesmo além dele." : "O robô recusa endereço além do raio."}</p>
+          <p className={dica}>{estruturado ? "O robô recusa endereço além do raio. Os bairros da lista valem mesmo além dele." : "O robô recusa endereço além do raio."}</p>
         </div>
         <div>
           <label className={rotulo}>Pedido mínimo para entrega (R$)</label>

@@ -147,6 +147,14 @@ assert.equal(fraseDoGrupo(m.grupos[0]),
   "De segunda a sexta, entregamos das 10h às 19h, dentro da janela, sem hora marcada, por R$ 6 até 3 km, R$ 9 até 6 km e R$ 12 até 10 km. Pedidos até as 17h.");
 assert.equal(fraseDoGrupo(m.grupos[2]), "No domingo, entregamos das 10h às 12h, dentro da janela, sem hora marcada, sem taxa.");
 assert.equal(textoTaxa({ modo: "fixa", valor: 10.5 }), "por R$ 10,50");
+// com bairros na lista a taxa do grupo só vale fora dela (Ubatuba lia "por R$ 20" como preço fechado, 24/09)
+const ubaSemana = { dias: ["seg", "ter", "qua", "qui", "sex"], tipos: [{ nome: "Entrega", inicio: "08:30", fim: "18:00", corte: "17:00", promessa: "minutos", minutos: 60, taxa: { modo: "especial", texto: "bairro fora da lista da unidade" } }] };
+assert.equal(fraseDoGrupo(ubaSemana, { temBairros: true }),
+  "De segunda a sexta, entregamos das 8h30 às 18h, em até 60 min depois de confirmado, fora da lista, com taxa que a unidade confirma. Bairros da lista, pelo valor de cada um. Pedidos até as 17h.");
+assert.match(fraseDoGrupo({ ...ubaSemana, tipos: [{ ...ubaSemana.tipos[0], taxa: { modo: "fixa", valor: 20 } }] }, { temBairros: true }), /fora da lista, por R\$ 20\. Bairros da lista/);
+// a regra "a unidade confirma" passa pela limpeza intacta e não trava o salvar
+assert.deepEqual(limparPricing({ grupos: [ubaSemana], zonas: [] }).grupos[0].tipos[0].taxa, { modo: "especial", texto: "bairro fora da lista da unidade" });
+assert.deepEqual(chaves({ grupos: [ubaSemana], zonas: [{ nomes: ["Centro"], valor: 10 }] }, { estruturado: true }), []);
 assert.equal(diasPorExtenso(["seg", "qua", "sex"]), "Segunda, quarta e sexta");
 assert.equal(diasPorExtenso(["sab"]), "No sábado");
 

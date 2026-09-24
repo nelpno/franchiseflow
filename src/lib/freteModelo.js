@@ -300,11 +300,11 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
     const vistos = new Map();
     (modelo?.zonas || []).forEach((z, zi) => {
       const nomes = (z.nomes || []).map((n) => String(n).trim()).filter(Boolean);
-      if (!nomes.length) out.push({ chave: `z${zi}.nomes`, msg: `Bairros com taxa diferente, linha ${zi + 1}: falta o nome do bairro.` });
-      if (!z.nao_atende && !z.especial && numero(z.valor) === null) out.push({ chave: `z${zi}.valor`, msg: `Bairros com taxa diferente, linha ${zi + 1}: falta o valor.` });
+      if (!nomes.length) out.push({ chave: `z${zi}.nomes`, msg: `Bairros com taxa própria, linha ${zi + 1}: falta o nome do bairro.` });
+      if (!z.nao_atende && !z.especial && numero(z.valor) === null) out.push({ chave: `z${zi}.valor`, msg: `Bairros com taxa própria, linha ${zi + 1}: falta o valor.` });
       for (const n of nomes) {
         const key = n.toLowerCase();
-        if (vistos.has(key) && vistos.get(key) !== zi) out.push({ chave: `z${zi}.nomes`, msg: `O bairro ${n} está em duas linhas de "Bairros com taxa diferente".` });
+        if (vistos.has(key) && vistos.get(key) !== zi) out.push({ chave: `z${zi}.nomes`, msg: `O bairro ${n} está em duas linhas de "Bairros com taxa própria".` });
         vistos.set(key, zi);
       }
     });
@@ -335,26 +335,31 @@ export function textoTaxa(taxa) {
     const partes = f.map((x) => `${dinheiro(x.valor)} até ${kmBR(x.ate)} km`);
     return `por ${partes.length > 1 ? `${partes.slice(0, -1).join(", ")} e ${partes.at(-1)}` : partes[0]}`;
   }
-  return "taxa que a unidade confirma";
+  return "com taxa que a unidade confirma";
 }
 
-/** "O vendedor vai dizer": a regra do grupo de dias em uma frase. */
-export function fraseDoGrupo(grupo) {
+/**
+ * "O vendedor vai dizer": a regra do grupo de dias em uma frase. Com bairros na lista, a taxa do grupo só vale
+ * fora dela: sem isso o "por R$ 20" parecia preço fechado (Ubatuba, 24/09).
+ */
+export function fraseDoGrupo(grupo, { temBairros = false } = {}) {
   const tipos = (grupo?.tipos || []).filter((t) => preenchido(t.inicio) && preenchido(t.fim));
   if (!(grupo?.dias || []).length || !tipos.length) return "";
   const prazo = (t) => (t.promessa === "minutos" && numero(t.minutos) > 0 ? `, que chega em até ${numero(t.minutos)} min` : "");
   const janela = (t) => `das ${horaCurta(t.inicio)} às ${horaCurta(t.fim)}`;
+  const taxa = (t) => (temBairros ? `fora da lista, ${textoTaxa(t.taxa)}` : textoTaxa(t.taxa));
   let corpo;
   if (tipos.length === 1) {
     const t = tipos[0];
-    corpo = `entregamos ${janela(t)}${t.promessa === "minutos" && numero(t.minutos) > 0 ? `, em até ${numero(t.minutos)} min depois de confirmado` : ", dentro da janela, sem hora marcada"}, ${textoTaxa(t.taxa)}`;
+    corpo = `entregamos ${janela(t)}${t.promessa === "minutos" && numero(t.minutos) > 0 ? `, em até ${numero(t.minutos)} min depois de confirmado` : ", dentro da janela, sem hora marcada"}, ${taxa(t)}`;
   } else {
-    const partes = tipos.map((t) => `a ${String(t.nome || "entrega").trim().toLowerCase()}, ${janela(t)}${prazo(t)}, ${textoTaxa(t.taxa)}`);
+    const partes = tipos.map((t) => `a ${String(t.nome || "entrega").trim().toLowerCase()}, ${janela(t)}${prazo(t)}, ${taxa(t)}`);
     corpo = `tem ${partes.slice(0, -1).join("; ")} e ${partes.at(-1)}`;
   }
   const cortes = [...new Set(tipos.map((t) => t.corte).filter(preenchido))];
   const corte = cortes.length === 1 ? ` Pedidos até as ${horaCurta(cortes[0])}.` : "";
-  return `${diasPorExtenso(grupo.dias)}, ${corpo}.${corte}`;
+  const bairros = temBairros ? " Bairros da lista, pelo valor de cada um." : "";
+  return `${diasPorExtenso(grupo.dias)}, ${corpo}.${bairros}${corte}`;
 }
 
 // ---------------------------------------------------------------- ajudas da tela

@@ -52,7 +52,7 @@ const editando = { ...base, _frete_modelo: { raio_km: 15, zonas: [], grupos: [{ 
 assert.match(validarEtapa(2, editando, ["_frete_modelo"]).erros[0], /^Seg: diga em até quantos minutos/);
 // frete calculado: bairro sem valor barra
 const calculado = { ...base, delivery_pricing: { raio_km: 15, grupos: editando._frete_modelo.grupos.map((g) => ({ ...g, tipos: [{ ...g.tipos[0], promessa: "janela" }] })), zonas: [{ nomes: ["Centro"], valor: "" }] } };
-assert.match(validarEtapa(2, calculado, ["delivery_pricing"]).erros[0], /^Bairros com taxa diferente, linha 1: falta o valor/);
+assert.match(validarEtapa(2, calculado, ["delivery_pricing"]).erros[0], /^Bairros com taxa própria, linha 1: falta o valor/);
 // retirada que fecha antes de abrir
 const retirada = { ...base, has_pickup: true, has_custom_pickup_hours: true, payment_pickup: ["pix"], pickup_schedule: [{ days: ["sab"], open: "14:00", close: "12:00" }] };
 assert.match(validarEtapa(2, retirada, ["pickup_schedule"]).erros[0], /fechamento tem de ser depois/);
