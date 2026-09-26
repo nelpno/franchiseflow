@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FranchiseConfiguration, User, salvarFreteEstruturado } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -180,6 +181,11 @@ function buildDbPayload(form) {
 
 function FranchiseSettingsContent() {
   const { selectedFranchise, setSelectedFranchise } = useAuth();
+  // Deep-link do admin/gerente: /FranchiseSettings?franchise=<evolution_instance_id>
+  // (Ficha da unidade, "Configurar robô →"). Antes o wizard sempre abria a 1ª config
+  // da lista, ignorando qual unidade o admin queria ver.
+  const [searchParams] = useSearchParams();
+  const franchiseParam = searchParams.get('franchise');
   const [configurations, setConfigurations] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -194,6 +200,7 @@ function FranchiseSettingsContent() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
   // O que a tela abriu (ou como ficou no último salvar): é contra isso que o salvar calcula o que
   // mudou e confere se alguém mexeu nas mesmas colunas no banco. Ver src/lib/configSave.js.
+  const avisouSemConfigRef = useRef(false); // ?franchise= sem config: avisa 1x só (achado ALTO, 26/09)
   const loadedRowRef = useRef(null);    // linha do banco
   const baselineRef = useRef(null);     // o mesmo, no formato que vai ao banco
   const baselineFormRef = useRef(null); // o mesmo, no formato do formulário (base do rascunho)
@@ -292,21 +299,35 @@ function FranchiseSettingsContent() {
         // Abre a config da unidade ATIVA. Antes abria configsToDisplay[0] (ordem do
         // banco) — com 2 unidades o wizard mostrava a errada com o seletor do topo
         // dizendo outra coisa (bug Araras × Limeira, 05/08/2026).
-        const target = activeFranchise
+        const targetByParam = franchiseParam && isAdminUser
+          ? configsToDisplay.find((c) => c.franchise_evolution_instance_id === franchiseParam)
+          : null;
+        const targetByActive = activeFranchise
           ? configsToDisplay.find(
               (c) => c.franchise_evolution_instance_id === activeFranchise.evolution_instance_id
             )
           : null;
+        const target = targetByParam || targetByActive;
+        // Admin chegou com ?franchise=<evo> mas essa unidade não tem config nesta
+        // lista (unidade nova, antes do seed de franchise_configurations): NÃO abrir
+        // configsToDisplay[0] no lugar dela — antes abria o robô de OUTRA unidade em
+        // silêncio (achado ALTO, 26/09; hoje 0/68 unidades sem config, mas a unidade
+        // seguinte pode nascer nesse intervalo).
+        const paramSemMatch = !!franchiseParam && isAdminUser && !targetByParam;
         // Admin (seletor próprio, não é dono de unidade) e quem só tem UMA unidade
-        // seguem abrindo a primeira. Franqueado com 2+ unidades: nada abre sem
-        // seleção — o render pede a unidade em vez de adivinhar. O teto é
-        // availableFranchisesForUser, não configsToDisplay: com 2 unidades e só 1
-        // configurada, "a única config" ainda seria a unidade errada.
+        // seguem abrindo a primeira — mas só quando não veio um ?franchise= que não
+        // bateu com nada. Franqueado com 2+ unidades: nada abre sem seleção — o
+        // render pede a unidade em vez de adivinhar. O teto é availableFranchisesForUser,
+        // não configsToDisplay: com 2 unidades e só 1 configurada, "a única config"
+        // ainda seria a unidade errada.
         const chosen =
-          target || (isAdminUser || availableFranchisesForUser.length === 1 ? configsToDisplay[0] : null);
+          target || (!paramSemMatch && (isAdminUser || availableFranchisesForUser.length === 1) ? configsToDisplay[0] : null);
         if (chosen) {
           setSelectedConfigId(chosen.id);
           loadConfigIntoForm(chosen);
+        } else if (paramSemMatch && !avisouSemConfigRef.current) {
+          avisouSemConfigRef.current = true;
+          toast.error("Esta unidade ainda não tem robô configurado.");
         }
       }
     } else if (!isLoading && currentUser) {
@@ -846,6 +867,19 @@ function FranchiseSettingsContent() {
         franchises={availableFranchisesForUser}
         title="Configurar o vendedor de qual unidade?"
       />
+    );
+  }
+
+  // Admin chegou pela Ficha (?franchise=<evo>) numa unidade sem config ainda — não
+  // mostrar o formulário de outra unidade no lugar dela (ver o toast acima).
+  if (isAdminUser && franchiseParam && !currentConfig && displayConfigurations.length > 0
+      && !displayConfigurations.some((c) => c.franchise_evolution_instance_id === franchiseParam)) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10 text-center space-y-2">
+        <MaterialIcon icon="tune" size={32} className="text-ink-3 mx-auto" aria-hidden="true" />
+        <p className="text-base font-semibold text-ink">Esta unidade ainda não tem robô configurado.</p>
+        <p className="text-sm text-ink-2">Assim que o cadastro fiscal da franquia for concluído, a configuração é criada automaticamente.</p>
+      </div>
     );
   }
 

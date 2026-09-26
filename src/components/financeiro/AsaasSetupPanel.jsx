@@ -1,23 +1,35 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Franchise, FranchiseConfiguration, SystemSubscription } from "@/entities/all";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { classifySubscription, compareCobranca, SITUACAO, SITUACAO_LABEL } from "@/lib/subscriptionStatus";
 import { formatDateOnly } from "@/lib/dateOnly";
-import { formatBRL } from "@/lib/formatters";
+import { formatBRL, formatBRLInteger } from "@/lib/formatters";
+import { nomeCurto } from "@/lib/networkOverview";
+import { montarMensagemFranqueado } from "@/lib/mensagemFranqueado";
+import { getWhatsAppLink } from "@/lib/whatsappUtils";
+import { safeHref } from "@/lib/safeHref";
 import { Skeleton } from "@/components/ui/skeleton";
+import EmptyState from "@/components/shared/EmptyState";
+import ErrorState from "@/components/shared/ErrorState";
+import MaisAcoesMenu from "@/components/shared/MaisAcoesMenu";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, CHIP, CHIP_ATIVO, CHIP_INATIVO } from "@/components/shared/adminUi";
 import { toast } from "sonner";
 import { supabase } from "@/api/supabaseClient";
 import { missingFiscalFields, saveFiscalData } from "@/lib/saveFiscalData";
 import FranchiseForm from "@/components/franchises/FranchiseForm";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
-import { cpfCnpjError } from "@/lib/documentUtils";
 import { precisaSincronizarDocumento } from "@/lib/fiscalSync";
 import SincronizarDocAsaasDialog from "@/components/franchises/SincronizarDocAsaasDialog";
+
+// A origem veio da Ficha (state.from) quando o caminho é /Unidade — decisão 7 do redesenho.
+const vindoDaFicha = (from) => typeof from === "string" && /^\/Unidade(\?|$)/.test(from);
+
+// Situações válidas no ?situacao= da URL (F8): as mesmas de subscriptionStatus.js.
+const SITUACOES_URL = new Set(Object.values(SITUACAO));
 
 /**
  * Chama a edge asaas-billing devolvendo o MOTIVO real da falha.
@@ -66,33 +78,48 @@ function formatCpfCnpj(value) {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
+function maskCpfCnpj(value) {
+  if (!value) return "—";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length <= 11) return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`;
+  return `**.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-**`;
+}
+
 function displayFranchiseName(name) {
   if (!name) return "—";
   return /^maxi\s+massas/i.test(name) ? name : `Maxi Massas ${name}`;
 }
 
-function StatusBadge({ status, asaasId, cpfCnpj }) {
-  if (asaasId) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-ok/10 text-ok-ink">
-        <MaterialIcon icon="check_circle" size={14} />
-        Cadastrado
-      </span>
-    );
-  }
-  if (cpfCnpj) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-brand-gold/10 text-brand-gold-ink">
-        <MaterialIcon icon="schedule" size={14} />
-        Pendente
-      </span>
-    );
-  }
+// #5/#13: mensagem de cobrança reusa montarMensagemFranqueado (padrão único do admin) e
+// passa o link de pagamento quando o ASAAS já devolveu um (current_payment_url) — sem
+// isso a franqueada tinha que pedir o link de novo por fora. O texto com/sem link é
+// montado inteiro dentro de mensagemFranqueado.js (nunca concatenar por fora: gerava
+// "Posso te mandar o link de novo? Link para pagar: …", incoerente).
+function mensagemCobranca(f, cls, sub) {
+  return montarMensagemFranqueado({
+    motivo: "mensalidade",
+    nome: f.owner_name,
+    franchiseName: f.name,
+    vencimento: cls.vencimento,
+    link: sub?.current_payment_url,
+  });
+}
+
+// "Sincronizar com ASAAS" (achado ALTO 26/09): fatura/assinatura apagada no painel do
+// ASAAS não volta pro dashboard por conta própria (docs/claude/asaas.md) — precisa ficar
+// visível, não escondido dentro do menu "Resolver"/"Mais ações".
+function BotaoSincronizar({ syncingAll, onClick }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-err/10 text-err">
-      <MaterialIcon icon="error" size={14} />
-      Falta CPF/CNPJ
-    </span>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={syncingAll}
+      title="Sincronizar com ASAAS"
+      aria-label="Sincronizar com ASAAS"
+      className={`${BTN_SECUNDARIO} h-11 w-11 shrink-0 px-0`}
+    >
+      <MaterialIcon icon={syncingAll ? "sync" : "cloud_sync"} size={18} className={syncingAll ? "animate-spin" : ""} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -101,13 +128,13 @@ function SubscriptionBadge({ sub }) {
   const estilo = {
     [SITUACAO.PAGO]: { bg: "bg-ok/10", fg: "text-ok-ink", icon: "check_circle" },
     [SITUACAO.VENCIDO]: { bg: "bg-err/10", fg: "text-err", icon: "error" },
-    [SITUACAO.PENDENTE]: { bg: "bg-brand-gold/10", fg: "text-brand-gold-ink", icon: "schedule" },
+    [SITUACAO.PENDENTE]: { bg: "bg-brand-gold-soft", fg: "text-brand-dark", icon: "schedule" },
     // "Sem cobranca" e o mais grave: nao existe assinatura, entao o cron de sync
     // nunca vai olhar para esta unidade e ninguem vai cobrar. Antes aparecia como
     // um travessao neutro.
     [SITUACAO.SEM_COBRANCA]: { bg: "bg-err/15", fg: "text-brand-dark", icon: "money_off" },
-    [SITUACAO.AGUARDANDO]: { bg: "bg-brand-gold/10", fg: "text-brand-gold-ink", icon: "hourglass_empty" },
-    [SITUACAO.CANCELADA]: { bg: "bg-gray-100", fg: "text-gray-600", icon: "block" },
+    [SITUACAO.AGUARDANDO]: { bg: "bg-brand-gold-soft", fg: "text-brand-dark", icon: "hourglass_empty" },
+    [SITUACAO.CANCELADA]: { bg: "bg-surface-2", fg: "text-ink-3", icon: "block" },
   }[situacao];
 
   const texto = situacao === SITUACAO.VENCIDO && diasAtraso > 0
@@ -115,28 +142,87 @@ function SubscriptionBadge({ sub }) {
     : SITUACAO_LABEL[situacao];
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${estilo.bg} ${estilo.fg}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${estilo.bg} ${estilo.fg}`}>
       <MaterialIcon icon={estilo.icon} size={14} aria-hidden="true" />
       {texto}
     </span>
   );
 }
 
+// #5/#13: ação principal da linha. Vencido → "Cobrar no WhatsApp" primário; o resto (sem
+// cobrança, aguardando, pendente, pago, cancelada) usa o menu "Mais ações" — cobrar é a
+// única ação que merece destaque na cobrança do dia a dia (B1: 1 primário por bloco).
+// `phone` já vem em dígitos puros (fallback f.phone_number || personal_phone_for_summary,
+// igual ao get_unit_360/admin-08 — CLAUDE.md: phone_number é quase sempre NULL na base).
+// `podeCobrar` é só a SITUAÇÃO (vencido); sem telefone o botão primário cai no aviso "Sem
+// telefone" em vez de a linha inteira cair muda no menu genérico (achado ALTO 26/09).
+function AcaoLinha({ f, cls, sub, missing, phone, onCriar, criando, onEditarFiscal, onCancelar }) {
+  const podeCobrar = cls.situacao === SITUACAO.VENCIDO;
+  const link = podeCobrar && phone ? getWhatsAppLink(phone, mensagemCobranca(f, cls, sub)) : null;
+
+  const itensMenu = [
+    missing.length > 0 && {
+      label: `Faltam ${missing.length} ${missing.length === 1 ? "campo" : "campos"} → Preencher`,
+      icon: "warning",
+      onClick: onEditarFiscal,
+    },
+    missing.length === 0 &&
+      !sub?.asaas_customer_id && {
+        label: "Cadastrar no ASAAS",
+        icon: "cloud_upload",
+        disabled: criando,
+        onClick: onCriar,
+      },
+    { label: "Editar dados de cobrança", icon: "edit", onClick: onEditarFiscal },
+    sub?.asaas_subscription_id && { label: "Cancelar assinatura", icon: "block", perigo: true, onClick: onCancelar },
+  ].filter(Boolean);
+
+  if (podeCobrar) {
+    return (
+      <div className="flex items-center justify-end gap-2">
+        {link ? (
+          <a href={safeHref(link)} target="_blank" rel="noopener noreferrer" className={`${BTN_PRIMARIO} whitespace-nowrap`}>
+            <MaterialIcon icon="chat" size={16} aria-hidden="true" />
+            Cobrar no WhatsApp
+          </a>
+        ) : (
+          <span className="text-xs text-ink-3">Sem telefone</span>
+        )}
+        <MaisAcoesMenu actions={itensMenu} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-end">
+      <MaisAcoesMenu actions={itensMenu} rotulo="Ações" />
+    </div>
+  );
+}
+
 export default function AsaasSetupPanel() {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const franchiseParam = searchParams.get("franchise") || "";
+  const daFicha = vindoDaFicha(location.state?.from);
+  const limparFranquia = () =>
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.delete("franchise");
+      return p;
+    });
   const [franchises, setFranchises] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [syncDocAsaas, setSyncDocAsaas] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [editingCpf, setEditingCpf] = useState({});
-  const [savingCpf, setSavingCpf] = useState({});
-  const [editingEmail, setEditingEmail] = useState({});
-  const [savingEmail, setSavingEmail] = useState({});
+  const [erro, setErro] = useState(null);
   // Cancelamento
   const [cancellingSub, setCancellingSub] = useState(null); // franchise object | null
   const [isCancelling, setIsCancelling] = useState(false);
-  // Atualizar valor
+  // Atualizar valor (fica em "Mais ações" — #20)
   const [monthlyValue, setMonthlyValue] = useState(150);
+  const valorAntesDialogRef = useRef(null);
   const [showValueDialog, setShowValueDialog] = useState(false);
   const [applyToCurrent, setApplyToCurrent] = useState(false);
   const [isUpdatingValue, setIsUpdatingValue] = useState(false);
@@ -154,36 +240,34 @@ export default function AsaasSetupPanel() {
       return next;
     });
   const [revealedCpfs, setRevealedCpfs] = useState({});
-  // Editar dados fiscais inline
+  // Editar dados fiscais/cobrança (CPF, email, endereço) — um dialog só, sem edição inline
+  // na linha da tabela (#13: CPF/email/endereço saem da linha e vão para cá).
   const [editingFiscal, setEditingFiscal] = useState(null);
   const [isSavingFiscal, setIsSavingFiscal] = useState(false);
   const mountedRef = useRef(true);
-
-  function maskCpfCnpj(value, franchiseId) {
-    if (!value) return "—";
-    if (revealedCpfs[franchiseId]) return formatCpfCnpj(value);
-    const digits = value.replace(/\D/g, "");
-    if (digits.length <= 11) return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`;
-    return `**.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-**`;
-  }
 
   function toggleCpfReveal(franchiseId) {
     setRevealedCpfs(prev => ({ ...prev, [franchiseId]: !prev[franchiseId] }));
   }
 
   const loadData = useCallback(async () => {
+    setErro(null);
     try {
       const [fRes, cRes, sRes] = await Promise.allSettled([
         Franchise.list("name", null, { columns: "id,name,owner_name,city,phone_number,evolution_instance_id,cpf_cnpj,state_uf,address_number,address_complement,neighborhood,status,billing_email" }),
-        FranchiseConfiguration.list(null, null, { columns: "franchise_evolution_instance_id,street_address,cep,franchise_name,neighborhood,city" }),
+        FranchiseConfiguration.list(null, null, { columns: "franchise_evolution_instance_id,street_address,cep,franchise_name,neighborhood,city,personal_phone_for_summary" }),
         SystemSubscription.list(null, null, { columns: "*" }),
       ]);
       if (!mountedRef.current) return;
-      setFranchises(fRes.status === "fulfilled" ? fRes.value : []);
+      if (fRes.status === "rejected") {
+        setErro(safeErrorMessage(fRes.reason, "Não foi possível carregar as franquias."));
+        return;
+      }
+      setFranchises(fRes.value);
       setConfigs(cRes.status === "fulfilled" ? cRes.value : []);
       setSubscriptions(sRes.status === "fulfilled" ? sRes.value : []);
     } catch (err) {
-      toast.error(safeErrorMessage(err, "Erro ao carregar dados."));
+      setErro(safeErrorMessage(err, "Erro ao carregar dados."));
     } finally {
       if (mountedRef.current) setIsLoading(false);
     }
@@ -195,10 +279,23 @@ export default function AsaasSetupPanel() {
     return () => { mountedRef.current = false; };
   }, [loadData]);
 
-  const [situacaoFiltro, setSituacaoFiltro] = useState(null);
+  // F8: filtro de situação fica na URL (?situacao=), lido também de fora (Fechamento do
+  // mês → "Cobrar em Mensalidades →" já chega com ?situacao=vencido).
+  const situacaoUrl = searchParams.get("situacao") || "";
+  const situacaoFiltro = SITUACOES_URL.has(situacaoUrl) ? situacaoUrl : null;
+  const setSituacaoFiltro = (sit) =>
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (sit) p.set("situacao", sit);
+      else p.delete("situacao");
+      return p;
+    }, { replace: true });
 
   const getConfig = (evoId) => configs.find(c => c.franchise_evolution_instance_id === evoId);
   const getSub = (evoId) => subscriptions.find(s => s.franchise_id === evoId);
+  // f.phone_number é quase sempre NULL (CLAUDE.md) — mesmo fallback do get_unit_360/
+  // admin-08: personal_phone_for_summary, só dígitos.
+  const telefoneCobranca = (f) => (f.phone_number || getConfig(f.evolution_instance_id)?.personal_phone_for_summary || "").replace(/\D/g, "");
 
   const activeFranchises = franchises.filter(f => f.status === "active");
 
@@ -214,58 +311,18 @@ export default function AsaasSetupPanel() {
     return acc;
   }, {});
 
-  const linhasVisiveis = situacaoFiltro
-    ? linhasCobranca.filter(({ cls }) => cls.situacao === situacaoFiltro)
-    : linhasCobranca;
-
-  const handleSaveEmail = async (franchise) => {
-    const email = (editingEmail[franchise.id] || "").trim();
-    if (!email) return;
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      toast.error("Email inválido");
-      return;
-    }
-    setSavingEmail(prev => ({ ...prev, [franchise.id]: true }));
-    try {
-      await Franchise.update(franchise.id, { billing_email: email });
-      setFranchises(prev => prev.map(f => f.id === franchise.id ? { ...f, billing_email: email } : f));
-      setEditingEmail(prev => { const n = { ...prev }; delete n[franchise.id]; return n; });
-      toast.success(`Email salvo para ${franchise.name}`);
-    } catch (err) {
-      toast.error(safeErrorMessage(err, "Erro ao salvar."));
-    } finally {
-      setSavingEmail(prev => ({ ...prev, [franchise.id]: false }));
-    }
-  };
-
-  const handleSaveCpf = async (franchise) => {
-    const cpf = editingCpf[franchise.id];
-    if (!cpf) return;
-    const digits = cpf.replace(/\D/g, "");
-    const docErro = cpfCnpjError(digits);
-    if (docErro) {
-      toast.error(docErro);
-      return;
-    }
-    setSavingCpf(prev => ({ ...prev, [franchise.id]: true }));
-    try {
-      const docAntigo = franchise.cpf_cnpj;
-      await Franchise.update(franchise.id, { cpf_cnpj: digits });
-      setFranchises(prev => prev.map(f => f.id === franchise.id ? { ...f, cpf_cnpj: digits } : f));
-      setEditingCpf(prev => { const n = { ...prev }; delete n[franchise.id]; return n; });
-      toast.success(`CPF/CNPJ salvo para ${franchise.name}`);
-      // O ASAAS não acompanha o painel: se já existe cliente lá, perguntar o que fazer.
-      const sub = subscriptions.find(s => s.franchise_id === franchise.evolution_instance_id);
-      if (sub?.asaas_customer_id &&
-          precisaSincronizarDocumento({ docAntigo, docNovo: digits, temClienteAsaas: true })) {
-        setSyncDocAsaas({ franquia: franchise, docAntigo, docNovo: digits });
-      }
-    } catch (err) {
-      toast.error(safeErrorMessage(err, "Erro ao salvar."));
-    } finally {
-      setSavingCpf(prev => ({ ...prev, [franchise.id]: false }));
-    }
-  };
+  // Chegou pela Ficha com ?franchise=<evo> (decisão 8): mostra só aquela unidade, com uma
+  // faixa pra voltar pra ficha ou ver a rede inteira — em vez de o admin ter que achar a
+  // linha dele no meio de 67.
+  const franchiseRow = franchiseParam ? linhasCobranca.find(({ f }) => f.evolution_instance_id === franchiseParam) : null;
+  const linhasVisiveis = franchiseParam
+    ? franchiseRow
+      ? [franchiseRow]
+      : []
+    : situacaoFiltro
+      ? linhasCobranca.filter(({ cls }) => cls.situacao === situacaoFiltro)
+      : linhasCobranca;
+  const nomeFranquiaFiltrada = franchiseRow ? nomeCurto(franchiseRow.f.name) : location.state?.label || "";
 
   const handleCreateAsaas = async (franchise) => {
     const evoId = franchise.evolution_instance_id;
@@ -285,6 +342,10 @@ export default function AsaasSetupPanel() {
   const handleCreateAllSubscriptions = async (franchiseIds) => {
     if (!franchiseIds || franchiseIds.length === 0) {
       toast.error("Selecione ao menos uma franquia para criar assinatura.");
+      return;
+    }
+    if (!Number.isFinite(monthlyValue) || monthlyValue < 5 || monthlyValue > 5000) {
+      toast.error("Informe um valor de mensalidade entre R$ 5 e R$ 5.000.");
       return;
     }
     setCreatingAll(true);
@@ -387,7 +448,7 @@ export default function AsaasSetupPanel() {
           street_address: addressExtras?.street_address,
         }
       );
-      toast.success("Dados fiscais atualizados!");
+      toast.success("Dados de cobrança atualizados!");
       const docAntigo = editingFiscal.franchise.cpf_cnpj;
       const franquiaSalva = editingFiscal.franchise;
       const subSalva = subscriptions.find(x => x.franchise_id === franquiaSalva.evolution_instance_id);
@@ -399,7 +460,7 @@ export default function AsaasSetupPanel() {
         setSyncDocAsaas({ franquia: franquiaSalva, docAntigo, docNovo: franchiseData.cpf_cnpj });
       }
     } catch (err) {
-      toast.error(safeErrorMessage(err, "Erro ao salvar dados fiscais."));
+      toast.error(safeErrorMessage(err, "Erro ao salvar dados de cobrança."));
     } finally {
       setIsSavingFiscal(false);
     }
@@ -409,25 +470,112 @@ export default function AsaasSetupPanel() {
   const getMissing = (f) => missingFiscalFields(f, getConfig(f.evolution_instance_id));
   const isFiscalComplete = (f) => getMissing(f).length === 0;
 
-  // Stats
+  // Stats de COBRANÇA (#20): o que importa no dia a dia é vencida/a vencer/paga, não
+  // cadastro (64 das 66 já prontas) — cadastro foi para "Mais ações".
   const totalActive = activeFranchises.length;
+  const nVencidas = contagemSituacao[SITUACAO.VENCIDO] || 0;
+  // "A vencer" é fatura pendente com data (SITUACAO.PENDENTE). AGUARDANDO é cliente ASAAS
+  // SEM assinatura ainda — não existe fatura nenhuma para vencer, então não entra aqui
+  // (senão infla o número e confunde "falta cadastrar" com "tem cobrança a caminho").
+  const nAVencer = contagemSituacao[SITUACAO.PENDENTE] || 0;
+  const nPagas = contagemSituacao[SITUACAO.PAGO] || 0;
+  const valorVencidas = linhasCobranca
+    .filter(({ cls }) => cls.situacao === SITUACAO.VENCIDO)
+    .reduce((s, { cls }) => s + (cls.valor || 0), 0);
+
   const fiscalComplete = activeFranchises.filter(isFiscalComplete).length;
-  const registered = activeFranchises.filter(f => getSub(f.evolution_instance_id)?.asaas_customer_id).length;
   const withSubscription = activeFranchises.filter(f => getSub(f.evolution_instance_id)?.asaas_subscription_id).length;
   const pendingRegister = activeFranchises.filter(f => isFiscalComplete(f) && !getSub(f.evolution_instance_id)?.asaas_customer_id);
+  const semAssinatura = activeFranchises.length - withSubscription;
   const hasAnyActiveSub = activeFranchises.some(f => {
     const s = getSub(f.evolution_instance_id);
     return s?.asaas_subscription_id && s?.subscription_status !== "CANCELLED";
   });
 
+  // #20: o que era a primeira dobra (cadastro + reajuste em massa) agora mora aqui —
+  // 1 clique errado a menos entre "cobrar" e "reajustar o valor de todos".
+  const acoesCadastro = [
+    hasAnyActiveSub && {
+      label: `Atualizar valor de todos (R$ ${monthlyValue.toFixed(2).replace(".", ",")})`,
+      icon: "price_change",
+      onClick: () => { valorAntesDialogRef.current = monthlyValue; setShowValueDialog(true); },
+    },
+    pendingRegister.length > 0 && {
+      label: `Cadastrar ${pendingRegister.length} pendentes no ASAAS`,
+      icon: "cloud_upload",
+      disabled: creatingAll,
+      onClick: async () => {
+        setCreatingAll(true);
+        try {
+          const data = await invokeAsaas({
+            action: "register-batch",
+            franchise_ids: pendingRegister.map(f => f.evolution_instance_id),
+          });
+          const { ok, falhas } = resumoLote(data);
+          const nomeDe = (fid) => franchises.find(f => f.evolution_instance_id === fid)?.name || fid;
+          if (falhas.length === 0) {
+            toast.success(`${ok.length} franqueado(s) cadastrado(s) no ASAAS`);
+          } else {
+            toast.warning(
+              `${ok.length} cadastrado(s), ${falhas.length} com erro — ${falhas
+                .map(r => `${nomeDe(r.franchise_id)}: ${r.error}`)
+                .join(" · ")}`,
+              { duration: 15000 }
+            );
+          }
+          setTimeout(() => loadData(), 5000);
+        } catch (err) {
+          toast.error(safeErrorMessage(err, "Erro no cadastro batch."));
+        } finally {
+          setCreatingAll(false);
+        }
+      },
+    },
+    {
+      label: "Criar assinaturas",
+      icon: "autorenew",
+      onClick: () => { setExcludedSubIds(new Set()); setShowReview(true); },
+    },
+  ].filter(Boolean);
+
+  // #20: "Sincronizar com ASAAS" (nome que os runbooks/docs/claude/asaas.md citam) saiu do
+  // menu "Resolver"/"Mais ações" e virou botão-ícone SEMPRE visível (achado ALTO 26/09) —
+  // é a única ação de recuperação (fatura/assinatura apagada no painel do ASAAS) e ficava
+  // escondida atrás de 1-2 cliques justo quando o admin mais precisa dela.
+  const handleSyncAll = async () => {
+    setSyncingAll(true);
+    try {
+      const data = await invokeAsaas({ action: "check-payment-batch" });
+      const { total = 0, updated = 0, errors = [] } = data || {};
+      if (errors.length > 0) {
+        toast.warning(`${updated} de ${total} sincronizadas — ${errors.length} com erro`);
+      } else {
+        toast.success(`${updated} de ${total} franquias sincronizadas`);
+      }
+      await loadData();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Erro ao sincronizar com ASAAS"));
+    } finally {
+      setSyncingAll(false);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="space-y-4" aria-busy="true">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <Skeleton className="h-24 rounded-2xl motion-reduce:animate-none" />
+          <Skeleton className="h-24 rounded-2xl motion-reduce:animate-none" />
+          <Skeleton className="h-24 rounded-2xl motion-reduce:animate-none" />
+        </div>
+        <Skeleton className="h-10 w-full max-w-md rounded-full motion-reduce:animate-none" />
+        <Skeleton className="h-64 w-full rounded-2xl motion-reduce:animate-none" />
       </div>
     );
+  }
+
+  if (erro) {
+    return <ErrorState texto={erro} onTentarNovamente={() => { setIsLoading(true); loadData(); }} cartao />;
   }
 
   // Review screen before creating subscriptions
@@ -444,452 +592,255 @@ export default function AsaasSetupPanel() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowReview(false)} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <MaterialIcon icon="arrow_back" size={20} />
+          <button onClick={() => setShowReview(false)} className="p-1 hover:bg-surface rounded-lg transition-colors">
+            <MaterialIcon icon="arrow_back" size={20} aria-hidden="true" />
           </button>
           <h2 className="text-lg font-semibold font-plus-jakarta">Confirmar Assinaturas</h2>
         </div>
 
-        <Card className="bg-amber-50 border-amber-200">
-          <CardContent className="p-4 flex items-start gap-3">
-            <MaterialIcon icon="info" size={20} className="text-amber-600 mt-0.5" />
-            <div className="text-sm text-amber-800">
-              <p className="font-medium">Revise antes de confirmar</p>
-              <p>Serão criadas {selectedForSubscription.length} assinatura(s) de R$ {monthlyValue.toFixed(2).replace(".", ",")}/mês com vencimento no dia 5. Toque no ✕ para tirar alguma da lista (ex: franquias de teste).</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-warn/40 bg-warn-soft p-4 flex items-start gap-3">
+          <MaterialIcon icon="info" size={20} className="text-warn-ink mt-0.5" aria-hidden="true" />
+          <div className="text-sm text-ink">
+            <p className="font-medium">Revise antes de confirmar</p>
+            <p>Serão criadas {selectedForSubscription.length} assinatura(s) de R$ {monthlyValue.toFixed(2).replace(".", ",")}/mês com vencimento no dia 5. Toque no ✕ para tirar alguma da lista (ex: franquias de teste).</p>
+            <label className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium">Mensalidade (R$)</span>
+              <input
+                type="number"
+                min="5"
+                max="5000"
+                step="0.01"
+                value={monthlyValue}
+                onChange={e => setMonthlyValue(parseFloat(e.target.value) || 0)}
+                className="h-10 w-32 rounded-xl border border-surface-line bg-white px-3 text-sm"
+              />
+            </label>
+          </div>
+        </div>
 
         <div className="space-y-2">
           {readyForSubscription.map(f => {
             const config = getConfig(f.evolution_instance_id);
             const isExcluded = excludedSubIds.has(f.evolution_instance_id);
             return (
-              <Card key={f.id} className={`bg-white ${isExcluded ? "opacity-50" : ""}`}>
-                <CardContent className="p-3 flex items-center justify-between gap-2">
-                  <div className={isExcluded ? "line-through" : ""}>
-                    <p className="font-medium text-sm">{displayFranchiseName(f.name)}</p>
-                    <p className="text-xs text-gray-500 inline-flex items-center gap-1">
-                      {f.owner_name} —{" "}
-                      {maskCpfCnpj(f.cpf_cnpj, f.evolution_instance_id || f.id)}
-                      <button
-                        type="button"
-                        onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
-                        className="text-ink-2/40 hover:text-ink-2/70 transition-colors"
-                        title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
-                      >
-                        <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} />
-                      </button>
-                    </p>
-                    <p className="text-xs text-gray-400">{config?.street_address || f.city}</p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-medium text-gray-700">R$ {monthlyValue.toFixed(2).replace(".", ",")}</span>
+              <div key={f.id} className={`${CARTAO} flex items-center justify-between gap-2 ${isExcluded ? "opacity-50" : ""}`}>
+                <div className={isExcluded ? "line-through" : ""}>
+                  <p className="font-medium text-sm">{displayFranchiseName(f.name)}</p>
+                  <p className="text-xs text-ink-3 inline-flex items-center gap-1">
+                    {f.owner_name} —{" "}
+                    {revealedCpfs[f.evolution_instance_id || f.id] ? formatCpfCnpj(f.cpf_cnpj) : maskCpfCnpj(f.cpf_cnpj)}
                     <button
                       type="button"
-                      onClick={() => toggleExcludeSub(f.evolution_instance_id)}
-                      className={`p-1 rounded-lg transition-colors ${isExcluded ? "text-brand hover:bg-red-50" : "text-gray-400 hover:bg-gray-100 hover:text-brand"}`}
-                      title={isExcluded ? "Incluir de volta" : "Tirar da lista"}
+                      onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
+                      className="text-ink-3 hover:text-ink-2 transition-colors"
+                      title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
                     >
-                      <MaterialIcon icon={isExcluded ? "undo" : "close"} size={18} />
+                      <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} aria-hidden="true" />
                     </button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </p>
+                  <p className="text-xs text-ink-3">{config?.street_address || f.city}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-sm font-medium text-ink-2">R$ {monthlyValue.toFixed(2).replace(".", ",")}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleExcludeSub(f.evolution_instance_id)}
+                    className={`min-h-10 min-w-10 flex items-center justify-center rounded-lg transition-colors ${isExcluded ? "text-brand hover:bg-err/10" : "text-ink-3 hover:bg-surface hover:text-brand"}`}
+                    title={isExcluded ? "Incluir de volta" : "Tirar da lista"}
+                  >
+                    <MaterialIcon icon={isExcluded ? "undo" : "close"} size={18} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
             );
           })}
         </div>
 
         {readyForSubscription.length > 0 ? (
-          <Button
+          <button
             onClick={() => handleCreateAllSubscriptions(selectedIds)}
             disabled={creatingAll || selectedIds.length === 0}
-            className="w-full bg-brand hover:bg-brand-dark text-white"
+            className={`${BTN_PRIMARIO} w-full`}
           >
             {creatingAll ? (
               <>
-                <MaterialIcon icon="sync" size={18} className="animate-spin mr-2" />
+                <MaterialIcon icon="sync" size={18} className="animate-spin" aria-hidden="true" />
                 Criando assinaturas...
               </>
             ) : (
               <>
-                <MaterialIcon icon="send" size={18} className="mr-2" />
+                <MaterialIcon icon="send" size={18} aria-hidden="true" />
                 {selectedIds.length > 0 ? `Criar ${selectedIds.length} assinatura(s)` : "Selecione ao menos uma"}
               </>
             )}
-          </Button>
+          </button>
         ) : (
-          <p className="text-center text-sm text-gray-500">Nenhum franqueado pronto para assinatura. Cadastre no ASAAS primeiro.</p>
+          <p className="text-center text-sm text-ink-3">Nenhum franqueado pronto para assinatura. Cadastre no ASAAS primeiro.</p>
         )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Franquias ativas", value: totalActive, icon: "store", color: "#1b1c1d" },
-          { label: "Dados fiscais completos", value: `${fiscalComplete}/${totalActive}`, icon: "fact_check", color: fiscalComplete === totalActive ? "#15803d" : "#d4af37" },
-          { label: "No ASAAS", value: `${registered}/${totalActive}`, icon: "cloud_done", color: registered === totalActive ? "#15803d" : "#d4af37" },
-          { label: "Com assinatura", value: `${withSubscription}/${totalActive}`, icon: "autorenew", color: withSubscription === totalActive ? "#15803d" : "#d4af37" },
-        ].map(stat => (
-          <Card key={stat.label} className="bg-white">
-            <CardContent className="p-3 text-center">
-              <MaterialIcon icon={stat.icon} size={24} className="mx-auto mb-1" style={{ color: stat.color }} />
-              <p className="text-lg font-semibold" style={{ color: stat.color }}>{stat.value}</p>
-              <p className="text-xs text-gray-500">{stat.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Action buttons */}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="flex items-end gap-2 mr-auto">
-          <div>
-            <label className="text-xs font-medium text-gray-500 block mb-1">Mensalidade (R$)</label>
-            <Input
-              type="number"
-              min="5"
-              max="5000"
-              step="0.01"
-              value={monthlyValue}
-              onChange={e => setMonthlyValue(parseFloat(e.target.value) || 0)}
-              className="h-9 w-32 text-sm"
-            />
-          </div>
-          {hasAnyActiveSub && (
-            <Button
-              onClick={() => setShowValueDialog(true)}
-              variant="outline"
-              size="sm"
-              className="h-9"
-              title="Aplicar esse valor em todas as assinaturas ativas"
-            >
-              <MaterialIcon icon="price_change" size={16} className="mr-1" />
-              Atualizar valor de todos
-            </Button>
-          )}
+    <div className="space-y-5">
+      {/* #20: 3 números de COBRANÇA (o que importa no dia a dia), não de cadastro. */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className={CARTAO}>
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Vencidas</p>
+          <p className="mt-2 font-plus-jakarta text-2xl font-extrabold tabular-nums text-err sm:text-3xl">{nVencidas}</p>
+          {valorVencidas > 0 && <p className="mt-1 text-sm text-ink-2">{formatBRLInteger(valorVencidas)}</p>}
         </div>
-        {pendingRegister.length > 0 && (
-          <Button
-            onClick={async () => {
-              setCreatingAll(true);
-              try {
-                const data = await invokeAsaas({
-                  action: "register-batch",
-                  franchise_ids: pendingRegister.map(f => f.evolution_instance_id),
-                });
-                const { ok, falhas } = resumoLote(data);
-                const nomeDe = (fid) => franchises.find(f => f.evolution_instance_id === fid)?.name || fid;
-                if (falhas.length === 0) {
-                  toast.success(`${ok.length} franqueado(s) cadastrado(s) no ASAAS`);
-                } else {
-                  toast.warning(
-                    `${ok.length} cadastrado(s), ${falhas.length} com erro — ${falhas
-                      .map(r => `${nomeDe(r.franchise_id)}: ${r.error}`)
-                      .join(" · ")}`,
-                    { duration: 15000 }
-                  );
-                }
-                setTimeout(() => loadData(), 5000);
-              } catch (err) {
-                toast.error(safeErrorMessage(err, "Erro no cadastro batch."));
-              } finally {
-                setCreatingAll(false);
-              }
-            }}
-            variant="outline"
-            size="sm"
-            disabled={creatingAll}
-          >
-            <MaterialIcon icon={creatingAll ? "sync" : "cloud_upload"} size={16} className={`mr-1 ${creatingAll ? "animate-spin" : ""}`} />
-            {creatingAll ? "Cadastrando..." : `Cadastrar ${pendingRegister.length} pendentes no ASAAS`}
-          </Button>
-        )}
-        <Button onClick={() => { setExcludedSubIds(new Set()); setShowReview(true); }} variant="outline" size="sm">
-          <MaterialIcon icon="autorenew" size={16} className="mr-1" />
-          Criar assinaturas
-        </Button>
-        <Button
-          onClick={async () => {
-            setSyncingAll(true);
-            try {
-              const data = await invokeAsaas({ action: "check-payment-batch" });
-              const { total = 0, updated = 0, errors = [] } = data || {};
-              if (errors.length > 0) {
-                toast.warning(`${updated} de ${total} sincronizadas — ${errors.length} com erro`);
-              } else {
-                toast.success(`${updated} de ${total} franquias sincronizadas`);
-              }
-              await loadData();
-            } catch (err) {
-              toast.error(safeErrorMessage(err, "Erro ao sincronizar com ASAAS"));
-            } finally {
-              setSyncingAll(false);
-            }
-          }}
-          variant="outline"
-          size="sm"
-          disabled={syncingAll}
-          title="Consulta o ASAAS e atualiza o status de pagamento de todas as franquias com assinatura ativa"
-        >
-          <MaterialIcon icon={syncingAll ? "sync" : "cloud_sync"} size={16} className={`mr-1 ${syncingAll ? "animate-spin" : ""}`} />
-          {syncingAll ? "Sincronizando..." : "Sincronizar com ASAAS"}
-        </Button>
+        <div className={CARTAO}>
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-3">A vencer</p>
+          <p className="mt-2 font-plus-jakarta text-2xl font-extrabold tabular-nums text-ink sm:text-3xl">{nAVencer}</p>
+        </div>
+        <div className={CARTAO}>
+          <p className="text-xs font-bold uppercase tracking-wide text-ink-3">Pagas</p>
+          <p className="mt-2 font-plus-jakarta text-2xl font-extrabold tabular-nums text-ok-ink sm:text-3xl">{nPagas}</p>
+        </div>
       </div>
 
-      {/* Franchise table */}
-      {/* Chips de cobranca: contam PAGAMENTO (a linha de stats acima conta CADASTRO,
-          que e outra pergunta). Clicar filtra a tabela. */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          SITUACAO.SEM_COBRANCA,
-          SITUACAO.VENCIDO,
-          SITUACAO.AGUARDANDO,
-          SITUACAO.PENDENTE,
-          SITUACAO.PAGO,
-          SITUACAO.CANCELADA,
-        ].map((sit) => {
-          const n = contagemSituacao[sit] || 0;
-          if (n === 0) return null;
-          const ativo = situacaoFiltro === sit;
-          const urgente = sit === SITUACAO.SEM_COBRANCA || sit === SITUACAO.VENCIDO;
-          return (
-            <button
-              key={sit}
-              type="button"
-              onClick={() => setSituacaoFiltro(ativo ? null : sit)}
-              aria-pressed={ativo}
-              className={`px-3 min-h-[40px] rounded-lg border text-xs transition-colors ${
-                ativo
-                  ? "border-brand bg-brand/5 text-brand font-semibold"
-                  : urgente
-                    ? "border-err/30 bg-err/5 text-brand-dark font-medium hover:bg-err/10"
-                    : "border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface"
-              }`}
-            >
-              {SITUACAO_LABEL[sit]} <span className="font-semibold">{n}</span>
+      {/* Aviso quando falta cadastro — só aparece quando falta algo (B10: nunca texto morto). */}
+      {(semAssinatura > 0 || fiscalComplete < totalActive) && !franchiseParam && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warn/40 bg-warn-soft px-3 py-2.5 text-sm text-ink">
+          <span>
+            {semAssinatura} {semAssinatura === 1 ? "unidade ativa está" : "unidades ativas estão"} sem assinatura no ASAAS
+            {fiscalComplete < totalActive ? ` (${totalActive - fiscalComplete} com dado de cobrança faltando)` : ""}.
+          </span>
+          <div className="flex items-center gap-2">
+            <BotaoSincronizar syncingAll={syncingAll} onClick={handleSyncAll} />
+            <MaisAcoesMenu actions={acoesCadastro} rotulo="Resolver" />
+          </div>
+        </div>
+      )}
+      {!(semAssinatura > 0 || fiscalComplete < totalActive) && !franchiseParam && (
+        <div className="flex items-center justify-end gap-2">
+          <BotaoSincronizar syncingAll={syncingAll} onClick={handleSyncAll} />
+          <MaisAcoesMenu actions={acoesCadastro} />
+        </div>
+      )}
+
+      {franchiseParam && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-gold-line bg-brand-gold-soft px-3 py-2.5 text-sm">
+          <span className="text-ink-2">
+            Você veio de <strong className="text-ink">{nomeFranquiaFiltrada || "uma unidade"}</strong>
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <BotaoSincronizar syncingAll={syncingAll} onClick={handleSyncAll} />
+            <MaisAcoesMenu actions={acoesCadastro} />
+            {daFicha && (
+              <Link to={location.state.from} className="min-h-10 inline-flex items-center font-semibold text-brand-dark hover:underline">
+                ← Voltar para a ficha{nomeFranquiaFiltrada ? ` de ${nomeFranquiaFiltrada}` : ""}
+              </Link>
+            )}
+            <button type="button" onClick={limparFranquia} className="min-h-10 inline-flex items-center font-semibold text-brand-dark hover:underline">
+              Ver todas →
             </button>
-          );
-        })}
-        {situacaoFiltro && (
-          <button
-            type="button"
-            onClick={() => setSituacaoFiltro(null)}
-            className="px-3 min-h-[40px] rounded-lg text-xs text-ink-3 underline"
-          >
-            limpar filtro
-          </button>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="pb-2 font-medium">Franquia</th>
-              <th className="pb-2 font-medium">CPF/CNPJ</th>
-              <th className="pb-2 font-medium">Email cobrança</th>
-              <th className="pb-2 font-medium">Endereço</th>
-              <th className="pb-2 font-medium">ASAAS</th>
-              <th className="pb-2 font-medium">Assinatura</th>
-              <th className="pb-2 font-medium">Vencimento</th>
-              <th className="pb-2 font-medium">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* Chips de situação (F1-F3): contam PAGAMENTO. Somem quando a lista já está presa
+          numa unidade só (?franchise=). */}
+      {!franchiseParam && (
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+          {[
+            SITUACAO.VENCIDO,
+            SITUACAO.SEM_COBRANCA,
+            SITUACAO.AGUARDANDO,
+            SITUACAO.PENDENTE,
+            SITUACAO.PAGO,
+            SITUACAO.CANCELADA,
+          ].map((sit) => {
+            const n = contagemSituacao[sit] || 0;
+            if (n === 0) return null;
+            const ativo = situacaoFiltro === sit;
+            return (
+              <button
+                key={sit}
+                type="button"
+                onClick={() => setSituacaoFiltro(ativo ? null : sit)}
+                aria-pressed={ativo}
+                className={`${CHIP} ${ativo ? CHIP_ATIVO : CHIP_INATIVO}`}
+              >
+                {SITUACAO_LABEL[sit]} · {n}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {linhasVisiveis.length === 0 ? (
+        <EmptyState
+          icone="search_off"
+          titulo={franchiseParam ? "Essa unidade não está entre as ativas" : "Nenhuma unidade nesta situação"}
+          texto={franchiseParam ? "Pode ter sido encerrada." : "Escolha outra situação no filtro acima."}
+          acao={franchiseParam ? { rotulo: "Ver todas", onClick: limparFranquia } : { rotulo: "Limpar filtro", onClick: () => setSituacaoFiltro(null) }}
+          cartao
+        />
+      ) : (
+        // Sem overflow-hidden (achado ALTO 26/09): o menu "Mais ações"/"Ações" de cada
+        // linha é absolute e w-64 — nas últimas linhas ele saía da caixa e o overflow
+        // cortava o menu inteiro (também escondia o de ?franchise=, que é linha única).
+        // O container só precisa do overflow-hidden para o CABEÇALHO (bg própria); as
+        // linhas não têm bg própria, então não sobram cantos quadrados visíveis.
+        <div className="rounded-2xl border border-surface-line bg-white">
+          {/* Cabeçalho desktop */}
+          <div className="hidden gap-3 rounded-t-2xl border-b border-surface-line bg-surface-2 px-5 py-3 text-xs font-bold uppercase tracking-wide text-ink-3 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto]">
+            <span>Unidade</span>
+            <span>Situação</span>
+            <span>Vencimento</span>
+            <span>Valor</span>
+            <span className="sr-only">Ação</span>
+          </div>
+          <div className="divide-y divide-surface-line">
             {linhasVisiveis.map(({ f, cls }) => {
-              const config = getConfig(f.evolution_instance_id);
               const sub = getSub(f.evolution_instance_id);
-              const isEditingThis = f.id in editingCpf;
-
+              const missing = getMissing(f);
+              const acaoProps = {
+                f, cls, sub, missing,
+                phone: telefoneCobranca(f),
+                criando: creatingAsaas[f.evolution_instance_id],
+                onCriar: () => handleCreateAsaas(f),
+                onEditarFiscal: () => setEditingFiscal({ franchise: f, config: getConfig(f.evolution_instance_id) }),
+                onCancelar: () => setCancellingSub(f),
+              };
               return (
-                <tr key={f.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="py-3">
-                    <p className="font-medium">{displayFranchiseName(f.name)}</p>
-                    <p className="text-xs text-gray-500">{f.owner_name}</p>
-                  </td>
-                  <td className="py-3">
-                    {f.cpf_cnpj && !isEditingThis ? (
-                      <span className="inline-flex items-center gap-1">
-                        <button
-                          onClick={() => setEditingCpf(prev => ({ ...prev, [f.id]: f.cpf_cnpj }))}
-                          className="text-sm hover:underline cursor-pointer"
-                        >
-                          {maskCpfCnpj(f.cpf_cnpj, f.evolution_instance_id || f.id)}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={e => { e.stopPropagation(); toggleCpfReveal(f.evolution_instance_id || f.id); }}
-                          className="text-ink-2/40 hover:text-ink-2/70 transition-colors"
-                          title={revealedCpfs[f.evolution_instance_id || f.id] ? "Ocultar" : "Revelar"}
-                        >
-                          <MaterialIcon icon={revealedCpfs[f.evolution_instance_id || f.id] ? "visibility_off" : "visibility"} size={14} />
-                        </button>
-                      </span>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          value={formatCpfCnpj(editingCpf[f.id] || "")}
-                          onChange={e => {
-                            const digits = e.target.value.replace(/\D/g, "").slice(0, 14);
-                            setEditingCpf(prev => ({ ...prev, [f.id]: digits }));
-                          }}
-                          placeholder="000.000.000-00"
-                          className="h-8 w-40 text-sm"
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleSaveCpf(f)}
-                          disabled={savingCpf[f.id]}
-                          className="h-8 w-8 p-0"
-                        >
-                          <MaterialIcon icon={savingCpf[f.id] ? "sync" : "check"} size={16} className={savingCpf[f.id] ? "animate-spin" : "text-ok"} />
-                        </Button>
-                        {f.cpf_cnpj && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingCpf(prev => { const n = { ...prev }; delete n[f.id]; return n; })}
-                            className="h-8 w-8 p-0"
-                          >
-                            <MaterialIcon icon="close" size={16} className="text-gray-400" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3">
-                    {f.billing_email && !(f.id in editingEmail) ? (
-                      <button
-                        onClick={() => setEditingEmail(prev => ({ ...prev, [f.id]: f.billing_email }))}
-                        className="text-xs hover:underline cursor-pointer max-w-[180px] truncate text-left"
-                        title={f.billing_email}
-                      >
-                        {f.billing_email}
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="email"
-                          value={editingEmail[f.id] || ""}
-                          onChange={e => setEditingEmail(prev => ({ ...prev, [f.id]: e.target.value }))}
-                          placeholder="email@exemplo.com"
-                          className="h-8 w-52 text-xs"
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleSaveEmail(f)}
-                          disabled={savingEmail[f.id]}
-                          className="h-8 w-8 p-0"
-                        >
-                          <MaterialIcon icon={savingEmail[f.id] ? "sync" : "check"} size={16} className={savingEmail[f.id] ? "animate-spin" : "text-ok"} />
-                        </Button>
-                        {f.billing_email && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingEmail(prev => { const n = { ...prev }; delete n[f.id]; return n; })}
-                            className="h-8 w-8 p-0"
-                          >
-                            <MaterialIcon icon="close" size={16} className="text-gray-400" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3">
-                    <p className="text-xs text-gray-600 max-w-[200px] truncate">
-                      {config?.street_address || "—"}
-                      {f.address_number ? `, ${f.address_number}` : ""}
-                      {f.address_complement ? ` — ${f.address_complement}` : ""}
+                <div key={f.id}>
+                  {/* Celular (T9): nome + situação · vencimento+valor · ação. */}
+                  <div className="p-4 md:hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="min-w-0 truncate font-semibold text-ink">{nomeCurto(f.name)}</p>
+                      <SubscriptionBadge sub={sub} />
+                    </div>
+                    <p className="mt-1 text-sm tabular-nums text-ink-2">
+                      {cls.vencimento ? formatDateOnly(cls.vencimento) : "sem vencimento"}
+                      {cls.valor != null ? ` · ${formatBRL(cls.valor)}` : ""}
                     </p>
-                    <p className="text-xs text-gray-400">{f.city}{f.state_uf ? ` - ${f.state_uf}` : ""}</p>
-                  </td>
-                  <td className="py-3">
-                    <StatusBadge status={sub?.subscription_status} asaasId={sub?.asaas_customer_id} cpfCnpj={f.cpf_cnpj} />
-                  </td>
-                  <td className="py-3">
-                    <SubscriptionBadge sub={sub} />
-                  </td>
-                  <td className="py-3 whitespace-nowrap">
-                    {cls.vencimento ? (
-                      <span className={cls.diasAtraso > 0 ? "text-err font-medium" : "text-ink-2"}>
-                        {formatDateOnly(cls.vencimento)}
-                        {cls.valor != null && (
-                          <span className="text-xs text-gray-500"> · {formatBRL(cls.valor)}</span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="py-3">
-                    {(() => {
-                      const missing = getMissing(f);
-                      const missingBtn = missing.length > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => setEditingFiscal({ franchise: f, config: getConfig(f.evolution_instance_id) })}
-                          className="inline-flex items-center gap-1 text-xs text-brand-gold hover:text-brand hover:underline cursor-pointer"
-                          title={`Faltam: ${missing.join(", ")}. Clique para preencher.`}
-                        >
-                          <MaterialIcon icon="warning" size={14} />
-                          Faltam {missing.length} campo{missing.length > 1 ? "s" : ""}
-                        </button>
-                      ) : null;
+                    <div className="mt-2">
+                      <AcaoLinha {...acaoProps} />
+                    </div>
+                  </div>
 
-                      // Tem sub ativa → Cancelar + warning de campos faltantes (NFe precisa)
-                      if (sub?.asaas_subscription_id) {
-                        return (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setCancellingSub(f)}
-                              className="h-7 text-xs text-gray-500 hover:text-err hover:bg-err/5"
-                              title="Cancelar assinatura"
-                            >
-                              <MaterialIcon icon="block" size={14} className="mr-1" />
-                              Cancelar
-                            </Button>
-                            {missingBtn}
-                          </div>
-                        );
-                      }
-                      // Customer sem sub → só warning (subscribe-batch cria a sub)
-                      if (sub?.asaas_customer_id) return missingBtn;
-                      // Sem customer e tem campos faltantes → warning para preencher
-                      if (missing.length > 0) return missingBtn;
-                      // Tudo completo, sem customer ainda → Criar
-                      return (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleCreateAsaas(f)}
-                          disabled={creatingAsaas[f.evolution_instance_id]}
-                          className="h-7 text-xs"
-                        >
-                          {creatingAsaas[f.evolution_instance_id] ? (
-                            <MaterialIcon icon="sync" size={14} className="animate-spin" />
-                          ) : (
-                            "Criar"
-                          )}
-                        </Button>
-                      );
-                    })()}
-                  </td>
-                </tr>
+                  {/* Desktop: colunas alinhadas com o cabeçalho. */}
+                  <div className="hidden items-center gap-3 px-5 py-3.5 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto]">
+                    <div className="min-w-0">
+                      <p className="font-semibold leading-snug text-ink">{displayFranchiseName(f.name)}</p>
+                      <p className="truncate text-sm text-ink-3">{f.owner_name}</p>
+                    </div>
+                    <SubscriptionBadge sub={sub} />
+                    <span className={cls.diasAtraso > 0 ? "text-err font-medium" : "text-ink-2"}>
+                      {cls.vencimento ? formatDateOnly(cls.vencimento) : <span className="text-ink-3">—</span>}
+                    </span>
+                    <span className="tabular-nums text-ink-2">{cls.valor != null ? formatBRL(cls.valor) : <span className="text-ink-3">—</span>}</span>
+                    <AcaoLinha {...acaoProps} />
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialog: cancelar assinatura */}
       <Dialog
@@ -899,7 +850,7 @@ export default function AsaasSetupPanel() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-err">
-              <MaterialIcon icon="block" size={20} />
+              <MaterialIcon icon="block" size={20} aria-hidden="true" />
               Cancelar assinatura
             </DialogTitle>
           </DialogHeader>
@@ -908,11 +859,11 @@ export default function AsaasSetupPanel() {
               Confirmar cancelamento da assinatura de{" "}
               <strong>{cancellingSub?.name}</strong>?
             </p>
-            <ul className="space-y-1 text-xs list-disc list-inside bg-gray-50 p-3 rounded-lg">
+            <ul className="space-y-1 text-xs list-disc list-inside bg-surface p-3 rounded-lg">
               <li>Cobrança recorrente mensal será encerrada no ASAAS</li>
               <li>Fatura pendente do mês também será cancelada</li>
               <li>Cliente ASAAS será mantido (permite recriar assinatura depois)</li>
-              <li className="font-semibold text-brand">A franquia NÃO será desativada</li>
+              <li className="font-semibold text-brand-dark">A franquia NÃO será desativada</li>
             </ul>
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -931,7 +882,7 @@ export default function AsaasSetupPanel() {
             >
               {isCancelling ? (
                 <>
-                  <MaterialIcon icon="sync" size={16} className="animate-spin mr-2" />
+                  <MaterialIcon icon="sync" size={16} className="animate-spin mr-2" aria-hidden="true" />
                   Cancelando...
                 </>
               ) : (
@@ -947,6 +898,8 @@ export default function AsaasSetupPanel() {
         open={showValueDialog}
         onOpenChange={(open) => {
           if (!open && !isUpdatingValue) {
+            // Cancelar não pode deixar o valor digitado aqui valendo para a próxima "Criar assinaturas".
+            if (valorAntesDialogRef.current != null) setMonthlyValue(valorAntesDialogRef.current);
             setShowValueDialog(false);
             setApplyToCurrent(false);
           }
@@ -955,12 +908,24 @@ export default function AsaasSetupPanel() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
-              <MaterialIcon icon="price_change" size={20} />
+              <MaterialIcon icon="price_change" size={20} aria-hidden="true" />
               Atualizar valor da mensalidade
             </DialogTitle>
           </DialogHeader>
           <div className="py-2 space-y-4 text-sm text-ink-2">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-xs font-medium text-ink-3">Novo valor (R$)</span>
+              <input
+                type="number"
+                min="5"
+                max="5000"
+                step="0.01"
+                value={monthlyValue}
+                onChange={e => setMonthlyValue(parseFloat(e.target.value) || 0)}
+                className="h-11 w-40 rounded-xl border border-surface-line px-3 text-sm"
+              />
+            </label>
+            <div className="rounded-lg border border-warn/40 bg-warn-soft p-3 text-xs text-ink">
               Serão atualizadas <strong>{withSubscription}</strong> franquias com assinatura ativa para <strong>R$ {monthlyValue.toFixed(2)}</strong>.
             </div>
             <label className="flex items-start gap-2 cursor-pointer select-none">
@@ -971,7 +936,7 @@ export default function AsaasSetupPanel() {
               />
               <span className="text-xs">
                 <strong className="block">Aplicar também à fatura pendente do mês atual</strong>
-                <span className="text-ink-2/70">
+                <span className="text-ink-3">
                   Refaz fatura + gera PIX novo. Se desmarcado, só próximos ciclos usam o novo valor.
                 </span>
               </span>
@@ -993,7 +958,7 @@ export default function AsaasSetupPanel() {
             >
               {isUpdatingValue ? (
                 <>
-                  <MaterialIcon icon="sync" size={16} className="animate-spin mr-2" />
+                  <MaterialIcon icon="sync" size={16} className="animate-spin mr-2" aria-hidden="true" />
                   Atualizando...
                 </>
               ) : (
@@ -1004,7 +969,8 @@ export default function AsaasSetupPanel() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: editar dados fiscais (preenche campos faltantes para ASAAS) */}
+      {/* Dialog: editar dados de cobrança (CPF/CNPJ, email, endereço) — único ponto de
+          edição desses campos (#13: saíram da linha da tabela). */}
       <Dialog
         open={!!editingFiscal}
         onOpenChange={(open) => { if (!open && !isSavingFiscal) setEditingFiscal(null); }}
@@ -1016,13 +982,19 @@ export default function AsaasSetupPanel() {
             return (
               <div>
                 <DialogHeader className="sr-only">
-                  <DialogTitle>Editar dados fiscais de {displayFranchiseName(f.name)}</DialogTitle>
+                  <DialogTitle>Dados de cobrança de {displayFranchiseName(f.name)}</DialogTitle>
                 </DialogHeader>
-                <div className="px-5 pt-4 pb-3 bg-amber-50 border-b border-amber-200 flex items-start gap-2">
-                  <MaterialIcon icon="info" size={18} className="text-amber-700 mt-0.5 shrink-0" />
-                  <div className="text-xs text-amber-800">
-                    <p className="font-semibold">Após salvar, clique em "Criar" na linha para cadastrar no ASAAS.</p>
-                    <p>Se a franquia já tem assinatura ativa, recadastre depois para sincronizar os novos dados na cobrança.</p>
+                <div className="px-5 pt-4 pb-3 bg-brand-gold-soft border-b border-brand-gold-line flex items-start gap-2">
+                  <MaterialIcon icon="info" size={18} className="text-brand-dark mt-0.5 shrink-0" aria-hidden="true" />
+                  <div className="text-xs text-ink">
+                    {/* O nome do menu varia por linha (vencido = "Mais ações", resto =
+                        "Ações") — texto genérico ("menu da linha") em vez de citar um
+                        nome. Nunca orientar recadastro por troca de documento: cria
+                        cliente DUPLICADO no ASAAS (CLAUDE.md, docs/claude/asaas.md); a
+                        troca de CPF/CNPJ já é tratada na hora, no diálogo que abre ao
+                        salvar (achado ALTO 26/09). */}
+                    <p className="font-semibold">Após salvar, se ainda não tem cadastro no ASAAS, use "Cadastrar no ASAAS" no menu da linha.</p>
+                    <p>Troca de CPF/CNPJ é tratada na hora, na janela que abre ao salvar.</p>
                   </div>
                 </div>
                 <FranchiseForm

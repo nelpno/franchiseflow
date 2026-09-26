@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { PurchaseOrder, PurchaseOrderItem, getPedidoModelo } from "@/entities/all";
-import { supabase } from "@/api/supabaseClient";
 import { quantidadesDoModelo } from "@/lib/pedidoModelo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

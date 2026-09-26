@@ -213,7 +213,7 @@ function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }
             </div>
           </div>
 
-          {paradosCount > 0 && (
+          {paradosCount > 0 && onClickEstoque && (
             <button
               onClick={onClickEstoque}
               className="mt-3 pt-3 border-t border-ink-shadow/5 w-full flex items-center justify-between text-xs text-brand-gold-ink hover:text-brand-gold-ink transition-colors group"
@@ -374,13 +374,15 @@ function CardMaisVendidos({ topProducts, onSeeAll }) {
           ))}
         </div>
 
-        <button
-          onClick={onSeeAll}
-          className="text-xs text-brand hover:text-brand-dark font-medium mt-4 flex items-center gap-1 self-start"
-        >
-          Ver todas as vendas
-          <MaterialIcon icon="arrow_forward" size={14} />
-        </button>
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="text-xs text-brand hover:text-brand-dark font-medium mt-4 flex items-center gap-1 self-start"
+          >
+            Ver todas as vendas
+            <MaterialIcon icon="arrow_forward" size={14} />
+          </button>
+        )}
       </CardContent>
     </Card>
   );
@@ -779,9 +781,18 @@ function ResumoAnoCard({ resumo }) {
 }
 
 // --------------------------------------------------------------- main TabResultado
-export default function TabResultado({ franchiseId, currentUser, contacts = [] }) {
+// #34: o admin chega aqui pelo link "Resultado" do Fechamento com o MÊS que estava vendo
+// (?mes=yyyy-MM) — sem isso a tela sempre abria no mês atual e o admin perdia o contexto
+// de onde clicou. 'yyyy-MM' -> Date do dia 1 daquele mês; formato errado cai no mês atual.
+function mesInicial(initialMonth) {
+  if (!/^\d{4}-\d{2}$/.test(String(initialMonth || ""))) return new Date();
+  const d = parseISO(`${initialMonth}-01`);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+export default function TabResultado({ franchiseId, currentUser, contacts = [], hideFranchiseeLinks = false, initialMonth = null }) {
   const navigate = useNavigate();
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [selectedMonth, setSelectedMonth] = useState(() => mesInicial(initialMonth));
   const [sales, setSales] = useState([]);
   const [saleItems, setSaleItems] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -1025,9 +1036,11 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [] }
       toast.error("Erro ao excluir despesa.");
     }
   };
-  const handleClickEstoque = () => navigate("/Gestao?tab=estoque");
+  // No admin (FinanceiroPorUnidade), /Gestao e /Vendas redirecionam pro Dashboard — não são
+  // dele. hideFranchiseeLinks tira os dois links; o resto da tela é igual à do franqueado.
+  const handleClickEstoque = hideFranchiseeLinks ? null : () => navigate("/Gestao?tab=estoque");
   const handleLancarCompra = () => setLancarCompraOpen(true);
-  const handleVerVendas = () => navigate("/Vendas");
+  const handleVerVendas = hideFranchiseeLinks ? null : () => navigate("/Vendas");
 
   // Relatório do mês em PDF: os mesmos dados que a tela já carregou (nenhuma consulta nova
   // de venda/despesa) + o retorno do anúncio, buscado só no clique — 1 chamada leve por mês.

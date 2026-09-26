@@ -20,10 +20,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { DailyUniqueContact, Sale, OnboardingChecklist } from "@/entities/all";
+import { OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { useAdminPendingCounts } from "@/hooks/useAdminPendingCounts";
-import { format } from "date-fns";
 import { getAvailableFranchises, getPrimaryFranchise, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
 import { listarFranquias } from "@/lib/franchisesCache";
@@ -178,8 +177,6 @@ function MaisBottomNavButton() {
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const { logout, user: currentUser, selectedFranchise, setSelectedFranchise, welcomeSeen } = useAuth();
-  const [todaySales, setTodaySales] = useState(0);
-  const [todayContacts, setTodayContacts] = useState(0);
   const [onboardingApproved, setOnboardingApproved] = useState(false);
   const [hasActiveOnboarding, setHasActiveOnboarding] = useState(false);
   const [onboardingLoaded, setOnboardingLoaded] = useState(false);
@@ -204,7 +201,6 @@ export default function Layout({ children, currentPageName }) {
     setNeedsOnboardingWelcome(false);
 
     if (currentUser.role === "admin" || currentUser.role === "manager") {
-      loadQuickStats();
       setOnboardingLoaded(true);
       return () => { cancelado = true; mountedRef.current = false; };
     }
@@ -296,24 +292,6 @@ export default function Layout({ children, currentPageName }) {
     return () => window.removeEventListener("onboarding-status-changed", handler);
   }, []);
 
-  const loadQuickStats = async () => {
-    try {
-      const today = format(new Date(), "yyyy-MM-dd");
-      const results = await Promise.allSettled([
-        DailyUniqueContact.filter({ date: today }),
-        // Só as vendas de HOJE (id apenas): elimina o teto silencioso de 50/dia e o select('*').
-        Sale.filter({ sale_date: today }, null, null, { columns: 'id' }),
-      ]);
-      if (!mountedRef.current) return;
-      const contactsData = results[0].status === "fulfilled" ? results[0].value : [];
-      const salesData = results[1].status === "fulfilled" ? results[1].value : [];
-      setTodayContacts(contactsData.length);
-      setTodaySales(salesData.length);
-    } catch (error) {
-      console.error("Erro ao carregar estatísticas rápidas:", error);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -389,7 +367,9 @@ export default function Layout({ children, currentPageName }) {
             <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} />
             <span className="text-sm flex-1">{item.title}</span>
             {badgeCount > 0 && (
-              <span className="text-[11px] font-bold bg-brand text-white rounded-full px-2 py-0.5 leading-none">
+              // Neutro (R3 do padrão): nenhum dos contadores de hoje (pedidos pra confirmar,
+              // verba a confirmar) é atraso — vermelho fica reservado pra isso.
+              <span className="text-[11px] font-bold bg-surface-2 text-ink-2 border border-surface-line rounded-full px-2 py-0.5 leading-none">
                 {badgeCount}
               </span>
             )}

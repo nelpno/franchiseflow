@@ -1,22 +1,25 @@
+import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatBRLMil, formatPct1, formatPontos, mesAtualLabel, trechoMesAnteriorLabel, nomeMesAnterior } from "./hojeFormat";
+import { formatBRLInteger, formatPct } from "@/lib/formatters";
+import { formatPontos, mesAtualLabel, trechoMesAnteriorLabel } from "./hojeFormat";
+import { CARTAO } from "@/components/shared/adminUi";
 
-function Cartao({ children }) {
-  return (
-    <div className="bg-white p-5 rounded-2xl border border-ink-shadow/5 shadow-sm flex flex-col gap-2 min-w-0">
-      {children}
-    </div>
-  );
+// K9: 1º cartão (o faturamento) ocupa as 2 colunas no celular; os outros dois ficam
+// lado a lado. No desktop os 3 dividem a linha igualmente.
+function Cartao({ destaque, children }) {
+  return <div className={`${CARTAO} flex min-w-0 flex-col gap-2 ${destaque ? "col-span-2 md:col-span-1" : ""}`}>{children}</div>;
 }
 
+// K6: rótulo em 1 linha no celular — por isso os textos curtos abaixo (achado médio
+// 26/09: "UNIDADES QUE VENDERAM NOS ÚLTIMOS 7 DIAS" quebrava em 2 linhas no celular).
 function Rotulo({ children }) {
-  return <p className="text-[13px] font-bold text-ink-2 tracking-wide">{children}</p>;
+  return <p className="whitespace-nowrap text-xs font-bold uppercase tracking-wide text-ink-3">{children}</p>;
 }
 
 function Valor({ children }) {
   return (
-    <p className="font-plus-jakarta text-[28px] md:text-[32px] font-extrabold text-ink tracking-tight tabular-nums truncate">
+    <p className="font-plus-jakarta text-2xl font-extrabold tabular-nums tracking-tight text-ink sm:text-3xl truncate">
       {children}
     </p>
   );
@@ -24,18 +27,22 @@ function Valor({ children }) {
 
 // 3 cartões do topo de "Hoje": faturamento, unidades ativas em 7d, conversão robô→compra.
 // resumo = resumoRede(overview) de src/lib/networkOverview.js (fonte única com "Unidades").
-export default function ResumoRedeCards({ resumo, funil }) {
-  const trechoAnterior = trechoMesAnteriorLabel();
+// mes = 'YYYY-MM' do banco (mesesVerba(overview).mes), nunca o relógio do aparelho.
+export default function ResumoRedeCards({ resumo, funil, mes }) {
+  const trechoAnterior = trechoMesAnteriorLabel(mes);
+  const semVenda7d = resumo.total - resumo.venderam7d;
 
   return (
-    <section aria-label="Como está a rede" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Cartao>
-        <Rotulo>FATURAMENTO DA REDE · {mesAtualLabel()}</Rotulo>
-        <Valor>{formatBRLMil(resumo.receitaMes)}</Valor>
+    <section aria-label="Como está a rede" className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+      <Cartao destaque>
+        <Rotulo>REDE · {mesAtualLabel(mes)}</Rotulo>
+        <Valor>{formatBRLInteger(resumo.receitaMes)}</Valor>
         {resumo.deltaPct !== null ? (
           <p className={`text-sm ${resumo.deltaPct >= 0 ? "text-ok-ink" : "text-warn-ink"}`}>
-            {resumo.deltaPct >= 0 ? "+" : ""}
-            {formatPct1(resumo.deltaPct)} {trechoAnterior} ({formatBRLMil(resumo.receitaAnterior)})
+            <span className="font-semibold">{formatPct(resumo.deltaPct, { sinal: true })}</span>{" "}
+            <span className="text-ink-2">
+              {trechoAnterior} ({formatBRLInteger(resumo.receitaAnterior)})
+            </span>
           </p>
         ) : (
           <p className="text-sm text-ink-3">Sem base de comparação ainda</p>
@@ -43,17 +50,23 @@ export default function ResumoRedeCards({ resumo, funil }) {
       </Cartao>
 
       <Cartao>
-        <Rotulo>UNIDADES QUE VENDERAM NOS ÚLTIMOS 7 DIAS</Rotulo>
+        <Rotulo>VENDERAM EM 7 DIAS</Rotulo>
         <Valor>
-          {resumo.venderam7d} <span className="text-lg md:text-xl text-ink-3 font-semibold">de {resumo.total}</span>
+          {resumo.venderam7d} <span className="text-lg text-ink-3 font-semibold md:text-xl">de {resumo.total}</span>
         </Valor>
-        <p className="text-sm text-ink-2">
-          No mês: {resumo.abaixo} abaixo, {resumo.acima} acima de {nomeMesAnterior()}
-        </p>
+        {/* Item 18: era um 2º número (abaixo/acima de agosto, sem piso) para a mesma
+            pergunta que "sem venda 7+ dias" já responde, e não levava a ação nenhuma. */}
+        {semVenda7d > 0 ? (
+          <Link to="/Unidades?filtro=sem_venda" state={{ from: "hoje" }} className="text-sm font-semibold text-err hover:underline">
+            {semVenda7d} sem venda há 7+ dias →
+          </Link>
+        ) : (
+          <p className="text-sm text-ink-3">Todas venderam nos últimos 7 dias</p>
+        )}
       </Cartao>
 
       <Cartao>
-        <Rotulo>QUEM FALA COM O ROBÔ E COMPRA · {mesAtualLabel()}</Rotulo>
+        <Rotulo>ROBÔ → COMPRA</Rotulo>
         {funil.isLoading ? (
           <Skeleton className="h-9 w-24 rounded-lg" />
         ) : funil.error ? (
@@ -65,10 +78,16 @@ export default function ResumoRedeCards({ resumo, funil }) {
           <p className="text-sm text-ink-3">Sem dado suficiente ainda</p>
         ) : (
           <>
-            <Valor>{formatPct1(funil.pct)}</Valor>
+            <Valor>{formatPct(funil.pct)}</Valor>
             {funil.prevPct !== null ? (
               <p className={`text-sm ${funil.pct - funil.prevPct >= 0 ? "text-ok-ink" : "text-warn-ink"}`}>
-                {formatPontos(funil.pct - funil.prevPct)} contra {nomeMesAnterior()} ({formatPct1(funil.prevPct)})
+                <span className="font-semibold">{formatPontos(funil.pct - funil.prevPct)}</span>{" "}
+                <span className="text-ink-2">
+                  {trechoAnterior} ({formatPct(funil.prevPct)})
+                  {/* network_reached (item 40): coluna nova, ainda não aplicada — o texto
+                      "· N pessoas" só aparece depois do SQL admin-12 ir para o ar. */}
+                  {funil.pessoas != null ? ` · ${funil.pessoas.toLocaleString("pt-BR")} pessoas` : ""}
+                </span>
               </p>
             ) : (
               <p className="text-sm text-ink-3">Sem base de comparação ainda</p>

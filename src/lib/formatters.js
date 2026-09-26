@@ -38,3 +38,22 @@ export function formatBRLCompact(value) {
   if (v >= 1000) return `R$ ${(v / 1000).toFixed(1).replace(".", ",")}k`;
   return `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
 }
+
+/**
+ * Percentual em pt-BR, com vírgula e o sinal de menos tipográfico (U+2212).
+ *   formatPct(-27.34)               → "−27,3%"
+ *   formatPct(13.2, { sinal: true }) → "+13,2%"
+ *   formatPct(27.3, { casas: 0 })    → "27%"
+ * `sinal: true` põe "+" nos positivos (delta). null/undefined/"" → "" (a tela decide o traço).
+ */
+export function formatPct(value, { sinal = false, casas = 1 } = {}) {
+  if (value === null || value === undefined || value === "") return "";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  const fator = 10 ** casas;
+  const r = Math.round(Math.abs(n) * fator) / fator;
+  const corpo = r.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
+  if (r === 0) return `${corpo}%`;
+  if (n < 0) return `−${corpo}%`;
+  return `${sinal ? "+" : ""}${corpo}%`;
+}

@@ -225,19 +225,13 @@ export const Contact = createEntity('contacts');
 
 export const Notification = createEntity('notifications');
 export const FranchiseInvite = createEntity('franchise_invites');
-export const MarketingFile = createEntity('marketing_files');
 export const SaleItem = createEntity('sale_items');
 export const Expense = createEntity('expenses');
 export const PurchaseOrder = createEntity('purchase_orders');
 export const PurchaseOrderItem = createEntity('purchase_order_items');
 export const AuditLog = createEntity('audit_logs');
-export const FranchiseNote = createEntity('franchise_notes');
 export const MarketingPayment = createEntity('marketing_payments');
 export const MarketingMetaDeposit = createEntity('marketing_meta_deposits');
-export const ConversationMessage = createEntity('conversation_messages');
-// Usa view vw_bot_conversations: exclui manual_sale e duplicate_stale do funil do bot (fix SAVE-1, 2026-04-19).
-// Para write/raw: usar supabase.from('bot_conversations') diretamente.
-export const BotConversation = createEntity('vw_bot_conversations');
 export const SystemSubscription = createEntity('system_subscriptions');
 
 // RPC helpers
@@ -261,18 +255,6 @@ export async function getFranchiseRankingMonthly(yearMonth, franchiseId, { signa
   const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
   if (error) throw error;
   return data?.[0] ?? null;
-}
-
-// Fechamento do mes: uma linha por unidade com faturamento, delta vs mes anterior, lucro
-// em caixa, vendas sem baixa, verba de marketing e mensalidade. Antes isso exigia tres
-// telas que nao se cruzam. O lucro sai da MESMA conta do franqueado (a RPC copia
-// calculatePnL, inclusive a regra de taxa repassada nao ser custo).
-export async function getFechamentoMensal(yearMonth, { signal } = {}) {
-  let query = supabase.rpc('get_fechamento_mensal', { p_month: yearMonth });
-  if (signal) query = query.abortSignal(signal);
-  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
-  if (error) throw error;
-  return data || [];
 }
 
 // Retorno da verba de marketing, por unidade e por mes.
@@ -376,12 +358,26 @@ export async function addDefaultProduct({ name, category, unit, costPrice, minSt
 }
 
 // --- Customer Success Cockpit ---
-export async function getFranchiseHealthSignals({ signal } = {}) {
-  let query = supabase.rpc('get_franchise_health_signals');
+// Mural rápido (26/09/2026): lê o cache que reconcile_cs_auto_tasks grava
+// (franchise_health_cache, RLS = is_cs_or_admin) em vez de recalcular a saúde da rede ao
+// vivo (~5 s). Devolve as MESMAS chaves da get_franchise_health_signals
+// ({...signals, franchise_id, tier, flags, is_standout}) + computed_at, para o Mural
+// decidir se o cache está velho e reconciliar em segundo plano.
+export async function getFranchiseHealthCache({ signal } = {}) {
+  let query = supabase
+    .from('franchise_health_cache')
+    .select('franchise_id,tier,flags,is_standout,signals,computed_at');
   if (signal) query = query.abortSignal(signal);
   const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
   if (error) throw error;
-  return data || [];
+  return (data || []).map((r) => ({
+    ...(r.signals || {}),
+    franchise_id: r.franchise_id,
+    tier: r.tier,
+    flags: r.flags || [],
+    is_standout: !!r.is_standout,
+    computed_at: r.computed_at,
+  }));
 }
 
 // Dono e telefone de cada unidade, para o Mural do CS. RPC PROPRIA de proposito: a
@@ -428,6 +424,29 @@ export async function getAdminNetworkOverview({ signal } = {}) {
   return data || [];
 }
 
+// Ficha da unidade (/Unidade?id=<evo>): jsonb ~8 KB com cabeçalho, saúde/tier, vendas por
+// semana, robô, marketing, clientes, pedidos à fábrica, assinatura, onboarding e cartões do
+// Mural. null = unidade inexistente ou sem acesso (a RPC filtra por papel).
+export async function getUnitDetail(franchiseId, { signal } = {}) {
+  if (!franchiseId) return null;
+  let query = supabase.rpc('get_unit_360', { p_evo: franchiseId });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data ?? null;
+}
+
+// Financeiro > "Fechamento do mês": 1 linha por unidade (não teste; ativa ou com venda no
+// mês), ~35 KB. yearMonth = 'YYYY-MM'. Sem acesso, mês inválido ou futuro: [].
+// SQL: supabase/2026-09-26-admin-06-financeiro-rede.sql
+export async function getFinanceiroRede(yearMonth, { signal } = {}) {
+  let query = supabase.rpc('get_financeiro_rede', { p_month: yearMonth });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
 // Contadores de "Pendências" (substituem as notificações de pedido/pagamento).
 // Só admin/gerente: para o CS a função dá erro 42501 → NÃO chamar para o CS (esconder o bloco).
 // Chaves: pedidos_para_confirmar, pedidos_para_entregar, marketing_a_confirmar,
@@ -442,8 +461,10 @@ export async function getAdminPendingCounts({ signal } = {}) {
 }
 
 // ---- Mural CS v2 (cs_tasks) ----
-export async function getCsTasks({ includeArchived = false, signal } = {}) {
-  let query = supabase.from('cs_tasks').select('*').order('moved_to_column_at', { ascending: false });
+// columns: a Hoje só precisa de 'franchise_id,column_status,moved_to_column_at'; o Mural
+// usa o default '*'. archived_at entra no filtro abaixo sem precisar estar na lista.
+export async function getCsTasks({ includeArchived = false, columns = '*', signal } = {}) {
+  let query = supabase.from('cs_tasks').select(columns).order('moved_to_column_at', { ascending: false });
   if (!includeArchived) query = query.is('archived_at', null);
   if (signal) query = query.abortSignal(signal);
   const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);

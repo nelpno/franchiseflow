@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { differenceInCalendarDays } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { formatBRL } from "@/lib/formatters";
-import { marketingLiquid } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { safeHref } from "@/lib/safeHref";
 import { formatPhone } from "@/lib/whatsappUtils";
@@ -14,6 +13,8 @@ import {
   deleteCsWorklistEvent, updateCsWorklistEventNote,
 } from "@/entities/all";
 import { TIER, SEV, COLUMN_CONFIG } from "@/components/customer-success/tierConfig";
+import RaioXPanel from "@/components/unidade/RaioXPanel";
+import { linkFicha } from "@/lib/networkOverview";
 
 const EVENT_LABEL = {
   contact: "Falou com a franquia", meeting: "Reunião marcada", resolve: "Resolvido",
@@ -25,24 +26,6 @@ const EVENT_ICON = {
   note: "sticky_note_2", move: "drag_indicator", auto_open: "auto_awesome", auto_resolve: "auto_awesome",
 };
 const COLUMN_LABEL = Object.fromEntries(COLUMN_CONFIG.map((c) => [c.key, c.label]));
-
-function daysAgo(n) {
-  if (n == null) return "—";
-  if (n <= 0) return "hoje";
-  return `${n}d atrás`;
-}
-
-function Metric({ icon, label, value, hint, tone }) {
-  return (
-    <div className="bg-surface rounded-lg p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-ink-3 font-medium uppercase tracking-wide">
-        <MaterialIcon icon={icon} size={14} /> {label}
-      </div>
-      <div className={`text-base font-bold mt-0.5 ${tone || "text-ink"}`}>{value}</div>
-      {hint && <div className="text-[11px] text-ink-3 mt-0.5">{hint}</div>}
-    </div>
-  );
-}
 
 // Drawer com 3 modos:
 //  - cartão de franquia  (task + row): por quê + registrar + histórico + raio-x (colapsável)
@@ -68,6 +51,7 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
   const isPreview = !task && !!row;
   const open = !!task || !!row;
   const fid = task?.franchise_id ?? row?.franchise_id ?? null;
+  const location = useLocation();
   const drawerKey = taskId || row?.franchise_id || null;
 
   const loadEvents = useCallback(async () => {
@@ -195,33 +179,10 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
   const cardTitle = titleLocal ?? task?.title ?? "";
   const headerTitle = row ? row.franchise_name : (cardTitle || "Cartão");
   const headerSub = row ? `${row.city || ""}${row.state_uf ? ` · ${row.state_uf}` : ""}` : "Tarefa geral";
-  const deltaStr = row?.revenue_delta_pct != null ? `${row.revenue_delta_pct > 0 ? "+" : ""}${row.revenue_delta_pct}%` : null;
-  const mktCur = marketingLiquid(row?.marketing_amount_current || 0);
-  const mktPrev = marketingLiquid(row?.marketing_amount_prev || 0);
   const agingDays = task ? differenceInCalendarDays(new Date(), new Date(task.moved_to_column_at)) : null;
   const isDone = task?.column_status === "feito";
 
-  const raioX = row && (
-    <div className="grid grid-cols-2 gap-2">
-      <Metric icon="payments" label="Faturamento 30d" value={formatBRL(row.revenue_30d || 0)}
-        hint={deltaStr ? `${deltaStr} vs mês anterior` : "base curta"}
-        tone={row.revenue_delta_pct != null && row.revenue_delta_pct <= -15 ? "text-red-600" : undefined} />
-      <Metric icon="trending_up" label="Margem bruta" value={row.gross_margin_pct_30d != null ? `${row.gross_margin_pct_30d}%` : "—"}
-        tone={row.gross_margin_pct_30d != null && row.gross_margin_pct_30d < 0 ? "text-red-600" : undefined} />
-      <Metric icon="shopping_cart" label="Última venda" value={daysAgo(row.days_since_last_sale)} />
-      <Metric icon="local_shipping" label="Última compra fábrica" value={daysAgo(row.days_since_last_purchase)}
-        tone={row.days_since_last_purchase >= 30 ? "text-red-600" : undefined} />
-      <Metric icon="repeat" label="Compras 30d" value={`${row.purchase_count_30d ?? 0}`} hint={`antes: ${row.purchase_count_prev ?? 0}`} />
-      <Metric icon="category" label="Variedade comprada" value={`${row.mix_distinct_30d ?? 0}`} hint={`antes: ${row.mix_distinct_prev ?? 0}`} />
-      <Metric icon="inventory_2" label="Itens-chave zerados" value={`${row.zeroed_key_items_count ?? 0}`}
-        hint={`de ${row.key_items_total ?? 0} que vende`} tone={row.zeroed_key_items_count >= 3 ? "text-amber-600" : undefined} />
-      <Metric icon="smart_toy" label="Conversão do bot" value={row.bot_conversion_30d != null ? `${row.bot_conversion_30d}%` : "—"} />
-      <Metric icon="credit_card" label="Assinatura R$150" value={row.subscription_overdue ? "Atrasada" : "Em dia"}
-        tone={row.subscription_overdue ? "text-red-600" : "text-green-600"} />
-      <Metric icon="campaign" label="Marketing 30d" value={formatBRL(mktCur)} hint={`antes: ${formatBRL(mktPrev)}`}
-        tone={mktCur < mktPrev ? "text-red-600" : mktCur > 0 ? "text-green-600" : undefined} />
-    </div>
-  );
+  const raioX = row && <RaioXPanel signals={row} />;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose?.(); }}>
@@ -264,6 +225,17 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
                 <span className={`inline-block w-fit text-xs px-2 py-0.5 rounded-full border ${TIER[tier].chip}`}>
                   {TIER[tier].label}
                 </span>
+              )}
+              {/* A Ficha é a tela principal da unidade pro CS agora — sem isto, quem
+                  está no Mural tinha de ir em Unidades e procurar pelo nome (achado
+                  BAIXO, 26/09). */}
+              {fid && (
+                <Link
+                  {...linkFicha(fid, { from: location.pathname + location.search, label: "o Mural do CS" })}
+                  className="text-sm font-medium text-brand-dark hover:underline w-fit"
+                >
+                  Abrir ficha da unidade →
+                </Link>
               )}
             </DialogHeader>
 

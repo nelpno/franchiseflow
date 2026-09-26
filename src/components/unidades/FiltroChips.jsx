@@ -1,8 +1,13 @@
 // Chips de filtro da tela Unidades. Ordem e rótulos vêm de @/lib/networkOverview
 // (fonte única com o cartão de "Hoje" — a contagem de um bate com a do outro).
-import { FILTROS, ORDEM_FILTROS } from "@/lib/networkOverview";
+import { FILTROS, ORDEM_FILTROS, rotuloMesVerba } from "@/lib/networkOverview";
 
-export default function FiltroChips({ contagens, ativo, onSelect }) {
+// `rows` (opcional) só serve para nomear o mês no chip "sem_verba" (achado médio 26/09:
+// o chip ficava genérico, "Sem verba do mês", sem dizer QUAL mês — divergindo do texto
+// que já nomeia o mês em Hoje/Marketing/Ficha).
+export default function FiltroChips({ contagens, ativo, onSelect, rows = [] }) {
+  const mes = rotuloMesVerba(rows);
+  const chipLabel = (k) => (k === "sem_verba" && mes ? `Sem verba de ${mes}` : FILTROS[k].chip);
   return (
     <div
       role="group"
@@ -23,7 +28,7 @@ export default function FiltroChips({ contagens, ativo, onSelect }) {
                 : "border-surface-line bg-white font-medium text-ink-2 hover:bg-surface"
             }`}
           >
-            {FILTROS[k].chip} · {contagens[k] ?? 0}
+            {chipLabel(k)} · {contagens[k] ?? 0}
           </button>
         );
       })}

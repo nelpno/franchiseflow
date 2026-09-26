@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Franchise } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
@@ -27,11 +28,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import MarketingPaymentsAdmin from "@/components/marketing/MarketingPaymentsAdmin";
 import MarketingPaymentSection from "@/components/marketing/MarketingPaymentSection";
+import MarketingAdminHome from "@/components/marketing/admin/MarketingAdminHome";
+import PageHeader from "@/components/shared/PageHeader";
+import ErrorState from "@/components/shared/ErrorState";
+import { PAGINA } from "@/components/shared/adminUi";
 
 // REST API direta — bypass TOTAL do supabase-js (trava em marketing_files)
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -237,11 +240,15 @@ function generateMonthOptions() {
 }
 
 // ─── Upload Form Dialog ──────────────────────────────────────────────
-function UploadDialog({ open, onClose, franchises, onUploaded }) {
+// `initialMonth` ('YYYY-MM', opcional): o mês que o cartão "Postagens do mês" está cobrando
+// (mês do calendário, ou o mês-alvo nos últimos 5 dias) — sem ele, o formulário sempre abria
+// no mês do relógio do aparelho, mesmo quando o botão dizia "Publicar postagens de outubro".
+function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
+  const mesPadrao = () => initialMonth || format(new Date(), "yyyy-MM");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("posts");
-  const [month, setMonth] = useState(format(new Date(), "yyyy-MM"));
+  const [month, setMonth] = useState(mesPadrao);
   const [franchiseId, setFranchiseId] = useState("shared");
   const [campaign, setCampaign] = useState("none");
   const [customCampaign, setCustomCampaign] = useState("");
@@ -252,11 +259,18 @@ function UploadDialog({ open, onClose, franchises, onUploaded }) {
   const [externalUrl, setExternalUrl] = useState("");
   const fileInputRef = useRef(null);
 
+  // Abriu com um mês-alvo diferente do último usado (ex.: "Publicar mais" depois de
+  // "Publicar postagens de outubro" na mesma sessão) — sincroniza o campo.
+  useEffect(() => {
+    if (open) setMonth(mesPadrao());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialMonth]);
+
   const reset = () => {
     setTitle("");
     setDescription("");
     setCategory("posts");
-    setMonth(format(new Date(), "yyyy-MM"));
+    setMonth(mesPadrao());
     setFranchiseId("shared");
     setCampaign("none");
     setCustomCampaign("");
@@ -886,12 +900,29 @@ export default function Marketing() {
   const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
+  // Falha específica do directList (marketing_files): PostagensDoMesCard precisa saber pra
+  // não ler `files=[]` de erro como "ninguém publicou ainda" (achado médio 26/09)
+  const [filesError, setFilesError] = useState(false);
   const mountedRef = useRef(true);
   const [showUpload, setShowUpload] = useState(false);
-  // ?tab=investimento: a home do admin (Pendências) chega direto nos pagamentos
-  const [activeTab, setActiveTab] = useState(() =>
-    new URLSearchParams(window.location.search).get("tab") === "investimento" ? "investimento" : "materiais"
-  );
+  // Mês que o UploadDialog abre pré-selecionado — o cartão "Postagens do mês" manda o mês
+  // que está cobrando (calendário ou alvo); "Novo material" avulso não manda nada (hoje).
+  const [uploadInitialMonth, setUploadInitialMonth] = useState(null);
+  const abrirUpload = useCallback((mes) => {
+    setUploadInitialMonth(mes || null);
+    setShowUpload(true);
+  }, []);
+  const [showBiblioteca, setShowBiblioteca] = useState(false);
+  // ?tab=investimento (link antigo, mantido): admin cai direto na página — ela já mostra a
+  // verba em primeiro plano, então o parâmetro só precisa não quebrar. &filtro= chega
+  // filtrado (princípio 2 do redesenho): sem_comprovante | sem_campanha | sem_verba.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filtroParam = searchParams.get("filtro");
+  const clearFiltro = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("filtro");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -906,6 +937,7 @@ export default function Marketing() {
   const loadData = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    setFilesError(false);
     try {
       const results = await Promise.allSettled([
         directList("created_at.desc"),
@@ -919,6 +951,7 @@ export default function Marketing() {
       if (results[0].status === "rejected") {
         console.warn("Falha ao carregar arquivos:", results[0].reason);
         toast.error(safeErrorMessage(results[0].reason, "Erro ao carregar materiais."));
+        setFilesError(true);
       }
       if (results[1].status === "rejected") {
         console.warn("Falha ao carregar franquias:", results[1].reason);
@@ -930,6 +963,7 @@ export default function Marketing() {
       console.error("Erro ao carregar materiais de marketing:", err);
       if (!mountedRef.current) return;
       setLoadError("Não foi possível carregar os materiais de marketing.");
+      setFilesError(true);
       toast.error("Erro ao carregar materiais de marketing.");
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -1034,57 +1068,77 @@ export default function Marketing() {
     setFilterFranchise("all");
   };
 
+  const isAdminOuManager = isAdmin || user?.role === "manager";
+
   return (
-    <div className="p-6 space-y-6 bg-surface">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className={isAdminOuManager ? PAGINA : "p-6 space-y-6 bg-surface"}>
+      {/* Cabeçalho — padrão do admin (docs/claude/padrao-visual-admin.md, C1-C4): h1 sem
+          ícone, subtítulo de uma frase. A ação principal é publicar as postagens do mês, não
+          enviar material avulso (achado "design" alto 26/09) — por isso não há slot `acao`
+          aqui; "Novo material" fica perto de "Ver todos os materiais", como ação secundária. */}
+      {/* Franqueado mantém o cabeçalho de antes (ícone + título): o redesenho é só do admin
+          (seção 13 do padrão — o lado do franqueado vem depois). */}
+      {isAdminOuManager ? (
+        <PageHeader
+          titulo="Marketing"
+          subtitulo="Duas tarefas por mês: publicar as postagens e colocar a verba de cada unidade no ar."
+        />
+      ) : (
         <div className="flex items-center gap-3">
           <div className="p-2 bg-gradient-to-br from-brand to-brand-dark rounded-lg">
             <MaterialIcon icon="campaign" size={24} className="text-white" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Marketing</h1>
-            <p className="text-sm text-gray-500">
-              {isAdmin
-                ? "Gerencie materiais de marketing das franquias"
-                : "Materiais de marketing disponíveis"}
-            </p>
+            <p className="text-sm text-ink-2">Materiais de marketing disponíveis</p>
           </div>
         </div>
-
-        {isAdmin && (
-          <Button
-            onClick={() => setShowUpload(true)}
-            className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
-          >
-            <MaterialIcon icon="add" size={16} className="mr-2" />
-            Novo Material
-          </Button>
-        )}
-      </div>
-
-      {(isAdmin || user?.role === "manager") && (
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="materiais">Materiais</TabsTrigger>
-            <TabsTrigger value="investimento">Investimento</TabsTrigger>
-          </TabsList>
-
-          {activeTab === "investimento" && (
-            <MarketingPaymentsAdmin franchises={franchises} />
-          )}
-        </Tabs>
       )}
 
-      {activeTab === "materiais" && (
-        <div className="space-y-6">
-      {/* Franqueado: card de pagamento marketing */}
-      {!isAdmin && user?.role !== "manager" && (
+      {isAdminOuManager ? (
+        <MarketingAdminHome
+          files={files}
+          filesLoading={loading}
+          filesError={filesError}
+          onRetryFiles={loadData}
+          franchises={franchises}
+          onPublicar={abrirUpload}
+          filtro={filtroParam}
+          onClearFiltro={clearFiltro}
+        />
+      ) : (
+        // Franqueado: card de pagamento marketing (tela do franqueado, INTOCADA)
         <MarketingPaymentSection />
       )}
 
+      {isAdminOuManager && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => setShowBiblioteca((v) => !v)}
+            className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand-dark hover:underline"
+          >
+            <MaterialIcon icon={showBiblioteca ? "expand_less" : "expand_more"} size={18} />
+            {showBiblioteca ? "Ocultar materiais anteriores" : "Ver todos os materiais →"}
+          </button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => abrirUpload()}
+              className="min-h-10 border-brand text-brand hover:bg-brand/5"
+            >
+              <MaterialIcon icon="add" size={16} className="mr-1.5" />
+              Novo material
+            </Button>
+          )}
+        </div>
+      )}
+
+      {(showBiblioteca || !isAdminOuManager) && (
+        <div className="space-y-6">
       {/* Search + Filters */}
-      <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+      <Card className="bg-white rounded-2xl border border-surface-line shadow-none">
         <CardContent className="p-4 space-y-3">
           {/* Search bar */}
           <div className="relative">
@@ -1224,14 +1278,7 @@ export default function Marketing() {
 
       {/* Content */}
       {loadError ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <MaterialIcon icon="cloud_off" size={48} className="text-gray-300 mb-4" />
-          <p className="text-ink-2 font-medium mb-2">{loadError}</p>
-          <Button variant="outline" onClick={loadData} className="mt-2">
-            <MaterialIcon icon="refresh" size={16} className="mr-2" />
-            Tentar novamente
-          </Button>
-        </div>
+        <ErrorState texto={loadError} onTentarNovamente={loadData} />
       ) : loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -1307,6 +1354,7 @@ export default function Marketing() {
           onClose={() => setShowUpload(false)}
           franchises={franchises}
           onUploaded={loadData}
+          initialMonth={uploadInitialMonth}
         />
       )}
     </div>

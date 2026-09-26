@@ -180,29 +180,3 @@ export function getEstadoFinanceiro({
     icone: "warning",
   };
 }
-
-/**
- * Filters arrays of sales/expenses by month and groups by franchise_id.
- * Returns Map<franchise_id, { sales, expenses }>
- */
-export function groupByFranchiseAndMonth(sales, expenses, monthDate) {
-  const map = new Map();
-
-  for (const s of sales) {
-    const dateStr = s.sale_date || s.created_at;
-    if (!isInMonth(dateStr, monthDate)) continue;
-    const fid = s.franchise_id;
-    if (!map.has(fid)) map.set(fid, { sales: [], expenses: [] });
-    map.get(fid).sales.push(s);
-  }
-
-  for (const e of expenses) {
-    const dateStr = e.expense_date || e.created_at;
-    if (!isInMonth(dateStr, monthDate)) continue;
-    const fid = e.franchise_id;
-    if (!map.has(fid)) map.set(fid, { sales: [], expenses: [] });
-    map.get(fid).expenses.push(e);
-  }
-
-  return map;
-}

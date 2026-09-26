@@ -1,469 +1,158 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { Suspense, lazy, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sale, SaleItem, Expense, InventoryItem, User } from "@/entities/all";
-import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
-import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 import MaterialIcon from "@/components/ui/MaterialIcon";
-import { toast } from "sonner";
-import { format, subMonths, addMonths, isSameMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { calculatePnL, isInMonth, groupByFranchiseAndMonth, getSaleNetValue } from "@/lib/financialCalcs";
-import { SALE_PNL_COLUMNS } from "@/entities/columns";
-import { safeErrorMessage, safeFailedQueriesMessage } from "@/lib/safeErrorMessage";
-import FinanceiroKpiCards from "@/components/financeiro/FinanceiroKpiCards";
-import FranchiseFinanceTable from "@/components/financeiro/FranchiseFinanceTable";
-import AsaasSetupPanel from "@/components/financeiro/AsaasSetupPanel";
-import TabResultado from "@/components/minha-loja/TabResultado";
-import FechamentoMensal from "@/components/financeiro/FechamentoMensal";
-import { listarFranquias } from "@/lib/franchisesCache";
+import { Skeleton } from "@/components/ui/skeleton";
+import FechamentoRede from "@/components/financeiro/FechamentoRede";
+import PageHeader from "@/components/shared/PageHeader";
+import MonthStepper from "@/components/shared/MonthStepper";
+import { PAGINA } from "@/components/shared/adminUi";
+import { useAdminPendingCounts } from "@/hooks/useAdminPendingCounts";
+import { mesValido, somarMeses } from "@/lib/fechamentoRede";
+import { dataCurta } from "@/lib/adminFormat";
 
-// Faturamento minimo no periodo para a unidade concorrer a "Menor Margem". Abaixo disso o
-// percentual e ruido: R$ 80 de venda contra uma compra a fabrica da -5657%.
-const PISO_MARGEM_COMPARAVEL = 2000;
+// Só carregam no clique: o painel do ASAAS é grande e o resultado por unidade arrasta o
+// TabResultado + recharts. A aba padrão (Fechamento do mês) é 1 consulta agregada.
+const AsaasSetupPanel = lazy(() => import("@/components/financeiro/AsaasSetupPanel"));
+const FinanceiroPorUnidade = lazy(() => import("@/components/financeiro/FinanceiroPorUnidade"));
+
+const MESES_PARA_TRAS = 12;
+
+// ?tab=: fechamento (padrão) | mensalidades | porunidade (drilldown, sem aba própria).
+// "financeiro" era a aba padrão antiga: cai no fechamento.
+function tabDaUrl(t) {
+  return t === "mensalidades" || t === "porunidade" ? t : "fechamento";
+}
+
+function Carregando() {
+  return (
+    <div className="space-y-3" aria-busy="true">
+      <Skeleton className="h-16 rounded-2xl motion-reduce:animate-none" />
+      <Skeleton className="h-80 rounded-2xl motion-reduce:animate-none" />
+    </div>
+  );
+}
 
 export default function Financeiro() {
-  const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => {
-    const t = searchParams.get("tab");
-    return ["porunidade", "mensalidades", "fechamento"].includes(t) ? t : "financeiro";
-  }); // "financeiro" | "fechamento" | "porunidade" | "mensalidades"
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [franchises, setFranchises] = useState([]);
-  const [allSales, setAllSales] = useState([]);
-  const [allExpenses, setAllExpenses] = useState([]);
-  const [allInventory, setAllInventory] = useState([]);
-  const [allSaleItems, setAllSaleItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [selectedFranchiseId, setSelectedFranchiseId] = useState(() => searchParams.get("franchise") || "");
-  const mountedRef = useRef(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { pending } = useAdminPendingCounts();
 
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => { mountedRef.current = false; };
-  }, []);
+  const mesAtual = useMemo(() => format(new Date(), "yyyy-MM"), []);
+  const tab = tabDaUrl(searchParams.get("tab"));
+  const mesUrl = searchParams.get("mes");
+  const mes = mesValido(mesUrl, mesAtual, MESES_PARA_TRAS) ? mesUrl : mesAtual;
+  const franchiseId = searchParams.get("franchise") || "";
+  const mesMinimo = somarMeses(mesAtual, -MESES_PARA_TRAS);
 
-  // Load base data once (franchises, sales, expenses, inventory)
-  const loadBaseData = useCallback(async () => {
-    if (!mountedRef.current) return;
-    setLoading(true);
-    setLoadError(null);
+  const atualizar = useCallback(
+    (mudancas) => {
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          for (const [k, v] of Object.entries(mudancas)) {
+            if (v === null || v === undefined || v === "") p.delete(k);
+            else p.set(k, v);
+          }
+          return p;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
-    try {
-      const user = await User.me();
-      if (!mountedRef.current) return;
-      if (user.role !== "admin" && user.role !== "manager") {
-        setLoading(false);
-        return;
-      }
-      setCurrentUser(user);
-
-      // Janela 13m: cobre 12m navegáveis + buffer comparativo M-1 (mês -13 ainda no range).
-      // Era 18m — 5 meses de folga inútil; 13m é o requisito real, carrega menos quando a base crescer.
-      const cutoffWindow = format(subMonths(new Date(), 13), "yyyy-MM-dd");
-      const results = await Promise.allSettled([
-        listarFranquias(),
-        Sale.list("-sale_date", null, {
-          columns: `id, franchise_id, sale_date, ${SALE_PNL_COLUMNS}, payment_method, created_at`,
-          fetchAll: true,
-          gte: { sale_date: cutoffWindow },
-        }),
-        Expense.list("-expense_date", null, {
-          columns: "id, franchise_id, expense_date, amount",
-          fetchAll: true,
-          gte: { expense_date: cutoffWindow },
-        }),
-        InventoryItem.list("franchise_id", null, {
-          columns: "id, franchise_id, product_name, cost_price, sale_price, quantity, min_stock",
-          fetchAll: true,
-        }),
-      ]);
-
-      if (!mountedRef.current) return;
-
-      const getValue = (r) => (r.status === "fulfilled" ? r.value : []);
-      const franchisesData = getValue(results[0]);
-      const salesData = getValue(results[1]);
-      const expensesData = getValue(results[2]);
-      const inventoryData = getValue(results[3]);
-
-      const failedQueries = results
-        .map((r, i) => (r.status === "rejected" ? ["franquias", "vendas", "despesas", "estoque"][i] : null))
-        .filter(Boolean);
-      if (failedQueries.length > 0) {
-        toast.error(safeFailedQueriesMessage(failedQueries));
-      }
-
-      if (!mountedRef.current) return;
-      setFranchises(franchisesData);
-      setAllSales(salesData);
-      setAllExpenses(expensesData);
-      setAllInventory(inventoryData);
-    } catch (error) {
-      console.error("Erro ao carregar financeiro:", error);
-      if (mountedRef.current) {
-        setLoadError(safeErrorMessage(error, "Erro ao carregar dados"));
-        toast.error("Erro ao carregar dados financeiros");
-      }
-    }
-    if (mountedRef.current) setLoading(false);
-  }, []);
-
-  // Load SaleItems when base sales are ready or month changes
-  useEffect(() => {
-    if (allSales.length === 0) return;
-    let cancelled = false;
-
-    const prevMonth = subMonths(selectedMonth, 1);
-    const relevantSaleIds = allSales
-      .filter((s) => {
-        const d = s.sale_date || s.created_at;
-        return isInMonth(d, selectedMonth) || isInMonth(d, prevMonth);
-      })
-      .map((s) => s.id);
-
-    if (relevantSaleIds.length === 0) {
-      setAllSaleItems([]);
-      return;
-    }
-
-    // Batch IDs in chunks of 500 to avoid URL length limits
-    const fetchSaleItems = async () => {
-      const chunkSize = 500;
-      const allItems = [];
-      for (let i = 0; i < relevantSaleIds.length; i += chunkSize) {
-        if (cancelled) return;
-        const chunk = relevantSaleIds.slice(i, i + chunkSize);
-        try {
-          const items = await SaleItem.filter(
-            { sale_id: chunk },
-            null,
-            null,
-            { columns: "id, sale_id, quantity, unit_price, cost_price, product_name" }
-          );
-          allItems.push(...items);
-        } catch (err) {
-          console.warn("SaleItems chunk failed:", err);
-        }
-      }
-      if (!cancelled && mountedRef.current) {
-        setAllSaleItems(allItems);
-      }
+  // #19: "Cobrar em Mensalidades →" do Fechamento passa a situação já filtrada
+  // (?situacao=vencido), lida pelo AsaasSetupPanel — sem isso o admin caía na lista
+  // inteira das 66 unidades e tinha que achar o chip "Vencido" na mão. #34: o link
+  // "Resultado" de cada linha leva junto o mês que o admin estava vendo.
+  const irPara = (novaTab, { situacao, mes: mesDestino, franchise } = {}) => {
+    const mudancas = {
+      tab: novaTab === "fechamento" ? null : novaTab,
+      franchise: novaTab === "porunidade" ? (franchise ?? franchiseId) : null,
+      situacao: novaTab === "mensalidades" ? situacao || null : null,
     };
-
-    fetchSaleItems();
-    return () => { cancelled = true; };
-  }, [allSales, selectedMonth]);
-
-  useEffect(() => {
-    loadBaseData();
-  }, [loadBaseData]);
-
-  useVisibilityPolling(loadBaseData, 300000);
-
-  // --- Month navigation ---
-  const handlePrevMonth = () => setSelectedMonth((m) => subMonths(m, 1));
-  const handleNextMonth = () => {
-    const next = addMonths(selectedMonth, 1);
-    if (next <= new Date()) setSelectedMonth(next);
+    if (novaTab === "porunidade" && mesDestino) mudancas.mes = mesDestino;
+    atualizar(mudancas);
   };
-  const isCurrentMonth = isSameMonth(selectedMonth, new Date());
+  const trocarMes = (novo) => atualizar({ mes: novo === mesAtual ? null : novo });
 
-  // --- Build sale_id → franchise_id lookup ---
-  const saleIdToFranchise = useMemo(() => {
-    const map = {};
-    for (const s of allSales) map[s.id] = s.franchise_id;
-    return map;
-  }, [allSales]);
+  const vencidas = pending?.mensalidades_vencidas ?? null;
+  const ABAS = [
+    { key: "fechamento", label: "Fechamento do mês", icon: "fact_check" },
+    {
+      key: "mensalidades",
+      label: vencidas > 0 ? `Mensalidades · ${vencidas} ${vencidas === 1 ? "vencida" : "vencidas"}` : "Mensalidades",
+      icon: "autorenew",
+    },
+  ];
 
-  // --- Aggregate per franchise ---
-  const { franchiseData, aggregated, worstFranchise, inventoryByFranchise, saleItemsByFranchise } = useMemo(() => {
-    const prevMonth = subMonths(selectedMonth, 1);
-    const grouped = groupByFranchiseAndMonth(allSales, allExpenses, selectedMonth);
-    const prevGrouped = groupByFranchiseAndMonth(allSales, allExpenses, prevMonth);
-
-    // Map sale_items to franchise via sale_id
-    const saleItemsByFranchise = {};
-    for (const si of allSaleItems) {
-      const fid = saleIdToFranchise[si.sale_id];
-      if (!fid) continue;
-      if (!saleItemsByFranchise[fid]) saleItemsByFranchise[fid] = [];
-      saleItemsByFranchise[fid].push(si);
-    }
-
-    // Filter sale items by month
-    const monthSaleIds = new Set(
-      allSales
-        .filter((s) => isInMonth(s.sale_date || s.created_at, selectedMonth))
-        .map((s) => s.id)
-    );
-    const prevMonthSaleIds = new Set(
-      allSales
-        .filter((s) => isInMonth(s.sale_date || s.created_at, prevMonth))
-        .map((s) => s.id)
-    );
-
-    const currentSaleItemsByFranchise = {};
-    const prevSaleItemsByFranchise = {};
-    for (const si of allSaleItems) {
-      const fid = saleIdToFranchise[si.sale_id];
-      if (!fid) continue;
-      if (monthSaleIds.has(si.sale_id)) {
-        if (!currentSaleItemsByFranchise[fid]) currentSaleItemsByFranchise[fid] = [];
-        currentSaleItemsByFranchise[fid].push(si);
-      }
-      if (prevMonthSaleIds.has(si.sale_id)) {
-        if (!prevSaleItemsByFranchise[fid]) prevSaleItemsByFranchise[fid] = [];
-        prevSaleItemsByFranchise[fid].push(si);
-      }
-    }
-
-    const hoje = new Date();
-    const ehMesCorrente =
-      selectedMonth.getFullYear() === hoje.getFullYear() &&
-      selectedMonth.getMonth() === hoje.getMonth();
-    const diaDeHoje = hoje.getDate();
-
-    let totalRecebidoAll = 0, lucroAll = 0;
-    const data = [];
-
-    for (const franchise of franchises) {
-      const evoId = franchise.evolution_instance_id;
-      if (!evoId) continue;
-
-      const monthData = grouped.get(evoId) || { sales: [], expenses: [] };
-      const prevData = prevGrouped.get(evoId) || { sales: [], expenses: [] };
-
-      const pnl = calculatePnL(
-        monthData.sales,
-        currentSaleItemsByFranchise[evoId] || [],
-        monthData.expenses
-      );
-      const prevPnl = calculatePnL(
-        prevData.sales,
-        prevSaleItemsByFranchise[evoId] || [],
-        prevData.expenses
-      );
-
-      // Comparativo honesto: se o mes selecionado e o CORRENTE, ele esta pela metade.
-      // Comparar 7 dias contra 31 do mes passado inventaria uma queda em toda a rede.
-      // Entao o mes anterior tambem e cortado no mesmo dia. Mes fechado compara inteiro.
-      const prevRecebidoComparavel = ehMesCorrente
-        ? prevData.sales
-            .filter((s) => Number(String(s.sale_date || s.created_at).slice(8, 10)) <= diaDeHoje)
-            .reduce((acc, s) => acc + getSaleNetValue(s), 0)
-        : prevPnl.totalRecebido;
-
-      totalRecebidoAll += pnl.totalRecebido;
-      lucroAll += pnl.lucroCaixa;
-
-      data.push({
-        prevRecebidoComparavel,
-        comparativoParcial: ehMesCorrente,
-        franchiseId: evoId,
-        franchiseUUID: franchise.id,
-        name: franchise.name,
-        city: franchise.city,
-        ownerName: franchise.owner_name,
-        pnl,
-        prevPnl,
-      });
-    }
-
-    const margemAll = totalRecebidoAll > 0 ? (lucroAll / totalRecebidoAll) * 100 : 0;
-    const agg = { totalRecebido: totalRecebidoAll, lucro: lucroAll, margem: margemAll };
-
-    // Pior margem — so entra quem ja faturou o bastante para o percentual significar algo.
-    //
-    // A guarda antiga era `salesCount > 0`, e uma venda de R$ 80 bastava. Resultado medido
-    // em 08/09/2026: o card de destaque anunciava "Menor Margem: Vila dos Remedios
-    // -5657,8%" — R$ 80 recebidos contra R$ 4.606 de despesa, dos quais R$ 3.806 e compra
-    // a fabrica. Nao e margem ruim: e uma unidade que COMPROU e ainda nao vendeu, num mes
-    // de 7 dias. Percentual sobre denominador de R$ 80 nao e informacao.
-    //
-    // O piso e o mesmo que get_franchise_health_signals ja usa para calcular delta de
-    // faturamento (revprev >= 2000) — um piso so no ecossistema. Com ele o card passa a
-    // apontar Santos (-106,8%), que e caso real: R$ 4.463 de venda contra R$ 9.274 de custo.
-    const withSales = data.filter((d) => d.pnl.totalRecebido >= PISO_MARGEM_COMPARAVEL);
-    const worst = withSales.length > 0
-      ? withSales.reduce((min, d) => (d.pnl.margemCaixa < min.pnl.margemCaixa ? d : min))
-      : null;
-    const worstInfo = worst
-      ? { name: worst.name, margem: worst.pnl.margemCaixa, recebido: worst.pnl.totalRecebido }
-      : null;
-
-    // Inventory grouped by franchise
-    const invByFranchise = {};
-    for (const item of allInventory) {
-      const fid = item.franchise_id;
-      if (!invByFranchise[fid]) invByFranchise[fid] = [];
-      invByFranchise[fid].push(item);
-    }
-
-    return {
-      franchiseData: data,
-      aggregated: agg,
-      worstFranchise: worstInfo,
-      inventoryByFranchise: invByFranchise,
-      saleItemsByFranchise: currentSaleItemsByFranchise,
-    };
-  }, [franchises, allSales, allExpenses, allSaleItems, allInventory, selectedMonth, saleIdToFranchise]);
-
-  // --- Render ---
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-4">
-        <div className="h-8 w-48 bg-surface-line rounded-xl animate-pulse" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-surface-line rounded-xl animate-pulse" />
-          ))}
-        </div>
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-16 bg-surface-line rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 md:p-6 flex flex-col items-center justify-center gap-4 min-h-[300px]">
-        <MaterialIcon icon="error_outline" size={48} className="text-err" />
-        <p className="text-ink-2">{loadError}</p>
-        <Button onClick={loadBaseData} variant="outline" className="rounded-xl">
-          <MaterialIcon icon="refresh" size={16} className="mr-2" />
-          Tentar novamente
-        </Button>
-      </div>
-    );
-  }
+  // C9: Mensalidades é status ATUAL (system_subscriptions), não histórico do mês — o
+  // seletor de mês some e dá lugar a "Situação de hoje, dd/mm" (mudança #34 / regra do
+  // padrão-visual, seção 12). O Fechamento (e o drilldown por unidade) continuam com o
+  // MonthStepper.
+  const situacaoHoje = `Situação de hoje, ${dataCurta(format(new Date(), "yyyy-MM-dd"))}`;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-plus-jakarta text-ink flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center">
-              <MaterialIcon icon="account_balance" size={24} className="text-white" />
-            </div>
-            Financeiro
-          </h1>
-          <p className="text-ink-2 mt-1 text-sm">
-            Visao financeira de todas as franquias
-          </p>
-        </div>
-
-        {/* Tab selector */}
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-          {[
-            { key: "financeiro", label: "Resultado", icon: "account_balance" },
-            { key: "fechamento", label: "Fechamento", icon: "fact_check" },
-            { key: "porunidade", label: "Por Unidade", icon: "store" },
-            { key: "mensalidades", label: "Mensalidades", icon: "autorenew" },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.key
-                  ? "bg-white text-ink shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <MaterialIcon icon={tab.icon} size={16} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {activeTab === "fechamento" ? (
-        <FechamentoMensal />
-      ) : activeTab === "mensalidades" ? (
-        <AsaasSetupPanel />
-      ) : activeTab === "porunidade" ? (
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-ink-shadow/5 p-4 flex items-center gap-3">
-            <MaterialIcon icon="store" size={20} className="text-ink/60 shrink-0" />
-            <select
-              value={selectedFranchiseId}
-              onChange={(e) => setSelectedFranchiseId(e.target.value)}
-              className="flex-1 bg-transparent text-sm font-semibold text-ink outline-none cursor-pointer"
-            >
-              <option value="">Selecione uma unidade…</option>
-              {franchises
-                .filter((f) => f.evolution_instance_id)
-                .slice()
-                .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
-                .map((f) => {
-                  const local = f.city ? ` — ${f.city}${f.state_uf ? "/" + f.state_uf : ""}` : "";
-                  return (
-                    <option key={f.id} value={f.evolution_instance_id}>
-                      {(f.name || "Franquia") + local}
-                    </option>
-                  );
-                })}
-            </select>
-          </div>
-          {selectedFranchiseId ? (
-            <TabResultado franchiseId={selectedFranchiseId} currentUser={currentUser} />
-          ) : (
-            <div className="bg-white rounded-2xl border border-ink-shadow/5 p-12 text-center">
-              <MaterialIcon icon="info" size={32} className="text-ink/30 mx-auto mb-3" />
-              <p className="text-sm text-ink-2">Escolha uma unidade acima para ver o resultado igual à visão do franqueado.</p>
-            </div>
-          )}
-        </div>
-      ) : (
-      <>
-        {/* Month selector */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevMonth}
-            className="h-9 w-9 rounded-xl"
-            aria-label="Mês anterior"
-            title="Mês anterior"
-          >
-            <MaterialIcon icon="chevron_left" size={20} />
-          </Button>
-          <span className="text-sm font-semibold text-ink min-w-[120px] text-center capitalize">
-            {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNextMonth}
-            disabled={isCurrentMonth}
-            className="h-9 w-9 rounded-xl"
-            aria-label="Próximo mês"
-            title="Próximo mês"
-          >
-            <MaterialIcon icon="chevron_right" size={20} />
-          </Button>
-        </div>
-
-      {/* KPI Cards */}
-      <FinanceiroKpiCards aggregated={aggregated} worstFranchise={worstFranchise} />
-
-      {/* Franchise Table */}
-      <FranchiseFinanceTable
-        franchiseData={franchiseData}
-        inventoryByFranchise={inventoryByFranchise}
-        saleItemsByFranchise={saleItemsByFranchise}
+    <div className={PAGINA}>
+      <PageHeader
+        titulo="Financeiro"
+        subtitulo="Quanto a rede vendeu, quem deve e quem precisa de atenção no mês."
+        mes={
+          tab === "fechamento" ? (
+            <MonthStepper mes={mes} min={mesMinimo} max={mesAtual} onChange={trocarMes} />
+          ) : null
+        }
+        situacao={tab === "mensalidades" ? situacaoHoje : null}
       />
 
-      {/* Footer info */}
-      <p className="text-xs text-ink-3 text-center">
-        {franchiseData.length} franquias &middot; Dados de {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
-      </p>
-      </>
+      {tab !== "porunidade" && (
+        <div role="tablist" aria-label="Seções do financeiro" className="-mx-1 flex gap-1 overflow-x-auto border-b border-surface-line px-1">
+          {ABAS.map((a) => {
+            const ativa = tab === a.key;
+            return (
+              <button
+                key={a.key}
+                type="button"
+                role="tab"
+                aria-selected={ativa}
+                // #19: a aba anuncia "N vencidas" — tocar nela já abre filtrado por
+                // ?situacao=vencido (achado MÉDIO 26/09: antes abria a lista inteira).
+                onClick={() => irPara(a.key, a.key === "mensalidades" && vencidas > 0 ? { situacao: "vencido" } : {})}
+                className={`-mb-px inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-2 text-sm sm:px-3 transition-colors ${
+                  ativa ? "border-brand-dark font-semibold text-ink" : "border-transparent font-medium text-ink-3 hover:text-ink-2"
+                }`}
+              >
+                <MaterialIcon icon={a.icon} size={16} className="hidden sm:inline-block" aria-hidden="true" />
+                {a.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === "fechamento" && (
+        <FechamentoRede
+          mes={mes}
+          mesAtual={mesAtual}
+          onVerMensalidades={(situacao) => irPara("mensalidades", { situacao })}
+        />
+      )}
+
+      {tab === "mensalidades" && (
+        <Suspense fallback={<Carregando />}>
+          <AsaasSetupPanel />
+        </Suspense>
+      )}
+
+      {tab === "porunidade" && (
+        <Suspense fallback={<Carregando />}>
+          <FinanceiroPorUnidade
+            franchiseId={franchiseId}
+            initialMonth={mesValido(mesUrl, mesAtual, MESES_PARA_TRAS) ? mesUrl : null}
+            onChangeFranchise={(evo) => atualizar({ franchise: evo })}
+            onVoltar={() => irPara("fechamento")}
+          />
+        </Suspense>
       )}
     </div>
   );

@@ -1,21 +1,27 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
-import { getFranchiseHealthSignals, getCsFranchiseContacts, getCsTasks, moveCsTask, reconcileCsAutoTasks, getNetworkFunnelRanking } from "@/entities/all";
+import { getFranchiseHealthCache, getCsFranchiseContacts, getCsTasks, moveCsTask, reconcileCsAutoTasks, getNetworkFunnelRanking } from "@/entities/all";
 import NetworkFunnelPanel from "@/components/dashboard/NetworkFunnelPanel";
 import { format, startOfMonth } from "date-fns";
 import FranchiseDrawer from "@/components/customer-success/FranchiseDrawer";
 import CsBoard from "@/components/customer-success/CsBoard";
 import CsRadarPanel from "@/components/customer-success/CsRadarPanel";
 import QuickAddCard from "@/components/customer-success/QuickAddCard";
+import PageHeader from "@/components/shared/PageHeader";
+import { PAGINA_LARGA, BTN_PRIMARIO } from "@/components/shared/adminUi";
+
+// Cache da saúde da rede mais velho que isto → reconcilia em segundo plano ao abrir o Mural.
+const CACHE_VELHO_MS = 30 * 60 * 1000;
 
 export default function CustomerSuccess() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [signals, setSignals] = useState([]);
   const [contatos, setContatos] = useState([]);
@@ -63,27 +69,47 @@ export default function CustomerSuccess() {
     }
   }, []);
 
-  // Carga completa: reconcilia os automáticos, depois puxa cartões + saúde da rede
+  // Reconciliação em segundo plano: roda a saúde da rede ao vivo (~5 s), regrava o cache e
+  // abre/fecha os cartões automáticos. A tela já está desenhada com o cache; ao terminar,
+  // recarrega cartões + cache. Uma por vez.
+  const reconcilingRef = useRef(false);
+  const reconcileEmSegundoPlano = useCallback(async () => {
+    if (reconcilingRef.current) return;
+    reconcilingRef.current = true;
+    try {
+      await reconcileCsAutoTasks();
+      const [t, s] = await Promise.all([getCsTasks(), getFranchiseHealthCache()]);
+      if (mountedRef.current) { setTasks(t); setSignals(s); }
+    } catch (e) {
+      console.warn("[CustomerSuccess] reconcile", e);
+    } finally {
+      reconcilingRef.current = false;
+    }
+  }, []);
+
+  // Carga: cartões + saúde da rede pelo CACHE (franchise_health_cache), sem esperar o
+  // recálculo. Só reconcilia (em segundo plano) quando o cache tem mais de 30 min.
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      try { await reconcileCsAutoTasks(); } catch (e) { console.warn("[CustomerSuccess] reconcile", e); }
       // contatos em paralelo: sem dono e telefone, o Celso abre o cartao e ainda
       // precisa procurar em outra tela com quem falar (auditoria 07/09/2026)
       const [t, s, c] = await Promise.all([
         getCsTasks(),
-        getFranchiseHealthSignals(),
+        getFranchiseHealthCache(),
         getCsFranchiseContacts().catch(() => []),
       ]);
       if (mountedRef.current) { setTasks(t); setSignals(s); setContatos(c); }
+      const maisNovo = s.reduce((mx, r) => Math.max(mx, Date.parse(r.computed_at) || 0), 0);
+      if (!maisNovo || Date.now() - maisNovo > CACHE_VELHO_MS) reconcileEmSegundoPlano();
     } catch (e) {
       console.error("[CustomerSuccess] load", e);
       if (mountedRef.current) setError("Não foi possível carregar o mural. Tente novamente.");
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, []);
+  }, [reconcileEmSegundoPlano]);
 
   useEffect(() => { load(); }, [load]);
   useVisibilityPolling(reloadTasks, 300000);
@@ -140,24 +166,66 @@ export default function CustomerSuccess() {
     ? (selectedTask.franchise_id ? signalsByFranchise[selectedTask.franchise_id] : null)
     : previewRow;
 
+  // Chegada por link: /CustomerSuccess?task=<id> (abre o cartão) ou ?unidade=<evo>
+  // (abre o cartão aberto da unidade, ou o preview do Radar se não houver nenhum).
+  // Antes a Ficha e o FranchiseDrawer linkavam pra cá sem nenhum parâmetro — o Mural
+  // abria inteiro, sem o cartão daquela unidade (achado MÉDIO, 26/09).
+  const paramsAplicadosRef = useRef(false);
+  useEffect(() => {
+    if (loading || paramsAplicadosRef.current) return;
+    const taskParam = searchParams.get("task");
+    const unidadeParam = searchParams.get("unidade");
+    if (!taskParam && !unidadeParam) return;
+    paramsAplicadosRef.current = true;
+    if (taskParam) {
+      const t = tasks.find((x) => x.id === taskParam);
+      if (t) openTask(t);
+    } else if (unidadeParam) {
+      const abertaDaUnidade = tasks.find((t) => t.franchise_id === unidadeParam && t.column_status !== "feito");
+      if (abertaDaUnidade) {
+        openTask(abertaDaUnidade);
+      } else {
+        // Sem cartão aberto: o link "Ver histórico →" da Ficha (ConversasCard) promete
+        // mostrar os cartões já resolvidos — o preview do Radar não tem seção de
+        // histórico (events só existe com task), então abrir o último "feito" da
+        // unidade é o que de fato cumpre a promessa (achado MÉDIO, 26/09).
+        const resolvidos = tasks
+          .filter((t) => t.franchise_id === unidadeParam && t.column_status === "feito")
+          .sort((a, b) => new Date(b.resolved_at || b.moved_to_column_at || 0) - new Date(a.resolved_at || a.moved_to_column_at || 0));
+        if (resolvidos[0]) {
+          openTask(resolvidos[0]);
+        } else if (signalsByFranchise[unidadeParam]) {
+          openPreview(signalsByFranchise[unidadeParam]);
+        }
+      }
+    }
+    // Limpa o parâmetro: um F5 depois, ou o polling recarregando a lista, não deve
+    // reabrir o mesmo cartão sozinho.
+    const next = new URLSearchParams(searchParams);
+    next.delete("task");
+    next.delete("unidade");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, tasks, signalsByFranchise]);
+
   return (
-    <div className="p-4 md:p-8 space-y-5">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-ink flex items-center gap-2">
-            <MaterialIcon icon="view_kanban" className="text-brand" /> Customer Success
-          </h1>
-          <p className="text-sm text-ink-2 mt-1">
-            O que precisa ser feito com cada franquia — arraste o cartão até o check.
-          </p>
-        </div>
-        {tab === "mural" && (
-          <Button size="sm" onClick={() => { setQuickAddFranchise(""); setQuickAddOpen(true); }}
-            className="bg-brand hover:bg-brand-dark text-white gap-1">
-            <MaterialIcon icon="add" size={16} /> Novo cartão
-          </Button>
-        )}
-      </div>
+    <div className={PAGINA_LARGA}>
+      <PageHeader
+        titulo="Mural do CS"
+        subtitulo="Cada cartão é uma unidade que estamos acompanhando. Fale, registre e marque quando resolver."
+        acao={
+          tab === "mural" && (
+            <button
+              type="button"
+              onClick={() => { setQuickAddFranchise(""); setQuickAddOpen(true); }}
+              className={`${BTN_PRIMARIO} h-11`}
+            >
+              <MaterialIcon icon="add" size={18} aria-hidden="true" />
+              Novo cartão
+            </button>
+          )
+        }
+      />
 
       {/* Abas Mural / Radar */}
       <div className="flex gap-2">

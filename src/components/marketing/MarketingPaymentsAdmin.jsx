@@ -62,14 +62,22 @@ function generateMonthOptions() {
   return options;
 }
 
+// Tokens do padrão (R1: nada de hex cru) — cada status casa com uma classe pronta.
 const STATUS_CONFIG = {
-  confirmed: { label: "Confirmado", color: "#15803d", icon: "check_circle" },
-  pending: { label: "Pendente", color: "#d4af37", icon: "schedule" },
-  rejected: { label: "Recusado", color: "#dc2626", icon: "error" },
-  not_paid: { label: "Nao pagou", color: "#dc2626", icon: "cancel" },
+  confirmed: { label: "Confirmado", classe: "text-ok-ink bg-ok/10", icon: "check_circle" },
+  pending: { label: "Pendente", classe: "text-brand-gold-ink bg-brand-gold-soft", icon: "schedule" },
+  rejected: { label: "Recusado", classe: "text-err bg-err/10", icon: "error" },
+  not_paid: { label: "Nao pagou", classe: "text-err bg-err/10", icon: "cancel" },
 };
 
-export default function MarketingPaymentsAdmin({ franchises = [] }) {
+// `onChanged` (opcional): avisa quem mostra este painel dentro de "Mais ações" — o
+// VerbaAlvoPanel passa a própria recarga (overview + filas), senão confirmar/recusar/cancelar
+// por aqui deixava as filas do painel principal congeladas (achado Codex 26/09).
+// `modoHistorico` (opcional): usado dentro da VerbaAlvoPanel — "Arrecadado" e "Não pagaram"
+// já estão no painel principal (achado "media" 26/09: os dois lugares mostravam o mesmo
+// número), então aqui escondemos esses dois e o filtro correspondente, deixando só o que É
+// exclusivo daqui: depósitos no Meta, retorno de anúncio, falta subir e cancelar pagamento.
+export default function MarketingPaymentsAdmin({ franchises = [], onChanged, modoHistorico = false }) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const mountedRef = useRef(true);
@@ -182,6 +190,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       await MarketingPayment.update(paymentId, { status: "confirmed", rejection_reason: null });
       toast.success("Pagamento confirmado!");
       await loadData();
+      if (onChanged) await onChanged();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao confirmar pagamento."));
     } finally {
@@ -199,6 +208,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       });
       toast.success(jaSubiu ? "Voltou para a fila." : "Campanha marcada como subida.");
       await loadData();
+      if (onChanged) await onChanged();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Nao foi possivel marcar a campanha."));
     } finally {
@@ -218,6 +228,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       setRejectDialog(null);
       setRejectReason("");
       await loadData();
+      if (onChanged) await onChanged();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao recusar pagamento."));
     } finally {
@@ -255,6 +266,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
       toast.success("Pagamento cancelado. Franquia pode lançar novamente.");
       setCancelDialog(null);
       await loadData();
+      if (onChanged) await onChanged();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao cancelar pagamento"));
     } finally {
@@ -299,7 +311,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
             <SelectItem value="pending">Pendentes</SelectItem>
             <SelectItem value="confirmed">Confirmados</SelectItem>
             <SelectItem value="falta_subir">Pagos — falta subir</SelectItem>
-            <SelectItem value="not_paid">Nao pagaram</SelectItem>
+            {!modoHistorico && <SelectItem value="not_paid">Nao pagaram</SelectItem>}
             <SelectItem value="rejected">Recusados</SelectItem>
           </SelectContent>
         </Select>
@@ -307,22 +319,26 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
 
       {/* ─── Resumo do Mes ─── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <p className="text-xs text-ink-3 mb-1">Arrecadado</p>
-            <p className="text-lg font-bold text-ink">{formatBRL(totalCollected)}</p>
-            <p className="text-xs text-ink-3 mt-1">{paidCount} de {franchises.length} pagaram</p>
-            {naoPagaramCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setFilterStatus("not_paid")}
-                className="mt-1 text-xs font-semibold text-brand hover:underline min-h-[24px]"
-              >
-                ver {naoPagaramCount} que não pagaram
-              </button>
-            )}
-          </CardContent>
-        </Card>
+        {/* "Arrecadado" some no modo histórico: o mesmo número já está no painel principal
+            (VerbaAlvoPanel) — repeti-lo aqui é o que a revisão de 26/09 achou "dado_sobrando". */}
+        {!modoHistorico && (
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-ink-3 mb-1">Arrecadado</p>
+              <p className="text-lg font-bold text-ink">{formatBRL(totalCollected)}</p>
+              <p className="text-xs text-ink-3 mt-1">{paidCount} de {franchises.length} pagaram</p>
+              {naoPagaramCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("not_paid")}
+                  className="mt-1 text-xs font-semibold text-brand hover:underline min-h-[24px]"
+                >
+                  ver {naoPagaramCount} que não pagaram
+                </button>
+              )}
+            </CardContent>
+          </Card>
+        )}
         {/* O card do liquido e o lugar semanticamente certo para a fila de subida: ele JA e
             sobre quanto vai para campanha. Por isso nao entra card novo — a tela continua com
             os mesmos 4. */}
@@ -479,11 +495,7 @@ export default function MarketingPaymentsAdmin({ franchises = [] }) {
                     {/* Status + se a campanha ja subiu (duas coisas diferentes) */}
                     <div className="md:col-span-2 md:text-center flex flex-wrap md:justify-center items-center gap-1">
                       <span
-                        className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{
-                          color: cfg.color,
-                          backgroundColor: `${cfg.color}10`,
-                        }}
+                        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.classe}`}
                       >
                         <MaterialIcon icon={cfg.icon} size={14} />
                         {cfg.label}
