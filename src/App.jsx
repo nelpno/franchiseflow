@@ -27,6 +27,16 @@ const ADMIN_ONLY_PAGES = new Set([
 const CS_PAGES = new Set(['CustomerSuccess', 'Unidades', 'Unidade']);
 const CS_ROLES = ['customer_success', 'admin', 'manager'];
 
+// Só o dono (admin): Progresso do CS avalia o trabalho do CS (as RPCs também exigem is_admin).
+const OWNER_ONLY_PAGES = new Set(['ProgressoCS']);
+
+function OwnerRoute({ children }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <PageFallback />;
+  if (!user || user.role !== 'admin') return <Navigate to="/Dashboard" replace />;
+  return children;
+}
+
 function AdminRoute({ children }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <PageFallback />;
@@ -81,7 +91,9 @@ const AuthenticatedApp = () => {
               key={path}
               path={`/${path}`}
               element={
-                CS_PAGES.has(path)
+                OWNER_ONLY_PAGES.has(path)
+                  ? <OwnerRoute>{pageElement}</OwnerRoute>
+                  : CS_PAGES.has(path)
                   ? <CsRoute>{pageElement}</CsRoute>
                   : ADMIN_ONLY_PAGES.has(path)
                     ? <AdminRoute>{pageElement}</AdminRoute>

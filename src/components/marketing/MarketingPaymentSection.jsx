@@ -6,6 +6,7 @@ import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { format, addMonths, parseISO } from "date-fns";
 import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
+import HelpTip from "@/components/shared/HelpTip";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -248,7 +249,7 @@ export default function MarketingPaymentSection() {
             </div>
             <div>
               <h3 className="font-plus-jakarta font-bold text-sm text-ink">
-                Investimento em Marketing
+                Investimento em Marketing <HelpTip tip="verbaMarketing" />
               </h3>
               <p className="text-xs text-ink-3">Minimo {formatBRL(MIN_AMOUNT)}/mes</p>
             </div>

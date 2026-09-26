@@ -5,18 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { createCsTask } from "@/entities/all";
-import { COLUMN_CONFIG } from "./tierConfig";
 
-// Dialog CONTROLADO (a página dona do open) — usado pelo botão "Novo cartão" do board
-// e pelo "Criar cartão" do Radar (pré-preenchendo a franquia).
+// Dialog CONTROLADO (a página dona do open) — usado pelo botão "Novo cartão" do Mural
+// (Onda 2: sem coluna pra escolher — o cartão manual sempre entra em "Falar hoje" com
+// motive_key 'manual'; quem decide de onde ele sai é a folha "Registrar"/"Mais ações").
 export default function QuickAddCard({ open, onOpenChange, userId, franchises = [], defaultFranchiseId = "", onCreated }) {
   const [title, setTitle] = useState("");
   const [franchiseId, setFranchiseId] = useState("");
-  const [column, setColumn] = useState("a_fazer");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) { setTitle(""); setFranchiseId(defaultFranchiseId || ""); setColumn("a_fazer"); }
+    if (open) { setTitle(""); setFranchiseId(defaultFranchiseId || ""); }
   }, [open, defaultFranchiseId]);
 
   const submit = async () => {
@@ -24,10 +23,10 @@ export default function QuickAddCard({ open, onOpenChange, userId, franchises = 
     setSaving(true);
     try {
       const task = await createCsTask(
-        { title: title.trim(), franchise_id: franchiseId || null, column_status: column, source: "manual" },
+        { title: title.trim(), franchise_id: franchiseId || null, column_status: "a_fazer", source: "manual" },
         userId,
       );
-      toast.success("Cartão criado");
+      // Toast fica só no onCreated (CustomerSuccess.jsx) — daqui dobrava ("Cartão criado" 2x).
       onOpenChange?.(false);
       onCreated?.(task);
     } catch (e) {
@@ -62,16 +61,6 @@ export default function QuickAddCard({ open, onOpenChange, userId, franchises = 
                   {f.franchise_name}{f.city ? ` · ${f.city}` : ""}
                 </option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-ink-2">Coluna</label>
-            <select
-              value={column}
-              onChange={(e) => setColumn(e.target.value)}
-              className="w-full text-sm rounded-md border border-ink-shadow/15 px-2 py-2 bg-white"
-            >
-              {COLUMN_CONFIG.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
             </select>
           </div>
         </div>

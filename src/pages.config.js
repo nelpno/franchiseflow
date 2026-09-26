@@ -64,6 +64,7 @@ const Marketing = lazy(() => import('./pages/Marketing'));
 const MinhaLoja = lazy(() => import('./pages/MinhaLoja'));
 const MyContacts = lazy(() => import('./pages/MyContacts'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
+const ProgressoCS = lazy(() => import('./pages/ProgressoCS'));
 const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 const Tutoriais = lazy(() => import('./pages/Tutoriais'));
 const Unidade = lazy(() => import('./pages/Unidade'));
@@ -81,6 +82,7 @@ export const PAGES = {
     "MinhaLoja": MinhaLoja,
     "MyContacts": MyContacts,
     "Onboarding": Onboarding,
+    "ProgressoCS": ProgressoCS,
     "PurchaseOrders": PurchaseOrders,
     "Tutoriais": Tutoriais,
     "Unidade": Unidade,

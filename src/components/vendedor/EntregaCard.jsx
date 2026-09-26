@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import HelpTip from "@/components/shared/HelpTip";
 import { WEEKDAYS } from "@/lib/franchiseUtils";
 import { rotuloDias } from "@/lib/configSave";
 import { diasLivres, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro } from "@/lib/freteModelo";
@@ -166,7 +167,7 @@ function Tipo({ tipo, prefixo, estruturado, temBairros, podeRemover, onChange, o
           </div>
         </div>
         <div>
-          <span className={rotulo}>Pedidos até</span>
+          <span className={rotulo}>Pedidos até <HelpTip tip="horarioCorte" /></span>
           <select aria-label="Limite de pedidos" className={`${campo}${marcas.has(`${prefixo}.corte`) ? erroRing : ""}`}
             value={tipo.corte || ""} onChange={(e) => set({ corte: e.target.value })}>
             <option value="">o fim da janela</option>
@@ -178,7 +179,7 @@ function Tipo({ tipo, prefixo, estruturado, temBairros, podeRemover, onChange, o
         </div>
       </div>
       <div>
-        <span className={rotulo}>{temBairros ? "Taxa para bairro fora da lista" : "Taxa"}</span>
+        <span className={rotulo}>{temBairros ? "Taxa para bairro fora da lista" : "Taxa"} <HelpTip tip="taxaEntrega" /></span>
         {temBairros && <p className={`${dica} -mt-1 mb-1.5`}>Os bairros da lista, lá em cima, têm o valor próprio.</p>}
         <Taxa taxa={tipo.taxa} onChange={(taxa) => set({ taxa })} marcas={marcas} prefixo={prefixo} estruturado={estruturado} temBairros={temBairros} />
       </div>
@@ -526,10 +527,10 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
           <p className={dica}>{estruturado ? "O robô recusa endereço além do raio. Os bairros da lista valem mesmo além dele." : "O robô recusa endereço além do raio."}</p>
         </div>
         <div>
-          <label className={rotulo}>Pedido mínimo para entrega (R$)</label>
+          <label className={rotulo}>Pedido mínimo para entrega (R$) <HelpTip tip="pedidoMinimo" /></label>
           <input className={`${campo} w-full font-mono`} type="number" min="0" inputMode="decimal"
             value={minOrder ?? ""} onChange={(e) => onMinOrderChange(e.target.value ? Number(e.target.value) : null)} placeholder="Sem mínimo" />
-          <p className={dica}>Abaixo desse valor o robô não fecha a entrega: pede para completar o pedido ou retirar.</p>
+          <p className={dica}>O robô recebe esse valor e o usa na conversa sobre entrega.</p>
         </div>
       </div>
       <TesteRapido modelo={modelo} estruturado={estruturado} />

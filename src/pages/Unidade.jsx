@@ -11,7 +11,7 @@ import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { dataCurta } from "@/lib/adminFormat";
 import { LINK_ACAO, LINK_VOLTAR, PAGINA, TOM_MAXI } from "@/components/shared/adminUi";
 import { getUnitDetail } from "@/entities/all";
-import { createCsTask, addCsTaskEvent, updateCsTask, moveCsTask } from "@/entities/all";
+import { createCsTask, updateCsTask } from "@/entities/all";
 import { diagnosticar, roteiroPara, montarMensagemUnidade, guiaPara } from "@/lib/fichaUnidade";
 import { linhaDaFicha, nomeCurto, rotuloMesVerba, voltarDaFicha } from "@/lib/networkOverview";
 import RaioXPanel from "@/components/unidade/RaioXPanel";
@@ -37,7 +37,10 @@ export default function Unidade() {
   const [error, setError] = useState(null);
   const [mensagem, setMensagem] = useState("");
   const [mensagemEditada, setMensagemEditada] = useState(false);
-  const [registrando, setRegistrando] = useState(false);
+  // A folha "Registrar" (RegistrarConversaDialog = RegistrarSheet) controla o próprio
+  // "salvando" — este flag só serve pros botões FORA dela (MessageCard/MobileActionBar)
+  // não abrirem duas vezes enquanto ela está aberta.
+  const registrando = false;
   const [showRaioX, setShowRaioX] = useState(false);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -100,47 +103,20 @@ export default function Unidade() {
     return () => document.removeEventListener("visibilitychange", aoVoltar);
   }, []);
 
-  const salvarConversa = async ({ tipo, nota, resolvido }) => {
-    if (!unit || registrando) return;
-    setRegistrando(true);
-    try {
-      const nowIso = new Date().toISOString();
-      const aberto = unit.cs?.open_tasks?.[0];
-      let taskId = aberto?.id;
-      if (aberto) {
-        if (resolvido) {
-          await moveCsTask(aberto.id, "feito", user?.id, unit.franchise_id);
-        } else {
-          await updateCsTask(aberto.id, { column_status: "aguardando_retorno", moved_to_column_at: nowIso });
-        }
-      } else {
-        const novo = await createCsTask(
-          {
-            franchise_id: unit.franchise_id,
-            title: `Cuidar de ${nomeCurto(unit.franchise_name)}`,
-            column_status: resolvido ? "feito" : "aguardando_retorno",
-            moved_to_column_at: nowIso,
-            ...(resolvido ? { resolved_at: nowIso } : {}),
-          },
-          user?.id
-        );
-        taskId = novo.id;
-      }
-      await addCsTaskEvent(taskId, tipo, nota, user?.id, unit.franchise_id);
-      setDialogConversa(false);
-      toast.success(
-        resolvido
-          ? aberto
-            ? `Conversa registrada. O cartão "${aberto.title || nomeCurto(unit.franchise_name)}" foi fechado no Mural.`
-            : `Conversa registrada. Não fica esperando resposta no Mural.`
-          : `Conversa registrada. ${nomeCurto(unit.franchise_name)} foi para “Esperando resposta” no Mural.`
-      );
-      await load();
-    } catch (e) {
-      toast.error(safeErrorMessage(e, "Não foi possível registrar a conversa."));
-    } finally {
-      setRegistrando(false);
-    }
+  // A folha "Registrar" (compartilhada com o Mural do CS, Onda 2) chama a RPC
+  // registrar_cs_conversa sozinha — aqui só reagimos ao resultado. Antes esta função
+  // fazia a mesma coisa na mão (createCsTask/updateCsTask/moveCsTask) e nunca gravava
+  // texto (achado R10 do estudo de 26/09); a folha nova sempre grava resultado +
+  // combinado + data de volta, e o banco decide qual cartão usar.
+  const aoRegistrarConversa = (resultado) => {
+    const lane = resultado?.lane;
+    const texto =
+      lane === "esperando" ? `Foi para "Esperando resposta" no Mural (volta em ${dataCurta(resultado.next_at)}).`
+      : lane === "falar_hoje" ? 'Fica em "Falar hoje".'
+      : lane === "resolvidos" ? "Cartão resolvido."
+      : "Conversa registrada.";
+    toast.success(texto);
+    load();
   };
 
   const [assumindo, setAssumindo] = useState(false);
@@ -304,11 +280,11 @@ export default function Unidade() {
       <RegistrarConversaDialog
         open={dialogConversa}
         onOpenChange={setDialogConversa}
+        franchiseId={unit.franchise_id}
+        taskId={unit.cs?.open_tasks?.[0]?.id || null}
         nomeUnidade={nomeCurto(unit.franchise_name)}
-        salvando={registrando}
-        onSalvar={salvarConversa}
         notaInicial={notaInicial}
-        cartaoAberto={unit.cs?.open_tasks?.[0] || null}
+        onSalvo={aoRegistrarConversa}
       />
       <MobileActionBar mensagem={mensagem} phone={unit.phone} onRegistrar={registrarConversa} registrando={registrando} onEnviar={marcarMensagemEnviada} />
     </div>

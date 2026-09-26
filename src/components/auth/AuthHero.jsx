@@ -8,15 +8,11 @@ import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
  */
 export default function AuthHero({ headline, subtitle }) {
   return (
-    <section className="hidden lg:flex lg:w-3/5 relative bg-gradient-to-br from-[#fff5f5] to-white p-16 flex-col justify-between overflow-hidden">
-      {/* Background dotted pattern */}
-      <div
-        className="absolute inset-0 opacity-60"
-        style={{
-          backgroundImage: "radial-gradient(circle at 2px 2px, rgba(220, 38, 38, 0.05) 1px, transparent 0)",
-          backgroundSize: "24px 24px",
-        }}
-      />
+    /* Fundo vermelho da marca + textura de farinha (igual à faixa do celular). Antes era rosa-claro
+       quase branco e a tela parecia apagada no desktop (Fase 4, 26/09/2026). Texto branco sobre
+       #b91c1c = 6,4:1 (AA). O destaque da headline (span .text-err) vira branco sublinhado de
+       dourado: vermelho sobre vermelho sumiria. */
+    <section className="hidden lg:flex lg:w-3/5 relative bg-brand bg-farinha p-16 flex-col justify-between overflow-hidden">
       {/* Keyframes for the staggered entrance */}
       <style>{`
         @keyframes maxiRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
@@ -24,34 +20,30 @@ export default function AuthHero({ headline, subtitle }) {
       `}</style>
 
       {/* Soft glow blobs for depth */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-err/[0.06] blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-28 -right-16 w-[26rem] h-[26rem] rounded-full bg-[#B8860B]/[0.06] blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-28 -right-16 w-[26rem] h-[26rem] rounded-full bg-brand-dark/60 blur-3xl pointer-events-none" />
 
       {/* Logo + brand */}
       <div className="relative z-10 flex items-center gap-4" style={{ animation: "maxiRise .6s ease both" }}>
-        <img
-          src={logoMaxiMassas}
-          alt="Maxi Massas Logo"
-          className="h-16 w-auto object-contain drop-shadow-sm"
-        />
-        <span className="text-2xl font-extrabold tracking-tighter text-ink">Maxi Massas</span>
+        <div className="bg-white rounded-2xl px-3 py-2">
+          <img src={logoMaxiMassas} alt="Maxi Massas" className="h-10 w-auto object-contain block" />
+        </div>
       </div>
 
       {/* Headline */}
       <div className="relative z-10 max-w-md" style={{ animation: "maxiRise .6s ease both", animationDelay: ".08s" }}>
         <h1
-          className="text-4xl xl:text-[2.85rem] font-bold text-ink tracking-tight leading-[1.12]"
+          className="text-4xl xl:text-[2.85rem] font-extrabold text-white tracking-tight leading-[1.12] [&_.text-err]:text-white [&_.text-err]:underline [&_.text-err]:decoration-brand-gold [&_.text-err]:decoration-4 [&_.text-err]:underline-offset-8"
           style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
         >
           {headline}
         </h1>
         {subtitle && (
-          <p className="mt-4 text-[#3d4a42] text-base leading-relaxed max-w-sm">{subtitle}</p>
+          <p className="mt-4 text-white text-lg leading-relaxed max-w-sm">{subtitle}</p>
         )}
       </div>
 
       {/* Dashboard preview (product mockup) */}
-      <div className="relative z-10 w-[400px] max-w-full" style={{ animation: "maxiRise .7s ease both", animationDelay: ".16s" }}>
+      <div aria-hidden="true" className="relative z-10 w-[400px] max-w-full" style={{ animation: "maxiRise .7s ease both", animationDelay: ".16s" }}>
         {/* App window frame */}
         <div className="rounded-2xl bg-white shadow-[0_28px_60px_-18px_rgba(220, 38, 38,0.22)] border border-black/5 overflow-hidden">
           {/* chrome bar */}

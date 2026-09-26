@@ -1,4 +1,5 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import HelpTip from "@/components/shared/HelpTip";
 
 // Uma linha por forma de pagamento, uma coluna por modalidade ligada (entrega/retirada).
 // Coluna com valor null não aparece. Valor que não está na lista (o legado "card_machine")
@@ -25,7 +26,7 @@ export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntr
       <table className="w-full text-sm">
         <thead className="bg-surface">
           <tr>
-            <th className="text-left px-3 sm:px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">Forma</th>
+            <th className="text-left px-3 sm:px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">Forma <HelpTip tip="formaPagamento" /></th>
             {colunas.map((c) => (
               <th key={c.chave} className="px-1 sm:px-3 py-2 w-[4.5rem] sm:w-28 text-center text-[11px] font-semibold uppercase tracking-wide text-[#3d4a42]/60">
                 {c.rotulo}

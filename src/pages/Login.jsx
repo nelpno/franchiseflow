@@ -5,6 +5,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import logoMaxiMassas from "@/assets/logo-maxi-massas-optimized.png";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import AuthHero from "@/components/auth/AuthHero";
+import { linkWhatsAppMaxi } from "@/lib/contatoMaxi";
 
 // Autofill de celular pode deixar espaco/maiuscula no e-mail. No reset, e-mail que nao casa
 // com nenhum usuario devolve 200 vazio e NENHUM email e enviado (anti-enumeracao do Supabase).
@@ -111,13 +112,9 @@ export default function Login() {
     }
   };
 
-  const handlePrimeiroAcesso = () => {
-    if (!email) {
-      toast.error('Digite seu email primeiro');
-      return;
-    }
-    setIsResetMode(true);
-  };
+  // "Esqueci a senha" e "Primeiro acesso" eram dois botões para o MESMO envio (link de criar
+  // senha por resetPasswordForEmail). Viraram um link só (Fase 4, 26/09/2026).
+  const whatsappMaxi = linkWhatsAppMaxi();
 
   return (
     <div className="bg-surface text-ink min-h-[100dvh] flex flex-col lg:items-center lg:justify-center lg:p-8">
@@ -159,7 +156,7 @@ export default function Login() {
                 <MaterialIcon icon="info" size={20} className="mt-0.5 shrink-0" />
                 <div className="flex-1 text-sm">
                   <p className="font-semibold">Esse link já foi usado ou venceu.</p>
-                  <p>Entre com seu e-mail e senha. Ainda não tem senha? Digite seu e-mail e toque em Primeiro acesso.</p>
+                  <p>Entre com seu e-mail e senha. Ainda não tem senha? Toque em “Primeiro acesso ou esqueceu a senha?” e peça um link novo.</p>
                 </div>
                 <button
                   type="button"
@@ -174,10 +171,10 @@ export default function Login() {
 
             <div>
               <h2 className="font-plus-jakarta font-extrabold text-2xl lg:text-3xl tracking-tight text-ink">
-                {isResetMode ? 'Recuperar senha' : 'Entrar'}
+                {isResetMode ? 'Receber link de acesso' : 'Entrar'}
               </h2>
               <p className="mt-1 text-[15px] lg:text-base text-ink-2">
-                {isResetMode ? 'Enviaremos um link para você redefinir a senha' : 'Acesse o painel da sua franquia'}
+                {isResetMode ? 'Serve para o primeiro acesso e para quem esqueceu a senha: enviamos um link para você criar a senha.' : 'Acesse o painel da sua franquia'}
               </p>
             </div>
 
@@ -199,18 +196,9 @@ export default function Login() {
 
               {!isResetMode && (
                 <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between items-center">
-                    <label htmlFor="password" className="text-[15px] font-semibold text-ink-2">
-                      Senha
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsResetMode(true)}
-                      className="min-h-[44px] text-[15px] font-semibold text-brand hover:underline"
-                    >
-                      Esqueci a senha
-                    </button>
-                  </div>
+                  <label htmlFor="password" className="text-[15px] font-semibold text-ink-2">
+                    Senha
+                  </label>
                   <div className="relative flex">
                     <input
                       id="password"
@@ -244,51 +232,42 @@ export default function Login() {
                 disabled={isLoading || (isLockedOut && !isResetMode)}
                 className="h-14 rounded-2xl bg-brand text-white font-bold text-[17px] shadow-lg shadow-brand/20 hover:opacity-90 active:scale-[0.98] transition-all disabled:bg-ink-4 disabled:text-white/70 disabled:shadow-none disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar email de recuperação' : isLockedOut ? `Aguarde ${lockoutSeconds}s` : 'Entrar'}
+                {isLoading ? 'Aguarde...' : isResetMode ? 'Enviar link' : isLockedOut ? `Aguarde ${lockoutSeconds}s` : 'Entrar'}
               </button>
 
-              {isResetMode && (
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsResetMode(false)}
-                    className="text-[15px] font-semibold text-brand hover:underline"
-                  >
-                    Voltar ao login
-                  </button>
-                </div>
-              )}
-            </form>
-
-            {!isResetMode && (
-              <>
-                <div className="flex items-center gap-3 text-ink-3 text-sm">
-                  <span className="flex-1 h-px bg-surface-line" aria-hidden="true" />
-                  ou
-                  <span className="flex-1 h-px bg-surface-line" aria-hidden="true" />
-                </div>
-
+              <div className="text-center">
                 <button
                   type="button"
-                  onClick={handlePrimeiroAcesso}
-                  className="h-[52px] rounded-2xl border-[1.5px] border-brand text-brand font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-brand-soft transition-colors"
+                  onClick={() => setIsResetMode(!isResetMode)}
+                  className="min-h-11 px-2 text-[15px] font-semibold text-brand-dark hover:underline"
                 >
-                  <MaterialIcon icon="mail" size={20} />
-                  Primeiro acesso? Receber link
+                  {isResetMode ? 'Voltar ao login' : 'Primeiro acesso ou esqueceu a senha?'}
                 </button>
-              </>
-            )}
+              </div>
+            </form>
+
           </div>
 
-          <p className="mt-6 text-center text-sm text-ink-3 max-w-md mx-auto w-full px-1">
-            Não tem acesso? Fale com a equipe Maxi Massas.
-          </p>
+          <div className="mt-6 max-w-md mx-auto w-full px-1 flex flex-col items-center gap-2 text-center">
+            <p className="text-sm text-ink-2">Não consegue entrar? Fale com a equipe Maxi Massas.</p>
+            {whatsappMaxi && (
+              <a
+                href={whatsappMaxi}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-surface-line bg-white px-4 text-sm font-semibold text-ink-2 hover:bg-surface"
+              >
+                <MaterialIcon icon="chat" size={18} className="text-ok-ink" />
+                Falar com a Maxi no WhatsApp
+              </a>
+            )}
+          </div>
         </section>
       </main>
 
       {/* Footer Meta */}
-      <footer className="mt-4 lg:fixed lg:bottom-6 lg:left-0 lg:right-0 flex justify-center opacity-40 hover:opacity-100 transition-opacity">
-        <p className="text-[10px] tracking-widest uppercase font-bold text-ink">
+      <footer className="mt-4 mb-4 lg:mb-0 lg:fixed lg:bottom-6 lg:left-0 lg:right-0 flex justify-center">
+        <p className="text-xs tracking-widest uppercase font-bold text-ink-3">
           &copy; 2026 Maxi Massas
         </p>
       </footer>
