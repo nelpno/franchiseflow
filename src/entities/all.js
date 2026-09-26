@@ -417,6 +417,30 @@ export async function updateCsWorklistEventNote(eventId, note) {
   return true;
 }
 
+// ---- Admin redesenhado (Fase 0, 26/09/2026) ----
+// 1 linha por unidade ativa e não-teste (~66). Alimenta "Hoje" e "Unidades".
+// Regras dos filtros em src/lib/networkOverview.js. Admin, gerente e CS; outros = [].
+export async function getAdminNetworkOverview({ signal } = {}) {
+  let query = supabase.rpc('get_admin_network_overview');
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
+// Contadores de "Pendências" (substituem as notificações de pedido/pagamento).
+// Só admin/gerente: para o CS a função dá erro 42501 → NÃO chamar para o CS (esconder o bloco).
+// Chaves: pedidos_para_confirmar, pedidos_para_entregar, marketing_a_confirmar,
+// marketing_sem_campanha, marketing_sem_comprovante, onboarding_aguardando_aprovacao,
+// mensalidades_vencidas, mes_alvo_marketing ('YYYY-MM').
+export async function getAdminPendingCounts({ signal } = {}) {
+  let query = supabase.rpc('get_admin_pending_counts');
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data ?? null;
+}
+
 // ---- Mural CS v2 (cs_tasks) ----
 export async function getCsTasks({ includeArchived = false, signal } = {}) {
   let query = supabase.from('cs_tasks').select('*').order('moved_to_column_at', { ascending: false });

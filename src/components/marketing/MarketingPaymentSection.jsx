@@ -163,18 +163,8 @@ export default function MarketingPaymentSection() {
       setAttachOnly(false);
       await loadPayments();
 
-      const franchiseName = ctxFranchise?.franchise_name || ctxFranchise?.owner_name || "Franquia";
-      try {
-        await supabase.rpc("notify_admins", {
-          p_title: "Comprovante de marketing anexado",
-          p_message: `${franchiseName} — ${formatBRL(parseFloat(currentPayment.amount))} ref. ${monthLabel}`,
-          p_type: "info",
-          p_icon: "campaign",
-          p_link: "/Marketing",
-        });
-      } catch {
-        // notificação é acessório: não derruba o anexo
-      }
+      // Notificação por RPC removida (26/09/2026): "Pendências" na home do admin
+      // (get_admin_pending_counts) substitui as notificações de pedido/pagamento.
     } catch (err) {
       toast.error(safeErrorMessage(err, "Não foi possível anexar o comprovante."));
     } finally {
@@ -231,17 +221,8 @@ export default function MarketingPaymentSection() {
       setEditMode(false);
       await loadPayments();
 
-      // Notificar admins (fire-and-forget)
-      const franchiseName = ctxFranchise?.franchise_name || ctxFranchise?.owner_name || "Franquia";
-      try {
-        await supabase.rpc("notify_admins", {
-          p_title: editMode ? "Comprovante marketing reenviado" : "Novo pagamento de marketing",
-          p_message: `${franchiseName} — ${formatBRL(numAmount)} ref. ${monthLabel}`,
-          p_type: "info",
-          p_icon: "campaign",
-          p_link: "/Marketing",
-        });
-      } catch (_) { /* não bloqueia o fluxo */ }
+      // Notificação por RPC removida (26/09/2026): "Pendências" na home do admin
+      // (get_admin_pending_counts) substitui as notificações de pedido/pagamento.
     } catch (err) {
       console.error("Erro ao registrar pagamento:", err);
       toast.error(

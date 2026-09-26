@@ -10,7 +10,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -18,107 +17,131 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { DailyUniqueContact, Sale, OnboardingChecklist } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
+import { useAdminPendingCounts } from "@/hooks/useAdminPendingCounts";
 import { format } from "date-fns";
 import { getAvailableFranchises, getPrimaryFranchise, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
 import { listarFranquias } from "@/lib/franchisesCache";
 import VoltarTrilhaBar from "@/components/onboarding/VoltarTrilhaBar";
 
-// Navigation items with admin section grouping
+// Todos os 4 papéis existentes — usado nos itens que aparecem para todo mundo (Hoje,
+// Ajuda), só que com rótulo/posição diferente por papel.
+const TODOS_OS_PAPEIS = ["admin", "manager", "customer_success", "franchisee"];
+
+// Navigation items. `adminNav` só importa para admin/manager: "main" fica no menu
+// principal (Fase 1, 26/09/2026), "mais" fica dentro do grupo colapsável "Mais".
+// `showToAdminToo` deixa um item franchiseeOnly aparecer TAMBÉM pro admin (dentro de
+// "Mais") sem deixar de ser a tela normal do franqueado.
 const navigationItems = [
   {
     title: "Dashboard",
     franchiseeLabel: "Início",
-    adminLabel: "Painel Geral",
+    adminLabel: "Hoje",
     url: createPageUrl("Dashboard"),
     materialIcon: "wb_sunny",
-    adminSection: "Principal",
+    roles: TODOS_OS_PAPEIS,
+    adminNav: "main",
   },
   {
-    title: "Vendas",
-    url: createPageUrl("Vendas"),
-    materialIcon: "point_of_sale",
-    franchiseeOnly: true,
-    adminSection: "Principal",
-  },
-  {
-    title: "Gestão",
-    url: createPageUrl("Gestao"),
-    materialIcon: "bar_chart",
-    franchiseeOnly: true,
-    adminSection: "Principal",
-  },
-  {
-    title: "Meus Clientes",
-    url: createPageUrl("MyContacts"),
-    materialIcon: "people",
-    franchiseeOnly: true,
-    adminSection: "Principal",
-  },
-  {
-    title: "Marketing",
-    url: createPageUrl("Marketing"),
-    materialIcon: "campaign",
-    adminSection: "Principal",
-  },
-  {
-    title: "Meu Vendedor",
-    url: createPageUrl("FranchiseSettings"),
-    materialIcon: "smart_toy",
-    franchiseeOnly: true,
-    adminSection: "Principal",
-  },
-  {
-    title: "Tutoriais",
-    adminLabel: "Ajuda",
-    url: createPageUrl("Tutoriais"),
-    materialIcon: "help_outline",
-    adminSection: "Administração",
-  },
-  {
-    title: "Financeiro",
-    url: createPageUrl("Financeiro"),
-    materialIcon: "account_balance",
-    adminOnly: true,
-    adminSection: "Gestão",
-  },
-  {
-    title: "Configurações",
-    url: createPageUrl("FranchiseSettings"),
-    materialIcon: "settings",
-    adminOnly: true,
-    adminSection: "Administração",
-  },
-  {
-    title: "Primeiros passos",
-    url: createPageUrl("Onboarding"),
-    materialIcon: "rocket_launch",
-    showOnboarding: true,
-    adminSection: "Administração",
+    title: "Unidades",
+    url: createPageUrl("Unidades"),
+    materialIcon: "home_work",
+    roles: ["admin", "manager", "customer_success"],
+    adminNav: "main",
   },
   {
     title: "Customer Success",
+    adminLabel: "Mural do CS",
     url: createPageUrl("CustomerSuccess"),
-    materialIcon: "monitor_heart",
+    materialIcon: "view_kanban",
     roles: ["customer_success", "admin", "manager"],
-    adminSection: "Gestão",
+    adminNav: "main",
   },
   {
     title: "Pedidos",
     url: createPageUrl("PurchaseOrders"),
     materialIcon: "local_shipping",
     adminOnly: true,
-    adminSection: "Gestão",
+    adminNav: "main",
+    pendingBadgeKey: "pedidos_para_confirmar",
+  },
+  {
+    title: "Financeiro",
+    url: createPageUrl("Financeiro"),
+    materialIcon: "account_balance",
+    adminOnly: true,
+    adminNav: "main",
+  },
+  {
+    title: "Vendas",
+    url: createPageUrl("Vendas"),
+    materialIcon: "point_of_sale",
+    franchiseeOnly: true,
+    showToAdminToo: true,
+    adminNav: "mais",
+  },
+  {
+    title: "Gestão",
+    url: createPageUrl("Gestao"),
+    materialIcon: "bar_chart",
+    franchiseeOnly: true,
+    showToAdminToo: true,
+    adminNav: "mais",
+  },
+  {
+    title: "Meus Clientes",
+    url: createPageUrl("MyContacts"),
+    materialIcon: "people",
+    franchiseeOnly: true,
+    showToAdminToo: true,
+    adminNav: "mais",
+  },
+  {
+    title: "Marketing",
+    url: createPageUrl("Marketing"),
+    materialIcon: "campaign",
+    adminNav: "main",
+    pendingBadgeKey: "marketing_a_confirmar",
+  },
+  {
+    title: "Meu Vendedor",
+    url: createPageUrl("FranchiseSettings"),
+    materialIcon: "smart_toy",
+    franchiseeOnly: true,
+  },
+  {
+    title: "Tutoriais",
+    adminLabel: "Ajuda",
+    url: createPageUrl("Tutoriais"),
+    materialIcon: "help_outline",
+    roles: TODOS_OS_PAPEIS,
+  },
+  {
+    title: "Configurações",
+    adminLabel: "Robôs das unidades",
+    url: createPageUrl("FranchiseSettings"),
+    materialIcon: "settings",
+    adminOnly: true,
+    adminNav: "mais",
+  },
+  {
+    title: "Primeiros passos",
+    url: createPageUrl("Onboarding"),
+    materialIcon: "rocket_launch",
+    showOnboarding: true,
+    adminNav: "mais",
   },
   {
     title: "Franqueados",
     url: createPageUrl("Franchises"),
     materialIcon: "group",
     adminOnly: true,
-    adminSection: "Administração",
+    adminNav: "mais",
   },
 ];
 
@@ -130,6 +153,27 @@ const mobileBottomNav = [
   { label: "Clientes", materialIcon: "people", url: createPageUrl("MyContacts") },
   { label: "Vendedor", materialIcon: "smart_toy", url: createPageUrl("FranchiseSettings") },
 ];
+
+// Mobile bottom nav para admin/gerente/CS: Hoje / Unidades / Mural / Mais (Mais abre
+// o menu completo — reusa o mesmo Sheet do hambúrguer via toggleSidebar).
+const adminMobileBottomNav = [
+  { label: "Hoje", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
+  { label: "Unidades", materialIcon: "home_work", url: createPageUrl("Unidades") },
+  { label: "Mural", materialIcon: "view_kanban", url: createPageUrl("CustomerSuccess") },
+];
+
+function MaisBottomNavButton() {
+  const { toggleSidebar } = useSidebar();
+  return (
+    <button
+      onClick={toggleSidebar}
+      className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 text-ink-2"
+    >
+      <MaterialIcon icon="menu" size={20} />
+      <span className="text-xs font-medium">Mais</span>
+    </button>
+  );
+}
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
@@ -280,17 +324,23 @@ export default function Layout({ children, currentPageName }) {
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
   const isCS = currentUser?.role === "customer_success";
+  // "/" tambem abre a home (App.jsx renderiza o MainPage sem redirecionar)
+  const isHomePath = location.pathname === "/" || location.pathname === createPageUrl("Dashboard");
+  const { pending: pendingCounts } = useAdminPendingCounts();
 
   const filteredNavigationItems = navigationItems
     .filter((item) => {
-      // Itens com lista de papéis (ex: Customer Success): só aparecem para esses papéis
+      // Itens com lista de papéis (ex: Hoje, Unidades, Mural do CS, Ajuda): só
+      // aparecem para esses papéis, com posição/rótulo por papel (ver abaixo).
       if (item.roles) return item.roles.includes(currentUser?.role);
       // Customer Success só vê itens role-gated (acima); nada mais
       if (isCS) return false;
       // Hide items from admin sidebar (routes still work via URL)
       if (isAdmin && item.adminSidebarHidden) return false;
       if (item.adminOnly) return isAdmin;
-      if (item.franchiseeOnly) return !isAdmin;
+      // franchiseeOnly some pro admin — exceto os marcados showToAdminToo (Vendas,
+      // Gestão, Meus Clientes: o admin usa essas telas de franqueado e ficam em "Mais")
+      if (item.franchiseeOnly) return !isAdmin || item.showToAdminToo === true;
       if (item.showOnboarding) {
         return isAdmin || hasActiveOnboarding;
       }
@@ -298,14 +348,14 @@ export default function Layout({ children, currentPageName }) {
     })
     .map((item) => ({
       ...item,
-      title: isAdmin
+      title: isAdmin || isCS
         ? item.adminLabel || item.title
         : item.franchiseeLabel || item.title,
     }));
 
   // Franqueada com primeiros passos ativos: o item vai pro TOPO da lista (é a
-  // próxima ação dela) — admin mantém a ordem normal (seção "Administração").
-  if (!isAdmin && hasActiveOnboarding) {
+  // próxima ação dela) — admin mantém a ordem normal (grupo "Mais").
+  if (!isAdmin && !isCS && hasActiveOnboarding) {
     const onboardingIdx = filteredNavigationItems.findIndex((item) => item.showOnboarding);
     if (onboardingIdx > 0) {
       const [onboardingItem] = filteredNavigationItems.splice(onboardingIdx, 1);
@@ -320,26 +370,29 @@ export default function Layout({ children, currentPageName }) {
       (item.url.includes(currentPageName) && currentPageName)
   )?.title || currentPageName || "Dashboard";
 
-  // Group items by admin section
-  const groupedItems = isAdmin
-    ? filteredNavigationItems.reduce((acc, item) => {
-        const section = item.adminSection || "Principal";
-        if (!acc[section]) acc[section] = [];
-        acc[section].push(item);
-        return acc;
-      }, {})
-    : null;
+  // Ajuda vai pro rodapé (admin/gerente/CS); o resto do menu admin se divide em
+  // "principal" (flat) e "Mais" (recolhido). Franqueado mantém a lista única de sempre.
+  const ajudaItem = filteredNavigationItems.find((item) => item.url === createPageUrl("Tutoriais"));
+  const itemsSemAjuda = filteredNavigationItems.filter((item) => item !== ajudaItem);
+  const mainItems = isAdmin ? itemsSemAjuda.filter((item) => item.adminNav !== "mais") : itemsSemAjuda;
+  const moreItems = isAdmin ? itemsSemAjuda.filter((item) => item.adminNav === "mais") : [];
 
   const renderNavItem = (item) => {
     const isActive =
       location.pathname === item.url ||
       (item.url.includes(currentPageName) && currentPageName);
+    const badgeCount = item.pendingBadgeKey ? pendingCounts?.[item.pendingBadgeKey] : null;
     return (
       <SidebarMenuItem key={item.url + item.title}>
         <SidebarMenuButton asChild isActive={isActive} className={`h-11 px-3 gap-3 rounded-xl transition-all ${isActive ? "bg-brand/10 text-brand font-semibold shadow-sm" : "hover:bg-brand/5 text-ink-2"}`}>
           <Link to={item.url} className="flex items-center gap-3">
             <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} />
-            <span className="text-sm">{item.title}</span>
+            <span className="text-sm flex-1">{item.title}</span>
+            {badgeCount > 0 && (
+              <span className="text-[11px] font-bold bg-brand text-white rounded-full px-2 py-0.5 leading-none">
+                {badgeCount}
+              </span>
+            )}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -402,33 +455,39 @@ export default function Layout({ children, currentPageName }) {
       <div className="min-h-screen flex w-full bg-surface">
         {/* Desktop Sidebar */}
         <Sidebar className="w-[260px] border-r border-[#f8eeee]/50 bg-gradient-to-b from-surface via-white to-surface">
-          <SidebarHeader className="px-4 h-28 flex items-center justify-center border-b border-brand/5">
+          <SidebarHeader className="px-4 h-32 flex items-center justify-center border-b border-brand/5">
             <div className="flex items-center gap-2.5">
-              <img src={logoImg} alt="Maxi Massas" className="h-16 w-auto object-contain" />
+              <img src={logoImg} alt="Maxi Massas" className="h-20 w-auto object-contain" />
             </div>
           </SidebarHeader>
 
           <SidebarContent className="px-3 pt-3 overflow-y-auto">
-            {isAdmin && groupedItems ? (
-              // Admin: sectioned navigation with spacing between sections
-              <div className="space-y-6 pb-6">
-                {Object.entries(groupedItems).map(([section, items]) => (
-                  <SidebarGroup key={section} className="space-y-1">
-                    <SidebarGroupLabel className="px-3 mb-2 text-[10px] font-bold text-ink-2/70 tracking-widest uppercase">
-                      {section}
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent>
-                      <SidebarMenu>{items.map(renderNavItem)}</SidebarMenu>
-                    </SidebarGroupContent>
-                  </SidebarGroup>
-                ))}
+            {isAdmin ? (
+              // Admin/gerente: menu principal liso + grupo "Mais" recolhido por padrão
+              <div className="space-y-1 pb-6">
+                <SidebarGroup>
+                  <SidebarGroupContent>
+                    <SidebarMenu className="space-y-1">{mainItems.map(renderNavItem)}</SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+                {moreItems.length > 0 && (
+                  <Collapsible defaultOpen={false} className="pt-2">
+                    <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-ink-2 hover:bg-brand/5 transition-colors [&[data-state=open]>svg]:rotate-180">
+                      <span className="text-xs font-bold tracking-widest uppercase text-ink-2/70">Mais</span>
+                      <MaterialIcon icon="expand_more" size={18} className="transition-transform" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-1">
+                      <SidebarMenu className="space-y-1">{moreItems.map(renderNavItem)}</SidebarMenu>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             ) : (
-              // Franchisee: flat navigation
+              // Franchisee e Customer Success: flat navigation (CS só tem 3 itens hoje)
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu className="space-y-1">
-                    {filteredNavigationItems.map(renderNavItem)}
+                    {(isCS ? mainItems : filteredNavigationItems).map(renderNavItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -436,10 +495,13 @@ export default function Layout({ children, currentPageName }) {
           </SidebarContent>
 
           <SidebarFooter className="border-t border-[#f2e7e7] p-4 mt-auto">
+            {(isAdmin || isCS) && ajudaItem && (
+              <SidebarMenu className="mb-2 pb-2 border-b border-[#f2e7e7]">{renderNavItem(ajudaItem)}</SidebarMenu>
+            )}
             <div className="flex items-center gap-3 px-2 py-2">
               {currentUser ? (
                 <>
-                  {isAdmin ? (
+                  {isAdmin || isCS ? (
                     <div className="w-8 h-8 rounded-full overflow-hidden bg-brand-gold-ink flex items-center justify-center text-white font-bold text-xs shrink-0">
                       {currentUser.full_name?.charAt(0).toUpperCase()}
                     </div>
@@ -453,7 +515,7 @@ export default function Layout({ children, currentPageName }) {
                       {currentUser.full_name}
                     </p>
                     <p className="text-[11px] text-ink-2 truncate">
-                      {isAdmin ? "Admin" : currentUser.email}
+                      {isAdmin ? "Admin" : isCS ? "Customer Success" : currentUser.email}
                     </p>
                   </div>
                   <button
@@ -479,8 +541,8 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Main content area */}
         <main className="flex-1 flex flex-col min-w-0">
-          {/* Top bar — desktop (hidden on admin Dashboard since AdminHeader replaces it) */}
-          {!(isAdmin && location.pathname === createPageUrl("Dashboard")) && (
+          {/* Top bar — desktop (hidden na Hoje do admin/CS: o cabeçalho da AdminHoje substitui) */}
+          {!((isAdmin || isCS) && isHomePath) && (
             <header className="hidden md:flex fixed top-0 right-0 z-40 h-20 items-center justify-between px-8 bg-surface/80 backdrop-blur-md" style={{ width: "calc(100% - 16rem)" }}>
               <div className="flex items-center gap-4">
                 <h1 className="text-lg font-semibold tracking-tight text-ink">
@@ -545,8 +607,8 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Page content */}
           <div className={`flex-1 min-h-0 overflow-auto ${
-            isAdmin && location.pathname === createPageUrl("Dashboard") ? "" : "md:pt-20"
-          } ${!isAdmin && !isCS ? "pb-20 md:pb-0" : ""}`}>
+            (isAdmin || isCS) && isHomePath ? "" : "md:pt-20"
+          } pb-20 md:pb-0`}>
             <VoltarTrilhaBar />
             <div className="max-w-6xl mx-auto w-full">
               {children}
@@ -554,7 +616,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </main>
 
-        {/* Mobile bottom nav — franchisee only */}
+        {/* Mobile bottom nav — franqueado */}
         {!isAdmin && !isCS && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-16 flex items-center justify-around px-4 z-40">
             {mobileBottomNav.map((item) => {
@@ -592,6 +654,32 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               );
             })}
+          </nav>
+        )}
+
+        {/* Mobile bottom nav — admin/gerente/CS: Hoje / Unidades / Mural / Mais */}
+        {(isAdmin || isCS) && (
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-16 flex items-center justify-around px-2 z-40">
+            {adminMobileBottomNav.map((item) => {
+              const isActive =
+                location.pathname === item.url ||
+                (item.url.includes(currentPageName) && currentPageName);
+              return (
+                <Link
+                  key={item.label}
+                  to={item.url}
+                  className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 ${
+                    isActive ? "text-brand" : "text-ink-2"
+                  }`}
+                >
+                  <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} />
+                  <span className={`text-xs ${isActive ? "font-bold" : "font-medium"}`}>
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+            <MaisBottomNavButton />
           </nav>
         )}
       </div>

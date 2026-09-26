@@ -179,6 +179,13 @@ export default function Franchises() {
     }
   }, [franchises, searchParams, setSearchParams]);
 
+  // Abre direto o formulário de criação via ?novo=1 (atalho vindo de Unidades)
+  useEffect(() => {
+    if (searchParams.get("novo") !== "1") return;
+    setShowForm(true);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const isStaff = currentUser?.role === "admin" || currentUser?.role === "manager";
 
   const handleCreateFranchise = async (franchiseData, franchiseeEmail, addressExtras) => {

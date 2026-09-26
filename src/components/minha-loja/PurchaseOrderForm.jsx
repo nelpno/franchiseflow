@@ -301,19 +301,8 @@ export default function PurchaseOrderForm({
 
       await PurchaseOrderItem.createMany(itemsToCreate);
 
-      // Notificar admins (fire-and-forget — erro aqui NÃO afeta o pedido)
-      // Trigger on_new_purchase_order foi esvaziado — notificação fica no frontend
-      // porque aqui já temos valor total e quantidade calculados
-      try {
-        await supabase.rpc('notify_admins', {
-          p_title: 'Novo pedido de reposição',
-          p_message: `Pedido de ${formatBRL(grandTotal)} — ${itemsToCreate.length} produtos (${itemsToCreate.reduce((s, i) => s + i.quantity, 0)} un.)`,
-          p_type: 'info',
-          p_icon: 'local_shipping',
-          p_link: '/PurchaseOrders',
-        });
-      } catch { /* notificação é bonus, pedido já foi criado */ }
-
+      // Notificação por RPC removida (26/09/2026): "Pendências" na home do admin
+      // (get_admin_pending_counts) substitui as notificações de pedido/pagamento.
       clearDraft();
       if (modeloAplicadoRef.current) {
         try { window.clarity?.('event', 'pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }

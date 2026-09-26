@@ -888,7 +888,10 @@ export default function Marketing() {
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
   const [showUpload, setShowUpload] = useState(false);
-  const [activeTab, setActiveTab] = useState("materiais");
+  // ?tab=investimento: a home do admin (Pendências) chega direto nos pagamentos
+  const [activeTab, setActiveTab] = useState(() =>
+    new URLSearchParams(window.location.search).get("tab") === "investimento" ? "investimento" : "materiais"
+  );
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -1061,7 +1064,7 @@ export default function Marketing() {
       </div>
 
       {(isAdmin || user?.role === "manager") && (
-        <Tabs defaultValue="materiais" onValueChange={(v) => setActiveTab(v)}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
           <TabsList className="mb-4">
             <TabsTrigger value="materiais">Materiais</TabsTrigger>
             <TabsTrigger value="investimento">Investimento</TabsTrigger>

@@ -24,7 +24,7 @@ const ADMIN_ONLY_PAGES = new Set([
 ]);
 
 // Páginas liberadas para o papel customer_success (+ admin/manager)
-const CS_PAGES = new Set(['CustomerSuccess']);
+const CS_PAGES = new Set(['CustomerSuccess', 'Unidades']);
 const CS_ROLES = ['customer_success', 'admin', 'manager'];
 
 function AdminRoute({ children }) {
