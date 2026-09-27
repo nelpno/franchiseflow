@@ -227,6 +227,14 @@ export default function TabEstoque({
       }
     }
 
+    clearIfSame();
+    await salvarCelula(itemId, field, newValue, item.product_name);
+  };
+
+  // Antes, se o update falhava o numero digitado sumia (a celula fechava e voltava o valor
+  // antigo, com um "Erro ao atualizar" generico). Agora o aviso diz o produto e o valor e
+  // tem "Tentar de novo" com o MESMO valor (27/09/2026).
+  const salvarCelula = async (itemId, field, newValue, nomeProduto) => {
     try {
       await InventoryItem.update(itemId, {
         [field]: newValue,
@@ -245,9 +253,15 @@ export default function TabEstoque({
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Erro ao atualizar:", error);
-      toast.error("Erro ao atualizar estoque.");
-    } finally {
-      clearIfSame();
+      const valorTexto = field === "sale_price" || field === "cost_price" ? formatBRL(newValue) : String(newValue);
+      toast.error(`Não salvou: ${nomeProduto || "produto"} ficou com o valor antigo.`, {
+        description: `Você tinha digitado ${valorTexto}. Toque em "Tentar de novo" para salvar.`,
+        duration: 20000,
+        action: {
+          label: "Tentar de novo",
+          onClick: () => salvarCelula(itemId, field, newValue, nomeProduto),
+        },
+      });
     }
   };
 
@@ -1222,7 +1236,7 @@ export default function TabEstoque({
 
       {/* Add/Edit product dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink">
               <MaterialIcon icon="inventory_2" size={20} className="text-brand" />

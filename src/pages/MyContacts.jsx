@@ -378,8 +378,8 @@ export default function MyContacts() {
     const params = new URLSearchParams({ action: "nova-venda" });
     if (contact.id) params.set("contact_id", contact.id);
     const phone = getContactPhone(contact);
-    if (phone) params.set("phone", phone);
-    navigate(`/Vendas?${params.toString()}`);
+    // Telefone vai no state, nunca na URL: a URL e gravada pelo Clarity (LGPD, 27/09/2026).
+    navigate(`/Vendas?${params.toString()}`, { state: phone ? { phone } : undefined });
   };
 
   // Loading skeleton
@@ -504,7 +504,7 @@ export default function MyContacts() {
 
       {/* Create Contact Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Novo Cliente</DialogTitle>
           </DialogHeader>
@@ -835,7 +835,7 @@ export default function MyContacts() {
           if (!open) setEditingContact(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Editar Contato</DialogTitle>
           </DialogHeader>

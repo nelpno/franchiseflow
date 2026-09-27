@@ -57,6 +57,17 @@ function loadDraft(franchiseId) {
   }
 }
 
+// Id da venda nova gerado no aparelho, antes da 1a tentativa: as novas tentativas mandam o
+// MESMO id e a RPC nao grava em dobro quando so a resposta se perdeu (27/09/2026).
+function novoIdVenda() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 function clearDraft(franchiseId) {
   try {
     localStorage.removeItem(getDraftKey(franchiseId));
@@ -432,6 +443,9 @@ export default function SaleForm({
   const draftRestoredRef = useRef(false);
   // Debounce timer ref for auto-save
   const draftTimerRef = useRef(null);
+  // Id da venda nova (ver novoIdVenda). Vive no rascunho: reabrir depois de uma falha
+  // reaproveita o id, e a venda que ja tinha entrado nao e gravada de novo.
+  const clientSaleIdRef = useRef(null);
 
   // Pre-fill when editing
   useEffect(() => {
@@ -506,12 +520,14 @@ export default function SaleForm({
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
     if (draft.saleDate) setSaleDate(draft.saleDate);
     if (draft.observacoes) setObservacoes(draft.observacoes);
+    if (draft.clientSaleId) clientSaleIdRef.current = draft.clientSaleId;
 
     toast.info("Rascunho recuperado", {
       action: {
         label: "Descartar",
         onClick: () => {
           clearDraft(franchiseId);
+          clientSaleIdRef.current = null;
           setItems([{ inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 }]);
           setContactId(null);
           setContactSearch("");
@@ -600,7 +616,7 @@ export default function SaleForm({
 
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      saveDraft(franchiseId, draftData);
+      saveDraft(franchiseId, { ...draftData, clientSaleId: clientSaleIdRef.current });
     }, 1000);
 
     return () => {
@@ -826,8 +842,11 @@ export default function SaleForm({
       return;
     }
 
+    if (!isEditing && !clientSaleIdRef.current) clientSaleIdRef.current = novoIdVenda();
+
     const submitSale = async () => {
       const saleData = {
+        ...(isEditing ? {} : { client_id: clientSaleIdRef.current }),
         franchise_id: franchiseId,
         value: subtotal,
         contact_id: resolvedContactId || null,
@@ -928,6 +947,7 @@ export default function SaleForm({
 
       // Success — clear draft and notify
       clearDraft(franchiseId);
+      clientSaleIdRef.current = null;
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
 
       // O cliente pode se perder no caminho: resolveContactId devolve null em silencio
@@ -946,7 +966,7 @@ export default function SaleForm({
       console.error("Erro ao salvar venda após retentativas:", error);
       // Ensure draft is saved so user doesn't lose data
       if (!isEditing) {
-        saveDraft(franchiseId, draftData);
+        saveDraft(franchiseId, { ...draftData, clientSaleId: clientSaleIdRef.current });
       }
       // Erro de REGRA tem motivo e a pessoa precisa dele: "nao foi possivel salvar"
       // com botao "Tentar novamente" manda ela repetir o que nunca vai passar.

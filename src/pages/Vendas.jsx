@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
@@ -21,7 +21,10 @@ export default function Vendas() {
   const { user, selectedFranchise } = useAuth();
   const rawAction = searchParams.get("action");
   const actionParam = rawAction === "nova-venda" ? rawAction : null;
-  const rawPhone = searchParams.get("phone");
+  // Telefone chega pelo state da navegacao, fora da URL: na URL ele ia parar no Clarity (LGPD, 27/09/2026).
+  // O ?phone= continua aceito para links antigos (MinhaLoja).
+  const location = useLocation();
+  const rawPhone = location.state?.phone || searchParams.get("phone");
   const phoneParam = rawPhone ? rawPhone.replace(/\D/g, "").slice(0, 11) : null;
   const rawContactId = searchParams.get("contact_id");
   const contactIdParam = rawContactId && /^[0-9a-f-]{36}$/i.test(rawContactId) ? rawContactId : null;

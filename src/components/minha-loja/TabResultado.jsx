@@ -1302,7 +1302,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
 
       {/* Expense form dialog */}
       <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
-        <DialogContent className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-md p-4 sm:p-6">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-md p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">
               {editingExpense ? "Editar despesa" : "Lançar despesa"}

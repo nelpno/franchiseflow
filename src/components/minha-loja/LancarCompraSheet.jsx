@@ -129,6 +129,7 @@ export default function LancarCompraSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        onInteractOutside={(e) => e.preventDefault()}
         side="bottom"
         className="rounded-t-2xl max-h-[92vh] overflow-y-auto sm:max-w-2xl sm:mx-auto"
       >
