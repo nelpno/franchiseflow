@@ -41,6 +41,26 @@ function Resumo({ r, freteRotulo }) {
   );
 }
 
+// Etiqueta do "Avisar entrega": na fila (o n8n ainda vai mandar), avisada, ou falhou (com o motivo).
+function AvisoEntregaTag({ order }) {
+  const st = order.delivery_notice_status;
+  if (!st) return null;
+  if (st === "fila") {
+    return <span className="inline-flex items-center rounded-full bg-surface px-2 py-0.5 font-semibold text-ink-2">aviso na fila</span>;
+  }
+  if (st === "enviado") {
+    const quando = order.delivery_notified_at
+      ? new Date(order.delivery_notified_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      : "";
+    return <span className="inline-flex items-center rounded-full bg-ok/10 px-2 py-0.5 font-semibold text-ok-ink">avisada {quando}</span>;
+  }
+  return (
+    <span className="inline-flex items-center rounded-full bg-err/10 px-2 py-0.5 font-semibold text-err">
+      aviso falhou{order.delivery_notice_error ? `: ${order.delivery_notice_error}` : ""}
+    </span>
+  );
+}
+
 const SecaoLote = forwardRef(function SecaoLote(
   {
     numero,
@@ -184,7 +204,7 @@ const SecaoLote = forwardRef(function SecaoLote(
                     <p className={`text-sm ${atrasado ? "font-semibold text-err" : "text-ink-3"}`}>
                       {linhaEsperaLabel(order)}
                     </p>
-                    {(mensalidadeAtrasada || entregaPrevista) && (
+                    {(mensalidadeAtrasada || entregaPrevista || order.delivery_notice_status) && (
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                         {mensalidadeAtrasada && (
                           <span className="inline-flex items-center rounded-full bg-err/10 px-2 py-0.5 font-semibold text-err">
@@ -192,6 +212,7 @@ const SecaoLote = forwardRef(function SecaoLote(
                           </span>
                         )}
                         {entregaPrevista && <span className="text-ink-3">entrega prevista {entregaPrevista}</span>}
+                        <AvisoEntregaTag order={order} />
                       </div>
                     )}
                     {order.notes && (

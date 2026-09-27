@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {
   MOTIVOS_MENSAGEM, PALAVRAS_PROIBIDAS, mensagemDaFicha, mensagemParaUnidade, montarMensagemFranqueado,
-  temPalavraProibida,
+  temPalavraProibida, montarAvisoEntrega, quandoEntrega,
 } from "./mensagemFranqueado.js";
 import { montarMensagemUnidade } from "./fichaUnidade.js";
 import { montarMensagemVerba } from "../components/marketing/admin/verbaHelpers.js";
@@ -120,6 +120,25 @@ test("montarMensagemVerba (reexport do Marketing) usa o mesmo gerador", () => {
   const msg = montarMensagemVerba("2026-09", { owner_name: "Karina Souza", franchise_name: "Maxi Massas Itápolis" });
   assert.equal(msg, montarMensagemFranqueado({ motivo: "sem_verba", mes: "2026-09", nome: "Karina Souza", franchiseName: "Maxi Massas Itápolis" }));
   assert.ok(!EMOJI.test(montarMensagemVerba("2026-10")));
+});
+
+test("aviso de entrega: um pedido com frete, amanhã", () => {
+  const m = montarAvisoEntrega({ nome: "Maria Aparecida", pedidos: [{ total: 3600.8, frete: 350 }], data: "2026-09-28", hoje: "2026-09-27" });
+  assert.ok(m.startsWith("Oi, Maria! Seu pedido da Maxi sai para entrega amanhã, segunda (28/09)."), m);
+  assert.ok(m.includes("Produtos: R$\u00a03.600,80") && m.includes("Frete: R$\u00a0350,00") && m.includes("Total: R$\u00a03.950,80"), m);
+  assert.ok(!EMOJI.test(m) && !TRAVESSAO.test(m) && !temPalavraProibida(m) && !m.includes("**"));
+});
+
+test("aviso de entrega: acréscimo soma, frete zero vira Valor, sem nome", () => {
+  const m = montarAvisoEntrega({ pedidos: [{ total: "100" }, { total: 50.5, frete: 0 }], data: "2026-10-03", hoje: "2026-09-27" });
+  assert.ok(m.startsWith("Oi! Seus 2 pedidos da Maxi saem para entrega no sábado (03/10)."), m);
+  assert.ok(m.includes("Valor: R$\u00a0150,50") && !m.includes("Frete"), m);
+});
+
+test("quando entrega: hoje / dia útil com artigo", () => {
+  assert.equal(quandoEntrega("2026-09-27", "2026-09-27"), "hoje, domingo (27/09)");
+  assert.equal(quandoEntrega("2026-09-30", "2026-09-27"), "na quarta (30/09)");
+  assert.equal(quandoEntrega("", "2026-09-27"), "");
 });
 
 console.log(`mensagemFranqueado: ${passed} testes ok`);

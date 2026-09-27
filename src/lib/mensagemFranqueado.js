@@ -10,6 +10,7 @@
 import { PALAVRAS_PROIBIDAS } from "./customerActions.js";
 import { dataCurta, nomeMes, primeiroNome } from "./adminFormat.js";
 import { linhaDaFicha, nomeCurto, sinaisUnidade } from "./networkOverview.js";
+import { formatBRL } from "./formatters.js";
 
 export { PALAVRAS_PROIBIDAS };
 
@@ -119,4 +120,40 @@ export function mensagemDaFicha(unit, opcoes) {
 export function temPalavraProibida(texto) {
   const alvo = String(texto || "").toLowerCase();
   return PALAVRAS_PROIBIDAS.find((p) => alvo.includes(p)) || null;
+}
+
+// Aviso de entrega do pedido à fábrica (27/09): sai pelo WhatsApp do Nelson (admin_nelson),
+// disparado em "Para separar e entregar". Uma mensagem por UNIDADE (acréscimo soma junto).
+//   montarAvisoEntrega({ nome: owner_name, pedidos: [{ total, frete }], data: 'YYYY-MM-DD',
+//                        hoje: 'YYYY-MM-DD' (BRT) })
+// Frete zero (acréscimo/retirada) não aparece: só "Valor". Data: "hoje"/"amanhã" só quando é.
+const DIAS_SEMANA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+export function quandoEntrega(data, hoje) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data || ""))) return "";
+  const t = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
+  const dow = new Date(t(data)).getUTCDay();
+  const dia = `${DIAS_SEMANA[dow]} (${dataCurta(data)})`;
+  const diff = hoje ? Math.round((t(data) - t(hoje)) / 86400000) : null;
+  if (diff === 0) return `hoje, ${dia}`;
+  if (diff === 1) return `amanhã, ${dia}`;
+  return `${dow === 0 || dow === 6 ? "no" : "na"} ${dia}`;
+}
+
+export function montarAvisoEntrega({ nome, pedidos = [], data, hoje } = {}) {
+  const primeiro = primeiroNome(nome);
+  const produtos = pedidos.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
+  const frete = pedidos.reduce((s, p) => s + (parseFloat(p.frete) || 0), 0);
+  const varios = pedidos.length > 1;
+  const linhas = [
+    `${primeiro ? `Oi, ${primeiro}!` : "Oi!"} ${varios ? `Seus ${pedidos.length} pedidos da Maxi saem` : "Seu pedido da Maxi sai"} para entrega ${quandoEntrega(data, hoje)}.`,
+    "",
+  ];
+  if (frete > 0) {
+    linhas.push(`Produtos: ${formatBRL(produtos)}`, `Frete: ${formatBRL(frete)}`, `Total: ${formatBRL(produtos + frete)}`);
+  } else {
+    linhas.push(`Valor: ${formatBRL(produtos)}`);
+  }
+  linhas.push("", "Qualquer dúvida, me chama.");
+  return linhas.join("\n");
 }

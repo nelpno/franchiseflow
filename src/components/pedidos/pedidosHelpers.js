@@ -11,7 +11,7 @@ export const CAPACIDADE_CAMINHAO_KG = 1500;
 // OrderDetailDialog usam. `confirmed_at` veio com supabase/2026-09-26-admin-14-purchase-orders-
 // confirmed-at.sql (aplicada 26/09); pode ser null em pedido antigo sem backfill.
 export const COLUNAS_PEDIDO =
-  "id, franchise_id, status, ordered_at, delivered_at, estimated_delivery, total_amount, total_weight_kg, freight_cost, notes, confirmed_at";
+  "id, franchise_id, status, ordered_at, delivered_at, estimated_delivery, total_amount, total_weight_kg, freight_cost, notes, confirmed_at, delivery_notice_status, delivery_notified_at, delivery_notice_error";
 
 export const STATUS_LABEL = {
   pendente: "Pendente",

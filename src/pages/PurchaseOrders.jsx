@@ -13,6 +13,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { PurchaseOrder, PurchaseOrderItem, FranchiseConfiguration, getProductWeightMap } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
+import { avisarEntregaPedidos } from "@/api/functions";
+import { montarAvisoEntrega } from "@/lib/mensagemFranqueado";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { resolveDeliveryAddress } from "@/lib/addressUtils";
 import { formatBRLInteger } from "@/lib/formatters";
@@ -80,6 +82,9 @@ export default function PurchaseOrders() {
   const [desmarcadosConfirmar, setDesmarcadosConfirmar] = useState(() => new Set());
   // Data em BRT ("yyyy-MM-dd") pro campo "Entregue em" do diálogo de entrega em lote.
   const [dataEntrega, setDataEntrega] = useState(() => dataBRT());
+  // "Avisar entrega": pedidos marcados + data que vai na mensagem (padrão: amanhã).
+  const [avisoEntrega, setAvisoEntrega] = useState(null);
+  const [dataAviso, setDataAviso] = useState(() => dataBRT(1));
 
   // Frete digitado na lista: rascunho por pedido (texto) + estado do salvamento.
   const [rascunhos, setRascunhos] = useState({});
@@ -517,6 +522,93 @@ export default function PurchaseOrders() {
     }
   };
 
+  // "Avisar entrega": uma mensagem por unidade (acréscimo vai junto), com o frete da tela.
+  const gruposAviso = useMemo(() => {
+    if (!avisoEntrega) return [];
+    const porUnidade = new Map();
+    avisoEntrega.forEach((o) => {
+      if (!porUnidade.has(o.franchise_id)) porUnidade.set(o.franchise_id, []);
+      porUnidade.get(o.franchise_id).push(o);
+    });
+    return [...porUnidade.entries()].map(([franchiseId, pedidos]) => {
+      const contato = getContato(franchiseId);
+      return {
+        franchiseId,
+        nome: getFranchiseName(franchiseId),
+        temTelefone: !!String(contato.phone || "").replace(/\D/g, ""),
+        jaAvisada: pedidos.some((o) => o.delivery_notice_status === "enviado"),
+        pedidos,
+        texto: montarAvisoEntrega({
+          nome: contato.ownerName,
+          pedidos: pedidos.map((o) => ({ total: o.total_amount, frete: freteNaSecao2(o) })),
+          data: dataAviso,
+          hoje: dataBRT(),
+        }),
+      };
+    });
+  }, [avisoEntrega, getContato, getFranchiseName, freteNaSecao2, dataAviso]);
+
+  const avisoComTelefone = gruposAviso.filter((g) => g.temTelefone);
+
+  const enviarAvisos = async () => {
+    const grupos = avisoComTelefone;
+    const lista = grupos.flatMap((g) => g.pedidos);
+    const invalidos = lista.filter((o) => rascunhos[o.id] !== undefined && !Number.isFinite(parseFrete(rascunhos[o.id])));
+    if (invalidos.length > 0) {
+      toast.error(`Confira o frete de ${nomesDe(invalidos)} antes de avisar.`);
+      return;
+    }
+    if (!dataAviso) {
+      toast.error("Escolha a data da entrega.");
+      return;
+    }
+    setLoteOcupado("avisar");
+    try {
+      await esperarFretes(lista.map((o) => o.id));
+      // A data avisada vira a "Previsão" que a franqueada já vê no app.
+      const { ok, falhou } = await atualizarVarios(lista, (o) => ({
+        estimated_delivery: dataAviso,
+        delivery_notice_status: "fila",
+        delivery_notice_error: null,
+        ...(rascunhos[o.id] !== undefined ? { freight_cost: parseFrete(rascunhos[o.id]) } : {}),
+      }));
+      if (!mountedRef.current) return;
+      limparRascunhos(ok.map((o) => o.id));
+      const okIds = new Set(ok.map((o) => o.id));
+      const avisos = grupos
+        .map((g) => ({ franchise_id: g.franchiseId, order_ids: g.pedidos.filter((o) => okIds.has(o.id)).map((o) => o.id), text: g.texto }))
+        .filter((a) => a.order_ids.length > 0);
+      if (avisos.length > 0) {
+        try {
+          await avisarEntregaPedidos(avisos);
+          const min = Math.max(1, Math.round((avisos.length - 1) * 0.8));
+          toast.success(
+            avisos.length === 1
+              ? "Aviso na fila. Chega em alguns segundos."
+              : `${avisos.length} avisos na fila. Saem um por vez, com intervalo, em uns ${min} min.`
+          );
+        } catch (err) {
+          console.error("Erro ao avisar entrega:", err);
+          await atualizarVarios(ok, () => ({ delivery_notice_status: "falhou", delivery_notice_error: "Não foi possível falar com o WhatsApp" }));
+          toast.error("Não consegui mandar os avisos agora. Tente de novo em instantes.");
+        }
+      }
+      if (falhou.length > 0) toast.error(`Não avisou: ${nomesDe(falhou)}. Tente de novo.`);
+      setAvisoEntrega(null);
+      loadData({ silent: true });
+    } finally {
+      if (mountedRef.current) setLoteOcupado(null);
+    }
+  };
+
+  // Enquanto houver aviso na fila do n8n, recarrega a cada 20 s para a etiqueta mudar sozinha.
+  const temAvisoNaFila = orders.some((o) => o.delivery_notice_status === "fila");
+  useEffect(() => {
+    if (!temAvisoNaFila) return undefined;
+    const id = setTimeout(() => loadData({ silent: true }), 20000);
+    return () => clearTimeout(id);
+  }, [temAvisoNaFila, versao]);
+
   // Exclusão definitiva (pendentes marcados em "Para confirmar" e cancelados em Entregues).
   // Devolve true/false — a EntreguesSection só limpa a seleção quando deu certo.
   const excluirPedidos = async (orderIds) => {
@@ -686,6 +778,7 @@ export default function PurchaseOrders() {
         }}
         acoesSecundarias={[
           { label: "Imprimir fichas", icon: "print", onClick: (sel) => imprimirLote(sel) },
+          { label: "Avisar entrega", icon: "send", onClick: (sel) => { setDataAviso(dataBRT(1)); setAvisoEntrega(sel); } },
         ]}
       />
 
@@ -784,6 +877,81 @@ export default function PurchaseOrders() {
                 aria-hidden="true"
               />
               Confirmar entrega
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* "Avisar entrega": WhatsApp pelo número do Nelson, uma mensagem por unidade. */}
+      <Dialog open={!!avisoEntrega} onOpenChange={(open) => { if (!open && loteOcupado !== "avisar") setAvisoEntrega(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
+              <MaterialIcon icon="send" size={20} className="text-brand" />
+              Avisar entrega
+            </DialogTitle>
+          </DialogHeader>
+          {avisoEntrega && (
+            <div className="space-y-3 text-sm text-ink-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="aviso-data" className="text-xs font-bold uppercase tracking-wide text-ink-3">
+                  Entrega em
+                </label>
+                <input
+                  id="aviso-data"
+                  type="date"
+                  value={dataAviso}
+                  min={dataBRT()}
+                  onChange={(e) => setDataAviso(e.target.value)}
+                  className="h-10 rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:border-brand focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setDataAviso(dataBRT(1))}
+                  className="min-h-10 rounded-xl border border-surface-line bg-white px-3 text-sm font-semibold text-ink-2 hover:bg-surface"
+                >
+                  Amanhã
+                </button>
+              </div>
+              <p>
+                {avisoComTelefone.length === 1 ? "1 unidade recebe" : `${avisoComTelefone.length} unidades recebem`} a mensagem no
+                WhatsApp, pelo seu número, uma de cada vez, com intervalo de 25 a 70 segundos. A data também aparece como previsão no app delas.
+              </p>
+              {avisoComTelefone[0] && (
+                <div>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wide text-ink-3">Exemplo: {avisoComTelefone[0].nome}</p>
+                  <p className="whitespace-pre-line rounded-xl border border-surface-line bg-surface p-3 text-ink">{avisoComTelefone[0].texto}</p>
+                </div>
+              )}
+              {avisoComTelefone.some((g) => g.jaAvisada) && (
+                <p className="font-semibold text-ink">
+                  Já avisadas antes (recebem de novo): {avisoComTelefone.filter((g) => g.jaAvisada).map((g) => g.nome).join(", ")}.
+                </p>
+              )}
+              {gruposAviso.some((g) => !g.temTelefone) && (
+                <p className="font-semibold text-err">
+                  Sem telefone cadastrado (não recebem): {gruposAviso.filter((g) => !g.temTelefone).map((g) => g.nome).join(", ")}.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setAvisoEntrega(null)} disabled={loteOcupado === "avisar"} className="min-h-10 border-ink-4 text-ink-2 rounded-xl">
+              Voltar
+            </Button>
+            <Button
+              size="sm"
+              onClick={enviarAvisos}
+              disabled={loteOcupado === "avisar" || avisoComTelefone.length === 0}
+              className="min-h-10 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-1"
+            >
+              <MaterialIcon
+                icon={loteOcupado === "avisar" ? "progress_activity" : "send"}
+                size={16}
+                className={loteOcupado === "avisar" ? "animate-spin" : ""}
+                aria-hidden="true"
+              />
+              {avisoComTelefone.length === 1 ? "Enviar 1 aviso" : `Enviar ${avisoComTelefone.length} avisos`}
             </Button>
           </DialogFooter>
         </DialogContent>

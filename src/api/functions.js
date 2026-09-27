@@ -61,6 +61,22 @@ export async function inviteFranchisee(email) {
 }
 
 // Convite de staff (admin/gerente) — cria conta + define role via n8n
+// Aviso de entrega dos pedidos à fábrica (27/09). O n8n responde na hora e manda um WhatsApp
+// por unidade pelo admin_nelson, com pausa aleatória entre elas; o status volta gravado em
+// purchase_orders.delivery_notice_status. O telefone sai do banco, não daqui.
+export async function avisarEntregaPedidos(avisos) {
+  const headers = await getAuthHeaders();
+  const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/aviso-entrega-pedidos`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ avisos }),
+  }, 30000);
+  if (!response.ok) throw new Error('Erro ao enviar avisos: ' + response.status);
+  const data = await response.json();
+  if (!data.ok) throw new Error(data.msg || 'Erro ao enviar avisos');
+  return data;
+}
+
 export async function staffInvite(email, role) {
   const headers = await getAuthHeaders();
   const response = await fetchWithTimeout(`${N8N_WEBHOOK_BASE}/staff-invite`, {
