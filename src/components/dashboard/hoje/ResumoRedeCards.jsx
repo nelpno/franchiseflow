@@ -1,14 +1,27 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRLInteger, formatPct } from "@/lib/formatters";
 import { formatPontos, mesAtualLabel, trechoMesAnteriorLabel } from "./hojeFormat";
-import { CARTAO } from "@/components/shared/adminUi";
+import { CARTAO, CARTAO_CLICAVEL } from "@/components/shared/adminUi";
+import FaixaDias from "@/components/shared/FaixaDias";
+import FaturamentoDiaSheet from "@/components/shared/FaturamentoDiaSheet";
+import { montarDias } from "@/lib/faturamentoDia";
 
 // K9: 1º cartão (o faturamento) ocupa as 2 colunas no celular; os outros dois ficam
 // lado a lado. No desktop os 3 dividem a linha igualmente.
-function Cartao({ destaque, children }) {
-  return <div className={`${CARTAO} flex min-w-0 flex-col gap-2 ${destaque ? "col-span-2 md:col-span-1" : ""}`}>{children}</div>;
+function Cartao({ destaque, children, onClick }) {
+  const cls = `flex min-w-0 flex-col gap-2 ${destaque ? "col-span-2 md:col-span-1" : ""}`;
+  // K2: com o detalhe por dia disponível, o cartão inteiro vira o botão que o abre.
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`${CARTAO_CLICAVEL} ${cls} w-full text-left`}>
+        {children}
+      </button>
+    );
+  }
+  return <div className={`${CARTAO} ${cls}`}>{children}</div>;
 }
 
 // K6: rótulo em 1 linha no celular — por isso os textos curtos abaixo (achado médio
@@ -28,13 +41,23 @@ function Valor({ children }) {
 // 3 cartões do topo de "Hoje": faturamento, unidades ativas em 7d, conversão robô→compra.
 // resumo = resumoRede(overview) de src/lib/networkOverview.js (fonte única com "Unidades").
 // mes = 'YYYY-MM' do banco (mesesVerba(overview).mes), nunca o relógio do aparelho.
-export default function ResumoRedeCards({ resumo, funil, mes }) {
+// fatDia = useFaturamentoDia() da AdminHoje ({ data, isLoading, error }): faixa de dias no
+// cartão de faturamento + detalhe. Sem o dado (erro ou função ainda não aplicada) o cartão
+// fica como era, sem faixa e sem clique.
+export default function ResumoRedeCards({ resumo, funil, mes, fatDia }) {
   const trechoAnterior = trechoMesAnteriorLabel(mes);
   const semVenda7d = resumo.total - resumo.venderam7d;
+  const [detalheAberto, setDetalheAberto] = useState(false);
+  const dadosDia = fatDia?.data || null;
+  const dias = useMemo(() => montarDias(dadosDia), [dadosDia]);
+  const temFaixa = dias.length > 0;
 
   return (
     <section aria-label="Como está a rede" className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
-      <Cartao destaque>
+      <Cartao
+        destaque
+        onClick={temFaixa ? () => setDetalheAberto(true) : undefined}
+      >
         <Rotulo>REDE · {mesAtualLabel(mes)}</Rotulo>
         <Valor>{formatBRLInteger(resumo.receitaMes)}</Valor>
         {resumo.deltaPct !== null ? (
@@ -47,6 +70,11 @@ export default function ResumoRedeCards({ resumo, funil, mes }) {
         ) : (
           <p className="text-sm text-ink-3">Sem base de comparação ainda</p>
         )}
+        {temFaixa ? (
+          <FaixaDias dias={dias} mes={dadosDia.mes} />
+        ) : fatDia?.isLoading ? (
+          <Skeleton className="h-9 w-full rounded-md motion-reduce:animate-none" />
+        ) : null}
       </Cartao>
 
       <Cartao>
@@ -95,6 +123,10 @@ export default function ResumoRedeCards({ resumo, funil, mes }) {
           </>
         )}
       </Cartao>
+
+      {temFaixa && (
+        <FaturamentoDiaSheet open={detalheAberto} onOpenChange={setDetalheAberto} dados={dadosDia} mostrarUnidades />
+      )}
     </section>
   );
 }

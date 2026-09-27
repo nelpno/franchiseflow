@@ -6,6 +6,7 @@ import { getNetworkFunnelBenchmark, getCsTasks } from "@/entities/all";
 import { useAdminNetworkOverview } from "@/hooks/useAdminNetworkOverview";
 import { resumoRede, FILTROS, mesesVerba } from "@/lib/networkOverview";
 import { useAdminPendingCounts } from "@/hooks/useAdminPendingCounts";
+import { useFaturamentoDia } from "@/entities/faturamentoDia";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { Skeleton } from "@/components/ui/skeleton";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -35,6 +36,8 @@ export default function AdminHoje() {
     refetch,
   } = useAdminNetworkOverview({ refetchInterval: 300000 });
   const { pending } = useAdminPendingCounts();
+  // Faturamento por dia (faixa no cartão + detalhe): 1 carga, fora do polling de 5 min.
+  const fatDia = useFaturamentoDia(null);
 
   const now = new Date();
   const curStart = format(startOfMonth(now), "yyyy-MM-dd");
@@ -127,7 +130,7 @@ export default function AdminHoje() {
         </div>
       </header>
 
-      <ResumoRedeCards resumo={resumo} funil={funil} mes={mesesVerba(overview)?.mes} />
+      <ResumoRedeCards resumo={resumo} funil={funil} mes={mesesVerba(overview)?.mes} fatDia={fatDia} />
 
       <QuemPrecisaDeVoce overview={overview} />
 

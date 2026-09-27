@@ -1,12 +1,28 @@
 // "Números da unidade": vendas por semana (12 semanas), robô 7d, verba de marketing,
 // clientes que voltam. Ficha da unidade (/Unidade?id=<evo>).
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import FaixaDias from "@/components/shared/FaixaDias";
+import FaturamentoDiaSheet from "@/components/shared/FaturamentoDiaSheet";
+import { CARTAO_CLICAVEL } from "@/components/shared/adminUi";
+import { useFaturamentoDia } from "@/entities/faturamentoDia";
+import { montarDias } from "@/lib/faturamentoDia";
+import { nomeCurto } from "@/lib/networkOverview";
 import { formatBRLInteger, formatPct } from "@/lib/formatters";
 import { dataCurta, nomeMes, somarMeses } from "@/lib/adminFormat";
 import { infoMesSeguinte, linhaDaFicha, novaNaTrilha, rotuloMesVerba, semVerba } from "@/lib/networkOverview";
 import { trechoMesAnteriorLabel } from "@/components/dashboard/hoje/hojeFormat";
 
-function Card({ titulo, children, className = "" }) {
+function Card({ titulo, children, className = "", onClick }) {
+  // K2: com o faturamento por dia disponível, o cartão de vendas vira o botão do detalhe.
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`${CARTAO_CLICAVEL} block w-full text-left ${className}`}>
+        <span className="block text-xs font-semibold text-ink-3">{titulo}</span>
+        {children}
+      </button>
+    );
+  }
   return (
     <div className={`bg-white rounded-2xl p-4 md:p-5 border border-surface-line ${className}`}>
       <div className="text-xs font-semibold text-ink-3">{titulo}</div>
@@ -120,11 +136,32 @@ export default function MetricsGrid({ unit }) {
   // 70+", como se estivesse fraco — quando o problema é não estar conectado.
   const roboNuncaConversou = bot.last_conversation_date == null;
 
+  // Faturamento por dia desta unidade (faixa no cartão de vendas + detalhe, sem a lista de
+  // unidades). Sem o dado, o cartão fica como era.
+  const fatDia = useFaturamentoDia(unit.franchise_id);
+  const dadosDia = fatDia.data || null;
+  const dias = useMemo(() => montarDias(dadosDia), [dadosDia]);
+  const temFaixa = dias.length > 0;
+  const [detalheAberto, setDetalheAberto] = useState(false);
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <Card titulo="VENDAS POR SEMANA · 12 SEMANAS" className="col-span-2 lg:col-span-1">
+      <Card
+        titulo="VENDAS POR SEMANA · 12 SEMANAS"
+        className="col-span-2 lg:col-span-1"
+        onClick={temFaixa ? () => setDetalheAberto(true) : undefined}
+      >
         <SalesBars weeks={unit.sales?.weeks} mesAtual={mesAtual} />
+        {temFaixa && <FaixaDias dias={dias} mes={dadosDia.mes} className="mt-3" />}
       </Card>
+      {temFaixa && (
+        <FaturamentoDiaSheet
+          open={detalheAberto}
+          onOpenChange={setDetalheAberto}
+          dados={dadosDia}
+          titulo={nomeCurto(unit.franchise_name)}
+        />
+      )}
 
       <Card titulo="ROBÔ · ÚLTIMOS 7 DIAS">
         {roboNuncaConversou ? (
