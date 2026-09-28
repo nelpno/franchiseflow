@@ -40,8 +40,8 @@ const TEXTOS = {
     `Pode me mandar a foto do comprovante da verba de ${nomeMes(c.mes) || "anúncio"} da unidade ${c.unidade}? Obrigado!`,
   mensalidade: (c) =>
     c.link
-      ? `A mensalidade do sistema da unidade ${c.unidade} está em aberto${c.vencimento ? ` desde ${c.vencimento}` : ""}. Segue o link para pagar: ${c.link}. Qualquer dúvida, é só me chamar.`
-      : `A mensalidade do sistema da unidade ${c.unidade} está em aberto${c.vencimento ? ` desde ${c.vencimento}` : ""}. Posso te mandar o link de pagamento de novo?`,
+      ? `A mensalidade da Equipe Digital Maxi da unidade ${c.unidade} está em aberto${c.vencimento ? ` desde ${c.vencimento}` : ""}. Segue o link para pagar: ${c.link}. Qualquer dúvida, é só me chamar.`
+      : `A mensalidade da Equipe Digital Maxi da unidade ${c.unidade} está em aberto${c.vencimento ? ` desde ${c.vencimento}` : ""}. Posso te mandar o link de pagamento de novo?`,
   robo_parado: (c) =>
     `O robô da unidade ${c.unidade} está sem conversa${c.dias !== null ? ` há ${c.dias} ${c.dias === 1 ? "dia" : "dias"}` : " há alguns dias"}. Consegue conferir se o WhatsApp dele ainda está conectado?`,
   caiu: (c) =>

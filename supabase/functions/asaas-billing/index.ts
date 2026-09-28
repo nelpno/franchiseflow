@@ -340,7 +340,7 @@ async function createSubscription(franchiseId: string, value: number = 150) {
       value: value,
       nextDueDate: nextDueStr,
       cycle: "MONTHLY",
-      description: "Mensalidade Maxi Massas",
+      description: "Mensalidade Equipe Digital Maxi",
       externalReference: franchiseId,
     }),
   });

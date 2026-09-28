@@ -54,7 +54,7 @@ export default function RaioXPanel({ signals, compacto = false }) {
           <Metric icon="shopping_cart" label="Última venda" value={daysAgo(signals.days_since_last_sale)} />
           <Metric icon="local_shipping" label="Última compra fábrica" value={daysAgo(signals.days_since_last_purchase)}
             tone={signals.days_since_last_purchase >= 30 ? "text-err" : undefined} />
-          <Metric icon="credit_card" label="Mensalidade do sistema" value={signals.subscription_overdue ? "Atrasada" : "Em dia"}
+          <Metric icon="credit_card" label="Equipe Digital Maxi" value={signals.subscription_overdue ? "Atrasada" : "Em dia"}
             tone={signals.subscription_overdue ? "text-err" : "text-ok-ink"} />
           <Metric icon="campaign" label="Verba de marketing (30 dias, líquido)" value={formatBRL(mktCur)} hint={`antes: ${formatBRL(mktPrev)}`}
             tone={mktCur < mktPrev ? "text-err" : mktCur > 0 ? "text-ok-ink" : undefined} />

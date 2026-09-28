@@ -44,7 +44,7 @@ export default function SubscriptionPaymentSheet({ open, onOpenChange, subscript
         <SheetHeader className="mb-4">
           <SheetTitle className="text-lg font-semibold flex items-center gap-2">
             <MaterialIcon icon="workspace_premium" className="text-brand-gold" />
-            Sua Equipe Digital
+            Equipe Digital Maxi
           </SheetTitle>
           <SheetDescription className="text-sm text-gray-600">
             {formattedDueDate

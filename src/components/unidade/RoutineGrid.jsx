@@ -1,4 +1,4 @@
-// "Rotina": usa o Quem chamar hoje?, último pedido à fábrica, mensalidade do sistema.
+// "Rotina": usa o Quem chamar hoje?, último pedido à fábrica, mensalidade da Equipe Digital Maxi.
 // Ficha da unidade (/Unidade?id=<evo>).
 import { Link, useLocation } from "react-router-dom";
 import { formatBRLInteger } from "@/lib/formatters";
@@ -87,7 +87,7 @@ export default function RoutineGrid({ unit, podeVerFinanceiro = true }) {
         link={podeVerFinanceiro ? { href: `/PurchaseOrders?unidade=${evo}`, label: "Ver pedidos da unidade", state: stateFicha } : null}
       />
       <Card
-        titulo="MENSALIDADE DO SISTEMA"
+        titulo="EQUIPE DIGITAL MAXI"
         valor={mensalidadeValor}
         valorTom={semCobranca || vencida ? "text-err" : cancelada || semPagamentoGerado ? "text-ink-3" : "text-ok-ink"}
         link={podeVerFinanceiro

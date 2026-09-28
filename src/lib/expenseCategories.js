@@ -11,7 +11,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "internet_telefone", label: "Internet / Telefone", icon: "wifi", color: "#0284c7", help: "Internet, telefone fixo e celular" },
   { value: "transporte", label: "Transporte", icon: "local_shipping", color: "#15803d", help: "Frete, motoboy, combustível, Uber" },
   { value: "marketing", label: "Marketing", icon: "campaign", color: "#9333ea", help: "Tráfego pago, panfletos, anúncios, leads" },
-  { value: "pacote_sistema", label: "Pacote Tecnologia", icon: "auto_awesome", color: "#dc2626", help: "Mensalidade Maxi Massas (dashboard + robô + tráfego + artes)" },
+  { value: "pacote_sistema", label: "Equipe Digital Maxi", icon: "auto_awesome", color: "#dc2626", help: "Mensalidade da Equipe Digital Maxi (dashboard + robô + tráfego + artes)" },
   { value: "impostos", label: "Impostos", icon: "receipt_long", color: "#475569", help: "DAS, INSS, ISS, NFS-e" },
   { value: "outros", label: "Outros gastos", icon: "more_horiz", color: "#4a3d3d", help: "Despesas que não se encaixam nas demais" },
 ];

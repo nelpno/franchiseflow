@@ -52,7 +52,7 @@ test("clientes diferentes ignora venda sem contato e conta o mesmo cliente uma v
 test("despesa agrupada pelo rótulo da categoria, categorias da maior para a menor", () => {
   assert.equal(rel.meses[0].despesasPorCategoria["Compra de produto"], 30);
   assert.equal(rel.meses[0].despesasPorCategoria["Marketing"], 20);
-  assert.deepEqual(rel.categorias, ["Pacote Tecnologia", "Compra de produto", "Marketing"]);
+  assert.deepEqual(rel.categorias, ["Equipe Digital Maxi", "Compra de produto", "Marketing"]);
 });
 
 test("mais vendidos por quantidade, no mês certo", () => {

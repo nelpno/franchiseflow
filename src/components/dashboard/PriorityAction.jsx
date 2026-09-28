@@ -8,7 +8,7 @@ const SCENARIOS = [
       subscription?.current_payment_status === "OVERDUE",
     render: () => ({
       icon: "warning",
-      title: "Sua Equipe Digital em atraso",
+      title: "Equipe Digital Maxi em atraso",
       subtitle: "Regularize para evitar bloqueio do sistema",
       cta: "Regularizar",
       onPress: true,

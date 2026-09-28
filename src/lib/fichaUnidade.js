@@ -140,7 +140,7 @@ export function diagnosticar(unit) {
     }
     case "mensalidade": {
       const venc = dataCurta(row?.subscription_due_date);
-      partes.push(`A mensalidade do sistema está vencida${venc ? ` desde ${venc}` : ""}.`);
+      partes.push(`A mensalidade da Equipe Digital Maxi está vencida${venc ? ` desde ${venc}` : ""}.`);
       break;
     }
     case "stopped_buying": {
@@ -230,7 +230,7 @@ const ROTEIROS = {
     "Quer que eu explique de novo como funciona a verba de anúncio?",
   ],
   mensalidade: [
-    "Está tudo bem? A mensalidade do sistema está em aberto.",
+    "Está tudo bem? A mensalidade da Equipe Digital Maxi está em aberto.",
     "Consigo te mandar o link de pagamento de novo?",
     "Precisa de ajuda com o PIX ou o cartão?",
   ],
