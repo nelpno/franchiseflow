@@ -156,6 +156,9 @@ const navigationItems = [
   {
     title: "Tutoriais",
     adminLabel: "Ajuda",
+    // Onda 5 (28/09/2026): com o menu novo a tela já é a Ajuda (S10.1); o menu
+    // chamava "Tutoriais" e a franqueada procurava "Ajuda" (teste com a chave ligada).
+    franchiseeLabelV2: "Ajuda",
     url: createPageUrl("Tutoriais"),
     materialIcon: "help_outline",
     roles: TODOS_OS_PAPEIS,
