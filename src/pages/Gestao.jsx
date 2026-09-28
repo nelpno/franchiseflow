@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback, Suspense, lazy } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import { User, InventoryItem, SaleItem, Contact } from "@/entities/all";
@@ -13,8 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import FranchisePicker from "@/components/shared/FranchisePicker";
 import TabEstoque from "@/components/minha-loja/TabEstoque";
-import TabResultado from "@/components/minha-loja/TabResultado";
 import TabReposicao from "@/components/minha-loja/TabReposicao";
+// S8.2 (28/09/2026): TabResultado é o maior chunk da tela (gráficos + PDF) — em lazy pra não
+// entrar no bundle de quem nem abre a aba Resultado (Vendas, Estoque não puxam mais esse peso).
+const TabResultado = lazy(() => import("@/components/minha-loja/TabResultado"));
 import { listarFranquias } from "@/lib/franchisesCache";
 
 const TAB_MAP = {
@@ -276,11 +278,13 @@ export default function Gestao() {
           </TabsList>
 
           <TabsContent value="resultado" className="mt-4">
-            <TabResultado
-              franchiseId={franchiseId}
-              currentUser={currentUser}
-              contacts={franchiseContacts}
-            />
+            <Suspense fallback={<Skeleton className="h-64 rounded-xl" />}>
+              <TabResultado
+                franchiseId={franchiseId}
+                currentUser={currentUser}
+                contacts={franchiseContacts}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="estoque" className="mt-4">

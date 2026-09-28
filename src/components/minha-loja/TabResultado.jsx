@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Sale, SaleItem, Expense, InventoryItem, AuditLog, getMarketingAttribution } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ import {
   isSameMonth,
   parseISO,
   subDays,
+  startOfMonth,
+  endOfMonth,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -810,8 +812,26 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const [lancarCompraOpen, setLancarCompraOpen] = useState(false);
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
 
-  const loadData = useCallback(async () => {
+  // S8.2 (28/09/2026): antes buscava TODO o histórico de vendas/despesas da franquia
+  // (fetchAll sem data) só pra mostrar 1 mês + evolução de 6 meses + acumulado do ano —
+  // franquia com anos de dado ia crescendo pra sempre. Agora a janela é de 13 meses pra trás
+  // do mês em tela (cobre evolucaoData -6m e anoResumo jan→mês, com folga) e só refaz a busca
+  // quando a navegação de mês sai da janela já carregada. Totais continuam sendo SOMA COMPLETA
+  // dos registros da janela (não é amostra); ordenação estável já vem do tie-breaker `id` que
+  // o fetchAll aplica sozinho (src/entities/all.js).
+  const JANELA_MESES = 13;
+  const loadedRangeRef = useRef(null); // { start, end } em 'yyyy-MM-dd', última janela buscada
+
+  const loadData = useCallback(async (opts = {}) => {
     if (!franchiseId) return;
+    const { targetMonth = selectedMonth, force = false } = opts;
+    const neededStart = format(startOfMonth(subMonths(targetMonth, JANELA_MESES)), "yyyy-MM-dd");
+    const neededEnd = format(endOfMonth(targetMonth), "yyyy-MM-dd");
+    const jaCobreJanela = !force && loadedRangeRef.current
+      && neededStart >= loadedRangeRef.current.start
+      && neededEnd <= loadedRangeRef.current.end;
+    if (jaCobreJanela) return;
+
     setLoading(true);
     setErroDeCarga(null);
     try {
@@ -820,9 +840,18 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
           { franchise_id: franchiseId },
           null,
           null,
-          { columns: `id, sale_date, ${SALE_PNL_COLUMNS}, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at`, fetchAll: true }
+          {
+            columns: `id, sale_date, ${SALE_PNL_COLUMNS}, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at`,
+            fetchAll: true,
+            gte: { sale_date: neededStart },
+            lte: { sale_date: neededEnd },
+          }
         ),
-        Expense.filter({ franchise_id: franchiseId }, null, null, { fetchAll: true }),
+        Expense.filter({ franchise_id: franchiseId }, null, null, {
+          fetchAll: true,
+          gte: { expense_date: neededStart },
+          lte: { expense_date: neededEnd },
+        }),
         InventoryItem.filter(
           { franchise_id: franchiseId },
           null,
@@ -866,6 +895,8 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
         setErroDeCarga(safeErrorMessage(results[0].reason, "Não foi possível carregar as vendas do período."));
       } else if (failed.length) {
         toast.error(`Alguns dados não carregaram: ${failed.join(", ")}`);
+      } else {
+        loadedRangeRef.current = { start: neededStart, end: neededEnd };
       }
     } catch (e) {
       console.error("Erro ao carregar dados:", e);
@@ -873,8 +904,11 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
     } finally {
       setLoading(false);
     }
-  }, [franchiseId]);
+  }, [franchiseId, selectedMonth]);
 
+  // Dispara ao trocar de franquia e sempre que a navegação de mês sair da janela carregada
+  // (loadData decide sozinho se precisa buscar de novo, olhando loadedRangeRef; a identidade
+  // do callback já muda exatamente nesses dois casos, por causa do useCallback acima).
   useEffect(() => { loadData(); }, [loadData]);
 
   // Lookup de contatos para resolver nome do cliente no export
@@ -1026,13 +1060,13 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   };
   const handleLancarDespesa = () => { setEditingExpense(null); setExpenseDialogOpen(true); };
   const handleEditExpense = (exp) => { setEditingExpense(exp); setExpenseDialogOpen(true); };
-  const handleExpenseSaved = () => { setExpenseDialogOpen(false); setEditingExpense(null); loadData(); };
+  const handleExpenseSaved = () => { setExpenseDialogOpen(false); setEditingExpense(null); loadData({ force: true }); };
   const handleDeleteExpense = async (id) => {
     try {
       await Expense.delete(id);
       toast.success("Despesa excluída!");
       setDeleteConfirmId(null);
-      loadData();
+      loadData({ force: true });
     } catch (e) {
       console.error(e);
       toast.error("Erro ao excluir despesa.");
@@ -1327,7 +1361,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
         franchiseId={franchiseId}
         inventoryItems={inventoryItems}
         recentSuppliers={recentSuppliers}
-        onSaved={() => loadData()}
+        onSaved={() => loadData({ force: true })}
       />
 
       {/* Delete confirmation */}
