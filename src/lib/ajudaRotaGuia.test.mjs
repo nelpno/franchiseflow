@@ -12,6 +12,7 @@ t("Dashboard, Vendas e MyContacts abrem o guia certo", () => {
   assert.equal(guiaDaRota("MyContacts"), "clientes");
   assert.equal(guiaDaRota("Marketing"), "artes");
   assert.equal(guiaDaRota("FranchiseSettings"), "reconectar-whatsapp");
+  assert.equal(guiaDaRota("Pagamentos"), "pagamentos"); // Onda 5: a tela nasceu na S11 sem "?"
 });
 
 t("Gestão escolhe o guia pela aba (tab), com fallback pra 'resultado' sem aba", () => {

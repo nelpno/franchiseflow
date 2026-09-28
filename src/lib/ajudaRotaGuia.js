@@ -15,6 +15,7 @@ export const ROTA_PARA_GUIA = {
   "Gestao:estoque": "pedido-fabrica",
   "Gestao:reposicao": "pedido-fabrica",
   Gestao: "resultado",
+  Pagamentos: "pagamentos",
 };
 
 /**
