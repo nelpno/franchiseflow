@@ -53,12 +53,14 @@ export default function FinancialObligationsCard({ marketingPayment }) {
   // fica null e o "Pagar" abria uma folha vazia (sem PIX, sem boleto, sem nada). O admin
   // já vê essas unidades como "Aguardando criar" em Financeiro > Mensalidades; aqui, pra
   // a franqueada, é melhor não mostrar do que mostrar um botão que não leva a nada.
-  const showSubscriptionRow = !!subscription?.asaas_subscription_id;
+  const subscriptionClass = classifySubscription(subscription);
+  // Assinatura cancelada nao tem o que pagar: esconde a linha (sem "Pagar" que leva a nada).
+  const showSubscriptionRow =
+    !!subscription?.asaas_subscription_id && subscriptionClass.situacao !== SITUACAO.CANCELADA;
   // P3 28/09/2026, achado 6: comparar so `current_payment_status === "OVERDUE"` perdia o
   // caso de PENDING com vencimento no passado (o paywall ja usava classifySubscription
   // pra isso — aqui nao usava, e a faixa vermelha "Regularize" nunca aparecia nesse caso,
   // ainda que fosse dia 1-2 de atraso, sem bloqueio nenhum). Mesma regua em toda parte.
-  const subscriptionClass = classifySubscription(subscription);
   const isVencido = subscriptionClass.situacao === SITUACAO.VENCIDO;
 
   if (!showSubscriptionRow && !showMarketingRow) return null;

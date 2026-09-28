@@ -157,7 +157,8 @@ export function useSubscriptionStatus() {
       if (pagou) {
         toast.success('Pagamento confirmado!');
       } else if (faturaRolou) {
-        toast.success('Pagamento confirmado! Mas já existe uma nova cobrança em aberto — confira abaixo.');
+        // Troca de fatura nao prova que a anterior foi paga: so informa, sem afirmar pagamento.
+        toast('Sua cobrança foi atualizada. Confira abaixo o que está em aberto.');
       } else {
         toast.error(
           'Ainda não identificamos seu pagamento. Se você já pagou, aguarde alguns minutos ou fale com a Equipe Digital Maxi.'
