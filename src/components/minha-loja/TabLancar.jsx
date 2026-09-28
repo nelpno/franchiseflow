@@ -534,7 +534,8 @@ export default function TabLancar({
     if (sale.contact_id && contactsMap[sale.contact_id]) {
       return contactsMap[sale.contact_id].nome || "Sem nome";
     }
-    return sale.customer_name || "—";
+    // Venda sem cliente: título legível na lista, em vez de um traço solto (Onda 5).
+    return sale.customer_name || "Sem cliente";
   };
 
   const getSourceBadge = (source) => {
@@ -1105,7 +1106,8 @@ export default function TabLancar({
         </Button>
 
         {/* Period tabs */}
-        <div className="flex gap-1 bg-white rounded-xl border border-ink-shadow/5 p-1 overflow-x-auto">
+        {/* Sem barra de rolagem visível no celular (390 px): o corte do último botão já indica que rola. */}
+        <div className="flex gap-1 bg-white rounded-xl border border-ink-shadow/5 p-1 overflow-x-auto [scrollbar-width:none]">
           {PERIOD_FILTERS.map((pf) => {
             if (pf.value === "month") {
               const isActive = period === "month";
