@@ -7,7 +7,7 @@
  * @param {string} className - Additional CSS classes
  * @param {number} size - Font size in px (default: 20)
  */
-export default function MaterialIcon({ icon, filled = false, className = "", size, style = {} }) {
+export default function MaterialIcon({ icon, filled = false, className = "", size, style = {}, ...rest }) {
   const variationSettings = filled
     ? "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24"
     : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24";
@@ -15,6 +15,7 @@ export default function MaterialIcon({ icon, filled = false, className = "", siz
   return (
     <span
       className={`material-symbols-outlined ${className}`}
+      {...rest}
       style={{
         fontVariationSettings: variationSettings,
         // O nome do ícone é o CONTEÚDO do span: a fonte desenha por LIGADURA do texto
