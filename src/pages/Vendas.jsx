@@ -44,6 +44,13 @@ export default function Vendas() {
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
   const franchiseIdRef = useRef(null); // o polling le daqui, nao do render atual
+  // P2 (revisão S8-P3, 28/09/2026): pode haver mais de um loadDadosDaUnidade em voo ao mesmo
+  // tempo — o polling de 5min, o refresh depois de salvar uma venda, e a troca de unidade
+  // (franqueado com 2+) podem se sobrepor. Sem isso, uma resposta ATRASADA de uma carga velha
+  // (de outra unidade, ou anterior a uma venda que acabou de ser salva) sobrescrevia sales/
+  // inventoryItems/contacts e os flags de loading com dado que não é mais o vigente. Cada
+  // chamada tira um número; só aplica o que responde ENQUANTO ainda é a mais recente.
+  const geracaoRef = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -88,6 +95,9 @@ export default function Vendas() {
   // a tela; loadingHistorico controla só o skeleton da lista/busca em TabLancar (S8.1).
   const loadDadosDaUnidade = useCallback(async (evoId, { silencioso = false } = {}) => {
     if (!evoId) return;
+    const minhaGeracao = ++geracaoRef.current;
+    const vigente = () => mountedRef.current && geracaoRef.current === minhaGeracao;
+
     if (!silencioso) {
       setLoadingUnidade(true);
       setLoadingHistorico(true);
@@ -96,13 +106,13 @@ export default function Vendas() {
       const inventoryData = await InventoryItem.filter({ franchise_id: evoId }, "-updated_at", null, {
         columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id',
       });
-      if (!mountedRef.current) return;
+      if (!vigente()) return;
       setInventoryItems(inventoryData);
     } catch (error) {
       console.error("Erro ao carregar estoque:", error);
-      if (!silencioso) toast.error("Erro ao carregar o estoque.");
+      if (!silencioso && vigente()) toast.error("Erro ao carregar o estoque.");
     } finally {
-      if (mountedRef.current) setLoadingUnidade(false);
+      if (vigente()) setLoadingUnidade(false);
     }
 
     try {
@@ -114,7 +124,7 @@ export default function Vendas() {
           columns: 'id, nome, telefone, status, franchise_id, endereco, bairro',
         }),
       ]);
-      if (!mountedRef.current) return;
+      if (!vigente()) return;
       const valor = (r) => (r.status === "fulfilled" ? r.value : []);
       setSales(valor(resultados[0]));
       setContacts(valor(resultados[1]));
@@ -126,7 +136,7 @@ export default function Vendas() {
     } catch (error) {
       console.error("Erro ao carregar histórico da unidade:", error);
     } finally {
-      if (mountedRef.current) setLoadingHistorico(false);
+      if (vigente()) setLoadingHistorico(false);
     }
   }, []);
 
