@@ -428,28 +428,6 @@ export async function getCsFranchiseContacts({ signal } = {}) {
   return data || [];
 }
 
-export async function deleteCsWorklistEvent(eventId) {
-  // .select('id') detecta RLS silencioso (0 rows = sem permissão, não erro)
-  const { data, error } = await withTimeout(
-    supabase.from('cs_worklist_events').delete().eq('id', eventId).select('id'),
-    30000,
-  );
-  if (error) throw error;
-  if (!data || data.length === 0) throw new Error('Sem permissão para apagar este registro.');
-  return true;
-}
-
-export async function updateCsWorklistEventNote(eventId, note) {
-  const trimmed = note?.trim() || null;
-  const { data, error } = await withTimeout(
-    supabase.from('cs_worklist_events').update({ note: trimmed }).eq('id', eventId).select('id'),
-    30000,
-  );
-  if (error) throw error;
-  if (!data || data.length === 0) throw new Error('Sem permissão para editar este registro.');
-  return true;
-}
-
 // ---- Admin redesenhado (Fase 0, 26/09/2026) ----
 // 1 linha por unidade ativa e não-teste (~66). Alimenta "Hoje" e "Unidades".
 // Regras dos filtros em src/lib/networkOverview.js. Admin, gerente e CS; outros = [].
@@ -540,15 +518,6 @@ export async function moveCsTask(taskId, column, userId, franchiseId = null) {
   // destino 'feito' registra 'resolve' (semântica do histórico); demais = 'move'
   await addCsTaskEvent(taskId, column === 'feito' ? 'resolve' : 'move', null, userId, data?.franchise_id ?? franchiseId);
   return data;
-}
-
-export async function getCsTaskEvents(taskId, { signal } = {}) {
-  let query = supabase.from('cs_worklist_events').select('*')
-    .eq('task_id', taskId).order('created_at', { ascending: false });
-  if (signal) query = query.abortSignal(signal);
-  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
-  if (error) throw error;
-  return data || [];
 }
 
 export async function addCsTaskEvent(taskId, eventType, note, userId, franchiseId = null) {
