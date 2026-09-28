@@ -503,3 +503,189 @@ export async function generateBulkPickingSheet(ordersWithItems, weightMap) {
   const dateStr = format(new Date(), "yyyyMMdd");
   doc.save(`Fichas_Separacao_${dateStr}.pdf`);
 }
+
+function fmtAgoraBrasilia(now) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+    }).format(now).replace(",", "");
+  } catch {
+    return format(now, "dd/MM/yyyy HH:mm", { locale: ptBR });
+  }
+}
+
+/**
+ * Pedido à fábrica impresso pela UNIDADE para conferir a chegada (S14.4, 28/09/2026 — pedido da
+ * franqueada de Ubatuba). Mesmo agrupamento/nomes da ficha de separação do admin; duas versões:
+ *   comValores=false -> "só quantidades": NENHUM valor em reais (quem recebe confere sem ver preço)
+ *   comValores=true  -> com preço unitário, total por linha e total do pedido (controle dela)
+ * A coluna RECEBIDO fica em branco para anotar à mão (vira a tela "Chegou meu pedido?" na S15).
+ */
+function renderConferencePage(doc, autoTable, { order, items, franchiseName, comValores, weightMap, now }) {
+  const pw = 210;
+  const m = 10;
+  const usable = pw - m * 2;
+  const shortId = String(order.id || "").slice(0, 8).toUpperCase();
+
+  // ── Header ──
+  let y = m;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.setTextColor(30, 30, 30);
+  doc.text("PEDIDO A FABRICA - CONFERENCIA", m, y + 5);
+  doc.setFontSize(11);
+  doc.text(`PED-${shortId}`, pw - m, y + 5, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.text(franchiseName ? String(franchiseName) : "Maxi Massas", m, y + 11);
+  doc.text(`Feito em ${fmtDate(order.ordered_at)}`, pw - m, y + 11, { align: "right" });
+  if (order.estimated_delivery) {
+    doc.text(`Previsao de entrega: ${fmtDate(order.estimated_delivery)}`, pw - m, y + 16, { align: "right" });
+  }
+
+  y += 20;
+  doc.setDrawColor(30, 30, 30);
+  doc.setLineWidth(0.5);
+  doc.line(m, y, pw - m, y);
+  y += 4;
+
+  // ── Tabela ──
+  const groups = groupItems(items, null);
+  const nCols = comValores ? 6 : 4;
+  const body = [];
+  let totalItems = 0;
+  let totalUnits = 0;
+  let totalValue = 0;
+  let totalWeight = 0;
+
+  groups.forEach((group) => {
+    body.push([
+      { content: group.label, colSpan: nCols, styles: { fillColor: [235, 235, 235], fontStyle: "bold", fontSize: 7.5, textColor: [80, 80, 80], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
+    ]);
+    group.items.forEach((item) => {
+      totalItems++;
+      totalUnits += item.finalQty;
+      const unit = Number(item.unit_price || 0);
+      totalValue += item.finalQty * unit;
+      const w = getItemWeightKg(item, weightMap);
+      if (w != null) totalWeight += item.finalQty * w;
+      const row = ["", getDisplayName(item.product_name) || "---", String(item.finalQty), ""];
+      if (comValores) row.push(fmtBRL(unit), fmtBRL(item.finalQty * unit));
+      body.push(row);
+    });
+  });
+
+  const head = comValores
+    ? [["OK", "PRODUTO", "PEDIDO", "RECEBIDO", "UNIT", "TOTAL"]]
+    : [["OK", "PRODUTO", "PEDIDO", "RECEBIDO"]];
+  const columnStyles = comValores
+    ? {
+        0: { cellWidth: 11, halign: "center" },
+        1: { cellWidth: usable - 11 - 18 - 22 - 20 - 24, fontSize: 10 },
+        2: { cellWidth: 18, halign: "center", fontStyle: "bold", fontSize: 10.5 },
+        3: { cellWidth: 22, halign: "center" },
+        4: { cellWidth: 20, halign: "right", fontSize: 9 },
+        5: { cellWidth: 24, halign: "right", fontSize: 9.5 },
+      }
+    : {
+        0: { cellWidth: 11, halign: "center" },
+        1: { cellWidth: usable - 11 - 22 - 28, fontSize: 10.5 },
+        2: { cellWidth: 22, halign: "center", fontStyle: "bold", fontSize: 11 },
+        3: { cellWidth: 28, halign: "center" },
+      };
+
+  const chk = 3.5;
+  autoTable(doc, {
+    startY: y,
+    head,
+    body,
+    theme: "grid",
+    styles: { fontSize: 9.5, cellPadding: { top: 1.6, bottom: 1.6, left: 2, right: 2 }, lineColor: [60, 60, 60], lineWidth: 0.2, textColor: [20, 20, 20] },
+    headStyles: { fillColor: [225, 225, 225], textColor: [20, 20, 20], fontStyle: "bold", fontSize: 8.5, halign: "center" },
+    columnStyles,
+    showHead: "everyPage",
+    margin: { left: m, right: m },
+    didDrawCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 0) return;
+      const raw = data.row.raw;
+      if (Array.isArray(raw) && raw.length === 1 && raw[0]?.colSpan) return;
+      const cx = data.cell.x + data.cell.width / 2;
+      const cy = data.cell.y + data.cell.height / 2;
+      doc.setDrawColor(90, 90, 90);
+      doc.setLineWidth(0.25);
+      doc.rect(cx - chk / 2, cy - chk / 2, chk, chk);
+    },
+  });
+
+  // ── Resumo ──
+  const tableEnd = doc.lastAutoTable || doc.previousAutoTable;
+  let fy = (tableEnd ? tableEnd.finalY : y + 20) + 6;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(20, 20, 20);
+  let resumo = `${totalItems} ${totalItems === 1 ? "produto" : "produtos"}  |  ${totalUnits} un`;
+  if (totalWeight > 0) resumo += `  |  Peso total: ${formatWeightKg(totalWeight)}`;
+  doc.text(resumo, m, fy);
+
+  if (comValores) {
+    fy += 5.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    const frete = Number(order.freight_cost || 0);
+    let valores = `Produtos: ${fmtBRL(totalValue)}`;
+    if (frete > 0) valores += `  |  Frete: ${fmtBRL(frete)}  |  Total: ${fmtBRL(totalValue + frete)}`;
+    else valores += "  |  Frete: a confirmar pela fabrica";
+    doc.text(valores, m, fy);
+  }
+
+  if (order.notes) {
+    fy += 6;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8.5);
+    doc.setTextColor(70, 70, 70);
+    const linhas = doc.splitTextToSize(`Obs: ${order.notes}`, usable);
+    doc.text(linhas, m, fy);
+    fy += (linhas.length - 1) * 4;
+  }
+
+  // ── Conferência à mão ──
+  fy += 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(30, 30, 30);
+  doc.setDrawColor(60, 60, 60);
+  doc.setLineWidth(0.2);
+  const col2 = pw / 2 + 4;
+  doc.text("Faltou ou veio a mais:", m, fy);
+  doc.text("Conferido por:", col2, fy);
+  doc.line(m, fy + 8, pw / 2 - 6, fy + 8);
+  doc.line(m, fy + 16, pw / 2 - 6, fy + 16);
+  doc.line(col2, fy + 8, pw - m, fy + 8);
+  doc.text("Data: ____ / ____ / ________", col2, fy + 16);
+
+  // ── Rodapé ──
+  doc.setFontSize(7.5);
+  doc.setTextColor(90, 90, 90);
+  const versao = comValores ? "Com valores (controle da unidade)." : "Sem valores (versao para conferencia).";
+  doc.text(`${versao} Impresso pelo app Maxi em ${fmtAgoraBrasilia(now || new Date())}.`, m, 287);
+}
+
+/** Monta o PDF de conferência e devolve o doc (sem salvar) — usado pelo teste. */
+export async function buildConferenceSheet({ order, items, franchiseName, comValores = false, weightMap, now }) {
+  const { jsPDF, autoTable } = await loadPdfLibs();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  renderConferencePage(doc, autoTable, { order, items, franchiseName, comValores: comValores === true, weightMap, now });
+  return doc;
+}
+
+/** Imprime (baixa) o pedido à fábrica da unidade para conferir a chegada. */
+export async function generateConferenceSheet(args) {
+  const doc = await buildConferenceSheet(args);
+  const dateStr = format(new Date(), "yyyyMMdd");
+  const shortId = String(args.order?.id || "").slice(0, 8).toUpperCase();
+  const sufixo = args.comValores === true ? "com_valores" : "so_quantidades";
+  doc.save(`Pedido_${shortId}_${sufixo}_${dateStr}.pdf`);
+}
