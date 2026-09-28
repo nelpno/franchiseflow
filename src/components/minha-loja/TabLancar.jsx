@@ -166,6 +166,19 @@ export default function TabLancar({
   const [confirmationFilter, setConfirmationFilter] = useState("all");
   const [togglingIds, setTogglingIds] = useState(new Set());
   const togglingRef = useRef(new Set());
+  // S12.6 (P3): o "Desfazer" do aviso só vale enquanto nada mudou — nem a venda (outro
+  // Recebi/Voltar depois dele), nem a unidade/tela (o aviso é global e sobrevive à navegação).
+  const recebimentoSeqRef = useRef(new Map());
+  const telaGeracaoRef = useRef(0);
+  const desfazerToastsRef = useRef(new Set());
+  useEffect(() => {
+    const avisos = desfazerToastsRef.current;
+    return () => {
+      telaGeracaoRef.current += 1;
+      avisos.forEach((id) => toast.dismiss(id));
+      avisos.clear();
+    };
+  }, [franchiseId]);
   const [isConfirmingAll, setIsConfirmingAll] = useState(false);
   const [showConfirmAllDialog, setShowConfirmAllDialog] = useState(false);
   // S12.5: lista desenhada de 50 em 50 (os totais saem da lista filtrada INTEIRA).
@@ -333,15 +346,30 @@ export default function TabLancar({
     // Dois toques no mesmo quadro passam antes do disabled pintar: a ref segura o 2º.
     if (togglingRef.current.has(sale.id)) return;
     togglingRef.current.add(sale.id);
+    const seq = (recebimentoSeqRef.current.get(sale.id) || 0) + 1;
+    recebimentoSeqRef.current.set(sale.id, seq);
+    const geracao = telaGeracaoRef.current;
 
     setTogglingIds((prev) => new Set(prev).add(sale.id));
     try {
       await Sale.update(sale.id, patchRecebimento(newValue));
-      if (uiV2 && newValue) {
-        toast.success("Recebido!", {
-          action: { label: "Desfazer", onClick: () => alterarRecebimento(sale, false) },
+      if (uiV2 && newValue && geracao === telaGeracaoRef.current) {
+        const id = toast.success("Recebido!", {
+          action: {
+            label: "Desfazer",
+            onClick: () => {
+              desfazerToastsRef.current.delete(id);
+              if (geracao !== telaGeracaoRef.current || recebimentoSeqRef.current.get(sale.id) !== seq) {
+                toast.info("Essa venda já mudou. Abra a venda para ajustar.");
+                return;
+              }
+              alterarRecebimento(sale, false);
+            },
+          },
         });
-      } else if (uiV2) toast.success("Voltou para a receber.");
+        desfazerToastsRef.current.add(id);
+      } else if (uiV2 && newValue) toast.success("Recebido!");
+      else if (uiV2) toast.success("Voltou para a receber.");
       else toast.success(newValue ? "Pagamento confirmado!" : "Confirmação removida.");
       // Dispara CAPI Purchase apenas na flip false -> true
       if (newValue) fireCapiOnConfirm(sale.id);
