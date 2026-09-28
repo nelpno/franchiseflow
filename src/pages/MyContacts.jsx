@@ -5,6 +5,7 @@ import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import FranchisePicker from "@/components/shared/FranchisePicker";
+import EmptyState from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -659,19 +660,27 @@ export default function MyContacts() {
 
       {/* Contact Cards Grid */}
       {filteredContacts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-surface-line flex items-center justify-center mb-4">
-            <MaterialIcon icon="group" size={32} className="text-ink-2" />
-          </div>
-          <h3 className="text-lg font-semibold text-ink mb-1">
-            Nenhum contato encontrado
-          </h3>
-          <p className="text-sm text-ink-2 max-w-sm">
-            {searchTerm || activeFilter !== "todos"
+        <EmptyState
+          icone="group"
+          titulo="Nenhum contato encontrado"
+          texto={
+            searchTerm || activeFilter !== "todos"
               ? "Tente ajustar seus filtros ou busca."
-              : "Os contatos das suas vendas e conversas aparecerão aqui."}
-          </p>
-        </div>
+              : "Os contatos das suas vendas e conversas aparecerão aqui."
+          }
+          acao={
+            searchTerm || activeFilter !== "todos"
+              ? {
+                  rotulo: "Limpar filtros",
+                  onClick: () => {
+                    setSearchTerm("");
+                    setActiveFilter("todos");
+                  },
+                }
+              : { rotulo: "Novo Cliente", onClick: () => setIsCreating(true) }
+          }
+          className="py-16"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredContacts.slice(0, visibleCount).map((contact) => {
@@ -944,7 +953,7 @@ export default function MyContacts() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setConfirmDelete(editingContact?.id)}
-                  className="text-err hover:text-brand hover:bg-red-50 rounded-xl text-xs h-8 px-2"
+                  className="text-err hover:text-brand hover:bg-err-soft rounded-xl text-xs h-8 px-2"
                 >
                   <MaterialIcon icon="delete" className="text-base mr-1" />
                   Excluir
