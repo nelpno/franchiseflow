@@ -182,6 +182,7 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - ⚠️ **Cuidado com denominador ao apurar por SQL ad-hoc**: `INNER JOIN contacts` (só quem já tem contato cadastrado) dá uma taxa diferente do `LEFT JOIN` da RPC e inventa quedas que não existem. Baseline correto Suzano: mai 62/1177 (5,3%), jun 74/432 (17,1%), jul 1–28 92/589 (15,6%); rede 9,2%, 1,14 compras/cliente.
 
 ### Vendas & Financeiro
+- 🔴 **Contrato do dinheiro (S6, 28/09/2026): [docs/claude/sobrou-no-mes.md](docs/claude/sobrou-no-mes.md)** — "a receber" entra no Sobrou; cancelar = excluir; estorno = desmarcar. `confirmed_at` é do SERVIDOR (trigger `trg_sales_confirmed_at_servidor`: o que o front manda é ignorado). Venda que nasce recebida: `payment_confirmed` no `p_sale_data` e a RPC `save_sale_with_items` grava SÓ no INSERT (nunca um `Sale.update` depois: a nova tentativa pelo `client_id` re-confirmaria venda estornada). CAPI manual: `src/lib/capiManual.js`. Planilha: colunas com `type` em `salesExport.js` (+ `exportSheet.js`).
 - Faturamento = `value - discount_amount + delivery_fee` SEMPRE. `delivery_fee` é RECEITA (NÃO deduzir). `discount_amount` DEVE ser subtraído em TODOS os cálculos de receita
 - **Taxa de cartão REPASSADA ao cliente NÃO é custo** (fix 02/07): `calculatePnL` exclui de `taxasCartao` as vendas `fee_passed_to_customer=true` (o cliente pagou a taxa; senão o DRE subestima o lucro em toda venda com repasse). Todo consumidor de `calculatePnL` (TabResultado, Financeiro) DEVE trazer `fee_passed_to_customer` nos `columns`. **Testes do dinheiro: `node src/lib/financialCalcs.test.mjs`** (node:assert puro, sem framework — cobre repassada×absorvida)
 - **`aggregate_daily_data` (cron 02h) é canônica desde 02/07**: subtrai `discount_amount` + data BRT `(now() AT TIME ZONE 'America/Sao_Paulo')::date-1` (a versão antiga somava sem desconto → `daily_summaries.sales_value`/meta diária inflados; 925 linhas corrigidas). Backfill de correção mexe SÓ em `sales_value` (não reprocessa via RPC, pra não zerar `unique_contacts`)
@@ -395,7 +396,9 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **`manualChunks` TEM de ser função** — o `dist/index.html` só pode ter modulepreload de `vendor/supabase/dates/ui`.
 - **`npm run lint:undef` antes de deploy** — o lint normal deixa passar símbolo não importado (tela branca); `npm run verify:undef` prova a guarda.
 - **Ícones = subset self-hosted:** `npm run icons:check` antes de deploy; ícone fora do subset vira PALAVRA (nome vindo do banco via `notify_admins` também). Diagnóstico: span de ícone com largura > 30 px.
-- `icons:check` conta QUALQUER string entre aspas ou crases, inclusive em comentário: `` `iso` `` num comentário reprovou o gate. Reescreva o comentário.
+- `icons:check` conta QUALQUER string entre aspas ou crases, inclusive em comentário: `` `iso` `` num comentário reprovou o gate. Reescreva o comentário. Na Onda 3 caíram assim `"money"` (valor de `type`), `"key"` e `"contact_phone"` (lista em teste): use outro nome (`"brl"`) ou monte a lista com `.split(" ")`.
+- **Cupom NUNCA usa `personal_phone_for_summary`** (é o celular pessoal do dono, recebe avisos internos). O WhatsApp da unidade no cupom vem só de `franchises.phone_number` — 0 de 66 preenchidos em 28/09, então a linha não aparece.
+- Publicar Artifact a partir de `.tmp/` é barrado pela regra de leitura: copiar para o scratchpad antes.
 - As prévias `.tmp/harness-*` dividem o cache do Vite: rode uma de cada vez (juntas quebram o React).
 - **`save_sale_with_items` ENUMERA as colunas** — coluna nova em `sales` precisa entrar na RPC, senão é no-op calado.
 - **Verde de TEXTO = `text-ok-ink`** (`text-ok` reprova AA; só para ícone). Cores em token (`brand`, `ink`, `surface`, `ok`, `warn`, `err`).
