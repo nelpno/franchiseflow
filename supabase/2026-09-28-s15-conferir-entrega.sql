@@ -69,6 +69,7 @@
 --   drop function if exists public.s15_guard_conferencia();
 --   drop function if exists public.s15_guard_itens();
 --   drop function if exists public.s15_privilegiado();
+--   drop function if exists public.salvar_edicao_pedido(uuid, jsonb, jsonb);   -- o front volta ao caminho antigo sozinho
 --   -- 3) reaplicar os 4 backups acima (node supabase/cs-cockpit/_aplica-lf.mjs <arquivo>).
 --   -- 4) colunas são aditivas e podem ficar; para tirar:
 --   -- alter table public.purchase_order_items drop column if exists received_quantity;
@@ -89,9 +90,9 @@
 --          has_function_privilege('authenticated', oid, 'execute') auth_exec
 --     from pg_proc where proname in ('confirmar_recebimento_pedido','s15_confirmar_recebimento',
 --                                    'concluir_entregas_sem_resposta','s15_guard_conferencia',
---                                    's15_guard_itens','s15_privilegiado');
---   -> todas prosecdef=true e search_path=public; anon_exec=false em todas; auth_exec=true só
---      em confirmar_recebimento_pedido.
+--                                    's15_guard_itens','s15_privilegiado','salvar_edicao_pedido');
+--   -> todas com search_path=public; prosecdef=true em todas MENOS salvar_edicao_pedido (invoker);
+--      anon_exec=false em todas; auth_exec=true só em confirmar_recebimento_pedido e salvar_edicao_pedido.
 --   select tgname from pg_trigger where tgrelid = 'public.purchase_orders'::regclass and not tgisinternal order by 1;
 --   -> a_s15_guard_conferencia em 1º (e a_s15_guard_itens em purchase_order_items).
 --
@@ -245,6 +246,14 @@ begin
         raise exception 'Pedido: pedido entregue não muda mais de situação.'
           using errcode = 'P0001', detail = 'S15_ENTREGUE_TERMINAL';
       end if;
+      -- Admin/gerente: mudar valor ou frete de pedido entregue é ERRO (P3 2ª passada, ponto 3):
+      -- descartar calado fazia a tela mostrar "salvo". A franqueada (o app dela nunca manda
+      -- esses campos) continua com o valor antigo devolvido em silêncio.
+      if v_equipe and (new.total_amount is distinct from old.total_amount
+                       or new.freight_cost is distinct from old.freight_cost) then
+        raise exception 'Pedido: o pedido já foi entregue; recarregue a página.'
+          using errcode = 'P0001', detail = 'S15_ENTREGUE_FINANCEIRO';
+      end if;
       new.total_amount := old.total_amount;
       new.freight_cost := old.freight_cost;
       new.delivered_at := old.delivered_at;
@@ -319,8 +328,12 @@ begin
     return new;
   end if;
 
+  -- Trava o CABEÇALHO antes de autorizar (P3 2ª passada, ponto 2): se outra transação está
+  -- entregando/conferindo este pedido, espera ela terminar e relê o status já gravado. Ordem de
+  -- lock em todo o fluxo: cabeçalho (purchase_orders) antes dos itens.
   select po.status, po.awaiting_since into v_status, v_aguarda
-    from purchase_orders po where po.id = new.order_id;
+    from purchase_orders po where po.id = new.order_id
+    for share;
   if v_status = 'entregue' or (v_status = 'em_rota' and v_aguarda is not null) then
     raise exception 'Pedido: os itens de um pedido entregue ou em conferência não mudam.'
       using errcode = 'P0001', detail = 'S15_ITENS_TRAVADOS';
@@ -611,6 +624,108 @@ revoke all on function public.s15_confirmar_recebimento(uuid, jsonb, uuid, boole
 grant execute on function public.s15_confirmar_recebimento(uuid, jsonb, uuid, boolean, uuid) to service_role;
 
 -- ============================================================================================
+-- 4b. Edição do pedido pelo admin numa transação (P3 2ª passada, ponto 1)
+--   Antes: cabeçalho e itens em chamadas separadas; se outro admin entregasse no meio, ficava
+--   total ≠ itens/despesa. Agora: trava o pedido, recusa se não está pendente/confirmado
+--   (P0001 detail S15_PEDIDO_MUDOU -> a tela diz "O pedido mudou, recarregue"), grava os itens e
+--   recalcula total_amount = soma dos itens NO SERVIDOR. p_patch aceita só freight_cost e
+--   estimated_delivery (chave ausente = não mexe; null = limpa).
+--   SECURITY INVOKER: a RLS do admin/gerente já deixa (po_update, poi_update).
+--   O front cai no caminho antigo só se esta função não existir (PGRST202/42883 citando o nome).
+-- ============================================================================================
+create or replace function public.salvar_edicao_pedido(
+  p_order_id uuid,
+  p_itens    jsonb default '[]'::jsonb,   -- [{id, quantity}] só os itens que mudaram
+  p_patch    jsonb default '{}'::jsonb    -- {freight_cost?, estimated_delivery?}
+)
+returns jsonb
+language plpgsql
+set search_path = public
+as $fn$
+declare
+  v_po    purchase_orders%rowtype;
+  v_item  jsonb;
+  v_id    uuid;
+  v_qtd   integer;
+  v_ids   uuid[]    := '{}';
+  v_qtds  integer[] := '{}';
+  v_bad   integer;
+  v_frete numeric;
+  v_prev  date;
+  v_out   jsonb;
+begin
+  if not coalesce(public.is_admin_or_manager(), false) then
+    raise exception 'Sem permissão.' using errcode = '42501';
+  end if;
+  if p_itens is null then p_itens := '[]'::jsonb; end if;
+  if p_patch is null then p_patch := '{}'::jsonb; end if;
+  if jsonb_typeof(p_itens) <> 'array' or jsonb_typeof(p_patch) <> 'object' then
+    raise exception 'Pedido: edição em formato inválido.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from jsonb_object_keys(p_patch) k where k not in ('freight_cost', 'estimated_delivery')) then
+    raise exception 'Pedido: campo que não se edita por aqui.' using errcode = 'P0001';
+  end if;
+
+  for v_item in select * from jsonb_array_elements(p_itens)
+  loop
+    begin
+      v_id  := (v_item->>'id')::uuid;
+      v_qtd := (v_item->>'quantity')::integer;
+    exception when others then
+      raise exception 'Pedido: quantidade inválida.' using errcode = 'P0001';
+    end;
+    if v_id is null or v_qtd is null or v_qtd < 0 or v_qtd > 10000 or v_id = any(v_ids) then
+      raise exception 'Pedido: quantidade inválida.' using errcode = 'P0001';
+    end if;
+    v_ids := v_ids || v_id;
+    v_qtds := v_qtds || v_qtd;
+  end loop;
+
+  begin
+    v_frete := case when p_patch ? 'freight_cost' then (p_patch->>'freight_cost')::numeric end;
+    v_prev  := case when p_patch ? 'estimated_delivery' then nullif(p_patch->>'estimated_delivery', '')::date end;
+  exception when others then
+    raise exception 'Pedido: frete ou previsão inválidos.' using errcode = 'P0001';
+  end;
+  if v_frete is not null and v_frete < 0 then
+    raise exception 'Pedido: frete inválido.' using errcode = 'P0001';
+  end if;
+
+  -- Cabeçalho primeiro (mesma ordem de lock da conferência e da guarda dos itens).
+  select * into v_po from purchase_orders where id = p_order_id for update;
+  if not found or v_po.status not in ('pendente', 'confirmado') then
+    raise exception 'Pedido: o pedido mudou (foi entregue ou cancelado). Recarregue a página.'
+      using errcode = 'P0001', detail = 'S15_PEDIDO_MUDOU';
+  end if;
+
+  select count(*) into v_bad
+    from unnest(v_ids) as p(id)
+    left join purchase_order_items i on i.id = p.id and i.order_id = p_order_id
+   where i.id is null;
+  if v_bad > 0 then
+    raise exception 'Pedido: um dos itens não é deste pedido. Recarregue a página.' using errcode = 'P0001';
+  end if;
+
+  update purchase_order_items i
+     set quantity = p.q
+    from unnest(v_ids, v_qtds) as p(id, q)
+   where i.id = p.id and i.order_id = p_order_id;
+
+  update purchase_orders po
+     set total_amount = (select round(coalesce(sum(i.quantity * i.unit_price), 0), 2)
+                           from purchase_order_items i where i.order_id = p_order_id),
+         freight_cost = case when p_patch ? 'freight_cost' then v_frete else po.freight_cost end,
+         estimated_delivery = case when p_patch ? 'estimated_delivery' then v_prev else po.estimated_delivery end
+   where po.id = p_order_id
+   returning to_jsonb(po.*) into v_out;
+  return v_out;
+end;
+$fn$;
+
+revoke all on function public.salvar_edicao_pedido(uuid, jsonb, jsonb) from public, anon;
+grant execute on function public.salvar_edicao_pedido(uuid, jsonb, jsonb) to authenticated, service_role;
+
+-- ============================================================================================
 -- 5. RPC da franqueada (e do admin, que pode confirmar por ela)
 -- ============================================================================================
 create or replace function public.confirmar_recebimento_pedido(
@@ -698,9 +813,10 @@ declare
   v_de   text;
   v_para text;
 begin
-  -- get_admin_pending_counts: 'em_rota' agora é "a unidade confere", não "para entregar".
+  -- get_admin_pending_counts: conferência S15 (em_rota COM awaiting_since) é "a unidade confere",
+  -- não "para entregar"; em_rota legado (sem awaiting_since) continua contando como antes.
   v_de   := $q$where po.status in ('confirmado', 'em_rota') and$q$;
-  v_para := $q$where po.status = 'confirmado' and$q$;
+  v_para := $q$where (po.status = 'confirmado' or (po.status = 'em_rota' and po.awaiting_since is null)) and$q$;
   select pg_get_functiondef('public.get_admin_pending_counts()'::regprocedure) into v_def;
   if (length(v_def) - length(replace(v_def, v_de, ''))) / length(v_de) <> 1 then
     raise exception 'S15: trecho de get_admin_pending_counts não encontrado exatamente 1 vez.';
@@ -708,9 +824,9 @@ begin
   v_novo := replace(v_def, v_de, v_para);
   execute v_novo;
 
-  -- get_financeiro_rede: pedido esperando a conferência continua somando no mês.
+  -- get_financeiro_rede: só a conferência S15 entra a mais (em_rota legado fica como antes).
   v_de   := $q$on po.status in ('entregue', 'confirmado')$q$;
-  v_para := $q$on po.status in ('entregue', 'confirmado', 'em_rota')$q$;
+  v_para := $q$on (po.status in ('entregue', 'confirmado') or (po.status = 'em_rota' and po.awaiting_since is not null))$q$;
   select pg_get_functiondef('public.get_financeiro_rede(text)'::regprocedure) into v_def;
   if (length(v_def) - length(replace(v_def, v_de, ''))) / length(v_de) <> 1 then
     raise exception 'S15: trecho de get_financeiro_rede não encontrado exatamente 1 vez.';

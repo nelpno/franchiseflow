@@ -28,6 +28,7 @@ declare
   v_r2     jsonb;
   v_st     text;
   v_err    text;
+  v_err2   text;
   v_res    text := '';
   v_n      integer;
   v_desp   numeric;
@@ -120,9 +121,15 @@ begin
     v_err := 'passou';
   exception when others then v_err := sqlerrm;
   end;
-  update purchase_orders set total_amount = 999999, freight_cost = 0, expenses_generated_at = null where id = v_po;
+  begin
+    update purchase_orders set total_amount = 999999, freight_cost = 0 where id = v_po;
+    v_err2 := 'passou';
+  exception when others then v_err2 := sqlerrm;
+  end;
+  update purchase_orders set expenses_generated_at = null where id = v_po;
   perform set_config('role', 'postgres', true);
   v_res := v_res || ' entregue_terminal=' || (v_err like 'Pedido: pedido entregue não muda%')
+                 || ' financeiro_erro=' || (v_err2 like 'Pedido: o pedido já foi entregue%')
                  || ' total_travado=' || ((select total_amount from purchase_orders where id = v_po) = v_desp)
                  || ' frete_travado=' || ((select freight_cost from purchase_orders where id = v_po) = 250)
                  || ' carimbo_travado=' || ((select expenses_generated_at from purchase_orders where id = v_po) is not null)
