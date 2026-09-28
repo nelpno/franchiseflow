@@ -392,7 +392,11 @@ export default function TabLancar({
     // S12.6 (P3): o lote divide a trava por venda com o "Recebi" individual e invalida o
     // "Desfazer" de avisos anteriores dessas vendas.
     const pendingSales = filteredSales.filter((s) => !s.payment_confirmed && !togglingRef.current.has(s.id));
-    if (pendingSales.length === 0) return;
+    if (pendingSales.length === 0) {
+      setShowConfirmAllDialog(false);
+      if (filteredSales.some((s) => !s.payment_confirmed)) toast.info("Essas vendas já estão sendo marcadas. Aguarde um instante.");
+      return;
+    }
     pendingSales.forEach((s) => {
       togglingRef.current.add(s.id);
       recebimentoSeqRef.current.set(s.id, (recebimentoSeqRef.current.get(s.id) || 0) + 1);
