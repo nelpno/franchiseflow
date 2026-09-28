@@ -29,6 +29,8 @@ export default function Vendas() {
   const phoneParam = rawPhone ? rawPhone.replace(/\D/g, "").slice(0, 11) : null;
   const rawContactId = searchParams.get("contact_id");
   const contactIdParam = rawContactId && /^[0-9a-f-]{36}$/i.test(rawContactId) ? rawContactId : null;
+  // S12.5: "Vendas hoje" da Início abre a lista em Hoje (só vale com a chave ui_v2; o TabLancar decide).
+  const periodoParam = searchParams.get("periodo") === "hoje" ? "today" : null;
 
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
@@ -283,6 +285,7 @@ export default function Vendas() {
           }}
           initialContactId={contactIdParam}
           initialPhone={phoneParam}
+          initialPeriod={periodoParam}
         />
       </div>
     </div>
