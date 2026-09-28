@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { format, startOfMonth, subDays, subMonths } from "date-fns";
 import {
   montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia, unirVendas,
-  vendasDaInicio, janelasInicio, avaliarAgora,
+  vendasDaInicio, janelasInicio, avaliarAgora, estadoDaCargaV2, planoRevalidacao, janelaConversao,
   metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto,
 } from "./inicioMes.js";
 import { resumirMes } from "./monthlyReport.js";
@@ -195,6 +195,41 @@ test("P3 #6: 'Tudo em dia!' só quando tudo respondeu e nada pede ação", () =>
   // controle positivo: a regra da 1ª versão (aReceber null = nada pendente) liberava o "Tudo em dia!"
   const temOutraPendenciaV1 = (aReceber) => false || false || (aReceber?.n || 0) > 0;
   assert.equal(!temOutraPendenciaV1(null), true);
+});
+
+test("P3-2 #1/#2: troca de unidade e tempo esgotado", () => {
+  const cargaA = { evo: "A", falhas: [] };
+  // contexto já em B, estado local e carga ainda de A: esqueleto
+  assert.equal(estadoDaCargaV2({ carga: cargaA, evoSelecionada: "B", evoLocal: "A", onboardingEvo: "A" }), "esqueleto");
+  // controle positivo: a regra da 1ª passada (carga × unidade LOCAL) liberava os números de A
+  const regraV1 = ({ carga, evoLocal, cobre = true }) => carga.evo === evoLocal && cobre;
+  assert.equal(regraV1({ carga: cargaA, evoLocal: "A" }), true);
+  // trilha de primeiros passos ainda da outra unidade: esqueleto
+  assert.equal(estadoDaCargaV2({ carga: cargaA, evoSelecionada: "A", evoLocal: "A", onboardingEvo: "B" }), "esqueleto");
+  assert.equal(estadoDaCargaV2({ carga: cargaA, evoSelecionada: "A", evoLocal: "A", onboardingEvo: "A" }), "ok");
+  assert.equal(estadoDaCargaV2({ carga: cargaA, evoSelecionada: "A", evoLocal: "A", onboardingEvo: "A", cobre: false }), "esqueleto");
+  // tempo esgotado registrado para A: erro (com "tentar de novo"), mesmo sem a trilha resolvida
+  const esgotou = { evo: "A", falhas: [], tempoEsgotado: true };
+  assert.equal(estadoDaCargaV2({ carga: esgotou, evoSelecionada: "A", evoLocal: "A" }), "erro");
+  // controle positivo: antes o tempo esgotado não registrava carga nenhuma -> esqueleto para sempre
+  assert.equal(estadoDaCargaV2({ carga: { evo: null, falhas: [] }, evoSelecionada: "A", evoLocal: "A", onboardingEvo: "A" }), "esqueleto");
+});
+
+test("P3-2 #3: voltar à aba antes de 1 min AGENDA a revalidação (não descarta)", () => {
+  assert.deepEqual(planoRevalidacao({ agora: 130000, ultimaCarga: 100000 }), { ja: false, esperarMs: 30000 });
+  assert.deepEqual(planoRevalidacao({ agora: 170000, ultimaCarga: 100000 }), { ja: true, esperarMs: 0 });
+  // controle positivo: a regra da 1ª passada só revalidava com >= 60 s e não agendava nada
+  const regraV1 = (agora, ultima) => (agora - ultima >= 60000 ? "revalida" : "ignora");
+  assert.equal(regraV1(130000, 100000), "ignora");
+});
+
+test("P3-2 #4: conversão da Início nova no mês de Brasília", () => {
+  const agora = new Date("2026-10-01T01:00:00Z"); // 30/09 22h em Brasília
+  assert.deepEqual(janelaConversao(janelasInicio(agora)), { start: "2026-09-01", end: "2026-09-30", label: "Set/2026" });
+  // controle positivo: a janela antiga pelo relógio de um aparelho em UTC já estava em outubro
+  const aparelhoUtc = new Date(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate(), agora.getUTCHours());
+  assert.equal(format(startOfMonth(aparelhoUtc), "yyyy-MM-dd"), "2026-10-01");
+  assert.equal(janelaConversao(null), null);
 });
 
 test("unirVendas não repete venda que veio nas duas listas (virada do mês)", () => {

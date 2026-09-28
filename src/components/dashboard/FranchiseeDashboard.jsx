@@ -34,7 +34,7 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import EmptyState from "@/components/shared/EmptyState";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
-import { RESUMOS_PARA_SEQUENCIA, janelasInicio } from "@/lib/inicioMes";
+import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao } from "@/lib/inicioMes";
 import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
@@ -90,7 +90,9 @@ export default function FranchiseeDashboard() {
   const [recargaRankingMes, setRecargaRankingMes] = useState(0);
   const [recargaHistorico, setRecargaHistorico] = useState(0);
   const ultimaCargaHistoricoRef = useRef(0);
-  const [funnelEvo, setFunnelEvo] = useState(null);
+  const [funnelTag, setFunnelTag] = useState(null); // "unidade|início|fim" da conversão carregada
+  const [onboardingEvo, setOnboardingEvo] = useState(null); // unidade da trilha carregada
+  const timerRevalidarRef = useRef(null);
 
   // Computed inside loadData to stay fresh after midnight
   const getToday = () => format(new Date(), "yyyy-MM-dd");
@@ -131,10 +133,17 @@ export default function FranchiseeDashboard() {
     // Safety timeout: garante que loading é desligado mesmo se queries travarem
     const safetyTimer = setTimeout(() => {
       if (mountedRef.current) {
+        // S18 P3-2 #1: esta carga ainda é a vigente e não foi cancelada (troca de unidade ou
+        // desmontagem abortam antes)? Então foi TEMPO ESGOTADO: a Início nova mostra "não
+        // consegui carregar" + tentar de novo para a unidade consultada, nunca esqueleto eterno.
+        const estourouEsta = abortControllerRef.current === controller && !controller.signal.aborted;
         console.warn('[Dashboard] Safety timeout fired — forçando fim do loading');
         controller.abort();
         setIsLoading(false);
         hasLoadedOnceRef.current = true;
+        if (estourouEsta) {
+          setCargaV2({ evo: ctxFranchise?.evolution_instance_id ?? null, falhas: [], tempoEsgotado: true, corte: null, diaRanking: null });
+        }
       }
     }, 10000);
     try {
@@ -266,16 +275,30 @@ export default function FranchiseeDashboard() {
 
   // P3 S18 #5: venda editada, recebida ou apagada em outra tela/aba — ao voltar para a Início o
   // histórico é lido de novo (no máximo 1 vez por minuto). Abrir a Início de novo também relê.
+  // P3-2 #3: voltar ANTES do minuto agenda a releitura para o fim do intervalo (um timer só,
+  // cancelado na troca de unidade e ao sair da tela) — antes o pedido se perdia.
   useEffect(() => {
     if (!uiV2) return undefined;
     const aoVoltar = () => {
-      if (document.visibilityState === "visible" && Date.now() - ultimaCargaHistoricoRef.current >= 60000) {
+      if (document.visibilityState !== "visible") return;
+      const plano = planoRevalidacao({ agora: Date.now(), ultimaCarga: ultimaCargaHistoricoRef.current });
+      if (plano.ja) {
         setRecargaHistorico((n) => n + 1);
+        return;
       }
+      if (timerRevalidarRef.current) return; // já agendada
+      timerRevalidarRef.current = setTimeout(() => {
+        timerRevalidarRef.current = null;
+        setRecargaHistorico((n) => n + 1);
+      }, plano.esperarMs);
     };
     document.addEventListener("visibilitychange", aoVoltar);
-    return () => document.removeEventListener("visibilitychange", aoVoltar);
-  }, [uiV2]);
+    return () => {
+      document.removeEventListener("visibilitychange", aoVoltar);
+      clearTimeout(timerRevalidarRef.current);
+      timerRevalidarRef.current = null;
+    };
+  }, [uiV2, evoId]);
 
   // P3 S18 #4: ranking do mês da Início nova pela competência de BRASÍLIA — vira com o mês mesmo
   // com a tela aberta; o anterior é limpo e só aparece o que veio desta unidade e deste mês.
@@ -303,6 +326,8 @@ export default function FranchiseeDashboard() {
   }, [uiV2, cargaV2.evo, evoId, cargaCobre, loadData]);
 
   const tentarDeNovoV2 = useCallback(() => {
+    // depois de tempo esgotado, a nova tentativa mostra o esqueleto (não o erro parado)
+    setCargaV2((c) => (c.tempoEsgotado ? { ...c, evo: null } : c));
     loadData();
     setRecargaHistorico((n) => n + 1);
     setRecargaRankingMes((n) => n + 1);
@@ -316,6 +341,7 @@ export default function FranchiseeDashboard() {
     if (!evoId || user?.role !== "franchisee") {
       setOnboardingChecklist(null);
       setOnboardingFacts(null);
+      setOnboardingEvo(evoId ?? null);
       return;
     }
     let cancelled = false;
@@ -328,11 +354,13 @@ export default function FranchiseeDashboard() {
         if (cancelled) return;
         setOnboardingChecklist(checklists?.[0] || null);
         setOnboardingFacts(facts);
+        setOnboardingEvo(evoId);
       } catch (err) {
         if (cancelled) return;
         console.warn("Primeiros passos: falha ao carregar checklist/fatos", err);
         setOnboardingChecklist(null);
         setOnboardingFacts(null);
+        setOnboardingEvo(evoId);
       }
     })();
     return () => { cancelled = true; };
@@ -340,6 +368,13 @@ export default function FranchiseeDashboard() {
 
   const primeirosPassosAtivo = !!onboardingChecklist && onboardingChecklist.status !== "approved";
   const modoReduzidoPrimeirosPassos = primeirosPassosAtivo && !onboardingFacts?.first_sale_at;
+
+  // S18 P3-2 #2: a Início nova confere a unidade SELECIONADA no contexto no próprio render (o
+  // estado local `franchise` só muda quando a carga começa): carga e trilha têm de ser dela.
+  // Sem a chave, nada disto muda o que aparece.
+  const evoSelecionada = ctxFranchise?.evolution_instance_id ?? null;
+  const onboardingDestaUnidade = !uiV2 || onboardingEvo === evoSelecionada;
+  const estadoCargaV2 = estadoDaCargaV2({ carga: cargaV2, evoSelecionada, evoLocal: evoId, cobre: cargaCobre, onboardingEvo });
 
   const jornadaPrimeirosPassos = useMemo(() => {
     if (!primeirosPassosAtivo) return null;
@@ -497,21 +532,27 @@ export default function FranchiseeDashboard() {
     };
   }, [period, monthOffset, customRange]);
 
+  // S18 P3-2 #4: com a chave, a conversão é a do mês de BRASÍLIA até hoje (a mesma competência
+  // do cartão do mês); sem a chave, a janela de sempre.
+  const conversaoV2 = uiV2 ? janelaConversao(janelas) : null;
+  const janelaFunil = conversaoV2 || funnelRange;
+
   // Funil — fora do useVisibilityPolling (métrica mensal, não muda a cada 5min).
   useEffect(() => {
     if (!evoId) return;
     const controller = new AbortController();
     setFunnelLoading(true);
-    getFranchiseFunnelStats(evoId, funnelRange.start, funnelRange.end, { signal: controller.signal })
+    getFranchiseFunnelStats(evoId, janelaFunil.start, janelaFunil.end, { signal: controller.signal })
       .then((f) => {
         if (!mountedRef.current) return;
         setFunnel(f);
-        setFunnelEvo(evoId); // S18: a Início nova só mostra a conversão desta unidade
+        // S18: a Início nova só mostra a conversão desta unidade e desta janela
+        setFunnelTag(`${evoId}|${janelaFunil.start}|${janelaFunil.end}`);
         setFunnelLoading(false);
       })
       .catch(() => { if (mountedRef.current) setFunnelLoading(false); });
     return () => controller.abort();
-  }, [evoId, funnelRange.start, funnelRange.end]);
+  }, [evoId, janelaFunil.start, janelaFunil.end]);
 
   // "Configurado" e "ativo" sao coisas DIFERENTES — ate 07/09/2026 o app tratava as
   // duas como a mesma, e por isso `botActive` nunca ficava falso: bastava existir
@@ -637,9 +678,9 @@ export default function FranchiseeDashboard() {
         </div>
       </div>
 
-      {primeirosPassosAtivo && <FirstStepsCard jornada={jornadaPrimeirosPassos} />}
+      {primeirosPassosAtivo && onboardingDestaUnidade && <FirstStepsCard jornada={jornadaPrimeirosPassos} />}
 
-      {modoReduzidoPrimeirosPassos && (
+      {modoReduzidoPrimeirosPassos && onboardingDestaUnidade && (
         // Unidade ainda não vendeu: a Início normal (KPIs zerados, ranking, Quem chamar
         // hoje...) só confunde quem ainda está montando a loja. Fica só o essencial +
         // uma dica de para onde olhar quando a 1ª venda chegar.
@@ -859,12 +900,13 @@ export default function FranchiseeDashboard() {
           franchise={franchise}
           allSales={allSales}
           historico={historico.chave === janelaHistorico ? historico : { status: "loading", sales: [] }}
-          cargaOk={cargaV2.evo === evoId && cargaCobre}
+          estadoCarga={estadoCargaV2}
           falhas={cargaV2.falhas}
           janelas={janelas}
           summaries={summaries}
           ranking={ranking}
           rankingDiaOk={cargaV2.diaRanking === janelas?.hoje}
+          rankingDiaFalhou={cargaV2.falhas.includes("ranking")}
           rankingMes={rankingMesV2.evo === evoId && rankingMesV2.mes === mesV2 ? rankingMesV2 : { status: "loading" }}
           onTentarDeNovo={tentarDeNovoV2}
           purchaseOrders={purchaseOrders}
@@ -876,8 +918,8 @@ export default function FranchiseeDashboard() {
           botConfigured={botConfigured}
           botSilentDays={botSilentDays}
           hasRecentSales={hasRecentSales}
-          funnel={funnelEvo === evoId ? funnel : null}
-          funnelRange={funnelRange}
+          funnel={conversaoV2 && funnelTag === `${evoSelecionada}|${conversaoV2.start}|${conversaoV2.end}` ? funnel : null}
+          funnelRange={conversaoV2}
         />
       )}
 

@@ -66,8 +66,8 @@ export function InicioV2Esqueleto() {
 }
 
 export default function InicioV2({
-  modoReduzido, evoId, franchise, allSales, historico, cargaOk, falhas = [], janelas, summaries,
-  ranking, rankingDiaOk, rankingMes, onTentarDeNovo,
+  modoReduzido, evoId, franchise, allSales, historico, estadoCarga, falhas = [], janelas, summaries,
+  ranking, rankingDiaOk, rankingDiaFalhou = false, rankingMes, onTentarDeNovo,
   purchaseOrders, subscription, checkPaymentNow, isChecking, marketingPayment,
   botActive, botConfigured, botSilentDays, hasRecentSales, funnel, funnelRange,
 }) {
@@ -101,8 +101,18 @@ export default function InicioV2({
     };
   }, [allSales, historico, summaries, evoId, hojeStr, corteAReceber, vendasOk]);
 
-  // Dado de outra unidade (troca no meio da carga) ou carga com cortes errados: esqueleto.
-  if (!cargaOk || !dados) return <EsqueletoBlocos />;
+  // P3-2 #1: a carga desta unidade estourou o tempo — diz isso e deixa tentar de novo.
+  if (estadoCarga === "erro") {
+    return (
+      <div className="flex flex-col gap-4">
+        <InicioErro rotulo="Início" texto="Não consegui carregar a Início agora." onTentarDeNovo={onTentarDeNovo} />
+        <InicioAtalhos />
+      </div>
+    );
+  }
+  // Dado de outra unidade (troca no meio da carga), trilha de outra unidade ou carga com cortes
+  // errados: esqueleto (estadoDaCargaV2 em src/lib/inicioMes.js).
+  if (estadoCarga !== "ok" || !dados) return <EsqueletoBlocos />;
 
   const falhouMarketing = falhas.includes("marketing");
   if (modoReduzido) {
@@ -135,7 +145,8 @@ export default function InicioV2({
         <EspacoMetaBimestre />
         <InicioRanking
           ranking={ranking}
-          rankingDiaOk={rankingDiaOk && !falhas.includes("ranking")}
+          rankingDiaOk={rankingDiaOk && !rankingDiaFalhou}
+          rankingDiaFalhou={rankingDiaFalhou}
           rankingMes={rankingMes}
           nomeMes={dados.mes.nomeMes}
           onTentarDeNovo={onTentarDeNovo}

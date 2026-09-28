@@ -16,7 +16,7 @@
 import { format, getDate, getDaysInMonth, parseISO, startOfMonth, subDays, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getSaleNetValue } from "./financialCalcs.js";
-import { nomeDoMes, resumirMes } from "./monthlyReport.js";
+import { nomeDoMes, resumirMes, rotuloMesCurto } from "./monthlyReport.js";
 import { dataCivilBRT } from "./subscriptionStatus.js";
 import { vendasAReceber } from "./vendasLista.js";
 
@@ -277,6 +277,38 @@ export function avaliarAgora({ temFaixa = false, temPedido = false, aReceber = n
     erro: falhouFonte.length > 0 || aReceber?.status === "erro",
     carregando: aReceber?.status === "loading",
   };
+}
+
+/**
+ * P3 S18 (2ª passada, #1 e #2): o que a Início nova pode desenhar agora.
+ *   "esqueleto" — a carga (ou a trilha de primeiros passos) ainda não é da unidade SELECIONADA no
+ *                 contexto (troca em andamento: o estado local da tela ainda pode ser o da anterior)
+ *                 ou os cortes da carga não cobrem o 3º mês anterior de Brasília;
+ *   "erro"      — a carga desta unidade estourou o tempo (10 s): "não consegui" + tentar de novo,
+ *                 nunca esqueleto eterno;
+ *   "ok".
+ */
+export function estadoDaCargaV2({ carga, evoSelecionada, evoLocal, cobre = true, onboardingEvo } = {}) {
+  if (!evoSelecionada || evoLocal !== evoSelecionada || carga?.evo !== evoSelecionada) return "esqueleto";
+  if (carga.tempoEsgotado) return "erro";
+  if (!cobre || onboardingEvo !== evoSelecionada) return "esqueleto";
+  return "ok";
+}
+
+export const INTERVALO_REVALIDAR_MS = 60000;
+/**
+ * Voltou para a aba: revalidar o histórico já, ou daqui a quanto (P3 S18 2ª passada #3 — antes,
+ * voltar antes de 1 min descartava a revalidação para sempre).
+ */
+export function planoRevalidacao({ agora = Date.now(), ultimaCarga = 0, intervalo = INTERVALO_REVALIDAR_MS } = {}) {
+  const falta = intervalo - (agora - ultimaCarga);
+  return falta <= 0 ? { ja: true, esperarMs: 0 } : { ja: false, esperarMs: falta };
+}
+
+/** Janela da conversão com a chave (P3 S18 2ª passada #4): o mês de Brasília até hoje. */
+export function janelaConversao(janelas) {
+  if (!janelas?.hoje || !janelas?.mes) return null;
+  return { start: `${janelas.mes}-01`, end: janelas.hoje, label: rotuloMesCurto(parseISO(janelas.hoje)) };
 }
 
 /** Corte da caixa "A receber" da tela Vendas (mesma fórmula, relógio do aparelho como lá). */

@@ -13,7 +13,7 @@ import InicioErro, { InicioErroLinha } from "./InicioErro";
 // P3 S18: `rankingMes` = { status, dado } já conferido (esta unidade, este mês de Brasília);
 // `rankingDiaOk` = a posição do dia veio desta carga, do dia de hoje e sem erro. O que não se
 // sabe não aparece — nunca "sem venda hoje" por causa de uma falha.
-export function InicioRanking({ ranking, rankingDiaOk, rankingMes, nomeMes, onTentarDeNovo }) {
+export function InicioRanking({ ranking, rankingDiaOk, rankingDiaFalhou = false, rankingMes, nomeMes, onTentarDeNovo }) {
   if (rankingMes?.status === "erro") {
     return <InicioErro rotulo="Ranking" texto="Não consegui carregar o ranking do mês." onTentarDeNovo={onTentarDeNovo} />;
   }
@@ -35,7 +35,7 @@ export function InicioRanking({ ranking, rankingDiaOk, rankingMes, nomeMes, onTe
   const textoDia = rankingDiaOk ? (temDia ? `${ranking.position}º hoje` : "sem venda hoje ainda") : null;
 
   return (
-    <section className={`${CARTAO} flex items-center gap-3`} aria-label="Ranking">
+    <section className={`${CARTAO} flex flex-wrap items-center gap-3`} aria-label="Ranking">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-gold-soft text-brand-gold-ink">
         <MaterialIcon icon="military_tech" size={24} filled aria-hidden="true" />
       </span>
@@ -59,6 +59,12 @@ export function InicioRanking({ ranking, rankingDiaOk, rankingMes, nomeMes, onTe
         </div>
       ) : (
         <p className="min-w-0 text-sm text-ink-2">Sua posição no ranking aparece com a primeira venda do mês.</p>
+      )}
+      {/* P3-2 #5: só a posição do dia falhou — diz isso e deixa tentar de novo */}
+      {rankingDiaFalhou && (
+        <div className="basis-full">
+          <InicioErroLinha texto="Não consegui carregar a posição de hoje." onTentarDeNovo={onTentarDeNovo} />
+        </div>
       )}
     </section>
   );
