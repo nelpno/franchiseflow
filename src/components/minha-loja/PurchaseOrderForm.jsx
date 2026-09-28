@@ -838,17 +838,19 @@ export default function PurchaseOrderForm({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {precosStatus === "loading" && <span className="text-sm text-ink-3">Carregando preços…</span>}
-          {precosStatus === "erro" && (
-            <button
-              type="button"
-              onClick={() => setPrecosTentativa((n) => n + 1)}
-              className="text-sm text-err underline min-h-[44px] px-2 touch-manipulation"
-            >
-              Não carreguei os preços. Tentar de novo
-            </button>
-          )}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div role="status" aria-live="polite" className={precosStatus === "ok" ? "sr-only" : "w-full sm:w-auto text-sm"}>
+            {precosStatus === "loading" && <span className="text-ink-3">Carregando preços…</span>}
+            {precosStatus === "erro" && (
+              <button
+                type="button"
+                onClick={() => setPrecosTentativa((n) => n + 1)}
+                className="text-err underline min-h-[44px] px-2 touch-manipulation"
+              >
+                Não carreguei os preços. Tentar de novo
+              </button>
+            )}
+          </div>
           <Button
             variant="outline"
             onClick={onCancel}
