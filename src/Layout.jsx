@@ -27,6 +27,8 @@ import { getAvailableFranchises, getPrimaryFranchise, resolveActiveFranchise } f
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
 import { listarFranquias } from "@/lib/franchisesCache";
 import VoltarTrilhaBar from "@/components/onboarding/VoltarTrilhaBar";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
 
 // Todos os 4 papéis existentes — usado nos itens que aparecem para todo mundo (Hoje,
 // Ajuda), só que com rótulo/posição diferente por papel.
@@ -109,9 +111,22 @@ const navigationItems = [
   },
   {
     title: "Meu Vendedor",
+    // Menu novo (S9.1, atrás de ui_v2): "Meu robô" — decisão de 27/09/2026. Com a
+    // chave desligada o rótulo segue "Meu Vendedor" (nada muda).
+    franchiseeLabelV2: "Meu robô",
     url: createPageUrl("FranchiseSettings"),
     materialIcon: "smart_toy",
     franchiseeOnly: true,
+  },
+  {
+    // Menu novo (S9.1): item direto pro Estoque (a aba já existe dentro de
+    // Gestão — só ganha atalho próprio no menu, "Loja" nunca aparece). Some do
+    // menu com a chave desligada (Gestão continua cobrindo o mesmo caminho).
+    title: "Estoque",
+    url: "/Gestao?tab=estoque",
+    materialIcon: "package_2",
+    franchiseeOnly: true,
+    onlyWhenV2: true,
   },
   {
     title: "Tutoriais",
@@ -144,13 +159,24 @@ const navigationItems = [
   },
 ];
 
-// Mobile bottom nav items for franchisee
+// Mobile bottom nav items for franchisee (chave ui_v2 DESLIGADA — comportamento atual)
 const mobileBottomNav = [
   { label: "Início", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
   { label: "Gestão", materialIcon: "bar_chart", url: createPageUrl("Gestao") },
   { label: "Vender", materialIcon: "add", url: "/Vendas?action=nova-venda", isFab: true },
   { label: "Clientes", materialIcon: "people", url: createPageUrl("MyContacts") },
   { label: "Vendedor", materialIcon: "smart_toy", url: createPageUrl("FranchiseSettings") },
+];
+
+// Mobile bottom nav para franqueado — menu novo (S9.1, 28/09/2026), atrás da
+// chave ui_v2: Início · Vendas · + Nova venda · Estoque · Mais (nunca "Loja").
+// "Mais" reusa o mesmo botão do admin (abre o Sheet do hambúrguer com o resto:
+// Meus Clientes, Gestão, Marketing, Meu robô, Tutoriais, Primeiros passos).
+const mobileBottomNavV2 = [
+  { label: "Início", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
+  { label: "Vendas", materialIcon: "point_of_sale", url: createPageUrl("Vendas") },
+  { label: "Nova venda", materialIcon: "add", url: "/Vendas?action=nova-venda", isFab: true },
+  { label: "Estoque", materialIcon: "package_2", url: "/Gestao?tab=estoque" },
 ];
 
 // Mobile bottom nav para admin/gerente/CS: Hoje / Unidades / Mural / Mais (Mais abre
@@ -305,6 +331,11 @@ export default function Layout({ children, currentPageName }) {
   // "/" tambem abre a home (App.jsx renderiza o MainPage sem redirecionar)
   const isHomePath = location.pathname === "/" || location.pathname === createPageUrl("Dashboard");
   const { pending: pendingCounts } = useAdminPendingCounts();
+  // Menu novo (S9.1, 28/09/2026) — botão de emergência da chave (CLAUDE.md § Voltar
+  // atrás): SEM PILOTO, mas só vale pro franqueado (admin/gerente não mudam). A
+  // franquia da chave é a `selectedFranchise` (o hook já cuida de desligada/erro).
+  const uiV2Raw = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const uiV2 = uiV2Raw && !isAdmin && !isCS;
 
   const filteredNavigationItems = navigationItems
     .filter((item) => {
@@ -316,6 +347,11 @@ export default function Layout({ children, currentPageName }) {
       // Hide items from admin sidebar (routes still work via URL)
       if (isAdmin && item.adminSidebarHidden) return false;
       if (item.adminOnly) return isAdmin;
+      // Item exclusivo do menu novo (ex: "Estoque"): some com a chave desligada.
+      // TEM que vir antes do franchiseeOnly abaixo — senão o `return true` dele
+      // libera o item pro franqueado mesmo com a chave desligada (bug real, pego
+      // no print do S9: "Estoque" aparecia na sidebar com ui_v2 OFF).
+      if (item.onlyWhenV2 && !uiV2) return false;
       // franchiseeOnly some pro admin — exceto os marcados showToAdminToo (Vendas,
       // Gestão, Meus Clientes: o admin usa essas telas de franqueado e ficam em "Mais")
       if (item.franchiseeOnly) return !isAdmin || item.showToAdminToo === true;
@@ -328,7 +364,7 @@ export default function Layout({ children, currentPageName }) {
       ...item,
       title: isAdmin || isCS
         ? item.adminLabel || item.title
-        : item.franchiseeLabel || item.title,
+        : (uiV2 && item.franchiseeLabelV2) || item.franchiseeLabel || item.title,
     }));
 
   // Franqueada com primeiros passos ativos: o item vai pro TOPO da lista (é a
@@ -598,10 +634,11 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </main>
 
-        {/* Mobile bottom nav — franqueado */}
+        {/* Mobile bottom nav — franqueado (S9.1: com ui_v2 ligada troca pro menu novo
+            Início · Vendas · + Nova venda · Estoque · Mais; desligada = o de sempre) */}
         {!isAdmin && !isCS && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-4 z-40">
-            {mobileBottomNav.map((item) => {
+            {(uiV2 ? mobileBottomNavV2 : mobileBottomNav).map((item) => {
               if (item.isFab) {
                 return (
                   <Link
@@ -636,6 +673,9 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               );
             })}
+            {/* "Mais" do menu novo abre o mesmo Sheet do hambúrguer (Meus Clientes,
+                Gestão, Marketing, Meu robô, Tutoriais, Primeiros passos) */}
+            {uiV2 && <MaisBottomNavButton />}
           </nav>
         )}
 
