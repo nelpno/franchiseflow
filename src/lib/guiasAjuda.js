@@ -67,7 +67,7 @@ export const GUIAS = [
     erroComum: "Tocar duas vezes em \"Registrar Venda\" e ficar com a venda em dobro. Toque uma vez e espere a confirmação; se duplicou, exclua a repetida.",
     passos: [
       { titulo: "Abra uma venda nova", texto: "No computador, entre em Vendas e toque no botão. No celular, use o botão redondo com + no meio da barra de baixo (\"Vender\" ou \"Nova venda\").", botao: "Nova Venda" },
-      { titulo: "Escolha o cliente", texto: "Busque pelo nome. Cliente novo? Digite o nome e o telefone com DDD: é com o telefone que o anúncio aprende. Se o cliente não quiser dar, toque em \"Cliente não quis informar\".", botao: "Cliente" },
+      { titulo: "Escolha o cliente", texto: "Busque pelo nome. Cliente novo? Digite o nome e o telefone com DDD: é com o telefone que o anúncio aprende. Se registrar sem telefone, o app pede o número; se o cliente não quiser dar, toque em \"Cliente não quis informar\" e a venda é registrada.", botao: "Cliente" },
       { titulo: "Inclua os produtos", texto: "Busque cada produto e confira a quantidade e o preço.", botao: "Produtos" },
       { titulo: "Escolha como o cliente pagou", texto: "Se a sua unidade repassa a taxa do cartão, a taxa aparece aqui.", botao: "Pagamento" },
       { titulo: "Diga se foi entrega", texto: "Na entrega, escolha Delivery e confira o endereço e o frete. O frete entra no valor da venda.", botao: "Delivery" },
@@ -156,10 +156,11 @@ export const GUIAS = [
     erroComum: "Pagar e continuar vendo a cobrança em aberto. Toque em \"Já paguei, verificar agora\": o app confere na hora. Se seguir aberta, fale com a Maxi com o comprovante.",
     passos: [
       { titulo: "Abra os pagamentos", texto: "Toque em Mais e em Pagamentos. Se o seu menu não tem Mais, o quadro da mensalidade fica na tela Início.", botao: "Pagamentos" },
-      { titulo: "Confira o mês e o valor", texto: "O quadro Equipe Digital Maxi mostra o mês, o valor e o vencimento. Pago aparece em verde." },
-      { titulo: "Abra a cobrança", texto: "Toque no quadro para ver o QR Code, o código Pix e o boleto.", botao: "Pagar →" },
+      { titulo: "Veja como está", texto: "O quadro Equipe Digital Maxi mostra o mês. Em aberto, mostra o valor e o vencimento; vencida, mostra \"Regularize para evitar bloqueio\"; paga, mostra Pago." },
+      { titulo: "Abra a cobrança", texto: "Toque no quadro, ou no botão \"Pagar →\" (\"Regularizar\" quando já venceu). Abre a cobrança com o valor, o vencimento e as formas de pagar." },
       { titulo: "Pague pelo Pix", texto: "Copie o código e cole no app do seu banco, em Pix Copia e Cola. Ou leia o QR Code com o celular do banco.", botao: "Copiar código PIX" },
-      { titulo: "Ou pague pelo boleto", texto: "O boleto abre numa aba nova. Pague pelo app do banco ou impresso.", botao: "Abrir boleto bancário" },
+      { titulo: "Ou pague pelo boleto", texto: "Quando a cobrança tem boleto, ele abre numa aba nova. Pague pelo app do banco ou impresso.", botao: "Abrir boleto bancário" },
+      { titulo: "Não apareceu o QR Code?", texto: "Toque para gerar a cobrança de novo. Se ainda não aparecer, use o boleto ou fale com a Maxi.", botao: "Atualizar cobrança" },
       { titulo: "Confirme", texto: "Depois de pagar, peça ao app para conferir. Pago, o quadro fica verde.", botao: "Já paguei, verificar agora" },
     ],
     nota: "Se atrasar: no 1º e no 2º dia depois do vencimento aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; ainda dá para pagar e lançar venda. A verba do anúncio é à parte (sem fundo de marketing): mínimo de R$ 200, no Pix CNPJ 00.494.317/0001-21.",

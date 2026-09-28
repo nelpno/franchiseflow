@@ -27,7 +27,6 @@ export default function Tutoriais() {
   const [searchParams, setSearchParams] = useSearchParams();
   const abrir = searchParams.get("abrir");
   const guia = acharGuia(abrir, role);
-  const nomeDaTela = equipe ? "Ajuda" : "Tutoriais";
   const [busca, setBusca] = useState("");
 
   // Tela Ajuda v2 (S10.1, 28/09/2026): busca, "Comece por aqui", por área e perguntas
@@ -35,6 +34,8 @@ export default function Tutoriais() {
   // admin/manager/CS), a tela Tutoriais segue EXATAMENTE igual (ver ramos abaixo).
   const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
   const ajudaV2 = uiV2 && !equipe;
+  // Com o menu novo o item se chama "Ajuda" também para a franqueada (Onda 5).
+  const nomeDaTela = equipe || ajudaV2 ? "Ajuda" : "Tutoriais";
 
   useEffect(() => {
     if (guia) window.scrollTo({ top: 0 });
