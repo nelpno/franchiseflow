@@ -19,19 +19,47 @@ export async function generateReceiptImage(element) {
 }
 
 /**
+ * Detecta celular/tablet pra decidir entre Web Share (arquivo) e download direto.
+ * P3 da S13 (28/09/2026, "não publicar"): `canShare({files})` sozinho NÃO basta — Chrome e
+ * Edge no Windows também respondem `true` (têm o share sheet do sistema operacional), então
+ * "Compartilhar" no computador abria aquele menu em vez de baixar o PNG como pedido.
+ * Ordem de sinais (do mais confiável pro mais genérico):
+ *   1. `navigator.userAgentData.mobile` (Client Hints, Chromium) — é exatamente essa pergunta;
+ *   2. UA string clássica (cobre Safari/iOS e Firefox, que não têm userAgentData);
+ *   3. `matchMedia("(pointer: coarse)")` — só como último recurso (notebook com touchscreen
+ *      teria pointer coarse E fine; por isso vem depois da UA, não antes).
+ */
+export function isMobileDevice() {
+  if (typeof navigator === "undefined") return false;
+  if (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean") {
+    return navigator.userAgentData.mobile;
+  }
+  const ua = navigator.userAgent || "";
+  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return true;
+  if (typeof window !== "undefined" && window.matchMedia) {
+    try {
+      return window.matchMedia("(pointer: coarse)").matches;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
  * Shares an image via Web Share API (mobile, files only) or downloads it (desktop).
  * S13.1 (28/09/2026): "Compartilhar" no computador BAIXA o PNG — não abre diálogo de impressão
- * (isso já é o botão "Imprimir" separado, que usa printReceipt/HTML nítido pra térmica). Antes
- * este fallback abria uma janela de impressão no desktop, redundante com o botão Imprimir.
+ * nem o menu de compartilhamento do Windows (isso já é o botão "Imprimir" separado, que usa
+ * printReceipt/HTML nítido pra térmica). A decisão é por DISPOSITIVO (isMobileDevice), não só
+ * por `canShare` — Chrome/Edge no Windows respondem `canShare({files}) === true` também.
  * @param {Blob} blob - The image blob to share
  * @param {string} filename - Filename for the image
  */
 export async function shareImage(blob, filename = "comprovante.png") {
   const file = new File([blob], filename, { type: "image/png" });
 
-  // Try native share (mobile) — só quando o navegador consegue compartilhar ARQUIVO
-  // (canShare com files é o sinal de "tem app pra receber", essencialmente mobile).
-  if (navigator.canShare?.({ files: [file] })) {
+  // Native share só em celular/tablet — mesmo quando o navegador desktop diz que "pode".
+  if (isMobileDevice() && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({
         files: [file],
@@ -44,7 +72,7 @@ export async function shareImage(blob, filename = "comprovante.png") {
     }
   }
 
-  // Fallback desktop (ou sem suporte a Web Share): baixa o PNG.
+  // Fallback desktop (ou mobile sem suporte a Web Share): baixa o PNG.
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
