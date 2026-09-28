@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { format, startOfMonth, subDays, subMonths } from "date-fns";
 import {
   montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia, unirVendas,
-  vendasDaInicio, janelasInicio, avaliarAgora, marketingDoMesAlvo, estadoDaCargaV2, planoRevalidacao, janelaConversao,
+  vendasDaInicio, janelasInicio, avaliarAgora, marketingDoMesAlvo, escolherMarketing, mesAlvoMarketing, estadoDaCargaV2, planoRevalidacao, janelaConversao,
   metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto,
 } from "./inicioMes.js";
 import { resumirMes } from "./monthlyReport.js";
@@ -344,4 +344,17 @@ test("S18.3: marketing da Início é o do mês-alvo (o mesmo do cartão do fim)"
   // 10/09 → mês-alvo setembro: o recusado de setembro é o que vale
   assert.equal(marketingDoMesAlvo(set, new Date(2026, 8, 10, 12)), set);
   assert.equal(marketingDoMesAlvo(null, new Date(2026, 8, 10, 12)), null);
+});
+
+test("S18.3 P3: verba antecipada não esconde a do mês-alvo; mês-alvo pelo dia de Brasília", () => {
+  const set = { reference_month: "2026-09", status: "confirmed" };
+  const out = { reference_month: "2026-10", status: "confirmed" };
+  // 10/09: outubro já registrado não esconde setembro pago
+  assert.equal(escolherMarketing([out, set], new Date("2026-09-10T15:00:00Z")), set);
+  // sem o do mês-alvo: o mais recente (como antes)
+  assert.equal(escolherMarketing([out], new Date("2026-09-10T15:00:00Z")), out);
+  assert.equal(escolherMarketing(undefined), null);
+  // 26/09 01:00Z = 25/09 22:00 em Brasília: mês-alvo ainda setembro, em qualquer fuso do aparelho
+  assert.equal(format(mesAlvoMarketing(new Date("2026-09-26T01:00:00Z")), "yyyy-MM"), "2026-09");
+  assert.equal(format(mesAlvoMarketing(new Date("2026-09-26T04:00:00Z")), "yyyy-MM"), "2026-10");
 });

@@ -19,7 +19,7 @@ function cap(str) {
 // vencimento, ação prioritária quando vencida) e passa `ocultarMensalidade` para não repetir; e
 // `ocultarMarketing` quando a leitura do marketing falhou (o vazio viraria "registre a verba").
 // Sem as props (Início de sempre), nada muda.
-export default function FinancialObligationsCard({ marketingPayment, ocultarMensalidade = false, ocultarMarketing = false }) {
+export default function FinancialObligationsCard({ marketingPayment, ocultarMensalidade = false, ocultarMarketing = false, mesAlvo = null }) {
   const navigate = useNavigate();
   const { subscription, isLoading: subLoading, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -43,7 +43,8 @@ export default function FinancialObligationsCard({ marketingPayment, ocultarMens
     checkPaymentNow();
   }, [subscription, checkPaymentNow]);
 
-  const targetDate = getMarketingTargetMonth();
+  // S18.3: a Início nova passa o mês-alvo de Brasília (o mesmo do "Agora"); sem ele, como antes.
+  const targetDate = mesAlvo || getMarketingTargetMonth();
   const targetMonth = format(targetDate, "yyyy-MM");
   const targetMonthLabel = cap(format(targetDate, "MMMM", { locale: ptBR }));
 

@@ -268,6 +268,24 @@ export function janelasInicio(agora = new Date()) {
  *           falhas?: string[] }} p
  */
 /**
+ * S18.3 (P3): mês-alvo da verba pelo dia civil de Brasília (não pelo fuso do aparelho).
+ * @returns Date local cujo ano/mês é o mês-alvo.
+ */
+export function mesAlvoMarketing(now = new Date()) {
+  return getMarketingTargetMonth(dataCivilBRT(now));
+}
+
+/**
+ * S18.3 (P3): entre os pagamentos mais recentes, o do mês-alvo (pagamento antecipado do mês
+ * seguinte não pode esconder o do mês-alvo); sem ele, o mais recente (comportamento de antes).
+ */
+export function escolherMarketing(lista, now = new Date()) {
+  const itens = Array.isArray(lista) ? lista : [];
+  const alvo = format(mesAlvoMarketing(now), "yyyy-MM");
+  return itens.find((p) => p?.reference_month === alvo) || itens[0] || null;
+}
+
+/**
  * S18.3: o pagamento de marketing que vale para a Início é o do MÊS-ALVO (mesma regra do cartão
  * de obrigações: nos últimos 5 dias do mês, o mês seguinte). O registro mais recente pode ser de
  * outro mês (ex.: setembro recusado quando a verba em aberto já é a de outubro) — aí a ação do
@@ -275,7 +293,7 @@ export function janelasInicio(agora = new Date()) {
  * @returns o pagamento se for do mês-alvo, senão null (= verba do mês-alvo pendente).
  */
 export function marketingDoMesAlvo(marketingPayment, now = new Date()) {
-  const alvo = format(getMarketingTargetMonth(now), "yyyy-MM");
+  const alvo = format(mesAlvoMarketing(now), "yyyy-MM");
   return marketingPayment?.reference_month === alvo ? marketingPayment : null;
 }
 

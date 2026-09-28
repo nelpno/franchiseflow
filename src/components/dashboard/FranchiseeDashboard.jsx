@@ -34,7 +34,7 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import EmptyState from "@/components/shared/EmptyState";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
-import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao } from "@/lib/inicioMes";
+import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao, escolherMarketing } from "@/lib/inicioMes";
 import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
@@ -180,7 +180,7 @@ export default function FranchiseeDashboard() {
           : Promise.resolve([]),                          // [6] purchase orders (health: reposição)
         evoId ? FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, { signal })
           : Promise.resolve([]),                          // [7] config (health: setup/whatsapp)
-        evoId ? MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 1, { signal })
+        evoId ? MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal })
           : Promise.resolve([]),                          // [8] marketing payment (priority action)
       ]);
 
@@ -208,7 +208,9 @@ export default function FranchiseeDashboard() {
       setBotPulse(results[3].status === "fulfilled" ? results[3].value : null);
       setPurchaseOrders(getValue(6));
       setFranchiseConfig(getValue(7)?.[0] || null);
-      setMarketingPayment(getValue(8)?.[0] || null);
+      // S18.3 (P3, vale sem a chave): o do mês-alvo entre os 3 últimos; verba do mês seguinte já
+      // registrada não esconde mais a do mês-alvo.
+      setMarketingPayment(escolherMarketing(getValue(8)));
 
 
 

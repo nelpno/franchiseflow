@@ -17,7 +17,7 @@ import { pedidoEmDestaque } from "../OpenOrderStrip";
 import { cenarioPrioritario } from "../PriorityAction";
 import { faixaMensalidade } from "@/lib/pagamentos";
 import {
-  MESES_EVOLUCAO, aReceberDesde, avaliarAgora, marketingDoMesAlvo, diasSeguidosBatendoMeta, faturamentoDoDia,
+  MESES_EVOLUCAO, aReceberDesde, avaliarAgora, marketingDoMesAlvo, mesAlvoMarketing, diasSeguidosBatendoMeta, faturamentoDoDia,
   metaDoDia, montarEvolucao, montarInicioMes, vendasDaInicio,
 } from "@/lib/inicioMes";
 import InicioMesCard from "./InicioMesCard";
@@ -117,7 +117,7 @@ export default function InicioV2({
   const falhouMarketing = falhas.includes("marketing");
   if (modoReduzido) {
     // Unidade que ainda não vendeu: igual à Início de sempre, só as obrigações.
-    return <FinancialObligationsCard marketingPayment={marketingPayment} ocultarMarketing={falhouMarketing} />;
+    return <FinancialObligationsCard marketingPayment={marketingPayment} ocultarMarketing={falhouMarketing} mesAlvo={mesAlvoMarketing()} />;
   }
 
   const resumosOk = !falhas.includes("resumos");
@@ -197,6 +197,7 @@ export default function InicioV2({
           marketingPayment={marketingPayment}
           ocultarMensalidade={mensalidadeNoAgora}
           ocultarMarketing={falhouMarketing || marketingNoAgora}
+          mesAlvo={mesAlvoMarketing()}
         />
       </div>
 
