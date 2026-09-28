@@ -146,8 +146,9 @@ export function textosInicioMes(m, brl) {
   const titulo = `${capitalizar(m.nomeMes)} até hoje`;
   const c = m.comparacao;
 
+  // Sem venda ainda no mês o selo seria "−100%" no dia 2: não diz nada útil, só desanima.
   let selo = null;
-  if (c && c.pct !== null) {
+  if (c && c.pct !== null && m.vendas > 0) {
     if (c.pct === 0) selo = { texto: `igual a ${c.mesAnterior}`, tom: "neutro" };
     else selo = { texto: `${c.pct > 0 ? "+" : "−"}${Math.abs(c.pct)}% que ${c.mesAnterior}`, tom: c.pct > 0 ? "ok" : "atencao" };
   }
@@ -203,6 +204,23 @@ export function montarEvolucao({ sales = [], hoje = dataCivilBRT(), meses = MESE
   return lista;
 }
 
+/**
+ * Junta listas de vendas sem repetir (mesmo id). A janela principal e o histórico não se cruzam,
+ * mas na virada do mês uma pode ter sido carregada antes da outra mudar de corte.
+ */
+export function unirVendas(...listas) {
+  const vistos = new Set();
+  const out = [];
+  for (const lista of listas) {
+    for (const s of lista || []) {
+      if (!s?.id || vistos.has(s.id)) continue;
+      vistos.add(s.id);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
 /** Corte da caixa "A receber" da tela Vendas (mesma fórmula, relógio do aparelho como lá). */
 export function corteAReceber(agora = new Date()) {
   return fmt(subMonths(agora, MESES_A_RECEBER));
@@ -210,13 +228,7 @@ export function corteAReceber(agora = new Date()) {
 
 /** Vendas a receber desde `desde` ('yyyy-MM-dd'), sem repetir venda que veio em duas listas. */
 export function aReceberDesde(sales = [], desde) {
-  const vistos = new Set();
-  const unicas = [];
-  for (const s of sales) {
-    if (!s?.id || vistos.has(s.id)) continue;
-    vistos.add(s.id);
-    if ((s.sale_date || "") >= desde) unicas.push(s);
-  }
+  const unicas = unirVendas(sales).filter((s) => (s.sale_date || "") >= desde);
   const lista = vendasAReceber(unicas);
   return { n: lista.length, total: lista.reduce((t, s) => t + getSaleNetValue(s), 0) };
 }

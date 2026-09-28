@@ -12,7 +12,7 @@ import ConversionDetailSheet from "../ConversionDetailSheet";
 import FinancialObligationsCard from "../FinancialObligationsCard";
 import {
   MESES_EVOLUCAO, aReceberDesde, corteAReceber, diasSeguidosBatendoMeta, faturamentoDoDia,
-  hojeBrasilia, metaDoDia, montarEvolucao, montarInicioMes,
+  hojeBrasilia, metaDoDia, montarEvolucao, montarInicioMes, unirVendas,
 } from "@/lib/inicioMes";
 import InicioMesCard from "./InicioMesCard";
 import EspacoMetaBimestre from "./EspacoMetaBimestre";
@@ -62,7 +62,7 @@ export default function InicioV2({
     // "hoje" em Brasília, recalculado a cada recarga dos dados (polling de 5 min da Início)
     const hoje = hojeBrasilia();
     const comHistorico = historico?.status === "ok";
-    const todas = comHistorico ? [...historico.sales, ...allSales] : allSales;
+    const todas = comHistorico ? unirVendas(historico.sales, allSales) : allSales;
     const doDia = faturamentoDoDia(allSales, hoje.str);
     return {
       mes: montarInicioMes({ sales: allSales, hoje: hoje.data }),

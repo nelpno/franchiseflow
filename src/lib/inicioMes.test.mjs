@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { format, subDays } from "date-fns";
 import {
-  montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia,
+  montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia, unirVendas,
   metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto,
 } from "./inicioMes.js";
 import { resumirMes } from "./monthlyReport.js";
@@ -104,6 +104,14 @@ test("dia 31 contra mês de 30 dias = mês anterior inteiro; passou da mediana",
   assert.equal(t.proximoPasso, "Você já passou da sua mediana dos últimos 3 meses. Parabéns!");
 });
 
+test("mês ainda sem venda: sem selo de −100%", () => {
+  const semSetembro = sales.filter((s) => !s.sale_date.startsWith("2026-09"));
+  const m = montarInicioMes({ sales: semSetembro, hoje: new Date(2026, 8, 5) });
+  perto(m.comparacao.antes, 1000); // agosto até o dia 5
+  assert.equal(m.comparacao.pct, -100);
+  assert.equal(textosInicioMes(m, brl).selo, null);
+});
+
 test("queda: selo de atenção, nunca vermelho de erro", () => {
   const poucas = sales.filter((s) => s.sale_date !== "2026-09-10");
   const t = textosInicioMes(montarInicioMes({ sales: poucas, hoje: HOJE }), brl);
@@ -133,6 +141,11 @@ test("a receber: mesmo recorte da caixa da tela Vendas, sem contar venda repetid
   const daTelaVendas = vendasAReceber(todas.filter((s) => s.sale_date >= desde));
   assert.equal(r.n, daTelaVendas.length);
   assert.equal(corteAReceber(new Date(2026, 8, 28)), "2026-03-28");
+});
+
+test("unirVendas não repete venda que veio nas duas listas (virada do mês)", () => {
+  const e = montarEvolucao({ sales: unirVendas(sales, sales.slice(0, 5)), hoje: HOJE });
+  assert.deepEqual(e.map((x) => x.valor), [0, 0, 3000, 5000, 4000, 3600]);
 });
 
 test("faturamento do dia e arredondamento 'perto de'", () => {
