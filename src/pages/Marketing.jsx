@@ -5,7 +5,7 @@ import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { safeHref } from "@/lib/safeHref";
-import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { listarFranquias } from "@/lib/franchisesCache";
 import { format, differenceInDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1006,12 +1006,13 @@ export default function Marketing() {
   // Layout já faz.
   const [franchiseList, setFranchiseList] = useState([]);
   useEffect(() => {
+    if (isAdmin) return undefined; // admin não tem destaque; a lista dele vem de Franchise.list
     let ativo = true;
     listarFranquias()
       .then((lista) => { if (ativo) setFranchiseList(lista); })
       .catch(() => {}); // sem lista, a régua de baixo trata como "ainda não sei" (fail-safe)
     return () => { ativo = false; };
-  }, []);
+  }, [isAdmin]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   // Falha específica do directList (marketing_files): PostagensDoMesCard precisa saber pra
@@ -1093,14 +1094,15 @@ export default function Marketing() {
   // Arte em destaque (franqueado, S19.1): a do mês atual, senão a mais recente que
   // ela pode ver — independente dos filtros da biblioteca (busca, mês, tipo…).
   // A lista de arquivos já vem ordenada por created_at desc (directList).
-  const availableFranchises = getAvailableFranchises(franchiseList, user);
   // Mesma régua do bug Araras×Limeira (franchiseUtils.js): com 2+ unidades, NUNCA cair
   // num "qualquer uma de managed_franchise_ids" enquanto o seletor do topo não resolveu —
   // isso mostrava a arte de uma unidade que não é a aberta na tela. Com 1 unidade só,
   // resolveActiveFranchise já resolve sozinho (sem depender do seletor carregar).
   const activeFranchise = resolveActiveFranchise(franchiseList, user, selectedFranchise);
   const arteDestaque =
-    isAdmin || (availableFranchises.length > 1 && !activeFranchise)
+    // Sem a lista (carregando ou falhou) ou sem a unidade resolvida: sem destaque, em vez de
+    // arriscar material de outra unidade ou só o global (P3 2ª passada).
+    isAdmin || !activeFranchise
       ? null
       : (() => {
           const activeEvoId = activeFranchise?.evolution_instance_id || null;
