@@ -1,17 +1,20 @@
 // S18.1 — 5º bloco da Início nova (chave ui_v2): o que pede ação hoje. Reusa as faixas que já
 // existiam (mensalidade, pedido a caminho/conferir entrega, ação prioritária) e acrescenta as
 // vendas a receber, com o MESMO recorte da caixa "A receber" da tela Vendas.
+// P3 S18 #6: `agora` vem de avaliarAgora (src/lib/inicioMes.js) — "Tudo em dia!" só quando todas
+// as fontes responderam; o que não se sabe vira "não consegui conferir", nunca "tudo certo".
 import React from "react";
 import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRLInteger } from "@/lib/formatters";
-import { faixaMensalidade } from "@/lib/pagamentos";
 import MensalidadeFaixa from "../MensalidadeFaixa";
-import OpenOrderStrip, { pedidoEmDestaque } from "../OpenOrderStrip";
+import OpenOrderStrip from "../OpenOrderStrip";
 import PriorityAction from "../PriorityAction";
+import { InicioErroLinha } from "./InicioErro";
 
 function AReceberFaixa({ aReceber }) {
-  if (!aReceber || aReceber.n <= 0) return null;
+  if (aReceber?.status !== "ok" || !(aReceber.n > 0)) return null;
   const { n, total } = aReceber;
   return (
     <Link
@@ -33,27 +36,31 @@ function AReceberFaixa({ aReceber }) {
 }
 
 export default function InicioAgora({
-  subscription, purchaseOrders, aReceber, marketingPayment, botActive, botConfigured, botSilentDays,
-  hasRecentSales, onOpenPaymentSheet,
+  subscription, purchaseOrders, aReceber, agora, marketingPayment, botActive, botConfigured, botSilentDays,
+  hasRecentSales, onOpenPaymentSheet, onTentarDeNovo,
 }) {
-  // "Tudo em dia!" só quando nada acima pede ação (as regras são as de cada faixa).
-  const temOutraPendencia = !!faixaMensalidade(subscription) || !!pedidoEmDestaque(purchaseOrders) || (aReceber?.n || 0) > 0;
   return (
     <section aria-label="Agora" className="flex flex-col gap-3 [&>*]:mb-0">
       <h2 className="font-plus-jakarta text-base font-bold text-ink">Agora</h2>
       <MensalidadeFaixa subscription={subscription} />
       <OpenOrderStrip purchaseOrders={purchaseOrders} />
       <AReceberFaixa aReceber={aReceber} />
-      <PriorityAction
-        marketingPayment={marketingPayment}
-        botActive={botActive}
-        botConfigured={botConfigured}
-        botSilentDays={botSilentDays}
-        hasRecentSales={hasRecentSales}
-        subscription={subscription}
-        onOpenPaymentSheet={onOpenPaymentSheet}
-        semTudoEmDia={temOutraPendencia}
-      />
+      {agora?.carregando && <Skeleton className="h-14 rounded-xl" />}
+      {agora?.erro && (
+        <InicioErroLinha texto="Não consegui conferir todos os avisos agora." onTentarDeNovo={onTentarDeNovo} />
+      )}
+      {agora?.mostrarPrioridade && (
+        <PriorityAction
+          marketingPayment={marketingPayment}
+          botActive={botActive}
+          botConfigured={botConfigured}
+          botSilentDays={botSilentDays}
+          hasRecentSales={hasRecentSales}
+          subscription={subscription}
+          onOpenPaymentSheet={onOpenPaymentSheet}
+          semTudoEmDia={!agora.permitirTudoEmDia}
+        />
+      )}
     </section>
   );
 }

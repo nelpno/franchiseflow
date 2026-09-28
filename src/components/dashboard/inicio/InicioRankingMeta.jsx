@@ -6,12 +6,33 @@ import { Link } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRLInteger } from "@/lib/formatters";
 import { deltaRanking } from "@/lib/inicioMes";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CARTAO, ROTULO, LINK_ACAO } from "@/components/shared/adminUi";
+import InicioErro, { InicioErroLinha } from "./InicioErro";
 
-export function InicioRanking({ ranking, monthlyRanking, nomeMes }) {
+// P3 S18: `rankingMes` = { status, dado } já conferido (esta unidade, este mês de Brasília);
+// `rankingDiaOk` = a posição do dia veio desta carga, do dia de hoje e sem erro. O que não se
+// sabe não aparece — nunca "sem venda hoje" por causa de uma falha.
+export function InicioRanking({ ranking, rankingDiaOk, rankingMes, nomeMes, onTentarDeNovo }) {
+  if (rankingMes?.status === "erro") {
+    return <InicioErro rotulo="Ranking" texto="Não consegui carregar o ranking do mês." onTentarDeNovo={onTentarDeNovo} />;
+  }
+  if (rankingMes?.status !== "ok") {
+    return (
+      <section className={`${CARTAO} flex items-center gap-3`} aria-label="Ranking">
+        <Skeleton className="h-11 w-11 rounded-xl" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </section>
+    );
+  }
+  const monthlyRanking = rankingMes.dado;
   const temMes = monthlyRanking?.rank_position && monthlyRanking?.total_franchises;
   const temDia = ranking?.position && ranking?.total_franchises;
   const delta = deltaRanking(monthlyRanking);
+  const textoDia = rankingDiaOk ? (temDia ? `${ranking.position}º hoje` : "sem venda hoje ainda") : null;
 
   return (
     <section className={`${CARTAO} flex items-center gap-3`} aria-label="Ranking">
@@ -32,8 +53,8 @@ export function InicioRanking({ ranking, monthlyRanking, nomeMes }) {
               <span className="font-semibold text-warn-ink">↓ caiu {delta.value} {delta.value === 1 ? "posição" : "posições"}</span>
             )}
             {delta?.type === "same" && <span className="text-ink-2">→ mesma posição do mês passado</span>}
-            {delta && <span className="text-ink-3"> · </span>}
-            <span className="text-ink-2">{temDia ? `${ranking.position}º hoje` : "sem venda hoje ainda"}</span>
+            {delta && textoDia && <span className="text-ink-3"> · </span>}
+            {textoDia && <span className="text-ink-2">{textoDia}</span>}
           </p>
         </div>
       ) : (
@@ -43,9 +64,9 @@ export function InicioRanking({ ranking, monthlyRanking, nomeMes }) {
   );
 }
 
-export function InicioMetaDia({ hoje, metaHoje, sequencia }) {
+export function InicioMetaDia({ hoje, metaHoje, sequencia, resumosOk = true, onTentarDeNovo }) {
   const total = hoje.total;
-  const temMeta = metaHoje !== null && metaHoje > 0;
+  const temMeta = resumosOk && metaHoje !== null && metaHoje > 0;
   const pct = temMeta ? Math.min(100, Math.round((total / metaHoje) * 100)) : 0;
   const batida = temMeta && total >= metaHoje;
   const dias = sequencia?.dias || 0;
@@ -83,16 +104,24 @@ export function InicioMetaDia({ hoje, metaHoje, sequencia }) {
         </>
       )}
 
+      {!resumosOk && (
+        <div className="mt-3">
+          <InicioErroLinha texto="A meta do dia e a sequência não carregaram agora." onTentarDeNovo={onTentarDeNovo} />
+        </div>
+      )}
+
       <div className="mt-3 flex items-center gap-3 border-t border-surface-line pt-3">
-        <MaterialIcon
-          icon="local_fire_department"
-          filled
-          size={22}
-          className={`shrink-0 ${dias > 0 ? "text-brand" : "text-ink-3"}`}
-          aria-hidden="true"
-        />
+        {resumosOk && (
+          <MaterialIcon
+            icon="local_fire_department"
+            filled
+            size={22}
+            className={`shrink-0 ${dias > 0 ? "text-brand" : "text-ink-3"}`}
+            aria-hidden="true"
+          />
+        )}
         <p className="min-w-0 flex-1 text-sm text-ink-2">
-          {dias > 1 ? (
+          {!resumosOk ? null : dias > 1 ? (
             <>
               <strong className="font-semibold text-ink tabular-nums">{dias} dias seguidos</strong> batendo a meta do dia
             </>

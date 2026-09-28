@@ -34,7 +34,7 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import EmptyState from "@/components/shared/EmptyState";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
-import { RESUMOS_PARA_SEQUENCIA, corteAReceber } from "@/lib/inicioMes";
+import { RESUMOS_PARA_SEQUENCIA, janelasInicio } from "@/lib/inicioMes";
 import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
@@ -80,6 +80,17 @@ export default function FranchiseeDashboard() {
   // Vendas mais antigas que a janela principal (só com a chave): evolução de 6 meses e o
   // "a receber" com o mesmo recorte da tela Vendas. Carrega 1 vez, fora do polling.
   const [historico, setHistorico] = useState({ status: "idle", sales: [], chave: null });
+  // P3 S18 (#1, #2): cada carga registra PARA QUAL unidade veio, com que corte, o dia do ranking
+  // e o que falhou — a Início nova nunca desenha dado de outra unidade nem trata falha como zero.
+  // Só a Início nova lê isto; a de sempre segue igual.
+  const [cargaV2, setCargaV2] = useState({ evo: null, falhas: [], corte: null, diaRanking: null });
+  const uiV2Ref = useRef(uiV2);
+  uiV2Ref.current = uiV2;
+  const [rankingMesV2, setRankingMesV2] = useState({ evo: null, mes: null, status: "idle", dado: null });
+  const [recargaRankingMes, setRecargaRankingMes] = useState(0);
+  const [recargaHistorico, setRecargaHistorico] = useState(0);
+  const ultimaCargaHistoricoRef = useRef(0);
+  const [funnelEvo, setFunnelEvo] = useState(null);
 
   // Computed inside loadData to stay fresh after midnight
   const getToday = () => format(new Date(), "yyyy-MM-dd");
@@ -134,10 +145,15 @@ export default function FranchiseeDashboard() {
       // Janela cobre o mês mais antigo navegável (offset -2) INTEIRO + seu comparativo (-3),
       // senão o dia 1 do mês antigo cai fora e total/delta% saem parciais. ~3 meses ≈ 90d.
       const cutoff90d = format(startOfMonth(subMonths(new Date(), 3)), "yyyy-MM-dd");
+      // P3 S18 #3: com a chave, o corte e o dia do ranking vêm do dia civil de Brasília (o mesmo
+      // dos cálculos da Início nova). Sem a chave, o relógio do aparelho, como sempre.
+      const janelasV2 = uiV2Ref.current ? janelasInicio() : null;
+      const corteVendas = janelasV2 ? janelasV2.inicioJanela : cutoff90d;
+      const diaRanking = janelasV2 ? janelasV2.hoje : today;
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
         evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", null,
-          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source, payment_confirmed', signal, fetchAll: true, gte: { sale_date: cutoff90d } })
+          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source, payment_confirmed', signal, fetchAll: true, gte: { sale_date: corteVendas } })
           : Promise.resolve([]),                          // [0] sales últimos 90d (+ source for bot filter)
         // S18: 120 linhas (era 30) — a sequência de "dias batendo a meta" compara cada dia com a
         // meta DAQUELE dia (média dos 30 anteriores a ele). A meta de hoje segue igual.
@@ -150,7 +166,7 @@ export default function FranchiseeDashboard() {
         evoId ? getFranchiseBotPulse(evoId, { signal }) : Promise.resolve(null),
                                                           // [3] pulso do robô (última conversa)
         Promise.resolve([]),                              // [4] livre (contatos saíram em 17/09/2026: a lista do dia tem RPC própria)
-        evoId ? getFranchiseRanking(today, evoId, { signal }) : Promise.resolve(null), // [5] ranking
+        evoId ? getFranchiseRanking(diaRanking, evoId, { signal }) : Promise.resolve(null), // [5] ranking
         evoId ? PurchaseOrder.filter({ franchise_id: evoId }, "-ordered_at", 50, { signal })
           : Promise.resolve([]),                          // [6] purchase orders (health: reposição)
         evoId ? FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, { signal })
@@ -189,6 +205,7 @@ export default function FranchiseeDashboard() {
 
       // Ranking — index [5]
       setRanking(results[5].status === "fulfilled" ? results[5].value : null);
+      setCargaV2({ evo: evoId, falhas: failedQueries, corte: corteVendas, diaRanking });
     } catch (err) {
       if (err?.name === 'AbortError') return;
       if (!mountedRef.current) return;
@@ -219,17 +236,19 @@ export default function FranchiseeDashboard() {
   const evoId = franchise?.evolution_instance_id;
 
   // S18: janela do histórico = do corte da caixa "A receber" da tela Vendas (6 meses) até a
-  // véspera do corte da janela principal (1º dia do 3º mês anterior). As duas não se cruzam;
-  // a chave muda na virada do mês e o efeito roda de novo.
-  const inicioJanelaPrincipal = startOfMonth(subMonths(new Date(), 3));
-  const janelaHistorico = uiV2 && evoId
-    ? `${evoId}|${corteAReceber()}|${format(subDays(inicioJanelaPrincipal, 1), "yyyy-MM-dd")}`
-    : null;
+  // véspera do corte da janela principal (1º dia do 3º mês anterior, em Brasília). As duas não
+  // se cruzam; a chave muda na virada do mês e o efeito roda de novo.
+  const janelas = uiV2 ? janelasInicio() : null;
+  const janelaHistorico = uiV2 && evoId ? `${evoId}|${janelas.historicoDesde}|${janelas.historicoAte}` : null;
   useEffect(() => {
     if (!janelaHistorico) return undefined;
     const [evo, desde, ate] = janelaHistorico.split("|");
     const controller = new AbortController();
-    setHistorico({ status: "loading", sales: [], chave: janelaHistorico });
+    ultimaCargaHistoricoRef.current = Date.now();
+    // revalidar a MESMA janela mantém o que já está na tela até a resposta chegar
+    setHistorico((prev) => (prev.chave === janelaHistorico && prev.status === "ok"
+      ? prev
+      : { status: "loading", sales: [], chave: janelaHistorico }));
     Sale.filter({ franchise_id: evo }, "-sale_date", null, {
       columns: 'id, franchise_id, value, delivery_fee, discount_amount, sale_date, created_at, payment_confirmed',
       signal: controller.signal, fetchAll: true, gte: { sale_date: desde }, lte: { sale_date: ate },
@@ -243,7 +262,51 @@ export default function FranchiseeDashboard() {
         setHistorico({ status: "erro", sales: [], chave: janelaHistorico });
       });
     return () => controller.abort();
-  }, [janelaHistorico]);
+  }, [janelaHistorico, recargaHistorico]);
+
+  // P3 S18 #5: venda editada, recebida ou apagada em outra tela/aba — ao voltar para a Início o
+  // histórico é lido de novo (no máximo 1 vez por minuto). Abrir a Início de novo também relê.
+  useEffect(() => {
+    if (!uiV2) return undefined;
+    const aoVoltar = () => {
+      if (document.visibilityState === "visible" && Date.now() - ultimaCargaHistoricoRef.current >= 60000) {
+        setRecargaHistorico((n) => n + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => document.removeEventListener("visibilitychange", aoVoltar);
+  }, [uiV2]);
+
+  // P3 S18 #4: ranking do mês da Início nova pela competência de BRASÍLIA — vira com o mês mesmo
+  // com a tela aberta; o anterior é limpo e só aparece o que veio desta unidade e deste mês.
+  const mesV2 = janelas?.mes || null;
+  useEffect(() => {
+    if (!uiV2 || !evoId || !mesV2) return undefined;
+    const controller = new AbortController();
+    setRankingMesV2({ evo: evoId, mes: mesV2, status: "loading", dado: null });
+    getFranchiseRankingMonthly(mesV2, evoId, { signal: controller.signal })
+      .then((r) => {
+        if (mountedRef.current && !controller.signal.aborted) setRankingMesV2({ evo: evoId, mes: mesV2, status: "ok", dado: r });
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted || !mountedRef.current) return;
+        setRankingMesV2({ evo: evoId, mes: mesV2, status: "erro", dado: null });
+      });
+    return () => controller.abort();
+  }, [uiV2, evoId, mesV2, recargaRankingMes]);
+
+  // A 1ª carga pode ter saído antes de a chave responder (cortes pelo relógio do aparelho): se
+  // ela não cobre o 3º mês anterior de Brasília, recarrega uma vez com os cortes certos.
+  const cargaCobre = !janelas || !cargaV2.corte || cargaV2.corte <= janelas.inicioJanela;
+  useEffect(() => {
+    if (uiV2 && cargaV2.evo && cargaV2.evo === evoId && !cargaCobre) loadData();
+  }, [uiV2, cargaV2.evo, evoId, cargaCobre, loadData]);
+
+  const tentarDeNovoV2 = useCallback(() => {
+    loadData();
+    setRecargaHistorico((n) => n + 1);
+    setRecargaRankingMes((n) => n + 1);
+  }, [loadData]);
 
   // Primeiros passos: efeito LEVE e separado, fora do polling de 5min (status do
   // checklist não muda nesse ritmo). Só para franqueada — CS também cai no
@@ -392,7 +455,8 @@ export default function FranchiseeDashboard() {
   // Ranking mensal entre franquias — fora do useVisibilityPolling de propósito.
   // Só dispara quando filtro muda. AbortController evita race em ◀◀◀ rápido.
   useEffect(() => {
-    if (!evoId) return;
+    // S18: com a chave, o ranking do mês é o da Início nova (efeito acima, por Brasília)
+    if (!evoId || uiV2) return;
     const controller = new AbortController();
     let yearMonth;
     if (period === "month") {
@@ -406,7 +470,7 @@ export default function FranchiseeDashboard() {
       .then((r) => { if (mountedRef.current) setMonthlyRanking(r); })
       .catch(() => { /* abort ou erro silencioso — mantém último valor */ });
     return () => controller.abort();
-  }, [evoId, period, monthOffset, customRange?.start]);
+  }, [evoId, period, monthOffset, customRange?.start, uiV2]);
 
   // Janela do funil — SEMPRE mensal (ou a faixa personalizada). Conversão de um dia
   // ou de uma semana não tem significado estatístico, então os filtros Hoje/Semana
@@ -442,6 +506,7 @@ export default function FranchiseeDashboard() {
       .then((f) => {
         if (!mountedRef.current) return;
         setFunnel(f);
+        setFunnelEvo(evoId); // S18: a Início nova só mostra a conversão desta unidade
         setFunnelLoading(false);
       })
       .catch(() => { if (mountedRef.current) setFunnelLoading(false); });
@@ -794,9 +859,14 @@ export default function FranchiseeDashboard() {
           franchise={franchise}
           allSales={allSales}
           historico={historico.chave === janelaHistorico ? historico : { status: "loading", sales: [] }}
+          cargaOk={cargaV2.evo === evoId && cargaCobre}
+          falhas={cargaV2.falhas}
+          janelas={janelas}
           summaries={summaries}
           ranking={ranking}
-          monthlyRanking={monthlyRanking}
+          rankingDiaOk={cargaV2.diaRanking === janelas?.hoje}
+          rankingMes={rankingMesV2.evo === evoId && rankingMesV2.mes === mesV2 ? rankingMesV2 : { status: "loading" }}
+          onTentarDeNovo={tentarDeNovoV2}
           purchaseOrders={purchaseOrders}
           subscription={subscription}
           checkPaymentNow={checkPaymentNow}
@@ -806,7 +876,7 @@ export default function FranchiseeDashboard() {
           botConfigured={botConfigured}
           botSilentDays={botSilentDays}
           hasRecentSales={hasRecentSales}
-          funnel={funnel}
+          funnel={funnelEvo === evoId ? funnel : null}
           funnelRange={funnelRange}
         />
       )}

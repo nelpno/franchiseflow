@@ -15,7 +15,11 @@ function cap(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-export default function FinancialObligationsCard({ marketingPayment }) {
+// S18 (P3 #7): a Início nova (chave ui_v2) já mostra a mensalidade no "Agora" (faixa perto do
+// vencimento, ação prioritária quando vencida) e passa `ocultarMensalidade` para não repetir; e
+// `ocultarMarketing` quando a leitura do marketing falhou (o vazio viraria "registre a verba").
+// Sem as props (Início de sempre), nada muda.
+export default function FinancialObligationsCard({ marketingPayment, ocultarMensalidade = false, ocultarMarketing = false }) {
   const navigate = useNavigate();
   const { subscription, isLoading: subLoading, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -46,7 +50,7 @@ export default function FinancialObligationsCard({ marketingPayment }) {
   const marketingPaymentForMonth =
     marketingPayment?.reference_month === targetMonth ? marketingPayment : null;
   const showMarketingRow =
-    !marketingPaymentForMonth || marketingPaymentForMonth.status === "rejected";
+    !ocultarMarketing && (!marketingPaymentForMonth || marketingPaymentForMonth.status === "rejected");
 
   // S5.2: franquia com cliente no ASAAS mas SEM assinatura criada ainda (hoje 2 unidades,
   // ex.: acabou de aderir) não tem cobrança nenhuma pra mostrar — current_payment_status
@@ -56,7 +60,7 @@ export default function FinancialObligationsCard({ marketingPayment }) {
   const subscriptionClass = classifySubscription(subscription);
   // Assinatura cancelada nao tem o que pagar: esconde a linha (sem "Pagar" que leva a nada).
   const showSubscriptionRow =
-    !!subscription?.asaas_subscription_id && subscriptionClass.situacao !== SITUACAO.CANCELADA;
+    !ocultarMensalidade && !!subscription?.asaas_subscription_id && subscriptionClass.situacao !== SITUACAO.CANCELADA;
   // P3 28/09/2026, achado 6: comparar so `current_payment_status === "OVERDUE"` perdia o
   // caso de PENDING com vencimento no passado (o paywall ja usava classifySubscription
   // pra isso — aqui nao usava, e a faixa vermelha "Regularize" nunca aparecia nesse caso,

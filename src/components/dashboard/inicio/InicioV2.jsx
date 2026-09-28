@@ -5,14 +5,20 @@
 //   4 evolução 6 meses · 5 Agora · 6 Quem chamar hoje (+ convite) · 7 atalhos.
 // Os dados chegam do FranchiseeDashboard (mesma carga da Início de sempre + o histórico de
 // vendas antigas, só com a chave); as contas estão em src/lib/inicioMes.js.
+// P3 S18: só desenha dado DESTA unidade (`cargaOk`), com os cortes do dia de Brasília (`janelas`),
+// e consulta que falhou (`falhas`) aparece como "não carregou", nunca como zero.
 import React, { useMemo, useState } from "react";
+import { parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
 import ConversionDetailSheet from "../ConversionDetailSheet";
 import FinancialObligationsCard from "../FinancialObligationsCard";
+import { pedidoEmDestaque } from "../OpenOrderStrip";
+import { cenarioPrioritario } from "../PriorityAction";
+import { faixaMensalidade } from "@/lib/pagamentos";
 import {
-  MESES_EVOLUCAO, aReceberDesde, corteAReceber, diasSeguidosBatendoMeta, faturamentoDoDia,
-  hojeBrasilia, metaDoDia, montarEvolucao, montarInicioMes, unirVendas,
+  MESES_EVOLUCAO, aReceberDesde, avaliarAgora, diasSeguidosBatendoMeta, faturamentoDoDia,
+  metaDoDia, montarEvolucao, montarInicioMes, vendasDaInicio,
 } from "@/lib/inicioMes";
 import InicioMesCard from "./InicioMesCard";
 import EspacoMetaBimestre from "./EspacoMetaBimestre";
@@ -21,19 +27,16 @@ import InicioEvolucao from "./InicioEvolucao";
 import InicioAgora from "./InicioAgora";
 import InicioQuemChamar from "./InicioQuemChamar";
 import InicioAtalhos from "./InicioAtalhos";
+import InicioErro from "./InicioErro";
 
 // Sem o histórico (carregando ou falhou) a evolução mostra só o que a janela principal cobre:
 // o mês atual e os 3 anteriores inteiros.
 const MESES_SEM_HISTORICO = 4;
 
-export function InicioV2Esqueleto() {
-  // Mesma ordem dos blocos da tela, sem ícone (a fonte pode não ter carregado ainda).
+// Mesma ordem dos blocos da tela, sem ícone (a fonte pode não ter carregado ainda).
+function EsqueletoBlocos() {
   return (
-    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
-      <div className="mb-2 space-y-2">
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-4 w-32" />
-      </div>
+    <div className="space-y-4" aria-busy="true">
       <Skeleton className="h-48 rounded-2xl" />
       <div className="grid gap-4 lg:grid-cols-2">
         <Skeleton className="h-20 rounded-2xl" />
@@ -50,63 +53,136 @@ export function InicioV2Esqueleto() {
   );
 }
 
+export function InicioV2Esqueleto() {
+  return (
+    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
+      <div className="mb-2 space-y-2">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <EsqueletoBlocos />
+    </div>
+  );
+}
+
 export default function InicioV2({
-  modoReduzido, evoId, franchise, allSales, historico, summaries, ranking, monthlyRanking,
+  modoReduzido, evoId, franchise, allSales, historico, cargaOk, falhas = [], janelas, summaries,
+  ranking, rankingDiaOk, rankingMes, onTentarDeNovo,
   purchaseOrders, subscription, checkPaymentNow, isChecking, marketingPayment,
   botActive, botConfigured, botSilentDays, hasRecentSales, funnel, funnelRange,
 }) {
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
   const [conversaoAberta, setConversaoAberta] = useState(false);
 
+  const hojeStr = janelas?.hoje;
+  const corteAReceber = janelas?.corteAReceber;
+  const vendasOk = !falhas.includes("vendas");
   const dados = useMemo(() => {
-    // "hoje" em Brasília, recalculado a cada recarga dos dados (polling de 5 min da Início)
-    const hoje = hojeBrasilia();
+    if (!hojeStr) return null;
+    // o MESMO dia civil de Brasília dos cortes da consulta (janelasInicio)
+    const hoje = parseISO(hojeStr);
     const comHistorico = historico?.status === "ok";
-    const todas = comHistorico ? unirVendas(historico.sales, allSales) : allSales;
-    const doDia = faturamentoDoDia(allSales, hoje.str);
+    // a janela principal (recarregada a cada 5 min) ganha da cópia do histórico
+    const todas = comHistorico ? vendasDaInicio({ principal: allSales, historico: historico.sales }) : allSales;
+    const doDia = faturamentoDoDia(allSales, hojeStr);
     return {
-      mes: montarInicioMes({ sales: allSales, hoje: hoje.data }),
-      evolucao: montarEvolucao({ sales: todas, hoje: hoje.data, meses: comHistorico ? MESES_EVOLUCAO : MESES_SEM_HISTORICO }),
-      // sem o histórico não dá para bater com a caixa da tela Vendas: não mostra número
-      aReceber: comHistorico ? aReceberDesde(todas, corteAReceber()) : null,
+      mes: montarInicioMes({ sales: allSales, hoje }),
+      evolucao: montarEvolucao({ sales: todas, hoje, meses: comHistorico ? MESES_EVOLUCAO : MESES_SEM_HISTORICO }),
+      // sem o histórico não dá para bater com a caixa da tela Vendas: a receber DESCONHECIDO
+      // e sem as vendas da janela principal também não (contaria só as antigas)
+      aReceber: !vendasOk
+        ? { status: "erro" }
+        : comHistorico
+          ? { status: "ok", ...aReceberDesde(todas, corteAReceber) }
+          : { status: historico?.status === "erro" ? "erro" : "loading" },
       doDia,
-      metaHoje: metaDoDia(summaries, hoje.str, { franchiseId: evoId }),
-      sequencia: diasSeguidosBatendoMeta(summaries, { hoje: hoje.str, franchiseId: evoId, faturamentoHoje: doDia.total }),
+      metaHoje: metaDoDia(summaries, hojeStr, { franchiseId: evoId }),
+      sequencia: diasSeguidosBatendoMeta(summaries, { hoje: hojeStr, franchiseId: evoId, faturamentoHoje: doDia.total }),
     };
-  }, [allSales, historico, summaries, evoId]);
+  }, [allSales, historico, summaries, evoId, hojeStr, corteAReceber, vendasOk]);
 
+  // Dado de outra unidade (troca no meio da carga) ou carga com cortes errados: esqueleto.
+  if (!cargaOk || !dados) return <EsqueletoBlocos />;
+
+  const falhouMarketing = falhas.includes("marketing");
   if (modoReduzido) {
     // Unidade que ainda não vendeu: igual à Início de sempre, só as obrigações.
-    return <FinancialObligationsCard marketingPayment={marketingPayment} />;
+    return <FinancialObligationsCard marketingPayment={marketingPayment} ocultarMarketing={falhouMarketing} />;
   }
 
+  const resumosOk = !falhas.includes("resumos");
   const statusHistorico = historico?.status === "ok" || historico?.status === "erro" ? historico.status : "loading";
+
+  // "Agora": o que pede ação e o que dá para afirmar (regras em avaliarAgora)
+  const temFaixa = !!faixaMensalidade(subscription);
+  const temPedido = !falhas.includes("pedidos") && !!pedidoEmDestaque(purchaseOrders);
+  const agora = avaliarAgora({ temFaixa, temPedido, aReceber: dados.aReceber, falhas });
+  const cenario = agora.mostrarPrioridade
+    ? cenarioPrioritario({ marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription })
+    : null;
+  // P3 S18 #7: a mensalidade que já está no "Agora" (faixa perto do vencimento ou ação de
+  // vencida) não se repete no cartão do fim; a linha do marketing continua.
+  const mensalidadeNoAgora = temFaixa || cenario?.key === "equipe_digital";
 
   return (
     <>
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start">
-        <InicioMesCard mes={dados.mes} funnel={funnel} onAbrirConversao={() => setConversaoAberta(true)} />
+        {vendasOk ? (
+          <InicioMesCard mes={dados.mes} funnel={funnel} onAbrirConversao={() => setConversaoAberta(true)} />
+        ) : (
+          <InicioErro className="lg:col-span-2" rotulo="O mês até hoje" texto="Não consegui carregar as vendas do mês." onTentarDeNovo={onTentarDeNovo} />
+        )}
         <EspacoMetaBimestre />
-        <InicioRanking ranking={ranking} monthlyRanking={monthlyRanking} nomeMes={dados.mes.nomeMes} />
-        <InicioMetaDia hoje={dados.doDia} metaHoje={dados.metaHoje} sequencia={dados.sequencia} />
-        <InicioEvolucao meses={dados.evolucao} status={statusHistorico} mediana={dados.mes.mediana} nomeMes={dados.mes.nomeMes} />
+        <InicioRanking
+          ranking={ranking}
+          rankingDiaOk={rankingDiaOk && !falhas.includes("ranking")}
+          rankingMes={rankingMes}
+          nomeMes={dados.mes.nomeMes}
+          onTentarDeNovo={onTentarDeNovo}
+        />
+        {vendasOk ? (
+          <InicioMetaDia
+            hoje={dados.doDia}
+            metaHoje={dados.metaHoje}
+            sequencia={dados.sequencia}
+            resumosOk={resumosOk}
+            onTentarDeNovo={onTentarDeNovo}
+          />
+        ) : (
+          <InicioErro rotulo="Meta do dia" texto="Não consegui carregar as vendas de hoje." onTentarDeNovo={onTentarDeNovo} />
+        )}
+        {vendasOk && (
+          <InicioEvolucao
+            meses={dados.evolucao}
+            status={statusHistorico}
+            mediana={dados.mes.mediana}
+            nomeMes={dados.mes.nomeMes}
+            onTentarDeNovo={onTentarDeNovo}
+          />
+        )}
         <InicioAgora
           subscription={subscription}
           purchaseOrders={purchaseOrders}
           aReceber={dados.aReceber}
+          agora={agora}
           marketingPayment={marketingPayment}
           botActive={botActive}
           botConfigured={botConfigured}
           botSilentDays={botSilentDays}
           hasRecentSales={hasRecentSales}
           onOpenPaymentSheet={() => setPagamentoAberto(true)}
+          onTentarDeNovo={onTentarDeNovo}
         />
         <InicioQuemChamar evoId={evoId} franchise={franchise} />
         <InicioAtalhos />
       </div>
 
       <div className="mt-4">
-        <FinancialObligationsCard marketingPayment={marketingPayment} />
+        <FinancialObligationsCard
+          marketingPayment={marketingPayment}
+          ocultarMensalidade={mensalidadeNoAgora}
+          ocultarMarketing={falhouMarketing}
+        />
       </div>
 
       <SubscriptionPaymentSheet

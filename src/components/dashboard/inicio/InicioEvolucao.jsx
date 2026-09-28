@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRLCompact, formatBRLInteger } from "@/lib/formatters";
 import { CARTAO, H3_CARTAO } from "@/components/shared/adminUi";
 
-export default function InicioEvolucao({ meses, status, mediana, nomeMes }) {
+export default function InicioEvolucao({ meses, status, mediana, nomeMes, onTentarDeNovo }) {
   if (status === "loading") {
     return (
       <section className={CARTAO} aria-label="Evolução">
@@ -48,6 +48,11 @@ export default function InicioEvolucao({ meses, status, mediana, nomeMes }) {
         {mediana !== null && mediana !== undefined && ` Sua mediana dos 3 meses anteriores: ${formatBRLInteger(mediana)}.`}
         {status === "erro" && " Os meses mais antigos não carregaram agora."}
       </p>
+      {status === "erro" && onTentarDeNovo && (
+        <button type="button" onClick={onTentarDeNovo} className="mt-1 min-h-11 text-sm font-semibold text-brand">
+          Tentar de novo
+        </button>
+      )}
     </section>
   );
 }
