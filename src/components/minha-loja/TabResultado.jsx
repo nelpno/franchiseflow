@@ -821,6 +821,9 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   // carregou: o aviso some em vez de afirmar algo sem dado. Poucas linhas por unidade.
   const [purchaseOrders, setPurchaseOrders] = useState(null);
   const [pedidosVersao, setPedidosVersao] = useState(0);
+  // P3 S17 (item 3): a leitura dos pedidos FALHOU (≠ ainda carregando) — a tela e o PDF dizem
+  // que não deu para conferir, nunca silêncio.
+  const [pedidosFalharam, setPedidosFalharam] = useState(false);
 
   // S8.2 (28/09/2026): antes buscava TODO o histórico de vendas/despesas da franquia
   // (fetchAll sem data) só pra mostrar 1 mês + evolução de 6 meses + acumulado do ano —
@@ -919,18 +922,23 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   // do callback já muda exatamente nesses dois casos, por causa do useCallback acima).
   useEffect(() => { loadData(); }, [loadData]);
 
+  const buscarPedidos = useCallback(
+    (signal) => PurchaseOrder.filter({ franchise_id: franchiseId }, null, null, {
+      columns: "id, status, total_amount, freight_cost, ordered_at, delivered_at",
+      fetchAll: true,
+      signal,
+    }),
+    [franchiseId]
+  );
+
   useEffect(() => {
     if (!uiV2 || !franchiseId) return undefined;
     const controller = new AbortController();
-    PurchaseOrder.filter({ franchise_id: franchiseId }, null, null, {
-      columns: "id, status, total_amount, freight_cost, ordered_at, delivered_at",
-      fetchAll: true,
-      signal: controller.signal,
-    })
-      .then((rows) => { if (!controller.signal.aborted) setPurchaseOrders(rows); })
-      .catch(() => { if (!controller.signal.aborted) setPurchaseOrders(null); });
+    buscarPedidos(controller.signal)
+      .then((rows) => { if (!controller.signal.aborted) { setPurchaseOrders(rows); setPedidosFalharam(false); } })
+      .catch(() => { if (!controller.signal.aborted) { setPurchaseOrders(null); setPedidosFalharam(true); } });
     return () => controller.abort();
-  }, [uiV2, franchiseId, pedidosVersao]);
+  }, [uiV2, franchiseId, pedidosVersao, buscarPedidos]);
 
   // Lookup de contatos para resolver nome do cliente no export
   const contactsMap = useMemo(() => {
@@ -1115,7 +1123,20 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
     setGerandoRelatorio(true);
     try {
       // S17.2: com a chave, o PDF sai do MESMO modelo da tela (montarResultadoMes).
-      const modelo = uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null;
+      // P3 S17 (item 3): o PDF não depende de os pedidos já terem chegado na tela — busca na hora
+      // do clique; falhou = o PDF diz que não deu para conferir.
+      let pedidosDoPdf = null;
+      let pedidosDoPdfFalharam = false;
+      if (uiV2) {
+        try {
+          pedidosDoPdf = await buscarPedidos();
+          setPurchaseOrders(pedidosDoPdf);
+          setPedidosFalharam(false);
+        } catch {
+          pedidosDoPdfFalharam = true;
+        }
+      }
+      const modelo = uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders: pedidosDoPdf, mesSelecionado: selectedMonth }) : null;
       const relatorio = modelo ? modelo.relatorio : montarRelatorioMensal({ sales, saleItems, expenses, mesSelecionado: selectedMonth });
       // O anúncio só entra com o robô com base (has_bot_data nos 3 meses do relatório).
       const inicioFunil = parseISO(`${relatorio.meses[0].chave}-01`);
@@ -1135,7 +1156,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
       await gerarRelatorioMensalPdf({
         relatorio,
         anuncio,
-        avisoFabrica: modelo ? modelo.avisoFabrica : undefined,
+        avisoFabrica: modelo ? (pedidosDoPdfFalharam ? { naoConferido: true } : modelo.avisoFabrica) : undefined,
         textoNovo: uiV2,
         nomeUnidade: unidade?.name || "Maxi Massas",
         mesSelecionado: selectedMonth,
@@ -1289,6 +1310,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
           }}
           auditLogs={auditLogs}
           mostrarDicaClientes={!hideFranchiseeLinks}
+          pedidosNaoConferidos={pedidosFalharam}
         />
         {dialogos}
       </>

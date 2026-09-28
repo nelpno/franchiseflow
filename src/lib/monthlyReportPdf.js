@@ -19,7 +19,8 @@ async function carregarLibs() {
 }
 
 // avisoFabrica (S17.2, só com a chave ui_v2): { aCaminho: {n, valor}, semGasto: {n, valor} } de
-// avaliarComprasFabrica, ou null/undefined = nada a avisar (o PDF de sempre).
+// avaliarComprasFabrica, { naoConferido: true } quando a leitura dos pedidos falhou, ou
+// null/undefined = nada a avisar (o PDF de sempre).
 export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica, textoNovo = false, nomeUnidade, mesSelecionado, hoje = new Date() }) {
   // textoNovo (S17.2, só com a chave ui_v2): a palavra da tela nova, "Sobrou", no lugar de "Lucro em caixa".
   const ROTULO_SOBROU = textoNovo ? "Sobrou no mês" : "Lucro em caixa";
@@ -56,7 +57,10 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica
 
   if (avisoFabrica) {
     const frases = [];
-    const { aCaminho, semGasto } = avisoFabrica;
+    const { aCaminho, semGasto, naoConferido } = avisoFabrica;
+    if (naoConferido) {
+      frases.push("Não foi possível conferir os pedidos à fábrica agora: o número pode ainda não ter a compra que está a caminho. Baixe de novo mais tarde.");
+    }
     if (aCaminho?.n > 0) {
       frases.push(`Compra da fábrica ainda não lançada: ${aCaminho.n === 1 ? "1 pedido" : `${aCaminho.n} pedidos`} (${brl(aCaminho.valor)}) ainda não ${aCaminho.n === 1 ? "chegou" : "chegaram"}. Entra como gasto na entrega, e o Sobrou vai baixar.`);
     }
