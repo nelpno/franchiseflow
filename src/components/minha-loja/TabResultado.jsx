@@ -43,7 +43,7 @@ import {
   getTopProducts,
   getSaleNetValue,
 } from "@/lib/financialCalcs";
-import { formatBRL, formatBRLCompact } from "@/lib/formatters";
+import { formatBRL, formatBRLCompactResultado as formatBRLCompact } from "@/lib/formatters";
 import { janelaCobre, janelaParaBuscar } from "@/lib/resultadoWindow";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
@@ -56,9 +56,10 @@ import { montarRelatorioMensal, montarBlocoAnuncio } from "@/lib/monthlyReport";
 import { gerarRelatorioMensalPdf } from "@/lib/monthlyReportPdf";
 
 // --------------------------------------------------------------- helpers
-// formatBRL e formatBRLCompact vêm de @/lib/formatters (S8.4, 28/09/2026) — a cópia local
-// de formatBRLCompact tinha semântica divergente da tela (2 casas decimais entre 1.000 e
-// 9.999, a compartilhada usa sempre 1 casa).
+// formatBRL vem de @/lib/formatters. formatBRLCompact AQUI é formatBRLCompactResultado (S8-P3,
+// 28/09/2026) — a versão que preserva o número exato de sempre nesta tela (2 casas entre
+// R$1.000-9.999, negativo com valor absoluto). NÃO trocar pelo formatBRLCompact genérico: ele
+// tem outra precisão (sempre 1 casa) e não trata negativo — ver o comentário em formatters.js.
 
 // Banner color → Tailwind class lookup
 const BANNER_COLORS = {
@@ -1142,7 +1143,12 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
       <ErrorState
         titulo="Não deu para carregar o resultado"
         texto={erroDeCarga}
-        onTentarNovamente={loadData}
+        // P2 (revisão S8-P3, 28/09/2026): loadData([evento do clique]) sem force pode achar
+        // que a janela já está coberta (loadedRangeRef de um sucesso ANTERIOR, mesmo que a
+        // tentativa mais recente pra esse mês tenha falhado) e não refazer a consulta nenhuma —
+        // o botão pareceria não fazer nada, com o erro preso na tela pra sempre. force:true
+        // ignora a checagem de cobertura e busca de novo.
+        onTentarNovamente={() => loadData({ force: true })}
       />
     );
   }
