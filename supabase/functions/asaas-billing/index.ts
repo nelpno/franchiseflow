@@ -426,11 +426,13 @@ async function checkPayment(franchiseId: string) {
     .single();
   if (!sub?.asaas_subscription_id) throw new Error("Sem assinatura ativa");
 
-  // Get last 6 payments (most recent dueDate first). ASAAS auto-creates next-cycle
+  // Get the payments (most recent dueDate first). ASAAS auto-creates next-cycle
   // invoices ahead of time, so picking limit=1 desc returns the FUTURE pending invoice
   // and masks the current period's paid status.
+  // S11 (28/09/2026): a janela era de 6 faturas — um atraso mais velho que isso sumia da
+  // regra de "arrears" e a unidade aparecia em dia. 100 é o teto do ASAAS numa página.
   const payments = await asaasRequest(
-    `/v3/subscriptions/${sub.asaas_subscription_id}/payments?sort=dueDate&order=desc&limit=6`
+    `/v3/subscriptions/${sub.asaas_subscription_id}/payments?sort=dueDate&order=desc&limit=100`
   );
   if (!payments.data?.length) return { status: "NO_PAYMENTS" };
 
@@ -513,36 +515,21 @@ async function handleWebhook(body: Record<string, unknown>) {
     .single();
   if (!sub) return { ignored: true, reason: "subscription not found" };
 
-  const status = mapPaymentStatus(payment.status as string);
-
-  // ASAAS auto-creates next-cycle invoices (PAYMENT_CREATED, status=PENDING) ahead
-  // of time. Applying that event would overwrite the current period's PAID status.
-  // Only update if the event represents an already-due payment (or within 7d grace).
-  const dueMs = new Date(payment.dueDate as string).getTime();
-  if (status === "PENDING" && dueMs > Date.now() + 7 * 86400000) {
-    return { ignored: true, reason: "future pending invoice, current paid status preserved", event };
+  // S11 (28/09/2026): o evento NÃO decide mais qual fatura é a atual. Antes ele gravava a
+  // fatura do evento como current_payment_*: pagar setembro com agosto em aberto trocava o
+  // card para "setembro · pago" e liberava o paywall. Agora o evento só dispara a MESMA
+  // regra do checkPayment (atraso mais antigo primeiro, depois a do período, depois a paga),
+  // relida no ASAAS. Evento de fatura futura (PAYMENT_CREATED do próximo ciclo) cai na
+  // mesma regra e não mexe no card.
+  // Falha ao falar com o ASAAS NÃO vira 500: a fila de webhooks do ASAAS é interrompida
+  // depois de erros seguidos. O sync diário (cron 08:05) e o "Já paguei" refazem a leitura.
+  try {
+    const result = await checkPayment(sub.franchise_id as string);
+    return { updated: sub.franchise_id, event, ...result };
+  } catch (err) {
+    console.error(`[asaas-billing] webhook ${event} p/ ${sub.franchise_id}: ${(err as Error).message}`);
+    return { updated: false, franchise_id: sub.franchise_id, event, error: "check-payment falhou" };
   }
-
-  const updateData: Record<string, unknown> = {
-    current_payment_id: payment.id,
-    current_payment_status: status,
-    current_payment_due_date: payment.dueDate,
-    current_payment_value: payment.value,
-    current_payment_url: (payment.bankSlipUrl || payment.invoiceUrl || null) as string | null,
-    last_synced_at: new Date().toISOString(),
-  };
-
-  // PIX da fatura que o evento traz. Antes só buscava em OVERDUE: um evento PENDING
-  // dentro da carência trocava o current_payment_id e mantinha o QR do ciclo anterior,
-  // deixando o card com o mês novo e um QR morto. Ver attachPixFields.
-  await attachPixFields(updateData, payment.id as string, status);
-
-  await supabase
-    .from("system_subscriptions")
-    .update(updateData)
-    .eq("franchise_id", sub.franchise_id);
-
-  return { updated: sub.franchise_id, status, event };
 }
 
 async function registerBatch(franchiseIds: string[]) {
