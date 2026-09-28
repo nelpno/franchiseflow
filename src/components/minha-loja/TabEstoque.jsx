@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { InventoryItem, getStandardProductCatalog, updateInventoryCountIfUnchanged } from "@/entities/all";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { Card, CardContent } from "@/components/ui/card";
@@ -116,6 +119,7 @@ export default function TabEstoque({
   franchises = [],
   onRefresh,
 }) {
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
   const [items, setItems] = useState([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -1093,7 +1097,18 @@ export default function TabEstoque({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-ink-2">
               <span className="font-bold text-ink">{totalProducts}</span> produtos
-              {lowStockCount > 0 && (
+              {lowStockCount > 0 && uiV2 && (
+                // Menu novo (Onda 5, pendência da S14): o selo leva à Reposição, onde o
+                // "Acabando" monta o pedido. Com a chave desligada, o selo de sempre.
+                <Link
+                  to="/Gestao?tab=reposicao"
+                  className="ml-2 inline-flex min-h-[32px] items-center gap-1 rounded-full bg-brand/10 px-2.5 text-[11px] font-bold text-brand touch-manipulation active:scale-[0.97]"
+                >
+                  {lowStockCount} baixo · Repor
+                  <MaterialIcon icon="chevron_right" size={14} aria-hidden="true" />
+                </Link>
+              )}
+              {lowStockCount > 0 && !uiV2 && (
                 <Badge className="bg-brand/10 text-brand rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
                   {lowStockCount} baixo
                 </Badge>
