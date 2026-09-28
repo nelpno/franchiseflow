@@ -668,7 +668,8 @@ export default function FranchiseeDashboard() {
           rawValue={stats.salesCount}
           previousValue={stats.prevSalesCount}
           trend={stats.salesCount > stats.prevSalesCount ? 'up' : stats.salesCount < stats.prevSalesCount ? 'down' : null}
-          href="/Vendas"
+          // S12.5: "Vendas Hoje" abre a lista já em Hoje (a lista só lê o parâmetro com ui_v2)
+          href={period === "today" ? "/Vendas?periodo=hoje" : "/Vendas"}
         />
         <StatsCard
           title="Faturamento"

@@ -271,3 +271,41 @@ grant execute on function public.registrar_lembrete_cobranca(text, jsonb, text, 
 grant execute on function public.concluir_lembrete_cobranca(uuid, boolean, text) to service_role;
 
 notify pgrst, 'reload schema';
+
+-- ── P3 (28/09/2026, 1ª passada) ─────────────────────────────────────────────────────────
+-- Resposta ambígua do WhatsApp (o envio pode ter saído) NÃO pode liberar novo envio: vira
+-- 'incerto', que conta como enviado (bloqueia o dia e o item). Só 'falhou' — falha ANTES do
+-- POST (número fora do WhatsApp) — libera tentar de novo.
+-- ROLLBACK desta parte: drop function if exists public.concluir_lembrete_cobranca(uuid, boolean, text, boolean);
+--   e recriar a de 3 argumentos acima; alter table ... drop constraint cobranca_lembretes_status_check,
+--   add constraint cobranca_lembretes_status_check check (status in ('enviando','enviado','falhou')).
+alter table public.cobranca_lembretes drop constraint if exists cobranca_lembretes_status_check;
+alter table public.cobranca_lembretes add constraint cobranca_lembretes_status_check
+  check (status in ('enviando', 'enviado', 'falhou', 'incerto'));
+
+drop function if exists public.concluir_lembrete_cobranca(uuid, boolean, text);
+create or replace function public.concluir_lembrete_cobranca(
+  p_id uuid, p_ok boolean, p_erro text default null, p_incerto boolean default false)
+returns void
+language plpgsql
+security definer
+set search_path = 'public'
+as $$
+declare v_claims text := nullif(current_setting('request.jwt.claims', true), '');
+begin
+  if not coalesce(
+       (v_claims is null and session_user in ('postgres', 'supabase_admin'))
+       or (v_claims is not null and v_claims::jsonb ->> 'role' = 'service_role'),
+       false) then
+    raise exception 'Sem permissão' using errcode = '42501';
+  end if;
+  update cobranca_lembretes
+     set status = case when p_ok then 'enviado' when p_incerto then 'incerto' else 'falhou' end,
+         erro = case when p_ok then null else left(coalesce(p_erro, 'falha no envio'), 300) end,
+         updated_at = now()
+   where id = p_id and status = 'enviando';
+end;
+$$;
+revoke all on function public.concluir_lembrete_cobranca(uuid, boolean, text, boolean) from public, anon, authenticated;
+grant execute on function public.concluir_lembrete_cobranca(uuid, boolean, text, boolean) to service_role;
+notify pgrst, 'reload schema';

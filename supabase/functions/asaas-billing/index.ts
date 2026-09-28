@@ -449,9 +449,12 @@ async function checkPayment(franchiseId: string) {
   //   2. Current period: most recent invoice due-or-within-7d-grace, with its real
   //      status (PENDING/PAID/OVERDUE). This is what rolls the card to the new month.
   //   3. Fallbacks: most recent paid invoice, else oldest of the window.
+  // S11 P3: só fatura COBRÁVEL conta como atraso — estornada/removida antiga (REFUNDED, DELETED,
+  // chargeback...) não pode esconder a dívida de verdade de um mês mais novo.
+  const COBRAVEL = new Set(["PENDING", "OVERDUE"]);
   const arrears = [...list]
     .reverse()
-    .find(p => !PAID_SET.has(p.status) && new Date(p.dueDate).getTime() < nowMs);
+    .find(p => COBRAVEL.has(p.status) && new Date(p.dueDate).getTime() < nowMs);
   const current = list.find(p => new Date(p.dueDate).getTime() <= graceMs);
   const paid = list.find(p => PAID_SET.has(p.status));
   const pay = arrears || current || paid || list[list.length - 1];
@@ -469,12 +472,13 @@ async function checkPayment(franchiseId: string) {
   // PIX da fatura selecionada (null quando ela não é pagável — ver attachPixFields)
   await attachPixFields(updateData, pay.id, status);
 
-  await supabase
+  const { error: upErr } = await supabase
     .from("system_subscriptions")
     .update(updateData)
     .eq("franchise_id", franchiseId);
+  if (upErr) throw new Error(`Falha ao gravar a situação da mensalidade: ${upErr.message}`);
 
-  return { status, paymentId: pay.id };
+  return { status, paymentId: pay.id, dueDate: pay.dueDate };
 }
 
 async function checkPaymentBatch() {
@@ -524,7 +528,16 @@ async function handleWebhook(body: Record<string, unknown>) {
   // Falha ao falar com o ASAAS NÃO vira 500: a fila de webhooks do ASAAS é interrompida
   // depois de erros seguidos. O sync diário (cron 08:05) e o "Já paguei" refazem a leitura.
   try {
-    const result = await checkPayment(sub.franchise_id as string);
+    // O ASAAS desiste em ~10 s e interrompe a fila depois de falhas seguidas: responde em até 8 s.
+    // Se estourar, a leitura continua em segundo plano (EdgeRuntime.waitUntil) e o sync diário cobre.
+    const trabalho = checkPayment(sub.franchise_id as string);
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil?.(trabalho.catch(() => undefined));
+    const result = await Promise.race([
+      trabalho,
+      new Promise<null>((r) => setTimeout(() => r(null), 8000)),
+    ]);
+    if (!result) return { updated: "pending", franchise_id: sub.franchise_id, event };
     return { updated: sub.franchise_id, event, ...result };
   } catch (err) {
     console.error(`[asaas-billing] webhook ${event} p/ ${sub.franchise_id}: ${(err as Error).message}`);
