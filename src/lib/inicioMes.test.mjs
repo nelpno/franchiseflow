@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { format, startOfMonth, subDays, subMonths } from "date-fns";
 import {
   montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia, unirVendas,
-  vendasDaInicio, janelasInicio, avaliarAgora, estadoDaCargaV2, planoRevalidacao, janelaConversao,
+  vendasDaInicio, janelasInicio, avaliarAgora, marketingDoMesAlvo, estadoDaCargaV2, planoRevalidacao, janelaConversao,
   metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto,
 } from "./inicioMes.js";
 import { resumirMes } from "./monthlyReport.js";
@@ -333,4 +333,15 @@ test("ranking: subiu, caiu, manteve, sem mês anterior", () => {
   assert.deepEqual(deltaRanking({ rank_position: 12, total_franchises: 58, prev_rank_position: 12 }), { type: "same", value: 0 });
   assert.equal(deltaRanking({ rank_position: 12, total_franchises: 58, prev_rank_position: null }), null);
   assert.equal(deltaRanking(null), null);
+});
+
+test("S18.3: marketing da Início é o do mês-alvo (o mesmo do cartão do fim)", () => {
+  const set = { reference_month: "2026-09", status: "rejected" };
+  const out = { reference_month: "2026-10", status: "confirmed" };
+  // 28/09 = últimos 5 dias → mês-alvo outubro: o recusado de setembro não vale mais
+  assert.equal(marketingDoMesAlvo(set, new Date(2026, 8, 28, 12)), null);
+  assert.equal(marketingDoMesAlvo(out, new Date(2026, 8, 28, 12)), out);
+  // 10/09 → mês-alvo setembro: o recusado de setembro é o que vale
+  assert.equal(marketingDoMesAlvo(set, new Date(2026, 8, 10, 12)), set);
+  assert.equal(marketingDoMesAlvo(null, new Date(2026, 8, 10, 12)), null);
 });

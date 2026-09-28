@@ -18,6 +18,7 @@ import { ptBR } from "date-fns/locale";
 import { getSaleNetValue } from "./financialCalcs.js";
 import { nomeDoMes, resumirMes, rotuloMesCurto } from "./monthlyReport.js";
 import { dataCivilBRT } from "./subscriptionStatus.js";
+import { getMarketingTargetMonth } from "./franchiseUtils.js";
 import { vendasAReceber } from "./vendasLista.js";
 
 export const MESES_MEDIANA = 3;
@@ -266,6 +267,18 @@ export function janelasInicio(agora = new Date()) {
  * @param {{ temFaixa: boolean, temPedido: boolean, aReceber: {status: string, n?: number}|null,
  *           falhas?: string[] }} p
  */
+/**
+ * S18.3: o pagamento de marketing que vale para a Início é o do MÊS-ALVO (mesma regra do cartão
+ * de obrigações: nos últimos 5 dias do mês, o mês seguinte). O registro mais recente pode ser de
+ * outro mês (ex.: setembro recusado quando a verba em aberto já é a de outubro) — aí a ação do
+ * "Agora" falava de um e o cartão do fim do outro.
+ * @returns o pagamento se for do mês-alvo, senão null (= verba do mês-alvo pendente).
+ */
+export function marketingDoMesAlvo(marketingPayment, now = new Date()) {
+  const alvo = format(getMarketingTargetMonth(now), "yyyy-MM");
+  return marketingPayment?.reference_month === alvo ? marketingPayment : null;
+}
+
 export const FONTES_DO_AGORA = ["pedidos", "marketing", "config", "robô"];
 export function avaliarAgora({ temFaixa = false, temPedido = false, aReceber = null, falhas = [] } = {}) {
   const falhouFonte = falhas.filter((f) => FONTES_DO_AGORA.includes(f));

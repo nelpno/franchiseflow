@@ -17,7 +17,7 @@ import { pedidoEmDestaque } from "../OpenOrderStrip";
 import { cenarioPrioritario } from "../PriorityAction";
 import { faixaMensalidade } from "@/lib/pagamentos";
 import {
-  MESES_EVOLUCAO, aReceberDesde, avaliarAgora, diasSeguidosBatendoMeta, faturamentoDoDia,
+  MESES_EVOLUCAO, aReceberDesde, avaliarAgora, marketingDoMesAlvo, diasSeguidosBatendoMeta, faturamentoDoDia,
   metaDoDia, montarEvolucao, montarInicioMes, vendasDaInicio,
 } from "@/lib/inicioMes";
 import InicioMesCard from "./InicioMesCard";
@@ -127,12 +127,16 @@ export default function InicioV2({
   const temFaixa = !!faixaMensalidade(subscription);
   const temPedido = !falhas.includes("pedidos") && !!pedidoEmDestaque(purchaseOrders);
   const agora = avaliarAgora({ temFaixa, temPedido, aReceber: dados.aReceber, falhas });
+  // S18.3: "Agora" e o cartão do fim olham o MESMO mês da verba; se a ação do "Agora" já é o
+  // marketing, a linha do cartão some (antes: "recusado" de um mês + "pendente" de outro).
+  const mktDoMes = marketingDoMesAlvo(marketingPayment);
   const cenario = agora.mostrarPrioridade
-    ? cenarioPrioritario({ marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription })
+    ? cenarioPrioritario({ marketingPayment: mktDoMes, botActive, botConfigured, botSilentDays, hasRecentSales, subscription })
     : null;
   // P3 S18 #7: a mensalidade que já está no "Agora" (faixa perto do vencimento ou ação de
   // vencida) não se repete no cartão do fim; a linha do marketing continua.
   const mensalidadeNoAgora = temFaixa || cenario?.key === "equipe_digital";
+  const marketingNoAgora = cenario?.key === "marketing";
 
   return (
     <>
@@ -176,7 +180,7 @@ export default function InicioV2({
           purchaseOrders={purchaseOrders}
           aReceber={dados.aReceber}
           agora={agora}
-          marketingPayment={marketingPayment}
+          marketingPayment={mktDoMes}
           botActive={botActive}
           botConfigured={botConfigured}
           botSilentDays={botSilentDays}
@@ -192,7 +196,7 @@ export default function InicioV2({
         <FinancialObligationsCard
           marketingPayment={marketingPayment}
           ocultarMensalidade={mensalidadeNoAgora}
-          ocultarMarketing={falhouMarketing}
+          ocultarMarketing={falhouMarketing || marketingNoAgora}
         />
       </div>
 
