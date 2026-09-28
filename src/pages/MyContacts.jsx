@@ -664,17 +664,19 @@ export default function MyContacts() {
           icone="group"
           titulo="Nenhum contato encontrado"
           texto={
-            searchTerm || activeFilter !== "todos"
+            searchTerm || activeFilter !== "todos" || sourceFilter !== "all" || dateFilter !== "all"
               ? "Tente ajustar seus filtros ou busca."
               : "Os contatos das suas vendas e conversas aparecerão aqui."
           }
           acao={
-            searchTerm || activeFilter !== "todos"
+            searchTerm || activeFilter !== "todos" || sourceFilter !== "all" || dateFilter !== "all"
               ? {
                   rotulo: "Limpar filtros",
                   onClick: () => {
                     setSearchTerm("");
                     setActiveFilter("todos");
+                    setSourceFilter("all");
+                    setDateFilter("all");
                   },
                 }
               : { rotulo: "Novo Cliente", onClick: () => setIsCreating(true) }
