@@ -1,12 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import PageHeader from "@/components/shared/PageHeader";
-import { PAGINA } from "@/components/shared/adminUi";
+import PageHeader, { BuscaCabecalho } from "@/components/shared/PageHeader";
+import { CARTAO, PAGINA } from "@/components/shared/adminUi";
 import GuiaLista from "@/components/ajuda/GuiaLista";
 import GuiaDetalhe from "@/components/ajuda/GuiaDetalhe";
 import VideosAntigos from "@/components/ajuda/VideosAntigos";
-import { acharGuia, ehEquipe, guiasParaPapel, PUBLICO } from "@/lib/guiasAjuda";
+import AjudaFaq from "@/components/ajuda/AjudaFaq";
+import FalarComMaxiCard from "@/components/ajuda/FalarComMaxiCard";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import {
+  acharGuia, buscarGuias, ehEquipe, guiasComecePorAqui, guiasParaPapel, guiasPorArea, PUBLICO,
+} from "@/lib/guiasAjuda";
 
 // Ajuda / Tutoriais (Fase 4 do redesenho, 26/09/2026): guias ESCRITOS com passos numerados,
 // pensados para o franqueado. Conteúdo em src/lib/guiasAjuda.js (testado).
@@ -21,6 +27,13 @@ export default function Tutoriais() {
   const abrir = searchParams.get("abrir");
   const guia = acharGuia(abrir, role);
   const nomeDaTela = equipe ? "Ajuda" : "Tutoriais";
+  const [busca, setBusca] = useState("");
+
+  // Tela Ajuda v2 (S10.1, 28/09/2026): busca, "Comece por aqui", por área e perguntas
+  // frequentes. Atrás de ui_v2 e só para o franqueado — com a chave desligada (e para
+  // admin/manager/CS), a tela Tutoriais segue EXATAMENTE igual (ver ramos abaixo).
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const ajudaV2 = uiV2 && !equipe;
 
   useEffect(() => {
     if (guia) window.scrollTo({ top: 0 });
@@ -32,7 +45,50 @@ export default function Tutoriais() {
   if (guia) {
     return (
       <div className={PAGINA}>
-        <GuiaDetalhe guia={guia} voltarLabel={nomeDaTela} onVoltar={voltar} equipe={equipe} />
+        <GuiaDetalhe guia={guia} voltarLabel={nomeDaTela} onVoltar={voltar} equipe={equipe} mostrarAjudaExtra={ajudaV2} />
+      </div>
+    );
+  }
+
+  if (ajudaV2) {
+    const termo = busca.trim();
+    const resultados = termo ? buscarGuias(role, termo) : [];
+    const comecePorAqui = guiasComecePorAqui(role);
+    const porArea = guiasPorArea(role);
+    return (
+      <div className={`${PAGINA} pb-24 md:pb-6`}>
+        <PageHeader
+          titulo="Ajuda"
+          subtitulo="Busque por nome, palavra-chave ou veja por área."
+          acao={
+            <BuscaCabecalho
+              id="busca-ajuda"
+              value={busca}
+              onChange={setBusca}
+              placeholder="Buscar ajuda"
+              rotulo="Buscar por título, palavra-chave ou área"
+            />
+          }
+        />
+        {termo ? (
+          resultados.length ? (
+            <GuiaLista titulo={`Resultados para "${termo}"`} guias={resultados} onAbrir={abrirGuia} />
+          ) : (
+            <div className={`${CARTAO} text-sm text-ink-2`}>
+              Nada encontrado para "{termo}". Veja as perguntas frequentes ou fale com a Maxi, abaixo.
+            </div>
+          )
+        ) : (
+          <>
+            <GuiaLista titulo="Comece por aqui" ajuda="O essencial para a unidade abrir e vender." guias={comecePorAqui} onAbrir={abrirGuia} />
+            {porArea.map(({ area, guias: guiasDaArea }) => (
+              <GuiaLista key={area} titulo={area} guias={guiasDaArea} onAbrir={abrirGuia} />
+            ))}
+          </>
+        )}
+        <AjudaFaq role={role} onAbrir={abrirGuia} />
+        <FalarComMaxiCard />
+        <VideosAntigos />
       </div>
     );
   }

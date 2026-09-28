@@ -1,7 +1,9 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import PageHeader from "@/components/shared/PageHeader";
-import { BTN_PRIMARIO, CARTAO, H3_CARTAO, TOM_CHEGADA } from "@/components/shared/adminUi";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, TOM_CHEGADA } from "@/components/shared/adminUi";
 import { linkWhatsAppDoGuia } from "@/lib/guiasAjuda";
+import { linkFalarComMaxiDoGuia } from "@/lib/contatoMaxi";
+import IssoResolveu from "./IssoResolveu";
 
 /**
  * Guia escrito aberto: passos numerados. No lugar do "recorte da tela + seta", cada passo
@@ -34,7 +36,27 @@ function BotaoWhatsApp({ guia, className = "" }) {
   );
 }
 
-export default function GuiaDetalhe({ guia, voltarLabel, onVoltar, equipe }) {
+function BotaoFalarComMaxi({ guia }) {
+  const link = linkFalarComMaxiDoGuia(guia);
+  if (!link) return null;
+  return (
+    <a
+      href={link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`}
+    >
+      <MaterialIcon icon="chat" size={18} />
+      Falar com a Maxi
+    </a>
+  );
+}
+
+// `mostrarAjudaExtra` (S10.2, 28/09/2026): "Isso resolveu?" e "Falar com a Maxi" direto
+// (sem passar pelo compartilhar). Só true quando a tela Ajuda v2 está no ar (atrás de
+// ui_v2, franqueado) — sem a prop, o guia renderiza EXATAMENTE como antes (a chave
+// desligada não pode mudar nada aqui).
+export default function GuiaDetalhe({ guia, voltarLabel, onVoltar, equipe, mostrarAjudaExtra = false }) {
   const paraQuem = guia.publico === "equipe" ? "Para a equipe Maxi" : "Para o franqueado";
   return (
     <div className="space-y-6 pb-24 md:pb-0">
@@ -102,6 +124,16 @@ export default function GuiaDetalhe({ guia, voltarLabel, onVoltar, equipe }) {
         </p>
         <BotaoWhatsApp guia={guia} className="w-full sm:ml-auto sm:w-auto" />
       </div>
+
+      {mostrarAjudaExtra && !equipe && (
+        <>
+          <IssoResolveu slug={guia.slug} />
+          <div className={`${CARTAO} flex flex-col gap-3 sm:flex-row sm:items-center`}>
+            <p className="text-sm text-ink-2">Não resolveu? Fale direto com a equipe Maxi.</p>
+            <BotaoFalarComMaxi guia={guia} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
