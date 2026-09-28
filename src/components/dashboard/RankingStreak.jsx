@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { deltaRanking, diasSeguidosBatendoMeta, hojeBrasilia } from "@/lib/inicioMes";
 
 export default function RankingStreak({
   ranking,
@@ -14,30 +15,20 @@ export default function RankingStreak({
 }) {
   const navigate = useNavigate();
 
+  // S18 (28/09/2026, vale com a chave ligada ou não): cada dia passado contra a meta DAQUELE
+  // dia (média dos 30 dias anteriores a ele + 10%). Antes todos os dias eram comparados com a
+  // meta de HOJE — um dia forte ontem zerava a sequência; uma semana fraca a inflava.
+  // Regra e testes: src/lib/inicioMes.js (diasSeguidosBatendoMeta).
   const streak = useMemo(() => {
     if (!summaries || !dailyGoal || dailyGoal <= 0) return 0;
-    const franchiseDays = summaries
-      .filter((s) => s.franchise_id === franchiseId)
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    let count = 0;
-    for (const day of franchiseDays) {
-      if ((parseFloat(day.sales_value) || 0) >= dailyGoal) count++;
-      else break;
-    }
-    return count;
+    return diasSeguidosBatendoMeta(summaries, { hoje: hojeBrasilia().str, franchiseId }).dias;
   }, [summaries, franchiseId, dailyGoal]);
 
   const showDailyAsPrimary = period === "today";
   const hasDaily = ranking?.position && ranking?.total_franchises;
   const hasMonthly = monthlyRanking?.rank_position && monthlyRanking?.total_franchises;
 
-  const delta = useMemo(() => {
-    if (!hasMonthly || !monthlyRanking?.prev_rank_position) return null;
-    const diff = monthlyRanking.prev_rank_position - monthlyRanking.rank_position;
-    if (diff > 0) return { type: "up", value: diff };
-    if (diff < 0) return { type: "down", value: Math.abs(diff) };
-    return { type: "same", value: 0 };
-  }, [hasMonthly, monthlyRanking]);
+  const delta = useMemo(() => deltaRanking(monthlyRanking), [monthlyRanking]);
 
   return (
     <section className="grid grid-cols-2 gap-4 mb-6">

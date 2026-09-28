@@ -32,6 +32,7 @@ import ConversionCard from "./ConversionCard";
 import ConversionDetailSheet from "./ConversionDetailSheet";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import EmptyState from "@/components/shared/EmptyState";
+import { RESUMOS_PARA_SEQUENCIA } from "@/lib/inicioMes";
 
 const MONTH_OFFSET_MIN = -2;
 
@@ -129,7 +130,9 @@ export default function FranchiseeDashboard() {
         evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", null,
           { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } })
           : Promise.resolve([]),                          // [0] sales últimos 90d (+ source for bot filter)
-        evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", 30,
+        // S18: 120 linhas (era 30) — a sequência de "dias batendo a meta" compara cada dia com a
+        // meta DAQUELE dia (média dos 30 anteriores a ele). A meta de hoje segue igual.
+        evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", RESUMOS_PARA_SEQUENCIA,
           { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal })
           : Promise.resolve([]),                          // [1] summaries (MiniRevenueChart, dailyGoal)
         evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
