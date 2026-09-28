@@ -40,6 +40,7 @@ import {
   canStepCount,
   computeCountDiff,
   splitSaveResults,
+  reconcileDraftWithItems,
 } from "@/lib/stockCount";
 
 const UNIT_OPTIONS = [
@@ -140,12 +141,14 @@ export default function TabEstoque({
   const [countMode, setCountMode] = useState(false);
   const [countBase, setCountBase] = useState({});
   const [counts, setCounts] = useState({});
+  const [countNames, setCountNames] = useState({}); // id -> nome (snapshot do toque — sobrevive a exclusão do item)
   const [countConflicts, setCountConflicts] = useState({}); // id -> { currentQuantity } — mudou no meio da contagem
   const [isSavingCount, setIsSavingCount] = useState(false);
   const [editingCountId, setEditingCountId] = useState(null);
   const [countEditValue, setCountEditValue] = useState("");
   const [itemMenuFor, setItemMenuFor] = useState(null); // item com o menu "..." (editar/ocultar/excluir) aberto
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showResumeChoice, setShowResumeChoice] = useState(false); // "Continuar" x "Começar do zero" ao achar rascunho
   const [pendingDraft, setPendingDraft] = useState(null); // rascunho salvo no sessionStorage de outra aba/sessão
   const countEditRef = useRef(null);
   const savingCountRef = useRef(false); // guarda SÍNCRONA — setState não chega a tempo de barrar clique duplo
@@ -162,9 +165,11 @@ export default function TabEstoque({
       setCountMode(false);
       setCountBase({});
       setCounts({});
+      setCountNames({});
       setCountConflicts({});
       setEditingCountId(null);
       setPendingDraft(null);
+      setShowResumeChoice(false);
     }
   }
 
@@ -207,12 +212,15 @@ export default function TabEstoque({
       if (Object.keys(countBase).length === 0) {
         sessionStorage.removeItem(draftKey);
       } else {
-        sessionStorage.setItem(draftKey, JSON.stringify({ base: countBase, counts, savedAt: Date.now() }));
+        sessionStorage.setItem(
+          draftKey,
+          JSON.stringify({ base: countBase, counts, names: countNames, savedAt: Date.now() })
+        );
       }
     } catch {
       // sessionStorage indisponível (aba anônima, storage bloqueado etc.) — segue sem rascunho
     }
-  }, [draftKey, countMode, countBase, counts]);
+  }, [draftKey, countMode, countBase, counts, countNames]);
 
   // Ao abrir a tela (ou trocar de unidade) fora do modo contagem, avisa se sobrou
   // rascunho de uma sessão anterior — sem isso, sair pela aba/rota perdia tudo calado.
@@ -559,17 +567,33 @@ export default function TabEstoque({
 
   // --- Modo "Contar estoque" (S16.1) ---
 
-  const handleEnterCountMode = () => {
+  // Começa uma contagem do ZERO (sem rascunho, ou depois de descartar um explicitamente).
+  const startFreshCount = () => {
+    setCountBase({});
+    setCounts({});
+    setCountNames({});
+    setCountConflicts({});
     setSearchTerm("");
     setFilterCategory("all");
     setFilterStockLevel("all"); // depende da quantidade — evita item sumir da lista no meio da contagem
     setCountMode(true);
   };
 
+  // "Contar estoque": se JÁ existe um rascunho pendente (outra aba/sessão deixou
+  // contagem sem salvar), NUNCA descarta calado — pergunta antes (revisão P3, rodada 2).
+  const handleEnterCountMode = () => {
+    if (pendingDraft && Object.keys(pendingDraft.base || {}).length > 0) {
+      setShowResumeChoice(true);
+      return;
+    }
+    startFreshCount();
+  };
+
   const exitCountMode = () => {
     setCountMode(false);
     setCountBase({});
     setCounts({});
+    setCountNames({});
     setCountConflicts({});
     setEditingCountId(null);
     if (draftKey) {
@@ -581,16 +605,34 @@ export default function TabEstoque({
     }
   };
 
+  // Retoma o rascunho — mas primeiro reconcilia contra os items ATUAIS: produto
+  // excluído enquanto a contagem ficou pendente sai sozinho, com aviso (nunca fica
+  // preso pra sempre esperando um "valor atual" que não existe mais).
   const handleResumeDraft = () => {
     if (!pendingDraft) return;
-    setCountBase(pendingDraft.base || {});
-    setCounts(pendingDraft.counts || {});
+    const { base, counts: reconciledCounts, names, removedNames } = reconcileDraftWithItems(
+      pendingDraft.base,
+      pendingDraft.counts,
+      pendingDraft.names,
+      items
+    );
+    setCountBase(base);
+    setCounts(reconciledCounts);
+    setCountNames(names);
     setCountConflicts({});
     setSearchTerm("");
     setFilterCategory("all");
     setFilterStockLevel("all");
     setCountMode(true);
     setPendingDraft(null);
+    setShowResumeChoice(false);
+    if (removedNames.length > 0) {
+      toast.warning(
+        removedNames.length === 1
+          ? `"${removedNames[0]}" foi excluído e saiu da contagem.`
+          : `${removedNames.length} produtos foram excluídos e saíram da contagem: ${removedNames.join(", ")}.`
+      );
+    }
   };
 
   const handleDiscardDraft = () => {
@@ -602,6 +644,14 @@ export default function TabEstoque({
       }
     }
     setPendingDraft(null);
+    setShowResumeChoice(false);
+  };
+
+  // Escolheu "Começar do zero" tendo um rascunho pendente: aí sim descarta — mas foi
+  // ação explícita da franqueada, não o clique de "Contar estoque" descartando calado.
+  const handleStartFreshFromChoice = () => {
+    handleDiscardDraft();
+    startFreshCount();
   };
 
   const handleCancelCount = () => {
@@ -639,6 +689,7 @@ export default function TabEstoque({
   // externo do `items`.
   const ensureCountBase = (item) => {
     setCountBase((prev) => (item.id in prev ? prev : { ...prev, [item.id]: Number(item.quantity) || 0 }));
+    setCountNames((prev) => (item.id in prev ? prev : { ...prev, [item.id]: item.product_name }));
   };
 
   const clearCountConflict = (itemId) => {
@@ -730,7 +781,7 @@ export default function TabEstoque({
           updateInventoryCountIfUnchanged(entry.id, franchiseId, entry.before, entry.after, currentUser?.id || null)
         )
       );
-      const { saved, conflicted, failed } = splitSaveResults(diff, results);
+      const { saved, conflicted, missing, failed } = splitSaveResults(diff, results);
 
       if (saved.length > 0) {
         const nowIso = new Date().toISOString();
@@ -755,6 +806,32 @@ export default function TabEstoque({
         });
       }
 
+      if (missing.length > 0) {
+        // Produto excluído enquanto a contagem ficou pendente — NÃO é conflito (não há
+        // "valor atual" pra reconferir), sai da fila sozinho (senão fica preso pra
+        // sempre com conflito de valor null). Ver revisão P3 rodada 2, 28/09/2026.
+        setCountBase((prev) => {
+          const next = { ...prev };
+          missing.forEach((m) => delete next[m.id]);
+          return next;
+        });
+        setCounts((prev) => {
+          const next = { ...prev };
+          missing.forEach((m) => delete next[m.id]);
+          return next;
+        });
+        setCountNames((prev) => {
+          const next = { ...prev };
+          missing.forEach((m) => delete next[m.id]);
+          return next;
+        });
+        setCountConflicts((prev) => {
+          const next = { ...prev };
+          missing.forEach((m) => delete next[m.id]);
+          return next;
+        });
+      }
+
       if (conflicted.length > 0) {
         // A base vira o valor ATUAL do servidor (é o que o próximo Salvar vai
         // comparar); o rascunho (o número que ela digitou) NÃO é tocado.
@@ -770,16 +847,33 @@ export default function TabEstoque({
         });
       }
 
+      const nomeDe = (entry) => countNames[entry.id] || entry.product_name || "produto";
+
       if (failed.length === 0 && conflicted.length === 0) {
-        toast.success(
-          `Contagem salva: ${saved.length} produto${saved.length > 1 ? "s" : ""} atualizado${saved.length > 1 ? "s" : ""}.`
-        );
+        const partesSucesso = [];
+        if (saved.length > 0) {
+          partesSucesso.push(`${saved.length} atualizado${saved.length > 1 ? "s" : ""}`);
+        }
+        if (missing.length > 0) {
+          const nomes = missing.map(nomeDe).join(", ");
+          partesSucesso.push(
+            missing.length === 1
+              ? `1 excluído (${nomes}) saiu da contagem`
+              : `${missing.length} excluídos saíram da contagem (${nomes})`
+          );
+        }
+        toast.success(`Contagem salva: ${partesSucesso.join(", ")}.`);
         exitCountMode();
         if (onRefresh) onRefresh();
       } else {
         console.error("Erro ao salvar contagem:", failed.map((f) => f.error));
         const partes = [];
         if (saved.length > 0) partes.push(`${saved.length} salvo${saved.length > 1 ? "s" : ""}`);
+        if (missing.length > 0) {
+          partes.push(
+            missing.length === 1 ? "1 excluído (saiu da contagem)" : `${missing.length} excluídos (saíram da contagem)`
+          );
+        }
         if (conflicted.length > 0) {
           partes.push(
             conflicted.length === 1
@@ -2172,6 +2266,39 @@ export default function TabEstoque({
               className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-2"
             >
               Descartar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* "Contar estoque" com rascunho pendente: nunca descarta calado — pergunta antes */}
+      <Dialog open={showResumeChoice} onOpenChange={(open) => !open && setShowResumeChoice(false)}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink">
+              <MaterialIcon icon="checklist" size={20} className="text-brand" />
+              Já tem uma contagem pendente
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-ink-2">
+            {Object.keys(pendingDraft?.base || {}).length === 1
+              ? "1 produto com número alterado ainda não foi salvo."
+              : `${Object.keys(pendingDraft?.base || {}).length} produtos com número alterado ainda não foram salvos.`}
+            {" "}Quer continuar de onde parou ou começar do zero?
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={handleStartFreshFromChoice}
+              className="border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
+            >
+              Começar do zero
+            </Button>
+            <Button
+              onClick={handleResumeDraft}
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-2"
+            >
+              Continuar contagem
             </Button>
           </div>
         </DialogContent>

@@ -83,13 +83,16 @@ export function computeCountDiff(base, counts, items) {
 /**
  * Junta o resultado de um Promise.allSettled com a lista que foi salva,
  * separando quem salvou de quem teve CONFLITO (outra aba ou o robo mudaram
- * a quantidade no meio — o update condicional voltou 0 linhas) de quem
- * falhou de verdade (rede) — a tela nunca perde o que a franqueada tinha
- * digitado em nenhum dos tres casos.
+ * a quantidade no meio — o update condicional voltou 0 linhas, mas o item
+ * ainda existe) de quem foi EXCLUÍDO (o item não existe mais — não é
+ * conflito, não tem "valor atual" pra reenviar, sai da pendência sozinho)
+ * de quem falhou de verdade (rede) — a tela nunca perde o que a franqueada
+ * tinha digitado em nenhum dos quatro casos.
  */
 export function splitSaveResults(diffItems, settledResults) {
   const saved = [];
   const conflicted = [];
+  const missing = [];
   const failed = [];
   diffItems.forEach((entry, i) => {
     const result = settledResults[i];
@@ -98,11 +101,37 @@ export function splitSaveResults(diffItems, settledResults) {
       return;
     }
     const value = result.value;
-    if (value && value.conflict) {
+    if (value && value.missing) {
+      missing.push({ ...entry });
+    } else if (value && value.conflict) {
       conflicted.push({ ...entry, currentQuantity: value.currentQuantity });
     } else {
       saved.push({ ...entry, quantity: value?.quantity ?? entry.after });
     }
   });
-  return { saved, conflicted, failed };
+  return { saved, conflicted, missing, failed };
+}
+
+/**
+ * Ao retomar um rascunho salvo (sessionStorage), remove os itens que não
+ * existem mais — excluídos enquanto a contagem ficou pendente numa aba ou
+ * numa sessão anterior. Devolve a base/counts/names já limpos (só quem
+ * ainda existe em `items`) e os nomes de quem saiu, pra avisar.
+ */
+export function reconcileDraftWithItems(draftBase, draftCounts, draftNames, items) {
+  const existingIds = new Set((items || []).map((i) => i.id));
+  const base = {};
+  const counts = {};
+  const names = {};
+  const removedNames = [];
+  Object.keys(draftBase || {}).forEach((id) => {
+    if (existingIds.has(id)) {
+      base[id] = draftBase[id];
+      counts[id] = (draftCounts || {})[id];
+      names[id] = (draftNames || {})[id];
+    } else {
+      removedNames.push((draftNames || {})[id] || "Um produto");
+    }
+  });
+  return { base, counts, names, removedNames };
 }

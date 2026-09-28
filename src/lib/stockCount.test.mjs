@@ -12,6 +12,7 @@ import {
   canStepCount,
   computeCountDiff,
   splitSaveResults,
+  reconcileDraftWithItems,
 } from "./stockCount.js";
 
 const ITEMS = [
@@ -98,7 +99,8 @@ const ITEMS = [
   // O update condicional (.eq('quantity', 10)) nao acha a linha (o robo já
   // gravou 8) — a entidade devolve conflict:true com o valor atual.
   const settled = [{ status: "fulfilled", value: { conflict: true, currentQuantity: 8 } }];
-  const { saved, conflicted, failed } = splitSaveResults(diffAntes, settled);
+  const { saved, conflicted, failed, missing } = splitSaveResults(diffAntes, settled);
+  assert.strictEqual(missing.length, 0);
   assert.strictEqual(saved.length, 0, "conflito NAO e salvo (senao sobrescreveria a baixa do robo)");
   assert.strictEqual(failed.length, 0);
   assert.strictEqual(conflicted.length, 1);
@@ -126,7 +128,7 @@ const ITEMS = [
     { status: "rejected", reason: new Error("rede caiu") },
     { status: "fulfilled", value: { conflict: true, currentQuantity: 9 } },
   ];
-  const { saved, conflicted, failed } = splitSaveResults(diffItems, settled);
+  const { saved, conflicted, failed, missing } = splitSaveResults(diffItems, settled);
   assert.strictEqual(saved.length, 1);
   assert.strictEqual(saved[0].id, "a");
   assert.strictEqual(failed.length, 1);
@@ -135,6 +137,61 @@ const ITEMS = [
   assert.strictEqual(conflicted.length, 1);
   assert.strictEqual(conflicted[0].id, "c");
   assert.strictEqual(conflicted[0].currentQuantity, 9);
+  assert.strictEqual(missing.length, 0);
+}
+
+// ── Produto excluído enquanto a contagem ficou pendente: NÃO é conflito, sai da
+//    fila sozinho — nunca fica preso esperando um "valor atual" que não existe.
+{
+  const diffItems = [
+    { id: "a", product_name: "Rondelli", before: 10, after: 11 },
+    { id: "b", product_name: "Molho", before: 5, after: 8 },
+  ];
+  const settled = [
+    { status: "fulfilled", value: { missing: true } }, // "a" foi excluído no meio
+    { status: "fulfilled", value: { conflict: false, quantity: 8 } },
+  ];
+  const { saved, conflicted, missing, failed } = splitSaveResults(diffItems, settled);
+  assert.strictEqual(missing.length, 1);
+  assert.strictEqual(missing[0].id, "a");
+  assert.strictEqual(conflicted.length, 0, "excluído NUNCA vira conflito (não tem valor atual pra comparar)");
+  assert.strictEqual(saved.length, 1);
+  assert.strictEqual(saved[0].id, "b");
+  assert.strictEqual(failed.length, 0);
+  // Controle positivo: se o código antigo (que tratava "não achei a linha" sempre
+  // como conflito) ainda estivesse ativo, "a" apareceria em `conflicted` com
+  // `currentQuantity: null` — e ficaria preso pra sempre (null nunca bate com
+  // nenhuma base futura). O teste acima falharia nesse cenário.
+}
+
+// ── reconcileDraftWithItems: retomar rascunho remove quem foi excluído no meio ──
+{
+  const draftBase = { a: 10, b: 5, c: 0 };
+  const draftCounts = { a: 11, b: 8, c: 2 };
+  const draftNames = { a: "Rondelli 4 Queijos - 700g", b: "Molho de Tomate - 250g", c: "Nhoque - 500g" };
+  // "b" foi excluído entre a contagem e a retomada (não está mais em `items`).
+  const itemsAtuais = ITEMS.filter((i) => i.id !== "b");
+
+  const { base, counts, names, removedNames } = reconcileDraftWithItems(
+    draftBase,
+    draftCounts,
+    draftNames,
+    itemsAtuais
+  );
+  assert.deepStrictEqual(base, { a: 10, c: 0 }, "só quem ainda existe fica na base");
+  assert.deepStrictEqual(counts, { a: 11, c: 2 });
+  assert.deepStrictEqual(names, { a: "Rondelli 4 Queijos - 700g", c: "Nhoque - 500g" });
+  assert.deepStrictEqual(removedNames, ["Molho de Tomate - 250g"], "nome do excluído pro aviso");
+
+  // Nada foi excluído -> reconcilia igual, sem remover ninguém.
+  const semExclusao = reconcileDraftWithItems(draftBase, draftCounts, draftNames, ITEMS);
+  assert.deepStrictEqual(semExclusao.base, draftBase);
+  assert.strictEqual(semExclusao.removedNames.length, 0);
+
+  // Rascunho sem nome salvo (drafts antigos, antes do campo `names` existir) ainda
+  // funciona — cai no fallback "Um produto" em vez de quebrar.
+  const semNomes = reconcileDraftWithItems({ b: 5 }, { b: 8 }, undefined, itemsAtuais);
+  assert.deepStrictEqual(semNomes.removedNames, ["Um produto"]);
 }
 
 // ── Clique repetido no Salvar: depois de salvar, o item sai da BASE (nao só

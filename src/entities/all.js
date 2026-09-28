@@ -234,7 +234,13 @@ export async function updateInventoryCountIfUnchanged(id, franchiseId, baseQty, 
       15000
     );
     if (fetchError) throw fetchError;
-    return { conflict: true, currentQuantity: atual ? Number(atual.quantity) : null };
+    // Item não existe mais (excluído enquanto a contagem ficou pendente) — isso NÃO é
+    // conflito (não há "valor atual" pra franqueada conferir e reenviar): é definitivo,
+    // sai da pendência sozinho. Ver revisão P3 rodada 2, 28/09/2026.
+    if (!atual) {
+      return { missing: true };
+    }
+    return { conflict: true, currentQuantity: Number(atual.quantity) };
   }
   return { conflict: false, quantity: Number(data[0].quantity), updated_at: data[0].updated_at };
 }
