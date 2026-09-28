@@ -522,7 +522,7 @@ export default function OrderDetailDialog({
                   </Button>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {isEditable && (
                   <Button variant="outline" size="sm" onClick={handleSaveEdits} disabled={saving} className="min-h-10 border-ink-4 text-ink-2 rounded-xl hover:bg-surface gap-1">
                     <MaterialIcon icon="save" size={16} />
@@ -536,9 +536,9 @@ export default function OrderDetailDialog({
                   </Button>
                 )}
                 {aguardaConferencia && (
-                  <Button size="sm" onClick={handleConfirmarPelaUnidade} disabled={saving || loadingItems} className="min-h-10 bg-ok-ink hover:bg-ok-ink/90 text-white font-bold rounded-xl gap-1">
+                  <Button size="sm" title="Use quando a unidade avisou que chegou tudo" onClick={handleConfirmarPelaUnidade} disabled={saving || loadingItems} className="min-h-10 bg-ok-ink hover:bg-ok-ink/90 text-white font-bold rounded-xl gap-1">
                     <MaterialIcon icon={saving ? "progress_activity" : "fact_check"} size={16} className={saving ? "animate-spin" : ""} />
-                    Confirmar pela unidade (chegou tudo)
+                    Confirmar pela unidade
                   </Button>
                 )}
                 {order.status === "confirmado" && (

@@ -45,7 +45,7 @@ function LinhaProduto({ item, valor, onChange, disabled }) {
         <div className="flex items-center gap-1.5" role="group" aria-label={`Quanto chegou de ${item.product_name}`}>
           <button
             type="button"
-            onClick={() => onChange(Math.max(0, chegou - 1))}
+            onClick={() => onChange((atual) => Math.max(0, limitarRecebido(atual, pedido) - 1))}
             disabled={disabled || chegou <= 0}
             aria-label="Menos um"
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink disabled:opacity-40"
@@ -66,7 +66,7 @@ function LinhaProduto({ item, valor, onChange, disabled }) {
           />
           <button
             type="button"
-            onClick={() => onChange(Math.min(pedido, chegou + 1))}
+            onClick={() => onChange((atual) => Math.min(pedido, limitarRecebido(atual, pedido) + 1))}
             disabled={disabled || chegou >= pedido}
             aria-label="Mais um"
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink disabled:opacity-40"
@@ -203,7 +203,13 @@ function PedidoParaConferir({ order, items, onConcluido }) {
                 item={item}
                 valor={item.id in recebidos ? recebidos[item.id] : Number(item.quantity) || 0}
                 disabled={enviando}
-                onChange={(v) => setRecebidos((prev) => ({ ...prev, [item.id]: v }))}
+                onChange={(v) =>
+                  setRecebidos((prev) => {
+                    // função = toque no menos/mais: parte do valor ATUAL (dois toques rápidos contam dois)
+                    const atual = item.id in prev ? prev[item.id] : Number(item.quantity) || 0;
+                    return { ...prev, [item.id]: typeof v === "function" ? v(atual) : v };
+                  })
+                }
               />
             ))}
           </ul>

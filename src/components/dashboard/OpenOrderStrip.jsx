@@ -4,6 +4,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRLInteger } from "@/lib/formatters";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
 
 /**
  * "Meu pedido saiu?" e uma das perguntas que mais chegam no grupo da rede — e a home
@@ -16,7 +18,8 @@ import { formatBRLInteger } from "@/lib/formatters";
  */
 // S15: 'em_rota' = a fábrica entregou e a unidade ainda não conferiu (só existe para unidade
 // com a chave ui_v2). Vem primeiro: é a única faixa que pede uma ação dela.
-const ABERTOS = new Set(["pendente", "confirmado", "em_rota"]);
+const ABERTOS = new Set(["pendente", "confirmado"]);
+const ABERTOS_V2 = new Set(["pendente", "confirmado", "em_rota"]);
 
 const ESTILO = {
   pendente: {
@@ -35,9 +38,12 @@ const ESTILO = {
 
 export default function OpenOrderStrip({ purchaseOrders = [] }) {
   const navigate = useNavigate();
+  // Sem a chave não há cartão de conferência: a faixa fica como antes (em_rota não aparece).
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const abertos = uiV2 ? ABERTOS_V2 : ABERTOS;
 
   const aberto = purchaseOrders
-    .filter((o) => ABERTOS.has(o.status))
+    .filter((o) => abertos.has(o.status))
     .sort((a, b) =>
       (b.status === "em_rota") - (a.status === "em_rota") ||
       new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0))[0];
