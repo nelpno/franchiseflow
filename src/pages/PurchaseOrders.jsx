@@ -36,6 +36,7 @@ import SecaoLote from "@/components/pedidos/SecaoLote";
 import EntreguesSection from "@/components/pedidos/EntreguesSection";
 import AguardandoConferenciaSection from "@/components/pedidos/AguardandoConferenciaSection";
 import { aguardaConferencia } from "@/lib/conferenciaEntrega";
+import { freteGravado, pedidoMudou } from "@/components/pedidos/edicaoPedido";
 import {
   filtrarPorTermo,
   ordenarPorEsperaAsc,
@@ -346,9 +347,11 @@ export default function PurchaseOrders() {
     const tarefa = anterior
       .catch(() => {})
       .then(() => PurchaseOrder.update(order.id, { freight_cost: valor }))
-      .then(() => {
+      .then((linha) => {
+        // "salvo" só com a linha DEVOLVIDA pelo banco trazendo o valor (P3 2ª passada, ponto 3).
+        if (!freteGravado(linha, valor)) throw Object.assign(new Error("frete não gravou"), { details: "S15_PEDIDO_MUDOU" });
         if (!mountedRef.current) return;
-        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, freight_cost: valor } : o)));
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, freight_cost: linha.freight_cost } : o)));
         setRascunhos((prev) => {
           if (prev[order.id] !== texto) return prev;
           const next = { ...prev };
@@ -361,7 +364,9 @@ export default function PurchaseOrders() {
         console.error("Erro ao salvar frete:", error);
         if (!mountedRef.current) return;
         marcarStatusFrete(order.id, "erro");
-        toast.error(safeErrorMessage(error, `Não salvou o frete de ${getFranchiseName(order.franchise_id)}.`));
+        toast.error(pedidoMudou(error)
+          ? `O pedido de ${getFranchiseName(order.franchise_id)} já foi entregue; recarregue a página.`
+          : safeErrorMessage(error, `Não salvou o frete de ${getFranchiseName(order.franchise_id)}.`));
       });
     filaFreteRef.current[order.id] = tarefa;
   }, [getFranchiseName, marcarStatusFrete]);
