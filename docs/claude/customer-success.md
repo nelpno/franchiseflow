@@ -22,3 +22,13 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - **`cs_tasks` usa `column_status`** (NÃO `status`) pra coluna do board. `cs_worklist_events.event_type` ∈ {contact, meeting, resolve, move, auto_open, auto_resolve} — base do monitoramento da atividade do Celso × delta de vendas (desde 01/07/2026; baseline+método na memória `project_monitoramento_celso_cs`, contato dele em `reference_celso_cs_contato`).
 - **Helper `is_cs_or_admin()`** = `role IN ('admin','manager','customer_success')`, dedicado às RPCs/tabelas do cockpit.
 - Calibração inicial 20/06: 15🔴/31🟡/4🟢/6⚪/1🏆. `engagement_low` via `auth.users.last_sign_in_at` (franqueado→franquia por `profiles.managed_franchise_ids`, que contém o evolution_instance_id). Treinamento adiado (sem dado). Spec+plano: `docs/superpowers/` do ecossistema.
+
+
+## Mural v2 — 3 colunas (26/09/2026, commit 51e7e5a; SQL `supabase/2026-09-27-cs-01..06`)
+- Estudo que originou: `cs-celso/analises/2026-09-26-estudo-mural-onda2.md`. Contrato banco × telas: `.tmp/onda2/CONTRATO.md`. Simulação antes de ligar: `.tmp/onda2/simulacao-mural.md` (15 → 28 cartões; bateu 18/10/1 em produção).
+- Motivos pela régua única (`cs_unit_motives`, interna): sem_venda, caiu (−20 p.p. contra a rede), nao_lanca, robo_parado (só onde o robô vendia), sem_comprar, manual. Congelados na abertura: `motive_key`, `motive_evidence`, `motive_value`, `baseline_rev_day`, `rev_month_before`.
+- Volta: Esperando → Falar hoje em `next_at` (padrão 7 dias). Fechado pelo CS não volta pelo mesmo motivo em 14 dias, salvo se piorou ou apareceu motivo MAIS grave. Fechado pelo sistema (`resolveu_sozinho`) volta no dia; aparece à parte e nunca conta como resultado do CS.
+- Unidade com cartão manual aberto não ganha automático (os motivos aparecem como alarme no manual).
+- Mensagens de erro das RPCs começam com `Mural:` (está em `PREFIXOS_SEGUROS`).
+- Placar (`get_cs_impacto`): episódio = 1º contato após 21+ dias sem contato; 28 dias antes × depois contra a mediana das não tocadas; reunião antiga lida pela data escrita na nota (`cs_try_date`). Reuniões só no Drive não entram.
+- Backups das funções de antes: `docs/db-backups/*.2026-09-27-antes.sql`.

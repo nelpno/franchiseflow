@@ -609,3 +609,15 @@ export async function registrarAcaoCliente(contactId, actionType, status) {
   }), 30000);
   if (error) throw error;
 }
+
+// ---- Chave liga/desliga por unidade (S1.2, 28/09/2026) ----
+// {"ui_v2": true, ...} já resolvido (unidade > rede > desligada). null = sem acesso.
+// Quem consome usa isFeatureOn() de src/lib/featureFlags.js (falha = desligada).
+export async function getFeatureFlags(franchiseId, { signal } = {}) {
+  if (!franchiseId) return {};
+  let query = supabase.rpc('get_feature_flags', { p_franchise_id: franchiseId });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || {};
+}

@@ -14,6 +14,13 @@ node .tmp/deploy.mjs                   # force update do serviço no Portainer (
 ```
 Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **CONTEÚDO** no live (~75s de 502). ⚠️ `git push` puro TRAVA (GCM headless no Windows): `TOK=$(gh auth token); git -c credential.helper= push "https://x-access-token:$TOK@github.com/nelpno/franchiseflow.git" main` (mascarar o token na saída; `$LASTEXITCODE`/`PUSH_RC=0` é a prova, não a cor). ⚠️ **Push por URL com token NÃO atualiza `origin/main`** → `git status` segue dizendo *"ahead 1"* com o push já feito, e o sinal *"ahead = deploy nunca aconteceu"* do CLAUDE.md raiz passa a MENTIR. Provar com `git ls-remote origin main` (bate com `git rev-parse main`?) e rodar `git fetch origin` para ressincronizar.
 
+## Voltar atrás (roteiro de emergência, 28/09/2026)
+Ordem: **1) chave → 2) front → 3) SQL → 4) n8n.** A chave resolve em segundos sem deploy; o resto só se ela não cobrir.
+1. **Chave liga/desliga** (`feature_flags`, SQL `supabase/2026-09-28-feature-flags.sql`): pelo MCP `execute_sql` (sem claims = passa) — rede: `select public.set_feature_flag('ui_v2', null, false, 'emergência: <motivo>');` · uma unidade: `select public.set_feature_flag('ui_v2', '<evo>', false, '<motivo>');` · voltar a seguir a rede: `delete from feature_flags where key='ui_v2' and franchise_id='<evo>';`. O front lê por `useFeatureFlag(FEATURE_KEYS.UI_V2)` (cache 5 min + foco da janela; erro = desligada). Chave nova = linha nova + nome em `src/lib/featureFlags.js`. Dentro de SQL: `feature_flag_enabled('<chave>', '<evo>')`.
+2. **Front:** `git revert <sha>` (nunca `reset` em main publicado) → push por URL com token (ver Comandos) → `node .tmp/deploy.mjs` → conferir pelo conteúdo que o texto/símbolo novo SUMIU do chunk. O build é do `main` no GitHub: commit local não volta nada.
+3. **SQL:** todo `.sql` novo traz no cabeçalho o `ROLLBACK` exato. Função alterada: backup do corpo vivo em `docs/db-backups/<função>.<data>-antes.sql` ANTES de aplicar (`pg_get_functiondef` pela Management API; reaplicar o arquivo = voltar). Aplicar sempre por `node supabase/cs-cockpit/_aplica-lf.mjs` e conferir em consulta separada (`md5(prosrc)`, sem `\r`).
+4. **n8n:** backup JSON em `automation/backups/` antes de qualquer PUT (skill `workflow-deploy`); voltar = PUT do backup (só `name/nodes/connections/settings`) e conferir `active` (PUT pode desativar).
+
 ## Stack & Deploy
 > 📄 Verificação detalhada (qual chunk grepar, hash local × VPS, smoke Playwright, casos reais): [docs/claude/deploy-verificacao.md](docs/claude/deploy-verificacao.md). Movido do arquivo em 11/09/2026.
 - React 18 + Vite 6 + Tailwind 3 + shadcn/ui + Supabase Cloud + react-query 5. Stack Portainer 39 | service `2zb27nndn5sg8zweyie6wscpc` | GitHub `nelpno/franchiseflow`.
@@ -34,6 +41,8 @@ Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **C
 - `supabase/` — migrations `.sql` versionadas + `functions/asaas-billing/` (edge) · `docs/claude/` — shards do CLAUDE.md
 
 ## Gotchas Críticos
+
+- 🔴 **Endereço fiscal e ponto de retirada usam as MESMAS colunas** (medido 26/09/2026): `FranchiseForm` (Celso) e "Meu Vendedor" gravam `street_address`/`cep`/`city`/`neighborhood` em `franchise_configurations`; o número vai para `franchises.address_number`. O Asaas junta a rua do ponto com o número fiscal (Araras: "…126" + "86 B"). Não há razão social, IE nem IBGE. Plano da fase fiscal: memória `project_locator_supabase_2026-09-26`.
 
 ### Auth (AuthContext.jsx)
 - Race conditions: `lastAuthUserRef` + `lastSignedInTimeRef` + safety timeouts (8s init, 10s login). NÃO há mutex
@@ -128,7 +137,7 @@ Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **C
 
 ### Integração n8n / Bot
 - **Adicionar forma de pagamento toca dashboard + bot (não só dashboard)**: fonte única `PAYMENT_METHODS` em [franchiseUtils.js](src/lib/franchiseUtils.js) propaga chips de aceitação (→bot via `vw_dadosunidade`), botão SaleForm, grade de taxa e labels. Se tem taxa: incluir nas listas `feeableMethods`/fallback do SaleForm (3×). Se exige maquininha: 3 filtros `thirdPartyDisabledPayments` no FranchiseSettings. **No bot V4, 3 pontos que NÃO derivam disso**: `Cerebro Enxuto CB` map de tradução `{pix:'Pix'...}[p]||p` (2×, entrega+retirada), tool `EnviaPedidoFechado1` `$fromAI('pagamento')` (lista fechada de valores), e `Prepare Sale Data` payMap (sub-wf `RnF1Jh6nDUj0IRHI`) cujo **default é `pix`** → esquecer o payMap grava a venda como PIX em silêncio. `accepted_payment_methods` da view é só concatenação dos values crus (o prompt traduz). Ex: VR/Sodexo=`meal_voucher` (24/06). Detalhe: memória `project_add_payment_method_flow`
-- **`min_order_value` é cutoff de entrega, NÃO trigger de upsell de retirada**: bot **recusa** entrega abaixo do valor (pede cliente aumentar pedido ou retirar). Hints em FieldHint devem descrever o comportamento REAL do bot — nada de "sugere/recomenda" se o nó n8n não tem essa lógica. Caso 25/05/2026: hint antigo "Abaixo desse valor, o bot sugere retirada no local" foi corrigido em [FranchiseSettings.jsx:938](src/pages/FranchiseSettings.jsx#L938) porque confundia franqueados (esperavam upsell ativo que não existe)
+- **`min_order_value`: o prompt LIVE só recebe `>>> PEDIDO MÍNIMO: R$X`, sem regra de recusa** (conferido 26/09/2026, `.tmp/onda2/conferencia-textos.md`). Dica e "?" NÃO prometem recusa; para recusar de fato, a regra tem de entrar no prompt.
 - V4 produção: `aRBzPABwrjhWCPvq` | V3 `XqWZyLl1AHlnJvdj` DESATIVADO
 - EnviaPedidoFechado V2: `RnF1Jh6nDUj0IRHI`
 - Bot Conversation Analyzer: `jh1ro9klxhbEvWgl` (cron 30min, Gemini 2.5 Flash `ezQN27UjYZVHyDEf`)
@@ -247,6 +256,15 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - **Números do cliente agora são recalculados pelas vendas** (`recompute_contact_purchase_stats`, triggers AFTER INSERT/UPDATE/DELETE em `sales`): antes a venda retroativa puxava `last_purchase_at` para trás (344 clientes) e apagar venda não voltava a data. `total_spent` = líquido (`value − desconto + frete`). `last_purchase_at` = meio-dia de SP da última `sale_date`. Backup do backfill: `_backup_contacts_stats_2026_09_17`.
 - Testes: `node src/lib/customerActions.test.mjs` (entra no `test:unit`). Prévia sem login: `npx vite --config .tmp/harness-clientes/vite.config.mjs` → `:5198/inicio`, `/MyContacts?aba=hoje`, `?cenario=feitos|vazio|erro`. Guia: Tutoriais → "Quem chamar hoje" (`/Tutoriais?abrir=clientes`).
 
+### Mural do CS v2 (26/09/2026, `51e7e5a`) → detalhe em [docs/claude/customer-success.md](docs/claude/customer-success.md)
+- Colunas (falar_hoje/esperando/com_nelson/estacionado/resolvidos) vêm PRONTAS de `get_cs_mural()`. Registro só por `registrar_cs_conversa`/`concluir_cs_cartao`/`estacionar_cs_cartao`; nunca `addCsTaskEvent` com nota nula.
+- Acordo (`cs_agreements`) nunca cala alarme; só segura o CARTÃO se tiver `review_at` futuro.
+- Reconcile fecha sozinho só após 3 dias fora da regra, sem cooldown. "caiu" do dia 1 ao 9 usa 28 dias × 28 dias anteriores (o mês até hoje sem base fechava cartão todo dia 1º).
+- Simular data no reconcile: `set_config('cs.sim_agora', …, true)` na transação (`cs_hoje()`/`cs_agora()`). Venda futura não serve: `tr_sales_data_futura` barra até em rollback.
+- `/ProgressoCS` é só admin (`OwnerRoute` no App.jsx; as RPCs exigem `is_admin`).
+- Comparar DIA com dia: mesmo dia da semana 4 semanas antes (dia − 28), nunca o mesmo número do mês anterior (sábado contra quarta dava "+R$ 10 mil" falso). Total do mês continua contra o mesmo trecho do mês anterior (`get_faturamento_por_dia`, `4b14fa5`).
+- Nota fiscal pré-pronta no branch `wip/nfe-cadastro`: rebase no main e aplicar `fiscal-01` ANTES do deploy (o front manda colunas novas → 400).
+
 ### Relatório do mês em PDF (11/09/2026, `ce61e6d`)
 - Botão no topo do Resultado (`HeroMetric`) → PDF de 1 página: 3 meses lado a lado, mais vendidos, anúncio. Lógica em `src/lib/monthlyReport.js` (+ `.test.mjs`), render em `monthlyReportPdf.js`. Reusa os dados da tela + `calculatePnL` (sem consulta nova); o anúncio (`get_marketing_attribution`) só no clique, e falha vira aviso no PDF, não bloqueia.
 - "Mais vendidos" ordena por QUANTIDADE, igual ao card da tela (item de kit sobe ao topo) — mudar para valor = mudar a tela junto.
@@ -316,6 +334,18 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - **Não confie no relatório da própria função destrutiva** — conte de fora no mesmo bloco (`do $$ … raise exception $$` desfaz o teste e traz o número).
 - **Classe Tailwind com token inexistente** (`text-ink-1`) não pinta e passa em todo lint — conferir o token no `tailwind.config.js`.
 
+### Redesenho do admin — Onda 1 (no ar 26/09/2026, `645c8c7`)
+> Plano e próximos passos: `~/.claude/plans/admin-redesign-2026-09-26.md` · padrão visual: [docs/claude/padrao-visual-admin.md](docs/claude/padrao-visual-admin.md) (componentes em `src/components/shared/`).
+- 🔴 **Régua única em `src/lib/networkOverview.js`**: queda (−20% com base de R$ 3 mil), sem venda, verba (mês principal = CALENDÁRIO; mês-alvo aparece neutro, nunca vermelho), nova (<60 dias), `sinaisUnidade`, `linkFicha`/`voltarDaFicha`, `ordenarPor`. Nenhuma tela repete limite à mão. Mensagem para franqueada: só `src/lib/mensagemFranqueado.js`. Formatos: `src/lib/adminFormat.js` + `formatPct`.
+- Ficha = `/Unidade?id=<evo>` (em `CS_PAGES`). Link para ela leva `state {from,label}`; telas abertas pela Ficha mostram "← Voltar para a ficha". Overview compartilhada via `useAdminNetworkOverview` (queryKey `['admin-overview']`); mutação chama `invalidarAdmin(queryClient)`.
+- `franchises.created_at` = data da MIGRAÇÃO (39 unidades em mar/2026), não da abertura: só mostrar idade quando < 60 dias.
+- 🔴 `get_franchise_health_signals` CALA unidades: acordo `cs_agreements` com `signal_key='*'` e sem baseline apaga todos os alertas para sempre (Uberlândia); `stopped_selling` exige `revprev>0` (parada 60+ dias vira healthy). Listas e Ficha já não dependem disso; o Mural sim (conserto na Onda 2).
+- `purchase_orders.confirmed_at` existe (backfill por `updated_at`); o trigger `on_purchase_order_delivered` respeita o `delivered_at` que o front manda.
+- Aplicar SQL: `node supabase/cs-cockpit/_aplica-lf.mjs <arquivo.sql>` (normaliza LF). Mudou o `RETURNS TABLE`? O arquivo precisa de `drop function if exists` antes (senão 42P13).
+- Prévias com mocks (`.tmp/harness-*`): mock VELHO gera print que mente (depósito R$ 0, "2 pedidos") — recarregar dados por SELECT via MCP antes de mostrar. Harness com `root` fora do repo perde o Tailwind (fix: `.tmp/harness-shared/postcss-root/`); vários vite ao mesmo tempo dão "Invalid hook call" (cache compartilhado) → `--force`.
+- Subagente não cria usuário admin temporário em produção (contorna o guard de privilégio e é recusado): prints com dados reais = harness + snapshot por MCP.
+- `eslint .` pega `.tmp/harness-*/.vite-cache` → apagar antes. `icons:check` acusa palavra entre crases em comentário que é nome de ícone (`files`, `orders`, `tooltip`) → reescrever o comentário.
+
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx.
 
@@ -365,6 +395,8 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **`manualChunks` TEM de ser função** — o `dist/index.html` só pode ter modulepreload de `vendor/supabase/dates/ui`.
 - **`npm run lint:undef` antes de deploy** — o lint normal deixa passar símbolo não importado (tela branca); `npm run verify:undef` prova a guarda.
 - **Ícones = subset self-hosted:** `npm run icons:check` antes de deploy; ícone fora do subset vira PALAVRA (nome vindo do banco via `notify_admins` também). Diagnóstico: span de ícone com largura > 30 px.
+- `icons:check` conta QUALQUER string entre aspas ou crases, inclusive em comentário: `` `iso` `` num comentário reprovou o gate. Reescreva o comentário.
+- As prévias `.tmp/harness-*` dividem o cache do Vite: rode uma de cada vez (juntas quebram o React).
 - **`save_sale_with_items` ENUMERA as colunas** — coluna nova em `sales` precisa entrar na RPC, senão é no-op calado.
 - **Verde de TEXTO = `text-ok-ink`** (`text-ok` reprova AA; só para ícone). Cores em token (`brand`, `ink`, `surface`, `ok`, `warn`, `err`).
 - **`marketing_payments.status` = recebimento; "já subi a campanha" = `campaign_raised_at`** (+ `campaign_raised_by`, ambos no guard).
@@ -375,3 +407,43 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **Management API devolve o último resultset NÃO-vazio** — fechar em `select coalesce(json_agg(t),'[]'::json)`. `current_date` é UTC: usar `(now() at time zone 'America/Sao_Paulo')::date`. `franchises.status` é `'active'`.
 - **Crons de banco:** `sync-asaas-subscriptions` (jobid 4, 08:05), `sentinela-diaria` (5, 08:10), `reconcile-cs-auto-tasks` (6, 08:15, via invólucro). Desligar: `select cron.unschedule('<nome>')`.
 - **Tela `franchiseeOnly` dá para testar** com usuário de teste criado pela Auth Admin API + `profiles` (apagar no fim); reload completo depois de trocar o papel.
+
+
+---
+
+> Movido do CLAUDE.md do projeto-pai em 21/09/2026 (o pai carrega em TODA sessão de TODO sub-projeto; isto aqui serve a 1-2 contextos). Byte-a-byte, sem edição.
+
+### Banco de Dados
+- RLS SEMPRE em tabelas novas (admin, franchisee, manager)
+- 🔴 **RLS não protege view nem função SECURITY DEFINER**: view nova/recriada = `create or replace view ... with (security_invoker = true)` (sem o WITH ela roda como o dono, e a chave anon — pública no bundle do painel — LÊ e até ALTERA a base); função SECURITY DEFINER = checar o usuário no corpo + `revoke execute ... from public, anon`. Auditar: GET com a chave anon tem de dar 401. *(12/09/2026; memória `feedback_supabase_view_security_invoker`)*
+- **Supabase Data API só expõe tabela nova com GRANT explícito a partir de 30/10/2026**: tabelas atuais não quebram (mantêm grants); tabela nova no schema `public` criada após o cutover some de PostgREST/supabase-js/GraphQL sem `grant select,insert,update,delete on table public.<t> to anon, authenticated, service_role`. SQL pronto + diagnóstico (Security Advisor + badge): memória `project_supabase_data_api_grant_oct2026` (discussion supabase #45329)
+- `franchise_id` em tabelas operacionais = `evolution_instance_id` (TEXT), NÃO UUID
+- **Análise por franquia (mkt × venda × leads)**: join `sales`/`marketing_payments`/`daily_unique_contacts`.`franchise_id` (text) = `franchises.evolution_instance_id`. `marketing_payments.amount` = **BRUTO** (`status='confirmed'` = pago); investimento **LÍQUIDO** em anúncio = `amount × 0,86` (Meta retém 14% imposto/taxa — corrigido de 13% em 31/07/2026; análises anteriores a essa data usaram 0,87). ⚠️ **`daily_unique_contacts` NÃO é captação de lead** — a trigger `on_sale_created` insere ali a cada venda com `contact_id`; medido em jul/26: **93% das linhas nasceram de venda**, só 64 na rede inteira são cadastro de quem não comprou. Logo "leads × faturamento" é **tautológico** (vale também p/ o r=0,93 da análise de 30/06, que estava errado como argumento). Captação real = `contacts` sem compra (o bot grava sozinho quem chega por anúncio). Cohort justo = `franchises.created_at < início da janela` + excluir nomes "Teste"
+- ✅ **`expense_generated_at` deixou de governar a geração de despesa (fix 19/08/2026).** `generate_expense_from_marketing_payment()` decidia por `NEW.expense_generated_at IS NULL`: se o `UPDATE` que confirma o pagamento setasse o carimbo no MESMO statement, o `INSERT` era barrado e o pagamento ficava marcado como processado **sem despesa nenhuma** — e como o carimbo era a própria condição, **reconfirmar nunca consertava** (3 casos na base). Agora a guarda é a **EXISTÊNCIA da despesa**: `source_id = NEW.id` **OU** franquia+`marketing`+valor dentro do mês de referência (esta 2ª perna enxerga o lançamento MANUAL, que tem `source_id` nulo — sem ela o fix reintroduziria a duplicidade). Carimbo agora só registra "passou pelo processamento". Versões antes/depois em `docs/db-backups/generate_expense_from_marketing_payment.*.sql`
+- **`marketing_payments` tem UNIQUE `(franchise_id, reference_month)`** — "1 pagamento por franquia por mês" é garantia de schema, não coincidência dos dados. É o que torna segura a 2ª perna da guarda acima (nunca haverá 2 pagamentos legítimos concorrendo no mesmo mês)
+- 🔴 **Ao conferir despesa "faltante" na mão, procure por VALOR + franquia em QUALQUER categoria/descrição/data.** Dos 3 casos de 19/08, **2 já estavam lançados à mão** com descrição livre ("Marketing", "TRAFEGO PAGO") e categoria variável (`outros`) — invisíveis para busca por `source_id` ou por `description='Marketing - AAAA-MM'`, e inserir teria duplicado o gasto no DRE de duas franqueadas. Fechamento de mês compara `count(marketing_payments confirmed)` × `count(expenses description='Marketing - AAAA-MM')`
+- **`franchise_configurations` se filtra por `franchise_evolution_instance_id`, NÃO por `franchise_id`** (o erro `42703` engana: parece coluna faltando no schema). É onde moram `has_pickup`/`pickup_address`/`pickup_schedule`/`pickup_is_store`. ⚠️ **O achado A11 ("`has_pickup=true` com `pickup_address` vazio faz o robô negar retirada") está SUPERADO** — verificado no prompt LIVE em 06/09/2026: a L49 usa `pickup_address || unit_address` e **nenhuma** unidade tem os dois vazios. `pickup_address` só é gravado quando a loja tem endereço diferente do cadastral; vazio ali é o normal, não defeito. Não gastar sessão "corrigindo" isso
+- **Pedidos de franquia = `purchase_orders`** (`total_amount`, `freight_cost`, `total_weight_kg`, `status` pendente/confirmado/entregue, `ordered_at`≠`created_at`); itens em `purchase_order_items`, peso via `product_weights`. Filtro do ciclo é o STATUS, não a data (ver `logistica/scripts/pull-pedidos.mjs`). 🔴 **`freight_cost` é lançado À MÃO — o dashboard não calcula a regra de frete**: em jun–ago/26, 64 de 208 pedidos saíram com frete ZERO e o resto ficou em ~10% do pedido em toda a rede, inclusive fora de SP. Ou seja, a regra oficial (R$ 350 desde 2023) não estava sendo aplicada — não usar `freight_cost` como prova de qual regra vigora
+- **`bot_conversations` não tem `created_at`** — as colunas são `started_at` e `updated_at` (e `franchises` tem `phone_number`, não `phone`, quase sempre NULL)
+- **`franchises` não tem `address` nem `state`** (o `city` já vem "Cidade - UF"). Endereço da unidade só na `vw_dadosunidade` (`unit_address`/`street_address`/`cep`) — é ele que vai como `origin` no DistanceService
+- **Antes de usar qualquer coluna como métrica, cheque QUEM escreve nela** (`pg_trigger` + `pg_get_functiondef`), nunca o nome dela. Mesma família: `whatsapp_status` (fica em **`franchise_configurations`**, NÃO em `franchises`) marca `disconnected` em 18/18 franquias, inclusive nas com centenas de conversas — use `bot_conversations` do mês como sinal de bot vivo, e o `connected`/`loggedIn` do `/admin/users` do ZZG como estado AO VIVO
+- **`marketing_payments.reference_month` (mês da verba) ≠ `created_at` (dia do pagamento)** — SEMPRE agrupar investimento de marketing por `reference_month`. Agrupar por `created_at` erra (verba de julho paga em 30/06 vira "junho"). O LÍQUIDO (`amount × 0,86`) do `reference_month` bate com o gasto real da campanha no Meta.
+- **O líquido de marketing NÃO existe no banco** — `marketing_payments` guarda só `amount` (BRUTO) e a trigger `tr_mkt_generate_expense` grava o BRUTO em `expenses` (é o que a franqueada pagou). Nenhuma função/trigger aplica a taxa: o líquido é derivado no front (`MARKETING_TAX_RATE` em `franchiseUtils.js`) e nas queries. Consequência: **mudar a taxa é trocar a constante — não há dado a migrar**, e a correção vale retroativamente em tudo que é exibido. Confirmar sempre antes de prometer "recálculo" (31/07/2026, 13%→14%)
+- **Meta Ads MCP oficial** (`ads_get_ad_entities`, conta `704083103754311`): lista campanhas `[CIDADE]` + gasto real (`spend`; usar `time_increment:monthly` — `last_30d` é janela móvel que engana). **~44-47 franquias anunciam de fato** (não 40 — 40 era o cohort da correlação, criado antes de 01/04).
+- Helpers SQL: `is_admin()`, `is_admin_or_manager()`, `managed_franchise_ids()`
+- **`psql -c` com múltiplos statements vira transação** — VACUUM / CREATE INDEX CONCURRENTLY falham com `cannot run inside a transaction block`. Usar **1 statement por `-c`** ou `bash -c "psql ...; psql ..."`
+- Erro VACUUM `uncommitted xmin X from before xid cutoff Y needs to be frozen` = pg_xact rotacionou antes do freeze (autovacuum atrasado). **NÃO forçar** — risco de amplificar corrupção. Workaround: `pg_dump` → `CREATE DATABASE novo` → `pg_restore` (tuples ganham xmin atual). Sintoma encontrado em `evolution.Message` 16/04/2026
+- **`ON CONFLICT ON CONSTRAINT <name>` exige CONSTRAINT, não INDEX**: `CREATE UNIQUE INDEX ... WHERE` cria índice mas NÃO constraint nomeada. Em INSERT, usar inferência por colunas: `ON CONFLICT (col1, col2) WHERE <mesmo predicado do índice> DO NOTHING`. Postgres casa com partial unique index automaticamente. Erro `42704: constraint "<name>" does not exist` = você caiu nessa
+- **`CURRENT_DATE` retorna UTC no Supabase**: container PG roda UTC, então à noite em BRT (UTC-3) "hoje" no SQL já é amanhã. Para data BRT use `(now() AT TIME ZONE 'America/Sao_Paulo')::date`. OK para timestamps computacionais; problema quando usuário lê "hoje" e SQL retorna ontem/amanhã
+- **Regex no Postgres: `\b` é BACKSPACE, não fronteira de palavra** — usar `\y` (`content ~* '\yte falo\y'`). Com `\b` a query devolve **0 silenciosamente** = falso "não tem o problema". Validar regex novo com canário inline antes de confiar: `select 'texto conhecido' ~* '<regex>' as deve_ser_true`
+- **`RETURNS TABLE` rejeita palavras reservadas SQL** como nome de coluna: `position`, `value`, `order` etc dão `42601 syntax error`. Renomear (`rank_position`, `amount_value`, `sort_order`) — é mais limpo que double-quoting. Pegou em `get_franchise_ranking_monthly` 06/05/2026
+- **`pg_get_functiondef()` estoura em AGREGADO** (`ERROR: "array_agg" is an aggregate function`) — ao varrer `pg_proc` atrás de uma string no corpo das funções (ex: caçar onde uma constante está hardcoded), filtrar `p.prokind = 'f'`. Sem o filtro a query inteira morre e você conclui "não existe em lugar nenhum" sem ter olhado nada
+
+
+## Convenções de UI e build (movido do CLAUDE.md do projeto-pai em 25/09/2026)
+<!-- movido do CLAUDE.md pai 25/09/2026 -->
+- Componentes: shadcn/ui + Material Symbols Outlined. Ícone = `<MaterialIcon icon="name" />`, NUNCA Lucide direto.
+- Fontes: Inter (body) + Plus Jakarta Sans (headings). Paleta: `#b91c1c` (primary), `#d4af37` (gold).
+- Edge Functions: SEMPRE validar JWT (`supabase.auth.getUser(token)`) + role check. Webhook externo: HMAC/token secreto (fail-closed).
+- **`npm run build` suprime o output do Vite** (18/05): mostra só `> vite build` e termina. Confiar em `EXIT=0` + timestamp de `dist/index.html` (build real ~10-20 s).
+- **TS LSP em `.jsx`** emite `implicit any` (TS7006) em parâmetro JS — pré-existente do strict do tsserver, NÃO causado pelo Edit. Ignorar se já existia antes da mudança.
