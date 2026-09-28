@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STATUS_LABEL, isAtrasado, isDeletable, freteSugerido, dataBRT, meioDiaBRT } from "./pedidosHelpers";
+import { salvarEdicaoPedido, pedidoMudou, MSG_PEDIDO_MUDOU } from "./edicaoPedido";
 
 const STATUS_ICON = {
   pendente: "schedule",
@@ -148,6 +149,30 @@ export default function OrderDetailDialog({
     return p;
   };
 
+  // P3 2ª passada (ponto 1): itens + frete + previsão numa transação (RPC salvar_edicao_pedido,
+  // total recalculado no servidor). Sem a função no banco, cai no caminho antigo abaixo.
+  const salvarEdicoes = async () => {
+    const changed = changedItemsPayload();
+    const itens = changed.map((item) => ({ id: item.id, quantity: editedQuantities[item.id] }));
+    const patch = { ...patchFrete() };
+    if ((editedDeliveryDate || null) !== (order.estimated_delivery || null)) patch.estimated_delivery = editedDeliveryDate || null;
+    if (itens.length === 0 && Object.keys(patch).length === 0) return;
+    await salvarEdicaoPedido({
+      rpc: (fn, params) => supabase.rpc(fn, params),
+      orderId: order.id,
+      itens,
+      patch,
+      legado: async () => {
+        const antigo = { ...patchFrete(), ...patchPrevisaoETotal() };
+        if (Object.keys(antigo).length > 0) await PurchaseOrder.update(order.id, antigo);
+        if (changed.length > 0) {
+          await Promise.all(changed.map((item) => PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })));
+        }
+      },
+    });
+  };
+  const erroDeSalvar = (error, fallback) => (pedidoMudou(error) ? MSG_PEDIDO_MUDOU : safeErrorMessage(error, fallback));
+
   const changedItemsPayload = () =>
     items.filter((item) => {
       const newQty = editedQuantities[item.id];
@@ -178,18 +203,13 @@ export default function OrderDetailDialog({
   const handleSaveEdits = async () => {
     setSaving(true);
     try {
-      const patch = { ...patchFrete(), ...patchPrevisaoETotal() };
-      if (Object.keys(patch).length > 0) await PurchaseOrder.update(order.id, patch);
-      const changed = changedItemsPayload();
-      if (changed.length > 0) {
-        await Promise.all(changed.map((item) => PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })));
-      }
+      await salvarEdicoes();
       toast.success("Pedido atualizado com sucesso!");
       onChanged();
       onClose();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error(safeErrorMessage(error, "Erro ao salvar alterações."));
+      toast.error(erroDeSalvar(error, "Erro ao salvar alterações."));
     } finally {
       setSaving(false);
     }
@@ -201,11 +221,8 @@ export default function OrderDetailDialog({
       const updates = { status: newStatus };
       if (newStatus === "entregue") updates.delivered_at = meioDiaBRT(dataEntrega) || new Date().toISOString();
       if (newStatus === "confirmado" && order.status !== "confirmado") updates.confirmed_at = new Date().toISOString();
-      Object.assign(updates, patchFrete(), patchPrevisaoETotal());
-      const changed = changedItemsPayload();
-      if (changed.length > 0) {
-        await Promise.all(changed.map((item) => PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })));
-      }
+      // Edições primeiro, numa transação; depois só a troca de status.
+      await salvarEdicoes();
       const salvo = await PurchaseOrder.update(order.id, updates);
       // S15: unidade com o app novo -> o banco deixa 'em_rota' e ele mesmo avisa a unidade.
       const foiParaConferencia = newStatus === "entregue" && emConferencia(salvo);
@@ -220,7 +237,7 @@ export default function OrderDetailDialog({
       onClose();
     } catch (error) {
       console.error("Erro ao alterar status:", error);
-      toast.error(safeErrorMessage(error, "Erro ao alterar status do pedido."));
+      toast.error(erroDeSalvar(error, "Erro ao alterar status do pedido."));
     } finally {
       setSaving(false);
       setConfirmAction(null);
