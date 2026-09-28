@@ -279,8 +279,19 @@ export default function OrderDetailDialog({
     try {
       // Uma chamada só: os itens saem junto em cascata (FK ON DELETE CASCADE), na mesma
       // transação — antes eram 2 chamadas e uma falha no meio deixava pedido sem item.
-      const { error: orderErr } = await supabase.from("purchase_orders").delete().eq("id", order.id);
+      // Só apaga se AINDA está pendente/cancelado no banco (outra tela pode ter confirmado ou
+      // entregue depois que este detalhe abriu — P3 4ª passada, S15).
+      const { data: apagados, error: orderErr } = await supabase
+        .from("purchase_orders")
+        .delete()
+        .eq("id", order.id)
+        .in("status", ["pendente", "cancelado"])
+        .select("id");
       if (orderErr) throw orderErr;
+      if (!apagados || apagados.length === 0) {
+        toast.error("O pedido mudou (foi confirmado ou entregue). Recarregue a página.", { id: toastId });
+        return;
+      }
       toast.success("Pedido excluído.", { id: toastId });
       onChanged();
       onClose();
