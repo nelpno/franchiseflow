@@ -411,6 +411,14 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **Crons de banco:** `sync-asaas-subscriptions` (jobid 4, 08:05), `sentinela-diaria` (5, 08:10), `reconcile-cs-auto-tasks` (6, 08:15, via invólucro). Desligar: `select cron.unschedule('<nome>')`.
 - **Tela `franchiseeOnly` dá para testar** com usuário de teste criado pela Auth Admin API + `profiles` (apagar no fim); reload completo depois de trocar o papel.
 
+## Onda 4 (28/09/2026) — o que ficou
+- **Lembretes de cobrança** (WhatsApp do Nelson): n8n `x4F3GRoYzcp2hBoG` (seg–sáb 10h) + regra em SQL `get_lembretes_cobranca` (fonte: `supabase/2026-09-28-s11-lembretes-cobranca.sql`). Liga/pausa pela chave `lembrete_cobranca` (sem linha = ninguém recebe). Teste só para o Nelson: `node .tmp/s11/n8n.mjs teste '{"hoje":"AAAA-MM-DD","franchise_id":"<evo>","max":1}'`, depois `delete from cobranca_lembretes where destino='teste'`.
+- **Webhook do ASAAS não decide a fatura atual**: só dispara o `checkPayment` (atraso cobrável mais antigo → período → paga) e responde em até 8 s. Mexer na regra = mexer só no `checkPayment`.
+- **Publicar edge sem Docker:** `SUPABASE_ACCESS_TOKEN=<SUPABASE_MANAGEMENT_TOKEN> npx supabase@latest functions deploy <fn> --project-ref sulgicnqqopyhulglakd --no-verify-jwt --use-api`. Antes: provar que o arquivo do main = publicado (fora a mudança).
+- **Tela que REDIRECIONA com a chave desligada** espera `useFeatureFlagState(k).resolved` — no 1º load a chave vale `false` e redirecionava antes de a resposta chegar.
+- **Pedido à fábrica = RPC `create_purchase_order_with_items`** (idempotente pelo id do aparelho; mesmo id com conteúdo diferente = P0001 `S14_ENVIO_DIFERENTE`). O front só cai nas 2 chamadas antigas se a função não existir.
+- **Testar função SQL de trilha sem deixá-la no banco:** mandar numa requisição só o `create function` + um `do $$ … raise exception 'RESULT …' $$` com os casos (a exceção desfaz tudo, inclusive a função) e conferir depois, em consulta separada, que nada sobrou.
+
 
 ---
 
