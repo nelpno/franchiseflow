@@ -47,7 +47,12 @@ export default function FinancialObligationsCard({ marketingPayment }) {
   const showMarketingRow =
     !marketingPaymentForMonth || marketingPaymentForMonth.status === "rejected";
 
-  const showSubscriptionRow = !!subscription;
+  // S5.2: franquia com cliente no ASAAS mas SEM assinatura criada ainda (hoje 2 unidades,
+  // ex.: acabou de aderir) não tem cobrança nenhuma pra mostrar — current_payment_status
+  // fica null e o "Pagar" abria uma folha vazia (sem PIX, sem boleto, sem nada). O admin
+  // já vê essas unidades como "Aguardando criar" em Financeiro > Mensalidades; aqui, pra
+  // a franqueada, é melhor não mostrar do que mostrar um botão que não leva a nada.
+  const showSubscriptionRow = !!subscription?.asaas_subscription_id;
   const subStatus = subscription?.current_payment_status;
 
   if (!showSubscriptionRow && !showMarketingRow) return null;
@@ -121,7 +126,7 @@ export default function FinancialObligationsCard({ marketingPayment }) {
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-ink truncate">
-                Sua Equipe Digital — {subMonthLabel}
+                Equipe Digital Maxi — {subMonthLabel}
               </p>
               <p className="text-xs text-ink-3 mt-0.5">{subSubtitle}</p>
             </div>
