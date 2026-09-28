@@ -8,7 +8,7 @@ import { supabase } from "@/api/supabaseClient";
 import { PurchaseOrder, PurchaseOrderItem, confirmarRecebimentoPedido } from "@/entities/all";
 import { novoIdDoEnvio } from "@/lib/enviarPedidoFabrica";
 import {
-  STATUS_AGUARDA_CONFERENCIA,
+  aguardaConferencia as emConferencia,
   prazoConferencia,
   resumoRecebido,
   rotuloConferencia,
@@ -128,7 +128,7 @@ export default function OrderDetailDialog({
   const isEditable = order.status !== "entregue" && order.status !== "cancelado";
   // S15: 'em_rota' = a fábrica entregou e a unidade confere. Quantidade pedida não muda mais
   // (é a base da conferência); frete/previsão/cancelar continuam.
-  const aguardaConferencia = order.status === STATUS_AGUARDA_CONFERENCIA;
+  const aguardaConferencia = emConferencia(order);
   const qtdEditavel = isEditable && !aguardaConferencia;
   const prazo = aguardaConferencia ? prazoConferencia(order) : null;
   // Conferido com diferença: o que chegou (received_quantity) manda nos valores da tela.
@@ -138,6 +138,15 @@ export default function OrderDetailDialog({
   // Frete só vai no patch se mudou aqui: nunca regrava por cima do que a lista salvou.
   const patchFrete = () =>
     editedFreight !== freteDoBanco ? { freight_cost: editedFreight ? parseFloat(editedFreight) : null } : {};
+
+  // P3 da S15 (ponto 2): só manda previsão e total se mudaram NESTA tela — reenviar o total
+  // original sobrescrevia o total do que chegou.
+  const patchPrevisaoETotal = () => {
+    const p = {};
+    if ((editedDeliveryDate || null) !== (order.estimated_delivery || null)) p.estimated_delivery = editedDeliveryDate || null;
+    if (changedItemsPayload().length > 0) p.total_amount = recalculateTotal();
+    return p;
+  };
 
   const changedItemsPayload = () =>
     items.filter((item) => {
@@ -169,12 +178,8 @@ export default function OrderDetailDialog({
   const handleSaveEdits = async () => {
     setSaving(true);
     try {
-      const newTotal = recalculateTotal();
-      await PurchaseOrder.update(order.id, {
-        ...patchFrete(),
-        estimated_delivery: editedDeliveryDate || null,
-        total_amount: newTotal,
-      });
+      const patch = { ...patchFrete(), ...patchPrevisaoETotal() };
+      if (Object.keys(patch).length > 0) await PurchaseOrder.update(order.id, patch);
       const changed = changedItemsPayload();
       if (changed.length > 0) {
         await Promise.all(changed.map((item) => PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })));
@@ -196,17 +201,14 @@ export default function OrderDetailDialog({
       const updates = { status: newStatus };
       if (newStatus === "entregue") updates.delivered_at = meioDiaBRT(dataEntrega) || new Date().toISOString();
       if (newStatus === "confirmado" && order.status !== "confirmado") updates.confirmed_at = new Date().toISOString();
-      const newTotal = recalculateTotal();
-      Object.assign(updates, patchFrete());
-      updates.estimated_delivery = editedDeliveryDate || null;
-      updates.total_amount = newTotal;
+      Object.assign(updates, patchFrete(), patchPrevisaoETotal());
       const changed = changedItemsPayload();
       if (changed.length > 0) {
         await Promise.all(changed.map((item) => PurchaseOrderItem.update(item.id, { quantity: editedQuantities[item.id] })));
       }
       const salvo = await PurchaseOrder.update(order.id, updates);
       // S15: unidade com o app novo -> o banco deixa 'em_rota' e ele mesmo avisa a unidade.
-      const foiParaConferencia = newStatus === "entregue" && salvo?.status === STATUS_AGUARDA_CONFERENCIA;
+      const foiParaConferencia = newStatus === "entregue" && emConferencia(salvo);
       if (!foiParaConferencia) notifyFranchisee(newStatus);
 
       if (foiParaConferencia) toast.success("Marcado. A unidade confere o que chegou (até 2 dias); aí o estoque e a despesa entram.");
@@ -324,7 +326,7 @@ export default function OrderDetailDialog({
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Badge className={`${STATUS_COLOR[order.status] || STATUS_COLOR.pendente} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
                     <MaterialIcon icon={STATUS_ICON[order.status] || "schedule"} size={12} />
-                    {STATUS_LABEL[order.status] || order.status}
+                    {aguardaConferencia ? "Unidade conferindo" : STATUS_LABEL[order.status] || order.status}
                   </Badge>
                   {isAtrasado(order) && (
                     <Badge className="bg-err/10 text-err rounded-full px-2 py-0.5 text-[10px] font-bold gap-1">
