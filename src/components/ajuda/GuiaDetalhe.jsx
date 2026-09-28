@@ -127,11 +127,20 @@ export default function GuiaDetalhe({ guia, voltarLabel, onVoltar, equipe, mostr
 
       {mostrarAjudaExtra && !equipe && (
         <>
-          <IssoResolveu slug={guia.slug} />
-          <div className={`${CARTAO} flex flex-col gap-3 sm:flex-row sm:items-center`}>
-            <p className="text-sm text-ink-2">Não resolveu? Fale direto com a equipe Maxi.</p>
-            <BotaoFalarComMaxi guia={guia} />
-          </div>
+          {/* key=slug (P3, S10): sem isso, a resposta de um guia ficava em memória
+              (useState) e vazava pro próximo ao navegar entre deep-links sem
+              desmontar o componente — o React só cria a instância de novo quando
+              a key muda. */}
+          <IssoResolveu key={guia.slug} slug={guia.slug} />
+          {/* Sem WHATSAPP_MAXI cadastrado, `linkFalarComMaxiDoGuia` volta null (P3,
+              28/09/2026): nesse caso o card some inteiro — nunca prometer "fale com
+              a equipe" sem ter pra onde mandar. */}
+          {linkFalarComMaxiDoGuia(guia) && (
+            <div className={`${CARTAO} flex flex-col gap-3 sm:flex-row sm:items-center`}>
+              <p className="text-sm text-ink-2">Não resolveu? Fale direto com a equipe Maxi.</p>
+              <BotaoFalarComMaxi guia={guia} />
+            </div>
+          )}
         </>
       )}
     </div>
