@@ -47,6 +47,7 @@ import { formatBRL, formatBRLCompactResultado as formatBRLCompact } from "@/lib/
 import { janelaCobre, janelaParaBuscar } from "@/lib/resultadoWindow";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, SALES_EXPORT_QUERY_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
+import { EXPENSES_EXPORT_COLUMNS, buildExpensesExportRows, sortExpenses } from "@/lib/expensesExport";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
 import ErrorState from "@/components/shared/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -927,6 +928,9 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
 
   // PnL atual e anterior
   const pnl = useMemo(() => calculatePnL(monthSales, monthSaleItems, monthExpenses), [monthSales, monthSaleItems, monthExpenses]);
+  // Lista na ordem da data (mais recente primeiro) — antes saía na ordem do id, aleatória.
+  const monthExpensesSorted = useMemo(() => sortExpenses(monthExpenses), [monthExpenses]);
+  const expensesExportData = useMemo(() => buildExpensesExportRows(monthExpenses, { includeTotalsRow: true }), [monthExpenses]);
   const prevPnl = useMemo(() => calculatePnL(prevMonthSales, prevMonthSaleItems, prevMonthExpenses), [prevMonthSales, prevMonthSaleItems, prevMonthExpenses]);
 
   // Resumo de estoque (atual)
@@ -1213,21 +1217,30 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
           {/* Despesas list (mantida) */}
           <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
             <CardContent className="p-5 md:p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
                   Despesas do mês
                 </h3>
-                <Button size="sm" onClick={handleLancarDespesa} className="gap-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs">
-                  <MaterialIcon icon="add" size={16} />
-                  Adicionar
-                </Button>
+                <div className="flex items-center gap-2">
+                  <ExportButtons
+                    data={expensesExportData}
+                    columns={EXPENSES_EXPORT_COLUMNS}
+                    filename={`despesas-${format(selectedMonth, "yyyy-MM")}`}
+                    title={`Despesas — ${monthLabel}`}
+                    evento="planilha_despesas"
+                  />
+                  <Button size="sm" onClick={handleLancarDespesa} className="gap-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs">
+                    <MaterialIcon icon="add" size={16} />
+                    Adicionar
+                  </Button>
+                </div>
               </div>
 
               {monthExpenses.length === 0 ? (
                 <p className="text-sm text-ink-2 text-center py-6">Nenhuma despesa neste mês.</p>
               ) : (
                 <div className="space-y-2">
-                  {monthExpenses.map((exp) => {
+                  {monthExpensesSorted.map((exp) => {
                     const meta = getCategoryMeta(exp.category);
                     const isAuto = exp.source && exp.source !== "manual";
                     return (

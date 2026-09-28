@@ -4,6 +4,7 @@
 
 const CELL_FORMAT = {
   date: "dd/mm/yyyy",
+  datetime: "dd/mm/yyyy hh:mm",
   time: "hh:mm",
   brl: "#,##0.00",
   int: "0",
@@ -14,7 +15,7 @@ function cellValue(col, raw) {
     if (col.format) return col.format(raw);
     return raw ?? "";
   }
-  if (col.type === "date") return raw instanceof Date && !Number.isNaN(raw.getTime()) ? raw : null;
+  if (col.type === "date" || col.type === "datetime") return raw instanceof Date && !Number.isNaN(raw.getTime()) ? raw : null;
   return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
 }
 
