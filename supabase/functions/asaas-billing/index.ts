@@ -434,7 +434,26 @@ async function checkPayment(franchiseId: string) {
   const payments = await asaasRequest(
     `/v3/subscriptions/${sub.asaas_subscription_id}/payments?sort=dueDate&order=desc&limit=100`
   );
-  if (!payments.data?.length) return { status: "NO_PAYMENTS" };
+  if (!Array.isArray(payments.data)) throw new Error("Resposta do ASAAS sem a lista de faturas");
+  if (payments.data.length === 0) {
+    // S11 P3: lista COMPROVADAMENTE vazia (assinatura sem fatura nenhuma) — limpa a fatura
+    // guardada; um atraso que deixou de existir no ASAAS não pode segurar o paywall para sempre.
+    const { error: upErr } = await supabase
+      .from("system_subscriptions")
+      .update({
+        current_payment_id: null,
+        current_payment_status: null,
+        current_payment_due_date: null,
+        current_payment_value: null,
+        current_payment_url: null,
+        pix_payload: null,
+        pix_qr_code_url: null,
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq("franchise_id", franchiseId);
+    if (upErr) throw new Error(`Falha ao gravar a situação da mensalidade: ${upErr.message}`);
+    return { status: "NO_PAYMENTS" };
+  }
 
   // deno-lint-ignore no-explicit-any
   const list: any[] = payments.data; // sorted by dueDate DESC
@@ -511,38 +530,41 @@ async function handleWebhook(body: Record<string, unknown>) {
   const payment = body.payment as Record<string, unknown>;
   if (!payment?.subscription) return { ignored: true };
 
-  // Find subscription in our table
-  const { data: sub } = await supabase
-    .from("system_subscriptions")
-    .select("franchise_id")
-    .eq("asaas_subscription_id", payment.subscription)
-    .single();
-  if (!sub) return { ignored: true, reason: "subscription not found" };
-
   // S11 (28/09/2026): o evento NÃO decide mais qual fatura é a atual. Antes ele gravava a
   // fatura do evento como current_payment_*: pagar setembro com agosto em aberto trocava o
   // card para "setembro · pago" e liberava o paywall. Agora o evento só dispara a MESMA
   // regra do checkPayment (atraso mais antigo primeiro, depois a do período, depois a paga),
   // relida no ASAAS. Evento de fatura futura (PAYMENT_CREATED do próximo ciclo) cai na
   // mesma regra e não mexe no card.
-  // Falha ao falar com o ASAAS NÃO vira 500: a fila de webhooks do ASAAS é interrompida
-  // depois de erros seguidos. O sync diário (cron 08:05) e o "Já paguei" refazem a leitura.
-  try {
-    // O ASAAS desiste em ~10 s e interrompe a fila depois de falhas seguidas: responde em até 8 s.
-    // Se estourar, a leitura continua em segundo plano (EdgeRuntime.waitUntil) e o sync diário cobre.
-    const trabalho = checkPayment(sub.franchise_id as string);
-    // deno-lint-ignore no-explicit-any
-    (globalThis as any).EdgeRuntime?.waitUntil?.(trabalho.catch(() => undefined));
-    const result = await Promise.race([
-      trabalho,
-      new Promise<null>((r) => setTimeout(() => r(null), 8000)),
-    ]);
-    if (!result) return { updated: "pending", franchise_id: sub.franchise_id, event };
-    return { updated: sub.franchise_id, event, ...result };
-  } catch (err) {
-    console.error(`[asaas-billing] webhook ${event} p/ ${sub.franchise_id}: ${(err as Error).message}`);
-    return { updated: false, franchise_id: sub.franchise_id, event, error: "check-payment falhou" };
-  }
+  // Falha ao falar com o ASAAS NÃO vira 500 e a resposta sai em até 8 s (o ASAAS desiste em
+  // ~10 s e interrompe a fila depois de falhas seguidas). O prazo conta desde o início — busca
+  // da assinatura inclusive; se estourar, o trabalho segue em segundo plano (waitUntil) e o
+  // sync diário (cron 08:05) cobre.
+  const trabalho = (async () => {
+    const { data: sub } = await supabase
+      .from("system_subscriptions")
+      .select("franchise_id")
+      .eq("asaas_subscription_id", payment.subscription)
+      .single();
+    if (!sub) return { ignored: true, reason: "subscription not found" };
+    try {
+      const result = await checkPayment(sub.franchise_id as string);
+      return { updated: sub.franchise_id, event, ...result };
+    } catch (err) {
+      console.error(`[asaas-billing] webhook ${event} p/ ${sub.franchise_id}: ${(err as Error).message}`);
+      return { updated: false, franchise_id: sub.franchise_id, event, error: "check-payment falhou" };
+    }
+  })().catch((err) => {
+    console.error(`[asaas-billing] webhook ${event}: ${(err as Error).message}`);
+    return { updated: false, event, error: "webhook falhou" };
+  });
+  // deno-lint-ignore no-explicit-any
+  (globalThis as any).EdgeRuntime?.waitUntil?.(trabalho);
+  const result = await Promise.race([
+    trabalho,
+    new Promise<null>((r) => setTimeout(() => r(null), 8000)),
+  ]);
+  return result ?? { updated: "pending", event };
 }
 
 async function registerBatch(franchiseIds: string[]) {
