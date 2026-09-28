@@ -1,5 +1,5 @@
 -- 1A.1: Trigger gera expense ao receber pagamento ASAAS confirmado
--- Categoria: pacote_sistema (mensalidade R$ 150 Pacote Tecnologia + Marketing)
+-- Categoria: pacote_sistema (mensalidade R$ 150 Equipe Digital Maxi). Versão viva: 2026-09-28-s5-despesa-mensalidade-equipe-digital.sql
 -- Idempotência via last_paid_payment_id
 --
 -- IMPORTANTE: a edge function asaas-billing normaliza status ASAAS
@@ -46,8 +46,8 @@ BEGIN
     ) VALUES (
       NEW.franchise_id,
       'pacote_sistema',
-      'Maxi Massas (Pacote Tecnologia)',
-      'Pacote Tecnologia + Marketing - vencimento ' || to_char(v_due_date, 'DD/MM/YYYY'),
+      'Maxi Massas (Equipe Digital Maxi)',
+      'Mensalidade Equipe Digital Maxi - vencimento ' || to_char(v_due_date, 'DD/MM/YYYY'),
       COALESCE(NEW.current_payment_value, 150),
       v_due_date,
       'asaas_subscription',

@@ -50,8 +50,8 @@ inserted AS (
   SELECT
     c.franchise_id,
     'pacote_sistema',
-    'Maxi Massas (Pacote Tecnologia)',
-    'Pacote Tecnologia + Marketing - vencimento ' || to_char(c.expense_date, 'DD/MM/YYYY'),
+    'Maxi Massas (Equipe Digital Maxi)',
+    'Mensalidade Equipe Digital Maxi - vencimento ' || to_char(c.expense_date, 'DD/MM/YYYY'),
     c.amount,
     c.expense_date,
     'asaas_subscription',
