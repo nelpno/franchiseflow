@@ -32,7 +32,10 @@ import ConversionCard from "./ConversionCard";
 import ConversionDetailSheet from "./ConversionDetailSheet";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import EmptyState from "@/components/shared/EmptyState";
-import { RESUMOS_PARA_SEQUENCIA } from "@/lib/inicioMes";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { RESUMOS_PARA_SEQUENCIA, corteAReceber } from "@/lib/inicioMes";
+import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
 
@@ -71,6 +74,12 @@ export default function FranchiseeDashboard() {
   const [funnelOpen, setFunnelOpen] = useState(false);
   const { subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [prioritySheetOpen, setPrioritySheetOpen] = useState(false);
+  // S18.1 (28/09/2026): Início nova atrás da chave ui_v2. Desligada = a Início de sempre.
+  const uiV2Chave = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const uiV2 = uiV2Chave && user?.role === "franchisee";
+  // Vendas mais antigas que a janela principal (só com a chave): evolução de 6 meses e o
+  // "a receber" com o mesmo recorte da tela Vendas. Carrega 1 vez, fora do polling.
+  const [historico, setHistorico] = useState({ status: "idle", sales: [], chave: null });
 
   // Computed inside loadData to stay fresh after midnight
   const getToday = () => format(new Date(), "yyyy-MM-dd");
@@ -128,7 +137,7 @@ export default function FranchiseeDashboard() {
       const evoId = ctxFranchise?.evolution_instance_id;
       const results = await Promise.allSettled([
         evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", null,
-          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source', signal, fetchAll: true, gte: { sale_date: cutoff90d } })
+          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source, payment_confirmed', signal, fetchAll: true, gte: { sale_date: cutoff90d } })
           : Promise.resolve([]),                          // [0] sales últimos 90d (+ source for bot filter)
         // S18: 120 linhas (era 30) — a sequência de "dias batendo a meta" compara cada dia com a
         // meta DAQUELE dia (média dos 30 anteriores a ele). A meta de hoje segue igual.
@@ -208,6 +217,33 @@ export default function FranchiseeDashboard() {
   useVisibilityPolling(loadData, 300000);
 
   const evoId = franchise?.evolution_instance_id;
+
+  // S18: janela do histórico = do corte da caixa "A receber" da tela Vendas (6 meses) até a
+  // véspera do corte da janela principal (1º dia do 3º mês anterior). As duas não se cruzam;
+  // a chave muda na virada do mês e o efeito roda de novo.
+  const inicioJanelaPrincipal = startOfMonth(subMonths(new Date(), 3));
+  const janelaHistorico = uiV2 && evoId
+    ? `${evoId}|${corteAReceber()}|${format(subDays(inicioJanelaPrincipal, 1), "yyyy-MM-dd")}`
+    : null;
+  useEffect(() => {
+    if (!janelaHistorico) return undefined;
+    const [evo, desde, ate] = janelaHistorico.split("|");
+    const controller = new AbortController();
+    setHistorico({ status: "loading", sales: [], chave: janelaHistorico });
+    Sale.filter({ franchise_id: evo }, "-sale_date", null, {
+      columns: 'id, franchise_id, value, delivery_fee, discount_amount, sale_date, created_at, payment_confirmed',
+      signal: controller.signal, fetchAll: true, gte: { sale_date: desde }, lte: { sale_date: ate },
+    })
+      .then((rows) => {
+        if (mountedRef.current && !controller.signal.aborted) setHistorico({ status: "ok", sales: rows || [], chave: janelaHistorico });
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted || !mountedRef.current) return;
+        console.warn("Início: histórico de vendas não carregou", err);
+        setHistorico({ status: "erro", sales: [], chave: janelaHistorico });
+      });
+    return () => controller.abort();
+  }, [janelaHistorico]);
 
   // Primeiros passos: efeito LEVE e separado, fora do polling de 5min (status do
   // checklist não muda nesse ritmo). Só para franqueada — CS também cai no
@@ -431,6 +467,8 @@ export default function FranchiseeDashboard() {
     return allSales.some(sale => sale.sale_date >= cutoff);
   }, [allSales]);
 
+  if (isLoading && uiV2) return <InicioV2Esqueleto />;
+
   if (isLoading) {
     // S8.3 (28/09/2026): esqueleto no formato final da tela — mesma ordem de blocos que o
     // corpo real (saudação, filtro de período, 4 cards, meta do dia, ação prioritária,
@@ -555,7 +593,7 @@ export default function FranchiseeDashboard() {
         </div>
       )}
 
-      {!modoReduzidoPrimeirosPassos && (
+      {!uiV2 && !modoReduzidoPrimeirosPassos && (
       <>
       {(() => {
         const monthLabel = formatMonthLabel(monthOffset);
@@ -748,9 +786,34 @@ export default function FranchiseeDashboard() {
       </>
       )}
 
-      <FinancialObligationsCard marketingPayment={marketingPayment} />
+      {/* S18.1: Início nova (chave ui_v2). Com a chave desligada nada daqui roda. */}
+      {uiV2 && (
+        <InicioV2
+          modoReduzido={modoReduzidoPrimeirosPassos}
+          evoId={evoId}
+          franchise={franchise}
+          allSales={allSales}
+          historico={historico.chave === janelaHistorico ? historico : { status: "loading", sales: [] }}
+          summaries={summaries}
+          ranking={ranking}
+          monthlyRanking={monthlyRanking}
+          purchaseOrders={purchaseOrders}
+          subscription={subscription}
+          checkPaymentNow={checkPaymentNow}
+          isChecking={isChecking}
+          marketingPayment={marketingPayment}
+          botActive={botActive}
+          botConfigured={botConfigured}
+          botSilentDays={botSilentDays}
+          hasRecentSales={hasRecentSales}
+          funnel={funnel}
+          funnelRange={funnelRange}
+        />
+      )}
 
-      {!modoReduzidoPrimeirosPassos && (
+      {!uiV2 && <FinancialObligationsCard marketingPayment={marketingPayment} />}
+
+      {!uiV2 && !modoReduzidoPrimeirosPassos && (
       <>
       <SubscriptionPaymentSheet
         open={prioritySheetOpen}

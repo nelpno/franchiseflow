@@ -114,11 +114,20 @@ const SCENARIOS = [
   },
 ];
 
-export default function PriorityAction({ healthResult, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription, onOpenPaymentSheet }) {
+// Cenário que o cartão mostraria (ou undefined). Exportado para o "Agora" da Início nova (S18).
+export function cenarioPrioritario(ctx) {
+  return SCENARIOS.find(s => s.check(ctx));
+}
+
+// `semTudoEmDia` (S18, Início nova): quando o "Agora" já mostra outra pendência, o "Tudo em
+// dia!" sem cenário contradiz a tela — aí o cartão não aparece. Sem a prop, nada muda.
+export default function PriorityAction({ healthResult, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription, onOpenPaymentSheet, semTudoEmDia = false }) {
   const navigate = useNavigate();
 
   const ctx = { healthResult, coachActions, marketingPayment, botActive, botConfigured, botSilentDays, hasRecentSales, subscription };
-  const activeScenario = SCENARIOS.find(s => s.check(ctx));
+  const activeScenario = cenarioPrioritario(ctx);
+
+  if (!activeScenario && semTudoEmDia) return null;
 
   if (!activeScenario) {
     // Tudo em dia!

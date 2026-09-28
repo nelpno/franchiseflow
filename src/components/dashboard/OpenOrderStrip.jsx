@@ -34,14 +34,20 @@ const ESTILO = {
   },
 };
 
-export default function OpenOrderStrip({ purchaseOrders = [] }) {
-  const navigate = useNavigate();
-
-  const aberto = purchaseOrders
+// Pedido que a faixa mostra (ou null). Exportado para o "Agora" da Início nova (S18) saber se
+// há faixa sem repetir a regra.
+export function pedidoEmDestaque(purchaseOrders = []) {
+  return (purchaseOrders || [])
     .filter((o) => ABERTOS.has(o.status) || aguardaConferencia(o))
     .sort((a, b) =>
       (b.status === "em_rota") - (a.status === "em_rota") ||
-      new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0))[0];
+      new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0))[0] || null;
+}
+
+export default function OpenOrderStrip({ purchaseOrders = [] }) {
+  const navigate = useNavigate();
+
+  const aberto = pedidoEmDestaque(purchaseOrders);
 
   if (!aberto) return null;
 
