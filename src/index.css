@@ -129,7 +129,9 @@ html, body, #root {
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
   .font-mono-numbers {
-    font-family: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    /* S7.4: numeros em Plus Jakarta Sans tabular (igual a .num) em todas as telas que ja usavam esta classe */
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
   /* Numero de verdade (dinheiro, quantidade, percentual): Plus Jakarta Sans com

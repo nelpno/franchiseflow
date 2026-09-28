@@ -776,7 +776,7 @@ export default function TabEstoque({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-10 w-10 text-ink-2 hover:text-brand"
+                              className="h-11 w-11 text-ink-2 hover:text-brand"
                               onClick={() => handleOpenEditDialog(item)}
                               aria-label="Editar produto"
                               title="Editar produto"
@@ -786,7 +786,7 @@ export default function TabEstoque({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-10 w-10 text-ink-2 hover:text-brand-gold-ink"
+                              className="h-11 w-11 text-ink-2 hover:text-brand-gold-ink"
                               onClick={() => handleToggleActive(item)}
                               aria-label={item.active === false ? "Reativar produto" : "Ocultar do catálogo"}
                               title={item.active === false ? "Reativar produto" : "Ocultar do catálogo"}
@@ -796,7 +796,7 @@ export default function TabEstoque({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-10 w-10 text-ink-4 hover:text-brand"
+                              className="h-11 w-11 text-ink-4 hover:text-brand"
                               onClick={() => setDeleteConfirmId(item.id)}
                               aria-label="Excluir produto"
                               title="Excluir produto"
@@ -1146,7 +1146,7 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-ink-2 hover:text-brand"
+                                    className="h-8 w-8 md:h-8 md:w-8 text-ink-2 hover:text-brand"
                                     onClick={() => handleOpenEditDialog(item)}
                                     aria-label="Editar produto"
                                     title="Editar produto"
@@ -1156,7 +1156,7 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-ink-2 hover:text-brand-gold-ink"
+                                    className="h-8 w-8 md:h-8 md:w-8 text-ink-2 hover:text-brand-gold-ink"
                                     onClick={() => handleToggleActive(item)}
                                     aria-label="Ocultar do catálogo"
                                     title="Ocultar produto — não aparece para o bot nem na reposição"
@@ -1166,7 +1166,7 @@ export default function TabEstoque({
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-ink-4 hover:text-brand"
+                                    className="h-8 w-8 md:h-8 md:w-8 text-ink-4 hover:text-brand"
                                     onClick={() => setDeleteConfirmId(item.id)}
                                     aria-label="Excluir produto"
                                     title="Excluir produto"

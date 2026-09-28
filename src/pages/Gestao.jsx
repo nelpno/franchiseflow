@@ -257,7 +257,7 @@ export default function Gestao() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="bg-white border border-ink-shadow/5 rounded-xl p-1 w-full md:w-auto flex">
+          <TabsList className="w-full md:w-auto flex">
             {[
               { value: "resultado", icon: "analytics", label: "Resultado", shortLabel: "Resultado" },
               { value: "estoque", icon: "inventory_2", label: "Estoque", shortLabel: "Estoque" },
@@ -266,7 +266,7 @@ export default function Gestao() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="gap-1 rounded-lg data-[state=active]:bg-brand data-[state=active]:text-white data-[state=active]:shadow-none px-2 md:px-4 flex-1 md:flex-none text-xs md:text-sm"
+                className="gap-1 px-2 md:px-4 flex-1 md:flex-none text-xs md:text-sm"
               >
                 <MaterialIcon icon={tab.icon} size={14} />
                 <span className="hidden md:inline">{tab.label}</span>

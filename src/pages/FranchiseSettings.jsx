@@ -78,7 +78,7 @@ const initialFormData = {
   facebook_page_id: '',
 };
 
-const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-sm outline-none";
+const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-base md:text-sm outline-none";
 const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
 
 const PICKUP_TYPES = [
@@ -1405,7 +1405,7 @@ function FranchiseSettingsContent() {
           segura); no desktop/PWA ele encosta no fim real da tela — pb soma a area segura
           do iPhone (home indicator) só quando isso importa (bottom-0), sem mexer no py-3
           do celular. */}
-      <footer className="fixed bottom-16 md:bottom-0 right-0 left-0 md:left-[260px] bg-white border-t border-surface-line px-4 md:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-40">
+      <footer className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 right-0 left-0 md:left-[260px] bg-white border-t border-surface-line px-4 md:px-8 pt-3 pb-3 md:pb-[max(0.75rem,env(safe-area-inset-bottom))] z-40">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           {/* Left: Voltar */}
           <div className="w-28">
