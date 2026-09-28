@@ -218,19 +218,40 @@ function MaisBottomNavButton() {
   );
 }
 
-// Fecha o Sheet "Mais" (mobile) sempre que a ROTA muda — path OU só a query (P3,
-// 28/09/2026: o sheet ficava aberto depois de tocar num destino, porque nada
-// escutava a navegação). Fica como componente à parte porque só um DESCENDENTE do
-// SidebarProvider pode chamar useSidebar() — o próprio Layout está por fora dele.
+// Fecha o Sheet "Mais" (mobile) — só existe (é montado) pro franqueado com ui_v2
+// ligada (P3, 28/09/2026, 2ª passada: admin/CS e franqueado com a chave desligada
+// não têm esse sheet, então não precisam do listener nem do efeito de rota rodando
+// à toa). Fica como componente à parte porque só um DESCENDENTE do SidebarProvider
+// pode chamar useSidebar() — o próprio Layout está por fora dele.
+//
+// Dois gatilhos, cada um cobre um buraco que o outro não cobre:
+// 1) evento `mais-sheet:close`, disparado no ONCLICK de cada link do menu — fecha
+//    na hora, inclusive quando o destino é a ROTA ATUAL (clicar em "Gestão" já
+//    estando em /Gestao?tab=resultado não muda path nem query, e o efeito de rota
+//    abaixo não dispararia sozinho).
+// 2) efeito de rota (path OU só query) — rede de segurança pra navegação que não
+//    passa pelo clique (ex.: back/forward do navegador).
 function FecharMaisAoNavegar() {
   const { setOpenMobile } = useSidebar();
   const location = useLocation();
+
+  useEffect(() => {
+    const handler = () => setOpenMobile(false);
+    window.addEventListener("mais-sheet:close", handler);
+    return () => window.removeEventListener("mais-sheet:close", handler);
+  }, [setOpenMobile]);
+
   useEffect(() => {
     setOpenMobile(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, location.search]);
+
   return null;
 }
+
+// Todo link do menu despacha isto ao ser tocado — sem custo pra quem não tem o
+// listener montado (admin, CS, franqueado com a chave desligada: nada escuta).
+const fecharMaisAoClicar = () => window.dispatchEvent(new Event("mais-sheet:close"));
 
 // Critério único de "item ativo" (P3, 28/09/2026): item com `tabMatch` só acende
 // quando o path bate E a query `tab` bate com esse valor exato — sem isso "Estoque"
@@ -500,6 +521,7 @@ export default function Layout({ children, currentPageName }) {
             className="flex items-center gap-3"
             aria-label={item.title}
             aria-current={isActive ? "page" : undefined}
+            onClick={fecharMaisAoClicar}
           >
             <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} aria-hidden="true" />
             <span className="text-sm flex-1">{item.title}</span>
@@ -524,8 +546,9 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <SidebarProvider>
-      {/* Fecha o Sheet "Mais" ao navegar (path ou só query) — P3, 28/09/2026 */}
-      <FecharMaisAoNavegar />
+      {/* Fecha o Sheet "Mais" ao navegar/clicar — só existe pro franqueado com a
+          chave ligada (P3, 28/09/2026, 2ª passada) */}
+      {uiV2 && <FecharMaisAoNavegar />}
       {/* Paywall: blocks franchisees with overdue subscription */}
       <SubscriptionPaywall availableFranchises={availableFranchises} />
       {/* Stitch-matched sidebar styles */}
