@@ -31,18 +31,15 @@ export async function generateReceiptImage(element) {
  */
 export function isMobileDevice() {
   if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  // Sistema de celular/tablet primeiro (tablet Android diz mobile:false no Client Hints).
+  if (/Android|iPhone|iPad|iPod|Mobi/i.test(ua)) return true;
+  // iPadOS se apresenta como Mac: Mac com tela de toque = iPad.
+  if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return true;
   if (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean") {
     return navigator.userAgentData.mobile;
   }
-  const ua = navigator.userAgent || "";
-  if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) return true;
-  if (typeof window !== "undefined" && window.matchMedia) {
-    try {
-      return window.matchMedia("(pointer: coarse)").matches;
-    } catch {
-      return false;
-    }
-  }
+  // Sem sinal de sistema móvel = computador (notebook com tela de toque baixa o PNG).
   return false;
 }
 
