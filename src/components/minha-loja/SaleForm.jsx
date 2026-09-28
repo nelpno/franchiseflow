@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
+import { Sale, SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,8 @@ import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { nasceRecebida } from "@/lib/recebimento";
 import { fireCapiOnConfirm } from "@/lib/capiManual";
+import { acharVendaDoRobo, janelaDeBusca } from "@/lib/vendaRepetida";
+import { dataDoRascunho, assinaturaEdicao } from "@/lib/rascunhoVenda";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -388,17 +390,22 @@ export default function SaleForm({
   onCancel,
   initialContactId = null,
   initialPhone = null,
+  onDirtyChange,
 }) {
   const isEditing = !!sale;
   // S6.2: com a chave ui_v2, venda nova nasce recebida; "Ainda vou receber" segura como a receber.
   const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
   const [aindaVouReceber, setAindaVouReceber] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingItems, setLoadingItems] = useState(false);
+  // Na edição começa "carregando": a assinatura de base do aviso de descartar (S12.4) só é
+  // tirada depois que a venda e os itens chegaram.
+  const [loadingItems, setLoadingItems] = useState(isEditing);
   // Lembrete de venda a R$ 0 — nao bloqueia, so obriga a olhar. Em 90 dias, 39 vendas
   // manuais fecharam a R$ 0 e 73 tinham pelo menos uma linha a R$ 0 (126 linhas), todas
   // salvas com "Venda registrada!" e nenhum aviso. Auditoria 08/09/2026.
   const [avisoValorZero, setAvisoValorZero] = useState(null);
+  // S12.3: aviso "o robô já lançou esta venda" (só aviso; ver lib/vendaRepetida.js).
+  const [avisoRepetida, setAvisoRepetida] = useState(null);
 
   // Contact
   const [contactSearch, setContactSearch] = useState("");
@@ -541,7 +548,14 @@ export default function SaleForm({
     if (draft.customerNeighborhood) setCustomerNeighborhood(draft.customerNeighborhood);
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
-    if (draft.saleDate) setSaleDate(draft.saleDate);
+    if (uiV2) {
+      // S12.4: rascunho de outro dia volta com a data de HOJE (antes voltava com a velha).
+      const hoje = format(new Date(), "yyyy-MM-dd");
+      const salvoEm = draft._ts ? format(new Date(draft._ts), "yyyy-MM-dd") : null;
+      const { data, trocou } = dataDoRascunho({ saleDate: draft.saleDate, salvoEm }, hoje);
+      setSaleDate(data);
+      if (trocou) toast.info("A data da venda voltou para hoje. Confira antes de registrar.");
+    } else if (draft.saleDate) setSaleDate(draft.saleDate);
     if (draft.observacoes) setObservacoes(draft.observacoes);
     if (draft.aindaVouReceber != null) setAindaVouReceber(!!draft.aindaVouReceber);
     if (draft.clientSaleId) clientSaleIdRef.current = draft.clientSaleId;
@@ -694,6 +708,24 @@ export default function SaleForm({
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     saveDraft(franchiseId, { ...draftData, aindaVouReceber: val, clientSaleId: clientSaleIdRef.current });
   };
+
+  // ---- S12.4: edição com mudança sem salvar (o TabLancar pergunta antes de fechar) ----
+  const assinaturaAtual = useMemo(
+    () =>
+      isEditing
+        ? assinaturaEdicao({ items, contactId, paymentMethod, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes })
+        : null,
+    [isEditing, items, contactId, paymentMethod, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes]
+  );
+  const baselineEdicaoRef = useRef(null);
+  useEffect(() => {
+    if (!isEditing || loadingItems) return;
+    if (baselineEdicaoRef.current === null) {
+      baselineEdicaoRef.current = assinaturaAtual;
+      return;
+    }
+    onDirtyChange?.(assinaturaAtual !== baselineEdicaoRef.current);
+  }, [isEditing, loadingItems, assinaturaAtual, onDirtyChange]);
 
   // A conta da venda vive em lib/saleCalc.js (testada: node src/lib/saleCalc.test.mjs).
   // Ela estava aqui dentro, em quatro useMemo sem teste nenhum, e a regra de "quais metodos
@@ -884,7 +916,7 @@ export default function SaleForm({
   };
 
   // Submit with retry
-  const handleSubmit = async (e, { ignorarValorZero = false, semTelefone = false } = {}) => {
+  const handleSubmit = async (e, { ignorarValorZero = false, semTelefone = false, ignorarRepetida = false } = {}) => {
     e.preventDefault();
 
     if (items.length === 0 || items.every((it) => !it.inventory_item_id)) {
@@ -979,6 +1011,43 @@ export default function SaleForm({
         } else if (!(semTelefone || semTelefoneOk)) {
           setPedirTelefone(true);
           toast.warning("Sem o telefone, o anúncio não aprende com essa venda. Digite o número do cliente.");
+          return;
+        }
+      }
+    }
+
+    // S12.3 (chave ligada): o robô já lançou esta venda? SÓ AVISA. Busca as vendas do robô
+    // da unidade na janela de ±1 dia e compara cliente/telefone e valor (lib/vendaRepetida.js).
+    // Falha ou demora na busca = segue sem aviso (nunca trava o lançamento).
+    if (uiV2 && !isEditing && !ignorarRepetida) {
+      const telefoneCandidato =
+        (contactId && isValidPhone(contactPhone) ? contactPhone : null) ||
+        (isValidPhone(missingPhone) ? missingPhone : null) ||
+        (!contactId && isValidPhone(contactSearch) ? contactSearch : null);
+      const contatoCandidato = contatoDoTelefone || contactId || null;
+      if (contatoCandidato || telefoneCandidato) {
+        setIsSubmitting(true);
+        let repetida = null;
+        try {
+          const { de, ate } = janelaDeBusca(saleDate);
+          const vendasDoRobo = await Promise.race([
+            Sale.filter({ franchise_id: franchiseId, source: "bot" }, "-created_at", 100, {
+              columns: "id, sale_number, source, contact_id, contact_phone, customer_name, sale_date, value, discount_amount, delivery_fee",
+              gte: { sale_date: de },
+              lte: { sale_date: ate },
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("tempo")), 5000)),
+          ]);
+          repetida = acharVendaDoRobo(
+            { contactId: contatoCandidato, telefone: telefoneCandidato, saleDate, value: subtotal, net: netValue },
+            vendasDoRobo
+          );
+        } catch {
+          repetida = null;
+        }
+        setIsSubmitting(false);
+        if (repetida) {
+          setAvisoRepetida(repetida);
           return;
         }
       }
@@ -1352,9 +1421,12 @@ export default function SaleForm({
             data-sale-item
             className="flex flex-col gap-2 p-3 bg-surface rounded-xl border border-ink-shadow/5"
           >
-            <div className="flex flex-col md:flex-row gap-2">
+            <div className={uiV2
+              ? "grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-end gap-2 md:flex md:flex-row"
+              : "flex flex-col md:flex-row gap-2"}>
             {/* Product search */}
-            <div className="flex-1 min-w-0 sm:min-w-[160px]">
+            <div className={`flex-1 min-w-0 sm:min-w-[160px]${uiV2 ? " col-span-3" : ""}`}>
+              {uiV2 && <span className="hidden md:block text-xs text-ink-3 mb-1">Produto</span>}
               <ProductSearch
                 products={availableProducts(item.inventory_item_id)}
                 selectedId={item.inventory_item_id}
@@ -1365,7 +1437,9 @@ export default function SaleForm({
 
             {/* Quantity */}
             <div className="w-full md:w-24">
+              {uiV2 && <Label htmlFor={`qtd-${index}`} className="block text-xs text-ink-3 mb-1 font-normal">Qtd.</Label>}
               <Input
+                id={uiV2 ? `qtd-${index}` : undefined}
                 data-qty-input
                 type="number"
                 min={1}
@@ -1394,7 +1468,9 @@ export default function SaleForm({
 
             {/* Unit price */}
             <div className="w-full md:w-28">
+              {uiV2 && <Label htmlFor={`preco-${index}`} className="block text-xs text-ink-3 mb-1 font-normal">Preço</Label>}
               <Input
+                id={uiV2 ? `preco-${index}` : undefined}
                 type="number"
                 inputMode="decimal"
                 min={0}
@@ -1409,7 +1485,9 @@ export default function SaleForm({
             </div>
 
             {/* Line total — calculado automaticamente, NÃO é input */}
-            <div className="flex items-center justify-between md:w-28">
+            <div className={uiV2 ? "md:w-32" : "flex items-center justify-between md:w-28"}>
+              {uiV2 && <span className="block text-xs text-ink-3 mb-1 text-right md:text-left">Subtotal</span>}
+              <div className={uiV2 ? "flex items-center justify-end h-11 md:h-10" : "contents"}>
               <span
                 className="text-sm font-medium text-ink-2 font-mono-numbers md:text-right md:w-full px-2 py-1.5 bg-surface-2 rounded-md cursor-default select-none"
                 title="Subtotal (quantidade × preço unitário)"
@@ -1420,11 +1498,15 @@ export default function SaleForm({
                 <button
                   type="button"
                   onClick={() => handleRemoveItem(index)}
-                  className="ml-2 p-1 rounded-lg hover:bg-brand/10 text-ink-2 hover:text-brand transition-colors"
+                  className={uiV2
+                    ? "ml-1 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-brand/10 text-ink-2 hover:text-brand transition-colors"
+                    : "ml-2 p-1 rounded-lg hover:bg-brand/10 text-ink-2 hover:text-brand transition-colors"}
+                  aria-label="Tirar produto"
                 >
                   <MaterialIcon icon="close" size={18} />
                 </button>
               )}
+              </div>
             </div>
             </div>
 
@@ -1555,27 +1637,29 @@ export default function SaleForm({
             </div>
           </div>
         )}
-
-        {uiV2 && !isEditing && (
-          <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5 flex items-start justify-between gap-3">
-            <div className="flex flex-col">
-              <Label className="text-sm text-ink-2 cursor-pointer" htmlFor="ainda-vou-receber-toggle">
-                Ainda vou receber
-              </Label>
-              <span className="text-xs text-ink-3 mt-0.5">
-                {aindaVouReceber
-                  ? "A venda fica em \"a receber\". Toque em Recebido na lista quando o dinheiro entrar."
-                  : "Sem marcar, a venda já entra como recebida hoje."}
-              </span>
-            </div>
-            <Switch
-              id="ainda-vou-receber-toggle"
-              checked={aindaVouReceber}
-              onCheckedChange={handleAindaVouReceber}
-            />
-          </div>
-        )}
       </MobileSection>
+
+      {/* "Ainda vou receber" fora da seção Pagamento: no celular ela nasce fechada e a
+          escolha ficava escondida (S12.1). */}
+      {uiV2 && !isEditing && (
+        <div className="p-3 bg-surface rounded-xl border border-ink-shadow/5 flex items-start justify-between gap-3">
+          <div className="flex flex-col">
+            <Label className="text-sm text-ink-2 cursor-pointer" htmlFor="ainda-vou-receber-toggle">
+              Ainda vou receber
+            </Label>
+            <span className="text-xs text-ink-3 mt-0.5">
+              {aindaVouReceber
+                ? "A venda fica em \"a receber\". Toque em Recebi na lista quando o dinheiro entrar."
+                : "Sem marcar, a venda já entra como recebida hoje."}
+            </span>
+          </div>
+          <Switch
+            id="ainda-vou-receber-toggle"
+            checked={aindaVouReceber}
+            onCheckedChange={handleAindaVouReceber}
+          />
+        </div>
+      )}
 
       {/* Delivery method */}
       <MobileSection id="delivery" label="Entrega" icon="delivery_dining" summary={deliverySummary}>
@@ -1755,14 +1839,50 @@ export default function SaleForm({
         )}
 
         <div className="border-t border-ink-shadow/10 pt-2 flex justify-between">
-          <span className="font-medium text-ink">Total a receber</span>
+          <span className="font-medium text-ink">{uiV2 ? "Total da venda" : "Total a receber"}</span>
           <span className="font-bold text-lg text-ink font-mono-numbers">
             {formatCurrency(netValue)}
           </span>
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions — chave ligada: rodapé fixo com o total sempre à vista (S12.4). O -bottom-6/
+          -mx-6 cobrem o respiro (p-6) do DialogContent, que é quem rola. */}
+      {uiV2 ? (
+        <div className="sticky -bottom-6 z-10 -mx-6 -mb-6 px-4 sm:px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-white border-t border-ink-shadow/10 flex items-center gap-3">
+          <div className="flex flex-col shrink-0 min-w-0">
+            <span className="text-xs text-ink-3">Total</span>
+            <span className="font-bold text-xl text-ink font-mono-numbers leading-tight" aria-live="polite">
+              {formatCurrency(netValue)}
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="hidden sm:inline-flex h-12 px-4 shrink-0"
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 min-w-0 h-12 text-base bg-brand hover:bg-brand-dark text-white"
+          >
+            {isSubmitting ? (
+              <>
+                <MaterialIcon icon="progress_activity" size={16} className="animate-spin mr-2" />
+                Salvando...
+              </>
+            ) : isEditing ? (
+              "Salvar mudanças"
+            ) : (
+              "Registrar venda"
+            )}
+          </Button>
+        </div>
+      ) : (
       <div className="flex gap-3">
         <Button
           type="button"
@@ -1790,6 +1910,47 @@ export default function SaleForm({
           )}
         </Button>
       </div>
+      )}
+
+      {/* S12.3: aviso de venda que o robô já lançou. Não bloqueia: recompra no mesmo dia existe. */}
+      <AlertDialog open={!!avisoRepetida} onOpenChange={(aberto) => !aberto && setAvisoRepetida(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>O robô já lançou esta venda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O robô já registrou uma venda
+              {avisoRepetida?.customer_name ? ` de ${avisoRepetida.customer_name}` : " deste cliente"} de{" "}
+              <strong>{formatCurrency(
+                (parseFloat(avisoRepetida?.value) || 0) - (parseFloat(avisoRepetida?.discount_amount) || 0) + (parseFloat(avisoRepetida?.delivery_fee) || 0)
+              )}</strong>
+              {avisoRepetida?.sale_date ? ` em ${avisoRepetida.sale_date.slice(8, 10)}/${avisoRepetida.sale_date.slice(5, 7)}` : ""}
+              {avisoRepetida?.sale_number ? ` (nº ${avisoRepetida.sale_number})` : ""}.
+              {" "}Se for a mesma, não precisa lançar de novo. E não apague a do robô: é ela que conta a venda para o anúncio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setAvisoRepetida(null);
+                if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+                clearDraft(franchiseId);
+                clientSaleIdRef.current = null;
+                onCancel?.();
+              }}
+            >
+              É a mesma, não lançar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setAvisoRepetida(null);
+                handleSubmit({ preventDefault: () => {} }, { ignorarValorZero: true, semTelefone: semTelefoneOk, ignorarRepetida: true });
+              }}
+            >
+              É outra venda, registrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Lembrete de valor zerado. Nao bloqueia: existe venda de cortesia, e travar o
           registro custaria mais do que o engano que evita. Mas passar calado tambem nao. */}
