@@ -37,7 +37,10 @@ export function useFeatureFlagState(key) {
     retry: 1,
   });
 
-  if (!franchiseId || isError) return { value: false, isLoading: false };
+  // `resolved` (S11.1): a resposta já chegou (ou não vai chegar). Tela que REDIRECIONA com a
+  // chave desligada precisa esperar isto — `isLoading` acima só cobre o refetch de quem já
+  // estava ligado (o menu não pode esperar), e no primeiro load a chave vale false.
+  if (!franchiseId || isError) return { value: false, isLoading: false, resolved: true };
 
   const value = isFeatureOn(data, key);
   // Lido do cache, não do `data` deste render: cobre exatamente o refetch em cima
@@ -48,7 +51,7 @@ export function useFeatureFlagState(key) {
   const eraLigadaAntes = isFeatureOn(queryClient.getQueryData(queryKey), key);
   const isLoading = isFetching && eraLigadaAntes && !value;
 
-  return { value, isLoading };
+  return { value, isLoading, resolved: data !== undefined };
 }
 
 /**

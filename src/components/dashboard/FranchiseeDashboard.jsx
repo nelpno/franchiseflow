@@ -25,6 +25,7 @@ import FinancialObligationsCard from "./FinancialObligationsCard";
 import FirstStepsCard from "./FirstStepsCard";
 import PriorityAction from "./PriorityAction";
 import OpenOrderStrip from "./OpenOrderStrip";
+import MensalidadeFaixa from "./MensalidadeFaixa";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
 import CustomDateRangeSheet from "./CustomDateRangeSheet";
 import ConversionCard from "./ConversionCard";
@@ -696,6 +697,8 @@ export default function FranchiseeDashboard() {
       {(period === "today" || (period === "month" && monthOffset === 0)) && (
         <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
       )}
+
+      <MensalidadeFaixa subscription={subscription} />
 
       <OpenOrderStrip purchaseOrders={purchaseOrders} />
 

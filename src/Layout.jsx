@@ -144,6 +144,15 @@ const navigationItems = [
     hideFromMaisSheetWhenV2: true,
   },
   {
+    // S11.1 (28/09/2026): Mais › Pagamentos — só no menu novo (ui_v2). Com a chave
+    // desligada o cartão de sempre da Início continua sendo o lugar de pagar.
+    title: "Pagamentos",
+    url: createPageUrl("Pagamentos"),
+    materialIcon: "payments",
+    franchiseeOnly: true,
+    onlyWhenV2: true,
+  },
+  {
     title: "Tutoriais",
     adminLabel: "Ajuda",
     url: createPageUrl("Tutoriais"),
