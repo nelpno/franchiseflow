@@ -20,7 +20,9 @@ alter table public.franchises add column if not exists whatsapp_publico text;
 
 alter table public.franchises drop constraint if exists franchises_whatsapp_publico_formato;
 alter table public.franchises add constraint franchises_whatsapp_publico_formato
-  check (whatsapp_publico is null or whatsapp_publico ~ '^[0-9]{10,11}$');
+  -- Formato BRASILEIRO (P3): DDD + celular com 9 (11) ou fixo 2-5 (10). Número estrangeiro
+  -- com 10/11 dígitos passaria num check só de tamanho e o formatPhone o mostraria como BR.
+  check (whatsapp_publico is null or whatsapp_publico ~ '^[1-9][1-9](9[0-9]{8}|[2-5][0-9]{7})$');
 
 comment on column public.franchises.whatsapp_publico is
   'WhatsApp de atendimento ao cliente (número do robô no Zuck). Só o comprovante lê. NÃO usar para o CS chamar a franqueada (isso é phone_number / personal_phone_for_summary).';
