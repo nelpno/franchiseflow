@@ -75,7 +75,7 @@ const initialFormData = {
 };
 
 const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-base md:text-sm outline-none";
-const labelClass = "block text-xs font-semibold text-[#3d4a42] mb-2";
+const labelClass = "block text-xs font-semibold text-ink-2 mb-2";
 
 const PICKUP_TYPES = [
   { value: 'simple', label: '🏠 Retirada simples', description: 'Cliente combina e busca com você (sem loja).' },
@@ -115,13 +115,13 @@ function avisarErros(erros) {
 function AvisosDaEtapa({ avisos }) {
   if (!avisos || avisos.length === 0) return null;
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1">
-      <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+    <div className="rounded-xl border border-warn/30 bg-warn-soft p-3 space-y-1">
+      <p className="text-xs font-bold text-warn-ink flex items-center gap-1.5">
         <MaterialIcon icon="warning" size={14} />
         Vale corrigir
       </p>
       {avisos.map((a) => (
-        <p key={a} className="text-xs text-amber-800">{a}</p>
+        <p key={a} className="text-xs text-warn-ink">{a}</p>
       ))}
     </div>
   );
@@ -808,9 +808,9 @@ function FranchiseSettingsContent() {
     return (
       <div className="px-4 md:px-8 pt-12">
         <div className="max-w-4xl mx-auto text-center py-24">
-          <MaterialIcon icon="info" filled size={64} className="text-[#bccac0] mx-auto mb-4" />
+          <MaterialIcon icon="info" filled size={64} className="text-ink-4 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-ink mb-2">Nenhuma configuração encontrada</h3>
-          <p className="text-[#3d4a42]/60 mb-6">Comece adicionando a primeira configuração de franquia.</p>
+          <p className="text-ink-2/60 mb-6">Comece adicionando a primeira configuração de franquia.</p>
           {franchisesWithoutConfig.length > 0 && (
             <div className="max-w-xs mx-auto space-y-3">
               <Select onValueChange={(value) => {
@@ -880,13 +880,13 @@ function FranchiseSettingsContent() {
 
   return (
     <div className="pb-32">
-      <div className="px-4 md:px-8 pt-8 max-w-3xl mx-auto space-y-6">
+      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-ink">Meu Vendedor</h2>
-            <p className="text-sm text-[#3d4a42]/70 mt-0.5">
+            <p className="text-sm text-ink-2/70 mt-0.5">
               {/* Com 2+ unidades, dizer QUAL está aberta — o wizard mostra o nome
                   da unidade nos campos, e sem isso não dá pra ter certeza. */}
               {availableFranchisesForUser.length > 1 && currentFranchise
@@ -913,17 +913,17 @@ function FranchiseSettingsContent() {
               onClick={() => currentConfig && handleCheckStatusFromBadge(currentConfig)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${
                 isConnected
-                  ? 'bg-emerald-50 border-emerald-200'
-                  : 'bg-surface-line/50 border-[#bccac0]/30'
+                  ? 'bg-ok-soft border-ok/30'
+                  : 'bg-surface-line/50 border-surface-line/30'
               }`}
               title="Clique para verificar o status atual"
             >
               {checkingStatusFor === currentConfig?.id ? (
                 <MaterialIcon icon="progress_activity" size={8} className="animate-spin text-ink-2" />
               ) : (
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-ink-3'}`} />
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-ok animate-pulse' : 'bg-ink-3'}`} />
               )}
-              <span className={`text-xs font-semibold ${isConnected ? 'text-emerald-700' : 'text-ink-2'}`}>
+              <span className={`text-xs font-semibold ${isConnected ? 'text-ok-ink' : 'text-ink-2'}`}>
                 {checkingStatusFor === currentConfig?.id ? 'Verificando...' : isConnected ? 'Conectado' : 'Não conectado'}
               </span>
             </button>
@@ -932,17 +932,17 @@ function FranchiseSettingsContent() {
 
         {/* WhatsApp Connection Card */}
         <section className={`rounded-2xl shadow-sm border p-5 flex flex-col sm:flex-row items-center justify-between gap-4 ${
-          isConnected ? 'bg-emerald-50/50 border-emerald-200/50' : 'bg-white border-[#bccac0]/5'
+          isConnected ? 'bg-ok-soft border-ok/30' : 'bg-white border-surface-line/5'
         }`}>
           <div className="flex items-center gap-5">
             <div className="relative">
               <div className={`w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden ${
-                isConnected ? 'bg-emerald-100' : 'bg-surface-line/50'
+                isConnected ? 'bg-ok-soft' : 'bg-surface-line/50'
               }`}>
                 {isConnected ? (
-                  <MaterialIcon icon="check_circle" filled size={32} className="text-emerald-600" />
+                  <MaterialIcon icon="check_circle" filled size={32} className="text-ok" />
                 ) : (
-                  <MaterialIcon icon="qr_code_2" size={36} className="text-[#bccac0]/60" />
+                  <MaterialIcon icon="qr_code_2" size={36} className="text-ink-4/60" />
                 )}
               </div>
             </div>
@@ -976,7 +976,7 @@ function FranchiseSettingsContent() {
         </section>
 
         {/* Wizard Stepper */}
-        <div className="bg-white rounded-2xl shadow-sm border border-[#bccac0]/5 p-4 md:p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-surface-line/5 p-4 md:p-6">
           <WizardStepper
             currentStep={currentStep}
             completedSteps={completedSteps}
@@ -1058,7 +1058,7 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_delivery', val)}
               />
               {hasDelivery && modeloFrete && (
-                <div className="sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
+                <div className="sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
                   <EntregaCard
                     modelo={modeloFrete}
                     onChange={handleFreteChange}
@@ -1072,10 +1072,10 @@ function FranchiseSettingsContent() {
                 </div>
               )}
               {hasDelivery && !modeloFrete && (
-                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
-                    <MaterialIcon icon="info" size={16} className="text-amber-700 mt-0.5 shrink-0" />
-                    <p className="text-xs text-amber-800">
+                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-warn-soft border border-warn/30">
+                    <MaterialIcon icon="info" size={16} className="text-warn-ink mt-0.5 shrink-0" />
+                    <p className="text-xs text-warn-ink">
                       Seu frete está em texto livre ("por modalidade"). O cartão novo, com tipos de entrega e bairros com taxa própria, entra quando o suporte passar o seu frete para o formato novo com você.
                     </p>
                   </div>
@@ -1118,7 +1118,7 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_pickup', val)}
               />
               {hasPickup && (
-                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-[#bccac0]/20 sm:p-4">
+                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
                   <div className="space-y-2">
                     <label className={labelClass}>Como funciona a retirada?</label>
                     <RadioCards
@@ -1212,8 +1212,8 @@ function FranchiseSettingsContent() {
               />
 
               {(usaPix || formData.pix_key_data) && (
-                <div className="border-t border-[#bccac0]/10 pt-4 space-y-4">
-                  <h4 className="text-xs font-bold text-[#3d4a42] flex items-center gap-1.5">
+                <div className="border-t border-surface-line/10 pt-4 space-y-4">
+                  <h4 className="text-xs font-bold text-ink-2 flex items-center gap-1.5">
                     <MaterialIcon icon="qr_code_2" size={14} />
                     Pix
                   </h4>
@@ -1255,7 +1255,7 @@ function FranchiseSettingsContent() {
               )}
 
               {(usaLink || formData.payment_link) && (
-                <div className="border-t border-[#bccac0]/10 pt-4">
+                <div className="border-t border-surface-line/10 pt-4">
                   <label className={labelClass}>Link de pagamento (opcional)</label>
                   <input className={inputClass} type="url" value={formData.payment_link || ''}
                     onChange={(e) => handleInputChange('payment_link', e.target.value)}
@@ -1264,7 +1264,7 @@ function FranchiseSettingsContent() {
                 </div>
               )}
 
-              <div className="border-t border-[#bccac0]/10 pt-4 space-y-3">
+              <div className="border-t border-surface-line/10 pt-4 space-y-3">
                 <ToggleCard
                   icon="request_quote"
                   label="Repassar a taxa de cartão ao cliente?"
@@ -1274,7 +1274,7 @@ function FranchiseSettingsContent() {
                 />
                 {metodosComTaxa.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-bold text-[#3d4a42] mb-1 flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-ink-2 mb-1 flex items-center gap-1.5">
                       <MaterialIcon icon="percent" size={14} />
                       Taxa da operadora (%)
                     </h4>
@@ -1343,7 +1343,7 @@ function FranchiseSettingsContent() {
                   const t = (formData.promotions_combo || '').toLowerCase();
                   const flag = ['não temos promo', 'nao temos promo', 'no momento não', 'no momento nao', 'sendo elaborado', 'não há', 'nao ha', 'em breve', 'aguardando'].some(p => t.includes(p));
                   return flag ? (
-                    <p className="text-xs text-amber-700 mt-1 flex items-start gap-1">
+                    <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
                       <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
                       <span>Esse texto não é uma promoção — apague o campo (deixe vazio). Texto "não temos promoção" polui o robô e gasta tokens à toa.</span>
                     </p>
@@ -1478,7 +1478,7 @@ function FranchiseSettingsContent() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 shadow-xl">
             <h3 className="text-lg font-bold text-ink mb-2">Alterações não salvas</h3>
-            <p className="text-sm text-[#3d4a42] mb-6">Você tem alterações não salvas. Deseja descartá-las?</p>
+            <p className="text-sm text-ink-2 mb-6">Você tem alterações não salvas. Deseja descartá-las?</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => {
@@ -1487,7 +1487,7 @@ function FranchiseSettingsContent() {
                   // que continua aberta aqui — senão o topo diz uma e o wizard mostra outra.
                   if (!isAdminUser && currentFranchise) setSelectedFranchise(currentFranchise);
                 }}
-                className="px-4 py-2 rounded-xl border border-[#bccac0] text-[#3d4a42] text-sm font-medium hover:bg-surface"
+                className="px-4 py-2 rounded-xl border border-surface-line text-ink-2 text-sm font-medium hover:bg-surface"
               >
                 Cancelar
               </button>

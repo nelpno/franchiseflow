@@ -63,10 +63,10 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
       {ranges.map((range, index) => (
         <div
           key={index}
-          className="bg-white rounded-xl p-4 border border-[#bccac0]/10 space-y-3"
+          className="bg-white rounded-xl p-4 border border-surface-line/10 space-y-3"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#3d4a42]">
+            <span className="text-xs font-semibold text-ink-2">
               Faixa {index + 1}
             </span>
             {ranges.length > 1 && (
@@ -99,8 +99,8 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
                     isSelected
                       ? "bg-brand text-white"
                       : isUsedElsewhere
-                      ? "bg-surface-line text-[#3d4a42]/30 cursor-not-allowed"
-                      : "bg-surface-line text-[#3d4a42] hover:bg-[#e3e2e3]"
+                      ? "bg-surface-line text-ink-2/30 cursor-not-allowed"
+                      : "bg-surface-line text-ink-2 hover:bg-surface-2"
                   }`}
                 >
                   {day.label}
@@ -112,7 +112,7 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
           {/* Time inputs */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#3d4a42]">Abre:</span>
+              <span className="text-xs text-ink-2">Abre:</span>
               <input
                 type="time"
                 value={range.open}
@@ -120,9 +120,9 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
                 className={inputClass}
               />
             </div>
-            <span className="text-[#3d4a42]">—</span>
+            <span className="text-ink-2">—</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#3d4a42]">Fecha:</span>
+              <span className="text-xs text-ink-2">Fecha:</span>
               <input
                 type="time"
                 value={range.close}
@@ -139,7 +139,7 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
         <button
           type="button"
           onClick={addRange}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/30 text-sm font-medium text-[#3d4a42] hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-xl border-2 border-dashed border-surface-line/30 text-sm font-medium text-ink-2 hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2"
         >
           <MaterialIcon icon="add" size={18} />
           Adicionar faixa de horário
@@ -149,10 +149,10 @@ export default function OperatingHoursEditor({ value = [], onChange }) {
       {/* Preview of what the bot will say */}
       {ranges.length > 0 && (
         <div className="bg-surface rounded-xl p-3 mt-2">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50 mb-1">
             O vendedor vai dizer:
           </p>
-          <p className="text-xs text-[#3d4a42] italic">
+          <p className="text-xs text-ink-2 italic">
             "Funcionamos {formatSummary()}"
           </p>
         </div>

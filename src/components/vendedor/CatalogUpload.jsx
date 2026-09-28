@@ -207,7 +207,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
 
       {value ? (
         /* Preview */
-        <div className="relative rounded-xl overflow-hidden border border-[#bccac0]/10 bg-white">
+        <div className="relative rounded-xl overflow-hidden border border-surface-line/10 bg-white">
           <img
             src={value}
             alt="Catálogo"
@@ -225,13 +225,13 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
             <button
               type="button"
               onClick={handleRemove}
-              className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs font-bold text-[#3d4a42] shadow-sm hover:bg-white transition-colors flex items-center gap-1"
+              className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs font-bold text-ink-2 shadow-sm hover:bg-white transition-colors flex items-center gap-1"
             >
               <MaterialIcon icon="delete" size={14} />
             </button>
           </div>
           <div className="p-3 bg-surface flex items-center justify-between">
-            <span className="text-[10px] text-[#3d4a42]/70 truncate flex-1">{value.split("?")[0]}</span>
+            <span className="text-[10px] text-ink-2/70 truncate flex-1">{value.split("?")[0]}</span>
             <a
               href={value}
               target="_blank"
@@ -253,21 +253,21 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
             dragOver
               ? "border-brand bg-brand/5"
-              : "border-[#bccac0]/30 hover:border-brand/30 hover:bg-surface"
+              : "border-surface-line/30 hover:border-brand/30 hover:bg-surface"
           }`}
         >
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
               <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-[#3d4a42]">{uploadStep || "Enviando..."}</span>
+              <span className="text-sm text-ink-2">{uploadStep || "Enviando..."}</span>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
-              <MaterialIcon icon="add_photo_alternate" size={32} className="text-[#3d4a42]/30" />
-              <p className="text-sm font-medium text-[#3d4a42]">
+              <MaterialIcon icon="add_photo_alternate" size={32} className="text-ink-2/30" />
+              <p className="text-sm font-medium text-ink-2">
                 Arraste a imagem do catálogo ou <span className="text-brand font-bold">clique para selecionar</span>
               </p>
-              <p className="text-xs text-[#3d4a42]/70">JPG, PNG ou WebP • Máximo 10MB</p>
+              <p className="text-xs text-ink-2/70">JPG, PNG ou WebP • Máximo 10MB</p>
             </div>
           )}
         </div>
@@ -283,10 +283,10 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
 
       {value && (
         <div className="bg-surface rounded-xl p-3">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/70 mb-1">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/70 mb-1">
             O vendedor vai enviar:
           </p>
-          <p className="text-xs text-[#3d4a42] italic">
+          <p className="text-xs text-ink-2 italic">
             "Aqui está nosso cardápio atualizado!" + imagem do catálogo
           </p>
         </div>

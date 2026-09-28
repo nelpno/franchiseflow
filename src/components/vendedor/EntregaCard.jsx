@@ -11,9 +11,9 @@ import { cotarFrete } from "@/lib/cotaFrete.gen";
 // quem converte para o banco é a página. `estruturado` = unidade no frete calculado (tipos e bairros liberados).
 
 const campo = "bg-surface-line border-none rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/20";
-const erroRing = " ring-2 ring-red-400";
-const rotulo = "block text-xs font-semibold text-[#3d4a42] mb-1.5";
-const dica = "text-[11px] text-[#3d4a42]/60 mt-1";
+const erroRing = " ring-2 ring-err";
+const rotulo = "block text-xs font-semibold text-ink-2 mb-1.5";
+const dica = "text-[11px] text-ink-2/60 mt-1";
 
 const HORAS = Array.from({ length: 38 }, (_, i) => {
   const m = 5 * 60 + i * 30;
@@ -21,7 +21,7 @@ const HORAS = Array.from({ length: 38 }, (_, i) => {
 });
 const opcoesHora = (valor) => (valor && !HORAS.includes(valor) ? [...HORAS, valor].sort() : HORAS);
 const pill = (ativo) =>
-  `px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ativo ? "bg-brand text-white" : "bg-surface-line text-[#3d4a42]/70 hover:bg-[#ddd]"}`;
+  `px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${ativo ? "bg-brand text-white" : "bg-surface-line text-ink-2/70 hover:bg-surface-2"}`;
 
 function SelectHora({ value, onChange, invalido, ariaLabel }) {
   return (
@@ -36,7 +36,7 @@ function SelectHora({ value, onChange, invalido, ariaLabel }) {
 function Dinheiro({ value, onChange, invalido, placeholder = "0,00", ariaLabel }) {
   return (
     <div className={`flex items-center gap-1.5 ${campo} w-28 shrink-0${invalido ? erroRing : ""}`}>
-      <span className="text-xs text-[#3d4a42]/60">R$</span>
+      <span className="text-xs text-ink-2/60">R$</span>
       <input aria-label={ariaLabel} type="number" inputMode="decimal" step="0.5" min="0" value={value ?? ""}
         onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full min-w-0 bg-transparent outline-none font-mono" />
     </div>
@@ -78,30 +78,30 @@ function Taxa({ taxa, onChange, marcas, prefixo, estruturado, temBairros }) {
         )}
       </div>
       {modo === "outro" && (
-        <p className="text-[11px] text-[#3d4a42]/80">
+        <p className="text-[11px] text-ink-2/80">
           {textoSuporte ? `Regra combinada com o suporte: ${textoSuporte}. ` : ""}O robô diz ao cliente que você confirma a taxa e te avisa no WhatsApp.
         </p>
       )}
       {modo === "fixa" && (
         <Dinheiro value={taxa.valor} onChange={(v) => onChange({ ...taxa, modo: "fixa", valor: v })} invalido={semNenhuma} ariaLabel="Valor da taxa" />
       )}
-      {modo === "gratis" && <p className="text-[11px] text-emerald-700">O robô diz que a entrega é sem taxa.</p>}
+      {modo === "gratis" && <p className="text-[11px] text-ok-ink">O robô diz que a entrega é sem taxa.</p>}
       {modo === "faixas" && (
         <div className="space-y-2">
           {faixas.map((f, i) => {
             const marcada = marcas.has(`${prefixo}.faixa${i}`) || (semNenhuma && i === 0);
             return (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-xs text-[#3d4a42]/60">Até</span>
+                <span className="text-xs text-ink-2/60">Até</span>
                 <input type="number" inputMode="decimal" min="0" step="0.5" aria-label={`Faixa ${i + 1}: até quantos km`}
                   className={`${campo} w-16 text-center font-mono${marcada && !preenchido(f.ate) ? erroRing : ""}`}
                   value={f.ate ?? ""} onChange={(e) => setFaixa(i, "ate", e.target.value)} placeholder="5" />
-                <span className="text-xs text-[#3d4a42]/60">km:</span>
+                <span className="text-xs text-ink-2/60">km:</span>
                 <Dinheiro value={f.valor} onChange={(v) => setFaixa(i, "valor", v)} invalido={marcada && !preenchido(f.valor)}
                   placeholder="8,00" ariaLabel={`Faixa ${i + 1}: valor`} />
                 {faixas.length > 1 && (
                   <button type="button" aria-label="Apagar faixa" onClick={() => onChange({ modo: "faixas", faixas: faixas.filter((_, j) => j !== i) })}
-                    className="text-[#3d4a42]/40 hover:text-red-500 transition-colors">
+                    className="text-ink-2/40 hover:text-err transition-colors">
                     <MaterialIcon icon="close" size={18} />
                   </button>
                 )}
@@ -131,7 +131,7 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
             <input type="number" min="1" inputMode="numeric" aria-label="Em até quantos minutos"
               className={`${campo} w-16 text-center font-mono${invalido ? erroRing : ""}`}
               value={minutos ?? ""} onChange={(e) => onChange({ promessa: "minutos", minutos: e.target.value })} />
-            <span className="text-xs text-[#3d4a42]/60">min</span>
+            <span className="text-xs text-ink-2/60">min</span>
           </span>
         )}
       </div>
@@ -162,7 +162,7 @@ function Tipo({ tipo, prefixo, estruturado, temBairros, podeRemover, onChange, o
           <span className={rotulo}>Janela de entrega</span>
           <div className="flex items-center gap-2">
             <SelectHora value={tipo.inicio} onChange={(v) => set({ inicio: v })} invalido={marcas.has(`${prefixo}.janela`)} ariaLabel="Início da entrega" />
-            <span className="text-xs text-[#3d4a42]/60">às</span>
+            <span className="text-xs text-ink-2/60">às</span>
             <SelectHora value={tipo.fim} onChange={(v) => set({ fim: v })} invalido={marcas.has(`${prefixo}.janela`)} ariaLabel="Fim da entrega" />
           </div>
         </div>
@@ -189,7 +189,7 @@ function Tipo({ tipo, prefixo, estruturado, temBairros, podeRemover, onChange, o
           <ComoChega promessa={tipo.promessa} minutos={tipo.minutos} onChange={set} invalido={marcas.has(`${prefixo}.minutos`)} />
         </div>
       )}
-      {erroMsg && <p className="text-[11px] text-red-600">{erroMsg}</p>}
+      {erroMsg && <p className="text-[11px] text-err">{erroMsg}</p>}
     </div>
   );
 }
@@ -205,9 +205,9 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
   const temBairros = estruturado && (modelo.zonas || []).some((z) => (z.nomes || []).length);
   const frase = fraseDoGrupo(grupo, { temBairros });
   return (
-    <div className="rounded-xl border border-[#bccac0]/30 bg-white p-3 sm:p-4 space-y-3">
+    <div className="rounded-xl border border-surface-line/30 bg-white p-3 sm:p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-bold text-[#3d4a42]">{rotuloDias(grupo.dias)}</span>
+        <span className="text-sm font-bold text-ink-2">{rotuloDias(grupo.dias)}</span>
         {podeRemover && (
           <button type="button" onClick={onRemove} className="text-xs text-brand hover:underline flex items-center gap-1">
             <MaterialIcon icon="close" size={14} />Remover estes dias
@@ -221,7 +221,7 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
           return (
             <button key={day.value} type="button" disabled={emOutro} onClick={() => toggleDia(day.value)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                marcado ? "bg-brand text-white" : emOutro ? "bg-surface-line text-[#3d4a42]/30 cursor-not-allowed" : "bg-surface-line text-[#3d4a42] hover:bg-[#e3e2e3]"}`}>
+                marcado ? "bg-brand text-white" : emOutro ? "bg-surface-line text-ink-2/30 cursor-not-allowed" : "bg-surface-line text-ink-2 hover:bg-surface-2"}`}>
               {day.label}
             </button>
           );
@@ -240,8 +240,8 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
       )}
       {frase && (
         <div className="bg-surface rounded-xl p-3">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50 mb-1">O vendedor vai dizer</p>
-          <p className="text-xs text-[#3d4a42] italic">"{frase}"</p>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50 mb-1">O vendedor vai dizer</p>
+          <p className="text-xs text-ink-2 italic">"{frase}"</p>
         </div>
       )}
     </div>
@@ -262,7 +262,7 @@ function NomesBairro({ nomes, onChange, invalido }) {
       {nomes.map((n) => (
         <span key={n} className="flex items-center gap-0.5 pl-2.5 pr-1 py-1 rounded-full bg-white text-xs font-semibold">
           {n}
-          <button type="button" aria-label={`Tirar ${n}`} onClick={() => onChange(nomes.filter((x) => x !== n))} className="text-[#3d4a42]/50 hover:text-red-500">
+          <button type="button" aria-label={`Tirar ${n}`} onClick={() => onChange(nomes.filter((x) => x !== n))} className="text-ink-2/50 hover:text-err">
             <MaterialIcon icon="close" size={14} />
           </button>
         </span>
@@ -294,9 +294,9 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
   const set = (i, z) => onChange(zonas.map((x, j) => (j === i ? z : x)));
   const erros = problemas.filter((p) => p.chave.startsWith("z"));
   return (
-    <div className="space-y-3 border-b border-[#bccac0]/20 pb-4">
+    <div className="space-y-3 border-b border-surface-line/20 pb-4">
       <div>
-        <p className="text-sm font-bold text-[#3d4a42] flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria</p>
+        <p className="text-sm font-bold text-ink-2 flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria</p>
         <p className={dica}>Cada bairro com o seu valor, em qualquer dia. Bairro que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
       </div>
       {zonas.map((z, i) => (
@@ -305,22 +305,22 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
             <NomesBairro nomes={z.nomes || []} onChange={(nomes) => set(i, { ...z, nomes })} invalido={marcas.has(`z${i}.nomes`)} />
           </div>
           <div className="flex items-center gap-3">
-            {z.nao_atende ? <span className="text-xs text-[#3d4a42]/60 w-28 px-1">sem entrega</span> : z.especial ? <span className="text-xs text-[#3d4a42]/60 w-28 px-1">regra especial</span> : (
+            {z.nao_atende ? <span className="text-xs text-ink-2/60 w-28 px-1">sem entrega</span> : z.especial ? <span className="text-xs text-ink-2/60 w-28 px-1">regra especial</span> : (
               <Dinheiro value={z.valor} onChange={(v) => set(i, { ...z, valor: v })} invalido={marcas.has(`z${i}.valor`)} ariaLabel="Taxa do bairro" />
             )}
-            <label className="flex items-center gap-2 text-xs text-[#3d4a42] cursor-pointer whitespace-nowrap">
+            <label className="flex items-center gap-2 text-xs text-ink-2 cursor-pointer whitespace-nowrap">
               <input type="checkbox" className="accent-brand" checked={!!z.nao_atende} onChange={(e) => set(i, { ...z, nao_atende: e.target.checked })} />
               Não entregamos
             </label>
             <button type="button" aria-label="Apagar linha" onClick={() => onChange(zonas.filter((_, j) => j !== i))}
-              className="ml-auto text-[#3d4a42]/40 hover:text-red-500">
+              className="ml-auto text-ink-2/40 hover:text-err">
               <MaterialIcon icon="close" size={18} />
             </button>
           </div>
-          {detalheDaZona(z) && <p className="text-[11px] text-[#3d4a42]/70 sm:basis-full">{detalheDaZona(z)}</p>}
+          {detalheDaZona(z) && <p className="text-[11px] text-ink-2/70 sm:basis-full">{detalheDaZona(z)}</p>}
         </div>
       ))}
-      {erros.length > 0 && <p className="text-[11px] text-red-600">{erros[0].msg}</p>}
+      {erros.length > 0 && <p className="text-[11px] text-err">{erros[0].msg}</p>}
       <button type="button" onClick={() => onChange([...zonas, { nomes: [], valor: "" }])}
         className="flex items-center gap-1 text-xs font-semibold text-brand hover:text-brand-dark">
         <MaterialIcon icon="add" size={16} />Adicionar bairros com outra taxa
@@ -344,25 +344,25 @@ function primeiroDiaComEntrega(pricing, dias, agora) {
 
 function Resultado({ r, km, raio }) {
   if (!r) return null;
-  const caixa = "rounded-xl border border-[#bccac0]/35 bg-white p-3 space-y-1.5";
+  const caixa = "rounded-xl border border-surface-line/35 bg-white p-3 space-y-1.5";
   if (r.estado === "ok") {
     const dp = r.data_pedida;
     if (!dp) return null;
     return (
       <div className={caixa}>
         <div className="flex flex-wrap items-center justify-between gap-1.5">
-          <span className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50">{dp.dia}</span>
-          {r.bairro_com_taxa && <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[11px] font-semibold">Bairro com taxa própria</span>}
+          <span className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50">{dp.dia}</span>
+          {r.bairro_com_taxa && <span className="px-2 py-0.5 rounded-md bg-warn-soft text-warn-ink text-[11px] font-semibold">Bairro com taxa própria</span>}
         </div>
         {dp.opcoes.length ? dp.opcoes.map((o) => (
           <div key={o.tipo} className="flex flex-wrap items-baseline gap-x-2">
             <span className="text-xl font-bold font-mono">{o.taxa === 0 ? "Grátis" : dinheiro(o.taxa)}</span>
-            <span className="text-xs text-[#3d4a42]">{o.tipo} · das {o.janela} · {o.prazo}</span>
+            <span className="text-xs text-ink-2">{o.tipo} · das {o.janela} · {o.prazo}</span>
           </div>
         )) : (
-          <p className="text-sm text-[#3d4a42]">{primeiraMaiuscula(dp.observacao)}.{r.proximo_dia_com_entrega ? ` Próximo dia com entrega: ${r.proximo_dia_com_entrega}.` : ""}</p>
+          <p className="text-sm text-ink-2">{primeiraMaiuscula(dp.observacao)}.{r.proximo_dia_com_entrega ? ` Próximo dia com entrega: ${r.proximo_dia_com_entrega}.` : ""}</p>
         )}
-        {r.aviso && <p className="text-[11px] text-amber-700">{r.aviso}</p>}
+        {r.aviso && <p className="text-[11px] text-warn-ink">{r.aviso}</p>}
       </div>
     );
   }
@@ -373,7 +373,7 @@ function Resultado({ r, km, raio }) {
     confirmar_bairro: "O robô confirma o bairro com o cliente antes de dizer o valor.",
     precisa_km: "Informe a distância.",
   }[r.estado] || "A unidade confirma a taxa.";
-  return <div className={`${caixa} text-sm text-[#3d4a42]`}>{texto}</div>;
+  return <div className={`${caixa} text-sm text-ink-2`}>{texto}</div>;
 }
 
 function TesteRapido({ modelo, estruturado }) {
@@ -403,12 +403,12 @@ function TesteRapido({ modelo, estruturado }) {
   if (!pricing?.grupos?.length) return null;
 
   return (
-    <section className="rounded-2xl border border-[#d4af37]/40 bg-[#d4af37]/[0.06] p-4 space-y-3">
+    <section className="rounded-2xl border border-brand-gold/40 bg-brand-gold/[0.06] p-4 space-y-3">
       <div className="flex items-start gap-2">
-        <MaterialIcon icon="calculate" size={20} className="text-[#775a19] mt-0.5" />
+        <MaterialIcon icon="calculate" size={20} className="text-brand-gold-ink mt-0.5" />
         <div>
           <p className="text-sm font-bold text-ink">Teste rápido</p>
-          <p className="text-[11px] text-[#3d4a42]/70">
+          <p className="text-[11px] text-ink-2/70">
             {estruturado ? "O que o robô cobra, pelo mesmo cálculo dele. Dá para testar antes de salvar." : "O que o robô deve cobrar com a sua tabela. Dá para testar antes de salvar."}
           </p>
         </div>
@@ -444,13 +444,13 @@ function TesteRapido({ modelo, estruturado }) {
       {r?.estado === "ok" && (
         <div>
           <p className={rotulo}>Se o cliente pedir para outro dia</p>
-          <div className="rounded-xl border border-[#bccac0]/35 overflow-hidden bg-white">
+          <div className="rounded-xl border border-surface-line/35 overflow-hidden bg-white">
             {outrosDias.map(({ d, r: rd }, i) => {
               const ops = rd?.data_pedida?.opcoes || [];
               return (
-                <div key={d} className={`grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 px-3 py-2 text-xs ${i ? "border-t border-[#bccac0]/20" : ""} ${d === entrega ? "bg-brand/5" : ""}`}>
+                <div key={d} className={`grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2 px-3 py-2 text-xs ${i ? "border-t border-surface-line/20" : ""} ${d === entrega ? "bg-brand/5" : ""}`}>
                   <span className={`font-semibold font-mono ${d === entrega ? "text-brand" : ""}`}>{rotuloCurto(d)}</span>
-                  <span className="text-[#3d4a42]">
+                  <span className="text-ink-2">
                     {rd?.estado !== "ok" ? "—" : ops.length
                       ? ops.map((o) => `${o.taxa === 0 ? "grátis" : dinheiro(o.taxa)} ${o.tipo.toLowerCase()} ${o.janela.replace(" às ", "–")}`).join(" · ")
                       : primeiraMaiuscula(rd.data_pedida?.observacao || "")}
@@ -483,15 +483,15 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
       {/* Bairros primeiro: para quem cobra por bairro é a regra principal, e no fim do cartão ninguém achava (Ubatuba, 24/09) */}
       {estruturado && <Bairros zonas={modelo.zonas || []} onChange={(zonas) => onChange({ ...modelo, zonas })} marcas={marcas} problemas={problemas} />}
       <div>
-        <p className="text-sm font-bold text-[#3d4a42]">Dias, horários e taxas</p>
+        <p className="text-sm font-bold text-ink-2">Dias, horários e taxas</p>
         <p className={dica}>
           Em cada grupo de dias: a janela de entrega, até que horas aceita pedido e a taxa.
           {estruturado ? " Pode ter mais de um tipo de entrega no mesmo dia (ex.: programada e imediata)." : ""}
         </p>
       </div>
       {semHorarioSalvo && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
-          <p className="text-xs text-amber-800 flex-1">Ainda não há horário de entrega salvo. O de baixo é só uma sugestão: ajuste ou use como está.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-warn-soft border border-warn/30">
+          <p className="text-xs text-warn-ink flex-1">Ainda não há horário de entrega salvo. O de baixo é só uma sugestão: ajuste ou use como está.</p>
           <button type="button" onClick={onUsarSugestao} className="px-3 py-2 rounded-lg bg-brand text-white text-xs font-bold hover:bg-brand-dark whitespace-nowrap">
             Usar este horário
           </button>
@@ -503,7 +503,7 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
       ))}
       {livres.length > 0 && (
         <button type="button" onClick={() => onChange({ ...modelo, grupos: [...modelo.grupos, novoGrupo(modelo)] })}
-          className="w-full py-3 rounded-xl border-2 border-dashed border-[#bccac0]/40 text-sm font-medium text-[#3d4a42] hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2">
+          className="w-full py-3 rounded-xl border-2 border-dashed border-surface-line/40 text-sm font-medium text-ink-2 hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2">
           <MaterialIcon icon="add" size={18} />Adicionar dias com horário diferente
         </button>
       )}
@@ -514,8 +514,8 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
         </div>
       )}
       {!estruturado && (
-        <p className="text-[11px] text-[#3d4a42]/70 flex items-start gap-1.5">
-          <MaterialIcon icon="lightbulb" size={14} className="mt-0.5 shrink-0 text-[#775a19]" />
+        <p className="text-[11px] text-ink-2/70 flex items-start gap-1.5">
+          <MaterialIcon icon="lightbulb" size={14} className="mt-0.5 shrink-0 text-brand-gold-ink" />
           Cobra valor diferente por bairro, ou tem mais de um tipo de entrega no mesmo dia (ex.: programada e imediata)? Fale com o suporte para ligar o frete calculado na sua unidade.
         </p>
       )}

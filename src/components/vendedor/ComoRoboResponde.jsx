@@ -8,10 +8,10 @@ import { modoDoFrete } from "@/lib/freteModelo";
 // o que conferir antes de ligar e, recolhidos, todos os dados (a antiga Revisão).
 
 const ESTILO = {
-  erro: { icon: "error", cls: "bg-red-50 text-red-700" },
-  aviso: { icon: "warning", cls: "bg-amber-50 text-amber-800" },
-  ok: { icon: "check_circle", cls: "bg-emerald-50 text-emerald-700" },
-  info: { icon: "info", cls: "bg-surface text-[#3d4a42]" },
+  erro: { icon: "error", cls: "bg-err-soft text-err" },
+  aviso: { icon: "warning", cls: "bg-warn-soft text-warn-ink" },
+  ok: { icon: "check_circle", cls: "bg-ok-soft text-ok-ink" },
+  info: { icon: "info", cls: "bg-surface text-ink-2" },
 };
 
 export default function ComoRoboResponde({ formData, erros = [], avisos = [], onGoToStep }) {
@@ -31,14 +31,14 @@ export default function ComoRoboResponde({ formData, erros = [], avisos = [], on
 
   return (
     <div className="space-y-6">
-      <p className="text-xs text-[#3d4a42]/70">{intro}</p>
+      <p className="text-xs text-ink-2/70">{intro}</p>
 
       <div className="space-y-5">
         {itens.map((it, i) => (
-          <div key={`${it.rotulo}-${i}`} className={`space-y-2 ${i ? "border-t border-[#bccac0]/20 pt-4" : ""}`}>
+          <div key={`${it.rotulo}-${i}`} className={`space-y-2 ${i ? "border-t border-surface-line/20 pt-4" : ""}`}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] uppercase tracking-widest font-bold text-[#3d4a42]/50">{it.rotulo}</span>
-              {it.tag && <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[11px] font-semibold">{it.tag}</span>}
+              <span className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50">{it.rotulo}</span>
+              {it.tag && <span className="px-2 py-0.5 rounded-md bg-warn-soft text-warn-ink text-[11px] font-semibold">{it.tag}</span>}
             </div>
             <div className="max-w-[85%] w-fit px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white border border-surface-line text-sm text-ink">{it.pergunta}</div>
             <div className="ml-auto max-w-[85%] w-fit px-3.5 py-2.5 rounded-2xl rounded-br-md bg-brand/[0.07] text-sm text-ink">{it.resposta}</div>
@@ -47,7 +47,7 @@ export default function ComoRoboResponde({ formData, erros = [], avisos = [], on
       </div>
 
       {conferencias.length > 0 && (
-        <div className="rounded-xl border border-[#bccac0]/30 p-4 space-y-2">
+        <div className="rounded-xl border border-surface-line/30 p-4 space-y-2">
           <p className="text-sm font-bold text-ink">Antes de ligar, confira</p>
           {conferencias.map((c, i) => (
             <div key={i} className={`flex items-start gap-2 px-3 py-2 rounded-xl text-xs ${ESTILO[c.tipo].cls}`}>
@@ -59,9 +59,9 @@ export default function ComoRoboResponde({ formData, erros = [], avisos = [], on
       )}
 
       {temEntrega && variosGrupos && (
-        <div className="rounded-xl border border-[#bccac0]/30 p-4 space-y-1">
+        <div className="rounded-xl border border-surface-line/30 p-4 space-y-1">
           <p className="text-sm font-bold text-ink">A regra do dia</p>
-          <p className="text-xs text-[#3d4a42]">
+          <p className="text-xs text-ink-2">
             O frete segue sempre o dia da <b>entrega</b>. Quem pede na sexta para sábado paga a tabela de sábado; quem pede na sexta para segunda paga a de segunda.
           </p>
         </div>

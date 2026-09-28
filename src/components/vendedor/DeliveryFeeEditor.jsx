@@ -2,14 +2,14 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { incompleteFeeRows } from "@/lib/configSave";
 
 const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-sm outline-none";
-const faltaClass = " ring-2 ring-red-400";
+const faltaClass = " ring-2 ring-err";
 const TEXTO_FALTA = { valor: "o valor", "descrição": "a descrição", km: "o km" };
 
 const pillClass = (active) =>
   `px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
     active
       ? "bg-brand text-white"
-      : "bg-surface-line text-[#3d4a42]/70 hover:bg-[#ddd]"
+      : "bg-surface-line text-ink-2/70 hover:bg-surface-2"
   }`;
 
 export default function DeliveryFeeEditor({ value, onChange }) {
@@ -26,7 +26,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
   const marca = (i, campo) => (faltando.get(i) === campo ? faltaClass : "");
   const aviso = (i) =>
     faltando.has(i) ? (
-      <p className="text-[11px] text-red-600 pl-1">
+      <p className="text-[11px] text-err pl-1">
         Falta {TEXTO_FALTA[faltando.get(i)]}: sem isso esta linha não vale. Preencha ou apague.
       </p>
     ) : null;
@@ -96,7 +96,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
                   onChange={(e) => updateRow(i, "label", e.target.value)}
                   placeholder="Ex: Entrega programada Seg-Sex 16h-19h"
                 />
-                <span className="text-xs text-[#3d4a42]/60 whitespace-nowrap">R$</span>
+                <span className="text-xs text-ink-2/60 whitespace-nowrap">R$</span>
                 <input
                   className={`${inputClass} !w-[4.5rem] sm:!w-24 !px-2 sm:!px-4 font-mono text-center${marca(i, "valor")}`}
                   type="number"
@@ -110,7 +110,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
                   <button
                     type="button"
                     onClick={() => removeRow(i)}
-                    className="text-[#3d4a42]/40 hover:text-red-500 transition-colors"
+                    className="text-ink-2/40 hover:text-err transition-colors"
                   >
                     <MaterialIcon icon="close" size={18} />
                   </button>
@@ -126,7 +126,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
           {rules.map((row, i) => (
             <div key={i} className="space-y-1">
               <div className="flex items-center gap-2 sm:gap-3">
-                <span className="text-xs text-[#3d4a42]/60 whitespace-nowrap">Até</span>
+                <span className="text-xs text-ink-2/60 whitespace-nowrap">Até</span>
                 <input
                   className={`${inputClass} !w-14 sm:!w-20 !px-2 sm:!px-4 font-mono text-center${marca(i, "km")}`}
                   type="number"
@@ -135,7 +135,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
                   onChange={(e) => updateRow(i, "max_km", e.target.value)}
                   placeholder="5"
                 />
-                <span className="text-xs text-[#3d4a42]/60 whitespace-nowrap">km: R$</span>
+                <span className="text-xs text-ink-2/60 whitespace-nowrap">km: R$</span>
                 <input
                   className={`${inputClass} !w-[4.5rem] sm:!w-24 !px-2 sm:!px-4 font-mono text-center${marca(i, "valor")}`}
                   type="number"
@@ -149,7 +149,7 @@ export default function DeliveryFeeEditor({ value, onChange }) {
                   <button
                     type="button"
                     onClick={() => removeRow(i)}
-                    className="text-[#3d4a42]/40 hover:text-red-500 transition-colors"
+                    className="text-ink-2/40 hover:text-err transition-colors"
                   >
                     <MaterialIcon icon="close" size={18} />
                   </button>

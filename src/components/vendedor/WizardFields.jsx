@@ -10,17 +10,17 @@ export function ToggleCard({ icon, label, description, checked, onChange }) {
       className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
         checked
           ? "border-brand bg-brand/5"
-          : "border-surface-line bg-surface-line/50 hover:border-[#bccac0]"
+          : "border-surface-line bg-surface-line/50 hover:border-surface-line"
       }`}
     >
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${checked ? "bg-brand/10" : "bg-surface-line"}`}>
-        <MaterialIcon icon={icon} filled size={22} className={checked ? "text-brand" : "text-[#3d4a42]/40"} />
+        <MaterialIcon icon={icon} filled size={22} className={checked ? "text-brand" : "text-ink-2/40"} />
       </div>
       <div className="flex-1">
-        <span className={`text-sm font-bold ${checked ? "text-ink" : "text-[#3d4a42]"}`}>{label}</span>
-        {description && <p className="text-xs text-[#3d4a42]/50 mt-0.5">{description}</p>}
+        <span className={`text-sm font-bold ${checked ? "text-ink" : "text-ink-2"}`}>{label}</span>
+        {description && <p className="text-xs text-ink-2/50 mt-0.5">{description}</p>}
       </div>
-      <div className={`w-11 h-6 rounded-full transition-colors relative ${checked ? "bg-brand" : "bg-[#bccac0]/40"}`}>
+      <div className={`w-11 h-6 rounded-full transition-colors relative ${checked ? "bg-brand" : "bg-surface-line/40"}`}>
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-0.5"}`} />
       </div>
     </button>
@@ -44,11 +44,11 @@ export function RadioCards({ options, value, onChange, disabled = [] }) {
                 ? "opacity-40 cursor-not-allowed border-surface-line bg-surface-line/30"
                 : isSelected
                 ? "border-brand bg-brand/5"
-                : "border-surface-line hover:border-[#bccac0] cursor-pointer"
+                : "border-surface-line hover:border-surface-line cursor-pointer"
             }`}
           >
-            <span className={`text-sm font-bold ${isSelected ? "text-brand" : "text-[#3d4a42]"}`}>{opt.label}</span>
-            {opt.description && <p className="text-xs text-[#3d4a42]/50 mt-1">{opt.description}</p>}
+            <span className={`text-sm font-bold ${isSelected ? "text-brand" : "text-ink-2"}`}>{opt.label}</span>
+            {opt.description && <p className="text-xs text-ink-2/50 mt-1">{opt.description}</p>}
           </button>
         );
       })}

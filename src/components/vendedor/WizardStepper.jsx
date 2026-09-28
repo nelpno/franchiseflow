@@ -70,8 +70,8 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                         : isCompleted
                         ? "bg-brand/15 text-brand"
                         : isSkipped
-                        ? "bg-surface-line/50 text-[#3d4a42]/30"
-                        : "bg-surface-line text-[#3d4a42]"
+                        ? "bg-surface-line/50 text-ink-2/30"
+                        : "bg-surface-line text-ink-2"
                     }`}
                   >
                     {isCompleted ? (
@@ -89,8 +89,8 @@ export default function WizardStepper({ currentStep, completedSteps = [], skippe
                         : isCompleted
                         ? "text-brand/70 font-semibold"
                         : isSkipped
-                        ? "text-[#3d4a42]/30"
-                        : "text-[#3d4a42]/60"
+                        ? "text-ink-2/30"
+                        : "text-ink-2/60"
                     }`}
                   >
                     {step.label}

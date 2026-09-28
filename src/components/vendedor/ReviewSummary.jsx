@@ -5,13 +5,13 @@ function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
   const hasWarning = fields.some((f) => f.warning);
 
   return (
-    <div className="border border-[#bccac0]/10 rounded-xl p-4">
+    <div className="border border-surface-line/10 rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <MaterialIcon icon={icon} filled size={18} className="text-brand" />
-          <h4 className="text-sm font-bold text-[#3d4a42]">{title}</h4>
+          <h4 className="text-sm font-bold text-ink-2">{title}</h4>
           {hasWarning && (
-            <MaterialIcon icon="warning" filled size={14} className="text-amber-500" />
+            <MaterialIcon icon="warning" filled size={14} className="text-brand-gold" />
           )}
         </div>
         <button
@@ -25,9 +25,9 @@ function ReviewSection({ icon, title, fields, stepNum, onGoToStep }) {
       <div className="space-y-1.5">
         {fields.map((f, i) => (
           <div key={i} className="flex items-start gap-2">
-            <span className="text-xs text-[#3d4a42]/50 min-w-[120px]">{f.label}:</span>
+            <span className="text-xs text-ink-2/50 min-w-[120px]">{f.label}:</span>
             {f.warning ? (
-              <span className="text-xs text-amber-600 italic">{f.value || "Não preenchido"}</span>
+              <span className="text-xs text-warn-ink italic">{f.value || "Não preenchido"}</span>
             ) : (
               <span className="text-xs text-ink font-medium">{f.value || "—"}</span>
             )}
