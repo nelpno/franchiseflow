@@ -519,9 +519,8 @@ export default function Layout({ children, currentPageName }) {
           <Link
             to={item.url}
             className="flex items-center gap-3"
-            aria-label={item.title}
             aria-current={isActive ? "page" : undefined}
-            onClick={fecharMaisAoClicar}
+            onClick={uiV2 && isMobile ? fecharMaisAoClicar : undefined}
           >
             <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} aria-hidden="true" />
             <span className="text-sm flex-1">{item.title}</span>
