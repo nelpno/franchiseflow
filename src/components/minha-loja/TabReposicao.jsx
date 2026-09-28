@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
-import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, InventoryItem } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,11 +29,17 @@ import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { useAuth } from "@/lib/AuthContext";
 import PurchaseOrderForm from "./PurchaseOrderForm";
 import PurchaseOrderHistory from "./PurchaseOrderHistory";
+import ConferirEntregaCard from "./ConferirEntregaCard";
+
+// Mesmas colunas do Gestao.jsx (INVENTORY_COLUMNS): o estoque relido aqui depois da
+// conferência (S15) tem de ter o mesmo formato do que a página passa.
+const COLUNAS_ESTOQUE = "id, franchise_id, product_name, quantity, min_stock, cost_price, sale_price, category, updated_at, created_by_franchisee, active";
 
 export default function TabReposicao({
   franchiseId,
-  inventoryItems,
+  inventoryItems: inventoryItemsProp,
   saleItems,
+  onRefreshInventory,
 }) {
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [orderRefreshKey, setOrderRefreshKey] = useState(0);
@@ -69,6 +75,24 @@ export default function TabReposicao({
     return () => controller.abort();
   }, [uiV2, franchiseId, orderRefreshKey, abertosTentativa]);
   const pedidosProntos = abertos.status === "ok";
+
+  // S15 (chave ui_v2): conferiu a entrega -> o estoque mudou no banco. Relê o estoque aqui
+  // (a página só relê a cada 5 min) para o "Acabando"/"Repor" não sugerir de novo o que
+  // acabou de chegar; vale até a página mandar uma lista nova.
+  const [estoqueFresco, setEstoqueFresco] = useState(null);
+  const inventoryItems =
+    estoqueFresco && estoqueFresco.base === inventoryItemsProp ? estoqueFresco.lista : inventoryItemsProp;
+  const aoConfirmarEntrega = async () => {
+    const base = inventoryItemsProp;
+    try {
+      const lista = await InventoryItem.filter({ franchise_id: franchiseId }, null, null, { columns: COLUNAS_ESTOQUE });
+      setEstoqueFresco({ base, lista });
+    } catch (err) {
+      console.error("Erro ao reler o estoque depois da conferência:", err);
+    }
+    onRefreshInventory?.();
+    setOrderRefreshKey((k) => k + 1);
+  };
   const emAberto = abertos.emAberto;
 
   // Unidade nunca fez pedido à fábrica (dado que a tela já busca pra "Repetir Ultimo") →
@@ -206,6 +230,11 @@ export default function TabReposicao({
 
   return (
     <div className="space-y-6">
+      {/* S15.1 — Seu pedido chegou: conferir (chave ui_v2) */}
+      {uiV2 && (
+        <ConferirEntregaCard franchiseId={franchiseId} refreshKey={orderRefreshKey} onConfirmado={aoConfirmarEntrega} />
+      )}
+
       {/* S14.1 — Acabando + Repor N (chave ui_v2) */}
       {uiV2 && linhasRepor.length > 0 && (
         <Card className="rounded-2xl shadow-sm border border-err/20 bg-white">

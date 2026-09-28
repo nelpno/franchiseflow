@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/dateOnly";
+import { resumoRecebido } from "@/lib/conferenciaEntrega";
 
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
@@ -130,7 +131,10 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
   };
 
   const getStatusBadge = (status) => {
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
+    // S15 (chave ui_v2): 'em_rota' = a fábrica entregou e falta ela conferir (cartão no topo).
+    const config = uiV2 && status === "em_rota"
+      ? { ...STATUS_CONFIG.em_rota, label: "Chegou · confira" }
+      : STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
     return (
       <Badge className={`${config.color} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
         <MaterialIcon icon={config.icon} size={12} />
@@ -174,6 +178,9 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
       {orders.map((order) => {
         const isExpanded = expandedOrderId === order.id;
         const items = orderItems[order.id] || [];
+        // S15 (chave ui_v2): pedido conferido com diferença mostra o que chegou.
+        const conferido = uiV2 && order.status === "entregue" ? resumoRecebido(items) : null;
+        const comDiferenca = !!conferido?.temDiferenca;
 
         return (
           <Card
@@ -203,6 +210,12 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                     <span className="text-lg font-bold text-ink font-plus-jakarta">
                       {formatBRL(order.total_amount)}
                     </span>
+                    {comDiferenca && (
+                      <span className="text-xs font-semibold text-err flex items-center gap-1">
+                        <MaterialIcon icon="error" size={12} />
+                        Chegou {formatBRL(conferido.totalRecebido)} de {formatBRL(conferido.totalPedido)}
+                      </span>
+                    )}
                     {items.length > 0 && (
                       <span className="text-xs text-ink-2">
                         {items.length} {items.length === 1 ? "produto" : "produtos"} · {items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)} un.
@@ -252,27 +265,33 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                     <p className="text-xs text-ink-2 py-3">Nenhum item encontrado.</p>
                   ) : (
                     <div className="space-y-2 pt-3">
-                      {items.map((item) => (
+                      {items.map((item) => {
+                        const faltou = comDiferenca && item.received_quantity != null && Number(item.received_quantity) !== Number(item.quantity);
+                        const qtdValor = faltou ? Number(item.received_quantity) : parseFloat(item.quantity) || 0;
+                        return (
                         <div
                           key={item.id}
                           className="flex items-center justify-between text-sm py-1"
                         >
                           <div className="flex-1 min-w-0">
                             <span className="text-ink">{item.product_name}</span>
+                            {faltou && (
+                              <span className="block text-xs font-semibold text-err">
+                                Chegou {item.received_quantity} de {item.quantity}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 ml-2">
                             <span className="text-ink-2">
-                              {item.quantity} x {formatBRL(item.unit_price)}
+                              {qtdValor} x {formatBRL(item.unit_price)}
                             </span>
                             <span className="font-medium text-ink min-w-[80px] text-right">
-                              {formatBRL(
-                                (parseFloat(item.quantity) || 0) *
-                                  (parseFloat(item.unit_price) || 0)
-                              )}
+                              {formatBRL(qtdValor * (parseFloat(item.unit_price) || 0))}
                             </span>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
 
                       {uiV2 && order.status !== "cancelado" && (
                         <div className="pt-3 mt-2 border-t border-ink-4/20">
