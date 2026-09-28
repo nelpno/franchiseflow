@@ -3,6 +3,8 @@
 // - Venda NOVA com a chave ui_v2 ligada nasce RECEBIDA, a não ser que a franqueada marque
 //   "Ainda vou receber". Com a chave desligada, nada muda: nasce "a receber" e ela toca
 //   "Recebido" na lista (como sempre foi).
+// - Gravação: o formulário manda payment_confirmed no p_sale_data e a RPC save_sale_with_items
+//   grava no INSERT (mesma transação; a nova tentativa pelo client_id não mexe no recebimento).
 // - Editar uma venda NUNCA mexe no recebimento (é o botão da lista que muda).
 // - "Recebido em" = `confirmed_at`, gravado pelo relógio do SERVIDOR
 //   (trigger trg_sales_confirmed_at_servidor); o que o aparelho manda é só compatibilidade.
@@ -11,7 +13,7 @@
 
 /**
  * @param {{ uiV2: boolean, isEditing: boolean, aindaVouReceber: boolean }} p
- * @returns {boolean} true = marcar como recebida logo depois de salvar
+ * @returns {boolean} true = mandar payment_confirmed:true para a RPC
  */
 export function nasceRecebida({ uiV2, isEditing, aindaVouReceber }) {
   if (!uiV2 || isEditing) return false;

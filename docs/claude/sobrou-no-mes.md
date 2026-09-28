@@ -29,9 +29,10 @@ Venda com data FUTURA dentro do mês conta no Resultado. O Financeiro da rede (`
 - **Entram no Sobrou.** O mês é da venda, não do dinheiro na mão. "A receber" é um alerta separado (Financeiro da rede: `unconfirmed_count/value`, e `unconfirmed_old_count` = há mais de 7 dias), não um desconto do resultado.
 - **Recebimento** (`payment_confirmed` + `confirmed_at`), contrato S6.2 (`src/lib/recebimento.js`):
   - chave `ui_v2` DESLIGADA (hoje, rede toda): venda nova nasce "a receber"; a franqueada toca "Recebido" na lista. Nada mudou.
-  - chave LIGADA: venda nova nasce **recebida**, a não ser que ela marque "Ainda vou receber" no formulário. É um `Sale.update` depois da RPC `save_sale_with_items` (que não grava recebimento); se falhar, a venda fica "a receber" e aparece aviso.
+  - chave LIGADA: venda nova nasce **recebida**, a não ser que ela marque "Ainda vou receber" no formulário (a escolha vai no rascunho). O formulário manda `payment_confirmed: true` no `p_sale_data` e a RPC `save_sale_with_items` grava o recebimento NO INSERT, na mesma transação da venda (`supabase/2026-09-28-s6-save-sale-recebida.sql`). A nova tentativa com o mesmo `client_id` (resposta perdida) cai no ON CONFLICT e não mexe no recebimento — nem se outra aba já estornou.
   - editar a venda nunca mexe no recebimento.
   - `confirmed_at` = relógio do SERVIDOR (trigger `trg_sales_confirmed_at_servidor`, `supabase/2026-09-28-s6-sales-confirmed-at-servidor.sql`): vira recebida → `now()`; desmarcada → NULL; continua recebida → mantém. Antes era o relógio do celular (530 vendas em 90 dias com recebimento ANTES da criação).
+- **Front antes do banco:** sem a RPC nova, a chave `payment_confirmed` é ignorada (venda nasce a receber) — por isso o SQL sobe ANTES do front. Com a chave `ui_v2` desligada o front nem manda a chave.
 - **Evento do anúncio (CAPI):** sai quando a venda vira recebida — botão "Recebido", "Confirmar todas" ou venda que nasce recebida (`src/lib/capiManual.js` → n8n `SendCapiOnSaleManual`). Uma vez só: o workflow pula se `capi_sent=true` e o `event_id` é `purchase_manual_<id>` (o Meta descarta repetido). Sem cliente (`contact_id`) não sai.
 
 ## Cancelamento e estorno
@@ -50,7 +51,7 @@ Três caminhos independentes: (A) `calculatePnL` sobre as linhas cruas, (B) soma
 | Santos | 216 | 25.262,36 | 195,85 | 23.769,92 | 1.296,59 |
 | Vila Maria | 276 | 32.565,81 | 466,88 | 16.368,96 | 15.729,97 |
 
-Nenhuma das 3 tinha venda "a receber" em agosto.
+Nenhuma das 3 tinha venda "a receber" em agosto. Nenhuma venda da base tem `sale_date` nulo (28/09: 0 de 20.529), então o filtro por `sale_date` não perde legado.
 
 ## A planilha (S6.3)
 
@@ -63,5 +64,6 @@ Eventos do Clarity: `relatorio_mes_baixado`, `relatorio_mes_erro`, `planilha_res
 ## Voltar atrás
 
 - Recebimento na criação: chave `ui_v2` desligada (já é o padrão).
+- RPC: aplicar `docs/db-backups/save_sale_with_items.2026-09-28-antes.sql`.
 - Trigger: `drop trigger if exists trg_sales_confirmed_at_servidor on public.sales; drop function if exists public.sales_confirmed_at_servidor();`
 - Front: `git revert` dos commits S6.

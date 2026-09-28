@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Sale, SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
+import { SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ import { format } from "date-fns";
 import { calcSale } from "@/lib/saleCalc";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
-import { nasceRecebida, patchRecebimento } from "@/lib/recebimento";
+import { nasceRecebida } from "@/lib/recebimento";
 import { fireCapiOnConfirm } from "@/lib/capiManual";
 
 // ---------------------------------------------------------------------------
@@ -543,6 +543,7 @@ export default function SaleForm({
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
     if (draft.saleDate) setSaleDate(draft.saleDate);
     if (draft.observacoes) setObservacoes(draft.observacoes);
+    if (draft.aindaVouReceber != null) setAindaVouReceber(!!draft.aindaVouReceber);
     if (draft.clientSaleId) clientSaleIdRef.current = draft.clientSaleId;
 
     toast.info("Rascunho recuperado", {
@@ -568,6 +569,7 @@ export default function SaleForm({
           setDiscountType("fixed");
           setDiscountInput(0);
           setObservacoes("");
+          setAindaVouReceber(false);
           toast.success("Rascunho descartado");
         },
       },
@@ -655,8 +657,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes, aindaVouReceber }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes, aindaVouReceber]
   );
 
   useEffect(() => {
@@ -983,8 +985,13 @@ export default function SaleForm({
 
     if (!isEditing && !clientSaleIdRef.current) clientSaleIdRef.current = novoIdVenda();
 
+    // S6.2: decidido uma vez por envio; vai no p_sale_data e a RPC grava junto com a venda
+    // (só no INSERT: a nova tentativa que cai no client_id já gravado não mexe no recebimento).
+    const vaiNascerRecebida = nasceRecebida({ uiV2, isEditing, aindaVouReceber });
+
     const submitSale = async () => {
       const saleData = {
+        ...(vaiNascerRecebida ? { payment_confirmed: true } : {}),
         ...(isEditing ? {} : { client_id: clientSaleIdRef.current }),
         franchise_id: franchiseId,
         value: subtotal,
@@ -1084,30 +1091,13 @@ export default function SaleForm({
         }
       }
 
-      // S6.2: venda que nasce recebida. É um passo à parte (a RPC não grava o recebimento);
-      // se falhar, a venda fica salva como "a receber" e a franqueada fica sabendo. O evento
-      // do anúncio só sai depois de gravado (o workflow pula se capi_sent=true).
-      let recebimentoFalhou = false;
-      if (savedSaleId && nasceRecebida({ uiV2, isEditing, aindaVouReceber })) {
-        try {
-          await Sale.update(savedSaleId, patchRecebimento(true));
-          fireCapiOnConfirm(savedSaleId);
-        } catch (err) {
-          console.warn("Venda salva, mas nao marcou como recebida:", err);
-          recebimentoFalhou = true;
-        }
-      }
+      // Evento do anúncio da venda que nasceu recebida (o workflow pula se capi_sent=true).
+      if (savedSaleId && vaiNascerRecebida) fireCapiOnConfirm(savedSaleId);
 
       // Success — clear draft and notify
       clearDraft(franchiseId);
       clientSaleIdRef.current = null;
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
-      if (recebimentoFalhou) {
-        toast.warning("A venda ficou como \"a receber\".", {
-          description: "Toque em Recebido na lista de vendas para marcar.",
-          duration: 8000,
-        });
-      }
 
       // O cliente pode se perder no caminho: resolveContactId devolve null em silencio
       // quando a busca nao casa e a criacao falha (RLS, telefone duplicado). A venda
