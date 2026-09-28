@@ -161,19 +161,27 @@ check(
 check("sem created_at -> so a data", formatReceiptDateTime("2026-08-30", null) === "30/08/2026");
 check("sem nada -> travessao", formatReceiptDateTime(null, null) === "—");
 
-// --- resolveUnitWhatsApp (P3 item 1: SÓ franchises.phone_number, NUNCA o celular pessoal) --
+// --- resolveUnitWhatsApp (S13.2: SÓ franchises.whatsapp_publico, NUNCA o celular pessoal) --
 check(
-  "franchises.phone_number presente -> formatado",
-  resolveUnitWhatsApp({ phone_number: "14996637977" }) === "(14) 99663-7977"
+  "franchises.whatsapp_publico presente -> formatado",
+  resolveUnitWhatsApp({ whatsapp_publico: "14996637977" }) === "(14) 99663-7977"
 );
 check(
-  "sem phone_number -> null (NÃO cai mais em personal_phone_for_summary)",
-  resolveUnitWhatsApp({ phone_number: null }) === null
+  "fixo (10 dígitos) -> formatado",
+  resolveUnitWhatsApp({ whatsapp_publico: "1433334444" }) === "(14) 3333-4444"
+);
+check(
+  "sem whatsapp_publico -> null (NÃO cai em personal_phone_for_summary)",
+  resolveUnitWhatsApp({ whatsapp_publico: null }) === null
+);
+check(
+  "phone_number (número que o CS usa para chamar a franqueada) NÃO vai ao cupom",
+  resolveUnitWhatsApp({ whatsapp_publico: null, phone_number: "14996637977" }) === null
 );
 check("sem franchise -> null", resolveUnitWhatsApp(null) === null);
 check(
   "resolveUnitWhatsApp ignora um 2º argumento (assinatura antiga com config foi removida)",
-  resolveUnitWhatsApp({ phone_number: null }, { personal_phone_for_summary: "14996637977" }) === null
+  resolveUnitWhatsApp({ whatsapp_publico: null }, { personal_phone_for_summary: "14996637977" }) === null
 );
 
 console.log(`receiptUtils.test.mjs: ${passed} OK`);

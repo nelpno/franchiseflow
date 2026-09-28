@@ -123,18 +123,15 @@ function formatTimePart(createdAt) {
 }
 
 /**
- * WhatsApp PÚBLICO da unidade pro rodapé do cupom: SÓ `franchises.phone_number`.
- * P3 da S13 (28/09/2026, "não publicar"): a versão anterior caía em
- * `franchise_configurations.personal_phone_for_summary` — esse é o CELULAR PESSOAL do dono,
- * usado internamente pra receber o resumo de pedidos, não um número de atendimento. Imprimir
- * ele no cupom do cliente vaza o telefone pessoal do franqueado. NUNCA usar esse campo aqui.
- * Hoje (28/09/2026, medido por SELECT/count) 0 de 66 unidades ativas têm `phone_number`
- * preenchido — sem fonte pública confiável, a linha simplesmente não aparece pra ninguém até
- * a rede cadastrar um número de atendimento de verdade (backlog: telefone de atendimento
- * público em `franchises.phone_number`).
+ * WhatsApp PÚBLICO da unidade pro rodapé do cupom: SÓ `franchises.whatsapp_publico`
+ * (S13.2, 28/09/2026) = o número do robô da unidade no Zuck, o mesmo com que o cliente já
+ * conversa. 53 de 66 unidades preenchidas (robô conectado); sem valor, a linha não aparece.
+ * NUNCA `franchise_configurations.personal_phone_for_summary` (celular PESSOAL do dono, P3 da
+ * S13) nem `franchises.phone_number` (é o número que o CS usa para chamar a franqueada;
+ * se um dia for preenchido com o celular dela, vazaria no cupom).
  */
 export function resolveUnitWhatsApp(franchise) {
-  const raw = franchise?.phone_number || "";
+  const raw = franchise?.whatsapp_publico || "";
   if (!raw) return null;
   const formatted = formatPhone(raw);
   return formatted || null;

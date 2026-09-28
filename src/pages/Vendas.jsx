@@ -73,7 +73,7 @@ export default function Vendas() {
       // sem ele o PostgREST varria a tabela inteira e deixava a RLS peneirar, e franqueado com
       // 2 unidades baixava as DUAS para descartar uma no client.
       const franchisesData = await Franchise.list(null, null, {
-        columns: 'id, evolution_instance_id, name, city, owner_name, phone_number',
+        columns: 'id, evolution_instance_id, name, city, owner_name, whatsapp_publico',
       });
       if (!mountedRef.current) return;
       setCurrentUser(user);
@@ -189,11 +189,9 @@ export default function Vendas() {
     return contacts.filter((c) => c.franchise_id === franchiseId);
   }, [contacts, franchiseId]);
 
-  // Rodapé do cupom (S13.1, corrigido no P3 28/09): SÓ franchises.phone_number (público da
-  // unidade). NUNCA personal_phone_for_summary — é o celular PESSOAL do dono, usado pra avisos
-  // internos (resumo de pedido), não um número de atendimento ao cliente. Hoje 0/66 unidades
-  // ativas têm phone_number preenchido (medido por SELECT/count, sem imprimir número real) —
-  // então a linha não aparece pra ninguém até a rede cadastrar um número público de verdade.
+  // Rodapé do cupom (S13.2): SÓ franchises.whatsapp_publico (número do robô, coluna própria).
+  // NUNCA personal_phone_for_summary (celular PESSOAL do dono) nem phone_number (o CS usa para
+  // chamar a franqueada). Regra e números em resolveUnitWhatsApp (receiptUtils.js).
   const unitWhatsApp = useMemo(() => resolveUnitWhatsApp(primaryFranchise), [primaryFranchise]);
 
   if (loading || (franchiseId && loadingUnidade)) {
