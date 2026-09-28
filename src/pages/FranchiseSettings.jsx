@@ -78,7 +78,7 @@ const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focu
 const labelClass = "block text-xs font-semibold text-ink-2 mb-2";
 
 const PICKUP_TYPES = [
-  { value: 'simple', label: '🏠 Retirada simples', description: 'Cliente combina e busca com você (sem loja).' },
+  { value: 'simple', label: '🏠 Retirada simples', description: 'Cliente combina e busca com você (sem ponto comercial).' },
   { value: 'store', label: '🏪 Loja / ponto físico', description: 'Você tem um ponto comercial. O bot fala "nossa loja" e informa o endereço.' },
 ];
 
@@ -880,7 +880,12 @@ function FranchiseSettingsContent() {
 
   return (
     <div className="pb-32">
-      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6">
+      {/* Contêiner externo igual ao de Marketing/Meus Clientes (mesma margem/padding nas
+          telas do franqueado, S19.1); o formulário em si fica mais estreito por dentro
+          (max-w-3xl, SEM mx-auto) para a borda esquerda alinhar com as outras telas em
+          vez de ficar centralizado sozinho dentro da área larga. */}
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="max-w-3xl space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1354,12 +1359,12 @@ function FranchiseSettingsContent() {
                 <ToggleCard
                   icon="event_available"
                   label="Aceitar reserva para outro dia sem pagamento antecipado?"
-                  description="Vale para entrega e retirada. Ligado, o robô aceita pedido para outro dia sem cobrar na hora e avisa você para separar e confirmar."
+                  description="Vale para entrega e retirada. Ligado, o robô aceita pedido para outro dia sem cobrar na hora e avisa você para preparar e confirmar."
                   checked={formData.accepts_reservation_without_payment ?? false}
                   onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
                 />
                 <p className="text-xs text-ink-3 mt-1 ml-1">
-                  Desligado por padrão. Ligue só se você aceita separar produto antes de receber: o risco do cliente sumir é seu.
+                  Desligado por padrão. Ligue só se você aceita preparar o produto antes de receber: o risco do cliente sumir é seu.
                 </p>
               </div>
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
@@ -1381,6 +1386,7 @@ function FranchiseSettingsContent() {
             </WizardStep>
           )}
         </form>
+      </div>
       </div>
 
       {/* WhatsApp Modal */}
