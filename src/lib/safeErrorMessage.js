@@ -75,11 +75,3 @@ export function ehErroDeRegra(error) {
   if (!code) return false;
   return code.startsWith("23") || code === "42501" || code === "P0001";
 }
-
-/**
- * Gera lista legível de queries que falharam sem expor nomes internos.
- */
-export function safeFailedQueriesMessage(failedQueries) {
-  if (!failedQueries || failedQueries.length === 0) return null;
-  return `Alguns dados não carregaram (${failedQueries.length} fonte${failedQueries.length > 1 ? "s" : ""}). Tente atualizar a página.`;
-}

@@ -15,9 +15,3 @@
  */
 export const SALE_PNL_COLUMNS =
   "value, delivery_fee, discount_amount, card_fee_amount, fee_passed_to_customer";
-
-/**
- * Campos mínimos para faturamento por venda (`getSaleNetValue`): telas que só
- * somam receita (dashboards, gráficos, ranking) e NÃO calculam DRE.
- */
-export const SALE_REVENUE_COLUMNS = "value, delivery_fee, discount_amount";

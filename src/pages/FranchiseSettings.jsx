@@ -71,7 +71,6 @@ const initialFormData = {
   delivery_schedule: [],
   catalog_image_url: '',
   payment_fees: null,
-  bot_personality: '',
   facebook_page_id: '',
 };
 
@@ -385,7 +384,6 @@ function FranchiseSettingsContent() {
       delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
       delivery_schedule: config.delivery_schedule || [],
       pix_key_type: config.pix_key_type || '',
-      bot_personality: config.bot_personality || '',
       operating_hours: config.operating_hours || [],
       pix_holder_name: config.pix_holder_name || '',
       pix_bank: config.pix_bank || '',

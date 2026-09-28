@@ -65,17 +65,6 @@ export function resolveActiveFranchise(franchises, currentUser, selectedFranchis
 }
 
 /**
- * Dado um franchiseId (que pode ser UUID ou evolution_instance_id),
- * encontra a franquia correspondente.
- */
-export function findFranchise(franchises, franchiseId) {
-  if (!franchiseId || !franchises) return null;
-  return franchises.find(
-    (f) => f.id === franchiseId || f.evolution_instance_id === franchiseId
-  );
-}
-
-/**
  * Labels amigáveis para métodos de pagamento.
  */
 export const PAYMENT_METHODS = [
@@ -101,24 +90,6 @@ export function getPaymentMethodLabel(value) {
 }
 
 /**
- * Labels para métodos de entrega.
- */
-export const DELIVERY_METHODS = [
-  { value: "own_fleet", label: "Motoboy próprio", description: "Leva máquina de cartão" },
-  { value: "third_party", label: "Uber / Flash / iFood", description: "Só PIX ou link (sem máquina)" },
-  { value: "both", label: "Ambos", description: "Próprio + terceirizado" },
-];
-
-/**
- * Labels para personalidade do bot.
- */
-export const BOT_PERSONALITIES = [
-  { value: "formal", label: "Formal", description: "Sério e executivo" },
-  { value: "friendly", label: "Amigável", description: "Caloroso e prestativo" },
-  { value: "casual", label: "Descontraído", description: "Jovial e direto" },
-];
-
-/**
  * Labels para tipo de chave PIX.
  */
 export const PIX_KEY_TYPES = [
@@ -128,21 +99,6 @@ export const PIX_KEY_TYPES = [
   { value: "email", label: "E-mail" },
   { value: "random", label: "Chave aleatória" },
 ];
-
-/**
- * Monta um Map de configs indexado por franchise_evolution_instance_id.
- * Usado para lookup rápido ao exibir nomes padronizados.
- */
-export function buildConfigMap(configs) {
-  const map = {};
-  if (!configs) return map;
-  configs.forEach((c) => {
-    if (c.franchise_evolution_instance_id) {
-      map[c.franchise_evolution_instance_id] = c;
-    }
-  });
-  return map;
-}
 
 /**
  * Nome padronizado de franquia.
