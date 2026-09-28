@@ -1,11 +1,25 @@
-// Guias escritos da tela Ajuda/Tutoriais (Fase 4 do redesenho, 26/09/2026).
+// Guias escritos da tela Ajuda/Tutoriais (Fase 4 do redesenho, 26/09/2026; campos v2 da S3, 28/09/2026).
 // Cada texto foi conferido contra o comportamento REAL (código + prompt LIVE do robô):
 // provas em `.tmp/onda2/conferencia-textos.md`. Mudou o comportamento? Mude o guia junto.
+// Rascunho ampliado (31 guias, texto puro, revisão leiga) em `docs/guias-ajuda-v2.md` —
+// fonte de referência para quando os 23 guias que faltam entrarem aqui.
 // Travas de linguagem: `node src/lib/guiasAjuda.test.mjs` (palavras proibidas, links).
 //
 // Formato de um passo: { titulo, texto, botao?, imagem? }
 //   botao  = rótulo EXATO do que a pessoa toca na tela (vira o chip com borda da marca)
 //   imagem = recorte real da tela em /public/tutoriais (só quando existe; nunca inventar)
+//
+// Campos v2 (S3, 28/09/2026) — a tela nova que os usa só liga na S10; até lá ficam
+// carregados nos dados sem consumidor. NENHUM é opcional na trava do teste, exceto `drive`:
+//   area      = agrupamento da tela nova (bate com as seções de docs/guias-ajuda-v2.md)
+//   sinonimos = palavras que a franqueada usaria para buscar este guia (busca da S10)
+//   dica      = 1 frase prática, além do passo a passo (pode repetir o que já está no texto)
+//   erroComum = o erro mais comum de quem segue este guia, e como sair dele
+//   drive     = { href, rotulo } de `materiais.js`, só quando o guia manda a pessoa para
+//                fora do app (Drive/Canva); ausente na maioria dos guias
+// Import RELATIVO (não "@/"): este arquivo roda direto com `node` no teste (sem o
+// resolver de alias do Vite), e o alias quebraria o `node src/lib/guiasAjuda.test.mjs`.
+import { DRIVE_VIDEOS_TREINAMENTO, DRIVE_POSTAGENS } from "../components/onboarding/materiais.js";
 
 export const APP_URL = "https://app.maximassas.tech";
 
@@ -22,6 +36,10 @@ export const GUIAS = [
     resumo: "Os 5 passos para abrir sua unidade: o que fazer agora, o que o app marca sozinho e o que a Maxi faz com você.",
     tempo: "Leitura de 3 minutos",
     icone: "rocket_launch",
+    area: "Começar",
+    sinonimos: ["trilha", "onboarding", "abrir a unidade", "por onde começo"],
+    dica: "Quando a trilha leva você para outra tela, aparece uma faixa no topo com o botão \"Voltar aos Primeiros passos\".",
+    erroComum: "Tocou em \"Marcar como feito\" sem querer? Toque de novo no mesmo botão para desfazer.",
     passos: [
       { titulo: "Abra a trilha", texto: "Enquanto sua unidade está começando, o menu tem \"Primeiros passos\" e a tela Início mostra um cartão vermelho.", botao: "Continuar", imagem: "/tutoriais/primeiros-passos-6.webp" },
       { titulo: "Veja onde você está", texto: "No topo aparece o passo atual. O cartão \"Agora\" mostra a próxima tarefa, e o botão vermelho leva direto para a tela certa.", imagem: "/tutoriais/primeiros-passos-1.webp" },
@@ -43,6 +61,10 @@ export const GUIAS = [
     resumo: "Cliente, produtos, pagamento e entrega: como lançar uma venda feita fora do robô.",
     tempo: "3 a 5 minutos",
     icone: "point_of_sale",
+    area: "Vender",
+    sinonimos: ["nova venda", "lançar venda", "vender fora do robô", "vender no balcão"],
+    dica: "Sempre escolha o cliente na venda. É assim que ele entra no Quem chamar hoje e você sabe quem voltou a comprar.",
+    erroComum: "Tocar duas vezes em \"Registrar Venda\" e ficar com a venda em dobro. Toque uma vez e espere a confirmação; se duplicou, exclua a repetida.",
     passos: [
       { titulo: "Abra uma venda nova", texto: "No computador, entre em Vendas e toque no botão. No celular, use o botão redondo \"Vender\" no meio da barra de baixo.", botao: "Nova Venda" },
       { titulo: "Escolha o cliente", texto: "Busque pelo nome. Cliente novo? Digite o nome e ele vira um contato novo, com telefone opcional.", botao: "Cliente" },
@@ -60,6 +82,10 @@ export const GUIAS = [
     resumo: "Todo dia o app mostra quem vale a pena chamar no WhatsApp, com a mensagem pronta.",
     tempo: "3 a 5 minutos por dia",
     icone: "people",
+    area: "Clientes",
+    sinonimos: ["chamar cliente", "mensagem pronta", "quem chamar hoje", "cliente sumido"],
+    dica: "São no máximo 8 por dia, de propósito: mensagem pessoal, uma de cada vez, vende mais e protege o seu número.",
+    erroComum: "Tocar em \"Chamar no WhatsApp\" e não enviar. O cartão já fica marcado como feito; use \"Desfazer\", no aviso que aparece embaixo, e chame depois.",
     passos: [
       { titulo: "Veja a lista do dia", texto: "Aparece em \"Quem chamar hoje\", na tela Início, e na aba Hoje de Meus Clientes.", botao: "Hoje", imagem: "/tutoriais/quem-chamar-hoje-1.webp" },
       { titulo: "Leia o motivo", texto: "Cada cartão diz por que chamar: voltou a falar e não comprou, quase comprou, hora de repetir, primeira compra ou sumido.", imagem: "/tutoriais/quem-chamar-hoje-2.webp" },
@@ -80,6 +106,10 @@ export const GUIAS = [
     resumo: "O Lucro do mês, as despesas e o relatório em PDF.",
     tempo: "3 a 5 minutos",
     icone: "bar_chart",
+    area: "Dinheiro",
+    sinonimos: ["lucro do mês", "quanto sobrou", "financeiro", "despesas", "relatório do mês"],
+    dica: "Pedido à fábrica entregue, verba de marketing confirmada e mensalidade paga entram sozinhos nas despesas; só os gastos do dia a dia você lança.",
+    erroComum: "O número parece alto demais porque faltam despesas lançadas (sacolas, gás, aluguel). Lance as despesas que faltam para o valor ficar mais próximo da realidade.",
     passos: [
       { titulo: "Abra o resultado", texto: "Entre em Gestão e toque na aba.", botao: "Resultado" },
       { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês para ver outro período." },
@@ -98,6 +128,10 @@ export const GUIAS = [
     resumo: "Repor o Estoque com os produtos da Maxi e acompanhar a entrega.",
     tempo: "5 a 10 minutos",
     icone: "local_shipping",
+    area: "Estoque e pedido à fábrica",
+    sinonimos: ["reposição", "pedir produto", "repor estoque", "pedido à fábrica"],
+    dica: "No primeiro pedido, a lista já vem preenchida com o pedido modelo da Maxi: é uma referência, ajuste o que precisar antes de enviar.",
+    erroComum: "Enviar sem conferir as quantidades da sugestão. Ela é só um ponto de partida: mude o que precisar antes de enviar.",
     passos: [
       { titulo: "Abra a reposição", texto: "Entre em Gestão e toque na aba.", botao: "Reposição" },
       { titulo: "Comece um pedido", texto: "A lista traz os produtos da Maxi. Produto que você cadastrou por conta própria fica só no Estoque, fora do pedido.", botao: "Novo Pedido" },
@@ -115,6 +149,10 @@ export const GUIAS = [
     resumo: "Registrar o PIX da verba dos anúncios e anexar o comprovante.",
     tempo: "Cerca de 5 minutos",
     icone: "campaign",
+    area: "Dinheiro",
+    sinonimos: ["verba do anúncio", "investimento em marketing", "pix do anúncio", "pagar anúncio"],
+    dica: "Sem o comprovante agora? Dá para registrar sem ele e anexar depois.",
+    erroComum: "Achar que registrar no app já faz o PIX. Não faz: o PIX é no seu banco, o registro só avisa a Maxi para conferir.",
     passos: [
       { titulo: "Abra Marketing", texto: "O quadro da verba fica no topo da tela.", botao: "Investimento em Marketing" },
       { titulo: "Confira o mês", texto: "Nos últimos 5 dias do mês, o quadro já abre no mês seguinte. Troque no seletor ao lado do título, se precisar." },
@@ -133,6 +171,11 @@ export const GUIAS = [
     resumo: "Achar as artes e as legendas do mês e salvar no celular para postar.",
     tempo: "5 a 10 minutos",
     icone: "image",
+    area: "Marketing",
+    sinonimos: ["postagem", "instagram", "facebook", "materiais do mês", "legenda"],
+    dica: "Copie a legenda antes de baixar a imagem: assim o texto já fica guardado no celular para colar depois.",
+    erroComum: "Achar que o app posta sozinho nas redes. Não posta: a postagem é feita por você, no Instagram ou no Facebook da unidade.",
+    drive: { href: DRIVE_POSTAGENS, rotulo: "Ver mais artes no Drive (acervo completo)" },
     passos: [
       { titulo: "Abra Marketing", texto: "Os materiais da rede ficam abaixo do quadro da verba." },
       { titulo: "Escolha o mês", texto: "Use o filtro para ver as artes do período. Os botões de cima filtram por tipo: Imagens, Vídeos, PDFs e Links.", botao: "Mês" },
@@ -149,6 +192,11 @@ export const GUIAS = [
     resumo: "O robô parou de responder porque o WhatsApp desconectou? Leia o QR Code de novo.",
     tempo: "3 a 5 minutos",
     icone: "qr_code_2",
+    area: "Meu robô",
+    sinonimos: ["robô não responde", "whatsapp desconectou", "qr code", "conectar robô"],
+    dica: "A conexão cai quando o celular da unidade fica muito tempo sem internet ou sem bateria. Deixe-o carregando e no Wi-Fi.",
+    erroComum: "Tentar ler o QR Code com o próprio celular que está mostrando o código. Precisa de duas telas: uma mostra, a outra lê.",
+    drive: { href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Assistir vídeos de treinamento (Drive)" },
     passos: [
       { titulo: "Use duas telas", texto: "Abra o app no computador (ou em outro celular). O celular da unidade vai ler o código que aparece nessa tela." },
       { titulo: "Abra o Meu Vendedor", texto: "O quadro da conexão fica no topo. Se ele disser que está ativo, o botão se chama Reconectar.", botao: "Gerar QR Code" },
@@ -165,6 +213,10 @@ export const GUIAS = [
     resumo: "Hoje, Unidades e Mural do CS: quem precisa de atenção e o registro do que foi feito.",
     tempo: "10 a 15 minutos, sem contar as conversas",
     icone: "wb_sunny",
+    area: "Equipe",
+    sinonimos: ["rotina do cs", "mural do cs", "unidades com problema", "checklist da manhã"],
+    dica: "Comece pelos cartões de hoje no Mural do CS antes de abrir a lista inteira de Unidades.",
+    erroComum: "Falar com a unidade e não registrar no cartão o que foi combinado. Sem registro, o cartão parece esquecido.",
     passos: [
       { titulo: "Comece pelo resumo", texto: "Em Hoje, leia \"Quem precisa de você\" e, se o seu acesso mostrar, \"Pendências\".", botao: "Hoje" },
       { titulo: "Abra a lista de unidades", texto: "Use a busca para achar uma unidade ou os filtros para ver um grupo.", botao: "Unidades" },
@@ -181,6 +233,10 @@ export const GUIAS = [
     resumo: "Dados, documento, endereço e o convite de primeiro acesso. Para administrador ou gerente.",
     tempo: "5 a 10 minutos, com os dados em mãos",
     icone: "home_work",
+    area: "Equipe",
+    sinonimos: ["franquia nova", "cadastrar franqueado", "abrir unidade nova", "convite de acesso"],
+    dica: "O e-mail cadastrado é o mesmo que recebe o convite de primeiro acesso ao app — confira antes de salvar.",
+    erroComum: "Documento com um dígito errado no CPF ou CNPJ: a cobrança não é criada e a unidade fica sem mensalidade configurada.",
     passos: [
       { titulo: "Abra o cadastro", texto: "Em Unidades, toque no botão do topo.", botao: "Nova unidade" },
       { titulo: "Nomeie a unidade", texto: "Preencha o nome da franquia e o nome do franqueado." },

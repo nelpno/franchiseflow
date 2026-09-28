@@ -11,11 +11,14 @@ import { HELP_TIPS } from "./helpTips.js";
 let n = 0;
 const t = (nome, fn) => { fn(); n++; };
 
-// Todo texto que chega à pessoa: título, resumo, passos, nota, mensagem do WhatsApp e "?".
+// Todo texto que chega à pessoa: título, resumo, passos, nota, dica, erro comum, sinônimos,
+// rótulo do link do Drive, mensagem do WhatsApp e "?".
 const textos = [];
 for (const g of GUIAS) {
-  textos.push([g.slug, g.titulo], [g.slug, g.resumo], [g.slug, g.whatsapp]);
+  textos.push([g.slug, g.titulo], [g.slug, g.resumo], [g.slug, g.whatsapp], [g.slug, g.dica], [g.slug, g.erroComum]);
   if (g.nota) textos.push([g.slug, g.nota]);
+  if (g.drive) textos.push([g.slug, g.drive.rotulo]);
+  for (const s of g.sinonimos || []) textos.push([g.slug, s]);
   for (const p of g.passos) {
     textos.push([g.slug, p.titulo], [g.slug, p.texto]);
     if (p.botao) textos.push([g.slug, p.botao]);
@@ -78,6 +81,20 @@ t("slugs únicos, passos numerados e mensagem de WhatsApp em todo guia", () => {
     assert.ok(g.whatsapp && g.whatsapp.length <= 200, `${g.slug}: mensagem curta`);
     assert.ok(["franqueado", "equipe"].includes(g.publico), g.slug);
     for (const p of g.passos) assert.ok(p.titulo && p.texto, g.slug);
+  }
+});
+
+// Campos v2 (S3, 28/09/2026): a tela nova (S10) usa area/sinonimos/dica/erroComum para
+// busca e para os blocos "Dica"/"Erro comum" do guia. `drive` é o único opcional.
+t("todo guia tem area, sinônimos, dica e erro comum (campos v2)", () => {
+  const AREAS_VALIDAS = ["Começar", "Vender", "Clientes", "Estoque e pedido à fábrica", "Dinheiro", "Marketing", "Meu robô", "Equipe"];
+  for (const g of GUIAS) {
+    assert.ok(AREAS_VALIDAS.includes(g.area), `${g.slug}: area "${g.area}" não está na lista`);
+    assert.ok(Array.isArray(g.sinonimos) && g.sinonimos.length >= 2, `${g.slug}: sinonimos`);
+    for (const s of g.sinonimos) assert.ok(s && s.length <= 40, `${g.slug}: sinônimo longo demais "${s}"`);
+    assert.ok(g.dica && g.dica.length <= 240, `${g.slug}: dica`);
+    assert.ok(g.erroComum && g.erroComum.length <= 320, `${g.slug}: erroComum`);
+    if (g.drive) assert.ok(g.drive.href?.startsWith("https://") && g.drive.rotulo, `${g.slug}: drive`);
   }
 });
 
