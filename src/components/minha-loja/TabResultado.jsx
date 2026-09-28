@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Sale, SaleItem, Expense, InventoryItem, AuditLog, getMarketingAttribution } from "@/entities/all";
+import { Sale, SaleItem, Expense, InventoryItem, AuditLog, PurchaseOrder, getMarketingAttribution, getFranchiseFunnelStats } from "@/entities/all";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,8 @@ import {
   isSameMonth,
   parseISO,
   subDays,
+  endOfMonth,
+  startOfMonth,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -53,8 +55,11 @@ import ErrorState from "@/components/shared/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { listarFranquias } from "@/lib/franchisesCache";
-import { montarRelatorioMensal, montarBlocoAnuncio } from "@/lib/monthlyReport";
+import { montarRelatorioMensal, montarBlocoAnuncio, montarResultadoMes, anuncioComBase } from "@/lib/monthlyReport";
 import { gerarRelatorioMensalPdf } from "@/lib/monthlyReportPdf";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import ResultadoV2 from "@/components/minha-loja/resultado/ResultadoV2";
 
 // --------------------------------------------------------------- helpers
 // formatBRL vem de @/lib/formatters. formatBRLCompact AQUI é formatBRLCompactResultado (S8-P3,
@@ -808,6 +813,13 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [lancarCompraOpen, setLancarCompraOpen] = useState(false);
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
+  // S17 (28/09/2026): tela nova do Resultado e PDF novo SÓ com a chave ui_v2. Desligada =
+  // tudo abaixo que depende de uiV2 não roda, e a tela é a de sempre.
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  // Pedidos à fábrica para o aviso "compra da fábrica ainda não lançada" (S17.2). null = não
+  // carregou: o aviso some em vez de afirmar algo sem dado. Poucas linhas por unidade.
+  const [purchaseOrders, setPurchaseOrders] = useState(null);
+  const [pedidosVersao, setPedidosVersao] = useState(0);
 
   // S8.2 (28/09/2026): antes buscava TODO o histórico de vendas/despesas da franquia
   // (fetchAll sem data) só pra mostrar 1 mês + evolução de 6 meses + acumulado do ano —
@@ -906,6 +918,19 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   // do callback já muda exatamente nesses dois casos, por causa do useCallback acima).
   useEffect(() => { loadData(); }, [loadData]);
 
+  useEffect(() => {
+    if (!uiV2 || !franchiseId) return undefined;
+    const controller = new AbortController();
+    PurchaseOrder.filter({ franchise_id: franchiseId }, null, null, {
+      columns: "id, status, total_amount, freight_cost, ordered_at, delivered_at",
+      fetchAll: true,
+      signal: controller.signal,
+    })
+      .then((rows) => { if (!controller.signal.aborted) setPurchaseOrders(rows); })
+      .catch(() => { if (!controller.signal.aborted) setPurchaseOrders(null); });
+    return () => controller.abort();
+  }, [uiV2, franchiseId, pedidosVersao]);
+
   // Lookup de contatos para resolver nome do cliente no export
   const contactsMap = useMemo(() => {
     const map = {};
@@ -932,6 +957,12 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const monthExpensesSorted = useMemo(() => sortExpenses(monthExpenses), [monthExpenses]);
   const expensesExportData = useMemo(() => buildExpensesExportRows(monthExpenses, { includeTotalsRow: true }), [monthExpenses]);
   const prevPnl = useMemo(() => calculatePnL(prevMonthSales, prevMonthSaleItems, prevMonthExpenses), [prevMonthSales, prevMonthSaleItems, prevMonthExpenses]);
+
+  // S17: modelo único da tela nova e do PDF novo (montarResultadoMes). Só calcula com a chave.
+  const modeloV2 = useMemo(
+    () => (uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null),
+    [uiV2, sales, saleItems, expenses, purchaseOrders, selectedMonth]
+  );
 
   // Resumo de estoque (atual)
   const estoqueResumo = useMemo(() => calcularEstoqueResumo(inventoryItems), [inventoryItems]);
@@ -1058,7 +1089,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   };
   const handleLancarDespesa = () => { setEditingExpense(null); setExpenseDialogOpen(true); };
   const handleEditExpense = (exp) => { setEditingExpense(exp); setExpenseDialogOpen(true); };
-  const handleExpenseSaved = () => { setExpenseDialogOpen(false); setEditingExpense(null); loadData({ force: true }); };
+  const handleExpenseSaved = () => { setExpenseDialogOpen(false); setEditingExpense(null); loadData({ force: true }); setPedidosVersao((v) => v + 1); };
   const handleDeleteExpense = async (id) => {
     try {
       await Expense.delete(id);
@@ -1082,18 +1113,28 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
     if (gerandoRelatorio) return;
     setGerandoRelatorio(true);
     try {
-      const relatorio = montarRelatorioMensal({ sales, saleItems, expenses, mesSelecionado: selectedMonth });
-      const [franquias, anuncio] = await Promise.all([
+      // S17.2: com a chave, o PDF sai do MESMO modelo da tela (montarResultadoMes).
+      const modelo = uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null;
+      const relatorio = modelo ? modelo.relatorio : montarRelatorioMensal({ sales, saleItems, expenses, mesSelecionado: selectedMonth });
+      // O anúncio só entra com o robô com base (has_bot_data nos 3 meses do relatório).
+      const inicioFunil = parseISO(`${relatorio.meses[0].chave}-01`);
+      const fimFunil = isSameMonth(selectedMonth, new Date()) ? new Date() : endOfMonth(selectedMonth);
+      const [franquias, anuncioBruto, funil] = await Promise.all([
         listarFranquias().catch(() => []),
         // undefined = não carregou (o PDF avisa); null = a unidade não anunciou nesses meses
         Promise.all(relatorio.meses.map((m) => getMarketingAttribution(m.chave, franchiseId).then((r) => r?.[0] || null)))
           .then(montarBlocoAnuncio)
           .catch(() => undefined),
+        uiV2
+          ? getFranchiseFunnelStats(franchiseId, format(startOfMonth(inicioFunil), "yyyy-MM-dd"), format(fimFunil, "yyyy-MM-dd")).catch(() => undefined)
+          : Promise.resolve(null),
       ]);
+      const anuncio = uiV2 ? anuncioComBase(anuncioBruto, funil) : anuncioBruto;
       const unidade = franquias.find((f) => f.evolution_instance_id === franchiseId);
       await gerarRelatorioMensalPdf({
         relatorio,
         anuncio,
+        avisoFabrica: modelo ? modelo.avisoFabrica : undefined,
         nomeUnidade: unidade?.name || "Maxi Massas",
         mesSelecionado: selectedMonth,
       });
@@ -1130,6 +1171,55 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
 
   const hasData = monthSales.length > 0 || monthExpenses.length > 0;
 
+  // Diálogos (gasto, compra fora da fábrica, excluir) — os mesmos nas duas telas.
+  const dialogos = (
+    <>
+    {/* Expense form dialog */}
+    <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-md p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="font-plus-jakarta">
+            {editingExpense ? (uiV2 ? "Editar gasto" : "Editar despesa") : (uiV2 ? "Registrar gasto" : "Lançar despesa")}
+          </DialogTitle>
+        </DialogHeader>
+        <ExpenseForm
+          expense={editingExpense}
+          franchiseId={franchiseId}
+          currentUser={currentUser}
+          onSave={handleExpenseSaved}
+          onCancel={() => setExpenseDialogOpen(false)}
+        />
+      </DialogContent>
+    </Dialog>
+
+    {/* Lançar Compra externa */}
+    <LancarCompraSheet
+      open={lancarCompraOpen}
+      onOpenChange={setLancarCompraOpen}
+      franchiseId={franchiseId}
+      inventoryItems={inventoryItems}
+      recentSuppliers={recentSuppliers}
+      onSaved={() => loadData({ force: true })}
+    />
+
+    {/* Delete confirmation */}
+    <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-sm p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="font-plus-jakarta">Excluir despesa?</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-ink-2">Esta ação não pode ser desfeita.</p>
+        <div className="flex gap-3 mt-4">
+          <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+          <Button className="flex-1 bg-brand hover:bg-brand-dark text-white" onClick={() => handleDeleteExpense(deleteConfirmId)}>
+            Excluir
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+
   if (loading) {
     // Esqueleto no lugar do spinner: a tela demora e o esqueleto ja mostra o formato
     return (
@@ -1157,6 +1247,49 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
         // ignora a checagem de cobertura e busca de novo.
         onTentarNovamente={() => loadData({ force: true })}
       />
+    );
+  }
+
+  if (uiV2 && modeloV2) {
+    return (
+      <>
+        <ResultadoV2
+          modelo={modeloV2}
+          hasData={hasData}
+          monthLabel={monthLabel}
+          isCurrentMonth={isCurrentMonth}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onBaixarRelatorio={sales.length > 0 || expenses.length > 0 ? handleBaixarRelatorio : null}
+          gerandoRelatorio={gerandoRelatorio}
+          estoque={estoqueResumo}
+          paradosCount={paradosCount}
+          onClickEstoque={handleClickEstoque}
+          despesas={monthExpensesSorted}
+          onEditarDespesa={handleEditExpense}
+          onExcluirDespesa={setDeleteConfirmId}
+          onRegistrarGasto={handleLancarDespesa}
+          onLancarCompra={handleLancarCompra}
+          exportDespesas={{
+            data: expensesExportData,
+            columns: EXPENSES_EXPORT_COLUMNS,
+            filename: `despesas-${format(selectedMonth, "yyyy-MM")}`,
+            title: `Despesas — ${monthLabel}`,
+            evento: "planilha_despesas",
+          }}
+          exportVendas={{
+            count: monthSales.length,
+            data: exportData,
+            columns: exportColumns,
+            filename: `vendas-${format(selectedMonth, "yyyy-MM")}`,
+            title: `Vendas — ${monthLabel}`,
+            evento: "planilha_resultado",
+          }}
+          auditLogs={auditLogs}
+          mostrarDicaClientes={!hideFranchiseeLinks}
+        />
+        {dialogos}
+      </>
     );
   }
 
@@ -1352,49 +1485,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
         </>
       )}
 
-      {/* Expense form dialog */}
-      <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-md p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="font-plus-jakarta">
-              {editingExpense ? "Editar despesa" : "Lançar despesa"}
-            </DialogTitle>
-          </DialogHeader>
-          <ExpenseForm
-            expense={editingExpense}
-            franchiseId={franchiseId}
-            currentUser={currentUser}
-            onSave={handleExpenseSaved}
-            onCancel={() => setExpenseDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Lançar Compra externa */}
-      <LancarCompraSheet
-        open={lancarCompraOpen}
-        onOpenChange={setLancarCompraOpen}
-        franchiseId={franchiseId}
-        inventoryItems={inventoryItems}
-        recentSuppliers={recentSuppliers}
-        onSaved={() => loadData({ force: true })}
-      />
-
-      {/* Delete confirmation */}
-      <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-sm p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="font-plus-jakarta">Excluir despesa?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-ink-2">Esta ação não pode ser desfeita.</p>
-          <div className="flex gap-3 mt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
-            <Button className="flex-1 bg-brand hover:bg-brand-dark text-white" onClick={() => handleDeleteExpense(deleteConfirmId)}>
-              Excluir
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {dialogos}
     </div>
   );
 }
