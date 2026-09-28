@@ -10,6 +10,7 @@ import ExportButtons from "@/components/shared/ExportButtons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL, formatBRLCompactResultado } from "@/lib/formatters";
 import { getCategoryMeta } from "@/lib/expenseCategories";
+import { textoComparacaoSobrou, blocosDoResultado } from "@/lib/resultadoTela";
 import { buildProductsExportRows, productsExportColumns, produtosComPercentual } from "@/lib/productsExport";
 import { CARTAO, H2, TOM_ATENCAO, BTN_SECUNDARIO, BTN_PRIMARIO } from "@/components/shared/adminUi";
 
@@ -27,19 +28,10 @@ function Barra({ pct, cor }) {
   );
 }
 
-function textoComparacao(c) {
-  if (!c) return null;
-  const quanto = formatBRL(Math.abs(c.diff));
-  const trecho = c.mesmoTrecho ? " no mesmo trecho" : "";
-  if (Math.abs(c.diff) < 0.005) return `Igual a ${c.mesAnterior}${trecho}`;
-  const lado = c.diff > 0 ? "a mais" : "a menos";
-  const pct = c.pct !== null ? ` (${c.pct > 0 ? "+" : ""}${c.pct}%)` : "";
-  return `${quanto} ${lado} que ${c.mesAnterior}${trecho}${pct}`;
-}
 
 // --------------------------------------------------------------- topo: Sobrou, Entrou × Saiu
 function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, onBaixarRelatorio, gerandoRelatorio }) {
-  const { sobrou, entrou, saiu, nomeMes, emAndamento, comparacao } = modelo;
+  const { sobrou, entrou, saiu, nomeMes, comparacao, diaCorte } = modelo;
   const maior = Math.max(entrou, saiu, 1);
   const positivo = sobrou >= 0;
   return (
@@ -58,11 +50,11 @@ function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, on
 
       <div className="grid gap-5 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:items-center md:gap-10">
         <div className="flex flex-col gap-1">
-          <span className={LBL}>Sobrou em {nomeMes}{emAndamento ? ", até hoje" : ""}</span>
+          <span className={LBL}>Sobrou em {nomeMes}</span>
           <span className={`font-plus-jakarta text-4xl font-extrabold tabular-nums leading-tight md:text-5xl ${positivo ? "text-ok-ink" : "text-err"}`}>
             {formatBRL(sobrou)}
           </span>
-          {comparacao && <span className="text-sm text-ink-2">{textoComparacao(comparacao)}</span>}
+          {comparacao && <span className="text-sm text-ink-2">{textoComparacaoSobrou(comparacao, diaCorte)}</span>}
         </div>
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3">
@@ -90,7 +82,15 @@ function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, on
 }
 
 // --------------------------------------------------------------- aviso do pedido à fábrica
-function AvisoFabrica({ aviso }) {
+function AvisoFabrica({ aviso, naoConferido }) {
+  if (naoConferido) {
+    return (
+      <p className={`${CAP} flex items-center gap-1.5`} role="status">
+        <MaterialIcon icon="info" size={16} aria-hidden="true" />
+        Não foi possível conferir os pedidos à fábrica agora: o Sobrou pode ainda não ter a compra que está a caminho.
+      </p>
+    );
+  }
   if (!aviso) return null;
   const { aCaminho, semGasto } = aviso;
   return (
@@ -492,6 +492,7 @@ export default function ResultadoV2({
   exportVendas,
   auditLogs,
   mostrarDicaClientes,
+  pedidosNaoConferidos = false,
 }) {
   const [escolhendo, setEscolhendo] = useState(false);
   const abrirEscolha = () => setEscolhendo(true);
@@ -515,56 +516,55 @@ export default function ResultadoV2({
     />
   );
 
-  if (!hasData) {
-    return (
-      <div className="space-y-5" data-resultado="v2">
-        {topo}
-        <AvisoFabrica aviso={modelo.avisoFabrica} />
-        <div className={`${CARTAO} text-center`}>
-          <p className="text-base font-semibold text-ink">Vazio por enquanto</p>
+  // P3 S17 (item 4): mês vazio troca SÓ os blocos do mês; o resto continua (resultadoTela.js).
+  const blocos = blocosDoResultado({ hasData });
+  const tem = (b) => blocos.includes(b);
+  const estoqueCard = <Estoque estoque={estoque} paradosCount={paradosCount} onClickEstoque={onClickEstoque} />;
+
+  return (
+    <div className="space-y-6" data-resultado="v2">
+      {topo}
+      <AvisoFabrica aviso={modelo.avisoFabrica} naoConferido={pedidosNaoConferidos} />
+
+      {tem("doMes") && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-5 [&>*]:min-w-0">
+          <div className="flex flex-col gap-4">
+            <DeOndeVeio modelo={modelo} />
+            <div className="hidden md:block">{estoqueCard}</div>
+          </div>
+          <ParaOndeFoi modelo={modelo} />
+          <MaisVendidos modelo={modelo} monthLabel={monthLabel} />
+        </div>
+      )}
+      {tem("vazio") && (
+        <div className={`${CARTAO} text-center`} data-bloco="vazio">
+          <p className="text-base font-semibold text-ink">Nada lançado neste mês</p>
           <p className="mb-4 mt-1 text-sm text-ink-2">Lance a primeira venda do mês ou registre um gasto para ver quanto sobrou.</p>
           <button type="button" onClick={abrirEscolha} className={`${BTN_PRIMARIO} min-h-[44px]`}>
             <MaterialIcon icon="add" size={18} aria-hidden="true" />
             Registrar gasto
           </button>
         </div>
-        {escolha}
-      </div>
-    );
-  }
+      )}
 
-  const estoqueCard = <Estoque estoque={estoque} paradosCount={paradosCount} onClickEstoque={onClickEstoque} />;
+      {tem("oQueMudou") && <OQueMudou modelo={modelo} mostrarDica={mostrarDicaClientes} />}
 
-  return (
-    <div className="space-y-6" data-resultado="v2">
-      {topo}
-      <AvisoFabrica aviso={modelo.avisoFabrica} />
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-5 [&>*]:min-w-0">
-        <div className="flex flex-col gap-4">
-          <DeOndeVeio modelo={modelo} />
-          <div className="hidden md:block">{estoqueCard}</div>
-        </div>
-        <ParaOndeFoi modelo={modelo} />
-        <MaisVendidos modelo={modelo} monthLabel={monthLabel} />
-      </div>
-
-      <OQueMudou modelo={modelo} mostrarDica={mostrarDicaClientes} />
-
-      <div className="md:hidden">{estoqueCard}</div>
+      {tem("estoque") && <div className={tem("doMes") ? "md:hidden" : ""}>{estoqueCard}</div>}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-5 [&>*]:min-w-0">
-        <SobrouPorMes modelo={modelo} />
-        <GastosDoMes
-          despesas={despesas}
-          onEditar={onEditarDespesa}
-          onExcluir={onExcluirDespesa}
-          onRegistrarGasto={abrirEscolha}
-          exportDespesas={exportDespesas}
-        />
+        {tem("porMes") && <SobrouPorMes modelo={modelo} />}
+        {tem("gastos") && (
+          <GastosDoMes
+            despesas={despesas}
+            onEditar={onEditarDespesa}
+            onExcluir={onExcluirDespesa}
+            onRegistrarGasto={abrirEscolha}
+            exportDespesas={exportDespesas}
+          />
+        )}
       </div>
 
-      {exportVendas && exportVendas.count > 0 && (
+      {tem("planilhaVendas") && exportVendas && exportVendas.count > 0 && (
         <section className={`${CARTAO} flex flex-wrap items-center justify-between gap-3`} aria-label="Planilha das vendas">
           <div>
             <h2 className="font-plus-jakarta text-base font-bold text-ink">Planilha das vendas</h2>
@@ -580,7 +580,7 @@ export default function ResultadoV2({
         </section>
       )}
 
-      <Historico auditLogs={auditLogs} />
+      {tem("historico") && <Historico auditLogs={auditLogs} />}
       {escolha}
     </div>
   );
