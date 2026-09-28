@@ -681,6 +681,20 @@ export default function SaleForm({
     };
   }, [draftData, isEditing, franchiseId]);
 
+  // "Ainda vou receber" vai para o rascunho NA HORA (sem esperar o debounce de 1 s): fechar
+  // logo depois de marcar e recuperar o rascunho não pode voltar como "recebida" (P3 S6).
+  const handleAindaVouReceber = (val) => {
+    setAindaVouReceber(val);
+    if (isEditing || !franchiseId) return;
+    const hasContent =
+      items.some((it) => it.inventory_item_id) ||
+      contactId ||
+      (contactSearch && contactSearch.trim().length > 0);
+    if (!hasContent) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    saveDraft(franchiseId, { ...draftData, aindaVouReceber: val, clientSaleId: clientSaleIdRef.current });
+  };
+
   // A conta da venda vive em lib/saleCalc.js (testada: node src/lib/saleCalc.test.mjs).
   // Ela estava aqui dentro, em quatro useMemo sem teste nenhum, e a regra de "quais metodos
   // tem taxa" estava copiada em QUATRO pontos deste arquivo — o calculo, dois campos do
@@ -1557,7 +1571,7 @@ export default function SaleForm({
             <Switch
               id="ainda-vou-receber-toggle"
               checked={aindaVouReceber}
-              onCheckedChange={(val) => setAindaVouReceber(val)}
+              onCheckedChange={handleAindaVouReceber}
             />
           </div>
         )}
