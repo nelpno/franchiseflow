@@ -35,6 +35,9 @@ import { formatBRL } from "@/lib/formatters";
 
 const BUCKET = "marketing-comprovantes";
 const MIN_AMOUNT = 200;
+// Chave Pix da verba de marketing (CNPJ da Maxi Massas) — decisão Nelson 27/09/2026 (S5.1).
+// Antes a franqueada não tinha onde achar essa chave dentro do app.
+const PIX_VERBA_MARKETING = "00.494.317/0001-21";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
@@ -72,8 +75,20 @@ export default function MarketingPaymentSection() {
   // (o admin já validou o pagamento e a despesa do DRE já foi gerada).
   const [attachOnly, setAttachOnly] = useState(false);
   const [showProofReminder, setShowProofReminder] = useState(false);
+  const [copiedPix, setCopiedPix] = useState(false);
 
   const monthOptions = getMonthOptions();
+
+  const handleCopyPix = async () => {
+    try {
+      await navigator.clipboard.writeText(PIX_VERBA_MARKETING);
+      setCopiedPix(true);
+      toast.success("Chave Pix copiada!");
+      setTimeout(() => setCopiedPix(false), 3000);
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Não foi possível copiar. Selecione manualmente."));
+    }
+  };
 
   const loadPayments = useCallback(async () => {
     if (!evoId) return;
@@ -277,6 +292,24 @@ export default function MarketingPaymentSection() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Chave Pix da verba (S5.1) — CNPJ da Maxi Massas, com botão Copiar */}
+        <div className="flex items-center justify-between gap-2 mb-4 p-2.5 rounded-xl bg-surface border border-surface-line">
+          <div className="min-w-0">
+            <p className="text-[11px] text-ink-3">Chave Pix (CNPJ) para pagar a verba</p>
+            <p className="text-sm font-medium text-ink truncate">{PIX_VERBA_MARKETING}</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs shrink-0"
+            onClick={handleCopyPix}
+          >
+            <MaterialIcon icon={copiedPix ? "check" : "content_copy"} size={14} className="mr-1" />
+            {copiedPix ? "Copiado!" : "Copiar"}
+          </Button>
         </div>
 
         {/* ─── Ja registrou ─── */}
