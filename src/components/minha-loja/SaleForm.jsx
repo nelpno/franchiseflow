@@ -450,6 +450,14 @@ export default function SaleForm({
   // Id da venda nova (ver novoIdVenda). Vive no rascunho: reabrir depois de uma falha
   // reaproveita o id, e a venda que ja tinha entrado nao e gravada de novo.
   const clientSaleIdRef = useRef(null);
+  // P1 (S8-P3, 28/09/2026): desde que o estoque libera a "Nova venda" antes do histórico
+  // (S8.1), `contacts` pode chegar (ou ser recarregado) DEPOIS que a franqueada já escolheu
+  // outro cliente na busca — sem essa trava, o efeito de pré-seleção via URL (initialContactId/
+  // initialPhone) reaplicava a cada nova referência de `contacts` e trocava o cliente escolhido
+  // de volta. usuarioMexeuContatoRef vira true no primeiro toque dela na busca/seleção/criação
+  // de contato; resolveuInicialRef garante que a pré-seleção da URL só é aplicada 1 vez.
+  const usuarioMexeuContatoRef = useRef(false);
+  const resolveuInicialRef = useRef(false);
 
   // Pre-fill when editing
   useEffect(() => {
@@ -508,6 +516,7 @@ export default function SaleForm({
     // Restore fields
     if (draft.items?.length) setItems(draft.items);
     if (draft.contactId) {
+      usuarioMexeuContatoRef.current = true; // rascunho já tinha cliente — a URL não deve pisar em cima
       setContactId(draft.contactId);
       const c = contacts.find((ct) => ct.id === draft.contactId);
       if (c) {
@@ -560,26 +569,52 @@ export default function SaleForm({
   }, [isEditing, franchiseId, contacts]);
 
   // ---- Pre-select contact from URL params (e.g., MyContacts "+ Venda") ----
+  // P1 (S8-P3, 28/09/2026): resolve DIRETO no banco (não espera nem depende da lista `contacts`
+  // de fundo, que pode demorar ou trocar de referência com o polling) e aplica só 1 vez — nunca
+  // reaplica se a franqueada já mexeu na seleção de contato nesse meio-tempo. Prova (harness):
+  // abrir a venda pra A, escolher B enquanto os contatos ainda carregam (latência alta) -> fica B.
   useEffect(() => {
-    if (isEditing || !contacts.length) return;
+    if (isEditing) return;
     if (!initialContactId && !initialPhone) return;
+    if (resolveuInicialRef.current) return;
+    let cancelado = false;
 
-    let match = null;
-    if (initialContactId) {
-      match = contacts.find((c) => c.id === initialContactId);
-    }
-    if (!match && initialPhone) {
-      const normalized = normalizePhone(initialPhone);
-      match = contacts.find((c) => normalizePhone(c.telefone) === normalized);
-    }
-    if (match) {
-      setContactId(match.id);
-      setContactSearch(match.nome || formatPhone(match.telefone));
-      setContactPhone(match.telefone || null);
-      if (match.endereco) setCustomerAddress((atual) => atual.trim() || match.endereco);
-      if (match.bairro) setCustomerNeighborhood((atual) => atual.trim() || match.bairro);
-    }
-  }, [isEditing, contacts, initialContactId, initialPhone]);
+    (async () => {
+      let match = null;
+      try {
+        if (initialContactId) {
+          const [c] = await Contact.filter({ id: initialContactId }, null, 1, {
+            columns: "id, nome, telefone, endereco, bairro",
+          });
+          match = c || null;
+        }
+        if (!match && initialPhone) {
+          const normalized = normalizePhone(initialPhone);
+          const [c] = await Contact.search(normalized, {
+            columns: "id, nome, telefone, endereco, bairro",
+            searchColumns: ["telefone"],
+            criteria: franchiseId ? { franchise_id: franchiseId } : undefined,
+            limit: 1,
+          }).catch(() => []);
+          if (c && normalizePhone(c.telefone) === normalized) match = c;
+        }
+      } catch {
+        match = null;
+      }
+      if (cancelado) return;
+      // Resolveu (achou ou não) e a franqueada não mexeu enquanto isso: não tenta de novo.
+      resolveuInicialRef.current = true;
+      if (match && !usuarioMexeuContatoRef.current) {
+        setContactId(match.id);
+        setContactSearch(match.nome || formatPhone(match.telefone));
+        setContactPhone(match.telefone || null);
+        if (match.endereco) setCustomerAddress((atual) => atual.trim() || match.endereco);
+        if (match.bairro) setCustomerNeighborhood((atual) => atual.trim() || match.bairro);
+      }
+    })();
+
+    return () => { cancelado = true; };
+  }, [isEditing, initialContactId, initialPhone, franchiseId]);
 
   // ---- Load payment_fees + charges_card_fee_to_customer from franchise config ----
   useEffect(() => {
@@ -693,6 +728,7 @@ export default function SaleForm({
 
   // Contact select
   const handleContactSelect = (contact) => {
+    usuarioMexeuContatoRef.current = true;
     setContactId(contact.id);
     setContactSearch(contact.nome || formatPhone(contact.telefone));
     setContactPhone(contact.telefone || null);
@@ -709,6 +745,7 @@ export default function SaleForm({
 
   // Detect new contact when typing a phone number with no match
   const handleContactSearchChange = (val) => {
+    usuarioMexeuContatoRef.current = true;
     setContactSearch(val);
     if (contactId) {
       setContactId(null); // user is typing again, clear selection
@@ -737,6 +774,7 @@ export default function SaleForm({
 
   // Create contact inline and select it
   const handleInlineContactCreate = async () => {
+    usuarioMexeuContatoRef.current = true;
     if (!inlineContactName.trim() && !inlineContactPhone.trim()) {
       toast.error("Preencha pelo menos nome ou telefone.");
       return;
