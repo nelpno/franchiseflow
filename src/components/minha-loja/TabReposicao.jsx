@@ -18,6 +18,15 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
+import {
+  itensParaRepor,
+  quantidadesEmAberto,
+  quantidadesParaRepor,
+  reposicaoDoItem,
+} from "@/lib/reposicao";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { useAuth } from "@/lib/AuthContext";
 import PurchaseOrderForm from "./PurchaseOrderForm";
 import PurchaseOrderHistory from "./PurchaseOrderHistory";
 
@@ -35,6 +44,22 @@ export default function TabReposicao({
   const [searchParams, setSearchParams] = useSearchParams();
   const modeloParamHandledRef = useRef(false);
 
+  // S14 (chave ui_v2): "Repor N" abre o pedido preenchido, descontando os pedidos abertos.
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const { selectedFranchise } = useAuth();
+  const franchiseName =
+    selectedFranchise?.evolution_instance_id === franchiseId ? selectedFranchise?.name || null : null;
+  const [origemPedido, setOrigemPedido] = useState(null);
+  // Pedidos carregados pelo histórico (mesma consulta, sem buscar de novo). null = ainda não
+  // chegou: o Repor espera (sem isso, pediria de novo o que já está a caminho).
+  const [pedidosCarregados, setPedidosCarregados] = useState(null);
+  useEffect(() => { setPedidosCarregados(null); }, [franchiseId]);
+  const emAberto = useMemo(
+    () => (pedidosCarregados ? quantidadesEmAberto(pedidosCarregados.orders, pedidosCarregados.itens) : {}),
+    [pedidosCarregados]
+  );
+  const pedidosProntos = pedidosCarregados !== null;
+
   // Unidade nunca fez pedido à fábrica (dado que a tela já busca pra "Repetir Ultimo") →
   // é o 1º pedido dela: PurchaseOrderForm mostra a faixa do pedido modelo da Maxi.
   const primeiroPedido = !loadingLastOrder && !lastOrder;
@@ -45,6 +70,7 @@ export default function TabReposicao({
     if (modeloParamHandledRef.current) return;
     if (searchParams.get("modelo") !== "1") return;
     modeloParamHandledRef.current = true;
+    setOrigemPedido(null);
     setInitialQuantities(null);
     setShowOrderDialog(true);
     const next = new URLSearchParams(searchParams);
@@ -75,6 +101,24 @@ export default function TabReposicao({
 
   const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
+  const linhasRepor = useMemo(
+    () => (uiV2 ? itensParaRepor(inventoryItems, weeklyTurnover, emAberto) : []),
+    [uiV2, inventoryItems, weeklyTurnover, emAberto]
+  );
+  const reporTudo = useMemo(() => quantidadesParaRepor(linhasRepor), [linhasRepor]);
+  const reporTudoCount = Object.keys(reporTudo).length;
+
+  const abrirRepor = (quantidades) => {
+    if (!pedidosProntos) {
+      toast.info("Carregando seus pedidos abertos. Tente de novo em instantes.");
+      return;
+    }
+    setOrigemPedido(Object.keys(quantidades).length > 0 ? "repor" : null);
+    setInitialQuantities(Object.keys(quantidades).length > 0 ? quantidades : null);
+    setShowOrderDialog(true);
+    try { window.clarity?.("event", "pedido_repor_aberto"); } catch { /* telemetria */ }
+  };
+
   const suggestions = useMemo(() => {
     // Só itens do catálogo padrão da fábrica — extras da franquia (created_by_franchisee) não
     // são pedidos à fábrica, então não fazem parte da sugestão de reposição.
@@ -87,7 +131,9 @@ export default function TabReposicao({
     );
     return items
       .map((item) => {
-        const sug = suggestionFor(item, weeklyTurnover);
+        const sug = uiV2
+          ? (() => { const r = reposicaoDoItem(item, weeklyTurnover, emAberto); return r.semBase ? null : r.repor; })()
+          : suggestionFor(item, weeklyTurnover);
         if (sug === null || sug <= 0) return null;
         return {
           id: item.id,
@@ -100,7 +146,7 @@ export default function TabReposicao({
       .filter(Boolean)
       .sort((a, b) => b.suggestion - a.suggestion)
       .slice(0, 5);
-  }, [inventoryItems, weeklyTurnover]);
+  }, [inventoryItems, weeklyTurnover, uiV2, emAberto]);
 
   const hasHistory = Object.keys(weeklyTurnover).length > 0;
 
@@ -119,6 +165,7 @@ export default function TabReposicao({
           qtyMap[item.inventory_item_id] = item.quantity || 0;
         }
       });
+      setOrigemPedido(null);
       setInitialQuantities(qtyMap);
       setShowOrderDialog(true);
     } catch (error) {
@@ -128,6 +175,7 @@ export default function TabReposicao({
   };
 
   const handleNewOrder = () => {
+    setOrigemPedido(null);
     setInitialQuantities(null);
     setShowOrderDialog(true);
   };
@@ -148,8 +196,78 @@ export default function TabReposicao({
 
   return (
     <div className="space-y-6">
+      {/* S14.1 — Acabando + Repor N (chave ui_v2) */}
+      {uiV2 && linhasRepor.length > 0 && (
+        <Card className="rounded-2xl shadow-sm border border-err/20 bg-white">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <MaterialIcon icon="warning" size={20} className="text-err shrink-0" />
+                <h3 className="text-base font-bold text-ink font-plus-jakarta">
+                  Acabando ({linhasRepor.length})
+                </h3>
+              </div>
+              {reporTudoCount > 1 && (
+                <Button
+                  type="button"
+                  onClick={() => abrirRepor(reporTudo)}
+                  className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-h-[44px]"
+                >
+                  <MaterialIcon icon="add_shopping_cart" size={18} />
+                  Repor todos ({reporTudoCount})
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {linhasRepor.slice(0, 12).map((l) => (
+                <div
+                  key={l.item.id}
+                  className="flex items-center justify-between gap-3 py-2 px-3 rounded-xl bg-err/5"
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-ink block truncate">{l.item.product_name}</span>
+                    <span className="text-xs text-ink-2">
+                      {l.zerado ? "acabou" : `sobram ${l.estoque} ${l.unidade}`}
+                      {l.minimo > 0 ? ` · mínimo ${l.minimo}` : ""}
+                      {l.aCaminho > 0 ? ` · ${l.aCaminho} a caminho` : ""}
+                    </span>
+                  </div>
+                  {l.repor > 0 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => abrirRepor({ [l.item.id]: l.repor })}
+                      className="shrink-0 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-h-[44px] px-4"
+                    >
+                      Repor {l.repor}
+                    </Button>
+                  ) : l.aCaminho > 0 ? (
+                    <span className="shrink-0 text-xs font-medium text-ok-ink">já pedido</span>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => abrirRepor({})}
+                      className="shrink-0 border-brand text-brand font-bold rounded-xl min-h-[44px] px-4"
+                    >
+                      Pedir
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {linhasRepor.length > 12 && (
+                <p className="text-xs text-ink-2 text-center">
+                  +{linhasRepor.length - 12} produtos acabando. Veja todos em "Novo pedido".
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Critical stock alert */}
-      {criticalItems.length > 0 && (
+      {!uiV2 && criticalItems.length > 0 && (
         <Card className="bg-gradient-to-r from-err/5 to-err/10 rounded-2xl shadow-sm border border-err/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
@@ -297,7 +415,13 @@ export default function TabReposicao({
       </div>
 
       {/* Purchase Order History */}
-      <PurchaseOrderHistory franchiseId={franchiseId} refreshKey={orderRefreshKey} />
+      <PurchaseOrderHistory
+        franchiseId={franchiseId}
+        refreshKey={orderRefreshKey}
+        uiV2={uiV2}
+        franchiseName={franchiseName}
+        onOrdersLoaded={(orders, itens) => setPedidosCarregados({ orders, itens })}
+      />
 
       {/* Purchase Order Dialog */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
@@ -306,7 +430,7 @@ export default function TabReposicao({
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink min-w-0">
               <MaterialIcon icon="local_shipping" size={20} className="text-brand-gold shrink-0" />
               <span className="truncate">
-                {initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
+                {origemPedido === "repor" ? "Repor estoque" : initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
               </span>
             </DialogTitle>
           </DialogHeader>
@@ -316,6 +440,9 @@ export default function TabReposicao({
             saleItems={saleItems}
             initialQuantities={initialQuantities}
             primeiroPedido={primeiroPedido}
+            uiV2={uiV2}
+            emAberto={uiV2 ? emAberto : null}
+            origem={origemPedido}
             onSave={() => {
               setShowOrderDialog(false);
               setInitialQuantities(null);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { PurchaseOrder } from "@/entities/all";
+import { PurchaseOrder, getProductWeightMap } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,13 +21,18 @@ const STATUS_CONFIG = {
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado" },
 };
 
-export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
+export default function PurchaseOrderHistory({ franchiseId, refreshKey, onOrdersLoaded, uiV2 = false, franchiseName = null }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [orderItems, setOrderItems] = useState({});
   const [cancellingId, setCancellingId] = useState(null);
   const [confirmCancelId, setConfirmCancelId] = useState(null);
+  // S14.4 (chave ui_v2): imprimir o pedido para conferir a chegada.
+  const [printMenuId, setPrintMenuId] = useState(null);
+  const [printingId, setPrintingId] = useState(null);
+  const onOrdersLoadedRef = useRef(onOrdersLoaded);
+  onOrdersLoadedRef.current = onOrdersLoaded;
   const mountedRef = useRef(true);
   const abortControllerRef = useRef(null);
 
@@ -78,6 +83,9 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
           grouped[item.order_id].push(item);
         }
         setOrderItems(grouped);
+        onOrdersLoadedRef.current?.(data, grouped);
+      } else {
+        onOrdersLoadedRef.current?.([], {});
       }
     } catch (error) {
       if (error?.name === "AbortError" || signal.aborted) return;
@@ -104,6 +112,23 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
     } finally {
       setCancellingId(null);
       setConfirmCancelId(null);
+    }
+  };
+
+  const handlePrint = async (order, items, comValores) => {
+    if (printingId) return;
+    setPrintingId(order.id);
+    try {
+      const weightMap = await getProductWeightMap().catch(() => ({}));
+      const { generateConferenceSheet } = await import("@/lib/pickingSheetPdf");
+      await generateConferenceSheet({ order, items, franchiseName, comValores, weightMap });
+      try { window.clarity?.("event", comValores ? "pedido_impresso_valores" : "pedido_impresso_quantidades"); } catch { /* telemetria */ }
+      setPrintMenuId(null);
+    } catch (error) {
+      console.error("Erro ao gerar o pedido impresso:", error);
+      toast.error(safeErrorMessage(error, "Não foi possível gerar o arquivo do pedido. Tente de novo."));
+    } finally {
+      if (mountedRef.current) setPrintingId(null);
     }
   };
 
@@ -251,6 +276,65 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey }) {
                           </div>
                         </div>
                       ))}
+
+                      {uiV2 && order.status !== "cancelado" && (
+                        <div className="pt-3 mt-2 border-t border-ink-4/20">
+                          {printMenuId === order.id ? (
+                            <div className="rounded-xl bg-surface p-3 space-y-2">
+                              <p className="text-xs text-ink-2">
+                                Imprimir para conferir a chegada. Escolha a versão:
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => handlePrint(order, items, false)}
+                                  disabled={!!printingId}
+                                  className="h-auto min-h-[44px] justify-start text-left rounded-xl border-ink-4 py-2"
+                                >
+                                  <span className="flex flex-col items-start">
+                                    <span className="text-sm font-bold text-ink">Só quantidades</span>
+                                    <span className="text-xs text-ink-2 font-normal">sem valores, para quem recebe conferir</span>
+                                  </span>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => handlePrint(order, items, true)}
+                                  disabled={!!printingId}
+                                  className="h-auto min-h-[44px] justify-start text-left rounded-xl border-ink-4 py-2"
+                                >
+                                  <span className="flex flex-col items-start">
+                                    <span className="text-sm font-bold text-ink">Com valores</span>
+                                    <span className="text-xs text-ink-2 font-normal">preços e total, para o seu controle</span>
+                                  </span>
+                                </Button>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setPrintMenuId(null)}
+                                disabled={!!printingId}
+                                className="h-9 text-xs text-ink-2"
+                              >
+                                Fechar
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); setPrintMenuId(order.id); }}
+                              className="w-full min-h-[40px] text-xs text-ink border-ink-4 rounded-xl hover:bg-surface gap-1"
+                            >
+                              <MaterialIcon icon={printingId === order.id ? "progress_activity" : "print"} size={14} className={printingId === order.id ? "animate-spin" : ""} />
+                              Imprimir pedido
+                            </Button>
+                          )}
+                        </div>
+                      )}
 
                       {order.notes && (
                         <div className="pt-2 mt-2 border-t border-ink-4/20">
