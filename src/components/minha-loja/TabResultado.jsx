@@ -21,8 +21,6 @@ import {
   isSameMonth,
   parseISO,
   subDays,
-  startOfMonth,
-  endOfMonth,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -46,6 +44,7 @@ import {
   getSaleNetValue,
 } from "@/lib/financialCalcs";
 import { formatBRL, formatBRLCompact } from "@/lib/formatters";
+import { janelaCobre, janelaParaBuscar } from "@/lib/resultadoWindow";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
@@ -810,23 +809,21 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
 
   // S8.2 (28/09/2026): antes buscava TODO o histórico de vendas/despesas da franquia
   // (fetchAll sem data) só pra mostrar 1 mês + evolução de 6 meses + acumulado do ano —
-  // franquia com anos de dado ia crescendo pra sempre. Agora a janela é de 13 meses pra trás
-  // do mês em tela (cobre evolucaoData -6m e anoResumo jan→mês, com folga) e só refaz a busca
-  // quando a navegação de mês sai da janela já carregada. Totais continuam sendo SOMA COMPLETA
-  // dos registros da janela (não é amostra); ordenação estável já vem do tie-breaker `id` que
-  // o fetchAll aplica sozinho (src/entities/all.js).
-  const JANELA_MESES = 13;
+  // franquia com anos de dado ia crescendo pra sempre. Agora busca só a janela de 13 meses pra
+  // trás do mês em tela (cobre evolucaoData -6m e anoResumo jan→mês, com folga); navegar dentro
+  // do que já foi carregado não refaz a busca. A janela nunca ENCOLHE, só cresce (UNIÃO com o
+  // que já tinha) — janela de largura fixa "só o necessário" faria toda navegação de mês
+  // buscar de novo (deslocar 1 mês desloca as duas pontas). Totais continuam SOMA COMPLETA dos
+  // registros carregados (não é amostra); ordenação estável já vem do tie-breaker `id` que o
+  // fetchAll aplica sozinho (src/entities/all.js). Cálculo em @/lib/resultadoWindow (testado
+  // com fixture: soma na janela == soma no histórico inteiro, pro mês exibido).
   const loadedRangeRef = useRef(null); // { start, end } em 'yyyy-MM-dd', última janela buscada
 
   const loadData = useCallback(async (opts = {}) => {
     if (!franchiseId) return;
     const { targetMonth = selectedMonth, force = false } = opts;
-    const neededStart = format(startOfMonth(subMonths(targetMonth, JANELA_MESES)), "yyyy-MM-dd");
-    const neededEnd = format(endOfMonth(targetMonth), "yyyy-MM-dd");
-    const jaCobreJanela = !force && loadedRangeRef.current
-      && neededStart >= loadedRangeRef.current.start
-      && neededEnd <= loadedRangeRef.current.end;
-    if (jaCobreJanela) return;
+    if (!force && janelaCobre(loadedRangeRef.current, targetMonth)) return;
+    const { start: neededStart, end: neededEnd } = janelaParaBuscar(loadedRangeRef.current, targetMonth);
 
     setLoading(true);
     setErroDeCarga(null);
