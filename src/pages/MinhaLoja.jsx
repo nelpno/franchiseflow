@@ -1,21 +1,15 @@
 import { Navigate, useSearchParams } from "react-router-dom";
+import { resolveMinhaLojaRedirect } from "@/lib/navRedirects";
 
-// Backward-compat redirect: old MinhaLoja URLs → new Vendas/Gestao pages
+// Backward-compat redirect (S9.2, 28/09/2026): a rota /MinhaLoja continua existindo
+// (link antigo no grupo, notificação salva, favorito) — só troca o destino por
+// dentro. Mapa de redirecionamento em lib/navRedirects.js (testado sem React).
 export default function MinhaLoja() {
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab");
   const action = searchParams.get("action");
   const phone = searchParams.get("phone");
 
-  // Gestão tabs redirect
-  if (tab === "resultado" || tab === "estoque" || tab === "reposicao") {
-    return <Navigate to={`/Gestao?tab=${tab}`} replace />;
-  }
-
-  // Default: redirect to Vendas (was "lancar" tab)
-  const params = new URLSearchParams();
-  if (action) params.set("action", action);
-  if (phone) params.set("phone", phone);
-  const queryString = params.toString();
-  return <Navigate to={`/Vendas${queryString ? `?${queryString}` : ""}`} replace />;
+  const to = resolveMinhaLojaRedirect({ tab, action, phone });
+  return <Navigate to={to} replace />;
 }
