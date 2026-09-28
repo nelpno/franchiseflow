@@ -458,3 +458,11 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - Edge Functions: SEMPRE validar JWT (`supabase.auth.getUser(token)`) + role check. Webhook externo: HMAC/token secreto (fail-closed).
 - **`npm run build` suprime o output do Vite** (18/05): mostra só `> vite build` e termina. Confiar em `EXIT=0` + timestamp de `dist/index.html` (build real ~10-20 s).
 - **TS LSP em `.jsx`** emite `implicit any` (TS7006) em parâmetro JS — pré-existente do strict do tsserver, NÃO causado pelo Edit. Ignorar se já existia antes da mudança.
+
+## Onda 5 (28/09/2026) — o que ficou
+- 🔴 **Pedido à fábrica `entregue` é TERMINAL** (S15, vale sem chave): nem admin tira do status; total/frete/`expenses_generated_at` travados depois de entregue (admin recebe `S15_ENTREGUE_FINANCEIRO`); `received_quantity` só pela RPC `confirmar_recebimento_pedido`/cron (CHECK 0..quantity). Edição do admin = RPC `salvar_edicao_pedido(order, itens, patch, remover)` (trava cabeçalho→itens, total no servidor; `S15_PEDIDO_MUDOU`/`S15_PEDIDO_OCUPADO`). Corrigir pedido entregue = SQL direto. Com `ui_v2` da unidade, "entregue" do admin vira `em_rota` + `awaiting_since` até a franqueada conferir (cron `s15-entregas-sem-resposta`, 48 h). Legado = `em_rota` sem `awaiting_since`.
+- **`inventory_items`: guard `trg_guard_inventory_cost`** — pela API a franqueada não muda `cost_price` de item padrão nem `created_by_franchisee` (preserva calado). Função SECURITY DEFINER passa (`current_user` = dono), por isso `record_external_purchase` segue recalculando custo médio.
+- **`useFeatureFlag(key, franchiseId?)`**: tela que mostra uma unidade escolhida (admin em Financeiro › Por unidade) passa o `franchiseId` — sem ele a chave lida é a do contexto, não a da unidade exibida.
+- **P5 com página lazy de 2º nível** (Gestão → TabResultado): `.tmp/s11/p5-recursivo.sh <index_antigo> "<texto>"` — o `p5-generico.sh` só baixa os chunks citados no `index` e dá 0 falso.
+- **CAPI manual sem dataset cai no pixel da REDE** (`$env.META_PIXEL_ID` no `Prepare CAPI Data` do `xNBgSwQ6QduaS6jT`): "Recebi" numa unidade de teste manda compra de verdade ao Meta. Até pular `is_test` no workflow, não marcar "Recebi" em teste.
+- Usuário franqueado de teste criado pela Auth Admin API: `DELETE /auth/v1/admin/users/<id>` dá 500 se ele gerou `audit_logs`/`notifications` → replicar os 4 DELETEs do `delete_user_complete`.
