@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
-import { Franchise, FranchiseConfiguration, Sale, InventoryItem, Contact } from "@/entities/all";
+import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { resolveUnitWhatsApp } from "@/lib/receiptUtils";
@@ -35,9 +35,6 @@ export default function Vendas() {
   const [sales, setSales] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [contacts, setContacts] = useState([]);
-  // WhatsApp da unidade (rodapé do cupom, S13.1) — franchise_configurations.personal_phone_for_summary,
-  // o fallback real de franchises.phone_number (quase sempre NULL na base).
-  const [franchiseConfig, setFranchiseConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   // fase 2: vendas/estoque/contatos so carregam DEPOIS que sabemos qual unidade e, filtrados por ela
   const [loadingUnidade, setLoadingUnidade] = useState(true);
@@ -127,15 +124,11 @@ export default function Vendas() {
         Contact.filter({ franchise_id: evoId }, '-created_at', null, {
           columns: 'id, nome, telefone, status, franchise_id, endereco, bairro',
         }),
-        FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, {
-          columns: 'franchise_evolution_instance_id, personal_phone_for_summary',
-        }),
       ]);
       if (!vigente()) return;
       const valor = (r) => (r.status === "fulfilled" ? r.value : []);
       setSales(valor(resultados[0]));
       setContacts(valor(resultados[1]));
-      setFranchiseConfig(valor(resultados[2])[0] || null);
       const falhou = resultados.filter((r) => r.status === "rejected");
       if (falhou.length > 0) {
         console.warn("Algumas queries falharam:", falhou.map((f) => f.reason?.message));
@@ -192,11 +185,12 @@ export default function Vendas() {
     return contacts.filter((c) => c.franchise_id === franchiseId);
   }, [contacts, franchiseId]);
 
-  // Rodapé do cupom (S13.1): mesmo número que o robô usa nessa unidade.
-  const unitWhatsApp = useMemo(
-    () => resolveUnitWhatsApp(primaryFranchise, franchiseConfig),
-    [primaryFranchise, franchiseConfig]
-  );
+  // Rodapé do cupom (S13.1, corrigido no P3 28/09): SÓ franchises.phone_number (público da
+  // unidade). NUNCA personal_phone_for_summary — é o celular PESSOAL do dono, usado pra avisos
+  // internos (resumo de pedido), não um número de atendimento ao cliente. Hoje 0/66 unidades
+  // ativas têm phone_number preenchido (medido por SELECT/count, sem imprimir número real) —
+  // então a linha não aparece pra ninguém até a rede cadastrar um número público de verdade.
+  const unitWhatsApp = useMemo(() => resolveUnitWhatsApp(primaryFranchise), [primaryFranchise]);
 
   if (loading || (franchiseId && loadingUnidade)) {
     return (
