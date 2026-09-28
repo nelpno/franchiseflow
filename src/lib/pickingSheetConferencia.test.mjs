@@ -87,4 +87,24 @@ await t("com valores sem frete lançado: não inventa frete", async () => {
   assert.ok(semFrete.includes("Maxi Massas"), "sem nome da unidade cai em Maxi Massas");
 });
 
+await t("P3 6: só quantidades não imprime a observação livre (pode ter R$)", async () => {
+  const comObsEmReais = { ...order, notes: "Pagar R$ 50,00 na entrega" };
+  const so = textoDoPdf(await mod.buildConferenceSheet({ order: comObsEmReais, items, comValores: false, weightMap: {}, now }));
+  assert.ok(!so.includes("R$"), "R$ vazou pela observação");
+  assert.ok(!so.includes("Obs:"));
+  const com = textoDoPdf(await mod.buildConferenceSheet({ order: comObsEmReais, items, comValores: true, weightMap: {}, now }));
+  assert.ok(com.includes("Obs: Pagar R$ 50,00 na entrega"));
+});
+
+await t("P3 7: frete 0 lançado imprime R$ 0,00 e o total; null fica a confirmar", async () => {
+  const zero = textoDoPdf(await mod.buildConferenceSheet({ order: { ...order, freight_cost: 0 }, items, comValores: true, weightMap: {}, now }));
+  assert.ok(zero.includes("Frete: R$ 0,00"), zero);
+  assert.ok(zero.includes("Total: R$ 347,20"));
+  assert.ok(!zero.includes("a confirmar"));
+  const zeroTexto = textoDoPdf(await mod.buildConferenceSheet({ order: { ...order, freight_cost: "0.00" }, items, comValores: true, weightMap: {}, now }));
+  assert.ok(zeroTexto.includes("Frete: R$ 0,00"));
+  const nulo = textoDoPdf(await mod.buildConferenceSheet({ order: { ...order, freight_cost: undefined }, items, comValores: true, weightMap: {}, now }));
+  assert.ok(nulo.includes("Frete: a confirmar pela fabrica"));
+});
+
 console.log(`\npickingSheetConferencia: ${n} grupos ok`);

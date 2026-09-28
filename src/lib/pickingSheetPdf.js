@@ -634,14 +634,22 @@ function renderConferencePage(doc, autoTable, { order, items, franchiseName, com
     fy += 5.5;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    const frete = Number(order.freight_cost || 0);
+    // null = a fábrica ainda não lançou; 0 é lançado de verdade (acréscimo/retirada) e soma no total.
+    const freteBruto = order.freight_cost;
+    const freteLancado = freteBruto !== null && freteBruto !== undefined && freteBruto !== ""
+      && Number.isFinite(Number(freteBruto));
     let valores = `Produtos: ${fmtBRL(totalValue)}`;
-    if (frete > 0) valores += `  |  Frete: ${fmtBRL(frete)}  |  Total: ${fmtBRL(totalValue + frete)}`;
-    else valores += "  |  Frete: a confirmar pela fabrica";
+    if (freteLancado) {
+      const frete = Number(freteBruto);
+      valores += `  |  Frete: ${fmtBRL(frete)}  |  Total: ${fmtBRL(totalValue + frete)}`;
+    } else {
+      valores += "  |  Frete: a confirmar pela fabrica";
+    }
     doc.text(valores, m, fy);
   }
 
-  if (order.notes) {
+  // Observação é texto livre (pode ter valor em reais): só sai na versão COM valores (P3, ponto 6).
+  if (comValores && order.notes) {
     fy += 6;
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8.5);
