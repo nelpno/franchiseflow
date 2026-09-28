@@ -53,7 +53,9 @@ export default function Pagamentos() {
     return () => controller.abort();
   }, [evoId, uiV2, mes.chave, mes.inicio, mes.ate]);
 
-  if (!isFranqueado || (flagResolvida && !uiV2)) return <Navigate to="/Dashboard" replace />;
+  // Só decide com a unidade já carregada: abrindo o endereço direto, a unidade chega um instante
+  // depois e, sem ela, a chave vale "resolvida e desligada" — redirecionava todo mundo (Onda 5).
+  if (!isFranqueado || (evoId && flagResolvida && !uiV2)) return <Navigate to="/Dashboard" replace />;
   if (!uiV2) {
     return (
       <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4">
