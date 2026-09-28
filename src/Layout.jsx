@@ -27,8 +27,9 @@ import { getAvailableFranchises, getPrimaryFranchise, resolveActiveFranchise } f
 import FranchiseSelector from "@/components/shared/FranchiseSelector";
 import { listarFranquias } from "@/lib/franchisesCache";
 import VoltarTrilhaBar from "@/components/onboarding/VoltarTrilhaBar";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useFeatureFlagState } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Todos os 4 papéis existentes — usado nos itens que aparecem para todo mundo (Hoje,
 // Ajuda), só que com rótulo/posição diferente por papel.
@@ -47,6 +48,9 @@ const navigationItems = [
     materialIcon: "wb_sunny",
     roles: TODOS_OS_PAPEIS,
     adminNav: "main",
+    // Já está no menu de baixo do franqueado com ui_v2 — não repetir dentro do
+    // Sheet "Mais" no celular (P3, 28/09/2026). Desktop e admin/CS ficam intactos.
+    hideFromMaisSheetWhenV2: true,
   },
   {
     title: "Unidades",
@@ -85,6 +89,7 @@ const navigationItems = [
     franchiseeOnly: true,
     showToAdminToo: true,
     adminNav: "mais",
+    hideFromMaisSheetWhenV2: true,
   },
   {
     title: "Gestão",
@@ -93,6 +98,11 @@ const navigationItems = [
     franchiseeOnly: true,
     showToAdminToo: true,
     adminNav: "mais",
+    // Com ui_v2 ligada, o item "Estoque" abaixo cobre a aba tab=estoque — não pode
+    // destacar os dois ao mesmo tempo (P3, 28/09/2026). Sem a chave, "Estoque" nem
+    // existe no menu, então "Gestão" volta a acender pra qualquer aba (comportamento
+    // de sempre) — daí o `excludeTabsWhenV2` só valer quando uiV2 está ligada.
+    excludeTabsWhenV2: ["estoque"],
   },
   {
     title: "Meus Clientes",
@@ -127,6 +137,11 @@ const navigationItems = [
     materialIcon: "package_2",
     franchiseeOnly: true,
     onlyWhenV2: true,
+    // Mesma tela de sempre (rota /Gestao) — o destaque tem que casar path+tab, senão
+    // acende em QUALQUER aba de Gestão (P3, 28/09/2026). Ver `tabMatch` no cálculo
+    // de isActive. Já está no menu de baixo — não repetir dentro do Sheet "Mais".
+    tabMatch: "estoque",
+    hideFromMaisSheetWhenV2: true,
   },
   {
     title: "Tutoriais",
@@ -176,7 +191,9 @@ const mobileBottomNavV2 = [
   { label: "Início", materialIcon: "wb_sunny", url: createPageUrl("Dashboard") },
   { label: "Vendas", materialIcon: "point_of_sale", url: createPageUrl("Vendas") },
   { label: "Nova venda", materialIcon: "add", url: "/Vendas?action=nova-venda", isFab: true },
-  { label: "Estoque", materialIcon: "package_2", url: "/Gestao?tab=estoque" },
+  // tabMatch: mesmo critério do item da sidebar — só acende com tab=estoque, nunca
+  // nas outras abas de Gestão (P3, 28/09/2026).
+  { label: "Estoque", materialIcon: "package_2", url: "/Gestao?tab=estoque", tabMatch: "estoque" },
 ];
 
 // Mobile bottom nav para admin/gerente/CS: Hoje / Unidades / Mural / Mais (Mais abre
@@ -192,12 +209,70 @@ function MaisBottomNavButton() {
   return (
     <button
       onClick={toggleSidebar}
+      aria-label="Mais"
       className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 text-ink-2 touch-manipulation active:opacity-60"
     >
-      <MaterialIcon icon="menu" size={20} />
+      <MaterialIcon icon="menu" size={20} aria-hidden="true" />
       <span className="text-xs font-medium">Mais</span>
     </button>
   );
+}
+
+// Fecha o Sheet "Mais" (mobile) sempre que a ROTA muda — path OU só a query (P3,
+// 28/09/2026: o sheet ficava aberto depois de tocar num destino, porque nada
+// escutava a navegação). Fica como componente à parte porque só um DESCENDENTE do
+// SidebarProvider pode chamar useSidebar() — o próprio Layout está por fora dele.
+function FecharMaisAoNavegar() {
+  const { setOpenMobile } = useSidebar();
+  const location = useLocation();
+  useEffect(() => {
+    setOpenMobile(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search]);
+  return null;
+}
+
+// Critério único de "item ativo" (P3, 28/09/2026): item com `tabMatch` só acende
+// quando o path bate E a query `tab` bate com esse valor exato — sem isso "Estoque"
+// (url /Gestao?tab=estoque) acendia em QUALQUER aba de Gestão, porque a checagem
+// antiga era só `url.includes(currentPageName)`. `excludeTabsWhenV2` apaga um item
+// SEM tabMatch (ex: "Gestão") quando ui_v2 está ligada e a query bate uma das tabs
+// listadas — impede os dois ficarem ativos ao mesmo tempo.
+// Reserva a MESMA altura/estrutura do menu de baixo enquanto a chave ainda está
+// carregando (P3, 28/09/2026) — em vez de mostrar o menu ANTIGO por um instante e
+// trocar pro novo assim que a chave resolve ligada. Espaço em branco > flash.
+function MobileNavSkeleton() {
+  return (
+    <>
+      {[0, 1].map((i) => (
+        <div key={`esq-${i}`} className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1" aria-hidden="true">
+          <div className="w-5 h-5 rounded-full bg-[#f2e7e7] animate-pulse" />
+          <div className="w-10 h-2.5 rounded bg-[#f2e7e7] animate-pulse" />
+        </div>
+      ))}
+      <div className="flex flex-col items-center -mt-10" aria-hidden="true">
+        <div className="w-12 h-12 rounded-full bg-[#f2e7e7] border-4 border-surface animate-pulse" />
+      </div>
+      {[0, 1].map((i) => (
+        <div key={`dir-${i}`} className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1" aria-hidden="true">
+          <div className="w-5 h-5 rounded-full bg-[#f2e7e7] animate-pulse" />
+          <div className="w-10 h-2.5 rounded bg-[#f2e7e7] animate-pulse" />
+        </div>
+      ))}
+    </>
+  );
+}
+
+function isNavItemActive(item, { pathname, search, currentPageName, uiV2 }) {
+  const [itemPath] = item.url.split("?");
+  const currentTab = new URLSearchParams(search).get("tab");
+  if (item.tabMatch) {
+    return pathname === itemPath && currentTab === item.tabMatch;
+  }
+  if (uiV2 && item.excludeTabsWhenV2?.includes(currentTab)) {
+    return false;
+  }
+  return pathname === item.url || (item.url.includes(currentPageName) && currentPageName);
 }
 
 export default function Layout({ children, currentPageName }) {
@@ -334,8 +409,18 @@ export default function Layout({ children, currentPageName }) {
   // Menu novo (S9.1, 28/09/2026) — botão de emergência da chave (CLAUDE.md § Voltar
   // atrás): SEM PILOTO, mas só vale pro franqueado (admin/gerente não mudam). A
   // franquia da chave é a `selectedFranchise` (o hook já cuida de desligada/erro).
-  const uiV2Raw = useFeatureFlag(FEATURE_KEYS.UI_V2);
-  const uiV2 = uiV2Raw && !isAdmin && !isCS;
+  // `uiV2Pending` distingue "carregando" de "desligada/erro" (P3, 28/09/2026): sem
+  // isso o menu de baixo mostrava o ANTIGO por um instante e trocava pro novo assim
+  // que a chave resolvia ligada — pisca visível em toda troca de franquia/foco de
+  // aba. A query key inclui a unidade (`useFeatureFlagState`), então trocar de
+  // franquia sempre entra em loading de novo — nunca reaproveita o valor da anterior.
+  const { value: uiV2Value, isLoading: uiV2Loading } = useFeatureFlagState(FEATURE_KEYS.UI_V2);
+  const uiV2 = uiV2Value && !isAdmin && !isCS;
+  const uiV2Pending = uiV2Loading && !isAdmin && !isCS;
+  // Só usado pra tirar Início/Vendas/Estoque do Sheet "Mais" no celular com ui_v2
+  // (P3, 28/09/2026) — eles já estão no menu de baixo, repetir é ruído. Desktop
+  // (isMobile=false) mantém a lista cheia de sempre.
+  const isMobile = useIsMobile();
 
   const filteredNavigationItems = navigationItems
     .filter((item) => {
@@ -378,10 +463,8 @@ export default function Layout({ children, currentPageName }) {
   }
 
   // Get current page title for top bar
-  const currentPageTitle = filteredNavigationItems.find(
-    (item) =>
-      location.pathname === item.url ||
-      (item.url.includes(currentPageName) && currentPageName)
+  const currentPageTitle = filteredNavigationItems.find((item) =>
+    isNavItemActive(item, { pathname: location.pathname, search: location.search, currentPageName, uiV2 })
   )?.title || currentPageName || "Dashboard";
 
   // Ajuda vai pro rodapé (admin/gerente/CS); o resto do menu admin se divide em
@@ -390,17 +473,35 @@ export default function Layout({ children, currentPageName }) {
   const itemsSemAjuda = filteredNavigationItems.filter((item) => item !== ajudaItem);
   const mainItems = isAdmin ? itemsSemAjuda.filter((item) => item.adminNav !== "mais") : itemsSemAjuda;
   const moreItems = isAdmin ? itemsSemAjuda.filter((item) => item.adminNav === "mais") : [];
+  // Sheet "Mais" no celular do franqueado com ui_v2: tira o que já está no menu de
+  // baixo (Início, Vendas, Estoque) — desktop/admin/CS usam `filteredNavigationItems`
+  // sem filtro nenhum (P3, 28/09/2026).
+  const franchiseeSidebarItems = (isMobile && uiV2)
+    ? filteredNavigationItems.filter((item) => !item.hideFromMaisSheetWhenV2)
+    : filteredNavigationItems;
 
   const renderNavItem = (item) => {
-    const isActive =
-      location.pathname === item.url ||
-      (item.url.includes(currentPageName) && currentPageName);
+    const isActive = isNavItemActive(item, {
+      pathname: location.pathname,
+      search: location.search,
+      currentPageName,
+      uiV2,
+    });
     const badgeCount = item.pendingBadgeKey ? pendingCounts?.[item.pendingBadgeKey] : null;
     return (
       <SidebarMenuItem key={item.url + item.title}>
-        <SidebarMenuButton asChild isActive={isActive} className={`h-11 px-3 gap-3 rounded-xl transition-all ${isActive ? "bg-brand/10 text-brand font-semibold shadow-sm" : "hover:bg-brand/5 text-ink-2"}`}>
-          <Link to={item.url} className="flex items-center gap-3">
-            <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} />
+        <SidebarMenuButton
+          asChild
+          isActive={isActive}
+          className={`h-11 px-3 gap-3 rounded-xl transition-all ${isActive ? "bg-brand/10 text-brand font-semibold shadow-sm" : "hover:bg-brand/5 text-ink-2"}`}
+        >
+          <Link
+            to={item.url}
+            className="flex items-center gap-3"
+            aria-label={item.title}
+            aria-current={isActive ? "page" : undefined}
+          >
+            <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} aria-hidden="true" />
             <span className="text-sm flex-1">{item.title}</span>
             {badgeCount > 0 && (
               // Neutro (R3 do padrão): nenhum dos contadores de hoje (pedidos pra confirmar,
@@ -423,6 +524,8 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <SidebarProvider>
+      {/* Fecha o Sheet "Mais" ao navegar (path ou só query) — P3, 28/09/2026 */}
+      <FecharMaisAoNavegar />
       {/* Paywall: blocks franchisees with overdue subscription */}
       <SubscriptionPaywall availableFranchises={availableFranchises} />
       {/* Stitch-matched sidebar styles */}
@@ -503,7 +606,7 @@ export default function Layout({ children, currentPageName }) {
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu className="space-y-1">
-                    {(isCS ? mainItems : filteredNavigationItems).map(renderNavItem)}
+                    {(isCS ? mainItems : franchiseeSidebarItems).map(renderNavItem)}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -635,47 +738,61 @@ export default function Layout({ children, currentPageName }) {
         </main>
 
         {/* Mobile bottom nav — franqueado (S9.1: com ui_v2 ligada troca pro menu novo
-            Início · Vendas · + Nova venda · Estoque · Mais; desligada = o de sempre) */}
+            Início · Vendas · + Nova venda · Estoque · Mais; desligada = o de sempre).
+            Enquanto a chave carrega (uiV2Pending), mostra só o esqueleto — nunca o
+            antigo pra depois trocar pro novo (P3, 28/09/2026). */}
         {!isAdmin && !isCS && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-4 z-40">
-            {(uiV2 ? mobileBottomNavV2 : mobileBottomNav).map((item) => {
-              if (item.isFab) {
-                return (
-                  <Link
-                    key="fab"
-                    to={item.url}
-                    className="flex flex-col items-center -mt-10"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-[#9c4143] text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform border-4 border-surface">
-                      <MaterialIcon icon="add" size={24} />
-                    </div>
-                    <span className="text-xs font-bold text-[#9c4143] mt-1">{item.label}</span>
-                  </Link>
-                );
-              }
-              const isActive =
-                location.pathname === item.url ||
-                (item.url.includes(currentPageName) && currentPageName);
-              return (
-                <Link
-                  key={item.label}
-                  to={item.url}
-                  // 48 px de altura e largura dividida: era ~40 px de area util no
-                  // controle mais tocado do app
-                  className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 touch-manipulation active:opacity-60 ${
-                    isActive ? "text-[#9c4143]" : "text-ink-2"
-                  }`}
-                >
-                  <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} />
-                  <span className={`text-xs ${isActive ? "font-bold" : "font-medium"}`}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-            {/* "Mais" do menu novo abre o mesmo Sheet do hambúrguer (Meus Clientes,
-                Gestão, Marketing, Meu robô, Tutoriais, Primeiros passos) */}
-            {uiV2 && <MaisBottomNavButton />}
+            {uiV2Pending ? (
+              <MobileNavSkeleton />
+            ) : (
+              <>
+                {(uiV2 ? mobileBottomNavV2 : mobileBottomNav).map((item) => {
+                  if (item.isFab) {
+                    return (
+                      <Link
+                        key="fab"
+                        to={item.url}
+                        aria-label={item.label}
+                        className="flex flex-col items-center -mt-10"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-[#9c4143] text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform border-4 border-surface">
+                          <MaterialIcon icon="add" size={24} aria-hidden="true" />
+                        </div>
+                        <span className="text-xs font-bold text-[#9c4143] mt-1">{item.label}</span>
+                      </Link>
+                    );
+                  }
+                  const isActive = isNavItemActive(item, {
+                    pathname: location.pathname,
+                    search: location.search,
+                    currentPageName,
+                    uiV2,
+                  });
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.url}
+                      aria-label={item.label}
+                      aria-current={isActive ? "page" : undefined}
+                      // 48 px de altura e largura dividida: era ~40 px de area util no
+                      // controle mais tocado do app
+                      className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 touch-manipulation active:opacity-60 ${
+                        isActive ? "text-[#9c4143]" : "text-ink-2"
+                      }`}
+                    >
+                      <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} aria-hidden="true" />
+                      <span className={`text-xs ${isActive ? "font-bold" : "font-medium"}`}>
+                        {item.label}
+                      </span>
+                    </Link>
+                  );
+                })}
+                {/* "Mais" do menu novo abre o mesmo Sheet do hambúrguer (Meus Clientes,
+                    Gestão, Marketing, Meu robô, Tutoriais, Primeiros passos) */}
+                {uiV2 && <MaisBottomNavButton />}
+              </>
+            )}
           </nav>
         )}
 
@@ -683,18 +800,23 @@ export default function Layout({ children, currentPageName }) {
         {(isAdmin || isCS) && (
           <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-2 z-40">
             {adminMobileBottomNav.map((item) => {
-              const isActive =
-                location.pathname === item.url ||
-                (item.url.includes(currentPageName) && currentPageName);
+              const isActive = isNavItemActive(item, {
+                pathname: location.pathname,
+                search: location.search,
+                currentPageName,
+                uiV2,
+              });
               return (
                 <Link
                   key={item.label}
                   to={item.url}
+                  aria-label={item.label}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 touch-manipulation active:opacity-60 ${
                     isActive ? "text-brand" : "text-ink-2"
                   }`}
                 >
-                  <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} />
+                  <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} aria-hidden="true" />
                   <span className={`text-xs ${isActive ? "font-bold" : "font-medium"}`}>
                     {item.label}
                   </span>
