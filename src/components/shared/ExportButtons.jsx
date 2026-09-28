@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
+import { buildExportWorksheet } from "@/lib/exportSheet";
 
 /**
  * ExportButtons — exports data to Excel (.xlsx) or PDF.
@@ -18,25 +19,10 @@ export default function ExportButtons({ data, columns, filename, title }) {
       const XLSX = await import("xlsx");
       const { saveAs } = await import("file-saver");
 
-      const rows = data.map((row) =>
-        columns.reduce((acc, col) => {
-          acc[col.header] = col.format ? col.format(row[col.key]) : row[col.key];
-          return acc;
-        }, {})
-      );
-
-      const ws = XLSX.utils.json_to_sheet(rows);
+      // Número e data vão como número e data (coluna com `type`), não como texto.
+      const ws = buildExportWorksheet(XLSX, data, columns);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Dados");
-
-      // Auto-size columns
-      const colWidths = columns.map((col) => ({
-        wch: Math.max(
-          col.header.length,
-          ...data.map((r) => String(col.format ? col.format(r[col.key]) : r[col.key] ?? "").length)
-        ) + 2,
-      }));
-      ws["!cols"] = colWidths;
 
       const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       saveAs(new Blob([buf], { type: "application/octet-stream" }), `${filename}.xlsx`);

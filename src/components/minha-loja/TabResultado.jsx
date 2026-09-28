@@ -46,7 +46,7 @@ import {
 import { formatBRL, formatBRLCompactResultado as formatBRLCompact } from "@/lib/formatters";
 import { janelaCobre, janelaParaBuscar } from "@/lib/resultadoWindow";
 import { getCategoryMeta } from "@/lib/expenseCategories";
-import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
+import { SALES_EXPORT_COLUMNS, SALES_EXPORT_QUERY_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
 import ErrorState from "@/components/shared/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -835,7 +835,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
           null,
           null,
           {
-            columns: `id, sale_date, ${SALE_PNL_COLUMNS}, contact_id, source, payment_method, payment_confirmed, delivery_method, observacoes, net_value, created_at`,
+            columns: `id, sale_date, ${SALE_PNL_COLUMNS}, contact_id, source, net_value, ${SALES_EXPORT_QUERY_COLUMNS}`,
             fetchAll: true,
             gte: { sale_date: neededStart },
             lte: { sale_date: neededEnd },
