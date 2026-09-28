@@ -34,7 +34,8 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import EmptyState from "@/components/shared/EmptyState";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
-import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao, escolherMarketing } from "@/lib/inicioMes";
+import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao, escolherMarketing, mesAlvoMarketing } from "@/lib/inicioMes";
+import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
@@ -61,7 +62,7 @@ export default function FranchiseeDashboard() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [botPulse, setBotPulse] = useState(null);
   const [franchiseConfig, setFranchiseConfig] = useState(null);
-  const [marketingPayment, setMarketingPayment] = useState(null);
+  const [marketingPayments, setMarketingPayments] = useState([]);
   const [period, setPeriod] = useState("today");
   const [monthOffset, setMonthOffset] = useState(0);
   const [customRange, setCustomRange] = useState(null);
@@ -77,6 +78,12 @@ export default function FranchiseeDashboard() {
   // S18.1 (28/09/2026): Início nova atrás da chave ui_v2. Desligada = a Início de sempre.
   const uiV2Chave = useFeatureFlag(FEATURE_KEYS.UI_V2);
   const uiV2 = uiV2Chave && user?.role === "franchisee";
+  // S18.3 (P3, vale sem a chave): o do mês-alvo entre os 3 últimos (verba do mês seguinte já
+  // registrada não esconde a do mês-alvo). Mês-alvo do MESMO jeito que o cartão de cada Início
+  // calcula: Brasília na nova, relógio do aparelho na de sempre.
+  const marketingPayment = escolherMarketing(
+    marketingPayments, uiV2 ? mesAlvoMarketing() : getMarketingTargetMonth()
+  );
   // Vendas mais antigas que a janela principal (só com a chave): evolução de 6 meses e o
   // "a receber" com o mesmo recorte da tela Vendas. Carrega 1 vez, fora do polling.
   const [historico, setHistorico] = useState({ status: "idle", sales: [], chave: null });
@@ -208,9 +215,7 @@ export default function FranchiseeDashboard() {
       setBotPulse(results[3].status === "fulfilled" ? results[3].value : null);
       setPurchaseOrders(getValue(6));
       setFranchiseConfig(getValue(7)?.[0] || null);
-      // S18.3 (P3, vale sem a chave): o do mês-alvo entre os 3 últimos; verba do mês seguinte já
-      // registrada não esconde mais a do mês-alvo.
-      setMarketingPayment(escolherMarketing(getValue(8)));
+      setMarketingPayments(getValue(8) || []);
 
 
 

@@ -279,9 +279,9 @@ export function mesAlvoMarketing(now = new Date()) {
  * S18.3 (P3): entre os pagamentos mais recentes, o do mês-alvo (pagamento antecipado do mês
  * seguinte não pode esconder o do mês-alvo); sem ele, o mais recente (comportamento de antes).
  */
-export function escolherMarketing(lista, now = new Date()) {
+export function escolherMarketing(lista, mesAlvo = mesAlvoMarketing()) {
   const itens = Array.isArray(lista) ? lista : [];
-  const alvo = format(mesAlvoMarketing(now), "yyyy-MM");
+  const alvo = format(mesAlvo, "yyyy-MM");
   return itens.find((p) => p?.reference_month === alvo) || itens[0] || null;
 }
 

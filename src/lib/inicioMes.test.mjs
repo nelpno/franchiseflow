@@ -350,9 +350,9 @@ test("S18.3 P3: verba antecipada não esconde a do mês-alvo; mês-alvo pelo dia
   const set = { reference_month: "2026-09", status: "confirmed" };
   const out = { reference_month: "2026-10", status: "confirmed" };
   // 10/09: outubro já registrado não esconde setembro pago
-  assert.equal(escolherMarketing([out, set], new Date("2026-09-10T15:00:00Z")), set);
+  assert.equal(escolherMarketing([out, set], mesAlvoMarketing(new Date("2026-09-10T15:00:00Z"))), set);
   // sem o do mês-alvo: o mais recente (como antes)
-  assert.equal(escolherMarketing([out], new Date("2026-09-10T15:00:00Z")), out);
+  assert.equal(escolherMarketing([out], mesAlvoMarketing(new Date("2026-09-10T15:00:00Z"))), out);
   assert.equal(escolherMarketing(undefined), null);
   // 26/09 01:00Z = 25/09 22:00 em Brasília: mês-alvo ainda setembro, em qualquer fuso do aparelho
   assert.equal(format(mesAlvoMarketing(new Date("2026-09-26T01:00:00Z")), "yyyy-MM"), "2026-09");
