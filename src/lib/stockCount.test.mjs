@@ -1,14 +1,15 @@
 // Testes puros (node:assert, sem framework) do modo "Contar estoque" (S16.1).
 // Rodar: node src/lib/stockCount.test.mjs
 //
-// Cobre os casos do roteiro: clique repetido no Salvar (nao duplica), rede caindo
-// no meio (o que salvou e o que nao salvou fica claro), quantidade negativa/vazia/
-// decimal, e o "so os itens alterados" do resumo antes de salvar.
+// Cobre os casos do roteiro e da revisao P3 (28/09/2026): base imutavel por item
+// tocado, item nunca tocado nunca entra no diff, conflito de update condicional
+// (robo/outra aba mudou a quantidade no meio), clique repetido, rede caindo no
+// meio, quantidade negativa/vazia/decimal, e +/- em cima de valor quebrado.
 import assert from "node:assert";
 import {
-  initCounts,
   validateCount,
   applyStep,
+  canStepCount,
   computeCountDiff,
   splitSaveResults,
 } from "./stockCount.js";
@@ -18,15 +19,6 @@ const ITEMS = [
   { id: "b", product_name: "Molho de Tomate - 250g", quantity: 5, unit: "un" },
   { id: "c", product_name: "Nhoque - 500g", quantity: 0, unit: "un" },
 ];
-
-// ── initCounts: parte da quantidade atual, item sem numero vira 0 ──
-{
-  const counts = initCounts(ITEMS);
-  assert.deepStrictEqual(counts, { a: 10, b: 5, c: 0 });
-
-  const comLixo = initCounts([{ id: "x", quantity: null }, { id: "y", quantity: "abc" }]);
-  assert.deepStrictEqual(comLixo, { x: 0, y: 0 });
-}
 
 // ── validateCount: os 4 casos do roteiro ──
 {
@@ -45,9 +37,6 @@ const ITEMS = [
   assert.strictEqual(zero.valid, true, "zero e uma contagem legitima (zerou o produto)");
   assert.strictEqual(zero.value, 0);
 
-  // Controle positivo: se a funcao so checasse isNaN (sem regex de inteiro),
-  // "3,5" teria virado NaN pelo parseInt e o teste acima pegaria — mas "3" +
-  // lixo (ex.: "3abc") tambem tem que cair fora, o que só o regex garante.
   assert.strictEqual(validateCount("3abc").valid, false, "numero com lixo junto tem que ser invalido");
 }
 
@@ -59,21 +48,73 @@ const ITEMS = [
   assert.strictEqual(applyStep(undefined, 1), 1, "item sem quantidade parte de 0");
 }
 
-// ── computeCountDiff: só os itens que MUDARAM entram no resumo ──
+// ── canStepCount: +/- so em cima de inteiro (estoque legado pode ter numeric quebrado) ──
 {
-  const counts = { a: 10, b: 8, c: 0 }; // só o "b" mudou (5 -> 8)
-  const diff = computeCountDiff(ITEMS, counts);
-  assert.strictEqual(diff.length, 1, "so 1 item mudou — o Salvar nao pode mandar os outros 2");
-  assert.strictEqual(diff[0].id, "b");
-  assert.strictEqual(diff[0].before, 5);
-  assert.strictEqual(diff[0].after, 8);
-  assert.strictEqual(diff[0].delta, 3);
-
-  const semMudanca = computeCountDiff(ITEMS, initCounts(ITEMS));
-  assert.strictEqual(semMudanca.length, 0, "contagem igual a atual = nada para salvar");
+  assert.strictEqual(canStepCount(2), true);
+  assert.strictEqual(canStepCount(0), true);
+  assert.strictEqual(canStepCount(2.5), false, "2.5 nao pode receber +/- silencioso");
+  assert.strictEqual(canStepCount("2.5"), false);
+  assert.strictEqual(canStepCount(NaN), false);
+  assert.strictEqual(canStepCount(undefined), false);
+  // Controle positivo: se canStepCount so checasse "e numero" (Number.isFinite sem
+  // Number.isInteger), 2.5 passaria e o bug do roteiro (2.5 -> 3.5) voltaria.
+  assert.strictEqual(Number.isFinite(2.5), true, "2.5 e finito — só Number.isInteger pega o caso");
 }
 
-// ── splitSaveResults: rede caindo no meio — separa quem salvou de quem falhou ──
+// ── computeCountDiff: só itens TOCADOS (presentes em `base`) entram, e só se mudaram ──
+{
+  // Nenhum item tocado -> base vazia -> diff vazio, mesmo que os items tenham
+  // quantidades diferentes entre si (nao ha "antes" pra ninguem).
+  assert.deepStrictEqual(computeCountDiff({}, {}, ITEMS), []);
+
+  // "b" foi tocado (esta em base) e mudou; "a" e "c" nunca foram tocados —
+  // mesmo que o array `items` (recarregado) mostre outros valores pra eles,
+  // isso NUNCA pode entrar no diff (e o bug que a P3 pegou).
+  const itemsRecarregados = ITEMS.map((i) => (i.id === "a" ? { ...i, quantity: 999 } : i));
+  const base = { b: 5 };
+  const counts = { b: 8 };
+  const diff = computeCountDiff(base, counts, itemsRecarregados);
+  assert.strictEqual(diff.length, 1, "só o item tocado pode aparecer, mesmo com outros items divergindo");
+  assert.strictEqual(diff[0].id, "b");
+  assert.strictEqual(diff[0].before, 5, "before vem da BASE, nunca do items recarregado");
+  assert.strictEqual(diff[0].after, 8);
+  assert.strictEqual(diff[0].delta, 3);
+  assert.strictEqual(diff[0].product_name, "Molho de Tomate - 250g");
+
+  // Tocou mas nao mudou (apertou + e depois -, voltou pro mesmo numero) -> some do diff.
+  const semMudanca = computeCountDiff({ a: 10 }, { a: 10 }, ITEMS);
+  assert.strictEqual(semMudanca.length, 0);
+}
+
+// ── Cenario do roteiro: 10 -> contou 11 -> o robo baixou pra 8 no meio ──
+{
+  const base = { a: 10 };
+  const counts = { a: 11 };
+  const diffAntes = computeCountDiff(base, counts, ITEMS);
+  assert.strictEqual(diffAntes.length, 1);
+  assert.strictEqual(diffAntes[0].before, 10);
+  assert.strictEqual(diffAntes[0].after, 11);
+
+  // O update condicional (.eq('quantity', 10)) nao acha a linha (o robo já
+  // gravou 8) — a entidade devolve conflict:true com o valor atual.
+  const settled = [{ status: "fulfilled", value: { conflict: true, currentQuantity: 8 } }];
+  const { saved, conflicted, failed } = splitSaveResults(diffAntes, settled);
+  assert.strictEqual(saved.length, 0, "conflito NAO e salvo (senao sobrescreveria a baixa do robo)");
+  assert.strictEqual(failed.length, 0);
+  assert.strictEqual(conflicted.length, 1);
+  assert.strictEqual(conflicted[0].id, "a");
+  assert.strictEqual(conflicted[0].currentQuantity, 8);
+
+  // A tela atualiza a BASE pro valor atual (8) mas preserva o rascunho (11)
+  // pra franqueada conferir e salvar de novo.
+  const novaBase = { a: 8 };
+  const diffDepois = computeCountDiff(novaBase, counts, ITEMS);
+  assert.strictEqual(diffDepois.length, 1, "continua pendente — o retry tem o que reenviar");
+  assert.strictEqual(diffDepois[0].before, 8);
+  assert.strictEqual(diffDepois[0].after, 11, "o numero que a franqueada digitou nao se perdeu");
+}
+
+// ── Rede caindo no meio: separa quem salvou de quem falhou de quem teve conflito ──
 {
   const diffItems = [
     { id: "a", product_name: "A", before: 1, after: 2 },
@@ -81,27 +122,28 @@ const ITEMS = [
     { id: "c", product_name: "C", before: 5, after: 6 },
   ];
   const settled = [
-    { status: "fulfilled", value: {} },
+    { status: "fulfilled", value: { conflict: false, quantity: 2 } },
     { status: "rejected", reason: new Error("rede caiu") },
-    { status: "fulfilled", value: {} },
+    { status: "fulfilled", value: { conflict: true, currentQuantity: 9 } },
   ];
-  const { saved, failed } = splitSaveResults(diffItems, settled);
-  assert.strictEqual(saved.length, 2);
-  assert.deepStrictEqual(saved.map((s) => s.id), ["a", "c"]);
+  const { saved, conflicted, failed } = splitSaveResults(diffItems, settled);
+  assert.strictEqual(saved.length, 1);
+  assert.strictEqual(saved[0].id, "a");
   assert.strictEqual(failed.length, 1);
   assert.strictEqual(failed[0].id, "b");
   assert.ok(failed[0].error, "o item que falhou carrega o motivo, para o retry");
+  assert.strictEqual(conflicted.length, 1);
+  assert.strictEqual(conflicted[0].id, "c");
+  assert.strictEqual(conflicted[0].currentQuantity, 9);
 }
 
-// ── Clique repetido no Salvar: depois de salvar, a contagem local reflete o
-//    banco, entao computeCountDiff([...], counts) do segundo clique dá 0
-//    diferencas — nada é reenviado (a idempotencia vem de fora, mas a peça
-//    pura que garante isso é o diff ficar vazio quando before === after).
+// ── Clique repetido no Salvar: depois de salvar, o item sai da BASE (nao só
+//    fica com before===after) — um segundo clique nao tem mais o id no diff.
 {
-  const itemsAtualizados = ITEMS.map((i) => (i.id === "b" ? { ...i, quantity: 8 } : i));
-  const counts = { a: 10, b: 8, c: 0 };
-  const diffDepoisDeSalvar = computeCountDiff(itemsAtualizados, counts);
-  assert.strictEqual(diffDepoisDeSalvar.length, 0, "clique repetido nao reenvia nada");
+  const baseDepoisDeSalvar = {}; // "b" removido da base pelo componente ao salvar
+  const countsDepoisDeSalvar = {};
+  const diff = computeCountDiff(baseDepoisDeSalvar, countsDepoisDeSalvar, ITEMS);
+  assert.strictEqual(diff.length, 0, "clique repetido nao reenvia nada — nem o id sobra");
 }
 
 console.log("stockCount.test.mjs: OK");

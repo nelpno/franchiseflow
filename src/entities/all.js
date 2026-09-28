@@ -209,6 +209,36 @@ export async function salvarFreteEstruturado(configId, campos, esperado) {
   return data;
 }
 
+// "Contar estoque" (S16.1, revisão P3 28/09/2026): grava a quantidade só se ainda for
+// a que a franqueada tinha visto ao tocar no item — senão o robô ou outra aba podem ter
+// baixado o estoque no meio da contagem, e um update comum sobrescreveria essa baixa
+// calado. `.eq('quantity', baseQty)` é o "compare-and-swap": 0 linhas afetadas = alguém
+// mexeu no meio — busca o valor atual pra tela mostrar "mudou (agora X)" e a franqueada
+// decidir de novo, em vez de gravar por cima.
+export async function updateInventoryCountIfUnchanged(id, franchiseId, baseQty, newQty, userId) {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await withTimeout(
+    supabase
+      .from('inventory_items')
+      .update({ quantity: newQty, last_updated_by: userId || null, updated_at: nowIso })
+      .eq('id', id)
+      .eq('franchise_id', franchiseId)
+      .eq('quantity', baseQty)
+      .select('id, quantity, updated_at'),
+    30000
+  );
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    const { data: atual, error: fetchError } = await withTimeout(
+      supabase.from('inventory_items').select('id, quantity').eq('id', id).maybeSingle(),
+      15000
+    );
+    if (fetchError) throw fetchError;
+    return { conflict: true, currentQuantity: atual ? Number(atual.quantity) : null };
+  }
+  return { conflict: false, quantity: Number(data[0].quantity), updated_at: data[0].updated_at };
+}
+
 // Entidades com nomes de tabela Supabase
 export const Franchise = {
   ...createEntity('franchises'),

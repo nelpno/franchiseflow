@@ -1,17 +1,11 @@
 // Logica pura do modo "Contar estoque" (S16.1) — sem React, sem Supabase.
 // Testes: node src/lib/stockCount.test.mjs
-
-/**
- * Ponto de partida da contagem: quantidade atual de cada item, por id.
- * Itens sem quantidade valida entram como 0 (mesmo padrao do resto do app).
- */
-export function initCounts(items) {
-  const counts = {};
-  for (const item of items || []) {
-    counts[item.id] = Number(item.quantity) || 0;
-  }
-  return counts;
-}
+//
+// A BASE de cada item (a quantidade que a franqueada viu ao tocar nele pela
+// primeira vez) e imutavel ate ser corrigida por um CONFLITO no Salvar (o
+// robo ou outra aba baixaram o estoque no meio da contagem) — o diff nunca
+// compara contra o `items` recarregado, so contra essa base. Item nunca
+// tocado nunca entra no diff nem no rascunho (revisao P3, 28/09/2026).
 
 /**
  * Valida o que a franqueada digitou direto no numero (fora do +/-).
@@ -47,21 +41,36 @@ export function applyStep(current, step) {
 }
 
 /**
- * Compara a contagem da tela com a quantidade que o item tinha antes —
- * só entram os itens que de fato mudaram (o "Salvar" manda só a diferenca).
+ * Estoque legado guarda `quantity` como numeric — um item pode chegar com
+ * valor quebrado (ex.: 2.5). +/- em cima disso so trocaria um numero
+ * quebrado por outro (2.5 -> 3.5), sem corrigir nada. So a digitacao direta
+ * (que so aceita inteiro via validateCount) resolve — por isso o passo e
+ * bloqueado quando o valor atual nao e inteiro.
  */
-export function computeCountDiff(items, counts) {
+export function canStepCount(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && Number.isInteger(n);
+}
+
+/**
+ * Compara a base IMUTAVEL de cada item TOCADO com o valor atual da tela.
+ * So entram no diff os itens tocados (a base so existe pra quem foi tocado)
+ * e que de fato mudaram. `items` serve só para anexar nome/unidade ao
+ * registro — nunca como fonte da quantidade "antes" (isso é sempre `base`).
+ */
+export function computeCountDiff(base, counts, items) {
+  const itemsById = new Map((items || []).map((i) => [i.id, i]));
   const diff = [];
-  for (const item of items || []) {
-    if (!(item.id in (counts || {}))) continue;
-    const before = Number(item.quantity) || 0;
-    const after = Number(counts[item.id]);
+  for (const id of Object.keys(base || {})) {
+    const before = Number(base[id]);
+    const after = counts?.[id];
     if (!Number.isFinite(after)) continue;
     if (after !== before) {
+      const item = itemsById.get(id);
       diff.push({
-        id: item.id,
-        product_name: item.product_name,
-        unit: item.unit,
+        id,
+        product_name: item?.product_name,
+        unit: item?.unit,
         before,
         after,
         delta: after - before,
@@ -73,19 +82,27 @@ export function computeCountDiff(items, counts) {
 
 /**
  * Junta o resultado de um Promise.allSettled com a lista que foi salva,
- * separando quem salvou de quem falhou — para a tela nunca perder o que
- * a franqueada tinha digitado (rede caindo no meio do "Salvar").
+ * separando quem salvou de quem teve CONFLITO (outra aba ou o robo mudaram
+ * a quantidade no meio — o update condicional voltou 0 linhas) de quem
+ * falhou de verdade (rede) — a tela nunca perde o que a franqueada tinha
+ * digitado em nenhum dos tres casos.
  */
 export function splitSaveResults(diffItems, settledResults) {
   const saved = [];
+  const conflicted = [];
   const failed = [];
   diffItems.forEach((entry, i) => {
     const result = settledResults[i];
-    if (result && result.status === "fulfilled") {
-      saved.push(entry);
-    } else {
+    if (!result || result.status === "rejected") {
       failed.push({ ...entry, error: result?.reason });
+      return;
+    }
+    const value = result.value;
+    if (value && value.conflict) {
+      conflicted.push({ ...entry, currentQuantity: value.currentQuantity });
+    } else {
+      saved.push({ ...entry, quantity: value?.quantity ?? entry.after });
     }
   });
-  return { saved, failed };
+  return { saved, conflicted, failed };
 }

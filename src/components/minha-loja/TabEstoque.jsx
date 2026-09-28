@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { InventoryItem, getStandardProductCatalog } from "@/entities/all";
+import { InventoryItem, getStandardProductCatalog, updateInventoryCountIfUnchanged } from "@/entities/all";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,9 @@ import { format } from "date-fns";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import { ptBR } from "date-fns/locale";
 import {
-  initCounts,
   validateCount,
   applyStep,
+  canStepCount,
   computeCountDiff,
   splitSaveResults,
 } from "@/lib/stockCount";
@@ -134,15 +134,39 @@ export default function TabEstoque({
   const suggestionsRef = useRef(null);
 
   // --- Modo "Contar estoque" (S16.1) ---
+  // `countBase`: quantidade que a franqueada VIU ao tocar o item pela 1a vez — imutável
+  // até um conflito de save a corrigir. `counts`: valor atual da tela para cada item
+  // tocado. Item que nunca foi tocado não está em nenhum dos dois (não entra no diff).
   const [countMode, setCountMode] = useState(false);
+  const [countBase, setCountBase] = useState({});
   const [counts, setCounts] = useState({});
+  const [countConflicts, setCountConflicts] = useState({}); // id -> { currentQuantity } — mudou no meio da contagem
   const [isSavingCount, setIsSavingCount] = useState(false);
   const [editingCountId, setEditingCountId] = useState(null);
   const [countEditValue, setCountEditValue] = useState("");
   const [itemMenuFor, setItemMenuFor] = useState(null); // item com o menu "..." (editar/ocultar/excluir) aberto
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState(null); // rascunho salvo no sessionStorage de outra aba/sessão
   const countEditRef = useRef(null);
   const savingCountRef = useRef(false); // guarda SÍNCRONA — setState não chega a tempo de barrar clique duplo
+  const prevFranchiseRef = useRef(franchiseId);
+
+  const draftKey = franchiseId ? `stockCount_draft_${franchiseId}` : null;
+
+  // Trocou de unidade com a contagem aberta: reseta ANTES de pintar (padrão React de
+  // "resetar estado quando a prop muda"), senão o efeito de persistência do rascunho
+  // gravaria a contagem da unidade ANTIGA na chave da unidade NOVA por uma renderização.
+  if (prevFranchiseRef.current !== franchiseId) {
+    prevFranchiseRef.current = franchiseId;
+    if (countMode || Object.keys(countBase).length > 0) {
+      setCountMode(false);
+      setCountBase({});
+      setCounts({});
+      setCountConflicts({});
+      setEditingCountId(null);
+      setPendingDraft(null);
+    }
+  }
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
 
@@ -173,6 +197,41 @@ export default function TabEstoque({
       countEditRef.current.select();
     }
   }, [editingCountId]);
+
+  // Rascunho da contagem em sessionStorage — sobrevive a troca de aba da Gestão, rota
+  // ou até fechar e reabrir a aba do navegador (sessionStorage, não localStorage: some
+  // se ela fechar o navegador de verdade, o que é aceitável pra uma contagem do dia).
+  useEffect(() => {
+    if (!draftKey || !countMode) return;
+    try {
+      if (Object.keys(countBase).length === 0) {
+        sessionStorage.removeItem(draftKey);
+      } else {
+        sessionStorage.setItem(draftKey, JSON.stringify({ base: countBase, counts, savedAt: Date.now() }));
+      }
+    } catch {
+      // sessionStorage indisponível (aba anônima, storage bloqueado etc.) — segue sem rascunho
+    }
+  }, [draftKey, countMode, countBase, counts]);
+
+  // Ao abrir a tela (ou trocar de unidade) fora do modo contagem, avisa se sobrou
+  // rascunho de uma sessão anterior — sem isso, sair pela aba/rota perdia tudo calado.
+  useEffect(() => {
+    if (!draftKey || countMode) return;
+    try {
+      const raw = sessionStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.base && Object.keys(parsed.base).length > 0) {
+          setPendingDraft(parsed);
+          return;
+        }
+      }
+    } catch {
+      // ignora — sem rascunho pra oferecer
+    }
+    setPendingDraft(null);
+  }, [draftKey, countMode]);
 
   const giroByItem = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
@@ -224,7 +283,7 @@ export default function TabEstoque({
 
   const countGroups = useMemo(() => groupItemsByType(countableItems), [countableItems]);
 
-  const countDiff = useMemo(() => computeCountDiff(items, counts), [items, counts]);
+  const countDiff = useMemo(() => computeCountDiff(countBase, counts, items), [countBase, counts, items]);
 
   // --- Inline edit ---
 
@@ -391,12 +450,18 @@ export default function TabEstoque({
         franchise_id: franchiseId,
         product_name: formData.product_name.trim(),
         category: formData.category || null,
-        quantity: parseInt(formData.quantity, 10) || 0,
         unit: formData.unit,
         min_stock: parseInt(formData.min_stock, 10) || 0,
         cost_price: parseFloat(formData.cost_price) || null,
         sale_price: parseFloat(formData.sale_price) || null,
       };
+
+      // Editar produto pelo menu "..." do modo Contar estoque NÃO mexe em quantidade —
+      // isso é só do +/- da contagem (que grava por update condicional). Fora do modo
+      // contagem (ou criando produto novo), o campo Quantidade normal vale.
+      if (!(countMode && editingItem)) {
+        payload.quantity = parseInt(formData.quantity, 10) || 0;
+      }
 
       // Cost price: admin always edits; franchisee only for items they created
       if (!isAdmin && editingItem && !editingItem.created_by_franchisee) {
@@ -495,19 +560,52 @@ export default function TabEstoque({
   // --- Modo "Contar estoque" (S16.1) ---
 
   const handleEnterCountMode = () => {
-    const activeItems = items.filter((i) => i.active !== false);
-    setCounts(initCounts(activeItems));
+    setSearchTerm("");
+    setFilterCategory("all");
     setFilterStockLevel("all"); // depende da quantidade — evita item sumir da lista no meio da contagem
     setCountMode(true);
   };
 
   const exitCountMode = () => {
     setCountMode(false);
+    setCountBase({});
     setCounts({});
+    setCountConflicts({});
     setEditingCountId(null);
+    if (draftKey) {
+      try {
+        sessionStorage.removeItem(draftKey);
+      } catch {
+        // sem storage — nada a limpar
+      }
+    }
+  };
+
+  const handleResumeDraft = () => {
+    if (!pendingDraft) return;
+    setCountBase(pendingDraft.base || {});
+    setCounts(pendingDraft.counts || {});
+    setCountConflicts({});
+    setSearchTerm("");
+    setFilterCategory("all");
+    setFilterStockLevel("all");
+    setCountMode(true);
+    setPendingDraft(null);
+  };
+
+  const handleDiscardDraft = () => {
+    if (draftKey) {
+      try {
+        sessionStorage.removeItem(draftKey);
+      } catch {
+        // sem storage — nada a limpar
+      }
+    }
+    setPendingDraft(null);
   };
 
   const handleCancelCount = () => {
+    if (isSavingCount) return;
     if (countDiff.length > 0) {
       setShowDiscardConfirm(true);
       return;
@@ -521,33 +619,83 @@ export default function TabEstoque({
   };
 
   // Aviso ao fechar a aba/atualizar com contagem não salva (nada some sem avisar).
+  // Trocar de aba da Gestão, de rota ou de unidade não passa por aqui — isso fica
+  // coberto pelo rascunho em sessionStorage (efeito acima) + o banner "Continuar
+  // contagem" ao voltar.
   useEffect(() => {
     if (!countMode) return;
     const handler = (e) => {
-      if (computeCountDiff(items, counts).length > 0) {
+      if (countDiff.length > 0) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [countMode, items, counts]);
+  }, [countMode, countDiff]);
+
+  // Registra a BASE do item na 1a vez que ele é tocado (+/-, digitação). Depois disso
+  // só muda por conflito de save (o servidor tinha outro valor) — nunca por um refresh
+  // externo do `items`.
+  const ensureCountBase = (item) => {
+    setCountBase((prev) => (item.id in prev ? prev : { ...prev, [item.id]: Number(item.quantity) || 0 }));
+  };
+
+  const clearCountConflict = (itemId) => {
+    setCountConflicts((prev) => {
+      if (!(itemId in prev)) return prev;
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  };
 
   const handleCountStep = (itemId, step) => {
-    setCounts((prev) => ({ ...prev, [itemId]: applyStep(prev[itemId], step) }));
+    if (savingCountRef.current) return; // guarda também no handler, não só no `disabled`
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+    // Gate do decimal legado: lê o valor mais recentemente conhecido (não é 100% à
+    // prova de 2 cliques na MESMA tick, mas um item quebrado não muda de quebrado
+    // pra inteiro sozinho — o resultado é o mesmo aviso nos dois cliques).
+    const knownCurrent = counts[itemId] ?? countBase[itemId] ?? (Number(item.quantity) || 0);
+    if (!canStepCount(knownCurrent)) {
+      // Estoque legado com numeric quebrado (ex.: 2.5) — +/- so trocaria um numero
+      // quebrado por outro. Pede correção explícita via digitação direta.
+      toast.warning(
+        `"${item.product_name}" está com número quebrado (${knownCurrent}). Digite a contagem certa.`
+      );
+      handleOpenCountInput(item);
+      return;
+    }
+    ensureCountBase(item);
+    // O incremento em si SEMPRE dentro do updater funcional: cliques que caem na
+    // MESMA tick do React (2 eventos antes do 1o re-render) têm que encadear em
+    // cima do `prev` da fila, nunca do valor lido do escopo do render — senão 3
+    // cliques rápidos em "+" produzem 9 em vez de 11 (regressão pega no smoke).
+    setCounts((prev) => {
+      const current = prev[itemId] ?? (Number(item.quantity) || 0);
+      return { ...prev, [itemId]: applyStep(current, step) };
+    });
+    clearCountConflict(itemId);
   };
 
   const handleOpenCountInput = (item) => {
+    if (savingCountRef.current) return;
+    ensureCountBase(item);
     setEditingCountId(item.id);
-    setCountEditValue(String(counts[item.id] ?? 0));
+    setCountEditValue(String(counts[item.id] ?? countBase[item.id] ?? (Number(item.quantity) || 0)));
   };
 
   const handleCountInputBlur = (itemId) => {
+    if (savingCountRef.current) return;
     const { valid, value, error } = validateCount(countEditValue);
     if (!valid) {
       toast.error(error || "Número inválido.");
     } else {
+      const item = items.find((i) => i.id === itemId);
+      if (item) ensureCountBase(item);
       setCounts((prev) => ({ ...prev, [itemId]: value }));
+      clearCountConflict(itemId);
     }
     setEditingCountId(null);
   };
@@ -560,41 +708,69 @@ export default function TabEstoque({
     }
   };
 
-  // Clique repetido no "Salvar" não duplica: enquanto isSavingCount for true, o botão
-  // fica desabilitado; depois de salvar, os itens salvos saem do diff (before === after)
-  // e um segundo clique não teria mais nada para reenviar.
+  const handleOpenItemMenu = (item) => {
+    if (savingCountRef.current) return;
+    setItemMenuFor(item);
+  };
+
+  // Clique repetido no "Salvar" não duplica: `savingCountRef` bloqueia de forma
+  // SÍNCRONA (setState não chegaria a tempo). O update é CONDICIONAL — só grava se a
+  // quantidade no banco ainda for a BASE que a franqueada viu; senão é conflito (o robô
+  // ou outra aba mexeram no meio) e a linha NÃO é sobrescrita.
   const handleSaveCount = async () => {
     if (savingCountRef.current) return;
-    const diff = computeCountDiff(items, counts);
+    const diff = computeCountDiff(countBase, counts, items);
     if (diff.length === 0) return;
 
     savingCountRef.current = true;
     setIsSavingCount(true);
     try {
-      const nowIso = new Date().toISOString();
       const results = await Promise.allSettled(
         diff.map((entry) =>
-          InventoryItem.update(entry.id, {
-            quantity: entry.after,
-            last_updated_by: currentUser?.id || null,
-            updated_at: nowIso,
-          })
+          updateInventoryCountIfUnchanged(entry.id, franchiseId, entry.before, entry.after, currentUser?.id || null)
         )
       );
-      const { saved, failed } = splitSaveResults(diff, results);
+      const { saved, conflicted, failed } = splitSaveResults(diff, results);
 
       if (saved.length > 0) {
+        const nowIso = new Date().toISOString();
         setItems((prev) =>
           prev.map((i) => {
             const hit = saved.find((s) => s.id === i.id);
             return hit
-              ? { ...i, quantity: hit.after, updated_at: nowIso, last_updated_by: currentUser?.id || i.last_updated_by }
+              ? { ...i, quantity: hit.quantity ?? hit.after, updated_at: nowIso, last_updated_by: currentUser?.id || i.last_updated_by }
               : i;
           })
         );
+        // Item salvo com sucesso sai da fila — sem ele, um clique repetido reenviaria.
+        setCountBase((prev) => {
+          const next = { ...prev };
+          saved.forEach((s) => delete next[s.id]);
+          return next;
+        });
+        setCounts((prev) => {
+          const next = { ...prev };
+          saved.forEach((s) => delete next[s.id]);
+          return next;
+        });
       }
 
-      if (failed.length === 0) {
+      if (conflicted.length > 0) {
+        // A base vira o valor ATUAL do servidor (é o que o próximo Salvar vai
+        // comparar); o rascunho (o número que ela digitou) NÃO é tocado.
+        setCountBase((prev) => {
+          const next = { ...prev };
+          conflicted.forEach((c) => { next[c.id] = c.currentQuantity; });
+          return next;
+        });
+        setCountConflicts((prev) => {
+          const next = { ...prev };
+          conflicted.forEach((c) => { next[c.id] = { currentQuantity: c.currentQuantity }; });
+          return next;
+        });
+      }
+
+      if (failed.length === 0 && conflicted.length === 0) {
         toast.success(
           `Contagem salva: ${saved.length} produto${saved.length > 1 ? "s" : ""} atualizado${saved.length > 1 ? "s" : ""}.`
         );
@@ -602,9 +778,22 @@ export default function TabEstoque({
         if (onRefresh) onRefresh();
       } else {
         console.error("Erro ao salvar contagem:", failed.map((f) => f.error));
-        const okTexto = saved.length > 0 ? `${saved.length} salvos, ` : "";
+        const partes = [];
+        if (saved.length > 0) partes.push(`${saved.length} salvo${saved.length > 1 ? "s" : ""}`);
+        if (conflicted.length > 0) {
+          partes.push(
+            conflicted.length === 1
+              ? "1 mudou enquanto você contava"
+              : `${conflicted.length} mudaram enquanto você contava`
+          );
+        }
+        if (failed.length > 0) {
+          partes.push(
+            failed.length === 1 ? "1 não salvou (falha de rede)" : `${failed.length} não salvaram (falha de rede)`
+          );
+        }
         toast.error(
-          `${okTexto}${failed.length} não salvaram (falha de rede). Os números continuam na tela — toque em "Salvar" de novo para tentar só esses.`,
+          `${partes.join(", ")}. Confira os produtos destacados e toque em "Salvar" de novo.`,
           { duration: 15000 }
         );
         if (onRefresh) onRefresh();
@@ -854,6 +1043,37 @@ export default function TabEstoque({
         </div>
       )}
 
+      {/* Rascunho de contagem pendente (trocou de aba/rota/unidade sem salvar) */}
+      {!countMode && pendingDraft && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-brand-gold/10 border border-brand-gold/30 rounded-xl">
+          <div className="flex items-center gap-2 text-sm text-brand-gold-ink">
+            <MaterialIcon icon="checklist" size={18} className="shrink-0" />
+            <span>
+              Contagem de estoque pendente ({Object.keys(pendingDraft.base || {}).length} produto
+              {Object.keys(pendingDraft.base || {}).length > 1 ? "s" : ""} alterado
+              {Object.keys(pendingDraft.base || {}).length > 1 ? "s" : ""}) — continue de onde parou.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDiscardDraft}
+              className="h-9 rounded-xl border-ink-4 text-ink-2"
+            >
+              Descartar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleResumeDraft}
+              className="h-9 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold"
+            >
+              Continuar contagem
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Modo "Contar estoque" */}
       {countMode && (
         <div className="space-y-4">
@@ -912,14 +1132,20 @@ export default function TabEstoque({
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {group.items.map((item) => {
-                    const value = counts[item.id] ?? (Number(item.quantity) || 0);
-                    const before = Number(item.quantity) || 0;
-                    const changed = value !== before;
+                    const touched = item.id in countBase;
+                    const before = touched ? Number(countBase[item.id]) : Number(item.quantity) || 0;
+                    const value = touched ? counts[item.id] ?? before : Number(item.quantity) || 0;
+                    const changed = touched && value !== before;
+                    const conflict = countConflicts[item.id];
                     return (
                       <Card
                         key={item.id}
                         className={`rounded-2xl border ${
-                          changed ? "border-brand-gold/40 bg-brand-gold/5" : "border-ink-shadow/5 bg-white"
+                          conflict
+                            ? "border-brand/50 bg-brand/5"
+                            : changed
+                              ? "border-brand-gold/40 bg-brand-gold/5"
+                              : "border-ink-shadow/5 bg-white"
                         }`}
                       >
                         <CardContent className="p-3 space-y-2">
@@ -932,13 +1158,20 @@ export default function TabEstoque({
                                   <span className="text-brand-gold-ink font-semibold"> · era {before}</span>
                                 )}
                               </p>
+                              {conflict && (
+                                <p className="text-xs text-brand font-semibold flex items-center gap-1 mt-0.5">
+                                  <MaterialIcon icon="warning" size={13} />
+                                  Mudou enquanto você contava (agora {conflict.currentQuantity}). Confira e salve de novo.
+                                </p>
+                              )}
                             </div>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
                               className="h-11 w-11 shrink-0 -mr-2 -mt-1 text-ink-2"
-                              onClick={() => setItemMenuFor(item)}
+                              onClick={() => handleOpenItemMenu(item)}
+                              disabled={isSavingCount}
                               aria-label={`Mais opções de ${item.product_name}`}
                             >
                               <MaterialIcon icon="more_horiz" size={20} />
@@ -952,6 +1185,7 @@ export default function TabEstoque({
                               size="icon"
                               className="h-11 w-11 shrink-0 rounded-xl border-ink-4 text-ink"
                               onClick={() => handleCountStep(item.id, -1)}
+                              disabled={isSavingCount}
                               aria-label={`Diminuir ${item.product_name}`}
                             >
                               <MaterialIcon icon="remove" size={20} />
@@ -968,13 +1202,15 @@ export default function TabEstoque({
                                 onChange={(e) => setCountEditValue(e.target.value)}
                                 onBlur={() => handleCountInputBlur(item.id)}
                                 onKeyDown={handleCountInputKeyDown}
+                                disabled={isSavingCount}
                                 className="flex-1 h-11 min-w-0 text-center font-bold bg-surface-line border-none rounded-xl focus-visible:ring-2 focus-visible:ring-brand/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
                               />
                             ) : (
                               <button
                                 type="button"
-                                className="flex-1 h-11 min-w-0 rounded-xl bg-surface-line font-bold text-ink text-center text-lg"
+                                className="flex-1 h-11 min-w-0 rounded-xl bg-surface-line font-bold text-ink text-center text-lg disabled:opacity-60"
                                 onClick={() => handleOpenCountInput(item)}
+                                disabled={isSavingCount}
                                 aria-label={`Quantidade de ${item.product_name}, toque para digitar`}
                               >
                                 {value}
@@ -987,6 +1223,7 @@ export default function TabEstoque({
                               size="icon"
                               className="h-11 w-11 shrink-0 rounded-xl border-ink-4 text-ink"
                               onClick={() => handleCountStep(item.id, 1)}
+                              disabled={isSavingCount}
                               aria-label={`Aumentar ${item.product_name}`}
                             >
                               <MaterialIcon icon="add" size={20} />
@@ -1648,26 +1885,29 @@ export default function TabEstoque({
               </Select>
             </div>
 
-            {/* Quantity and Unit */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-ink">Quantidade</Label>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="1"
-                  value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      quantity: e.target.value,
-                    }))
-                  }
-                  placeholder="0"
-                  className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
-                />
-              </div>
+            {/* Quantity and Unit — Quantidade some quando editando pelo menu do modo
+                Contar estoque: quem muda a quantidade ali é só o +/- da contagem. */}
+            <div className={`grid gap-3 ${countMode && editingItem ? "grid-cols-1" : "grid-cols-2"}`}>
+              {!(countMode && editingItem) && (
+                <div className="space-y-2">
+                  <Label className="text-ink">Quantidade</Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="1"
+                    value={formData.quantity}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        quantity: e.target.value,
+                      }))
+                    }
+                    placeholder="0"
+                    className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-ink">Unidade</Label>
