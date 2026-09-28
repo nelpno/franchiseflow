@@ -83,6 +83,7 @@ declare
   v_atraso jsonb;
   v_verba  jsonb;
   v_pix    constant text := 'Pix CNPJ 00.494.317/0001-21';
+  v_so_vencida constant boolean := true;  -- decisão 28/09: só "1 a 3 dias depois do vencimento"
 begin
   if not coalesce(
        (v_claims is null and session_user in ('postgres', 'supabase_admin'))
@@ -127,7 +128,9 @@ begin
     -- Mensalidade: só assinatura ativa no ASAAS (sem ela não há o que pagar — S5.2)
     if r.asaas_subscription_id is not null and coalesce(r.subscription_status, '') <> 'CANCELLED'
        and r.current_payment_id is not null and r.current_payment_due_date is not null then
-      if r.current_payment_status = 'PENDING'
+      -- Decisão Nelson 28/09: por enquanto SÓ o lembrete de vencida (o "2 dias antes" e a verba
+      -- ficam desligados aqui; para voltar, trocar v_so_vencida para false).
+      if not v_so_vencida and r.current_payment_status = 'PENDING'
          and r.current_payment_due_date - v_hoje between 1 and 2 then
         v_antes := jsonb_build_object('tipo', 'mensalidade_antes', 'ref', r.current_payment_id,
                                       'vencimento', r.current_payment_due_date, 'valor', r.current_payment_value);
@@ -140,7 +143,7 @@ begin
 
     -- Verba do anúncio: dia 1 a 3, sem pagamento do mês (qualquer status menos recusado), e só
     -- para quem pagou verba em algum dos 3 meses anteriores (quem não anuncia não é cobrado).
-    if extract(day from v_hoje) between 1 and 3
+    if not v_so_vencida and extract(day from v_hoje) between 1 and 3
        and not exists (select 1 from marketing_payments m
                         where m.franchise_id = r.evo and m.reference_month = v_mes and m.status <> 'rejected')
        and exists (select 1 from marketing_payments m
