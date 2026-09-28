@@ -16,6 +16,7 @@
 import {
   DRIVE_FRANQUEADOS,
   DRIVE_VIDEOS_TREINAMENTO,
+  DRIVE_ROBO,
   DRIVE_SACOLA,
   DRIVE_META_BUSINESS,
   DRIVE_POSTAGENS,
@@ -64,8 +65,14 @@ export const JOURNEY_STEPS = [
         titulo: "Materiais da franquia",
         resumo: "Materiais e vídeos da franquia, no Drive.",
         texto:
-          "No Drive estão os materiais e os vídeos de treinamento da franquia. " +
-          "Se ele não abrir, avise a equipe Maxi o e-mail que você usa no Google.",
+          "No Drive estão os materiais e os vídeos da franquia, em 6 pastas:\n" +
+          "1. Comece aqui\n" +
+          "2. Vender e atender\n" +
+          "3. Estoque e fábrica\n" +
+          "4. Marketing e postagens\n" +
+          "5. Robô vendedor\n" +
+          "6. Marca e artes\n\n" +
+          "Abre direto pelo link, sem pedir acesso.",
         destinos: [{ tipo: "drive", href: DRIVE_FRANQUEADOS, rotulo: "Abrir Drive de materiais" }],
       },
     ],
@@ -115,14 +122,17 @@ export const JOURNEY_STEPS = [
         id: "videos_treinamento",
         tipo: "material",
         titulo: "Vídeos de treinamento",
-        resumo: "Três vídeos, uns 45 minutos, no seu ritmo.",
+        resumo: "WhatsApp, Meta e robô, em vídeos curtos.",
         texto:
-          "Assista os 3 vídeos no Drive:\n" +
-          "1. Configuração do WhatsApp Business\n" +
-          "2. Como usar o Meta Business Suite\n" +
-          "3. Como funciona o Robô de Atendimento\n\n" +
-          "Dura cerca de 45 minutos no total. Pode assistir no seu ritmo!",
-        destinos: [{ tipo: "drive", href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Assistir vídeos de treinamento" }],
+          "No Drive, pasta \"1. Comece aqui\", em \"Vídeos de configuração\":\n" +
+          "1. WhatsApp Business: conectar, capa e descrição, catálogo (3 vídeos)\n" +
+          "2. Meta Business Suite: visão geral, menu e Planner (4 vídeos)\n\n" +
+          "E o vídeo do robô vendedor fica na pasta \"5. Robô vendedor\".\n\n" +
+          "Pode assistir no seu ritmo!",
+        destinos: [
+          { tipo: "drive", href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Vídeos de WhatsApp e Meta" },
+          { tipo: "drive", href: DRIVE_ROBO, rotulo: "Vídeo do robô vendedor" },
+        ],
       },
       {
         id: "cardapio",
@@ -232,10 +242,10 @@ export const JOURNEY_STEPS = [
           "Tamanhos recomendados:\n" +
           "• 30×40 — pacote com cerca de 350 unidades\n" +
           "• 35×45 — pacote com cerca de 265 unidades\n\n" +
-          "Você encontra em papelarias, lojas de embalagens ou pela internet. O fornecedor recomendado está no Drive, " +
-          "e você também pode comprar perto de você.\n\n" +
+          "Você encontra em papelarias, lojas de embalagens ou pela internet. No Drive estão o contato do " +
+          "fornecedor recomendado, o logo para a sacola e fotos de exemplo, e você também pode comprar perto de você.\n\n" +
           "Dica: coloque um panfleto ou cartão de visita na sacola — gera indicações!",
-        destinos: [{ tipo: "drive", href: DRIVE_SACOLA, rotulo: "Ver artes da sacola" }],
+        destinos: [{ tipo: "drive", href: DRIVE_SACOLA, rotulo: "Ver modelo, logo e fornecedor" }],
       },
       {
         id: "uniforme",
