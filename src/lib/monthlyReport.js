@@ -223,13 +223,25 @@ function dataUtc(ts) {
   return Number.isNaN(d.getTime()) ? s.substring(0, 10) : d.toISOString().substring(0, 10);
 }
 
+// Dia (yyyy-MM-dd) de um timestamptz em Brasília — o mês em que a franqueada FEZ o pedido.
+function diaEmBrasilia(ts) {
+  if (!ts) return null;
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+}
+
 /**
  * S17.2 — "compra da fábrica ainda não lançada". A despesa do pedido à fábrica só nasce
  * quando o pedido vira "entregue" (trigger tr_po_generate_expenses: compra + frete, com a
  * data da entrega). Então, num mês em andamento, pedido já feito e ainda não entregue NÃO
  * está no Sobrou — e ele vai cair (medido 28/09: 18 pedidos "confirmado" na rede, ~5 dias
  * do pedido à entrega, 59 de 257 entregues noutro mês). Regra:
- *   - aCaminho: só no mês em andamento, pedidos que não estão "entregue" nem "cancelado";
+ *   - aCaminho: só no mês em andamento, pedidos que não estão "entregue" nem "cancelado" E
+ *     que foram FEITOS (ordered_at, dia de Brasília) neste mês ou no anterior. Pedido aberto
+ *     mais velho que isso é registro esquecido (não vai chegar) e não pode baixar o Sobrou de
+ *     um mês que não é o dele (P3 S17; medido 28/09: 0 abertos anteriores a set/2026, todos
+ *     os 18 são de 22 a 27/09 — a regra não esconde nenhum pedido real hoje);
  *     valor = total_amount + freight_cost (é o que a despesa vai somar: 249/258 batem).
  *   - semGasto: pedidos "entregue" com a data da entrega neste mês e sem NENHUMA despesa com
  *     source 'purchase_order' e source_id = pedido (1 caso em 120 dias; legado).
@@ -242,8 +254,13 @@ export function avaliarComprasFabrica({ purchaseOrders, expenses = [], mesSeleci
     expenses.filter((e) => e.source === "purchase_order" && e.source_id).map((e) => e.source_id)
   );
   const valorPedido = (p) => num(p.total_amount) + num(p.freight_cost);
+  const base = startOfMonth(mesSelecionado);
+  const recente = (p) => {
+    const dia = diaEmBrasilia(p.ordered_at);
+    return !!dia && (isInMonth(dia, base) || isInMonth(dia, subMonths(base, 1)));
+  };
   const aCaminhoLista = emAndamento
-    ? purchaseOrders.filter((p) => p.status !== "entregue" && p.status !== "cancelado")
+    ? purchaseOrders.filter((p) => p.status !== "entregue" && p.status !== "cancelado" && recente(p))
     : [];
   const semGastoLista = purchaseOrders.filter(
     (p) => p.status === "entregue" && !comGasto.has(p.id) && isInMonth(dataUtc(p.delivered_at), mesSelecionado)

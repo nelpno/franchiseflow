@@ -120,7 +120,7 @@ test("Quanto sobrou por mês: 6 meses até o selecionado, acumulado do ano", () 
 test("Compra da fábrica ainda não lançada: a caminho (só no mês corrente) e entregue sem gasto", () => {
   const pedidos = [
     { id: "po2", status: "entregue", total_amount: 90, freight_cost: 10, delivered_at: "2026-09-04T13:00:00+00:00" },
-    { id: "po4", status: "confirmado", total_amount: 500, freight_cost: 50, delivered_at: null },
+    { id: "po4", status: "confirmado", total_amount: 500, freight_cost: 50, ordered_at: "2026-09-08T15:00:00+00:00", delivered_at: null },
     { id: "po5", status: "cancelado", total_amount: 999, freight_cost: 0, delivered_at: null },
     { id: "po6", status: "entregue", total_amount: 70, freight_cost: 0, delivered_at: "2026-09-08T01:30:00+00:00" },
     { id: "po7", status: "entregue", total_amount: 40, freight_cost: 0, delivered_at: "2026-08-30T12:00:00+00:00" },
@@ -179,4 +179,19 @@ test("Planilha de produtos abre com número de verdade (xlsx)", async () => {
   assert.equal(ws.B2.v, 6);
   assert.equal(ws.C2.v, 150);
   assert.equal(ws.D2.v, 31.25);
+});
+
+test("P3 item 5: pedido aberto só conta se foi feito neste mês ou no anterior (dia de Brasília)", () => {
+  const abertos = [
+    { id: "set", status: "confirmado", total_amount: 100, freight_cost: 0, ordered_at: "2026-09-02T12:00:00+00:00" },
+    { id: "ago", status: "confirmado", total_amount: 200, freight_cost: 0, ordered_at: "2026-08-20T12:00:00+00:00" },
+    // 01/08 02:00 UTC = 31/07 23:00 em Brasília: julho, fica fora
+    { id: "virada", status: "confirmado", total_amount: 400, freight_cost: 0, ordered_at: "2026-08-01T02:00:00+00:00" },
+    { id: "jun", status: "confirmado", total_amount: 800, freight_cost: 0, ordered_at: "2026-06-15T12:00:00+00:00" },
+    { id: "semdata", status: "confirmado", total_amount: 1600, freight_cost: 0, ordered_at: null },
+  ];
+  const a = avaliarComprasFabrica({ purchaseOrders: abertos, expenses: [], mesSelecionado: HOJE, hoje: HOJE });
+  assert.deepEqual(a.aCaminho, { n: 2, valor: 300 });
+  // só pedidos esquecidos: nada a avisar
+  assert.equal(avaliarComprasFabrica({ purchaseOrders: abertos.slice(2), expenses: [], mesSelecionado: HOJE, hoje: HOJE }), null);
 });
