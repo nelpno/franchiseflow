@@ -33,7 +33,6 @@ const ROTULOS = {
   franchise_invites: "convites",
   franchise_configurations: "configuração da unidade",
   onboarding_checklists: "itens de onboarding",
-  sales_goals: "metas",
   system_subscriptions: "assinatura do sistema",
   cs_tasks: "cartões do Customer Success",
   cs_worklist: "worklist do CS",
@@ -41,7 +40,6 @@ const ROTULOS = {
   cs_agreements: "combinados do CS",
   coach_actions: "ações do coach",
   bot_reports: "relatórios do robô",
-  franchise_notes: "anotações",
 };
 
 /**

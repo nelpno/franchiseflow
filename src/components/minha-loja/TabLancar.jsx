@@ -1264,8 +1264,10 @@ export default function TabLancar({
           ))}
         </div>
 
-        {/* Confirm all visible button */}
-        {periodStats.pendingCount > 0 && confirmationFilter !== "confirmed" && (
+        {/* Confirm all visible button — S12.2 (28/09/2026): sai com a chave ui_v2. A venda já nasce
+            recebida e a caixa "A receber" tem o "Recebi" por venda; das 4 unidades que usavam, Embu
+            ("tanto faz") e Vila dos Remédios ("não faz falta") responderam. Sem a chave, fica. */}
+        {!uiV2 && periodStats.pendingCount > 0 && confirmationFilter !== "confirmed" && (
           <Button
             variant="outline"
             size="sm"
@@ -1282,7 +1284,7 @@ export default function TabLancar({
               <>
                 <MaterialIcon icon="done_all" size={14} />
                 <span className="hidden sm:inline">Confirmar todas</span>
-                <span className="sm:hidden">{uiV2 ? "Recebi todas" : "Todas"}</span>
+                <span className="sm:hidden">Todas</span>
                 <span className="font-mono-numbers">({periodStats.pendingCount})</span>
               </>
             )}
