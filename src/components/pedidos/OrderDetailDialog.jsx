@@ -35,7 +35,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STATUS_LABEL, isAtrasado, isDeletable, freteSugerido, dataBRT, meioDiaBRT } from "./pedidosHelpers";
-import { salvarEdicaoPedido, pedidoMudou, MSG_PEDIDO_MUDOU } from "./edicaoPedido";
+import { salvarEdicaoPedido, mensagemErroPedido } from "./edicaoPedido";
 
 const STATUS_ICON = {
   pendente: "schedule",
@@ -171,7 +171,7 @@ export default function OrderDetailDialog({
       },
     });
   };
-  const erroDeSalvar = (error, fallback) => (pedidoMudou(error) ? MSG_PEDIDO_MUDOU : safeErrorMessage(error, fallback));
+  const erroDeSalvar = (error, fallback) => mensagemErroPedido(error, safeErrorMessage(error, fallback));
 
   const changedItemsPayload = () =>
     items.filter((item) => {
@@ -221,8 +221,9 @@ export default function OrderDetailDialog({
       const updates = { status: newStatus };
       if (newStatus === "entregue") updates.delivered_at = meioDiaBRT(dataEntrega) || new Date().toISOString();
       if (newStatus === "confirmado" && order.status !== "confirmado") updates.confirmed_at = new Date().toISOString();
-      // Edições primeiro, numa transação; depois só a troca de status.
-      await salvarEdicoes();
+      // Edições primeiro, numa transação; depois só a troca de status. Cancelar não depende de
+      // salvar campos (P3 3ª passada): o pedido cancelado não precisa de frete/previsão novos.
+      if (newStatus !== "cancelado") await salvarEdicoes();
       const salvo = await PurchaseOrder.update(order.id, updates);
       // S15: unidade com o app novo -> o banco deixa 'em_rota' e ele mesmo avisa a unidade.
       const foiParaConferencia = newStatus === "entregue" && emConferencia(salvo);
@@ -276,8 +277,8 @@ export default function OrderDetailDialog({
     setDeleting(true);
     const toastId = toast.loading("Excluindo pedido...");
     try {
-      const { error: itemsErr } = await supabase.from("purchase_order_items").delete().eq("order_id", order.id);
-      if (itemsErr) throw itemsErr;
+      // Uma chamada só: os itens saem junto em cascata (FK ON DELETE CASCADE), na mesma
+      // transação — antes eram 2 chamadas e uma falha no meio deixava pedido sem item.
       const { error: orderErr } = await supabase.from("purchase_orders").delete().eq("id", order.id);
       if (orderErr) throw orderErr;
       toast.success("Pedido excluído.", { id: toastId });

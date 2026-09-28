@@ -30,19 +30,34 @@ export function pedidoMudou(error) {
 }
 export const MSG_PEDIDO_MUDOU = "O pedido mudou (já foi entregue ou cancelado). Recarregue a página.";
 
+// Outra operação está alterando o mesmo pedido agora (lock com NOWAIT no banco): tentar de novo.
+export function pedidoOcupado(error) {
+  return !!error && error.details === "S15_PEDIDO_OCUPADO";
+}
+export const MSG_PEDIDO_OCUPADO = "O pedido está sendo alterado, tente de novo.";
+
+/** Texto do erro de salvar um pedido (admin). */
+export function mensagemErroPedido(error, fallbackSeguro) {
+  if (pedidoOcupado(error)) return MSG_PEDIDO_OCUPADO;
+  if (pedidoMudou(error)) return MSG_PEDIDO_MUDOU;
+  return fallbackSeguro;
+}
+
 /**
  * @param {object} a
  * @param {(fn:string, params:object) => Promise<{data:any, error:any}>} a.rpc
  * @param {Array<{id:string, quantity:number}>} a.itens  só os itens que mudaram
  * @param {object} a.patch  {freight_cost?, estimated_delivery?} — chave ausente = não mexe
+ * @param {string[]} [a.remover]  ids de itens a tirar do pedido (mesma transação)
  * @param {() => Promise<void>} a.legado  caminho antigo (só se a função não existir)
  * @returns {Promise<{via:"rpc"|"legado", linha:object|null}>}
  */
-export async function salvarEdicaoPedido({ rpc, orderId, itens, patch, legado }) {
+export async function salvarEdicaoPedido({ rpc, orderId, itens, patch, remover = [], legado }) {
   const { data, error } = await rpc(RPC_EDICAO_PEDIDO, {
     p_order_id: orderId,
     p_itens: Array.isArray(itens) ? itens : [],
     p_patch: patch && typeof patch === "object" ? patch : {},
+    p_remover: Array.isArray(remover) ? remover : [],
   });
   if (error) {
     if (rpcEdicaoAusente(error) && typeof legado === "function") {
