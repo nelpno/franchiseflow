@@ -178,18 +178,23 @@ t("PERGUNTAS_FREQUENTES: pergunta e resposta curtas, guiaSlug (quando existe) ap
   }
 });
 
-t("registrarAjudaResolveu: dispara o evento certo no Clarity, nunca derruba a tela", () => {
+t("registrarAjudaResolveu: o slug vai no NOME do evento (não em 'set', que é tag de sessão), nunca derruba a tela", () => {
   const chamadas = [];
   const clarityAntes = globalThis.window?.clarity;
   globalThis.window = globalThis.window || {};
   globalThis.window.clarity = (...args) => chamadas.push(args);
   registrarAjudaResolveu("vendas", "sim");
   registrarAjudaResolveu("vendas", "nao");
+  registrarAjudaResolveu("pedido-fabrica", "sim"); // hífen no slug vira "_" no nome
+  registrarAjudaResolveu(null, "sim"); // sem slug: cai pro nome genérico
   registrarAjudaResolveu("vendas", "resposta-invalida"); // ignorada, sem disparar nada
-  assert.deepEqual(chamadas[0], ["event", "ajuda_resolveu_sim"]);
-  assert.deepEqual(chamadas[1], ["set", "ajuda_guia", "vendas"]);
-  assert.deepEqual(chamadas[2], ["event", "ajuda_resolveu_nao"]);
-  assert.equal(chamadas.length, 4); // a 3ª chamada (resposta inválida) não gerou evento
+  assert.deepEqual(chamadas[0], ["event", "ajuda_resolveu_vendas_sim"]);
+  assert.deepEqual(chamadas[1], ["event", "ajuda_resolveu_vendas_nao"]);
+  assert.deepEqual(chamadas[2], ["event", "ajuda_resolveu_pedido_fabrica_sim"]);
+  assert.deepEqual(chamadas[3], ["event", "ajuda_resolveu_sim"]);
+  assert.equal(chamadas.length, 4); // a 5ª chamada (resposta inválida) não gerou evento
+  assert.ok(chamadas.every(([, nome]) => /^[a-z0-9_]+$/.test(nome)), "nome do evento só com [a-z0-9_]");
+  assert.ok(chamadas.every(([acao]) => acao === "event")); // nunca "set" — tag de sessão inteira, não do evento
   // Clarity quebrado não pode derrubar a tela.
   globalThis.window.clarity = () => { throw new Error("clarity fora do ar"); };
   assert.doesNotThrow(() => registrarAjudaResolveu("vendas", "sim"));

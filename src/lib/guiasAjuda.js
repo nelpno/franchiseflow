@@ -388,16 +388,32 @@ export const PERGUNTAS_FREQUENTES = [
 
 const RESPOSTAS_AJUDA = new Set(["sim", "nao"]);
 
+// `clarity("set", ...)` é tag de SESSÃO inteira (fica grudada em todo evento
+// seguinte da mesma sessão, não só neste) — errado pra algo por guia (P3, S10,
+// 28/09/2026). O slug entra no NOME do evento, saneado pra só [a-z0-9_] (o
+// Clarity trata o nome do evento como texto livre, mas manter previsível ajuda
+// a filtrar no painel — e evita colar hífen/acento vindo de um slug futuro).
+function slugParaEvento(slug) {
+  return String(slug || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 /**
  * "Isso resolveu?" (S10.2): evento no Clarity, no mesmo padrão dos eventos existentes
  * (ExportButtons.jsx, TabResultado.jsx) — nunca derruba a tela se o Clarity falhar.
- * S21.3 lê este evento por guia: mais de 30% de "nao" no mês = reescrever o guia.
+ * Nome do evento: `ajuda_resolveu_<slug>_sim` / `..._nao` (slug ausente cai pro nome
+ * genérico, sem quebrar). S21.3 lê por guia: mais de 30% de "nao" no mês = reescrever.
  */
 export function registrarAjudaResolveu(slug, resposta) {
   if (!RESPOSTAS_AJUDA.has(resposta)) return;
+  const slugEvento = slugParaEvento(slug);
+  const nomeEvento = slugEvento ? `ajuda_resolveu_${slugEvento}_${resposta}` : `ajuda_resolveu_${resposta}`;
   try {
-    window.clarity?.("event", `ajuda_resolveu_${resposta}`);
-    if (slug) window.clarity?.("set", "ajuda_guia", slug);
+    window.clarity?.("event", nomeEvento);
   } catch {
     /* telemetria não pode derrubar a tela */
   }
