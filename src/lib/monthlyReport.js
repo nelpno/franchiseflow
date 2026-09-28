@@ -119,6 +119,8 @@ export function resumirMes(d, { sales = [], saleItems = [], expenses = [], ateDi
     const tPnl = calculatePnL(tSales, [], tExp);
     trecho = {
       faturamento: tSales.reduce((soma, s) => soma + getSaleNetValue(s), 0),
+      // S18 (Início, "você contra você"): quantas vendas no trecho. Só acrescenta.
+      vendas: tSales.length,
       sobrou: tPnl.lucroCaixa,
       quantidades: quantidadesPorProduto(mItems.filter((si) => tIds.has(si.sale_id))),
     };
