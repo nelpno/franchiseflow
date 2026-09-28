@@ -51,7 +51,8 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica
     doc.setTextColor(...APAGADO);
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8.5);
-    doc.text(`Mês em andamento: os números vão até hoje, dia ${diaCorte}.`, m, y);
+    // Venda com data futura no mês já conta (contrato do Sobrou): não dizer "até hoje".
+    doc.text(`Mês em andamento (gerado no dia ${diaCorte}): os totais somam tudo o que já foi lançado no mês.`, m, y);
     y += 5;
   }
 
