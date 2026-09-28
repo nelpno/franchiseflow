@@ -30,6 +30,7 @@ import VoltarTrilhaBar from "@/components/onboarding/VoltarTrilhaBar";
 import { useFeatureFlagState } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { guiaDaRota } from "@/lib/ajudaRotaGuia";
 
 // Todos os 4 papéis existentes — usado nos itens que aparecem para todo mundo (Hoje,
 // Ajuda), só que com rótulo/posição diferente por papel.
@@ -447,6 +448,10 @@ export default function Layout({ children, currentPageName }) {
   const { value: uiV2Value, isLoading: uiV2Loading } = useFeatureFlagState(FEATURE_KEYS.UI_V2);
   const uiV2 = uiV2Value && !isAdmin && !isCS;
   const uiV2Pending = uiV2Loading && !isAdmin && !isCS;
+  // "?" de ajuda no topo (S10.2, 28/09/2026): mapa PURO rota → guia (ajudaRotaGuia.js,
+  // testado). Só franqueado, só atrás de ui_v2, só quando a tela tem guia mapeado —
+  // com a chave desligada, `uiV2` já é false e o botão nem aparece.
+  const guiaDaTela = uiV2 ? guiaDaRota(currentPageName, new URLSearchParams(location.search).get("tab")) : null;
   // Só usado pra tirar Início/Vendas/Estoque do Sheet "Mais" no celular com ui_v2
   // (P3, 28/09/2026) — eles já estão no menu de baixo, repetir é ruído. Desktop
   // (isMobile=false) mantém a lista cheia de sempre.
@@ -703,6 +708,15 @@ export default function Layout({ children, currentPageName }) {
                 {!isAdmin && availableFranchises.length > 0 && (
                   <FranchiseSelector franchises={availableFranchises} />
                 )}
+                {guiaDaTela && (
+                  <Link
+                    to={`/Tutoriais?abrir=${guiaDaTela}`}
+                    aria-label="Ajuda desta tela"
+                    className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-ink-2 transition-colors hover:bg-white/50"
+                  >
+                    <MaterialIcon icon="help_outline" size={20} />
+                  </Link>
+                )}
                 <NotificationBell size={20} />
               </div>
             </header>
@@ -721,6 +735,15 @@ export default function Layout({ children, currentPageName }) {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {guiaDaTela && (
+                <Link
+                  to={`/Tutoriais?abrir=${guiaDaTela}`}
+                  aria-label="Ajuda desta tela"
+                  className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl text-ink-2 transition-colors hover:bg-white/50"
+                >
+                  <MaterialIcon icon="help_outline" size={20} />
+                </Link>
+              )}
               <div className="min-h-[40px] min-w-[40px] flex items-center justify-center">
                 <NotificationBell size={20} />
               </div>
