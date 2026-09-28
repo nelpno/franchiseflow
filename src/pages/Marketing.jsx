@@ -34,7 +34,9 @@ import MarketingPaymentSection from "@/components/marketing/MarketingPaymentSect
 import MarketingAdminHome from "@/components/marketing/admin/MarketingAdminHome";
 import PageHeader from "@/components/shared/PageHeader";
 import ErrorState from "@/components/shared/ErrorState";
+import EmptyState from "@/components/shared/EmptyState";
 import { PAGINA } from "@/components/shared/adminUi";
+import { linkWhatsAppMaxi } from "@/lib/contatoMaxi";
 
 // REST API direta — bypass TOTAL do supabase-js (trava em marketing_files)
 const SB_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -104,11 +106,11 @@ async function directDelete(id) {
 }
 
 const CATEGORIES = [
-  { value: "posts", label: "Posts", icon: "image", color: "bg-blue-100 text-blue-700" },
-  { value: "stories", label: "Stories", icon: "smartphone", color: "bg-purple-100 text-purple-700" },
-  { value: "catalogo", label: "Catálogo", icon: "menu_book", color: "bg-amber-100 text-amber-700" },
-  { value: "materiais_impressos", label: "Materiais Impressos", icon: "print", color: "bg-rose-100 text-rose-700" },
-  { value: "outros", label: "Outros", icon: "description", color: "bg-gray-100 text-gray-700" },
+  { value: "posts", label: "Posts", icon: "image", color: "bg-brand-soft text-brand-dark" },
+  { value: "stories", label: "Stories", icon: "smartphone", color: "bg-brand-gold-soft text-brand-gold-ink" },
+  { value: "catalogo", label: "Catálogo", icon: "menu_book", color: "bg-warn-soft text-warn-ink" },
+  { value: "materiais_impressos", label: "Materiais Impressos", icon: "print", color: "bg-ok-soft text-ok-ink" },
+  { value: "outros", label: "Outros", icon: "description", color: "bg-surface-2 text-ink-2" },
 ];
 
 const CAMPAIGN_PRESETS = [
@@ -199,11 +201,11 @@ function getFileTypeLabel(fileType) {
 
 function getFileTypeBadgeColor(fileType) {
   switch (fileType) {
-    case "video": return "bg-red-100 text-red-700";
-    case "pdf": return "bg-orange-100 text-orange-700";
-    case "link": return "bg-green-100 text-green-700";
+    case "video": return "bg-err-soft text-err";
+    case "pdf": return "bg-warn-soft text-warn-ink";
+    case "link": return "bg-ok-soft text-ok-ink";
     case "image":
-    default: return "bg-sky-100 text-sky-700";
+    default: return "bg-brand-soft text-brand-dark";
   }
 }
 
@@ -421,13 +423,13 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Mode toggle */}
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <div className="flex rounded-lg border border-surface-line overflow-hidden">
             <button
               type="button"
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
                 uploadMode === "file"
                   ? "bg-brand text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
+                  : "bg-white text-ink-2 hover:bg-surface-2"
               }`}
               onClick={() => setUploadMode("file")}
             >
@@ -439,7 +441,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
                 uploadMode === "link"
                   ? "bg-brand text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
+                  : "bg-white text-ink-2 hover:bg-surface-2"
               }`}
               onClick={() => setUploadMode("link")}
             >
@@ -454,8 +456,8 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
               <div
                 className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                   dragOver
-                    ? "border-brand bg-red-50"
-                    : "border-gray-300 hover:border-brand/40 hover:bg-gray-50"
+                    ? "border-brand bg-brand-soft"
+                    : "border-surface-line hover:border-brand/40 hover:bg-surface-2"
                 }`}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -465,12 +467,12 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
               >
-                <MaterialIcon icon="upload" size={32} className="mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600">
+                <MaterialIcon icon="upload" size={32} className="mx-auto text-ink-3 mb-2" />
+                <p className="text-sm text-ink-2">
                   Arraste arquivos aqui ou{" "}
                   <span className="text-brand font-medium">clique para selecionar</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">Imagens, PDFs e outros formatos</p>
+                <p className="text-xs text-ink-3 mt-1">Imagens, PDFs e outros formatos</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -486,20 +488,20 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
               {/* Selected files list */}
               {files.length > 0 && (
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">
+                  <Label className="text-xs text-ink-3">
                     {files.length} arquivo(s) selecionado(s)
                   </Label>
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {files.map((f, i) => (
                       <div
                         key={i}
-                        className="flex items-center justify-between bg-gray-50 rounded px-3 py-1.5 text-sm"
+                        className="flex items-center justify-between bg-surface-2 rounded px-3 py-1.5 text-sm"
                       >
                         <span className="truncate mr-2">{f.name}</span>
                         <button
                           type="button"
                           onClick={() => removeFile(i)}
-                          className="text-gray-400 hover:text-red-500 shrink-0"
+                          className="text-ink-3 hover:text-err shrink-0"
                         >
                           <MaterialIcon icon="close" size={16} />
                         </button>
@@ -526,9 +528,9 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
                     <MaterialIcon
                       icon={getFileTypeIcon(detectedType)}
                       size={14}
-                      className={detectedType === "video" ? "text-red-500" : "text-green-600"}
+                      className={detectedType === "video" ? "text-err" : "text-ok"}
                     />
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-ink-3">
                       Detectado: {getFileTypeLabel(detectedType)}
                       {detectedType === "video" && " (YouTube)"}
                       {detectedType === "link" && isDriveUrl(externalUrl) && " (Google Drive)"}
@@ -539,7 +541,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
 
               {/* YouTube thumbnail preview */}
               {detectedType === "video" && getYouTubeThumbnail(externalUrl) && (
-                <div className="rounded-lg overflow-hidden border border-gray-200">
+                <div className="rounded-lg overflow-hidden border border-surface-line">
                   <img
                     src={getYouTubeThumbnail(externalUrl)}
                     alt="YouTube preview"
@@ -678,6 +680,93 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
   );
 }
 
+// ─── Arte em destaque (franqueado, S19.1) ─────────────────────────────
+// A postagem mais recente pensada para o mês atual (ou, sem nenhuma, a última
+// enviada) aparece em destaque no topo — antes da biblioteca inteira — para
+// quem só quer "a arte de hoje" sem procurar.
+function ArteDestaque({ file }) {
+  const catInfo = getCategoryInfo(file.category);
+  const publicUrl = getFilePublicUrl(file.file_path);
+  const fileType = file.file_type || detectFileType(file.file_path);
+  const isImage = fileType === "image" && isImageFile(file.file_path);
+  const isVideo = fileType === "video";
+  const isDrive = fileType === "link";
+  const ytThumbnail = isVideo ? getYouTubeThumbnail(file.file_path) : null;
+  const isCurrentMonth = file.month === format(new Date(), "yyyy-MM");
+
+  const handleOpen = () => {
+    if (publicUrl) window.open(publicUrl, "_blank");
+  };
+  const handleShare = () => {
+    const message = `Confira o material: ${file.title} - ${file.file_path}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+  };
+  const handleCopyCaption = () => {
+    if (!file.description) return;
+    navigator.clipboard.writeText(file.description);
+    toast.success("Legenda copiada!");
+  };
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-surface-line bg-white shadow-sm">
+      <div className="flex flex-col sm:flex-row">
+        <button
+          type="button"
+          onClick={handleOpen}
+          className="relative flex h-48 shrink-0 items-center justify-center overflow-hidden bg-surface-2 sm:h-auto sm:w-64"
+          aria-label={`Abrir ${file.title}`}
+        >
+          {isImage && publicUrl ? (
+            <img src={publicUrl} alt={file.title} className="h-full w-full object-cover" loading="lazy" />
+          ) : isVideo && ytThumbnail ? (
+            <div className="relative h-full w-full">
+              <img src={ytThumbnail} alt={file.title} className="h-full w-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-lg">
+                  <MaterialIcon icon="play_arrow" size={26} className="ml-0.5 text-err" />
+                </div>
+              </div>
+            </div>
+          ) : isDrive ? (
+            <MaterialIcon icon="add_to_drive" size={48} className="text-ok" />
+          ) : fileType === "pdf" ? (
+            <MaterialIcon icon="picture_as_pdf" size={48} className="text-warn-ink" />
+          ) : (
+            <MaterialIcon icon={catInfo.icon} size={48} className="text-ink-4" />
+          )}
+        </button>
+        <div className="min-w-0 flex-1 space-y-2 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-brand-gold-line bg-brand-gold-soft px-2.5 py-0.5 text-xs font-bold text-brand-gold-ink">
+              <MaterialIcon icon="workspace_premium" size={12} filled />
+              {isCurrentMonth ? "Arte do mês" : "Última arte enviada"}
+            </span>
+            <Badge className={`text-xs ${catInfo.color}`}>{catInfo.label}</Badge>
+          </div>
+          <h2 className="text-base font-bold leading-snug text-ink">{file.title}</h2>
+          {file.description && <p className="line-clamp-2 text-sm text-ink-2">{file.description}</p>}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button size="sm" onClick={handleOpen} className="bg-brand text-white hover:bg-brand-dark">
+              <MaterialIcon icon={isVideo ? "play_circle" : isDrive ? "open_in_new" : "download"} size={14} className="mr-1.5" />
+              {isVideo ? "Assistir" : isDrive ? "Abrir" : "Baixar"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleShare} className="text-ok hover:bg-ok-soft hover:text-ok-ink">
+              <MaterialIcon icon="share" size={14} className="mr-1.5" />
+              Compartilhar
+            </Button>
+            {file.description && (
+              <Button size="sm" variant="ghost" onClick={handleCopyCaption} className="text-brand hover:text-brand-dark">
+                <MaterialIcon icon="content_copy" size={14} className="mr-1.5" />
+                Copiar legenda
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── File Card ───────────────────────────────────────────────────────
 function FileCard({ file, isAdmin, onDelete }) {
   const [deleting, setDeleting] = useState(false);
@@ -740,7 +829,7 @@ function FileCard({ file, isAdmin, onDelete }) {
     <Card className="group overflow-hidden hover:shadow-md transition-shadow bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
       {/* Preview area */}
       <div
-        className="relative h-48 bg-gray-100 flex items-center justify-center overflow-hidden cursor-pointer"
+        className="relative h-48 bg-surface-2 flex items-center justify-center overflow-hidden cursor-pointer"
         onClick={handleOpen}
       >
         {isImage && publicUrl ? (
@@ -760,22 +849,22 @@ function FileCard({ file, isAdmin, onDelete }) {
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
               <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                <MaterialIcon icon="play_arrow" size={32} className="text-red-600 ml-0.5" />
+                <MaterialIcon icon="play_arrow" size={32} className="text-err ml-0.5" />
               </div>
             </div>
           </div>
         ) : isDrive ? (
           <div className="flex flex-col items-center gap-2">
-            <MaterialIcon icon="add_to_drive" size={56} className="text-green-500" />
-            <span className="text-xs text-gray-400">Google Drive</span>
+            <MaterialIcon icon="add_to_drive" size={56} className="text-ok" />
+            <span className="text-xs text-ink-3">Google Drive</span>
           </div>
         ) : fileType === "pdf" ? (
           <div className="flex flex-col items-center gap-2">
-            <MaterialIcon icon="picture_as_pdf" size={56} className="text-orange-400" />
-            <span className="text-xs text-gray-400">PDF</span>
+            <MaterialIcon icon="picture_as_pdf" size={56} className="text-warn-ink" />
+            <span className="text-xs text-ink-3">PDF</span>
           </div>
         ) : (
-          <MaterialIcon icon={catInfo.icon} size={56} className="text-gray-300" />
+          <MaterialIcon icon={catInfo.icon} size={56} className="text-ink-4" />
         )}
 
         {/* Top badges */}
@@ -794,7 +883,7 @@ function FileCard({ file, isAdmin, onDelete }) {
         )}
 
         {file.campaign && (
-          <Badge className="absolute bottom-2 left-2 text-xs bg-white/90 text-gray-700 border-0 shadow-sm">
+          <Badge className="absolute bottom-2 left-2 text-xs bg-white/90 text-ink-2 border-0 shadow-sm">
             <MaterialIcon icon="campaign" size={12} className="mr-0.5" />
             {file.campaign}
           </Badge>
@@ -805,7 +894,7 @@ function FileCard({ file, isAdmin, onDelete }) {
         <h3 className="font-medium text-sm leading-tight line-clamp-2">{file.title}</h3>
         {file.description && (
           <div className="space-y-1">
-            <p className="text-xs text-gray-500 line-clamp-3">{file.description}</p>
+            <p className="text-xs text-ink-3 line-clamp-3">{file.description}</p>
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -819,7 +908,7 @@ function FileCard({ file, isAdmin, onDelete }) {
             </button>
           </div>
         )}
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-ink-3">
           {file.created_at
             ? format(new Date(file.created_at), "dd/MM/yyyy", { locale: ptBR })
             : ""}
@@ -842,7 +931,7 @@ function FileCard({ file, isAdmin, onDelete }) {
           <Button
             size="sm"
             variant="outline"
-            className="text-green-600 hover:text-green-700 hover:bg-green-50 px-2"
+            className="text-ok hover:text-ok-ink hover:bg-ok-soft px-2"
             onClick={handleShare}
             title="Compartilhar via WhatsApp"
           >
@@ -852,7 +941,7 @@ function FileCard({ file, isAdmin, onDelete }) {
             <Button
               size="sm"
               variant="ghost"
-              className="text-red-500 hover:text-red-700 hover:bg-red-50 px-2"
+              className="text-err hover:bg-err-soft px-2"
               onClick={() => setConfirmDelete(true)}
               disabled={deleting}
             >
@@ -864,7 +953,7 @@ function FileCard({ file, isAdmin, onDelete }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-ink-2 hover:bg-gray-100 px-2 text-xs"
+                className="text-ink-2 hover:bg-surface-2 px-2 text-xs"
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
               >
@@ -873,7 +962,7 @@ function FileCard({ file, isAdmin, onDelete }) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 text-xs font-bold"
+                className="text-err hover:bg-err-soft px-2 text-xs font-bold"
                 onClick={handleDelete}
                 disabled={deleting}
               >
@@ -976,6 +1065,23 @@ export default function Marketing() {
     return () => { mountedRef.current = false; };
   }, [loadData]);
 
+  // Arte em destaque (franqueado, S19.1): a do mês atual, senão a mais recente que
+  // ela pode ver — independente dos filtros da biblioteca (busca, mês, tipo…).
+  // A lista de arquivos já vem ordenada por created_at desc (directList).
+  const arteVisivel = (f) => {
+    const myFranchiseIds = user?.managed_franchise_ids || [];
+    const activeEvoId = selectedFranchise?.evolution_instance_id;
+    if (!f.franchise_id) return true;
+    return activeEvoId ? f.franchise_id === activeEvoId : myFranchiseIds.includes(f.franchise_id);
+  };
+  const arteDestaque = isAdmin
+    ? null
+    : (() => {
+        const mesAtual = format(new Date(), "yyyy-MM");
+        const visiveis = files.filter(arteVisivel);
+        return visiveis.find((f) => f.month === mesAtual) || visiveis[0] || null;
+      })();
+
   // Extract unique campaigns from data
   const availableCampaigns = [...new Set(files.map((f) => f.campaign).filter(Boolean))].sort();
 
@@ -1071,7 +1177,7 @@ export default function Marketing() {
   const isAdminOuManager = isAdmin || user?.role === "manager";
 
   return (
-    <div className={isAdminOuManager ? PAGINA : "p-6 space-y-6 bg-surface"}>
+    <div className={isAdminOuManager ? PAGINA : "p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-surface"}>
       {/* Cabeçalho — padrão do admin (docs/claude/padrao-visual-admin.md, C1-C4): h1 sem
           ícone, subtítulo de uma frase. A ação principal é publicar as postagens do mês, não
           enviar material avulso (achado "design" alto 26/09) — por isso não há slot `acao`
@@ -1085,15 +1191,18 @@ export default function Marketing() {
         />
       ) : (
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-brand to-brand-dark rounded-lg">
-            <MaterialIcon icon="campaign" size={24} className="text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10">
+            <MaterialIcon icon="campaign" size={22} className="text-brand" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Marketing</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-ink font-plus-jakarta">Marketing</h1>
             <p className="text-sm text-ink-2">Materiais de marketing disponíveis</p>
           </div>
         </div>
       )}
+
+      {/* Arte em destaque: a de hoje, sem precisar procurar na biblioteca (S19.1) */}
+      {!isAdminOuManager && arteDestaque && <ArteDestaque file={arteDestaque} />}
 
       {isAdminOuManager ? (
         <MarketingAdminHome
@@ -1145,7 +1254,7 @@ export default function Marketing() {
             <MaterialIcon
               icon="search"
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
             />
             <Input
               value={searchQuery}
@@ -1156,7 +1265,7 @@ export default function Marketing() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink-2"
               >
                 <MaterialIcon icon="close" size={16} />
               </button>
@@ -1172,7 +1281,7 @@ export default function Marketing() {
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   filterType === ft.value
                     ? "bg-brand text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "bg-surface-2 text-ink-2 hover:bg-surface-2"
                 }`}
               >
                 <MaterialIcon icon={ft.icon} size={14} />
@@ -1184,7 +1293,7 @@ export default function Marketing() {
           {/* Dropdowns row */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 min-w-[130px]">
-              <Label className="text-xs text-gray-500 mb-1 block">Mês</Label>
+              <Label className="text-xs text-ink-3 mb-1 block">Mês</Label>
               <Select value={filterMonth} onValueChange={setFilterMonth}>
                 <SelectTrigger>
                   <SelectValue />
@@ -1201,7 +1310,7 @@ export default function Marketing() {
             </div>
 
             <div className="flex-1 min-w-[130px]">
-              <Label className="text-xs text-gray-500 mb-1 block">Categoria</Label>
+              <Label className="text-xs text-ink-3 mb-1 block">Categoria</Label>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger>
                   <SelectValue />
@@ -1219,7 +1328,7 @@ export default function Marketing() {
 
             {availableCampaigns.length > 0 && (
               <div className="flex-1 min-w-[130px]">
-                <Label className="text-xs text-gray-500 mb-1 block">Campanha</Label>
+                <Label className="text-xs text-ink-3 mb-1 block">Campanha</Label>
                 <Select value={filterCampaign} onValueChange={setFilterCampaign}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1239,7 +1348,7 @@ export default function Marketing() {
 
             {isAdmin && (
               <div className="flex-1 min-w-[130px]">
-                <Label className="text-xs text-gray-500 mb-1 block">Franquia</Label>
+                <Label className="text-xs text-ink-3 mb-1 block">Franquia</Label>
                 <Select value={filterFranchise} onValueChange={setFilterFranchise}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1261,7 +1370,7 @@ export default function Marketing() {
           {/* Active filters indicator */}
           {hasActiveFilters && (
             <div className="flex items-center justify-between pt-1">
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-ink-3">
                 {filteredFiles.length} material(is) encontrado(s)
               </span>
               <button
@@ -1286,23 +1395,28 @@ export default function Marketing() {
           ))}
         </div>
       ) : filteredFiles.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-          <MaterialIcon icon="folder_open" size={64} className="mb-4" />
-          <p className="text-lg font-medium">Nenhum material disponível</p>
-          <p className="text-sm">
-            {hasActiveFilters
+        <EmptyState
+          icone="folder_open"
+          titulo="Nenhum material disponível"
+          texto={
+            hasActiveFilters
               ? "Tente alterar os filtros para ver mais resultados."
               : isAdmin
-              ? 'Clique em "Novo Material" para enviar o primeiro arquivo.'
-              : "Nenhum material foi compartilhado ainda."}
-          </p>
-          {hasActiveFilters && (
-            <Button variant="outline" size="sm" className="mt-4" onClick={clearFilters}>
-              <MaterialIcon icon="filter_alt_off" size={14} className="mr-1" />
-              Limpar filtros
-            </Button>
-          )}
-        </div>
+              ? "Publique a primeira postagem do mês para a rede."
+              : "Nenhum material foi compartilhado com a sua unidade ainda."
+          }
+          acao={
+            hasActiveFilters
+              ? { rotulo: "Limpar filtros", onClick: clearFilters }
+              : isAdmin
+              ? { rotulo: "Novo material", onClick: () => abrirUpload() }
+              : {
+                  rotulo: "Falar com a Maxi",
+                  href: linkWhatsAppMaxi("Olá! Ainda não recebi material de marketing para a minha unidade. Pode me ajudar?"),
+                }
+          }
+          className="py-20"
+        />
       ) : (
         <div className="space-y-8">
           {sortedGroupKeys.map((groupKey) => {
@@ -1318,12 +1432,12 @@ export default function Marketing() {
 
             return (
               <div key={groupKey}>
-                <h2 className="text-lg font-semibold text-gray-700 capitalize mb-4">
+                <h2 className="text-lg font-semibold text-ink-2 capitalize mb-4">
                   {groupByCampaign && (
                     <MaterialIcon icon="campaign" size={20} className="inline mr-1.5 align-text-bottom text-brand" />
                   )}
                   {groupLabel}
-                  <span className="text-sm font-normal text-gray-400 ml-2">
+                  <span className="text-sm font-normal text-ink-3 ml-2">
                     ({grouped[groupKey].length} arquivo
                     {grouped[groupKey].length !== 1 ? "s" : ""})
                   </span>
