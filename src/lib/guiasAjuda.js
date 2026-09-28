@@ -290,3 +290,115 @@ export function textoWhatsApp(guia) {
 export function linkWhatsAppDoGuia(guia) {
   return `https://wa.me/?text=${encodeURIComponent(textoWhatsApp(guia))}`;
 }
+
+// ---------------------------------------------------------------------------
+// Tela Ajuda v2 (S10.1, 28/09/2026, atrás da chave ui_v2): busca, "Comece por
+// aqui", agrupamento por área e perguntas frequentes. Tudo aqui é dado puro —
+// a tela (Tutoriais.jsx) só lê.
+// ---------------------------------------------------------------------------
+
+function normalizarBusca(txt) {
+  return String(txt || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/** Busca por título, resumo, área e sinônimos (não por dentro dos passos). */
+export function buscarGuias(role, termo) {
+  const alvo = normalizarBusca(termo);
+  if (!alvo) return [];
+  return guiasParaPapel(role).filter((g) => {
+    const campos = [g.titulo, g.resumo, g.area, ...(g.sinonimos || [])];
+    return campos.some((c) => normalizarBusca(c).includes(alvo));
+  });
+}
+
+/** Guias agrupados por área, na ordem em que a área aparece pela primeira vez em GUIAS. */
+export function guiasPorArea(role) {
+  const guias = guiasParaPapel(role);
+  const ordem = [];
+  const porArea = new Map();
+  for (const g of guias) {
+    if (!porArea.has(g.area)) {
+      porArea.set(g.area, []);
+      ordem.push(g.area);
+    }
+    porArea.get(g.area).push(g);
+  }
+  return ordem.map((area) => ({ area, guias: porArea.get(area) }));
+}
+
+// Curadoria manual (não é "os 4 primeiros do array"): o essencial pra unidade nova
+// abrir e vender. Só slugs de guias que existem hoje — `guiasComecePorAqui` descarta
+// silenciosamente um slug que não bater com nenhum guia (defesa se o slug mudar).
+export const COMECE_POR_AQUI = ["primeiros-passos", "vendas", "clientes", "resultado"];
+
+export function guiasComecePorAqui(role) {
+  return COMECE_POR_AQUI.map((slug) => acharGuia(slug, role)).filter(Boolean);
+}
+
+// Perguntas frequentes da tela Ajuda (S10.1). Só perguntas sobre guias que já existem
+// no app hoje (as outras 23 do rascunho de docs/guias-ajuda-v2.md ficam pra quando a
+// tela/guia correspondente existir). `guiaSlug` é opcional: quando presente, a
+// pergunta linka pro guia completo.
+export const PERGUNTAS_FREQUENTES = [
+  {
+    pergunta: "Por onde eu começo?",
+    resposta: "Siga a trilha Primeiros passos: ela mostra o que fazer agora e o que o app marca sozinho.",
+    guiaSlug: "primeiros-passos",
+  },
+  {
+    pergunta: "Vendi fora do robô, o que eu faço?",
+    resposta: "Lance a venda em + Nova venda: cliente, produtos, pagamento e entrega. Ela entra no Resultado do mês e desconta do Estoque.",
+    guiaSlug: "vendas",
+  },
+  {
+    pergunta: "Por que chamar os clientes todo dia?",
+    resposta: "São no máximo 8 por dia, de propósito: mensagem pessoal para poucas pessoas por vez vende mais e protege o seu número.",
+    guiaSlug: "clientes",
+  },
+  {
+    pergunta: "O que é o \"Sobrou no mês\"?",
+    resposta: "É o que entrou com as vendas (valor menos desconto, mais frete) menos a taxa de cartão que a unidade pagou e as despesas lançadas.",
+    guiaSlug: "resultado",
+  },
+  {
+    pergunta: "Preciso lançar o pedido à fábrica como despesa?",
+    resposta: "Não. O pedido à fábrica entregue, a verba de marketing confirmada e a mensalidade paga entram sozinhos nas despesas.",
+    guiaSlug: "pedido-fabrica",
+  },
+  {
+    pergunta: "Quanto do valor da verba vai para o anúncio?",
+    resposta: "Do valor pago, 14% ficam em impostos e taxas: de R$ 200, R$ 172 vão para o anúncio.",
+    guiaSlug: "verba-marketing",
+  },
+  {
+    pergunta: "Como eu baixo as artes para postar?",
+    resposta: "Em Marketing, escolha o mês e toque em Baixar. Copie a legenda antes de baixar a imagem.",
+    guiaSlug: "artes",
+  },
+  {
+    pergunta: "O robô parou de responder. E agora?",
+    resposta: "Veja se o WhatsApp da unidade está conectado e leia o QR Code de novo, com duas telas.",
+    guiaSlug: "reconectar-whatsapp",
+  },
+];
+
+const RESPOSTAS_AJUDA = new Set(["sim", "nao"]);
+
+/**
+ * "Isso resolveu?" (S10.2): evento no Clarity, no mesmo padrão dos eventos existentes
+ * (ExportButtons.jsx, TabResultado.jsx) — nunca derruba a tela se o Clarity falhar.
+ * S21.3 lê este evento por guia: mais de 30% de "nao" no mês = reescrever o guia.
+ */
+export function registrarAjudaResolveu(slug, resposta) {
+  if (!RESPOSTAS_AJUDA.has(resposta)) return;
+  try {
+    window.clarity?.("event", `ajuda_resolveu_${resposta}`);
+    if (slug) window.clarity?.("set", "ajuda_guia", slug);
+  } catch {
+    /* telemetria não pode derrubar a tela */
+  }
+}

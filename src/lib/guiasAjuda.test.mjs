@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   GUIAS, VIDEOS, guiasParaPapel, acharGuia, linkDoGuia, textoWhatsApp, linkWhatsAppDoGuia, ehEquipe,
+  buscarGuias, guiasPorArea, COMECE_POR_AQUI, guiasComecePorAqui, PERGUNTAS_FREQUENTES, registrarAjudaResolveu,
 } from "./guiasAjuda.js";
 import { HELP_TIPS } from "./helpTips.js";
 
@@ -25,6 +26,8 @@ for (const g of GUIAS) {
   }
 }
 for (const [k, h] of Object.entries(HELP_TIPS)) textos.push([`?${k}`, h.titulo], [`?${k}`, h.texto], [`?${k}`, h.exemplo]);
+// Tela Ajuda v2 (S10.1): as perguntas frequentes também passam pela trava de linguagem.
+for (const f of PERGUNTAS_FREQUENTES) textos.push(["faq", f.pergunta], ["faq", f.resposta]);
 
 // Regras de linguagem do CLAUDE.md: "sem fundo de marketing" (nunca "taxa de marketing"), "markup" (nunca
 // "margem"), "Estoque" (nunca "Inventário"), "Valor Médio" (nunca "Ticket Médio"), nunca "Líquido",
@@ -137,6 +140,60 @@ t("imagens só das que existem em /public/tutoriais", () => {
 
 t("vídeos têm id do YouTube", () => {
   for (const v of VIDEOS) assert.match(v.youtubeId, /^[\w-]{11}$/);
+});
+
+// Tela Ajuda v2 (S10.1, 28/09/2026): busca, "Comece por aqui", por área e FAQ.
+t("buscarGuias: acha por título, sinônimo e área; ignora acento e maiúscula", () => {
+  assert.ok(buscarGuias("franchisee", "venda").some((g) => g.slug === "vendas"));
+  assert.ok(buscarGuias("franchisee", "VENDA").some((g) => g.slug === "vendas")); // maiúscula
+  assert.ok(buscarGuias("franchisee", "nova venda").some((g) => g.slug === "vendas")); // sinônimo
+  assert.ok(buscarGuias("franchisee", "dinheiro").some((g) => g.slug === "resultado")); // área
+  assert.ok(buscarGuias("franchisee", "reposicao").some((g) => g.slug === "pedido-fabrica")); // sem acento
+  assert.deepEqual(buscarGuias("franchisee", ""), []); // termo vazio não retorna tudo
+  assert.deepEqual(buscarGuias("franchisee", "xyz-nao-existe"), []);
+  assert.ok(!buscarGuias("franchisee", "ronda da manha").length); // guia de equipe não aparece pro franqueado
+});
+
+t("guiasPorArea: agrupa sem perder nenhum guia e sem repetir área", () => {
+  const grupos = guiasPorArea("franchisee");
+  const total = grupos.reduce((soma, g) => soma + g.guias.length, 0);
+  assert.equal(total, guiasParaPapel("franchisee").length);
+  const areas = grupos.map((g) => g.area);
+  assert.equal(new Set(areas).size, areas.length);
+});
+
+t("COMECE_POR_AQUI: todo slug existe e vira guia de verdade pro franqueado", () => {
+  assert.ok(COMECE_POR_AQUI.length >= 3);
+  const guias = guiasComecePorAqui("franchisee");
+  assert.equal(guias.length, COMECE_POR_AQUI.length);
+  for (const g of guias) assert.equal(g.publico, "franqueado");
+});
+
+t("PERGUNTAS_FREQUENTES: pergunta e resposta curtas, guiaSlug (quando existe) aponta pra guia real", () => {
+  assert.ok(PERGUNTAS_FREQUENTES.length >= 5);
+  for (const f of PERGUNTAS_FREQUENTES) {
+    assert.ok(f.pergunta && f.pergunta.length <= 80, f.pergunta);
+    assert.ok(f.resposta && f.resposta.length <= 240, f.pergunta);
+    if (f.guiaSlug) assert.ok(acharGuia(f.guiaSlug, "franchisee"), f.guiaSlug);
+  }
+});
+
+t("registrarAjudaResolveu: dispara o evento certo no Clarity, nunca derruba a tela", () => {
+  const chamadas = [];
+  const clarityAntes = globalThis.window?.clarity;
+  globalThis.window = globalThis.window || {};
+  globalThis.window.clarity = (...args) => chamadas.push(args);
+  registrarAjudaResolveu("vendas", "sim");
+  registrarAjudaResolveu("vendas", "nao");
+  registrarAjudaResolveu("vendas", "resposta-invalida"); // ignorada, sem disparar nada
+  assert.deepEqual(chamadas[0], ["event", "ajuda_resolveu_sim"]);
+  assert.deepEqual(chamadas[1], ["set", "ajuda_guia", "vendas"]);
+  assert.deepEqual(chamadas[2], ["event", "ajuda_resolveu_nao"]);
+  assert.equal(chamadas.length, 4); // a 3ª chamada (resposta inválida) não gerou evento
+  // Clarity quebrado não pode derrubar a tela.
+  globalThis.window.clarity = () => { throw new Error("clarity fora do ar"); };
+  assert.doesNotThrow(() => registrarAjudaResolveu("vendas", "sim"));
+  globalThis.window.clarity = clarityAntes;
 });
 
 t("HelpTip: 5 campos, com texto e exemplo", () => {
