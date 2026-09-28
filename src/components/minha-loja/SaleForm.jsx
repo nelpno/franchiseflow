@@ -429,6 +429,9 @@ export default function SaleForm({
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [cardFeePercent, setCardFeePercent] = useState(0);
   const [paymentFees, setPaymentFees] = useState(null); // JSONB from franchise_configurations
+  // A configuração da unidade respondeu (ou falhou): só depois disso a taxa (%) da edição
+  // está hidratada e dá para tirar a "foto" de base do aviso de descartar (S12.4, P3).
+  const [configCarregada, setConfigCarregada] = useState(false);
   const [feePassedToCustomer, setFeePassedToCustomer] = useState(false); // override por venda
   const [franchiseChargesFee, setFranchiseChargesFee] = useState(false); // default config da franquia
 
@@ -519,6 +522,15 @@ export default function SaleForm({
       .finally(() => setLoadingItems(false));
   }, [sale, contacts]);
 
+  // Data restaurada do rascunho enquanto a chave ui_v2 ainda não era conhecida (ver abaixo).
+  const dataRestauradaRef = useRef(null);
+  const aplicarDataDoRascunho = (saleDateDoRascunho, salvoEm) => {
+    const hoje = format(new Date(), "yyyy-MM-dd");
+    const { data, trocou } = dataDoRascunho({ saleDate: saleDateDoRascunho, salvoEm }, hoje);
+    setSaleDate(data);
+    if (trocou) toast.info("A data da venda voltou para hoje. Confira antes de registrar.");
+  };
+
   // ---- Draft: restore on mount (new sale only) ----
   useEffect(() => {
     if (isEditing || draftRestoredRef.current || !franchiseId) return;
@@ -548,14 +560,16 @@ export default function SaleForm({
     if (draft.customerNeighborhood) setCustomerNeighborhood(draft.customerNeighborhood);
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
+    // S12.4: rascunho de outro dia volta com a data de HOJE (chave ligada). Se a chave ainda
+    // não chegou, restaura como sempre e guarda o que restaurou: o efeito abaixo corrige quando
+    // ela ligar, desde que a franqueada não tenha mexido na data (P3).
+    const salvoEm = draft._ts ? format(new Date(draft._ts), "yyyy-MM-dd") : null;
     if (uiV2) {
-      // S12.4: rascunho de outro dia volta com a data de HOJE (antes voltava com a velha).
-      const hoje = format(new Date(), "yyyy-MM-dd");
-      const salvoEm = draft._ts ? format(new Date(draft._ts), "yyyy-MM-dd") : null;
-      const { data, trocou } = dataDoRascunho({ saleDate: draft.saleDate, salvoEm }, hoje);
-      setSaleDate(data);
-      if (trocou) toast.info("A data da venda voltou para hoje. Confira antes de registrar.");
-    } else if (draft.saleDate) setSaleDate(draft.saleDate);
+      aplicarDataDoRascunho(draft.saleDate, salvoEm);
+    } else if (draft.saleDate) {
+      setSaleDate(draft.saleDate);
+      dataRestauradaRef.current = { saleDate: draft.saleDate, salvoEm };
+    }
     if (draft.observacoes) setObservacoes(draft.observacoes);
     if (draft.aindaVouReceber != null) setAindaVouReceber(!!draft.aindaVouReceber);
     if (draft.clientSaleId) clientSaleIdRef.current = draft.clientSaleId;
@@ -566,6 +580,7 @@ export default function SaleForm({
         onClick: () => {
           clearDraft(franchiseId);
           clientSaleIdRef.current = null;
+          dataRestauradaRef.current = null;
           setItems([{ inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 }]);
           setContactId(null);
           setContactSearch("");
@@ -590,6 +605,16 @@ export default function SaleForm({
       duration: 6000,
     });
   }, [isEditing, franchiseId, contacts]);
+
+  // Chave chegou DEPOIS de o rascunho ser restaurado: normaliza a data agora, só se ela ainda
+  // é a que veio do rascunho (se a franqueada já trocou, respeita).
+  useEffect(() => {
+    const r = dataRestauradaRef.current;
+    if (!uiV2 || !r) return;
+    dataRestauradaRef.current = null;
+    if (saleDate !== r.saleDate) return;
+    aplicarDataDoRascunho(r.saleDate, r.salvoEm);
+  }, [uiV2]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Pre-select contact from URL params (e.g., MyContacts "+ Venda") ----
   // P1 (S8-P3, 28/09/2026): resolve DIRETO no banco (não espera nem depende da lista `contacts`
@@ -659,7 +684,8 @@ export default function SaleForm({
           setFeePassedToCustomer(charges);
         }
       })
-      .catch(() => {}); // silent — fallback to manual input
+      .catch(() => {}) // silent — fallback to manual input
+      .finally(() => setConfigCarregada(true));
   }, [franchiseId, isEditing]);
 
   // Auto-set fee when payment method changes (if config has fees)
@@ -713,19 +739,26 @@ export default function SaleForm({
   const assinaturaAtual = useMemo(
     () =>
       isEditing
-        ? assinaturaEdicao({ items, contactId, paymentMethod, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes })
+        ? assinaturaEdicao({ items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes })
         : null,
-    [isEditing, items, contactId, paymentMethod, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes]
+    [isEditing, items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes]
   );
+  // A base só é tirada um render DEPOIS de venda, itens e configuração chegarem: a taxa (%)
+  // é recalculada pela tabela da unidade no mesmo lote em que a configuração chega, e a
+  // foto tirada antes disso acusaria "mudou" sem a franqueada ter tocado em nada.
+  const [baseProntaParaFoto, setBaseProntaParaFoto] = useState(false);
+  useEffect(() => {
+    if (isEditing && !loadingItems && configCarregada) setBaseProntaParaFoto(true);
+  }, [isEditing, loadingItems, configCarregada]);
   const baselineEdicaoRef = useRef(null);
   useEffect(() => {
-    if (!isEditing || loadingItems) return;
+    if (!isEditing || !baseProntaParaFoto || loadingItems) return;
     if (baselineEdicaoRef.current === null) {
       baselineEdicaoRef.current = assinaturaAtual;
       return;
     }
     onDirtyChange?.(assinaturaAtual !== baselineEdicaoRef.current);
-  }, [isEditing, loadingItems, assinaturaAtual, onDirtyChange]);
+  }, [isEditing, baseProntaParaFoto, loadingItems, assinaturaAtual, onDirtyChange]);
 
   // A conta da venda vive em lib/saleCalc.js (testada: node src/lib/saleCalc.test.mjs).
   // Ela estava aqui dentro, em quatro useMemo sem teste nenhum, e a regra de "quais metodos
@@ -916,8 +949,23 @@ export default function SaleForm({
   };
 
   // Submit with retry
-  const handleSubmit = async (e, { ignorarValorZero = false, semTelefone = false, ignorarRepetida = false } = {}) => {
-    e.preventDefault();
+  // Trava de envio (P3 S12, vale SEM a chave: é dinheiro). Dois cliques em "Registrar" no
+  // mesmo quadro passavam antes de o botão desligar; se a 1ª execução terminasse e zerasse o
+  // clientSaleIdRef, a 2ª gravava OUTRA venda. A ref fecha antes do 1º await e abre no fim,
+  // no erro e quando para num aviso (que chama o envio de novo pelo botão do aviso).
+  const enviandoRef = useRef(false);
+  const handleSubmit = async (e, opcoes) => {
+    e?.preventDefault?.();
+    if (enviandoRef.current) return;
+    enviandoRef.current = true;
+    try {
+      await enviarVenda(opcoes);
+    } finally {
+      enviandoRef.current = false;
+    }
+  };
+
+  const enviarVenda = async ({ ignorarValorZero = false, semTelefone = false, ignorarRepetida = false } = {}) => {
 
     if (items.length === 0 || items.every((it) => !it.inventory_item_id)) {
       toast.error("Adicione pelo menos um produto.");
@@ -944,6 +992,52 @@ export default function SaleForm({
             : "Há produto com valor R$ 0,00 — ele não entra no faturamento.",
         });
         return;
+      }
+    }
+
+    // S12.3 (chave ligada): o robô já lançou esta venda? SÓ AVISA. Roda ANTES de qualquer
+    // gravação (contato/telefone): "É a mesma, não lançar" não pode deixar o cadastro mexido
+    // (P3). Só leitura: vendas do robô da unidade na janela de ±1 dia, filtradas NO SERVIDOR
+    // pelo contato e pelo telefone (duas consultas, sem teto que corte o cliente), comparadas
+    // por valor em lib/vendaRepetida.js. Falha ou demora = segue sem aviso.
+    if (uiV2 && !isEditing && !ignorarRepetida) {
+      const telefoneCandidato = normalizePhone(
+        (contactId && isValidPhone(contactPhone) ? contactPhone : null) ||
+          (isValidPhone(missingPhone) ? missingPhone : null) ||
+          (!contactId && isValidPhone(contactSearch) ? contactSearch : null) ||
+          ""
+      );
+      const contatoCandidato = contactId || null;
+      if (contatoCandidato || telefoneCandidato) {
+        setIsSubmitting(true);
+        let repetida = null;
+        try {
+          const { de, ate } = janelaDeBusca(saleDate);
+          const opcoes = {
+            columns: "id, sale_number, source, contact_id, contact_phone, customer_name, sale_date, value, discount_amount, delivery_fee",
+            gte: { sale_date: de },
+            lte: { sale_date: ate },
+          };
+          const base = { franchise_id: franchiseId, source: "bot" };
+          const consultas = [];
+          if (contatoCandidato) consultas.push(Sale.filter({ ...base, contact_id: contatoCandidato }, "-created_at", 20, opcoes));
+          if (telefoneCandidato) consultas.push(Sale.filter({ ...base, contact_phone: telefoneCandidato }, "-created_at", 20, opcoes));
+          const resultados = await Promise.race([
+            Promise.all(consultas),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("tempo")), 5000)),
+          ]);
+          repetida = acharVendaDoRobo(
+            { contactId: contatoCandidato, telefone: telefoneCandidato, saleDate, value: subtotal, net: netValue },
+            resultados.flat()
+          );
+        } catch {
+          repetida = null;
+        }
+        setIsSubmitting(false);
+        if (repetida) {
+          setAvisoRepetida(repetida);
+          return;
+        }
       }
     }
 
@@ -1011,43 +1105,6 @@ export default function SaleForm({
         } else if (!(semTelefone || semTelefoneOk)) {
           setPedirTelefone(true);
           toast.warning("Sem o telefone, o anúncio não aprende com essa venda. Digite o número do cliente.");
-          return;
-        }
-      }
-    }
-
-    // S12.3 (chave ligada): o robô já lançou esta venda? SÓ AVISA. Busca as vendas do robô
-    // da unidade na janela de ±1 dia e compara cliente/telefone e valor (lib/vendaRepetida.js).
-    // Falha ou demora na busca = segue sem aviso (nunca trava o lançamento).
-    if (uiV2 && !isEditing && !ignorarRepetida) {
-      const telefoneCandidato =
-        (contactId && isValidPhone(contactPhone) ? contactPhone : null) ||
-        (isValidPhone(missingPhone) ? missingPhone : null) ||
-        (!contactId && isValidPhone(contactSearch) ? contactSearch : null);
-      const contatoCandidato = contatoDoTelefone || contactId || null;
-      if (contatoCandidato || telefoneCandidato) {
-        setIsSubmitting(true);
-        let repetida = null;
-        try {
-          const { de, ate } = janelaDeBusca(saleDate);
-          const vendasDoRobo = await Promise.race([
-            Sale.filter({ franchise_id: franchiseId, source: "bot" }, "-created_at", 100, {
-              columns: "id, sale_number, source, contact_id, contact_phone, customer_name, sale_date, value, discount_amount, delivery_fee",
-              gte: { sale_date: de },
-              lte: { sale_date: ate },
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("tempo")), 5000)),
-          ]);
-          repetida = acharVendaDoRobo(
-            { contactId: contatoCandidato, telefone: telefoneCandidato, saleDate, value: subtotal, net: netValue },
-            vendasDoRobo
-          );
-        } catch {
-          repetida = null;
-        }
-        setIsSubmitting(false);
-        if (repetida) {
-          setAvisoRepetida(repetida);
           return;
         }
       }

@@ -20,8 +20,9 @@ const f = { items: [{ inventory_item_id: "i1", quantity: 2, unit_price: 54 }, { 
   contactId: "c1", paymentMethod: "pix", deliveryMethod: "delivery", deliveryFee: 10, customerAddress: "Rua A ",
   discountType: "fixed", discountInput: 0, saleDate: "2026-09-28", observacoes: "", cardFeePercent: 0 };
 
-test("assinatura: igual quando nada mudou (linha vazia, espaço e taxa ignorados)", () => {
-  assert.equal(assinaturaEdicao(f), assinaturaEdicao({ ...f, customerAddress: "Rua A", cardFeePercent: 3.5, items: f.items.slice(0, 1) }));
+test("assinatura: igual quando nada mudou (linha vazia e espaço ignorados)", () => {
+  assert.equal(assinaturaEdicao(f), assinaturaEdicao({ ...f, customerAddress: "Rua A", items: f.items.slice(0, 1) }));
+  assert.equal(assinaturaEdicao(f), assinaturaEdicao({ ...f, cardFeePercent: "0", feePassedToCustomer: undefined }));
   assert.equal(assinaturaEdicao(f), assinaturaEdicao({ ...f, deliveryFee: "10", items: [{ ...f.items[0], unit_price: "54.00" }] }));
 });
 test("assinatura: muda com quantidade, preço, data, pagamento, observação", () => {
@@ -31,6 +32,9 @@ test("assinatura: muda com quantidade, preço, data, pagamento, observação", (
   assert.notEqual(a, assinaturaEdicao({ ...f, saleDate: "2026-09-27" }));
   assert.notEqual(a, assinaturaEdicao({ ...f, paymentMethod: "cash" }));
   assert.notEqual(a, assinaturaEdicao({ ...f, observacoes: "portaria" }));
+  // P3: só a taxa mudou também conta
+  assert.notEqual(a, assinaturaEdicao({ ...f, cardFeePercent: 3.5 }));
+  assert.notEqual(a, assinaturaEdicao({ ...f, feePassedToCustomer: true }));
 });
 
 console.log(`\n${passed} testes ok`);
