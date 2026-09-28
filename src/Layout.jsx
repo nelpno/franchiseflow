@@ -388,7 +388,7 @@ export default function Layout({ children, currentPageName }) {
   return (
     <SidebarProvider>
       {/* Paywall: blocks franchisees with overdue subscription */}
-      <SubscriptionPaywall />
+      <SubscriptionPaywall availableFranchises={availableFranchises} />
       {/* Stitch-matched sidebar styles */}
       <style>{`
         [data-sidebar="menu-button"][data-active="true"] {

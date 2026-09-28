@@ -89,6 +89,25 @@ export function classifySubscription(sub, { hoje = new Date() } = {}) {
   return { situacao: SITUACAO.PENDENTE, diasAtraso: null, vencimento, valor };
 }
 
+/**
+ * Carencia da mensalidade (S5.3, decisao Nelson 27-28/09/2026): 2 dias de atraso ficam
+ * em faixa vermelha SEM bloquear o app (dia 6 e 7, se o vencimento e dia 5); o bloqueio
+ * comeca no 3o dia de atraso (dia 8). Antes disso o paywall bloqueava no PRIMEIRO dia
+ * (qualquer status OVERDUE), sem carencia nenhuma.
+ */
+export const CARENCIA_DIAS = 2;
+
+/**
+ * Decide se o paywall deve BLOQUEAR o app (tela cheia). So franquia VENCIDA (nao
+ * PENDENTE nem AGUARDANDO) e com mais dias de atraso do que a carencia.
+ * @param {{situacao: string, diasAtraso: number|null}} classification retorno de classifySubscription
+ */
+export function isBlockingOverdue(classification) {
+  if (!classification) return false;
+  if (classification.situacao !== SITUACAO.VENCIDO) return false;
+  return (classification.diasAtraso ?? 0) > CARENCIA_DIAS;
+}
+
 /** Ordem de cobranca: quem esta mais atrasado primeiro; quem nao tem cobranca no topo. */
 export const ORDEM_COBRANCA = [
   SITUACAO.SEM_COBRANCA,

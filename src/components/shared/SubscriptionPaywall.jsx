@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { safeHref } from "@/lib/safeHref";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -6,13 +7,26 @@ import { formatBRL } from "@/lib/formatters";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import FranchiseSelector from "@/components/shared/FranchiseSelector";
+import { linkWhatsAppMaxi, MENSAGEM_MENSALIDADE } from "@/lib/contatoMaxi";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
-export default function SubscriptionPaywall() {
-  const { isOverdue, isLoading, subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
+// Rota que continua liberada mesmo com o app bloqueado (S5.3, decisão Nelson 27-28/09):
+// "lançar venda" nunca pode ficar preso atrás do paywall. "pagar" já é a própria tela do
+// paywall; "trocar de unidade" é o FranchiseSelector embutido abaixo.
+const ROTA_LIBERADA = "/Vendas";
+
+export default function SubscriptionPaywall({ availableFranchises }) {
+  const { isBlocked, isLoading, subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
   const [copiedPix, setCopiedPix] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Never block while loading, and never block if not overdue
-  if (isLoading || !isOverdue || !subscription) return null;
+  // Never block while loading, never block if not past the carência (faixa vermelha
+  // sem bloqueio fica por conta dos cartões da Início — ver useSubscriptionStatus.js),
+  // e nunca bloqueia a rota de venda (continua liberada mesmo com o app bloqueado).
+  const naRotaLiberada = location.pathname.startsWith(ROTA_LIBERADA);
+  if (isLoading || !isBlocked || !subscription || naRotaLiberada) return null;
 
   const {
     current_payment_value,
@@ -27,6 +41,8 @@ export default function SubscriptionPaywall() {
     ? format(new Date(current_payment_due_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
     : "—";
 
+  const whatsappMaxi = linkWhatsAppMaxi(MENSAGEM_MENSALIDADE);
+
   const handleCopyPix = async () => {
     if (!pix_payload) return;
     try {
@@ -34,14 +50,24 @@ export default function SubscriptionPaywall() {
       setCopiedPix(true);
       toast.success("Código PIX copiado!");
       setTimeout(() => setCopiedPix(false), 3000);
-    } catch {
-      toast.error("Não foi possível copiar. Selecione manualmente.");
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Não foi possível copiar. Selecione manualmente."));
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-white flex items-center justify-center p-4">
-      <div className="max-w-lg w-full space-y-6">
+    // items-start (não items-center): com o seletor de unidade + os botões novos (S5.3/S5.4)
+    // o conteúdo pode passar da altura da tela — centralizar corta o topo (FranchiseSelector)
+    // sem dar como rolar até lá (scroll não alcança conteúdo "acima" do centro).
+    <div className="fixed inset-0 z-[60] bg-white flex items-start justify-center p-4 overflow-y-auto">
+      <div className="max-w-lg w-full space-y-6 py-6">
+        {/* Trocar de unidade continua liberado mesmo bloqueada */}
+        {availableFranchises?.length > 1 && (
+          <div className="flex justify-center">
+            <FranchiseSelector franchises={availableFranchises} />
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50">
@@ -51,7 +77,7 @@ export default function SubscriptionPaywall() {
             Mensalidade em atraso
           </h1>
           <p className="text-gray-500 text-sm">
-            Regularize sua mensalidade para continuar usando o sistema.
+            Regularize a mensalidade da Equipe Digital Maxi para continuar usando o sistema.
           </p>
         </div>
 
@@ -124,6 +150,28 @@ export default function SubscriptionPaywall() {
         >
           <MaterialIcon icon={isChecking ? "sync" : "check_circle"} size={18} className={isChecking ? "animate-spin" : ""} />
           {isChecking ? "Verificando pagamento..." : "Já paguei, verificar agora"}
+        </button>
+
+        {/* Falar com a Maxi (WhatsApp do Celso) */}
+        {whatsappMaxi && (
+          <a
+            href={safeHref(whatsappMaxi)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors active:scale-[0.98]"
+          >
+            <MaterialIcon icon="chat" size={18} className="text-emerald-600" />
+            Falar com a Maxi
+          </a>
+        )}
+
+        {/* O que continua liberado mesmo bloqueada */}
+        <button
+          onClick={() => navigate("/Vendas?action=nova-venda")}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-brand hover:underline"
+        >
+          <MaterialIcon icon="point_of_sale" size={18} />
+          Lançar uma venda agora
         </button>
 
         {/* Footer */}
