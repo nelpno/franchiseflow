@@ -1,5 +1,6 @@
 import { supabase } from '@/api/supabaseClient';
 import { paginateAll } from "@/lib/paginateAll";
+import { confirmarRecebimento } from "@/lib/conferenciaEntrega";
 
 function parseOrderBy(orderByStr) {
   if (!orderByStr) return null;
@@ -656,4 +657,11 @@ export async function getFeatureFlags(franchiseId, { signal } = {}) {
   const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
   if (error) throw error;
   return data || {};
+}
+
+// ---- Conferir a entrega do pedido à fábrica (S15.1, 28/09/2026) ----
+// RPC confirmar_recebimento_pedido (supabase/2026-09-28-s15-conferir-entrega.sql): grava o que
+// chegou e fecha o pedido numa transação (estoque e despesa uma vez só). Lógica em conferenciaEntrega.js.
+export async function confirmarRecebimentoPedido(orderId, itens, clientId) {
+  return confirmarRecebimento({ rpc: (fn, p) => supabase.rpc(fn, p), orderId, itens, clientId });
 }
