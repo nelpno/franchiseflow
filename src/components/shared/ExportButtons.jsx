@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
@@ -20,7 +20,24 @@ function registrarEvento(evento, formato) {
 }
 
 export default function ExportButtons({ data, columns, filename, title, evento }) {
-  const handleExcel = async () => {
+  // Trava contra clique repetido (S17 P3): um arquivo por vez; a ref segura o 2º toque antes
+  // de o estado re-renderizar, o botão fica desligado e o finally sempre solta. Vale para
+  // todas as telas que usam este componente.
+  const ocupadoRef = useRef(false);
+  const [ocupado, setOcupado] = useState(false);
+  const umPorVez = (fn) => async () => {
+    if (ocupadoRef.current) return;
+    ocupadoRef.current = true;
+    setOcupado(true);
+    try {
+      await fn();
+    } finally {
+      ocupadoRef.current = false;
+      setOcupado(false);
+    }
+  };
+
+  const handleExcel = umPorVez(async () => {
     try {
       const XLSX = await import("xlsx");
       const { saveAs } = await import("file-saver");
@@ -38,9 +55,9 @@ export default function ExportButtons({ data, columns, filename, title, evento }
       console.error("Erro ao exportar Excel:", err);
       toast.error("Erro ao exportar Excel.");
     }
-  };
+  });
 
-  const handlePdf = async () => {
+  const handlePdf = umPorVez(async () => {
     try {
       const jspdfModule = await import("jspdf");
       const jsPDF = jspdfModule.default || jspdfModule.jsPDF;
@@ -89,7 +106,7 @@ export default function ExportButtons({ data, columns, filename, title, evento }
       console.error("Erro ao exportar PDF:", err);
       toast.error("Erro ao exportar PDF.");
     }
-  };
+  });
 
   if (!data || data.length === 0) return null;
 
@@ -99,6 +116,7 @@ export default function ExportButtons({ data, columns, filename, title, evento }
         variant="outline"
         size="sm"
         onClick={handleExcel}
+        disabled={ocupado}
         className="gap-1.5 text-ink-2 hover:text-ok-ink hover:border-ok/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="download" size={16} />
@@ -108,6 +126,7 @@ export default function ExportButtons({ data, columns, filename, title, evento }
         variant="outline"
         size="sm"
         onClick={handlePdf}
+        disabled={ocupado}
         className="gap-1.5 text-ink-2 hover:text-brand hover:border-brand/30 rounded-xl text-xs"
       >
         <MaterialIcon icon="picture_as_pdf" size={16} />
