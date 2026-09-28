@@ -30,6 +30,7 @@ import {
   mensagemErroPedido,
   novoIdDoEnvio,
   idDoEnvioValido,
+  ehEnvioDiferente,
 } from "@/lib/enviarPedidoFabrica";
 
 // Só essa tela mostra "—" pra vazio em vez de "R$ 0,00" (quantidade ainda não digitada) —
@@ -98,6 +99,9 @@ export default function PurchaseOrderForm({
 
   const [notes, setNotes] = useState(draft.current?.notes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // P3 da S14 (ponto 3): o mesmo envio já chegou à fábrica com OUTRO conteúdo (outra aba, ou a
+  // tela mudou depois de uma resposta perdida). O rascunho fica; envio novo só se ela confirmar.
+  const [envioDiferente, setEnvioDiferente] = useState(false);
   const submittingRef = useRef(false);
 
   // Mapa de pesos (tabela-mestra). Falha silenciosa cai no parser do nome.
@@ -376,7 +380,15 @@ export default function PurchaseOrderForm({
       if (order?.id) {
         PurchaseOrder.delete(order.id).catch(() => {});
       }
-      toast.error(getErrorMessage(error), { id: toastId });
+      if (ehEnvioDiferente(error)) {
+        setEnvioDiferente(true);
+        toast.error(
+          "Um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.",
+          { id: toastId }
+        );
+      } else {
+        toast.error(getErrorMessage(error), { id: toastId });
+      }
       submittingRef.current = false;
       setIsSubmitting(false);
     }
@@ -685,6 +697,43 @@ export default function PurchaseOrderForm({
           className="w-full rounded-xl bg-surface-line border-none px-4 py-3 text-sm focus:ring-2 focus:ring-brand/20 focus:outline-none resize-none"
         />
       </div>
+
+      {envioDiferente && (
+        <div role="alert" className="p-4 rounded-2xl border border-err/30 bg-err/5 space-y-3">
+          <div className="flex items-start gap-2">
+            <MaterialIcon icon="warning" size={18} className="text-err shrink-0 mt-0.5" />
+            <p className="text-sm text-ink">
+              Um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de
+              enviar de novo. Seu rascunho continua aqui.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              className="min-h-[44px] rounded-xl border-ink-4 text-ink"
+            >
+              Ver o histórico
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                // Confirmação explícita: só aqui nasce um envio novo (id novo).
+                clientIdRef.current = novoIdDoEnvio();
+                saveDraft(quantities, notes);
+                setEnvioDiferente(false);
+                handleSubmit();
+              }}
+              disabled={isSubmitting}
+              className="min-h-[44px] rounded-xl bg-brand hover:bg-brand-dark text-white font-bold"
+            >
+              Enviar como pedido novo
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Grand total + actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-ink-4/30">
