@@ -160,6 +160,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ## 4. Lançar uma venda
 `slug: vendas` · **Onde começa:** botão **+ Nova venda** (no meio da barra de baixo; no computador, no topo da barra da esquerda) · **Tempo:** 2 a 4 minutos
+> Fotos feitas (S21.1, 28/09/2026): `vendas-1.webp`..`vendas-6.webp`, telas finais reais (harness `.tmp/harness-s211`, ui_v2 ligada), destaque = anel vermelho da marca no elemento certo. Ligadas em `guiasAjuda.js`.
 
 **Quando usar:** você vendeu fora do robô (telefone, conhecido, balcão) e quer que a venda conte no mês e desconte do estoque.
 
@@ -448,6 +449,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ## 14. Fazer pedido à fábrica
 `slug: pedido-fabrica` (alias `estoque`) · **Onde começa:** Estoque › aba **Pedir à fábrica** · **Tempo:** 5 a 10 minutos
+> Fotos feitas (S21.1, 28/09/2026): `pedido-fabrica-1.webp`..`pedido-fabrica-6.webp` (tela real é a aba **Reposição** de Gestão, não uma aba "Pedir à fábrica" separada — ver nota no relatório da sessão). Ligadas em `guiasAjuda.js`.
 
 **Quando usar:** repor o freezer com os produtos da Maxi.
 
@@ -554,6 +556,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ## 18. Ver quanto sobrou no mês
 `slug: resultado` · **Onde começa:** Mais › Resultado do mês · **Tempo:** 3 a 5 minutos
+> Fotos feitas (S21.1, 28/09/2026): `resultado-1.webp`..`resultado-5.webp`, tela real ResultadoV2 (aba Resultado de Gestão). `resultado-4` destaca "Para onde foi" (a tela não tem mais um bloco separado "Despesas do mês" — ver nota no relatório). Ligadas em `guiasAjuda.js`.
 
 **Quando usar:** saber se o mês deu resultado e para onde foi o dinheiro.
 
@@ -635,6 +638,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ## 21. Pagar a Equipe Digital Maxi
 `slug: pagar-equipe-digital` · **Onde começa:** Mais › Pagamentos · **Tempo:** 3 minutos
+> Fotos feitas (S21.1, 28/09/2026): `pagamentos-2.webp`, `pagamentos-3.webp`, `pagamentos-4.webp`, `pagamentos-7.webp` (guia vive no app como `guiasAjuda.js` slug `pagamentos`, alias `pagar-equipe-digital`). Sem foto: passo 1 (abrir Mais › Pagamentos — teria que fotografar o Sheet "Mais"), passo 5 (boleto) e passo 6 (Atualizar cobrança) — o mock do harness não tem esses estados; ver relatório da sessão.
 
 **Quando usar:** pagar a mensalidade de R$ 150 (gestão dos anúncios, painel, robô e artes).
 

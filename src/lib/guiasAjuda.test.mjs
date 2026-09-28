@@ -138,6 +138,26 @@ t("imagens só das que existem em /public/tutoriais", () => {
   }
 });
 
+// Controle positivo (S21.1, 28/09/2026): prova que a checagem acima REALMENTE falha
+// quando o arquivo não existe — sem isso, um `imagem` com nome errado passaria calado.
+t("controle positivo: nome de arquivo inexistente FALHA na checagem de imagem", () => {
+  const pub = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../public");
+  const inventado = "/tutoriais/isso-nao-existe-de-verdade-123.webp";
+  assert.ok(!fs.existsSync(path.join(pub, inventado)), "o arquivo canário não deveria existir");
+  assert.throws(() => assert.ok(fs.existsSync(path.join(pub, inventado)), "canário"), assert.AssertionError);
+});
+
+// Toda imagem citada nos guias precisa também estar visivelmente ligada a um guia da
+// PRIORIDADE da S21.1 (Vendas, pedido à fábrica, Pagamentos, Resultado) — sem isso,
+// a foto pode ter sido gerada mas esquecida sem `imagem` em nenhum passo.
+t("guias prioritários da S21.1 têm pelo menos 1 imagem cada", () => {
+  for (const slug of ["vendas", "pedido-fabrica", "pagamentos", "resultado"]) {
+    const g = acharGuia(slug, "franchisee");
+    assert.ok(g, slug);
+    assert.ok(g.passos.some((p) => p.imagem), `${slug}: nenhum passo com imagem`);
+  }
+});
+
 t("vídeos têm id do YouTube", () => {
   for (const v of VIDEOS) assert.match(v.youtubeId, /^[\w-]{11}$/);
 });
