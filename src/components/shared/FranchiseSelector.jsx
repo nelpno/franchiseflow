@@ -6,7 +6,10 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
  * Dropdown selector for users with multiple franchises.
  * Shows franchise name only (no dropdown) if user has a single franchise.
  */
-export default function FranchiseSelector({ franchises }) {
+// `encolher` (S10, só o cabeçalho móvel com ui_v2): deixa o seletor encolher para caber o "?".
+// Padrão false = as mesmas classes de sempre em todos os outros usos.
+export default function FranchiseSelector({ franchises, encolher = false }) {
+  const mw = encolher ? "min-w-0 " : "";
   const { selectedFranchise, setSelectedFranchise } = useAuth();
 
   if (!franchises || franchises.length === 0) return null;
@@ -14,9 +17,9 @@ export default function FranchiseSelector({ franchises }) {
   // Single franchise — show name only
   if (franchises.length === 1) {
     return (
-      <div className="flex min-w-0 items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5 text-sm font-medium text-brand">
-        <MaterialIcon icon="storefront" size={16} className="shrink-0" />
-        <span className="min-w-0 truncate max-w-[160px]">
+      <div className={`${mw}flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5 text-sm font-medium text-brand`}>
+        <MaterialIcon icon="storefront" size={16} className={encolher ? "shrink-0" : undefined} />
+        <span className={`${mw}truncate max-w-[160px]`}>
           {franchises[0].city || franchises[0].name || "Minha Franquia"}
         </span>
       </div>
@@ -32,13 +35,14 @@ export default function FranchiseSelector({ franchises }) {
   };
 
   return (
-    <div className="flex min-w-0 items-center gap-2">
-      <div className="flex min-w-0 items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5">
+    <div className={`${mw}flex items-center gap-2`}>
+      <div className={`${mw}flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5`}>
         <MaterialIcon icon="storefront" size={16} className="text-brand shrink-0" />
         <select
           value={selectedFranchise?.id || ""}
           onChange={handleChange}
-          className="min-w-0 bg-transparent text-sm font-medium text-brand border-none outline-none cursor-pointer pr-1 max-w-[160px] truncate appearance-none"
+          aria-label="Selecionar unidade"
+          className={`${mw}bg-transparent text-sm font-medium text-brand border-none outline-none cursor-pointer pr-1 max-w-[160px] truncate appearance-none`}
           style={{ WebkitAppearance: "none" }}
         >
           {franchises.map((f) => (

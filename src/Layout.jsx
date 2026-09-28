@@ -728,17 +728,17 @@ export default function Layout({ children, currentPageName }) {
                 comprido, o FranchiseSelector precisa poder encolher (o truncate dele
                 só funciona se o pai admitir isso) — senão o "?" novo do lado direito
                 empurra o cabeçalho pra fora dos 390px. */}
-            <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div className={uiV2 ? "flex min-w-0 flex-1 items-center gap-3" : "flex items-center gap-3"}>
               <SidebarTrigger className="p-2 rounded-xl text-ink-2 hover:bg-white/50 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center" />
               {!isAdmin && availableFranchises.length > 1 ? (
-                <FranchiseSelector franchises={availableFranchises} />
+                <FranchiseSelector franchises={availableFranchises} encolher={uiV2} />
               ) : (
-                <h1 className="min-w-0 truncate text-lg font-semibold text-ink">
+                <h1 className={uiV2 ? "min-w-0 truncate text-lg font-semibold text-ink" : "text-lg font-semibold text-ink"}>
                   {currentPageTitle}
                 </h1>
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className={uiV2 ? "flex shrink-0 items-center gap-2" : "flex items-center gap-2"}>
               {guiaDaTela && (
                 <Link
                   to={`/Tutoriais?abrir=${guiaDaTela}`}
