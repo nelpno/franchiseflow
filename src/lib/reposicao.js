@@ -122,3 +122,15 @@ export async function carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem,
   }
   return { pedidos: abertos, itensPorPedido, emAberto: quantidadesEmAberto(abertos, itensPorPedido) };
 }
+
+/**
+ * S14.7: troca o custo da unidade pelo preço que o pedido à fábrica grava (mapa do banco).
+ * Sem o mapa (carregando ou falhou) fica o custo da unidade, que hoje é igual à tabela.
+ */
+export function comPrecoDaTabela(itens, precos) {
+  if (!precos) return itens;
+  return itens.map((item) => {
+    const p = precos[item.id];
+    return p > 0 && p !== parseFloat(item.cost_price) ? { ...item, cost_price: p } : item;
+  });
+}

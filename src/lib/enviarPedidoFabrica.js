@@ -88,7 +88,8 @@ export async function enviarPedidoFabrica({ rpc, clientId, franchiseId, itens, n
     throw error;
   }
   if (!data?.id) throw new Error("Resposta sem o número do pedido");
-  return { id: data.id, jaExistia: data.ja_existia === true, via: "rpc" };
+  const total = data.total_amount == null ? NaN : Number(data.total_amount);
+  return { id: data.id, jaExistia: data.ja_existia === true, via: "rpc", totalAmount: Number.isFinite(total) ? total : null };
 }
 
 /** uuid v4 do envio (gerado ANTES da 1ª tentativa). crypto.randomUUID quando existe. */

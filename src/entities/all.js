@@ -600,6 +600,15 @@ export async function setOnboardingItem(franchiseId, key, done) {
 
 // Pedido modelo da Maxi para o 1º pedido: [{ product_name, quantidade }].
 // Quantidades ficam em catalog_products.qtd_pedido_modelo.
+// S14.7: preço que o pedido à fábrica GRAVA (tabela da fábrica; nome fora da tabela = custo da
+// unidade), pela mesma função da RPC create_purchase_order_with_items. { [inventory_item_id]: preço }.
+export async function getPrecosPedidoFabrica(franchiseId) {
+  const { data, error } = await withTimeout(
+    supabase.rpc('get_precos_pedido_fabrica', { p_franchise_id: franchiseId }), QUERY_TIMEOUT_MS);
+  if (error) throw error;
+  return Object.fromEntries((data || []).map((r) => [r.inventory_item_id, parseFloat(r.unit_price) || 0]));
+}
+
 export async function getPedidoModelo() {
   const { data, error } = await withTimeout(supabase.rpc('get_pedido_modelo'), QUERY_TIMEOUT_MS);
   if (error) throw error;

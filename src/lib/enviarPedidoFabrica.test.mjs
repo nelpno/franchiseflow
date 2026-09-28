@@ -18,9 +18,9 @@ const base = { clientId: "c-1", franchiseId: "franquiateste", itens: [{ inventor
 
 await t("chama a RPC com o client_id e devolve o pedido", async () => {
   const chamadas = [];
-  const rpc = async (fn, p) => { chamadas.push([fn, p]); return { data: { id: "c-1", ja_existia: false }, error: null }; };
+  const rpc = async (fn, p) => { chamadas.push([fn, p]); return { data: { id: "c-1", ja_existia: false, total_amount: "64.40" }, error: null }; };
   const r = await enviarPedidoFabrica({ ...base, rpc, legado: () => { throw new Error("não devia"); } });
-  assert.deepEqual(r, { id: "c-1", jaExistia: false, via: "rpc" });
+  assert.deepEqual(r, { id: "c-1", jaExistia: false, via: "rpc", totalAmount: 64.4 });
   assert.equal(chamadas[0][0], RPC_PEDIDO_FABRICA);
   assert.equal(chamadas[0][1].p_client_id, "c-1");
   assert.equal(chamadas[0][1].p_notes, null);

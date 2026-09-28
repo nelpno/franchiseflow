@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { PurchaseOrder, PurchaseOrderItem, getPedidoModelo } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, getPedidoModelo, getPrecosPedidoFabrica } from "@/entities/all";
 import { quantidadesDoModelo } from "@/lib/pedidoModelo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { formatBRL as formatBRLShared } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { estimarFreteFabrica } from "@/lib/freteFabrica";
-import { reposicaoDoItem, unidadeDeMedida } from "@/lib/reposicao";
+import { comPrecoDaTabela, reposicaoDoItem, unidadeDeMedida } from "@/lib/reposicao";
 import {
   enviarPedidoFabrica,
   montarItensDoPedido,
@@ -117,18 +117,29 @@ export default function PurchaseOrderForm({
     return () => { alive = false; };
   }, []);
 
+  // S14.7: preços da tabela da fábrica (o que a RPC grava). Falha = fica o custo da unidade.
+  const [precosTabela, setPrecosTabela] = useState(null);
+  useEffect(() => {
+    if (!franchiseId) return undefined;
+    let alive = true;
+    getPrecosPedidoFabrica(franchiseId)
+      .then((m) => { if (alive) setPrecosTabela(m); })
+      .catch(() => { /* sem a função/rede: o total mostrado segue o custo; a RPC grava pela tabela */ });
+    return () => { alive = false; };
+  }, [franchiseId]);
+
   // Produtos da fábrica = catálogo padrão da rede (created_by_franchisee === false) com custo > 0.
   // Itens extras criados pela própria franquia (created_by_franchisee === true) NÃO podem ser
   // pedidos à fábrica — o controle desses é da unidade. Antes o filtro usava só cost_price > 0,
   // o que deixava itens extras com custo (queijo ralado, salsaretti, molhos próprios) vazarem pro pedido.
   const standardProducts = useMemo(() => {
-    return (inventoryItems || []).filter(
+    return comPrecoDaTabela((inventoryItems || []).filter(
       (item) =>
         item.created_by_franchisee !== true &&
         item.cost_price &&
         parseFloat(item.cost_price) > 0
-    );
-  }, [inventoryItems]);
+    ), precosTabela);
+  }, [inventoryItems, precosTabela]);
 
   // Group products by type (first word of product_name)
   const productGroups = useMemo(() => {
@@ -375,7 +386,11 @@ export default function PurchaseOrderForm({
       if (resultado.jaExistia) {
         toast.success("Este pedido já tinha sido enviado. Ele está no histórico.", { id: toastId });
       } else {
-        toast.success("Pedido enviado com sucesso!", { id: toastId });
+        const difere = resultado.totalAmount != null && Math.abs(resultado.totalAmount - grandTotal) > 0.009;
+        toast.success(
+          difere ? `Pedido enviado! Total pela tabela da fábrica: ${formatBRLShared(resultado.totalAmount)}` : "Pedido enviado com sucesso!",
+          { id: toastId }
+        );
       }
       // NÃO resetar submittingRef — componente vai desmontar via onSave
       if (onSave) onSave();

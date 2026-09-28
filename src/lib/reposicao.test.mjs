@@ -1,6 +1,6 @@
 // node src/lib/reposicao.test.mjs
 import assert from "node:assert/strict";
-import {
+import { comPrecoDaTabela,
   quantidadesEmAberto,
   reposicaoDoItem,
   itensParaRepor,
@@ -132,3 +132,12 @@ await (async () => {
 })();
 
 console.log(`\nreposicao: ${n} grupos ok`);
+
+t("S14.7: comPrecoDaTabela mostra o preço que o pedido grava (tabela), não o custo da unidade", () => {
+  const itens = [{ id: "a", cost_price: "1.00" }, { id: "b", cost_price: "6.20" }, { id: "c", cost_price: "9.00" }];
+  const r = comPrecoDaTabela(itens, { a: 22.9, b: 6.2 });
+  assert.equal(r[0].cost_price, 22.9);   // custo inventado/médio → tabela
+  assert.equal(r[1], itens[1]);          // igual: mesmo objeto
+  assert.equal(r[2], itens[2]);          // sem preço no mapa: custo da unidade
+  assert.equal(comPrecoDaTabela(itens, null), itens); // mapa ainda não chegou
+});
