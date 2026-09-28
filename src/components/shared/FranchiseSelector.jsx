@@ -14,9 +14,9 @@ export default function FranchiseSelector({ franchises }) {
   // Single franchise — show name only
   if (franchises.length === 1) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5 text-sm font-medium text-brand">
-        <MaterialIcon icon="storefront" size={16} />
-        <span className="truncate max-w-[160px]">
+      <div className="flex min-w-0 items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5 text-sm font-medium text-brand">
+        <MaterialIcon icon="storefront" size={16} className="shrink-0" />
+        <span className="min-w-0 truncate max-w-[160px]">
           {franchises[0].city || franchises[0].name || "Minha Franquia"}
         </span>
       </div>
@@ -32,13 +32,13 @@ export default function FranchiseSelector({ franchises }) {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5">
+    <div className="flex min-w-0 items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5">
         <MaterialIcon icon="storefront" size={16} className="text-brand shrink-0" />
         <select
           value={selectedFranchise?.id || ""}
           onChange={handleChange}
-          className="bg-transparent text-sm font-medium text-brand border-none outline-none cursor-pointer pr-1 max-w-[160px] truncate appearance-none"
+          className="min-w-0 bg-transparent text-sm font-medium text-brand border-none outline-none cursor-pointer pr-1 max-w-[160px] truncate appearance-none"
           style={{ WebkitAppearance: "none" }}
         >
           {franchises.map((f) => (
