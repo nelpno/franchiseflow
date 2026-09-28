@@ -166,7 +166,7 @@ function MaisBottomNavButton() {
   return (
     <button
       onClick={toggleSidebar}
-      className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 text-ink-2"
+      className="flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 text-ink-2 touch-manipulation active:opacity-60"
     >
       <MaterialIcon icon="menu" size={20} />
       <span className="text-xs font-medium">Mais</span>
@@ -623,7 +623,7 @@ export default function Layout({ children, currentPageName }) {
                   to={item.url}
                   // 48 px de altura e largura dividida: era ~40 px de area util no
                   // controle mais tocado do app
-                  className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 ${
+                  className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 touch-manipulation active:opacity-60 ${
                     isActive ? "text-[#9c4143]" : "text-ink-2"
                   }`}
                 >
@@ -648,7 +648,7 @@ export default function Layout({ children, currentPageName }) {
                 <Link
                   key={item.label}
                   to={item.url}
-                  className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 ${
+                  className={`flex-1 flex flex-col items-center justify-center gap-1 min-h-[48px] py-1 touch-manipulation active:opacity-60 ${
                     isActive ? "text-brand" : "text-ink-2"
                   }`}
                 >

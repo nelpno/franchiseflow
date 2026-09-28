@@ -1408,7 +1408,7 @@ function FranchiseSettingsContent() {
               <button
                 type="button"
                 onClick={prevStep}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-brand text-brand font-bold text-sm hover:bg-brand/5 transition-all"
+                className="flex items-center gap-1.5 px-5 min-h-11 md:min-h-0 md:py-2.5 rounded-xl border border-brand text-brand font-bold text-sm hover:bg-brand/5 transition-all touch-manipulation active:scale-95"
               >
                 <MaterialIcon icon="arrow_back" size={16} />
                 Voltar
@@ -1446,7 +1446,7 @@ function FranchiseSettingsContent() {
                 type="button"
                 onClick={nextStep}
                 disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm shadow-lg shadow-brand/20 transition-all disabled:opacity-60"
+                className="flex items-center gap-1.5 px-5 min-h-11 md:min-h-0 md:py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm shadow-lg shadow-brand/20 transition-all disabled:opacity-60 touch-manipulation active:scale-95"
               >
                 {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
                 Próximo
@@ -1463,7 +1463,7 @@ function FranchiseSettingsContent() {
                    candidato mais forte aos 26,3% de sessoes com dead click nesta
                    tela (Clarity, 3 dias, auditoria 07/09/2026). */
                 disabled={isSubmitting}
-                className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm shadow-lg shadow-brand/20 transition-all disabled:opacity-50"
+                className="flex items-center gap-1.5 px-6 min-h-11 md:min-h-0 md:py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold text-sm shadow-lg shadow-brand/20 transition-all disabled:opacity-50 touch-manipulation active:scale-95"
               >
                 {isSubmitting && <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />}
                 Concluir
