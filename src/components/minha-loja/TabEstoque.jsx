@@ -34,6 +34,13 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import { ptBR } from "date-fns/locale";
+import {
+  initCounts,
+  validateCount,
+  applyStep,
+  computeCountDiff,
+  splitSaveResults,
+} from "@/lib/stockCount";
 
 const UNIT_OPTIONS = [
   { value: "un", label: "Unidade" },
@@ -56,6 +63,38 @@ function getCategoryFromName(name) {
   if (MASSA_PREFIXES.some((p) => lower.startsWith(p))) return "Massas";
   if (MOLHO_PREFIXES.some((p) => lower.startsWith(p))) return "Molhos";
   return "Outros";
+}
+
+const GROUP_ORDER = ["Canelone", "Conchiglione", "Massa", "Nhoque", "Fatiado", "Rondelli", "Sofioli", "Molho"];
+
+// Agrupa por tipo de produto (1a palavra do nome) — usado na lista normal e no modo contagem.
+function groupItemsByType(list) {
+  const groups = [];
+  const groupMap = {};
+
+  list.forEach((item) => {
+    const firstWord = item.product_name.split(" ")[0];
+    const groupKey = GROUP_ORDER.includes(firstWord) ? firstWord : "Outros";
+    if (!groupMap[groupKey]) {
+      groupMap[groupKey] = { label: groupKey, items: [] };
+      groups.push(groupMap[groupKey]);
+    }
+    groupMap[groupKey].items.push(item);
+  });
+
+  groups.sort((a, b) => {
+    const orderWithOutros = [...GROUP_ORDER, "Outros"];
+    const ai = orderWithOutros.indexOf(a.label);
+    const bi = orderWithOutros.indexOf(b.label);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  // Ordem alfabetica dentro de cada grupo para evitar reordenacao ao atualizar estoque
+  groups.forEach((g) => g.items.sort((a, b) =>
+    a.product_name.localeCompare(b.product_name, 'pt-BR')
+  ));
+
+  return groups;
 }
 
 const EMPTY_FORM = {
@@ -94,6 +133,17 @@ export default function TabEstoque({
   const editingCellRef = useRef(null);
   const suggestionsRef = useRef(null);
 
+  // --- Modo "Contar estoque" (S16.1) ---
+  const [countMode, setCountMode] = useState(false);
+  const [counts, setCounts] = useState({});
+  const [isSavingCount, setIsSavingCount] = useState(false);
+  const [editingCountId, setEditingCountId] = useState(null);
+  const [countEditValue, setCountEditValue] = useState("");
+  const [itemMenuFor, setItemMenuFor] = useState(null); // item com o menu "..." (editar/ocultar/excluir) aberto
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const countEditRef = useRef(null);
+  const savingCountRef = useRef(false); // guarda SÍNCRONA — setState não chega a tempo de barrar clique duplo
+
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
 
   // Sync items from parent prop
@@ -116,6 +166,13 @@ export default function TabEstoque({
       editInputRef.current.select();
     }
   }, [editingCell]);
+
+  useEffect(() => {
+    if (editingCountId && countEditRef.current) {
+      countEditRef.current.focus();
+      countEditRef.current.select();
+    }
+  }, [editingCountId]);
 
   const giroByItem = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
@@ -149,35 +206,25 @@ export default function TabEstoque({
 
   // --- Grouping by product type (first word of product_name) ---
 
-  const itemGroups = useMemo(() => {
-    const ORDER = ["Canelone", "Conchiglione", "Massa", "Nhoque", "Fatiado", "Rondelli", "Sofioli", "Molho"];
-    const groups = [];
-    const groupMap = {};
+  const itemGroups = useMemo(() => groupItemsByType(filteredItems), [filteredItems]);
 
-    filteredItems.forEach((item) => {
-      const firstWord = item.product_name.split(" ")[0];
-      const groupKey = ORDER.includes(firstWord) ? firstWord : "Outros";
-      if (!groupMap[groupKey]) {
-        groupMap[groupKey] = { label: groupKey, items: [] };
-        groups.push(groupMap[groupKey]);
-      }
-      groupMap[groupKey].items.push(item);
-    });
+  // --- Modo "Contar estoque": lista independente do filtro de nivel de estoque
+  // (que depende da quantidade — mudaria embaixo do dedo enquanto ela conta),
+  // mas ainda respeita busca e categoria para achar o produto rapido.
+  const countableItems = useMemo(() => items.filter((item) => {
+    if (item.active === false) return false;
+    const itemCategory = item.category || getCategoryFromName(item.product_name);
+    const matchesSearch =
+      !searchTerm ||
+      item.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      itemCategory?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === "all" || itemCategory === filterCategory;
+    return matchesSearch && matchesCategory;
+  }), [items, searchTerm, filterCategory]);
 
-    groups.sort((a, b) => {
-      const orderWithOutros = [...ORDER, "Outros"];
-      const ai = orderWithOutros.indexOf(a.label);
-      const bi = orderWithOutros.indexOf(b.label);
-      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-    });
+  const countGroups = useMemo(() => groupItemsByType(countableItems), [countableItems]);
 
-    // Ordem alfabetica dentro de cada grupo para evitar reordenacao ao atualizar estoque
-    groups.forEach(g => g.items.sort((a, b) =>
-      a.product_name.localeCompare(b.product_name, 'pt-BR')
-    ));
-
-    return groups;
-  }, [filteredItems]);
+  const countDiff = useMemo(() => computeCountDiff(items, counts), [items, counts]);
 
   // --- Inline edit ---
 
@@ -445,6 +492,129 @@ export default function TabEstoque({
     }
   };
 
+  // --- Modo "Contar estoque" (S16.1) ---
+
+  const handleEnterCountMode = () => {
+    const activeItems = items.filter((i) => i.active !== false);
+    setCounts(initCounts(activeItems));
+    setFilterStockLevel("all"); // depende da quantidade — evita item sumir da lista no meio da contagem
+    setCountMode(true);
+  };
+
+  const exitCountMode = () => {
+    setCountMode(false);
+    setCounts({});
+    setEditingCountId(null);
+  };
+
+  const handleCancelCount = () => {
+    if (countDiff.length > 0) {
+      setShowDiscardConfirm(true);
+      return;
+    }
+    exitCountMode();
+  };
+
+  const confirmDiscardCount = () => {
+    setShowDiscardConfirm(false);
+    exitCountMode();
+  };
+
+  // Aviso ao fechar a aba/atualizar com contagem não salva (nada some sem avisar).
+  useEffect(() => {
+    if (!countMode) return;
+    const handler = (e) => {
+      if (computeCountDiff(items, counts).length > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [countMode, items, counts]);
+
+  const handleCountStep = (itemId, step) => {
+    setCounts((prev) => ({ ...prev, [itemId]: applyStep(prev[itemId], step) }));
+  };
+
+  const handleOpenCountInput = (item) => {
+    setEditingCountId(item.id);
+    setCountEditValue(String(counts[item.id] ?? 0));
+  };
+
+  const handleCountInputBlur = (itemId) => {
+    const { valid, value, error } = validateCount(countEditValue);
+    if (!valid) {
+      toast.error(error || "Número inválido.");
+    } else {
+      setCounts((prev) => ({ ...prev, [itemId]: value }));
+    }
+    setEditingCountId(null);
+  };
+
+  const handleCountInputKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.target.blur();
+    } else if (e.key === "Escape") {
+      setEditingCountId(null);
+    }
+  };
+
+  // Clique repetido no "Salvar" não duplica: enquanto isSavingCount for true, o botão
+  // fica desabilitado; depois de salvar, os itens salvos saem do diff (before === after)
+  // e um segundo clique não teria mais nada para reenviar.
+  const handleSaveCount = async () => {
+    if (savingCountRef.current) return;
+    const diff = computeCountDiff(items, counts);
+    if (diff.length === 0) return;
+
+    savingCountRef.current = true;
+    setIsSavingCount(true);
+    try {
+      const nowIso = new Date().toISOString();
+      const results = await Promise.allSettled(
+        diff.map((entry) =>
+          InventoryItem.update(entry.id, {
+            quantity: entry.after,
+            last_updated_by: currentUser?.id || null,
+            updated_at: nowIso,
+          })
+        )
+      );
+      const { saved, failed } = splitSaveResults(diff, results);
+
+      if (saved.length > 0) {
+        setItems((prev) =>
+          prev.map((i) => {
+            const hit = saved.find((s) => s.id === i.id);
+            return hit
+              ? { ...i, quantity: hit.after, updated_at: nowIso, last_updated_by: currentUser?.id || i.last_updated_by }
+              : i;
+          })
+        );
+      }
+
+      if (failed.length === 0) {
+        toast.success(
+          `Contagem salva: ${saved.length} produto${saved.length > 1 ? "s" : ""} atualizado${saved.length > 1 ? "s" : ""}.`
+        );
+        exitCountMode();
+        if (onRefresh) onRefresh();
+      } else {
+        console.error("Erro ao salvar contagem:", failed.map((f) => f.error));
+        const okTexto = saved.length > 0 ? `${saved.length} salvos, ` : "";
+        toast.error(
+          `${okTexto}${failed.length} não salvaram (falha de rede). Os números continuam na tela — toque em "Salvar" de novo para tentar só esses.`,
+          { duration: 15000 }
+        );
+        if (onRefresh) onRefresh();
+      }
+    } finally {
+      savingCountRef.current = false;
+      setIsSavingCount(false);
+    }
+  };
+
   // --- CSV export ---
 
   const handleExportCSV = () => {
@@ -635,46 +805,206 @@ export default function TabEstoque({
   return (
     <div className="space-y-4">
       {/* Header actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-ink-2">
-            <span className="font-bold text-ink">{totalProducts}</span> produtos
-            {lowStockCount > 0 && (
-              <Badge className="bg-brand/10 text-brand rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
-                {lowStockCount} baixo
-              </Badge>
-            )}
-            {faturamentoPotencial > 0 && (
-              <Badge className="bg-brand-gold/10 text-brand-gold-ink rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
-                Potencial {formatBRL(faturamentoPotencial)}
-              </Badge>
-            )}
+      {!countMode && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-ink-2">
+              <span className="font-bold text-ink">{totalProducts}</span> produtos
+              {lowStockCount > 0 && (
+                <Badge className="bg-brand/10 text-brand rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
+                  {lowStockCount} baixo
+                </Badge>
+              )}
+              {faturamentoPotencial > 0 && (
+                <Badge className="bg-brand-gold/10 text-brand-gold-ink rounded-full px-2 py-0.5 text-[11px] font-bold ml-2">
+                  Potencial {formatBRL(faturamentoPotencial)}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleEnterCountMode}
+              className="gap-2 border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
+              size="sm"
+            >
+              <MaterialIcon icon="checklist" size={16} />
+              Contar estoque
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportCSV}
+              className="gap-2 border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
+              size="sm"
+            >
+              <MaterialIcon icon="upload" size={16} />
+              CSV
+            </Button>
+            <Button
+              onClick={handleOpenAddDialog}
+              className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
+              size="sm"
+            >
+              <MaterialIcon icon="add" size={16} />
+              Adicionar
+            </Button>
           </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={handleExportCSV}
-            className="gap-2 border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
-            size="sm"
-          >
-            <MaterialIcon icon="upload" size={16} />
-            CSV
-          </Button>
-          <Button
-            onClick={handleOpenAddDialog}
-            className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
-            size="sm"
-          >
-            <MaterialIcon icon="add" size={16} />
-            Adicionar
-          </Button>
+      {/* Modo "Contar estoque" */}
+      {countMode && (
+        <div className="space-y-4">
+          <div className="sticky top-0 z-10 -mx-1 px-3 py-3 bg-white/95 backdrop-blur border border-ink-4/20 rounded-2xl shadow-sm flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-bold text-ink font-plus-jakarta flex items-center gap-2">
+                <MaterialIcon icon="checklist" size={18} className="text-brand" />
+                Contar estoque
+              </h3>
+              <p className="text-xs text-ink-2">
+                {countDiff.length === 0
+                  ? "Toque em − ou + para contar cada produto."
+                  : `${countDiff.length} produto${countDiff.length > 1 ? "s" : ""} alterado${countDiff.length > 1 ? "s" : ""}.`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-11 rounded-xl border-ink-4 text-ink-2"
+                onClick={handleCancelCount}
+                disabled={isSavingCount}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-11 rounded-xl bg-brand hover:bg-brand-dark text-white font-bold gap-2"
+                onClick={handleSaveCount}
+                disabled={isSavingCount || countDiff.length === 0}
+              >
+                {isSavingCount ? (
+                  <>
+                    <MaterialIcon icon="progress_activity" size={16} className="animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>Salvar{countDiff.length > 0 ? ` (${countDiff.length})` : ""}</>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {countGroups.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <MaterialIcon icon="package_2" size={64} className="text-ink-4 mb-4" />
+              <p className="text-sm text-ink-2">Nenhum produto para contar com esse filtro.</p>
+            </div>
+          ) : (
+            countGroups.map((group) => (
+              <div key={group.label} className="space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-brand font-plus-jakarta px-1">
+                  {group.label}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {group.items.map((item) => {
+                    const value = counts[item.id] ?? (Number(item.quantity) || 0);
+                    const before = Number(item.quantity) || 0;
+                    const changed = value !== before;
+                    return (
+                      <Card
+                        key={item.id}
+                        className={`rounded-2xl border ${
+                          changed ? "border-brand-gold/40 bg-brand-gold/5" : "border-ink-shadow/5 bg-white"
+                        }`}
+                      >
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-ink leading-snug">{item.product_name}</p>
+                              <p className="text-xs text-ink-2">
+                                {getUnitLabel(item.unit)}
+                                {changed && (
+                                  <span className="text-brand-gold-ink font-semibold"> · era {before}</span>
+                                )}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11 shrink-0 -mr-2 -mt-1 text-ink-2"
+                              onClick={() => setItemMenuFor(item)}
+                              aria-label={`Mais opções de ${item.product_name}`}
+                            >
+                              <MaterialIcon icon="more_horiz" size={20} />
+                            </Button>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-11 w-11 shrink-0 rounded-xl border-ink-4 text-ink"
+                              onClick={() => handleCountStep(item.id, -1)}
+                              aria-label={`Diminuir ${item.product_name}`}
+                            >
+                              <MaterialIcon icon="remove" size={20} />
+                            </Button>
+
+                            {editingCountId === item.id ? (
+                              <Input
+                                ref={countEditRef}
+                                type="number"
+                                inputMode="numeric"
+                                min="0"
+                                step="1"
+                                value={countEditValue}
+                                onChange={(e) => setCountEditValue(e.target.value)}
+                                onBlur={() => handleCountInputBlur(item.id)}
+                                onKeyDown={handleCountInputKeyDown}
+                                className="flex-1 h-11 min-w-0 text-center font-bold bg-surface-line border-none rounded-xl focus-visible:ring-2 focus-visible:ring-brand/20 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                className="flex-1 h-11 min-w-0 rounded-xl bg-surface-line font-bold text-ink text-center text-lg"
+                                onClick={() => handleOpenCountInput(item)}
+                                aria-label={`Quantidade de ${item.product_name}, toque para digitar`}
+                              >
+                                {value}
+                              </button>
+                            )}
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-11 w-11 shrink-0 rounded-xl border-ink-4 text-ink"
+                              onClick={() => handleCountStep(item.id, 1)}
+                              aria-label={`Aumentar ${item.product_name}`}
+                            >
+                              <MaterialIcon icon="add" size={20} />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      </div>
+      )}
 
       {/* Filters */}
-      <FilterBar
+      {!countMode && <FilterBar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         searchPlaceholder="Buscar por produto ou categoria..."
@@ -702,10 +1032,10 @@ export default function TabEstoque({
             ],
           },
         ]}
-      />
+      />}
 
       {/* Missing sale_price banner */}
-      {missingPriceCount > 0 && (
+      {!countMode && missingPriceCount > 0 && (
         <div className="flex items-center gap-3 p-3 bg-brand-gold/10 border border-brand-gold/30 rounded-xl">
           <MaterialIcon icon="warning" size={20} className="text-brand-gold-ink shrink-0" />
           <p className="text-sm text-brand-gold-ink flex-1">
@@ -716,7 +1046,7 @@ export default function TabEstoque({
       )}
 
       {/* Content */}
-      {filteredItems.length === 0 ? (
+      {!countMode && (filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <MaterialIcon icon="package_2" size={64} className="text-ink-4 mb-4" />
           <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
@@ -1186,10 +1516,10 @@ export default function TabEstoque({
             </CardContent>
           </Card>
         </>
-      )}
+      ))}
 
       {/* Hidden items section */}
-      {hiddenItems.length > 0 && (
+      {!countMode && hiddenItems.length > 0 && (
         <div className="border border-ink-4/30 rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowHidden(!showHidden)}
@@ -1520,6 +1850,88 @@ export default function TabEstoque({
             >
               <MaterialIcon icon="delete" size={16} />
               Remover
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modo contagem: menu "..." com editar/ocultar/excluir juntos (não soltos na linha) */}
+      <Dialog open={!!itemMenuFor} onOpenChange={(open) => !open && setItemMenuFor(null)}>
+        <DialogContent className="sm:max-w-xs rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-plus-jakarta text-ink text-base truncate">
+              {itemMenuFor?.product_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start gap-2 h-12 rounded-xl border-ink-4 text-ink"
+              onClick={() => {
+                handleOpenEditDialog(itemMenuFor);
+                setItemMenuFor(null);
+              }}
+            >
+              <MaterialIcon icon="edit" size={18} />
+              Editar produto
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start gap-2 h-12 rounded-xl border-ink-4 text-ink"
+              onClick={() => {
+                handleToggleActive(itemMenuFor);
+                setItemMenuFor(null);
+              }}
+            >
+              <MaterialIcon icon={itemMenuFor?.active === false ? "visibility" : "visibility_off"} size={18} />
+              {itemMenuFor?.active === false ? "Reativar produto" : "Ocultar do catálogo"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start gap-2 h-12 rounded-xl border-brand/30 text-brand"
+              onClick={() => {
+                setDeleteConfirmId(itemMenuFor?.id);
+                setItemMenuFor(null);
+              }}
+            >
+              <MaterialIcon icon="delete" size={18} />
+              Excluir produto
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sair da contagem com alteração não salva */}
+      <Dialog open={showDiscardConfirm} onOpenChange={(open) => !open && setShowDiscardConfirm(false)}>
+        <DialogContent className="sm:max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink">
+              <MaterialIcon icon="warning" size={20} className="text-brand" />
+              Descartar a contagem?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-ink-2">
+            {countDiff.length === 1
+              ? "1 produto com número alterado ainda não foi salvo."
+              : `${countDiff.length} produtos com número alterado ainda não foram salvos.`}
+            {" "}Se sair agora, essa contagem se perde.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDiscardConfirm(false)}
+              className="border-ink-4 text-ink-2 rounded-xl hover:bg-surface"
+            >
+              Continuar contando
+            </Button>
+            <Button
+              onClick={confirmDiscardCount}
+              className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-2"
+            >
+              Descartar
             </Button>
           </div>
         </DialogContent>
