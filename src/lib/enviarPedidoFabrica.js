@@ -14,11 +14,25 @@ import { safeErrorMessage } from "./safeErrorMessage.js";
 export const RPC_PEDIDO_FABRICA = "create_purchase_order_with_items";
 export const TIMEOUT_PEDIDO_MS = 30000;
 
+// Só a AUSÊNCIA desta função específica libera o caminho antigo (P3 da S14, ponto 5):
+// PGRST202 (PostgREST não achou a função chamada) ou 42883 cuja mensagem cita este nome.
+// Qualquer outro erro — inclusive 42883 de outra função chamada lá dentro — interrompe.
 export function rpcAusente(error) {
   if (!error) return false;
-  const code = error.code;
   const msg = String(error.message || "");
-  return code === "PGRST202" || code === "42883" || /could not find the function/i.test(msg);
+  if (error.code === "PGRST202") return true;
+  if (error.code === "42883") return msg.includes(RPC_PEDIDO_FABRICA);
+  return false;
+}
+
+// Mesmo client_id com conteúdo diferente do que já foi gravado (outra aba, tela mudada depois
+// de uma resposta perdida): a RPC recusa com detail S14_ENVIO_DIFERENTE. A tela mantém o
+// rascunho e só gera um envio novo (id novo) se ela confirmar.
+export const DETALHE_ENVIO_DIFERENTE = "S14_ENVIO_DIFERENTE";
+export function ehEnvioDiferente(error) {
+  if (!error) return false;
+  return error.details === DETALHE_ENVIO_DIFERENTE ||
+    String(error.message || "").startsWith("Pedido: um pedido anterior deste formulário");
 }
 
 /** Mensagem segura: as da RPC começam com "Pedido:" e foram escritas para a franqueada ler. */

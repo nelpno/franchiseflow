@@ -8,6 +8,7 @@ import {
   RPC_PEDIDO_FABRICA,
   novoIdDoEnvio,
   idDoEnvioValido,
+  ehEnvioDiferente,
 } from "./enviarPedidoFabrica.js";
 
 let n = 0;
@@ -43,7 +44,7 @@ await t("clique repetido: a 2ª chamada com o mesmo id volta 'já existia', sem 
 await t("banco velho (função não existe) cai no caminho antigo", async () => {
   for (const error of [
     { code: "PGRST202", message: "Could not find the function public.create_purchase_order_with_items" },
-    { code: "42883", message: "function does not exist" },
+    { code: "42883", message: "function public.create_purchase_order_with_items(uuid, text, jsonb, text, numeric) does not exist" },
   ]) {
     let usouLegado = 0;
     const r = await enviarPedidoFabrica({ ...base, rpc: async () => ({ data: null, error }), legado: async () => { usouLegado++; return { id: "velho" }; } });
@@ -97,7 +98,6 @@ await t("montarItensDoPedido: só inteiro > 0", async () => {
   ]);
 });
 
-console.log(`\nenviarPedidoFabrica: ${n} grupos ok`);
 
 {
   const a = novoIdDoEnvio(), b = novoIdDoEnvio();
@@ -106,3 +106,34 @@ console.log(`\nenviarPedidoFabrica: ${n} grupos ok`);
   assert.equal(idDoEnvioValido(null), false);
   console.log("ok - id do envio (uuid v4)");
 }
+
+await t("P3 5: só a ausência DESTA função cai no legado", async () => {
+  let usouLegado = 0;
+  const legado = async () => { usouLegado++; return { id: "x" }; };
+  for (const error of [
+    { code: "42883", message: "function public.normalize_phone_br(text) does not exist" },
+    { code: "42883", message: "operator does not exist: text = uuid" },
+    { code: "PGRST203", message: "Could not choose the best candidate function" },
+    { message: "Could not find the function public.create_purchase_order_with_items" }, // sem código
+  ]) {
+    await assert.rejects(enviarPedidoFabrica({ ...base, rpc: async () => ({ data: null, error }), legado }));
+  }
+  assert.equal(usouLegado, 0);
+});
+
+await t("P3 3: mesmo id com conteúdo diferente é reconhecido e não cai no legado", async () => {
+  const error = { code: "P0001", details: "S14_ENVIO_DIFERENTE", message: "Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo." };
+  assert.equal(ehEnvioDiferente(error), true);
+  assert.equal(ehEnvioDiferente({ code: "P0001", message: "Pedido: escolha pelo menos um produto." }), false);
+  assert.equal(ehEnvioDiferente(null), false);
+  let usouLegado = 0;
+  await assert.rejects(
+    enviarPedidoFabrica({ ...base, rpc: async () => ({ data: null, error }), legado: async () => { usouLegado++; return { id: "x" }; } }),
+    (e) => ehEnvioDiferente(e)
+  );
+  assert.equal(usouLegado, 0);
+  assert.equal(mensagemErroPedido(error), "um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.");
+});
+
+console.log(`
+enviarPedidoFabrica: ${n} grupos ok`);
