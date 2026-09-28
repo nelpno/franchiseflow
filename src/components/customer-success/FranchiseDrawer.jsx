@@ -186,7 +186,7 @@ export default function FranchiseDrawer({ task, row, contato, userId, isAdmin = 
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose?.(); }}>
-      <DialogContent aria-describedby={undefined} className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-2xl max-h-[90dvh] overflow-y-auto overscroll-contain">
         {open && (
           <div className="space-y-4">
             <DialogHeader className="space-y-1 text-left">

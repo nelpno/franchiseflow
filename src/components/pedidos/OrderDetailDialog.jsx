@@ -255,7 +255,7 @@ export default function OrderDetailDialog({
   return (
     <>
       <Dialog open={!!order} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-2xl w-[95vw] max-h-[90dvh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta">
               <MaterialIcon icon="receipt_long" size={20} className="text-brand" />

@@ -1028,7 +1028,7 @@ export default function Franchises() {
             if (!open && !isSavingFiscal) setEditingFiscal(null);
           }}
         >
-          <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+          <DialogContent className="max-w-2xl max-h-[92dvh] overflow-y-auto overscroll-contain p-0">
             {editingFiscal && (() => {
               const f = editingFiscal.franchise;
               const c = editingFiscal.config;

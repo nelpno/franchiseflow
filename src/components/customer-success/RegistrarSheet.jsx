@@ -100,7 +100,7 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="max-h-[92vh] overflow-y-auto sm:max-w-lg sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-8 sm:rounded-2xl"
+        className="max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-w-lg sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-8 sm:rounded-2xl"
       >
         <SheetHeader className="mb-4">
           <SheetTitle className="font-plus-jakarta text-lg font-bold text-ink">

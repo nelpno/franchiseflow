@@ -977,7 +977,7 @@ export default function AsaasSetupPanel() {
         open={!!editingFiscal}
         onOpenChange={(open) => { if (!open && !isSavingFiscal) setEditingFiscal(null); }}
       >
-        <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+        <DialogContent className="sm:max-w-2xl max-h-[92dvh] overflow-y-auto overscroll-contain p-0">
           {editingFiscal && (() => {
             const f = editingFiscal.franchise;
             const c = editingFiscal.config;

@@ -152,7 +152,7 @@ export default function FaturamentoDiaSheet({ open, onOpenChange, dados, mostrar
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="max-h-[90vh] overflow-y-auto rounded-t-2xl p-5 sm:bottom-8 sm:left-1/2 sm:right-auto sm:w-full sm:max-w-2xl sm:-translate-x-1/2 sm:rounded-2xl sm:p-6"
+        className="max-h-[90dvh] overflow-y-auto overscroll-contain rounded-t-2xl p-5 sm:bottom-8 sm:left-1/2 sm:right-auto sm:w-full sm:max-w-2xl sm:-translate-x-1/2 sm:rounded-2xl sm:p-6"
       >
         <SheetHeader className="pr-8 text-left">
           <SheetTitle className="font-plus-jakarta text-lg font-bold text-ink">

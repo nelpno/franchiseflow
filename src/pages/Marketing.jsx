@@ -408,7 +408,7 @@ function UploadDialog({ open, onClose, franchises, onUploaded, initialMonth }) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MaterialIcon icon="upload" size={20} />

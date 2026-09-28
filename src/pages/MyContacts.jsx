@@ -504,7 +504,7 @@ export default function MyContacts() {
 
       {/* Create Contact Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain">
           <DialogHeader>
             <DialogTitle className="font-plus-jakarta">Novo Cliente</DialogTitle>
           </DialogHeader>

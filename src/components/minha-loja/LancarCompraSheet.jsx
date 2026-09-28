@@ -131,7 +131,7 @@ export default function LancarCompraSheet({
       <SheetContent
         onInteractOutside={(e) => e.preventDefault()}
         side="bottom"
-        className="rounded-t-2xl max-h-[92vh] overflow-y-auto sm:max-w-2xl sm:mx-auto"
+        className="rounded-t-2xl max-h-[92dvh] overflow-y-auto overscroll-contain sm:max-w-2xl sm:mx-auto"
       >
         <SheetHeader className="text-left">
           <SheetTitle className="flex items-center gap-2 font-plus-jakarta">

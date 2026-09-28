@@ -40,7 +40,7 @@ export default function SubscriptionPaymentSheet({ open, onOpenChange, subscript
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto sm:max-w-lg sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-8 sm:rounded-2xl">
+      <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto overscroll-contain sm:max-w-lg sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-8 sm:rounded-2xl">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-lg font-semibold flex items-center gap-2">
             <MaterialIcon icon="workspace_premium" className="text-brand-gold" />

@@ -366,7 +366,7 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
       <Sheet open={!!skipItem} onOpenChange={(open) => !open && setSkipItem(null)}>
         <SheetContent
           side="bottom"
-          className="max-h-[90vh] overflow-y-auto sm:left-1/2 sm:right-auto sm:bottom-8 sm:max-w-lg sm:-translate-x-1/2 sm:rounded-2xl"
+          className="max-h-[90dvh] overflow-y-auto overscroll-contain sm:left-1/2 sm:right-auto sm:bottom-8 sm:max-w-lg sm:-translate-x-1/2 sm:rounded-2xl"
         >
           <SheetHeader>
             <SheetTitle className="font-plus-jakarta">Pular {skipItem ? nomeExibicao(skipItem) : "cliente"}</SheetTitle>
