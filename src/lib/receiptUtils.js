@@ -5,35 +5,67 @@
  */
 import { formatPhone } from "./whatsappUtils.js";
 
-/** Valores reais em `sales.delivery_method` (medido 28/09/2026, 90d): so "delivery"/"retirada",
- * 0 nulos. "pickup" cobre exportacoes antigas (salesExport.js ja tratava os 3). Qualquer outra
- * coisa cai em "retirada" - e o default do proprio formulario (SaleForm.jsx). */
-export function isDeliverySale(deliveryMethod) {
-  return deliveryMethod === "delivery";
+/** string não-vazia após trim, ou null. Usado em TODA leitura de endereço (P3 item 7: campo
+ * salvo só com espaço não pode contar como "tem endereço"). */
+function nonEmptyTrim(value) {
+  if (typeof value !== "string") return null;
+  const t = value.trim();
+  return t ? t : null;
 }
 
-/** "Entrega" ou "Retirada", explicito no cupom (nunca "loja"). */
-export function resolveDeliveryLabel(deliveryMethod) {
-  return isDeliverySale(deliveryMethod) ? "Entrega" : "Retirada";
+/**
+ * Classifica a venda em "delivery" | "retirada" | "unknown". Valores reais em
+ * `sales.delivery_method` (medido 28/09/2026, 90d): só "delivery"/"retirada", 0 nulos —
+ * "pickup" cobre exportações antigas (salesExport.js já tratava os 3). Venda LEGADA sem
+ * delivery_method nenhum (achado do P3, 28/09/2026) NÃO pode virar "retirada" por default —
+ * isso inventava um dado que a venda não tem. Em vez disso, infere pelo sinal que ela TEM:
+ * frete cobrado ou endereço de entrega preenchido → é entrega; sem nenhum dos dois, fica
+ * "unknown" (nem entrega nem retirada — o cupom não mostra selo nenhum nesse caso).
+ */
+export function classifyDeliveryType(sale) {
+  const dm = sale?.delivery_method;
+  if (dm === "delivery") return "delivery";
+  if (dm === "retirada" || dm === "pickup") return "retirada";
+
+  const frete = parseFloat(sale?.delivery_fee) || 0;
+  const enderecoDaVenda = nonEmptyTrim(sale?.customer_address);
+  if (frete > 0 || enderecoDaVenda) return "delivery";
+  return "unknown";
+}
+
+export function isDeliverySale(sale) {
+  return classifyDeliveryType(sale) === "delivery";
+}
+
+/** "Entrega" ou "Retirada", explícito no cupom (nunca "loja"); null quando a venda é legada
+ * demais pra saber (sem delivery_method, sem frete, sem endereço) — nesse caso não imprime
+ * selo nenhum em vez de inventar um. */
+export function resolveDeliveryLabel(sale) {
+  const tipo = classifyDeliveryType(sale);
+  if (tipo === "delivery") return "Entrega";
+  if (tipo === "retirada") return "Retirada";
+  return null;
 }
 
 /**
  * Endereco do cliente para o cupom: a VENDA primeiro (sales.customer_address/
  * customer_neighborhood, que o robo grava desde 28/09 - S4.2), depois o contato "vivo"
  * (contacts.endereco/bairro - cobre venda manual antiga sem o campo). Nunca mistura rua de
- * uma fonte com bairro de outra (evita "Rua X - bairro que nao e dela").
- * Retorna null quando a venda e RETIRADA (o cliente nao precisa de endereco nenhum); para
- * ENTREGA sem endereco nenhum, sinaliza `missing`.
+ * uma fonte com bairro de outra (evita "Rua X - bairro que nao e dela"). Ambas as fontes
+ * passam por trim (P3 item 7): string só com espaço conta como vazia.
+ * Retorna null quando a venda NÃO é entrega (retirada, ou legada sem sinal nenhum — o cliente
+ * não precisa de endereço); quando É entrega sem endereço nenhum, sinaliza `missing`.
  */
 export function resolveReceiptAddress({ sale, contact } = {}) {
-  const deliveryMethod = sale?.delivery_method;
-  if (!isDeliverySale(deliveryMethod)) return null;
+  if (!isDeliverySale(sale)) return null;
 
-  if (sale?.customer_address) {
-    return { address: sale.customer_address, neighborhood: sale.customer_neighborhood || null, missing: false };
+  const enderecoDaVenda = nonEmptyTrim(sale?.customer_address);
+  if (enderecoDaVenda) {
+    return { address: enderecoDaVenda, neighborhood: nonEmptyTrim(sale?.customer_neighborhood), missing: false };
   }
-  if (contact?.endereco) {
-    return { address: contact.endereco, neighborhood: contact.bairro || null, missing: false };
+  const enderecoDoContato = nonEmptyTrim(contact?.endereco);
+  if (enderecoDoContato) {
+    return { address: enderecoDoContato, neighborhood: nonEmptyTrim(contact?.bairro), missing: false };
   }
   return { address: null, neighborhood: null, missing: true };
 }
@@ -43,7 +75,7 @@ export const ENDERECO_NAO_INFORMADO = "ENDEREÇO NÃO INFORMADO";
 
 export function formatReceiptAddressLine({ sale, contact } = {}) {
   const resolved = resolveReceiptAddress({ sale, contact });
-  if (!resolved) return null; // retirada: sem linha de endereco
+  if (!resolved) return null; // retirada (ou legado sem sinal): sem linha de endereco
   if (resolved.missing) return ENDERECO_NAO_INFORMADO;
   return [resolved.address, resolved.neighborhood].filter(Boolean).join(" — ");
 }
@@ -91,13 +123,18 @@ function formatTimePart(createdAt) {
 }
 
 /**
- * WhatsApp da unidade pro rodape do cupom: mesmo numero que o robo usa
- * (franchises.phone_number quase sempre NULL na base - CLAUDE.md - entao o fallback real e
- * franchise_configurations.personal_phone_for_summary, o mesmo padrao do AsaasSetupPanel/
- * PurchaseOrders). Retorna ja formatado ("(14) 99663-7977") ou null.
+ * WhatsApp PÚBLICO da unidade pro rodapé do cupom: SÓ `franchises.phone_number`.
+ * P3 da S13 (28/09/2026, "não publicar"): a versão anterior caía em
+ * `franchise_configurations.personal_phone_for_summary` — esse é o CELULAR PESSOAL do dono,
+ * usado internamente pra receber o resumo de pedidos, não um número de atendimento. Imprimir
+ * ele no cupom do cliente vaza o telefone pessoal do franqueado. NUNCA usar esse campo aqui.
+ * Hoje (28/09/2026, medido por SELECT/count) 0 de 66 unidades ativas têm `phone_number`
+ * preenchido — sem fonte pública confiável, a linha simplesmente não aparece pra ninguém até
+ * a rede cadastrar um número de atendimento de verdade (backlog: telefone de atendimento
+ * público em `franchises.phone_number`).
  */
-export function resolveUnitWhatsApp(franchise, config) {
-  const raw = franchise?.phone_number || config?.personal_phone_for_summary || "";
+export function resolveUnitWhatsApp(franchise) {
+  const raw = franchise?.phone_number || "";
   if (!raw) return null;
   const formatted = formatPhone(raw);
   return formatted || null;
