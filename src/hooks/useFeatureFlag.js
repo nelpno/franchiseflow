@@ -21,9 +21,12 @@ import { isFeatureOn } from '@/lib/featureFlags';
  *
  *   const { value, isLoading } = useFeatureFlagState(FEATURE_KEYS.UI_V2);
  */
-export function useFeatureFlagState(key) {
+// `franchiseIdExplicito` (S17 P3, opcional): tela que mostra OUTRA unidade que não a do
+// contexto (admin em Financeiro › Por unidade) passa o evolution_instance_id exibido. Sem ele,
+// vale a unidade selecionada, como sempre. Entra na queryKey (cache por unidade).
+export function useFeatureFlagState(key, franchiseIdExplicito) {
   const { selectedFranchise } = useAuth();
-  const franchiseId = selectedFranchise?.evolution_instance_id;
+  const franchiseId = franchiseIdExplicito || selectedFranchise?.evolution_instance_id;
   const queryClient = useQueryClient();
   const queryKey = ['feature-flags', franchiseId];
 
@@ -61,6 +64,6 @@ export function useFeatureFlagState(key) {
  *
  *   const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
  */
-export function useFeatureFlag(key) {
-  return useFeatureFlagState(key).value;
+export function useFeatureFlag(key, franchiseIdExplicito) {
+  return useFeatureFlagState(key, franchiseIdExplicito).value;
 }

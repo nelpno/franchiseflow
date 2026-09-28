@@ -815,7 +815,8 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
   // S17 (28/09/2026): tela nova do Resultado e PDF novo SÓ com a chave ui_v2. Desligada =
   // tudo abaixo que depende de uiV2 não roda, e a tela é a de sempre.
-  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  // Chave da unidade EXIBIDA (P3: no admin, Financeiro › Por unidade, a do contexto é outra).
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2, franchiseId);
   // Pedidos à fábrica para o aviso "compra da fábrica ainda não lançada" (S17.2). null = não
   // carregou: o aviso some em vez de afirmar algo sem dado. Poucas linhas por unidade.
   const [purchaseOrders, setPurchaseOrders] = useState(null);
