@@ -4,6 +4,9 @@ import { Franchise } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { safeHref } from "@/lib/safeHref";
+import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { listarFranquias } from "@/lib/franchisesCache";
 import { format, differenceInDays, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
@@ -226,6 +229,14 @@ function isNewFile(createdAt) {
 
 function getFilePublicUrl(filePath) {
   return filePath || null;
+}
+
+// "yyyy-MM" em America/Sao_Paulo — nunca o fuso do aparelho. O franqueado pode estar
+// viajando (ou o QA testando com o relógio do celular errado); o corte de mês da arte em
+// destaque tem de bater com o que o resto do app considera "mês atual" (mesma regra do
+// banco: (now() at time zone 'America/Sao_Paulo')::date).
+function mesAtualBR(agora = new Date()) {
+  return agora.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 7);
 }
 
 function generateMonthOptions() {
@@ -692,7 +703,7 @@ function ArteDestaque({ file }) {
   const isVideo = fileType === "video";
   const isDrive = fileType === "link";
   const ytThumbnail = isVideo ? getYouTubeThumbnail(file.file_path) : null;
-  const isCurrentMonth = file.month === format(new Date(), "yyyy-MM");
+  const isCurrentMonth = file.month === mesAtualBR();
 
   const handleOpen = () => {
     if (publicUrl) window.open(publicUrl, "_blank");
@@ -717,7 +728,10 @@ function ArteDestaque({ file }) {
           aria-label={`Abrir ${file.title}`}
         >
           {isImage && publicUrl ? (
-            <img src={publicUrl} alt={file.title} className="h-full w-full object-cover" loading="lazy" />
+            // object-contain (não -cover): arte quadrada (posts) e vertical 9:16 (stories)
+            // não podem sair cortada — o fundo neutro (bg-surface-2 do botão pai) faz a
+            // moldura quando a proporção não preenche a caixa.
+            <img src={publicUrl} alt={file.title} className="h-full w-full object-contain p-3" loading="lazy" />
           ) : isVideo && ytThumbnail ? (
             <div className="relative h-full w-full">
               <img src={ytThumbnail} alt={file.title} className="h-full w-full object-cover" loading="lazy" />
@@ -750,8 +764,8 @@ function ArteDestaque({ file }) {
               <MaterialIcon icon={isVideo ? "play_circle" : isDrive ? "open_in_new" : "download"} size={14} className="mr-1.5" />
               {isVideo ? "Assistir" : isDrive ? "Abrir" : "Baixar"}
             </Button>
-            <Button size="sm" variant="outline" onClick={handleShare} className="text-ok hover:bg-ok-soft hover:text-ok-ink">
-              <MaterialIcon icon="share" size={14} className="mr-1.5" />
+            <Button size="sm" variant="outline" onClick={handleShare} className="text-ok-ink hover:bg-ok-soft">
+              <MaterialIcon icon="share" size={14} className="mr-1.5 text-ok" />
               Compartilhar
             </Button>
             {file.description && (
@@ -987,6 +1001,17 @@ export default function Marketing() {
 
   const [files, setFiles] = useState([]);
   const [franchises, setFranchises] = useState([]);
+  // Lista de franquias para o FRANQUEADO (resolveActiveFranchise) — `franchises` acima só é
+  // carregada para admin. Cache compartilhado (franchisesCache): não duplica a busca que o
+  // Layout já faz.
+  const [franchiseList, setFranchiseList] = useState([]);
+  useEffect(() => {
+    let ativo = true;
+    listarFranquias()
+      .then((lista) => { if (ativo) setFranchiseList(lista); })
+      .catch(() => {}); // sem lista, a régua de baixo trata como "ainda não sei" (fail-safe)
+    return () => { ativo = false; };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   // Falha específica do directList (marketing_files): PostagensDoMesCard precisa saber pra
@@ -1068,19 +1093,21 @@ export default function Marketing() {
   // Arte em destaque (franqueado, S19.1): a do mês atual, senão a mais recente que
   // ela pode ver — independente dos filtros da biblioteca (busca, mês, tipo…).
   // A lista de arquivos já vem ordenada por created_at desc (directList).
-  const arteVisivel = (f) => {
-    const myFranchiseIds = user?.managed_franchise_ids || [];
-    const activeEvoId = selectedFranchise?.evolution_instance_id;
-    if (!f.franchise_id) return true;
-    return activeEvoId ? f.franchise_id === activeEvoId : myFranchiseIds.includes(f.franchise_id);
-  };
-  const arteDestaque = isAdmin
-    ? null
-    : (() => {
-        const mesAtual = format(new Date(), "yyyy-MM");
-        const visiveis = files.filter(arteVisivel);
-        return visiveis.find((f) => f.month === mesAtual) || visiveis[0] || null;
-      })();
+  const availableFranchises = getAvailableFranchises(franchiseList, user);
+  // Mesma régua do bug Araras×Limeira (franchiseUtils.js): com 2+ unidades, NUNCA cair
+  // num "qualquer uma de managed_franchise_ids" enquanto o seletor do topo não resolveu —
+  // isso mostrava a arte de uma unidade que não é a aberta na tela. Com 1 unidade só,
+  // resolveActiveFranchise já resolve sozinho (sem depender do seletor carregar).
+  const activeFranchise = resolveActiveFranchise(franchiseList, user, selectedFranchise);
+  const arteDestaque =
+    isAdmin || (availableFranchises.length > 1 && !activeFranchise)
+      ? null
+      : (() => {
+          const activeEvoId = activeFranchise?.evolution_instance_id || null;
+          const visiveis = files.filter((f) => !f.franchise_id || f.franchise_id === activeEvoId);
+          const mesAtual = mesAtualBR();
+          return visiveis.find((f) => f.month === mesAtual) || visiveis[0] || null;
+        })();
 
   // Extract unique campaigns from data
   const availableCampaigns = [...new Set(files.map((f) => f.campaign).filter(Boolean))].sort();
@@ -1175,6 +1202,9 @@ export default function Marketing() {
   };
 
   const isAdminOuManager = isAdmin || user?.role === "manager";
+  // null quando WHATSAPP_MAXI não está cadastrado (contatoMaxi.js) — o empty state do
+  // franqueado trata isso escondendo o botão em vez de mostrar um link morto.
+  const linkAjudaMaxi = linkWhatsAppMaxi("Olá! Ainda não recebi material de marketing para a minha unidade. Pode me ajudar?");
 
   return (
     <div className={isAdminOuManager ? PAGINA : "p-4 md:p-8 max-w-7xl mx-auto space-y-6 bg-surface"}>
@@ -1410,10 +1440,9 @@ export default function Marketing() {
               ? { rotulo: "Limpar filtros", onClick: clearFilters }
               : isAdmin
               ? { rotulo: "Novo material", onClick: () => abrirUpload() }
-              : {
-                  rotulo: "Falar com a Maxi",
-                  href: linkWhatsAppMaxi("Olá! Ainda não recebi material de marketing para a minha unidade. Pode me ajudar?"),
-                }
+              : // Sem WHATSAPP_MAXI cadastrado, linkWhatsAppMaxi devolve null — nesse caso o
+                // botão SOME (em vez de virar um link morto tipo href="#")
+                linkAjudaMaxi && { rotulo: "Falar com a Maxi", href: safeHref(linkAjudaMaxi) }
           }
           className="py-20"
         />
