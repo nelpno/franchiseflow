@@ -10,6 +10,7 @@ import ExportButtons from "@/components/shared/ExportButtons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL, formatBRLCompactResultado } from "@/lib/formatters";
 import { getCategoryMeta } from "@/lib/expenseCategories";
+import { buildProductsExportRows, productsExportColumns, produtosComPercentual } from "@/lib/productsExport";
 import { CARTAO, H2, TOM_ATENCAO, BTN_SECUNDARIO, BTN_PRIMARIO } from "@/components/shared/adminUi";
 
 const LBL = "text-xs font-bold uppercase tracking-wide text-ink-3";
@@ -140,10 +141,16 @@ function DeOndeVeio({ modelo }) {
         {mes.vendas > 0 && (
           <div className="px-4 py-3 space-y-1.5">
             {temRobo && (
-              <div className="flex justify-between text-xs text-ink-2">
-                <span>Pelo robô ({mes.porOrigem.robo.n}) · lançadas por você ({mes.porOrigem.manual.n})</span>
-                <span className="tabular-nums">{formatBRL(mes.porOrigem.robo.valor)} · {formatBRL(mes.porOrigem.manual.valor)}</span>
-              </div>
+              <>
+                <div className="flex justify-between gap-2 text-xs text-ink-2">
+                  <span>Pelo robô · {mes.porOrigem.robo.n} venda{mes.porOrigem.robo.n === 1 ? "" : "s"}</span>
+                  <span className="tabular-nums">{formatBRL(mes.porOrigem.robo.valor)}</span>
+                </div>
+                <div className="flex justify-between gap-2 text-xs text-ink-2">
+                  <span>Lançadas por você · {mes.porOrigem.manual.n}</span>
+                  <span className="tabular-nums">{formatBRL(mes.porOrigem.manual.valor)}</span>
+                </div>
+              </>
             )}
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-2">
               {mes.porPagamento.slice(0, 4).map((p) => (
@@ -184,8 +191,9 @@ function ParaOndeFoi({ modelo }) {
 }
 
 // --------------------------------------------------------------- Mais vendidos
-function MaisVendidos({ modelo }) {
+function MaisVendidos({ modelo, monthLabel }) {
   const top = modelo.maisVendidos;
+  const [todos, setTodos] = useState(false);
   return (
     <section className="flex flex-col gap-2.5" aria-label="Mais vendidos">
       <div className="flex items-baseline justify-between">
@@ -201,8 +209,64 @@ function MaisVendidos({ modelo }) {
             <span className={`${VAL} text-sm`}>{p.quantity.toLocaleString("pt-BR")}</span>
           </div>
         ))}
+        {modelo.produtos.length > 0 && (
+          <button type="button" onClick={() => setTodos(true)} className="flex min-h-[44px] w-full items-center justify-between px-4 text-sm font-semibold text-brand-dark hover:bg-surface">
+            Ver todos os produtos ({modelo.produtos.length})
+            <MaterialIcon icon="arrow_forward" size={16} aria-hidden="true" />
+          </button>
+        )}
       </div>
+      <VendasPorProduto open={todos} onOpenChange={setTodos} produtos={modelo.produtos} chave={modelo.chave} monthLabel={monthLabel} />
     </section>
+  );
+}
+
+// --------------------------------------------------------------- Vendas por produto (todos)
+// Pedido de Bragança (28/09/2026): vendas por produto no período = o mês do Resultado.
+function VendasPorProduto({ open, onOpenChange, produtos, chave, monthLabel }) {
+  const lista = produtosComPercentual(produtos);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1rem)] flex-col p-4 sm:w-full sm:max-w-lg sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="font-plus-jakarta">Vendas por produto</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className={CAP}>
+            <span className="capitalize">{monthLabel}</span> · valor = quantidade × preço do item (sem frete e desconto)
+          </p>
+          <ExportButtons
+            data={buildProductsExportRows(produtos, { includeTotalsRow: true })}
+            columns={productsExportColumns(produtos)}
+            filename={`vendas-por-produto-${chave}`}
+            title={`Vendas por produto · ${monthLabel}`}
+            evento="planilha_produtos"
+          />
+        </div>
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-ink-3">
+                <th className="px-1 py-2 font-semibold">Produto</th>
+                <th className="px-1 py-2 text-right font-semibold">Qtd</th>
+                <th className="px-1 py-2 text-right font-semibold">Valor</th>
+                <th className="px-1 py-2 text-right font-semibold">%</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-line">
+              {lista.map((p) => (
+                <tr key={p.name}>
+                  <td className="px-1 py-2 text-ink">{p.name}</td>
+                  <td className="px-1 py-2 text-right tabular-nums text-ink">{p.quantity.toLocaleString("pt-BR")}</td>
+                  <td className="whitespace-nowrap px-1 py-2 text-right tabular-nums text-ink">{formatBRL(p.revenue)}</td>
+                  <td className="px-1 py-2 text-right tabular-nums text-ink-3">{p.pct.toFixed(0)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -324,7 +388,7 @@ function GastosDoMes({ despesas, onEditar, onExcluir, onRegistrarGasto, exportDe
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-ink">{exp.description || meta.label}</div>
                 <div className={CAP}>
-                  {exp.expense_date ? format(parseISO(exp.expense_date), "dd/MM") : "—"} · {meta.label} · {auto ? "entra sozinho" : "você lançou"}
+                  {exp.expense_date ? format(parseISO(exp.expense_date), "dd/MM") : "—"}<span className="hidden md:inline"> · {meta.label}</span> · {auto ? "entra sozinho" : "você lançou"}
                 </div>
               </div>
               <span className={`${VAL} shrink-0 text-sm`}>{formatBRL(exp.amount)}</span>
@@ -476,20 +540,20 @@ export default function ResultadoV2({
       {topo}
       <AvisoFabrica aviso={modelo.avisoFabrica} />
 
-      <div className="grid gap-6 md:grid-cols-3 md:gap-5">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-5 [&>*]:min-w-0">
         <div className="flex flex-col gap-4">
           <DeOndeVeio modelo={modelo} />
           <div className="hidden md:block">{estoqueCard}</div>
         </div>
         <ParaOndeFoi modelo={modelo} />
-        <MaisVendidos modelo={modelo} />
+        <MaisVendidos modelo={modelo} monthLabel={monthLabel} />
       </div>
 
       <OQueMudou modelo={modelo} mostrarDica={mostrarDicaClientes} />
 
       <div className="md:hidden">{estoqueCard}</div>
 
-      <div className="grid gap-6 md:grid-cols-2 md:gap-5">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-5 [&>*]:min-w-0">
         <SobrouPorMes modelo={modelo} />
         <GastosDoMes
           despesas={despesas}

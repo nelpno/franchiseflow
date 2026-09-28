@@ -136,6 +136,8 @@ export function resumirMes(d, { sales = [], saleItems = [], expenses = [], ateDi
     taxasCartao: pnl.taxasCartao,
     lucroCaixa: pnl.lucroCaixa,
     maisVendidos: getTopProducts(mItems, 5),
+    // Todos os produtos do mês, pela mesma regra do card (Bragança, 28/09: vendas por produto).
+    produtos: getTopProducts(mItems, Infinity),
     faturamentoAteDia: trecho ? trecho.faturamento : null,
     // S17 (tela nova)
     vendasBrutas: pnl.vendas,
@@ -344,6 +346,7 @@ export function montarResultadoMes({
     deOndeVeio,
     paraOndeFoi: mes.paraOndeFoi,
     maisVendidos: mes.maisVendidos,
+    produtos: mes.produtos,
     oQueMudou,
     porMes,
     ano,

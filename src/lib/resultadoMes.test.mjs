@@ -149,3 +149,34 @@ test("Anúncio no PDF só com o robô com base (has_bot_data)", () => {
   assert.equal(anuncioComBase(undefined, { has_bot_data: true }), undefined);
   assert.equal(anuncioComBase(null, { has_bot_data: true }), null);
 });
+
+test("Vendas por produto (Bragança): todos os produtos do mês, por quantidade, valor = qtd × preço", async () => {
+  const { buildProductsExportRows, productsExportColumns } = await import("./productsExport.js");
+  // setembro inteiro: Lasanha 6 × 25, Sofioli 4 × 20, Nhoque 1 × 250
+  assert.deepEqual(setembro.produtos.map((p) => [p.name, p.quantity, p.revenue]), [
+    ["Lasanha", 6, 150], ["Sofioli", 4, 80], ["Nhoque", 1, 250],
+  ]);
+  // o card mostra os 5 primeiros da MESMA lista
+  assert.deepEqual(setembro.maisVendidos, setembro.produtos.slice(0, 5));
+  const rows = buildProductsExportRows(setembro.produtos, { includeTotalsRow: true });
+  assert.deepEqual(rows[0], { produto: "Lasanha", quantidade: 6, valor: 150, pct: 31.25 });
+  assert.deepEqual(rows[rows.length - 1], { produto: "TOTAL", quantidade: 11, valor: 480, pct: 100 });
+  perto(rows.slice(0, -1).reduce((s, r) => s + r.pct, 0), 100);
+  const cols = productsExportColumns(setembro.produtos);
+  assert.deepEqual(cols.map((c) => c.header), ["Produto", "Quantidade", "Valor vendido (R$)", "% do total"]);
+  assert.equal(cols[1].type, "int");
+  assert.equal(productsExportColumns([{ quantity: 1.5 }])[1].type, "brl");
+  // nome que começa com "=" não vira fórmula
+  assert.ok(!buildProductsExportRows([{ name: "=HYPERLINK()", quantity: 1, revenue: 1 }])[0].produto.startsWith("="));
+});
+
+test("Planilha de produtos abre com número de verdade (xlsx)", async () => {
+  const XLSX = await import("xlsx");
+  const { buildExportWorksheet } = await import("./exportSheet.js");
+  const { buildProductsExportRows, productsExportColumns } = await import("./productsExport.js");
+  const ws = buildExportWorksheet(XLSX, buildProductsExportRows(setembro.produtos), productsExportColumns(setembro.produtos));
+  assert.equal(ws.B2.t, "n");
+  assert.equal(ws.B2.v, 6);
+  assert.equal(ws.C2.v, 150);
+  assert.equal(ws.D2.v, 31.25);
+});
