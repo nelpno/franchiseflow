@@ -321,17 +321,27 @@ export default function TabLancar({
   };
 
   // Toggle payment confirmation
-  const handleToggleConfirmation = async (e, sale) => {
+  const handleToggleConfirmation = (e, sale) => {
     e.stopPropagation();
+    return alterarRecebimento(sale, !sale.payment_confirmed);
+  };
+
+  // S12.6: "Recebi" ganha "Desfazer" no aviso (chave ligada) — o toque errado volta na hora,
+  // sem ter de achar a venda (e o mês dela) para "Voltar para a receber". O anúncio já recebeu
+  // a compra no "Recebi"; desfazer não a retira (igual ao "Voltar para a receber").
+  const alterarRecebimento = async (sale, newValue) => {
     // Dois toques no mesmo quadro passam antes do disabled pintar: a ref segura o 2º.
     if (togglingRef.current.has(sale.id)) return;
     togglingRef.current.add(sale.id);
-    const newValue = !sale.payment_confirmed;
 
     setTogglingIds((prev) => new Set(prev).add(sale.id));
     try {
       await Sale.update(sale.id, patchRecebimento(newValue));
-      if (uiV2) toast.success(newValue ? "Recebido!" : "Voltou para a receber.");
+      if (uiV2 && newValue) {
+        toast.success("Recebido!", {
+          action: { label: "Desfazer", onClick: () => alterarRecebimento(sale, false) },
+        });
+      } else if (uiV2) toast.success("Voltou para a receber.");
       else toast.success(newValue ? "Pagamento confirmado!" : "Confirmação removida.");
       // Dispara CAPI Purchase apenas na flip false -> true
       if (newValue) fireCapiOnConfirm(sale.id);
@@ -1258,6 +1268,8 @@ export default function TabLancar({
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 bg-[#fffbeb]">
             <h2 className="font-plus-jakarta font-bold text-ink">
               A receber · <span className="font-mono-numbers">{aReceber.length}</span>
+              {/* S12.6: a caixa soma TODOS os meses carregados; o chip e o resumo abaixo, só o período */}
+              <span className="ml-1.5 text-xs font-medium text-ink-2">de todos os meses</span>
             </h2>
             <span className="font-bold text-ink font-mono-numbers">{formatCurrency(aReceberTotal)}</span>
             <p className="w-full text-xs text-ink-2">
