@@ -30,6 +30,17 @@ export function normalizePhone(phone) {
  * 11 digits and no 9 there (or 12+ digits), it is not Brazilian. No country code
  * starts with 0: "0..." is a Brazilian number typed with the carrier zero.
  */
+/**
+ * True when the phone can reach the client: Brazilian with DDD (10-11 digits)
+ * or a foreign number with country code. A sale without it never ties back to
+ * the ad click, so Meta can't learn from it (28/09/2026).
+ */
+export function isValidPhone(phone) {
+  const n = normalizePhone(phone ? String(phone) : "");
+  if (!n || /^0/.test(n)) return false;
+  return n.length === 10 || n.length === 11 || isInternationalPhone(n);
+}
+
 export function isInternationalPhone(phone) {
   if (!phone) return false;
   const digits = String(phone).replace(/\D/g, "");

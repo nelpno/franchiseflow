@@ -18,7 +18,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { parseDeliveryFeeOptions } from "@/lib/deliveryFeeRules";
-import { normalizePhone, formatPhone } from "@/lib/whatsappUtils";
+import { normalizePhone, formatPhone, isValidPhone } from "@/lib/whatsappUtils";
 import { safeErrorMessage, ehErroDeRegra } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -406,6 +406,12 @@ export default function SaleForm({
   const [inlineContactName, setInlineContactName] = useState("");
   const [inlineContactPhone, setInlineContactPhone] = useState("");
   const [isCreatingContact, setIsCreatingContact] = useState(false);
+  // Telefone obrigatorio na venda nova: sem ele a venda nao se liga ao clique no anuncio
+  // e o Meta nao aprende com ela. Em 30 dias, 45 de ~60 unidades lancaram venda manual sem
+  // telefone (Itaquera 93%, Vila Maria 67%). contactPhone = telefone do contato escolhido
+  // (undefined = ainda nao sabemos); missingPhone = digitado quando o contato nao tem. 28/09/2026.
+  const [contactPhone, setContactPhone] = useState(undefined);
+  const [missingPhone, setMissingPhone] = useState("");
 
   // Payment
   const [paymentMethod, setPaymentMethod] = useState("pix");
@@ -506,7 +512,10 @@ export default function SaleForm({
     if (draft.contactId) {
       setContactId(draft.contactId);
       const c = contacts.find((ct) => ct.id === draft.contactId);
-      if (c) setContactSearch(c.nome || formatPhone(c.telefone));
+      if (c) {
+        setContactSearch(c.nome || formatPhone(c.telefone));
+        setContactPhone(c.telefone || null);
+      }
     }
     if (draft.contactSearch) setContactSearch(draft.contactSearch);
     if (draft.paymentMethod) setPaymentMethod(draft.paymentMethod);
@@ -531,6 +540,8 @@ export default function SaleForm({
           setItems([{ inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 }]);
           setContactId(null);
           setContactSearch("");
+          setContactPhone(undefined);
+          setMissingPhone("");
           setPaymentMethod("pix");
           setCardFeePercent(0);
           setFeePassedToCustomer(franchiseChargesFee);
@@ -564,6 +575,7 @@ export default function SaleForm({
     if (match) {
       setContactId(match.id);
       setContactSearch(match.nome || formatPhone(match.telefone));
+      setContactPhone(match.telefone || null);
       if (match.endereco) setCustomerAddress((atual) => atual.trim() || match.endereco);
       if (match.bairro) setCustomerNeighborhood((atual) => atual.trim() || match.bairro);
     }
@@ -683,6 +695,8 @@ export default function SaleForm({
   const handleContactSelect = (contact) => {
     setContactId(contact.id);
     setContactSearch(contact.nome || formatPhone(contact.telefone));
+    setContactPhone(contact.telefone || null);
+    setMissingPhone("");
     setIsNewContact(false);
     setNewContactName("");
     // Pre-enche o endereco pelo contato, mas NUNCA por cima do que ja foi digitado:
@@ -696,6 +710,8 @@ export default function SaleForm({
     setContactSearch(val);
     if (contactId) {
       setContactId(null); // user is typing again, clear selection
+      setContactPhone(undefined);
+      setMissingPhone("");
     }
     // isNewContact detection now simplified — "Novo contato" button is always in dropdown
     setIsNewContact(false);
@@ -717,8 +733,8 @@ export default function SaleForm({
 
   // Create contact inline and select it
   const handleInlineContactCreate = async () => {
-    if (!inlineContactName.trim() && !inlineContactPhone.trim()) {
-      toast.error("Preencha pelo menos nome ou telefone.");
+    if (!isValidPhone(inlineContactPhone)) {
+      toast.error("Informe o telefone do cliente com DDD.");
       return;
     }
     setIsCreatingContact(true);
@@ -735,6 +751,8 @@ export default function SaleForm({
       });
       setContactId(newContact.id);
       setContactSearch(inlineContactName.trim() || formatPhone(phone));
+      setContactPhone(phone);
+      setMissingPhone("");
       setIsNewContact(false);
       setNewContactName("");
       setShowInlineCreate(false);
@@ -829,12 +847,58 @@ export default function SaleForm({
       }
     }
 
+    // Telefone obrigatorio so na venda NOVA — editar venda antiga continua livre.
+    // Quando o telefone digitado ja e de outro contato da franquia (quase sempre o que veio
+    // do WhatsApp/anuncio), a venda vai para ele: e esse contato que liga a compra ao clique.
+    let contatoDoTelefone = null;
+    if (!isEditing) {
+      if (contactId) {
+        let tel = contactPhone;
+        if (tel === undefined) {
+          try {
+            const [c] = await Contact.filter({ id: contactId }, null, 1, { columns: "id, telefone" });
+            tel = c?.telefone || null;
+          } catch {
+            tel = null;
+          }
+          setContactPhone(tel);
+        }
+        if (!isValidPhone(tel)) {
+          if (!isValidPhone(missingPhone)) {
+            toast.error("Esse cliente está sem telefone. Digite o telefone dele para registrar a venda.");
+            return;
+          }
+          const normalized = normalizePhone(missingPhone);
+          try {
+            await Contact.update(contactId, { telefone: normalized });
+            setContactPhone(normalized);
+          } catch (err) {
+            const [outro] = await Contact.search(normalized, {
+              columns: "id, telefone",
+              searchColumns: ["telefone"],
+              criteria: franchiseId ? { franchise_id: franchiseId } : undefined,
+              limit: 1,
+            }).catch(() => []);
+            if (!outro) {
+              toast.error(safeErrorMessage(err, "Não foi possível salvar o telefone do cliente."));
+              return;
+            }
+            contatoDoTelefone = outro.id;
+          }
+        }
+      } else if (!isValidPhone(contactSearch)) {
+        handleOpenInlineCreate();
+        toast.error("Informe o telefone do cliente para registrar a venda.");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     // Resolve contact before retry loop (avoid creating duplicates)
     let resolvedContactId;
     try {
-      resolvedContactId = await resolveContactId();
+      resolvedContactId = contatoDoTelefone || (await resolveContactId());
     } catch (err) {
       console.error("Erro ao resolver contato:", err);
       toast.error("Erro ao processar contato. Tente novamente.");
@@ -1065,6 +1129,26 @@ export default function SaleForm({
           franchiseId={franchiseId}
           className="bg-surface-line/50"
         />
+        {!isEditing && !contactId && !showInlineCreate && (
+          <p className="text-xs text-ink-3">
+            Digite o telefone: quem já conversou no WhatsApp aparece na hora.
+          </p>
+        )}
+        {!isEditing && contactId && contactPhone !== undefined && !isValidPhone(contactPhone) && (
+          <div className="flex items-center gap-2 p-3 bg-[#fffbeb] rounded-xl border border-brand-gold/30">
+            <MaterialIcon icon="call" size={18} className="text-brand-gold shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#92400e] mb-1">Este cliente está sem telefone. Digite para registrar a venda:</p>
+              <Input
+                value={missingPhone}
+                onChange={(e) => setMissingPhone(e.target.value)}
+                placeholder="Telefone com DDD"
+                inputMode="tel"
+                className="bg-white h-9"
+              />
+            </div>
+          </div>
+        )}
         {isNewContact && !showInlineCreate && (
           <div className="flex items-center gap-2 p-3 bg-[#fffbeb] rounded-xl border border-brand-gold/30">
             <MaterialIcon icon="person_add" size={18} className="text-brand-gold shrink-0" />
@@ -1096,7 +1180,8 @@ export default function SaleForm({
               <Input
                 value={inlineContactPhone}
                 onChange={(e) => setInlineContactPhone(e.target.value)}
-                placeholder="Telefone (opcional)"
+                placeholder="Telefone com DDD"
+                inputMode="tel"
                 className="bg-white h-9"
               />
             </div>

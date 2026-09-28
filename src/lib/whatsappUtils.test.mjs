@@ -2,7 +2,7 @@
 // Rodar: node src/lib/whatsappUtils.test.mjs
 // Casos tirados da base real (contacts, 16/09/2026).
 import assert from "node:assert";
-import { normalizePhone, formatPhone, getWhatsAppLink, isInternationalPhone } from "./whatsappUtils.js";
+import { normalizePhone, formatPhone, getWhatsAppLink, isInternationalPhone, isValidPhone } from "./whatsappUtils.js";
 
 // ── Caso Tatuapé (Izaias): EUA gravado pelo robô aparecia como "(13) 21438-4841" ──
 assert.equal(formatPhone("13214384841"), "+13214384841");
@@ -49,4 +49,14 @@ assert.equal(getWhatsAppLink("13214384841", text), "https://wa.me/13214384841?te
 assert.equal(getWhatsAppLink("11986509681", ""), getWhatsAppLink("11986509681"));
 assert.equal(getWhatsAppLink("13214384841", null), getWhatsAppLink("13214384841"));
 assert.equal(getWhatsAppLink(null, text), "#");
-console.log("whatsappUtils: ok (30 testes)");
+
+// ── Telefone obrigatório na venda manual (28/09/2026) ──
+assert.equal(isValidPhone("(11) 98650-9681"), true);
+assert.equal(isValidPhone("1632345678"), true); // fixo com DDD
+assert.equal(isValidPhone("+55 16 99718-5628"), true);
+assert.equal(isValidPhone("13214384841"), true); // EUA
+assert.equal(isValidPhone("98650-9681"), false); // sem DDD
+assert.equal(isValidPhone("Maria"), false);
+assert.equal(isValidPhone(""), false);
+assert.equal(isValidPhone(null), false);
+console.log("whatsappUtils: ok (38 testes)");
