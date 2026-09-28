@@ -622,7 +622,7 @@ export default function PurchaseOrderForm({
                     <h4 className="font-medium text-ink truncate">
                       {item.product_name}
                     </h4>
-                    <p className="text-xs text-ink-2 truncate">
+                    <p className={`text-xs text-ink-2 ${uiV2 ? "" : "truncate"}`}>
                       Custo: {formatBRL(item.cost_price)} · Estoque: {item.quantity ?? 0}
                       {uiV2 ? ` ${unidadeDeMedida(item)}` : ""}
                       {aCaminhoDe(item) > 0 ? ` · ${aCaminhoDe(item)} a caminho` : ""}
