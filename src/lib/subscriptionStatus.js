@@ -38,10 +38,44 @@ export const SITUACAO_LABEL = {
 
 const PAGOS = new Set(["PAID", "RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
 
+export const TZ_BRASIL = "America/Sao_Paulo";
+
+/**
+ * P3 (28/09/2026, achado 3): `diasDesde` fazia `hoje.getFullYear()/getMonth()/getDate()`
+ * direto no instante atual — isso le o fuso do PROCESSO (SO/navegador), nao de Brasilia.
+ * Rodando com TZ=UTC (build/CI, ou celular com fuso trocado) a "data de hoje" podia sair
+ * 1 dia adiantada/atrasada perto da meia-noite BRT, fazendo o paywall bloquear 1 dia cedo
+ * (ou tarde) demais. `dataCivilBRT` fixa o fuso via Intl, nunca o do processo.
+ */
+export function dataCivilBRT(instante = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ_BRASIL,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instante);
+  const mapa = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+  return new Date(Number(mapa.year), Number(mapa.month) - 1, Number(mapa.day));
+}
+
+/** Quantos ms faltam para a proxima meia-noite em America/Sao_Paulo, a partir de `instante`. */
+export function msAteProximaMeiaNoiteBRT(instante = new Date()) {
+  const partes = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TZ_BRASIL,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(instante);
+  const mapa = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+  const decorridoMs = ((Number(mapa.hour) * 3600 + Number(mapa.minute) * 60 + Number(mapa.second)) * 1000);
+  return 24 * 3600 * 1000 - decorridoMs;
+}
+
 function diasDesde(dateOnly, hoje) {
   const d = parseDateOnly(dateOnly);
   if (!d || Number.isNaN(d.getTime())) return null;
-  const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  const base = dataCivilBRT(hoje);
   const alvo = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   return Math.round((base - alvo) / 86400000);
 }

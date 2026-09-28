@@ -9,6 +9,7 @@ import { formatBRL } from "@/lib/formatters";
 import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
 import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
+import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
 
 function cap(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -53,7 +54,12 @@ export default function FinancialObligationsCard({ marketingPayment }) {
   // já vê essas unidades como "Aguardando criar" em Financeiro > Mensalidades; aqui, pra
   // a franqueada, é melhor não mostrar do que mostrar um botão que não leva a nada.
   const showSubscriptionRow = !!subscription?.asaas_subscription_id;
-  const subStatus = subscription?.current_payment_status;
+  // P3 28/09/2026, achado 6: comparar so `current_payment_status === "OVERDUE"` perdia o
+  // caso de PENDING com vencimento no passado (o paywall ja usava classifySubscription
+  // pra isso — aqui nao usava, e a faixa vermelha "Regularize" nunca aparecia nesse caso,
+  // ainda que fosse dia 1-2 de atraso, sem bloqueio nenhum). Mesma regua em toda parte.
+  const subscriptionClass = classifySubscription(subscription);
+  const isVencido = subscriptionClass.situacao === SITUACAO.VENCIDO;
 
   if (!showSubscriptionRow && !showMarketingRow) return null;
 
@@ -74,35 +80,30 @@ export default function FinancialObligationsCard({ marketingPayment }) {
     ? formatBRL(subscription.current_payment_value)
     : "R$ 150,00";
 
-  // A edge function normaliza RECEIVED/CONFIRMED/RECEIVED_IN_CASH -> "PAID" (mapPaymentStatus).
-  // Mantemos os crus como defesa caso algum registro antigo não tenha passado pela normalização.
-  const isPaidStatus =
-    subStatus === "PAID" ||
-    subStatus === "RECEIVED" ||
-    subStatus === "CONFIRMED" ||
-    subStatus === "RECEIVED_IN_CASH";
+  // classifySubscription ja normaliza RECEIVED/CONFIRMED/RECEIVED_IN_CASH -> PAGO.
+  const isPaidStatus = subscriptionClass.situacao === SITUACAO.PAGO;
 
   const subIconName = isPaidStatus
     ? "check_circle"
-    : subStatus === "OVERDUE"
+    : isVencido
     ? "warning"
     : "schedule";
 
   const subIconBg = isPaidStatus
     ? "bg-green-100"
-    : subStatus === "OVERDUE"
+    : isVencido
     ? "bg-red-100"
     : "bg-brand-gold/10";
 
   const subIconColor = isPaidStatus
     ? "text-green-600"
-    : subStatus === "OVERDUE"
+    : isVencido
     ? "text-red-600"
     : "text-brand-gold";
 
   const subSubtitle = isPaidStatus
     ? "Pago"
-    : subStatus === "OVERDUE"
+    : isVencido
     ? "Regularize para evitar bloqueio"
     : subDueDateFormatted
     ? `${subValue} · vence ${subDueDateFormatted}`
@@ -136,7 +137,7 @@ export default function FinancialObligationsCard({ marketingPayment }) {
                 <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                   Pago
                 </span>
-              ) : subStatus === "OVERDUE" ? (
+              ) : isVencido ? (
                 <button
                   onClick={() => setSheetOpen(true)}
                   className="rounded-lg text-xs font-medium px-3 py-1.5 active:scale-95 transition-transform bg-brand text-white"

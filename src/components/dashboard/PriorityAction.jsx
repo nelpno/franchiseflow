@@ -1,11 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
 
 const SCENARIOS = [
   {
     key: "equipe_digital",
-    check: ({ subscription }) =>
-      subscription?.current_payment_status === "OVERDUE",
+    // P3 28/09/2026, achado 6: `current_payment_status === "OVERDUE"` perdia o caso de
+    // PENDING com vencimento no passado (o ASAAS demora a virar o status) — mesma regua
+    // do paywall (classifySubscription), que ja cobre CANCELADA e sem asaas_subscription_id
+    // (essas nunca viram VENCIDO, entao continuam sem cartao aqui).
+    check: ({ subscription }) => classifySubscription(subscription).situacao === SITUACAO.VENCIDO,
     render: () => ({
       icon: "warning",
       title: "Equipe Digital Maxi em atraso",
