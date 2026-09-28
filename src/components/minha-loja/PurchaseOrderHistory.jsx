@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/dateOnly";
-import { resumoRecebido } from "@/lib/conferenciaEntrega";
+import { resumoRecebido, aguardaConferencia } from "@/lib/conferenciaEntrega";
 
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
@@ -130,9 +130,11 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
     }
   };
 
-  const getStatusBadge = (status) => {
-    // S15 (chave ui_v2): 'em_rota' = a fábrica entregou e falta ela conferir (cartão no topo).
-    const config = uiV2 && status === "em_rota"
+  const getStatusBadge = (order) => {
+    const status = order.status;
+    // S15: conferência em curso (em_rota COM awaiting_since) = a fábrica entregou e falta ela
+    // conferir (cartão no topo). Vale mesmo com a chave desligada depois de começar.
+    const config = aguardaConferencia(order)
       ? { ...STATUS_CONFIG.em_rota, label: "Chegou · confira" }
       : STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
     return (
@@ -178,8 +180,9 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
       {orders.map((order) => {
         const isExpanded = expandedOrderId === order.id;
         const items = orderItems[order.id] || [];
-        // S15 (chave ui_v2): pedido conferido com diferença mostra o que chegou.
-        const conferido = uiV2 && order.status === "entregue" ? resumoRecebido(items) : null;
+        // S15: pedido conferido com diferença mostra o que chegou (só existe received_quantity
+        // em pedido que passou pela conferência; os antigos ficam como sempre).
+        const conferido = order.status === "entregue" ? resumoRecebido(items) : null;
         const comDiferenca = !!conferido?.temDiferenca;
 
         return (
@@ -203,7 +206,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                           })
                         : "—"}
                     </span>
-                    {getStatusBadge(order.status)}
+                    {getStatusBadge(order)}
                   </div>
 
                   <div className="flex items-center gap-3 mt-1 flex-wrap">

@@ -22,14 +22,15 @@ const itens = [
 ];
 
 await t("só em_rota espera conferência", () => {
-  assert.equal(aguardaConferencia({ status: "em_rota" }), true);
+  assert.equal(aguardaConferencia({ status: "em_rota", awaiting_since: "2026-09-28T12:00:00Z" }), true);
+  assert.equal(aguardaConferencia({ status: "em_rota" }), false); // em_rota legado: fluxo antigo
   for (const s of ["pendente", "confirmado", "entregue", "cancelado", undefined]) assert.equal(aguardaConferencia({ status: s }), false);
   assert.equal(aguardaConferencia(null), false);
 });
 
-await t("prazo = awaiting_since + 48 h (cai no shipped_at; sem data = null)", () => {
+await t("prazo = awaiting_since + 48 h (sem awaiting_since = null)", () => {
   assert.equal(prazoConferencia({ awaiting_since: "2026-09-28T12:00:00Z" }).toISOString(), "2026-09-30T12:00:00.000Z");
-  assert.equal(prazoConferencia({ shipped_at: "2026-09-28T12:00:00Z" }).toISOString(), "2026-09-30T12:00:00.000Z");
+  assert.equal(prazoConferencia({ shipped_at: "2026-09-28T12:00:00Z" }), null);
   assert.equal(prazoConferencia({}), null);
   assert.equal(prazoConferencia({ awaiting_since: "lixo" }), null);
 });

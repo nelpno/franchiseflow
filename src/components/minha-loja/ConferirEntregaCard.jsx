@@ -13,6 +13,7 @@ import { formatBRL } from "@/lib/formatters";
 import { novoIdDoEnvio } from "@/lib/enviarPedidoFabrica";
 import {
   STATUS_AGUARDA_CONFERENCIA,
+  aguardaConferencia,
   prazoConferencia,
   limitarRecebido,
   montarItensRecebidos,
@@ -261,12 +262,13 @@ export default function ConferirEntregaCard({ franchiseId, refreshKey = 0, onCon
     const { signal } = controller;
     (async () => {
       try {
-        const pedidos = await PurchaseOrder.filter(
+        // Só conferência S15 (com awaiting_since); em_rota legado segue o fluxo antigo.
+        const pedidos = (await PurchaseOrder.filter(
           { franchise_id: franchiseId, status: STATUS_AGUARDA_CONFERENCIA },
           "ordered_at",
           undefined,
           { signal }
-        );
+        )).filter(aguardaConferencia);
         let itens = {};
         if (pedidos.length > 0) {
           const lista = await PurchaseOrderItem.filter({ order_id: pedidos.map((p) => p.id) }, "product_name", undefined, { signal });

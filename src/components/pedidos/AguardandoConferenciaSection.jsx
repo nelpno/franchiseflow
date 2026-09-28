@@ -8,7 +8,7 @@ import { PurchaseOrder } from "@/entities/all";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 import { H2 } from "@/components/shared/adminUi";
-import { STATUS_AGUARDA_CONFERENCIA, prazoConferencia } from "@/lib/conferenciaEntrega";
+import { STATUS_AGUARDA_CONFERENCIA, aguardaConferencia, prazoConferencia } from "@/lib/conferenciaEntrega";
 import { filtrarPorTermo } from "./pedidosHelpers";
 
 const FUSO = "America/Sao_Paulo";
@@ -28,7 +28,8 @@ export default function AguardandoConferenciaSection({ getFranchiseName, onVerIt
     PurchaseOrder.filter(criteria, "ordered_at")
       .then((data) => {
         if (!alive) return;
-        const semTeste = (data || []).filter((o) => !testFranchiseIds?.has(o.franchise_id));
+        // Só conferência S15 (com awaiting_since); em_rota legado não é "esperando a unidade".
+        const semTeste = (data || []).filter((o) => aguardaConferencia(o) && !testFranchiseIds?.has(o.franchise_id));
         setPedidos(filtrarPorTermo(semTeste, searchTerm, getFranchiseName));
       })
       .catch((error) => {

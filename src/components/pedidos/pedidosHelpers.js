@@ -16,7 +16,7 @@ export const COLUNAS_PEDIDO =
 export const STATUS_LABEL = {
   pendente: "Pendente",
   confirmado: "Confirmado",
-  em_rota: "Unidade conferindo", // S15: a fábrica entregou, falta a unidade conferir
+  em_rota: "Em Rota",
   entregue: "Entregue",
   cancelado: "Cancelado",
 };

@@ -35,7 +35,7 @@ import OrderDetailDialog from "@/components/pedidos/OrderDetailDialog";
 import SecaoLote from "@/components/pedidos/SecaoLote";
 import EntreguesSection from "@/components/pedidos/EntreguesSection";
 import AguardandoConferenciaSection from "@/components/pedidos/AguardandoConferenciaSection";
-import { STATUS_AGUARDA_CONFERENCIA } from "@/lib/conferenciaEntrega";
+import { aguardaConferencia } from "@/lib/conferenciaEntrega";
 import {
   filtrarPorTermo,
   ordenarPorEsperaAsc,
@@ -516,8 +516,8 @@ export default function PurchaseOrders() {
       }));
       if (!mountedRef.current) return;
       // S15: unidade com o app novo confere antes (o banco já avisou a unidade).
-      const aConferir = ok.filter((o) => salvos.get(o.id)?.status === STATUS_AGUARDA_CONFERENCIA);
-      const entregues = ok.filter((o) => salvos.get(o.id)?.status !== STATUS_AGUARDA_CONFERENCIA);
+      const aConferir = ok.filter((o) => aguardaConferencia(salvos.get(o.id)));
+      const entregues = ok.filter((o) => !aguardaConferencia(salvos.get(o.id)));
       entregues.forEach((o) => notifyFranchisee(o, "entregue"));
       limparRascunhos(ok.map((o) => o.id));
       if (entregues.length > 0) toast.success(`${entregues.length === 1 ? "1 pedido entregue" : `${entregues.length} pedidos entregues`}. Estoque das unidades atualizado.`);

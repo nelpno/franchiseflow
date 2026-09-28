@@ -18,13 +18,15 @@ export const STATUS_AGUARDA_CONFERENCIA = "em_rota";
 export const HORAS_PARA_CONFERIR = 48;
 export const TIMEOUT_CONFERENCIA_MS = 30000;
 
+// Conferência S15 = em_rota COM awaiting_since (o banco grava ao desviar o "entregue" da
+// fábrica). em_rota sem awaiting_since é o fluxo antigo e não entra aqui.
 export function aguardaConferencia(order) {
-  return order?.status === STATUS_AGUARDA_CONFERENCIA;
+  return order?.status === STATUS_AGUARDA_CONFERENCIA && !!order?.awaiting_since;
 }
 
 /** Até quando ela pode conferir (awaiting_since + 48 h). null sem a data. */
 export function prazoConferencia(order) {
-  const base = order?.awaiting_since || order?.shipped_at;
+  const base = order?.awaiting_since;
   if (!base) return null;
   const d = new Date(base);
   if (Number.isNaN(d.getTime())) return null;

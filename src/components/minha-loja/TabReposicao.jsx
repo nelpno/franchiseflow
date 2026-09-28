@@ -230,10 +230,10 @@ export default function TabReposicao({
 
   return (
     <div className="space-y-6">
-      {/* S15.1 — Seu pedido chegou: conferir (chave ui_v2) */}
-      {uiV2 && (
-        <ConferirEntregaCard franchiseId={franchiseId} refreshKey={orderRefreshKey} onConfirmado={aoConfirmarEntrega} />
-      )}
+      {/* S15.1 — Seu pedido chegou: conferir. A chave ui_v2 só decide INICIAR a conferência (no
+          banco); a que já começou aparece mesmo com a chave desligada, até concluir. Sem nada
+          esperando, o cartão não desenha nada. */}
+      <ConferirEntregaCard franchiseId={franchiseId} refreshKey={orderRefreshKey} onConfirmado={aoConfirmarEntrega} />
 
       {/* S14.1 — Acabando + Repor N (chave ui_v2) */}
       {uiV2 && linhasRepor.length > 0 && (
