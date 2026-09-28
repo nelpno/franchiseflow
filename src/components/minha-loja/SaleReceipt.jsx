@@ -40,8 +40,10 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
 
   // S13.1 (28/09/2026): Entrega/Retirada explícito e endereço da VENDA primeiro (o robô grava
   // sales.customer_address desde a S4.2), depois o do contato "vivo"; sem nenhum, avisa em vez
-  // de calar. Regra inteira em src/lib/receiptUtils.js (testada, sem depender do DOM).
-  const deliveryLabel = resolveDeliveryLabel(sale.delivery_method);
+  // de calar. Venda legada sem delivery_method (P3, 28/09/2026) infere pelo frete/endereço em
+  // vez de virar "Retirada" por default; sem sinal nenhum, deliveryLabel vem null (sem selo).
+  // Regra inteira em src/lib/receiptUtils.js (testada, sem depender do DOM).
+  const deliveryLabel = resolveDeliveryLabel(sale);
   const receiptAddressLine = formatReceiptAddressLine({ sale, contact });
   // Telefone do cliente no cupom — o entregador liga direto em vez de acionar a franqueada.
   // Mesma cascata do endereço: contato "vivo" primeiro, snapshot da venda como fallback.
@@ -82,6 +84,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             border-color: #000 !important;
             box-shadow: none !important;
             text-shadow: none !important;
+            font-weight: 700 !important;
             overflow-wrap: anywhere;
             word-break: break-word;
           }
@@ -142,22 +145,25 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           </div>
         ) : null}
         {/* Entrega/Retirada explícito (S13.1) — nunca "loja"; texto puro, sem ícone (o cupom
-            pode ir pra um iframe de impressão que só carrega Inter/Plus Jakarta). */}
-        <div
-          style={{
-            display: "inline-block",
-            marginTop: 8,
-            padding: "3px 10px",
-            border: "1px solid #1b1c1d",
-            borderRadius: 999,
-            fontSize: 10,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          {deliveryLabel}
-        </div>
+            pode ir pra um iframe de impressão que só carrega Inter/Plus Jakarta). Venda legada
+            sem sinal nenhum (sem delivery_method, sem frete, sem endereço) não mostra selo. */}
+        {deliveryLabel && (
+          <div
+            style={{
+              display: "inline-block",
+              marginTop: 8,
+              padding: "3px 10px",
+              border: "1px solid #1b1c1d",
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            {deliveryLabel}
+          </div>
+        )}
       </div>
 
       {/* Separador */}
@@ -294,7 +300,9 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         {showCardFeeRow && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#4a3d3d" }}>
-              Taxa cartão ({formatCardFeePercent(cardFeePercent)})
+              {/* P3 (28/09/2026, item 8): taxa cobrada mas percentual zerado/ausente não pode
+                  virar "(0%)" — omite o parêntese em vez de mostrar um número inventado. */}
+              Taxa cartão{cardFeePercent > 0 ? ` (${formatCardFeePercent(cardFeePercent)})` : ""}
             </span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>
               {formatCurrency(cardFeeAmount)}
