@@ -1,4 +1,13 @@
 -- S20.2 — limpeza com prova de desuso (roteiro do franqueado, Onda 6)
+-- 🔴 RASCUNHO — NÃO APLICAR ASSIM. P3 (Codex, 28/09/2026) reprovou o SQL; o front da S20.2 saiu sem ele.
+--   1. rls_auto_enable NÃO é órfã: é a função do event trigger ensure_rls (liga RLS em tabela
+--      nova). Retirada da lista abaixo (conferido em pg_event_trigger).
+--   2. O teste por prosrc ILIKE %franchise_notes% falha pelos próprios comentários dentro dos corpos.
+--   3. Migração e teste no mesmo arquivo terminando em RAISE: separar (BEGIN/COMMIT × BEGIN/ROLLBACK).
+--   4. Rollback por pg_get_functiondef não devolve dono nem GRANT/REVOKE das funções dropadas.
+--   5. Falta o corpo VIVO das 2 funções reescritas (backup em docs/db-backups/) e o diff contra ele.
+--   6. O teste não percorre a exclusão real (dry_run=true; delete_user_complete para no guard).
+--   DROP de tabela/função só com o ok do Nelson.
 -- NÃO APLICADO. Gerado no worktree C:/Temp/wt-s20 (branch onda6/s20), 29/09/2026.
 --
 -- Prova de desuso está no relatório final da trilha S20.2 (front: grep em src/;
@@ -340,7 +349,7 @@ drop function if exists public.get_bot_conversation_summary(timestamptz);
 drop function if exists public.upsert_bot_contact(text, text, text);
 drop function if exists public.get_contact_by_phone(text, text);
 drop function if exists public.deduct_inventory(text, jsonb);
-drop function if exists public.rls_auto_enable();
+-- drop function if exists public.rls_auto_enable();  -- NÃO: é a função do event trigger ensure_rls (P3)
 drop function if exists public.get_network_touch_ranking(date, date);
 drop function if exists public.get_human_message_counts(timestamptz);
 drop function if exists public.get_human_message_totals(timestamptz);
