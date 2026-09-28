@@ -18,7 +18,9 @@ async function carregarLibs() {
   return { jsPDF: jspdfModule.jsPDF || jspdfModule.default, autoTable: autoTableModule.default };
 }
 
-export async function gerarRelatorioMensalPdf({ relatorio, anuncio, nomeUnidade, mesSelecionado, hoje = new Date() }) {
+// avisoFabrica (S17.2, só com a chave ui_v2): { aCaminho: {n, valor}, semGasto: {n, valor} } de
+// avaliarComprasFabrica, ou null/undefined = nada a avisar (o PDF de sempre).
+export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica, nomeUnidade, mesSelecionado, hoje = new Date() }) {
   const { jsPDF, autoTable } = await carregarLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const larg = doc.internal.pageSize.getWidth();
@@ -48,6 +50,28 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, nomeUnidade,
     doc.setFontSize(8.5);
     doc.text(`Mês em andamento: os números vão até hoje, dia ${diaCorte}.`, m, y);
     y += 5;
+  }
+
+  if (avisoFabrica) {
+    const frases = [];
+    const { aCaminho, semGasto } = avisoFabrica;
+    if (aCaminho?.n > 0) {
+      frases.push(`Compra da fábrica ainda não lançada: ${aCaminho.n === 1 ? "1 pedido" : `${aCaminho.n} pedidos`} (${brl(aCaminho.valor)}) ainda não ${aCaminho.n === 1 ? "chegou" : "chegaram"}. Entra como gasto na entrega, e o lucro em caixa vai baixar.`);
+    }
+    if (semGasto?.n > 0) {
+      frases.push(`${semGasto.n === 1 ? "1 pedido entregue" : `${semGasto.n} pedidos entregues`} neste mês sem o gasto lançado (${brl(semGasto.valor)}).`);
+    }
+    if (frases.length) {
+      doc.setTextColor(146, 64, 14);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.8);
+      for (const f of frases) {
+        const partes = doc.splitTextToSize(f, larg - 2 * m);
+        doc.text(partes, m, y);
+        y += partes.length * 4.2;
+      }
+      y += 2;
+    }
   }
 
   const secao = (titulo) => {
