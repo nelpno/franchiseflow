@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import {
   itensParaRepor,
-  quantidadesEmAberto,
+  carregarPedidosAbertos,
   quantidadesParaRepor,
   reposicaoDoItem,
 } from "@/lib/reposicao";
@@ -50,15 +50,26 @@ export default function TabReposicao({
   const franchiseName =
     selectedFranchise?.evolution_instance_id === franchiseId ? selectedFranchise?.name || null : null;
   const [origemPedido, setOrigemPedido] = useState(null);
-  // Pedidos carregados pelo histórico (mesma consulta, sem buscar de novo). null = ainda não
-  // chegou: o Repor espera (sem isso, pediria de novo o que já está a caminho).
-  const [pedidosCarregados, setPedidosCarregados] = useState(null);
-  useEffect(() => { setPedidosCarregados(null); }, [franchiseId]);
-  const emAberto = useMemo(
-    () => (pedidosCarregados ? quantidadesEmAberto(pedidosCarregados.orders, pedidosCarregados.itens) : {}),
-    [pedidosCarregados]
-  );
-  const pedidosProntos = pedidosCarregados !== null;
+  // O que está A CAMINHO: consulta própria só dos pedidos ABERTOS, com todos os itens (P3,
+  // ponto 4). Enquanto carrega ou se der erro, o Repor fica DESLIGADO com aviso — "nada a
+  // caminho" por falha de rede faria pedir em dobro.
+  const [abertos, setAbertos] = useState({ status: "carregando", emAberto: {} });
+  const [abertosTentativa, setAbertosTentativa] = useState(0);
+  useEffect(() => {
+    if (!uiV2 || !franchiseId) return undefined;
+    const controller = new AbortController();
+    setAbertos({ status: "carregando", emAberto: {} });
+    carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem, franchiseId, signal: controller.signal })
+      .then((r) => { if (!controller.signal.aborted) setAbertos({ status: "ok", emAberto: r.emAberto }); })
+      .catch((err) => {
+        if (controller.signal.aborted || err?.name === "AbortError") return;
+        console.error("Erro ao carregar pedidos abertos:", err);
+        setAbertos({ status: "erro", emAberto: {} });
+      });
+    return () => controller.abort();
+  }, [uiV2, franchiseId, orderRefreshKey, abertosTentativa]);
+  const pedidosProntos = abertos.status === "ok";
+  const emAberto = abertos.emAberto;
 
   // Unidade nunca fez pedido à fábrica (dado que a tela já busca pra "Repetir Ultimo") →
   // é o 1º pedido dela: PurchaseOrderForm mostra a faixa do pedido modelo da Maxi.
@@ -109,10 +120,7 @@ export default function TabReposicao({
   const reporTudoCount = Object.keys(reporTudo).length;
 
   const abrirRepor = (quantidades) => {
-    if (!pedidosProntos) {
-      toast.info("Carregando seus pedidos abertos. Tente de novo em instantes.");
-      return;
-    }
+    if (!pedidosProntos) return; // botões já ficam desligados; defesa extra
     setOrigemPedido(Object.keys(quantidades).length > 0 ? "repor" : null);
     setInitialQuantities(Object.keys(quantidades).length > 0 ? quantidades : null);
     setShowOrderDialog(true);
@@ -210,6 +218,7 @@ export default function TabReposicao({
               {reporTudoCount > 1 && (
                 <Button
                   type="button"
+                  disabled={!pedidosProntos}
                   onClick={() => abrirRepor(reporTudo)}
                   className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-h-[44px]"
                 >
@@ -218,6 +227,25 @@ export default function TabReposicao({
                 </Button>
               )}
             </div>
+            {abertos.status === "erro" && (
+              <div role="alert" className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3 p-3 rounded-xl bg-warn/10 text-sm text-ink">
+                <span className="flex-1">
+                  Não conseguimos ver seus pedidos abertos agora. O Repor fica desligado para não pedir em dobro.
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAbertosTentativa((n) => n + 1)}
+                  className="min-h-[40px] rounded-xl border-ink-4 text-ink shrink-0"
+                >
+                  Tentar de novo
+                </Button>
+              </div>
+            )}
+            {abertos.status === "carregando" && (
+              <p className="text-xs text-ink-2 mb-2">Conferindo o que já está a caminho…</p>
+            )}
             <div className="space-y-2">
               {linhasRepor.slice(0, 12).map((l) => (
                 <div
@@ -236,6 +264,7 @@ export default function TabReposicao({
                     <Button
                       type="button"
                       size="sm"
+                      disabled={!pedidosProntos}
                       onClick={() => abrirRepor({ [l.item.id]: l.repor })}
                       className="shrink-0 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-h-[44px] px-4"
                     >
@@ -248,6 +277,7 @@ export default function TabReposicao({
                       type="button"
                       size="sm"
                       variant="outline"
+                      disabled={!pedidosProntos}
                       onClick={() => abrirRepor({})}
                       className="shrink-0 border-brand text-brand font-bold rounded-xl min-h-[44px] px-4"
                     >
@@ -420,7 +450,7 @@ export default function TabReposicao({
         refreshKey={orderRefreshKey}
         uiV2={uiV2}
         franchiseName={franchiseName}
-        onOrdersLoaded={(orders, itens) => setPedidosCarregados({ orders, itens })}
+        onChanged={() => setAbertosTentativa((n) => n + 1)}
       />
 
       {/* Purchase Order Dialog */}
@@ -441,7 +471,7 @@ export default function TabReposicao({
             initialQuantities={initialQuantities}
             primeiroPedido={primeiroPedido}
             uiV2={uiV2}
-            emAberto={uiV2 ? emAberto : null}
+            emAberto={uiV2 && pedidosProntos ? emAberto : null}
             origem={origemPedido}
             onSave={() => {
               setShowOrderDialog(false);

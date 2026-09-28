@@ -89,3 +89,36 @@ export function quantidadesParaRepor(linhas) {
   }
   return out;
 }
+
+/**
+ * Carrega o que está A CAMINHO (P3 da S14, ponto 4): só pedidos ABERTOS da unidade e TODOS os
+ * itens deles (fetchAll pagina; ids em lotes). Erro NÃO vira "nada a caminho": a promessa rejeita
+ * e a tela trata como indisponível (Repor desligado), senão pediria em dobro.
+ * Entidades injetadas (PurchaseOrder/PurchaseOrderItem de @/entities/all) para testar sem banco.
+ * @returns {Promise<{pedidos: Array, itensPorPedido: Record<string, Array>, emAberto: Record<string, number>}>}
+ */
+export async function carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem, franchiseId, signal, lote = 100 }) {
+  if (!franchiseId) throw new Error("Unidade não identificada");
+  const pedidos = await PurchaseOrder.filter(
+    { franchise_id: franchiseId, status: [...STATUS_PEDIDO_ABERTO] },
+    "-ordered_at",
+    undefined,
+    { signal, fetchAll: true, columns: "id, status" }
+  );
+  const abertos = (pedidos || []).filter((p) => STATUS_PEDIDO_ABERTO.includes(p?.status));
+  const itensPorPedido = {};
+  const ids = abertos.map((p) => p.id);
+  for (let i = 0; i < ids.length; i += lote) {
+    const parte = ids.slice(i, i + lote);
+    const itens = await PurchaseOrderItem.filter(
+      { order_id: parte },
+      null,
+      undefined,
+      { signal, fetchAll: true, columns: "id, order_id, inventory_item_id, quantity" }
+    );
+    for (const it of itens || []) {
+      (itensPorPedido[it.order_id] = itensPorPedido[it.order_id] || []).push(it);
+    }
+  }
+  return { pedidos: abertos, itensPorPedido, emAberto: quantidadesEmAberto(abertos, itensPorPedido) };
+}

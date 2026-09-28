@@ -21,7 +21,7 @@ const STATUS_CONFIG = {
   cancelado: { color: "bg-[#6b7280]/10 text-[#6b7280]", icon: "cancel", label: "Cancelado" },
 };
 
-export default function PurchaseOrderHistory({ franchiseId, refreshKey, onOrdersLoaded, uiV2 = false, franchiseName = null }) {
+export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChanged, uiV2 = false, franchiseName = null }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
@@ -31,8 +31,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onOrders
   // S14.4 (chave ui_v2): imprimir o pedido para conferir a chegada.
   const [printMenuId, setPrintMenuId] = useState(null);
   const [printingId, setPrintingId] = useState(null);
-  const onOrdersLoadedRef = useRef(onOrdersLoaded);
-  onOrdersLoadedRef.current = onOrdersLoaded;
+
   const mountedRef = useRef(true);
   const abortControllerRef = useRef(null);
 
@@ -83,9 +82,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onOrders
           grouped[item.order_id].push(item);
         }
         setOrderItems(grouped);
-        onOrdersLoadedRef.current?.(data, grouped);
-      } else {
-        onOrdersLoadedRef.current?.([], {});
       }
     } catch (error) {
       if (error?.name === "AbortError" || signal.aborted) return;
@@ -106,6 +102,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onOrders
       await PurchaseOrder.update(orderId, { status: 'cancelado' });
       toast.success("Pedido cancelado.");
       loadOrders();
+      onChanged?.(); // o "a caminho" do Repor muda
     } catch (error) {
       console.error("Erro ao cancelar pedido:", error);
       toast.error(safeErrorMessage(error, "Erro ao cancelar pedido."));

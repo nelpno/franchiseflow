@@ -7,6 +7,7 @@ import {
   quantidadesParaRepor,
   unidadeDeMedida,
   ehProdutoDaFabrica,
+  carregarPedidosAbertos,
 } from "./reposicao.js";
 
 let n = 0;
@@ -109,5 +110,25 @@ t("quantidadesParaRepor só leva o que tem algo a pedir", () => {
   assert.deepEqual(quantidadesParaRepor(linhas), { x: 6 });
   assert.deepEqual(quantidadesParaRepor(null), {});
 });
+
+await (async () => {
+  // P3 ponto 4: só pedidos abertos, todos os itens, e erro não vira "nada a caminho"
+  const chamadas = [];
+  const PurchaseOrder = { filter: async (crit, _o, _l, opts) => { chamadas.push(["po", crit, opts]);
+    return [{ id: "p1", status: "pendente" }, { id: "p2", status: "em_rota" }, { id: "p3", status: "entregue" }]; } };
+  const PurchaseOrderItem = { filter: async (crit, _o, _l, opts) => { chamadas.push(["poi", crit, opts]);
+    return crit.order_id.flatMap((id) => [{ order_id: id, inventory_item_id: "a", quantity: 2 }]); } };
+  const r = await carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem, franchiseId: "f", lote: 1 });
+  assert.deepEqual(chamadas[0][1], { franchise_id: "f", status: ["pendente", "confirmado", "em_rota"] });
+  assert.equal(chamadas[0][2].fetchAll, true);
+  const lotes = chamadas.filter((c) => c[0] === "poi");
+  assert.deepEqual(lotes.map((c) => c[1].order_id), [["p1"], ["p2"]]); // entregue fora, 1 lote por pedido
+  assert.ok(lotes.every((c) => c[2].fetchAll === true));
+  assert.deepEqual(r.emAberto, { a: 4 });
+  const falha = { filter: async () => { throw new Error("rede"); } };
+  await assert.rejects(carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem: falha, franchiseId: "f" }), /rede/);
+  await assert.rejects(carregarPedidosAbertos({ PurchaseOrder: falha, PurchaseOrderItem, franchiseId: "f" }), /rede/);
+  n++; console.log("ok - P3 4: carrega só pedidos abertos, completos; erro rejeita");
+})();
 
 console.log(`\nreposicao: ${n} grupos ok`);
