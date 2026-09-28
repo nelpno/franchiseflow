@@ -10,6 +10,7 @@ import AjudaFaq from "@/components/ajuda/AjudaFaq";
 import FalarComMaxiCard from "@/components/ajuda/FalarComMaxiCard";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { MENSAGEM_AJUDA, linkWhatsAppMaxi } from "@/lib/contatoMaxi";
 import {
   acharGuia, buscarGuias, ehEquipe, guiasComecePorAqui, guiasParaPapel, guiasPorArea, PUBLICO,
 } from "@/lib/guiasAjuda";
@@ -55,6 +56,9 @@ export default function Tutoriais() {
     const resultados = termo ? buscarGuias(role, termo) : [];
     const comecePorAqui = guiasComecePorAqui(role);
     const porArea = guiasPorArea(role);
+    // Sem WHATSAPP_MAXI cadastrado, não prometer "fale com a Maxi, abaixo" (P3, 28/09/2026)
+    // — o card abaixo (FalarComMaxiCard) já some sozinho nesse caso.
+    const temFalarComMaxi = Boolean(linkWhatsAppMaxi(MENSAGEM_AJUDA));
     return (
       <div className={`${PAGINA} pb-24 md:pb-6`}>
         <PageHeader
@@ -75,7 +79,7 @@ export default function Tutoriais() {
             <GuiaLista titulo={`Resultados para "${termo}"`} guias={resultados} onAbrir={abrirGuia} />
           ) : (
             <div className={`${CARTAO} text-sm text-ink-2`}>
-              Nada encontrado para "{termo}". Veja as perguntas frequentes ou fale com a Maxi, abaixo.
+              Nada encontrado para "{termo}". Veja as perguntas frequentes{temFalarComMaxi ? " ou fale com a Maxi, abaixo." : "."}
             </div>
           )
         ) : (
