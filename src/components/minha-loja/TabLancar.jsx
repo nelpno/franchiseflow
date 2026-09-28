@@ -1350,7 +1350,7 @@ export default function TabLancar({
           {aReceber.length > 5 && (
             <button
               type="button"
-              onClick={() => { setPeriod("all"); setConfirmationFilter("pending"); }}
+              onClick={() => { setPeriod("all"); setConfirmationFilter("pending"); setSearchTerm(""); }}
               className="w-full min-h-[44px] text-sm font-medium text-brand border-t border-ink-shadow/5 hover:bg-surface"
             >
               Ver as {aReceber.length} vendas a receber
