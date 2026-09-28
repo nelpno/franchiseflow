@@ -21,7 +21,7 @@
 --      transação só, com o pedido travado (FOR UPDATE). Aí os triggers de SEMPRE rodam uma vez:
 --      estoque soma coalesce(received_quantity, quantity) e a despesa compra_produto usa o
 --      mesmo coalesce; frete = freight_cost (inalterado). delivered_at = shipped_at.
---   3. `concluir_entregas_sem_resposta(48)` (cron, proposto abaixo, NÃO agendado) fecha os
+--   3. `concluir_entregas_sem_resposta(48)` (cron no arquivo 2026-09-28-s15-cron.sql, aplicado DEPOIS deste) fecha os
 --      'em_rota' com mais de 48 h desde awaiting_since como recebidos completos e avisa o admin.
 --
 -- Unidade com a chave DESLIGADA: o trigger novo não troca nada (status 'entregue' segue
@@ -62,10 +62,13 @@
 --     from public.purchase_orders where status = 'em_rota' and awaiting_since is not null;
 --   -- 2) desagendar (se agendado): select cron.unschedule('s15-entregas-sem-resposta');
 --   drop trigger if exists a_s15_guard_conferencia on public.purchase_orders;
+--   drop trigger if exists a_s15_guard_itens on public.purchase_order_items;
 --   drop function if exists public.concluir_entregas_sem_resposta(integer);
 --   drop function if exists public.confirmar_recebimento_pedido(uuid, jsonb, uuid);
 --   drop function if exists public.s15_confirmar_recebimento(uuid, jsonb, uuid, boolean, uuid);
 --   drop function if exists public.s15_guard_conferencia();
+--   drop function if exists public.s15_guard_itens();
+--   drop function if exists public.s15_privilegiado();
 --   -- 3) reaplicar os 4 backups acima (node supabase/cs-cockpit/_aplica-lf.mjs <arquivo>).
 --   -- 4) colunas são aditivas e podem ficar; para tirar:
 --   -- alter table public.purchase_order_items drop column if exists received_quantity;
@@ -73,8 +76,10 @@
 --   --   drop column if exists received_confirmed_at, drop column if exists received_confirmed_by,
 --   --   drop column if exists received_mode, drop column if exists received_client_id,
 --   --   drop column if exists ordered_total_amount;
---   Desligar SEM rollback: desligar a chave ui_v2 da unidade (o trigger para de desviar para
---   em_rota na hora; pedidos que já estão em_rota fecham pelo cron ou pelo passo 1).
+--   Desligar SEM rollback: desligar a chave ui_v2 da unidade (o trigger para de INICIAR
+--   conferências na hora; as que já começaram seguem visíveis para ela e fecham pela RPC ou pelo cron).
+--   Guardas da P3 (1ª passada) ficam no bloco 2: entregue terminal, colunas protegidas, franqueada
+--   só cancela pendente, itens travados, received_quantity só pela RPC.
 --
 -- NÃO APLICADO. Aplicar (SQL antes do front): node supabase/cs-cockpit/_aplica-lf.mjs supabase/2026-09-28-s15-conferir-entrega.sql
 -- Teste que se desfaz: supabase/2026-09-28-s15-conferir-entrega.teste.sql (mandar ESTE arquivo + o de
@@ -83,16 +88,15 @@
 --   select proname, prosecdef, proconfig, has_function_privilege('anon', oid, 'execute') anon_exec,
 --          has_function_privilege('authenticated', oid, 'execute') auth_exec
 --     from pg_proc where proname in ('confirmar_recebimento_pedido','s15_confirmar_recebimento',
---                                    'concluir_entregas_sem_resposta','s15_guard_conferencia');
+--                                    'concluir_entregas_sem_resposta','s15_guard_conferencia',
+--                                    's15_guard_itens','s15_privilegiado');
 --   -> todas prosecdef=true e search_path=public; anon_exec=false em todas; auth_exec=true só
 --      em confirmar_recebimento_pedido.
 --   select tgname from pg_trigger where tgrelid = 'public.purchase_orders'::regclass and not tgisinternal order by 1;
---   -> a_s15_guard_conferencia em 1º.
+--   -> a_s15_guard_conferencia em 1º (e a_s15_guard_itens em purchase_order_items).
 --
--- CRON proposto (NÃO agendado; de hora em hora, para fechar perto das 48 h e não até 24 h depois):
---   select cron.schedule('s15-entregas-sem-resposta', '40 * * * *',
---                        $$select public.concluir_entregas_sem_resposta(48)$$);
---   Desligar: select cron.unschedule('s15-entregas-sem-resposta');
+-- CRON: arquivo separado supabase/2026-09-28-s15-cron.sql. ORDEM: 1) este arquivo; 2) o do cron.
+--   Sem o cron, conferência sem resposta NÃO fecha sozinha (fica em 'Esperando a unidade conferir').
 
 -- ============================================================================================
 -- 0. Paridade: as 4 funções alteradas têm de estar como em 28/09 (md5 do prosrc, sem \r).
@@ -130,11 +134,11 @@ alter table public.purchase_order_items
   drop constraint if exists purchase_order_items_received_quantity_check;
 alter table public.purchase_order_items
   add constraint purchase_order_items_received_quantity_check
-  check (received_quantity is null or received_quantity >= 0);
+  check (received_quantity is null or (received_quantity >= 0 and received_quantity <= quantity));
 
 alter table public.purchase_orders
   add column if not exists shipped_at            timestamptz,  -- data de entrega que a fábrica informou
-  add column if not exists awaiting_since        timestamptz,  -- quando passou a esperar a conferência (base das 48 h)
+  add column if not exists awaiting_since        timestamptz,  -- quando passou a esperar a conferência (base das 48 h). NÃO nulo = conferência S15
   add column if not exists received_confirmed_at timestamptz,
   add column if not exists received_confirmed_by uuid references auth.users(id) on delete set null,
   add column if not exists received_mode         text,         -- ok | divergente | automatico
@@ -152,9 +156,45 @@ create index if not exists purchase_orders_aguardando_conferencia_idx
   on public.purchase_orders (awaiting_since) where status = 'em_rota';
 
 -- ============================================================================================
--- 2. Guarda da conferência (BEFORE UPDATE; o nome começa com "a_" para rodar ANTES de
---    purchase_order_status_change / set_updated_at / tr_po_generate_expenses)
+-- 2. Guardas (P3 1ª passada, pontos 1, 2, 3 e 5)
+--
+--   "Privilegiado" = SQL direto/cron (sem claims + session_user do banco) ou service_role pela
+--   API (n8n). Nunca current_user (é o dono da função). "Via RPC" = a conferência ligou
+--   s15.confirmando dentro da própria transação.
+--
+--   purchase_orders, BEFORE INSERT/UPDATE (nome "a_": roda ANTES dos triggers de estoque/despesa):
+--     * 'entregue' é TERMINAL: nenhuma saída, nem para admin (só privilegiado).
+--     * colunas da conferência + expenses_generated_at: ninguém de fora escreve (volta o antigo;
+--       no INSERT, nulas).
+--     * depois de entregue: total_amount, ordered_total_amount e freight_cost travados (volta o
+--       antigo; a tela velha do admin não sobrescreve o total do que chegou).
+--     * franqueada (não admin/gerente): não mexe em total_amount nem freight_cost (volta o
+--       antigo) e a ÚNICA mudança de status dela é pendente -> cancelado (o que o app faz hoje,
+--       PurchaseOrderHistory "Cancelar pedido"); INSERT só como 'pendente' (os 2 caminhos do app).
+--     * conferência S15 = em_rota COM awaiting_since: só a RPC/cron leva a 'entregue'. em_rota
+--       SEM awaiting_since (legado; 0 hoje) segue livre como antes.
+--     * a chave ui_v2 só decide INICIAR a conferência (desvio entregue -> em_rota).
+--   purchase_order_items, BEFORE INSERT/UPDATE:
+--     * received_quantity só pela RPC/cron (fora dela: nula no INSERT, a antiga no UPDATE);
+--     * itens de pedido em conferência S15 ou entregue: sem INSERT/UPDATE (DELETE segue a RLS,
+--       que já é só admin — e a exclusão de franquia continua apagando em cascata).
 -- ============================================================================================
+create or replace function public.s15_privilegiado()
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $fn$
+declare
+  v_claims text := nullif(current_setting('request.jwt.claims', true), '');
+begin
+  return (v_claims is null and session_user in ('postgres', 'supabase_admin'))
+      or coalesce(v_claims::jsonb->>'role', '') = 'service_role';
+end;
+$fn$;
+revoke all on function public.s15_privilegiado() from public, anon, authenticated;
+
 create or replace function public.s15_guard_conferencia()
 returns trigger
 language plpgsql
@@ -162,42 +202,81 @@ security definer
 set search_path = public
 as $fn$
 declare
-  v_via_rpc boolean := coalesce(current_setting('s15.confirmando', true), '') = 'on';
-  v_fid uuid;
+  v_via_rpc     boolean := coalesce(current_setting('s15.confirmando', true), '') = 'on';
+  v_priv        boolean;
+  v_equipe      boolean;
+  v_fid         uuid;
 begin
   if v_via_rpc then
     return new;  -- a RPC de conferência sabe o que está fazendo
   end if;
+  v_priv := public.s15_privilegiado();
 
-  -- Colunas da conferência só mudam pela RPC (a franqueada tem UPDATE na tabela).
-  new.shipped_at            := old.shipped_at;
-  new.awaiting_since        := old.awaiting_since;
-  new.received_confirmed_at := old.received_confirmed_at;
-  new.received_confirmed_by := old.received_confirmed_by;
-  new.received_mode         := old.received_mode;
-  new.received_client_id    := old.received_client_id;
-  new.ordered_total_amount  := old.ordered_total_amount;
+  if tg_op = 'INSERT' then
+    if not v_priv then
+      new.shipped_at := null; new.awaiting_since := null;
+      new.received_confirmed_at := null; new.received_confirmed_by := null;
+      new.received_mode := null; new.received_client_id := null;
+      new.ordered_total_amount := null; new.expenses_generated_at := null;
+      if new.status is distinct from 'pendente' and not coalesce(public.is_admin_or_manager(), false) then
+        raise exception 'Pedido: pedido novo sai como pendente.' using errcode = 'P0001';
+      end if;
+    end if;
+    return new;
+  end if;
 
-  -- Esperando a unidade: só a conferência leva a 'entregue' (estoque e despesa entram UMA vez).
-  if old.status = 'em_rota' and new.status = 'entregue' then
+  -- ---------- UPDATE ----------
+  if not v_priv then
+    v_equipe := coalesce(public.is_admin_or_manager(), false);
+
+    -- Colunas da conferência e o carimbo da despesa: ninguém de fora escreve.
+    new.shipped_at            := old.shipped_at;
+    new.awaiting_since        := old.awaiting_since;
+    new.received_confirmed_at := old.received_confirmed_at;
+    new.received_confirmed_by := old.received_confirmed_by;
+    new.received_mode         := old.received_mode;
+    new.received_client_id    := old.received_client_id;
+    new.ordered_total_amount  := old.ordered_total_amount;
+    new.expenses_generated_at := old.expenses_generated_at;
+
+    -- Entregue é terminal (estoque e despesa já entraram; sair daqui abriria a porta de entrar de novo).
+    if old.status = 'entregue' then
+      if new.status is distinct from 'entregue' then
+        raise exception 'Pedido: pedido entregue não muda mais de situação.'
+          using errcode = 'P0001', detail = 'S15_ENTREGUE_TERMINAL';
+      end if;
+      new.total_amount := old.total_amount;
+      new.freight_cost := old.freight_cost;
+      new.delivered_at := old.delivered_at;
+    end if;
+
+    -- Franqueada: valor e frete são da fábrica; status só pendente -> cancelado.
+    if not v_equipe then
+      new.total_amount := old.total_amount;
+      new.freight_cost := old.freight_cost;
+      if new.status is distinct from old.status
+         and not (old.status = 'pendente' and new.status = 'cancelado') then
+        raise exception 'Pedido: só é possível cancelar um pedido que ainda está pendente.'
+          using errcode = 'P0001', detail = 'S15_STATUS_FRANQUEADA';
+      end if;
+    end if;
+  end if;
+
+  -- Conferência S15 em curso: só a RPC/cron leva a 'entregue' (estoque e despesa entram UMA vez).
+  if old.status = 'em_rota' and old.awaiting_since is not null and new.status = 'entregue' then
     raise exception 'Pedido: este pedido espera a unidade conferir o que chegou. Use "Confirmar recebimento".'
       using errcode = 'P0001', detail = 'S15_AGUARDA_CONFERENCIA';
   end if;
 
-  -- Fábrica marcou entregue numa unidade com o app novo: vira "chegou, falta conferir".
+  -- Fábrica marcou entregue numa unidade com o app novo: começa a conferência (a chave só decide INICIAR).
   if new.status = 'entregue' and old.status in ('pendente', 'confirmado')
      and public.feature_flag_enabled('ui_v2', new.franchise_id) then
     new.status := 'em_rota';
     new.shipped_at := case
       when new.delivered_at is not null and new.delivered_at is distinct from old.delivered_at then new.delivered_at
       else now() end;
-    new.delivered_at := old.delivered_at;
-  end if;
-
-  -- Entrou em 'em_rota' agora (pelo desvio acima ou por UPDATE direto): começa a contar as 48 h.
-  if new.status = 'em_rota' and old.status is distinct from 'em_rota' then
-    new.shipped_at := coalesce(new.shipped_at, now());
     new.awaiting_since := now();
+    new.delivered_at := old.delivered_at;
     select f.id into v_fid from franchises f where f.evolution_instance_id = new.franchise_id;
     if v_fid is not null then
       perform public.notify_franchise_users(
@@ -208,8 +287,9 @@ begin
     end if;
   end if;
 
-  -- Saiu de 'em_rota' sem conferência (admin voltou ou cancelou): zera a espera.
-  if old.status = 'em_rota' and new.status in ('pendente', 'confirmado', 'cancelado') then
+  -- Saiu da conferência sem concluir (admin voltou ou cancelou): zera a espera.
+  if old.status = 'em_rota' and old.awaiting_since is not null
+     and new.status in ('pendente', 'confirmado', 'cancelado') then
     new.shipped_at := null;
     new.awaiting_since := null;
   end if;
@@ -222,8 +302,49 @@ revoke all on function public.s15_guard_conferencia() from public, anon, authent
 
 drop trigger if exists a_s15_guard_conferencia on public.purchase_orders;
 create trigger a_s15_guard_conferencia
-  before update on public.purchase_orders
+  before insert or update on public.purchase_orders
   for each row execute function public.s15_guard_conferencia();
+
+create or replace function public.s15_guard_itens()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $fn$
+declare
+  v_status   text;
+  v_aguarda  timestamptz;
+begin
+  if coalesce(current_setting('s15.confirmando', true), '') = 'on' or public.s15_privilegiado() then
+    return new;
+  end if;
+
+  select po.status, po.awaiting_since into v_status, v_aguarda
+    from purchase_orders po where po.id = new.order_id;
+  if v_status = 'entregue' or (v_status = 'em_rota' and v_aguarda is not null) then
+    raise exception 'Pedido: os itens de um pedido entregue ou em conferência não mudam.'
+      using errcode = 'P0001', detail = 'S15_ITENS_TRAVADOS';
+  end if;
+  if tg_op = 'UPDATE' and new.order_id is distinct from old.order_id then
+    raise exception 'Pedido: item não troca de pedido.' using errcode = 'P0001';
+  end if;
+
+  -- O que chegou só a conferência grava.
+  if tg_op = 'INSERT' then
+    new.received_quantity := null;
+  else
+    new.received_quantity := old.received_quantity;
+  end if;
+  return new;
+end;
+$fn$;
+
+revoke all on function public.s15_guard_itens() from public, anon, authenticated;
+
+drop trigger if exists a_s15_guard_itens on public.purchase_order_items;
+create trigger a_s15_guard_itens
+  before insert or update on public.purchase_order_items
+  for each row execute function public.s15_guard_itens();
 
 -- ============================================================================================
 -- 3. Estoque e despesa pelo que CHEGOU (coalesce: sem conferência = quantidade pedida, igual antes)
@@ -399,7 +520,7 @@ begin
       'total_pedido', v_po.ordered_total_amount);
   end if;
 
-  if v_po.status <> 'em_rota' then
+  if v_po.status <> 'em_rota' or v_po.awaiting_since is null then
     raise exception '%', case v_po.status
         when 'entregue'  then 'Pedido: a fábrica já deu este pedido como entregue. Se faltou algo, fale com a fábrica.'
         when 'cancelado' then 'Pedido: este pedido foi cancelado.'
@@ -417,6 +538,8 @@ begin
       using errcode = 'P0001';
   end if;
 
+  -- Daqui até o fim da troca de status, as guardas deixam a conferência escrever.
+  perform set_config('s15.confirmando', 'on', true);
   update purchase_order_items i
      set received_quantity = coalesce(
            (select p.q from unnest(v_ids, v_qtds) as p(id, q) where p.id = i.id),
@@ -436,7 +559,6 @@ begin
 
   -- em_rota -> entregue: dispara, UMA vez, estoque (+recebido) e despesa (compra = recebido,
   -- frete = o cobrado). delivered_at = a data que a fábrica informou.
-  perform set_config('s15.confirmando', 'on', true);
   update purchase_orders
      set status                = 'entregue',
          delivered_at          = coalesce(v_po.shipped_at, now()),
@@ -551,8 +673,9 @@ begin
     select po.id
       from purchase_orders po
      where po.status = 'em_rota'
-       and coalesce(po.awaiting_since, po.shipped_at, po.updated_at) <= now() - make_interval(hours => p_horas)
-     order by coalesce(po.awaiting_since, po.shipped_at, po.updated_at)
+       and po.awaiting_since is not null   -- só conferência S15 (em_rota legado fica de fora)
+       and po.awaiting_since <= now() - make_interval(hours => p_horas)
+     order by po.awaiting_since
      for update skip locked   -- a franqueada conferindo agora: pula, ela ganha
   loop
     perform public.s15_confirmar_recebimento(r.id, null, gen_random_uuid(), true, null);

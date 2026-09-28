@@ -112,6 +112,22 @@ begin
                  || ' repetido_idempotente=' || ((v_r2->>'ja_confirmado')::boolean and (v_r2->>'mesmo_envio')::boolean)
                  || ' admin_avisado=' || exists (select 1 from notifications where title = 'Entrega com diferença' and created_at > now() - interval '1 minute');
 
+  -- 5b) P3: entregue é terminal e o total do que chegou não se sobrescreve (admin)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    update purchase_orders set status = 'confirmado' where id = v_po;
+    v_err := 'passou';
+  exception when others then v_err := sqlerrm;
+  end;
+  update purchase_orders set total_amount = 999999, freight_cost = 0, expenses_generated_at = null where id = v_po;
+  perform set_config('role', 'postgres', true);
+  v_res := v_res || ' entregue_terminal=' || (v_err like 'Pedido: pedido entregue não muda%')
+                 || ' total_travado=' || ((select total_amount from purchase_orders where id = v_po) = v_desp)
+                 || ' frete_travado=' || ((select freight_cost from purchase_orders where id = v_po) = 250)
+                 || ' carimbo_travado=' || ((select expenses_generated_at from purchase_orders where id = v_po) is not null)
+                 || ' sem_despesa_nova=' || ((select count(*) from expenses where source_id = v_po) = 2);
+
   -- 6) cron: um 2º pedido parado há 49 h fecha sozinho com o pedido inteiro
   insert into purchase_orders (id, franchise_id, status, total_amount, freight_cost, notes, confirmed_by, confirmed_at)
   values (v_off, v_evo, 'confirmado', 0, 0, 'S15 TESTE', v_admin, now());
