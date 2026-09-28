@@ -137,6 +137,8 @@ export default function TabReposicao({
         item.cost_price &&
         parseFloat(item.cost_price) > 0
     );
+    // Com a chave e sem o "a caminho" (carregando/erro): nada de sugestão calculada com zero.
+    if (uiV2 && !pedidosProntos) return [];
     return items
       .map((item) => {
         const sug = uiV2
@@ -154,7 +156,7 @@ export default function TabReposicao({
       .filter(Boolean)
       .sort((a, b) => b.suggestion - a.suggestion)
       .slice(0, 5);
-  }, [inventoryItems, weeklyTurnover, uiV2, emAberto]);
+  }, [inventoryItems, weeklyTurnover, uiV2, emAberto, pedidosProntos]);
 
   const hasHistory = Object.keys(weeklyTurnover).length > 0;
 
@@ -336,7 +338,31 @@ export default function TabReposicao({
       )}
 
       {/* Suggestion card */}
-      {suggestions.length > 0 ? (
+      {uiV2 && !pedidosProntos ? (
+        <Card className="rounded-2xl shadow-sm border border-ink/10 bg-white">
+          <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-start gap-2 flex-1">
+              <MaterialIcon icon="lightbulb" size={20} className="text-brand-gold shrink-0 mt-0.5" />
+              <p className="text-sm text-ink">
+                {abertos.status === "erro"
+                  ? "Não conseguimos ver seus pedidos abertos agora. A sugestão de reposição fica desligada para não pedir em dobro."
+                  : "Conferindo o que já está a caminho…"}
+              </p>
+            </div>
+            {abertos.status === "erro" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAbertosTentativa((n) => n + 1)}
+                className="min-h-[40px] rounded-xl border-ink-4 text-ink shrink-0"
+              >
+                Tentar de novo
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : suggestions.length > 0 ? (
         <Card className="bg-gradient-to-r from-brand-gold/5 to-brand-gold/10 rounded-2xl shadow-sm border border-brand-gold/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
@@ -472,6 +498,7 @@ export default function TabReposicao({
             primeiroPedido={primeiroPedido}
             uiV2={uiV2}
             emAberto={uiV2 && pedidosProntos ? emAberto : null}
+            abertosStatus={abertos.status}
             origem={origemPedido}
             onSave={() => {
               setShowOrderDialog(false);

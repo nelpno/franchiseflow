@@ -71,6 +71,9 @@ export default function PurchaseOrderForm({
   uiV2 = false,
   emAberto = null,
   origem = null,
+  // Estado do "a caminho" (P3 2ª passada): "ok" | "carregando" | "erro". Só vale com a chave;
+  // fora de "ok" a sugestão automática fica desligada (calcularia zero a caminho = pedir em dobro).
+  abertosStatus = "ok",
 }) {
   const DRAFT_KEY = `reposicao_draft_${franchiseId}`;
   const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
@@ -154,8 +157,10 @@ export default function PurchaseOrderForm({
 
   const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
+  const sugestaoIndisponivel = uiV2 && abertosStatus !== "ok";
   const getSuggestion = (item) => {
     if (!uiV2) return suggestionFor(item, weeklyTurnover);
+    if (sugestaoIndisponivel) return null;
     const r = reposicaoDoItem(item, weeklyTurnover, emAberto);
     return r.semBase ? null : r.repor;
   };
@@ -261,6 +266,7 @@ export default function PurchaseOrderForm({
   };
 
   const handleUseSuggestions = () => {
+    if (sugestaoIndisponivel) return;
     usuarioMexeuRef.current = true;
     const newQtys = { ...quantities };
     standardProducts.forEach((item) => {
@@ -484,7 +490,26 @@ export default function PurchaseOrderForm({
         <p className="text-sm text-ink-2">
           Selecione as quantidades dos produtos que deseja encomendar.
         </p>
-        {hasSuggestions && (
+        {sugestaoIndisponivel && (
+          <div role="status" className="flex flex-col items-start sm:items-end gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled
+              className="gap-2 border-brand-gold text-brand-gold-ink rounded-xl"
+            >
+              <MaterialIcon icon="auto_fix_high" size={16} />
+              Usar sugestão
+            </Button>
+            <span className="text-xs text-ink-2 max-w-[280px] sm:text-right">
+              {abertosStatus === "erro"
+                ? "Não conseguimos ver seus pedidos abertos agora. A sugestão fica desligada para não pedir em dobro."
+                : "Conferindo o que já está a caminho…"}
+            </span>
+          </div>
+        )}
+        {!sugestaoIndisponivel && hasSuggestions && (
           <Button
             variant="outline"
             size="sm"
