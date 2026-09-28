@@ -113,8 +113,8 @@ export const GUIAS = [
     passos: [
       { titulo: "Abra o resultado", texto: "Entre em Gestão e toque na aba.", botao: "Resultado", imagem: "/tutoriais/resultado-1.webp" },
       { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês para ver outro período.", imagem: "/tutoriais/resultado-2.webp" },
-      { titulo: "Leia o valor principal", texto: "É o que entrou com as vendas (valor menos desconto, mais frete), menos a taxa de cartão que a unidade pagou e as despesas lançadas.", botao: "Lucro do mês", imagem: "/tutoriais/resultado-3.webp" },
-      { titulo: "Confira as despesas", texto: "Algumas entram sozinhas: pedido à fábrica entregue, verba de marketing confirmada e mensalidade paga. As outras (sacolas, gás, aluguel) você lança.", botao: "Despesas do mês", imagem: "/tutoriais/resultado-4.webp" },
+      { titulo: "Leia o valor principal", texto: "É o que entrou com as vendas (valor menos desconto, mais frete), menos a taxa de cartão que a unidade pagou e os gastos do mês.", botao: "Sobrou em (mês)", imagem: "/tutoriais/resultado-3.webp" },
+      { titulo: "Veja para onde foi", texto: "Pedido à fábrica entregue, verba de marketing confirmada e mensalidade paga entram sozinhos. Os outros gastos (sacolas, gás, aluguel) você lança em Registrar gasto.", botao: "Para onde foi", imagem: "/tutoriais/resultado-4.webp" },
       { titulo: "Guarde o relatório", texto: "Baixe o PDF de 1 página para consultar ou compartilhar.", botao: "Baixar relatório do mês", imagem: "/tutoriais/resultado-5.webp" },
     ],
     nota: "O cálculo conta todas as vendas lançadas no mês, confirmadas ou não. Não é o saldo da sua conta no banco.",
