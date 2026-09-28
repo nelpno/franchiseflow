@@ -1135,6 +1135,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
         relatorio,
         anuncio,
         avisoFabrica: modelo ? modelo.avisoFabrica : undefined,
+        textoNovo: uiV2,
         nomeUnidade: unidade?.name || "Maxi Massas",
         mesSelecionado: selectedMonth,
       });

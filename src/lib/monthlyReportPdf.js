@@ -20,7 +20,9 @@ async function carregarLibs() {
 
 // avisoFabrica (S17.2, só com a chave ui_v2): { aCaminho: {n, valor}, semGasto: {n, valor} } de
 // avaliarComprasFabrica, ou null/undefined = nada a avisar (o PDF de sempre).
-export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica, nomeUnidade, mesSelecionado, hoje = new Date() }) {
+export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica, textoNovo = false, nomeUnidade, mesSelecionado, hoje = new Date() }) {
+  // textoNovo (S17.2, só com a chave ui_v2): a palavra da tela nova, "Sobrou", no lugar de "Lucro em caixa".
+  const ROTULO_SOBROU = textoNovo ? "Sobrou no mês" : "Lucro em caixa";
   const { jsPDF, autoTable } = await carregarLibs();
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const larg = doc.internal.pageSize.getWidth();
@@ -56,7 +58,7 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica
     const frases = [];
     const { aCaminho, semGasto } = avisoFabrica;
     if (aCaminho?.n > 0) {
-      frases.push(`Compra da fábrica ainda não lançada: ${aCaminho.n === 1 ? "1 pedido" : `${aCaminho.n} pedidos`} (${brl(aCaminho.valor)}) ainda não ${aCaminho.n === 1 ? "chegou" : "chegaram"}. Entra como gasto na entrega, e o lucro em caixa vai baixar.`);
+      frases.push(`Compra da fábrica ainda não lançada: ${aCaminho.n === 1 ? "1 pedido" : `${aCaminho.n} pedidos`} (${brl(aCaminho.valor)}) ainda não ${aCaminho.n === 1 ? "chegou" : "chegaram"}. Entra como gasto na entrega, e o Sobrou vai baixar.`);
     }
     if (semGasto?.n > 0) {
       frases.push(`${semGasto.n === 1 ? "1 pedido entregue" : `${semGasto.n} pedidos entregues`} neste mês sem o gasto lançado (${brl(semGasto.valor)}).`);
@@ -114,7 +116,7 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica
     linhas.push(["Saiu: taxa de cartão", ...meses.map((x) => (x.taxasCartao ? brl(x.taxasCartao) : "-"))]);
   }
   const fundo = { fillColor: [250, 245, 230] };
-  linhas.push([negrito("Lucro em caixa", fundo), ...meses.map((x) => negrito(brl(x.lucroCaixa), fundo))]);
+  linhas.push([negrito(ROTULO_SOBROU, fundo), ...meses.map((x) => negrito(brl(x.lucroCaixa), fundo))]);
   tabela({
     head: [cab],
     body: linhas,
@@ -163,7 +165,9 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   const notas = [
-    "Lucro em caixa = o que entrou menos o que saiu no mês. Ele sobe e desce com a data da compra na fábrica.",
+    textoNovo
+      ? "Sobrou = o que entrou menos o que saiu no mês (venda ainda a receber já conta). Ele sobe e desce com a data da compra na fábrica."
+      : "Lucro em caixa = o que entrou menos o que saiu no mês. Ele sobe e desce com a data da compra na fábrica.",
     "Vendas e despesas são as lançadas no painel. Venda que não foi lançada não aparece aqui.",
   ];
   if (anuncio) notas.push("Quem veio do anúncio: o robô marca a pessoa quando ela chega pelo clique no anúncio.");
