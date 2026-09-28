@@ -25,6 +25,7 @@ import { safeErrorMessage } from "@/lib/safeErrorMessage";
 
 import FilterBar from "@/components/shared/FilterBar";
 import { formatPhone, normalizePhone, getWhatsAppLink, isInternationalPhone } from "@/lib/whatsappUtils";
+import { formatBRL as formatCurrency } from "@/lib/formatters";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
@@ -49,13 +50,6 @@ function timeAgo(dateStr) {
   } catch {
     return "";
   }
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value || 0);
 }
 
 export default function MyContacts() {

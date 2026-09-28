@@ -30,6 +30,7 @@ import ExportButtons from "@/components/shared/ExportButtons";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
+import { formatBRL as formatCurrency } from "@/lib/formatters";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
@@ -45,11 +46,6 @@ function formatMonthLabel(offset) {
   const cleaned = raw.replace(".", "");
   return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    value || 0
-  );
 
 const PERIOD_FILTERS = [
   { value: "today", label: "Hoje" },

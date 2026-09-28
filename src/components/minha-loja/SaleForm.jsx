@@ -19,6 +19,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { parseDeliveryFeeOptions } from "@/lib/deliveryFeeRules";
 import { normalizePhone, formatPhone, isValidPhone } from "@/lib/whatsappUtils";
+import { formatBRL as formatCurrency } from "@/lib/formatters";
 import { safeErrorMessage, ehErroDeRegra } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -212,11 +213,6 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
     </div>
   );
 }
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    value || 0
-  );
 
 // ---------------------------------------------------------------------------
 // ContactAutocomplete — server-side search with debounce

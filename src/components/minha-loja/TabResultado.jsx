@@ -45,6 +45,7 @@ import {
   getTopProducts,
   getSaleNetValue,
 } from "@/lib/financialCalcs";
+import { formatBRL, formatBRLCompact } from "@/lib/formatters";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
@@ -56,14 +57,9 @@ import { montarRelatorioMensal, montarBlocoAnuncio } from "@/lib/monthlyReport";
 import { gerarRelatorioMensalPdf } from "@/lib/monthlyReportPdf";
 
 // --------------------------------------------------------------- helpers
-const formatBRL = (v) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-
-const formatBRLCompact = (v) => {
-  const n = parseFloat(v) || 0;
-  if (Math.abs(n) >= 1000) return `R$ ${(n / 1000).toFixed(n >= 10000 ? 1 : 2).replace(".", ",")}k`;
-  return formatBRL(n);
-};
+// formatBRL e formatBRLCompact vêm de @/lib/formatters (S8.4, 28/09/2026) — a cópia local
+// de formatBRLCompact tinha semântica divergente da tela (2 casas decimais entre 1.000 e
+// 9.999, a compartilhada usa sempre 1 casa).
 
 // Banner color → Tailwind class lookup
 const BANNER_COLORS = {

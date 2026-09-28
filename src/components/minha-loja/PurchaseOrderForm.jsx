@@ -19,13 +19,13 @@ import { toast } from "sonner";
 import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import { getItemWeightKg, formatWeightKg } from "@/lib/productWeight";
 import { getProductWeightMap } from "@/entities/all";
+import { formatBRL as formatBRLShared } from "@/lib/formatters";
 
+// Só essa tela mostra "—" pra vazio em vez de "R$ 0,00" (quantidade ainda não digitada) —
+// o formatador em si vem de @/lib/formatters (S8.4, 28/09/2026).
 const formatBRL = (value) => {
   if (value === null || value === undefined || value === "") return "—";
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
+  return formatBRLShared(value);
 };
 
 const getErrorMessage = (error) => {
