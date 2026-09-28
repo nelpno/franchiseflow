@@ -34,7 +34,10 @@ import {
   limitesMesBRT,
   ateDiaBRT,
   resumoEntregas,
+  COLUNAS_CONFERENCIA,
+  colunaAusente,
 } from "./pedidosHelpers";
+import { rotuloConferencia } from "@/lib/conferenciaEntrega";
 
 // "5,3 dias" / "5 dias" (sem decimal quando é número inteiro) / "1 dia".
 function diasLabel(n) {
@@ -215,11 +218,15 @@ const EntreguesSection = forwardRef(function EntreguesSection(
     const colunaRef = statusAba === "entregue" ? "delivered_at" : "ordered_at";
     const criteria = { status: statusAba };
     if (unidadeParam) criteria.franchise_id = unidadeParam;
-    PurchaseOrder.filter(criteria, `-${colunaRef}`, null, {
-      columns: COLUNAS_PEDIDO,
-      gte: { [colunaRef]: limitesDoMes.inicio },
-      lte: { [colunaRef]: limitesDoMes.fim },
-    })
+    const buscar = (columns) =>
+      PurchaseOrder.filter(criteria, `-${colunaRef}`, null, {
+        columns,
+        gte: { [colunaRef]: limitesDoMes.inicio },
+        lte: { [colunaRef]: limitesDoMes.fim },
+      });
+    // S15: tenta com as colunas da conferência; banco sem elas -> busca de sempre.
+    buscar(`${COLUNAS_PEDIDO}, ${COLUNAS_CONFERENCIA}`)
+      .catch((error) => (colunaAusente(error) ? buscar(COLUNAS_PEDIDO) : Promise.reject(error)))
       .then((data) => {
         if (!alive) return;
         const semTeste = (data || []).filter((o) => !testFranchiseIds?.has(o.franchise_id));
@@ -351,7 +358,19 @@ const EntreguesSection = forwardRef(function EntreguesSection(
                         </label>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-ink">{getFranchiseName(order.franchise_id)}</p>
+                        <p className="font-semibold text-ink">
+                          {getFranchiseName(order.franchise_id)}
+                          {(order.received_mode === "divergente" || order.received_mode === "automatico") && (
+                            <span
+                              className={`ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-[11px] font-bold ${
+                                order.received_mode === "divergente" ? "bg-err-soft text-err" : "bg-surface-2 text-ink-2"
+                              }`}
+                            >
+                              <MaterialIcon icon={order.received_mode === "divergente" ? "error" : "schedule"} size={12} aria-hidden="true" />
+                              {rotuloConferencia(order.received_mode)}
+                            </span>
+                          )}
+                        </p>
                         <p className="text-sm text-ink-3">
                           {order.status === "entregue" && order.delivered_at
                             ? `entregue em ${new Date(order.delivered_at).toLocaleDateString("pt-BR")}`
@@ -359,7 +378,9 @@ const EntreguesSection = forwardRef(function EntreguesSection(
                         </p>
                       </div>
                       <span className="hidden text-sm text-ink-2 sm:inline">
-                        {formatBRL(order.total_amount)} · {frete > 0 ? `frete ${formatBRL(frete)}` : "sem frete"} · {formatKg(order.total_weight_kg)}
+                        {formatBRL(order.total_amount)}
+                        {order.received_mode === "divergente" && order.ordered_total_amount != null ? ` (pedido ${formatBRL(order.ordered_total_amount)})` : ""}
+                        {" · "}{frete > 0 ? `frete ${formatBRL(frete)}` : "sem frete"} · {formatKg(order.total_weight_kg)}
                       </span>
                       <button type="button" onClick={() => onVerItens(order)} className="min-h-10 shrink-0 text-sm font-semibold text-brand-dark hover:underline">
                         Ver itens →

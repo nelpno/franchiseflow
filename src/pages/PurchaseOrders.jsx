@@ -34,6 +34,8 @@ import NovoProdutoDialog from "@/components/pedidos/NovoProdutoDialog";
 import OrderDetailDialog from "@/components/pedidos/OrderDetailDialog";
 import SecaoLote from "@/components/pedidos/SecaoLote";
 import EntreguesSection from "@/components/pedidos/EntreguesSection";
+import AguardandoConferenciaSection from "@/components/pedidos/AguardandoConferenciaSection";
+import { STATUS_AGUARDA_CONFERENCIA } from "@/lib/conferenciaEntrega";
 import {
   filtrarPorTermo,
   ordenarPorEsperaAsc,
@@ -417,16 +419,21 @@ export default function PurchaseOrders() {
     } catch { /* notificação é bônus */ }
   };
 
-  // Roda um update por pedido e separa quem deu certo de quem falhou.
+  // Roda um update por pedido e separa quem deu certo de quem falhou. `salvos` = linha como
+  // o banco gravou (S15: o "entregue" de unidade com o app novo volta como 'em_rota').
   const atualizarVarios = async (lista, patchDe) => {
     const resultados = await Promise.allSettled(lista.map((o) => PurchaseOrder.update(o.id, patchDe(o))));
     const ok = [];
     const falhou = [];
-    resultados.forEach((r, i) => (r.status === "fulfilled" ? ok : falhou).push(lista[i]));
+    const salvos = new Map();
+    resultados.forEach((r, i) => {
+      (r.status === "fulfilled" ? ok : falhou).push(lista[i]);
+      if (r.status === "fulfilled" && r.value) salvos.set(lista[i].id, r.value);
+    });
     if (falhou.length > 0) {
       console.error("Falhas no lote:", resultados.filter((r) => r.status === "rejected").map((r) => r.reason));
     }
-    return { ok, falhou };
+    return { ok, falhou, salvos };
   };
 
   const nomesDe = (lista) => lista.map((o) => getFranchiseName(o.franchise_id)).join(", ");
@@ -502,15 +509,19 @@ export default function PurchaseOrders() {
     try {
       await esperarFretes(lista.map((o) => o.id));
       const entregueEm = meioDiaBRT(dataEntrega) || new Date().toISOString();
-      const { ok, falhou } = await atualizarVarios(lista, (o) => ({
+      const { ok, falhou, salvos } = await atualizarVarios(lista, (o) => ({
         status: "entregue",
         delivered_at: entregueEm,
         ...(rascunhos[o.id] !== undefined ? { freight_cost: parseFrete(rascunhos[o.id]) } : {}),
       }));
       if (!mountedRef.current) return;
-      ok.forEach((o) => notifyFranchisee(o, "entregue"));
+      // S15: unidade com o app novo confere antes (o banco já avisou a unidade).
+      const aConferir = ok.filter((o) => salvos.get(o.id)?.status === STATUS_AGUARDA_CONFERENCIA);
+      const entregues = ok.filter((o) => salvos.get(o.id)?.status !== STATUS_AGUARDA_CONFERENCIA);
+      entregues.forEach((o) => notifyFranchisee(o, "entregue"));
       limparRascunhos(ok.map((o) => o.id));
-      if (ok.length > 0) toast.success(`${ok.length === 1 ? "1 pedido entregue" : `${ok.length} pedidos entregues`}. Estoque das unidades atualizado.`);
+      if (entregues.length > 0) toast.success(`${entregues.length === 1 ? "1 pedido entregue" : `${entregues.length} pedidos entregues`}. Estoque das unidades atualizado.`);
+      if (aConferir.length > 0) toast.success(`${aConferir.length === 1 ? "1 pedido espera" : `${aConferir.length} pedidos esperam`} a unidade conferir o que chegou (até 2 dias).`);
       if (falhou.length > 0) toast.error(`Não marcou como entregue: ${nomesDe(falhou)}. Tente de novo.`);
       loadData({ silent: true });
       invalidarAdmin(queryClient);
@@ -780,6 +791,15 @@ export default function PurchaseOrders() {
           { label: "Imprimir fichas", icon: "print", onClick: (sel) => imprimirLote(sel) },
           { label: "Avisar entrega", icon: "send", onClick: (sel) => { setDataAviso(dataBRT(1)); setAvisoEntrega(sel); } },
         ]}
+      />
+
+      <AguardandoConferenciaSection
+        getFranchiseName={getFranchiseName}
+        onVerItens={abrirDetalhe}
+        unidadeParam={unidadeParam}
+        searchTerm={searchTerm}
+        testFranchiseIds={testFranchiseIds}
+        versao={versao}
       />
 
       <EntreguesSection

@@ -396,3 +396,15 @@ export function resumoEntregas(orders) {
     diasMediana: mediana(dias),
   };
 }
+
+// S15.1: colunas da conferência da unidade (supabase/2026-09-28-s15-conferir-entrega.sql).
+// Vão numa busca à parte com volta para COLUNAS_PEDIDO: se o front sair antes do SQL, a lista
+// de entregues continua abrindo (só sem o rótulo da conferência).
+export const COLUNAS_CONFERENCIA = "received_mode, ordered_total_amount";
+
+/** Erro de coluna que ainda não existe no banco (42703 do Postgres / PGRST204). */
+export function colunaAusente(error) {
+  if (!error) return false;
+  if (error.code === "42703" || error.code === "PGRST204") return true;
+  return /column .* does not exist/i.test(String(error.message || ""));
+}
