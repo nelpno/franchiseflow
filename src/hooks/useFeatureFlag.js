@@ -1,25 +1,34 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFeatureFlags } from '@/entities/all';
 import { useAuth } from '@/lib/AuthContext';
 import { isFeatureOn } from '@/lib/featureFlags';
 
 /**
- * Estado bruto da query da chave (S9 P3, 28/09/2026): separa "carregando" de
- * "desligada/erro" — quem só quer o booleano usa `useFeatureFlag` abaixo; quem
- * precisa não piscar menu (reservar espaço enquanto carrega, em vez de mostrar o
- * antigo e trocar) usa este. `isLoading` aqui é o do React Query PARA A QUERY KEY
- * ATUAL (`['feature-flags', franchiseId]`): como a key muda com a franquia, trocar
- * de unidade sempre entra num estado de carregamento novo — nunca reaproveita o
- * `data` da franquia anterior (React Query não usa `keepPreviousData` aqui).
+ * Estado bruto da query da chave (S9 P3, 28/09/2026, 2ª passada). Quem só quer o
+ * booleano usa `useFeatureFlag` abaixo.
+ *
+ * `isLoading` aqui NUNCA significa "chave desconhecida" (carregando pela 1ª vez,
+ * erro, ou unidade ainda sem resposta) — nesse caso o chamador deve tratar como
+ * DESLIGADA na hora, sem esperar nada (é o que `value` já faz, default false). Só
+ * vale `true` quando o CACHE do React Query já tinha essa queryKey confirmada
+ * LIGADA antes (`queryClient.getQueryData`) e agora um refetch está em andamento —
+ * o único caso em que "esperar um instante em vez de mostrar o velho" faz sentido,
+ * porque já se sabe que o velho está errado. Unidade nunca consultada, resposta
+ * anterior OFF, ou erro: `isLoading` fica sempre false, e quem usa isso (Layout)
+ * mostra o menu de sempre na mesma hora — a 1ª passada da P3 tinha isso invertido
+ * (qualquer "carregando" virava esqueleto, inclusive pra quem nunca vai ligar,
+ * atrasando o menu de quem está OFF, que é a esmagadora maioria da rede).
  *
  *   const { value, isLoading } = useFeatureFlagState(FEATURE_KEYS.UI_V2);
  */
 export function useFeatureFlagState(key) {
   const { selectedFranchise } = useAuth();
   const franchiseId = selectedFranchise?.evolution_instance_id;
+  const queryClient = useQueryClient();
+  const queryKey = ['feature-flags', franchiseId];
 
-  const { data, isError, isLoading } = useQuery({
-    queryKey: ['feature-flags', franchiseId],
+  const { data, isError, isFetching } = useQuery({
+    queryKey,
     queryFn: ({ signal }) => getFeatureFlags(franchiseId, { signal }),
     enabled: !!franchiseId,
     staleTime: 5 * 60 * 1000,
@@ -28,12 +37,18 @@ export function useFeatureFlagState(key) {
     retry: 1,
   });
 
-  if (!franchiseId) return { value: false, isLoading: false };
-  // Com erro o React Query mantém o dado ANTERIOR (poderia seguir ligada): erro = desligada,
-  // e não é "carregando" (já temos uma resposta, ainda que ruim) — trava o flicker de
-  // ficar reservando espaço pra sempre se a rede cair.
-  if (isError) return { value: false, isLoading: false };
-  return { value: isFeatureOn(data, key), isLoading };
+  if (!franchiseId || isError) return { value: false, isLoading: false };
+
+  const value = isFeatureOn(data, key);
+  // Lido do cache, não do `data` deste render: cobre exatamente o refetch em cima
+  // de uma resposta anterior já ON — quando isso é verdade, `value` acima já é
+  // true (React Query mantém o dado anterior visível durante o refetch), então
+  // `isLoading` aqui não é o que faz a tela trocar de ON pra esqueleto; é só o
+  // sinalizador pra quem quiser evitar reafirmar/reconstruir a UI à toa.
+  const eraLigadaAntes = isFeatureOn(queryClient.getQueryData(queryKey), key);
+  const isLoading = isFetching && eraLigadaAntes && !value;
+
+  return { value, isLoading };
 }
 
 /**
