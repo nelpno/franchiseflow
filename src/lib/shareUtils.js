@@ -19,14 +19,18 @@ export async function generateReceiptImage(element) {
 }
 
 /**
- * Shares an image via Web Share API (mobile) or downloads it (desktop).
+ * Shares an image via Web Share API (mobile, files only) or downloads it (desktop).
+ * S13.1 (28/09/2026): "Compartilhar" no computador BAIXA o PNG — não abre diálogo de impressão
+ * (isso já é o botão "Imprimir" separado, que usa printReceipt/HTML nítido pra térmica). Antes
+ * este fallback abria uma janela de impressão no desktop, redundante com o botão Imprimir.
  * @param {Blob} blob - The image blob to share
  * @param {string} filename - Filename for the image
  */
 export async function shareImage(blob, filename = "comprovante.png") {
   const file = new File([blob], filename, { type: "image/png" });
 
-  // Try native share (mobile)
+  // Try native share (mobile) — só quando o navegador consegue compartilhar ARQUIVO
+  // (canShare com files é o sinal de "tem app pra receber", essencialmente mobile).
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({
@@ -40,37 +44,15 @@ export async function shareImage(blob, filename = "comprovante.png") {
     }
   }
 
-  // Fallback desktop: print
+  // Fallback desktop (ou sem suporte a Web Share): baixa o PNG.
   const url = URL.createObjectURL(blob);
-  const printWindow = window.open("", "_blank", "width=450,height=600");
-  if (printWindow) {
-    const doc = printWindow.document;
-    const style = doc.createElement("style");
-    style.textContent =
-      "@media print { @page { margin: 10mm; } body { margin: 0; } } " +
-      "body { display: flex; justify-content: center; padding: 0; margin: 0; } " +
-      "img { max-width: 100%; height: auto; }";
-    doc.head.appendChild(style);
-    doc.title = "Comprovante de Venda";
-
-    const img = doc.createElement("img");
-    img.src = url;
-    img.onload = () => {
-      printWindow.print();
-      printWindow.close();
-      URL.revokeObjectURL(url);
-    };
-    doc.body.appendChild(img);
-  } else {
-    // Popup blocked — fallback to download
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   return true;
 }
 
