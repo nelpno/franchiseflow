@@ -33,8 +33,7 @@ assert.deepEqual(findConflicts(carregado, noBanco, { delivery_schedule: noBanco.
 assert.deepEqual(
   camposDoRascunhoADescartar(["delivery_schedule"]).sort(),
   ["_frete_modelo", "avg_prep_time_minutes", "charges_delivery_fee", "delivery_fee_rules", "delivery_pricing",
-    "delivery_schedule", "delivery_start_time", "max_delivery_radius_km", "opening_hours", "operating_hours",
-    "order_cutoff_time", "working_days"]
+    "delivery_schedule", "max_delivery_radius_km", "opening_hours", "operating_hours", "working_days"]
 );
 assert.deepEqual(camposDoRascunhoADescartar(["promotions_combo"]), ["promotions_combo"]);
 assert.equal(nomesDosCampos(["delivery_schedule", "delivery_fee_rules", "xyz"]), "horários e taxas de entrega, outros dados");

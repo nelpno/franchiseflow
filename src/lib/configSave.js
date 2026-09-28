@@ -48,8 +48,10 @@ export function findConflicts(loadedRow, currentRow, patch) {
 
 // Campos que o wizard grava juntos: se um deles bateu de frente com outra pessoa, o rascunho perde
 // o grupo inteiro (a cópia antiga de delivery_fee_rules sobrescreveria a nova, por exemplo).
+// delivery_start_time, order_cutoff_time e delivery_method saíram do formData do wizard
+// (S8.4, 28/09/2026) — nunca aparecem num patch, então saíram daqui também.
 const GRUPOS = [
-  ["delivery_schedule", "delivery_fee_rules", "delivery_start_time", "order_cutoff_time",
+  ["delivery_schedule", "delivery_fee_rules",
     "charges_delivery_fee", "operating_hours", "opening_hours", "working_days",
     "delivery_pricing", "_frete_modelo", "max_delivery_radius_km", "avg_prep_time_minutes"],
   ["unit_address", "street_address", "neighborhood", "city", "cep"],

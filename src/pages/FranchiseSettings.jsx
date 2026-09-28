@@ -59,7 +59,6 @@ const initialFormData = {
   pickup_address: '',
   accepts_reservation_without_payment: false,
   charges_card_fee_to_customer: false,
-  delivery_method: '',
   payment_delivery: [],
   payment_pickup: [],
   delivery_fee_rules: [{ max_km: '', fee: '' }],
@@ -68,8 +67,6 @@ const initialFormData = {
   pix_bank: '',
   city: '',
   neighborhood: '',
-  order_cutoff_time: '',
-  delivery_start_time: '',
   charges_delivery_fee: true,
   delivery_schedule: [],
   catalog_image_url: '',
@@ -383,13 +380,11 @@ function FranchiseSettingsContent() {
       welcome_message: config.welcome_message || '',
       has_delivery: config.has_delivery ?? true,
       has_pickup: config.has_pickup ?? false,
-      delivery_method: config.delivery_method || '',
       payment_delivery: config.payment_delivery || [],
       payment_pickup: config.payment_pickup || [],
       delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
       delivery_schedule: config.delivery_schedule || [],
       pix_key_type: config.pix_key_type || '',
-      order_cutoff_time: config.order_cutoff_time || '',
       bot_personality: config.bot_personality || '',
       operating_hours: config.operating_hours || [],
       pix_holder_name: config.pix_holder_name || '',
@@ -661,8 +656,10 @@ function FranchiseSettingsContent() {
 
   // Horários de entrega e o que ainda é derivado deles: opening_hours e working_days (robô e checagem do QR)
   // e delivery_fee_rules (venda manual, 1º grupo). "Cobra frete" = algum grupo cobra: antes vinha só do
-  // 1º grupo, e um grupo grátis anunciava frete grátis para a semana toda. operating_hours,
-  // delivery_start_time e order_cutoff_time não têm leitor e deixaram de ser gravados.
+  // 1º grupo, e um grupo grátis anunciava frete grátis para a semana toda.
+  // delivery_start_time, order_cutoff_time e delivery_method saíram do formData (S8.4, 28/09/2026):
+  // não tinham leitor nenhum e a tela parou de gravar neles em 12/09. operating_hours continua no
+  // formData — ainda é lido como fallback de pickup_schedule mais abaixo (unidade com dado antigo).
   const handleScheduleChange = (val) => {
     handleInputChange('delivery_schedule', val);
     if (val.length > 0) {
