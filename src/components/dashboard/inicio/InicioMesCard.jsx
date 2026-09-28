@@ -7,6 +7,12 @@ import { formatBRLInteger } from "@/lib/formatters";
 import { textosInicioMes } from "@/lib/inicioMes";
 import { CARTAO, ROTULO, LINK_ACAO } from "@/components/shared/adminUi";
 
+// P3 S18 #8: conquista em verde (ok-soft/ok-ink, tailwind.config.js); próximo passo em marca.
+const TOM_PASSO = {
+  ok: { caixa: "bg-ok-soft text-ok-ink", icone: "check_circle", cor: "text-ok" },
+  acao: { caixa: "bg-brand-soft text-ink", icone: "trending_up", cor: "text-brand" },
+};
+
 const SELO = {
   ok: "bg-ok-soft text-ok-ink",
   atencao: "bg-warn-soft text-warn-ink",
@@ -62,9 +68,14 @@ export default function InicioMesCard({ mes, funnel, onAbrirConversao }) {
       )}
 
       {t.proximoPasso && (
-        <p className="mt-3 flex items-start gap-2 rounded-xl bg-brand-soft px-3 py-2.5 text-sm font-medium text-ink">
-          <MaterialIcon icon="trending_up" size={18} className="mt-0.5 shrink-0 text-brand" aria-hidden="true" />
-          <span className="min-w-0">{t.proximoPasso}</span>
+        <p className={`mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${(TOM_PASSO[t.proximoPasso.tom] || TOM_PASSO.acao).caixa}`}>
+          <MaterialIcon
+            icon={(TOM_PASSO[t.proximoPasso.tom] || TOM_PASSO.acao).icone}
+            size={18}
+            className={`mt-0.5 shrink-0 ${(TOM_PASSO[t.proximoPasso.tom] || TOM_PASSO.acao).cor}`}
+            aria-hidden="true"
+          />
+          <span className="min-w-0">{t.proximoPasso.texto}</span>
         </p>
       )}
 

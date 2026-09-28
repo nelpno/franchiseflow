@@ -169,16 +169,20 @@ export function textosInicioMes(m, brl) {
     ritmo = `Sua mediana dos últimos 3 meses é ${brl(m.mediana)}.`;
   }
 
+  // P3 S18 #8: cada mensagem leva o seu tom — "ok" (conquista, verde) ou "acao" (próximo passo).
   let proximoPasso = null;
   const p = m.paraMediana;
   if (p && p.falta > 0 && p.alcancavel) {
-    proximoPasso = p.diasRestantes > 1
-      ? `Para chegar na sua mediana faltam ${brl(p.falta)}: cerca de ${brl(Math.ceil(p.porDia))} por dia até o fim do mês.`
-      : `Para chegar na sua mediana faltam ${brl(p.falta)} hoje.`;
+    proximoPasso = {
+      tom: "acao",
+      texto: p.diasRestantes > 1
+        ? `Para chegar na sua mediana faltam ${brl(p.falta)}: cerca de ${brl(Math.ceil(p.porDia))} por dia até o fim do mês.`
+        : `Para chegar na sua mediana faltam ${brl(p.falta)} hoje.`,
+    };
   } else if (p && p.falta > 0) {
-    proximoPasso = "Um bom próximo passo para hoje: chamar os clientes do “Quem chamar hoje”, aqui na Início.";
+    proximoPasso = { tom: "acao", texto: "Um bom próximo passo para hoje: chamar os clientes do “Quem chamar hoje”, aqui na Início." };
   } else if (p && p.passou >= 0 && m.faturamento > 0) {
-    proximoPasso = `Você já passou da sua mediana dos últimos 3 meses. Parabéns!`;
+    proximoPasso = { tom: "ok", texto: "Você já passou da sua mediana dos últimos 3 meses. Parabéns!" };
   }
 
   return { titulo, selo, comparacao, ritmo, proximoPasso };
@@ -205,8 +209,9 @@ export function montarEvolucao({ sales = [], hoje = dataCivilBRT(), meses = MESE
 }
 
 /**
- * Junta listas de vendas sem repetir (mesmo id). A janela principal e o histórico não se cruzam,
- * mas na virada do mês uma pode ter sido carregada antes da outra mudar de corte.
+ * Junta listas de vendas sem repetir (mesmo id): a PRIMEIRA lista ganha. A janela principal e o
+ * histórico não se cruzam, mas na virada do mês uma pode ter sido carregada antes da outra mudar
+ * de corte — e uma venda movida de data aparece nas duas.
  */
 export function unirVendas(...listas) {
   const vistos = new Set();
@@ -219,6 +224,59 @@ export function unirVendas(...listas) {
     }
   }
   return out;
+}
+
+/**
+ * Vendas que a evolução e o "a receber" usam (P3 S18 #5): a janela principal vem PRIMEIRO — ela é
+ * recarregada a cada 5 min; o histórico é uma cópia mais velha. Venda que mudou de maio para
+ * setembro aparece nas duas: vale a versão da janela principal.
+ */
+export function vendasDaInicio({ principal = [], historico = [] } = {}) {
+  return unirVendas(principal, historico);
+}
+
+/**
+ * Cortes e parâmetros da Início nova, todos do MESMO dia civil de Brasília que os cálculos usam
+ * (P3 S18 #3: aparelho em UTC às 01h de 01/10 ainda é 30/09 em Brasília; cortar pelo relógio do
+ * aparelho tirava junho da mediana). Só o corte do "a receber" segue o relógio do aparelho, porque
+ * tem de bater com a caixa da tela Vendas, que usa o mesmo.
+ */
+export function janelasInicio(agora = new Date()) {
+  const hoje = dataCivilBRT(agora);
+  const inicioJanela = startOfMonth(subMonths(hoje, MESES_MEDIANA));
+  const corteVendas = corteAReceber(agora);
+  const inicioEvolucao = fmt(startOfMonth(subMonths(hoje, MESES_EVOLUCAO - 1)));
+  return {
+    hoje: fmt(hoje),
+    mes: format(hoje, "yyyy-MM"),
+    // janela principal (polling): do 1º dia do 3º mês anterior em diante
+    inicioJanela: fmt(inicioJanela),
+    // histórico (1 vez): o que a evolução de 6 meses e o "a receber" precisam antes disso
+    historicoDesde: corteVendas < inicioEvolucao ? corteVendas : inicioEvolucao,
+    historicoAte: fmt(subDays(inicioJanela, 1)),
+    corteAReceber: corteVendas,
+  };
+}
+
+/**
+ * O que o bloco "Agora" pode afirmar (P3 S18 #6). "Tudo em dia!" só quando TODAS as fontes
+ * responderam e nada pede ação: histórico carregando ou com erro (a receber desconhecido) ou
+ * falha de pedidos/marketing/config nunca viram "tudo certo". Falha de marketing/config esconde
+ * também a ação prioritária (ela leria o vazio como "marketing pendente"/"ative o robô").
+ * @param {{ temFaixa: boolean, temPedido: boolean, aReceber: {status: string, n?: number}|null,
+ *           falhas?: string[] }} p
+ */
+export const FONTES_DO_AGORA = ["pedidos", "marketing", "config", "robô"];
+export function avaliarAgora({ temFaixa = false, temPedido = false, aReceber = null, falhas = [] } = {}) {
+  const falhouFonte = falhas.filter((f) => FONTES_DO_AGORA.includes(f));
+  const aReceberConhecido = aReceber?.status === "ok";
+  const pendencia = temFaixa || temPedido || (aReceberConhecido && (aReceber.n || 0) > 0);
+  return {
+    mostrarPrioridade: !falhouFonte.some((f) => f === "marketing" || f === "config" || f === "robô"),
+    permitirTudoEmDia: !pendencia && aReceberConhecido && falhouFonte.length === 0,
+    erro: falhouFonte.length > 0 || aReceber?.status === "erro",
+    carregando: aReceber?.status === "loading",
+  };
 }
 
 /** Corte da caixa "A receber" da tela Vendas (mesma fórmula, relógio do aparelho como lá). */

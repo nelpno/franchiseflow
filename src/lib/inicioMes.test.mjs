@@ -1,9 +1,10 @@
 // S18.1 (28/09/2026): números da Início nova. Rodar: node src/lib/inicioMes.test.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { format, subDays } from "date-fns";
+import { format, startOfMonth, subDays, subMonths } from "date-fns";
 import {
   montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia, unirVendas,
+  vendasDaInicio, janelasInicio, avaliarAgora,
   metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto,
 } from "./inicioMes.js";
 import { resumirMes } from "./monthlyReport.js";
@@ -63,7 +64,7 @@ test("mediana dos 3 meses anteriores, ritmo e o que falta para chegar nela", () 
   assert.deepEqual(t.selo, { texto: "+20% que agosto", tom: "ok" });
   assert.equal(t.comparacao, "Até o dia 28: R$ 3600, contra R$ 3000 no mesmo trecho de agosto.");
   assert.equal(t.ritmo, "No ritmo de agora, setembro fecha perto de R$ 3800. Sua mediana dos últimos 3 meses é R$ 4000.");
-  assert.equal(t.proximoPasso, "Para chegar na sua mediana faltam R$ 400: cerca de R$ 134 por dia até o fim do mês.");
+  assert.deepEqual(t.proximoPasso, { tom: "acao", texto: "Para chegar na sua mediana faltam R$ 400: cerca de R$ 134 por dia até o fim do mês." });
 });
 
 test("mediana longe demais: o próximo passo vira uma ação de hoje, sem número que desanima", () => {
@@ -71,7 +72,7 @@ test("mediana longe demais: o próximo passo vira uma ação de hoje, sem númer
   const m = montarInicioMes({ sales: fraco, hoje: HOJE });
   perto(m.paraMediana.falta, 2600); // 4.000 − 1.400
   assert.equal(m.paraMediana.alcancavel, false); // 867/dia contra ~30/dia
-  assert.equal(textosInicioMes(m, brl).proximoPasso, "Um bom próximo passo para hoje: chamar os clientes do “Quem chamar hoje”, aqui na Início.");
+  assert.deepEqual(textosInicioMes(m, brl).proximoPasso, { tom: "acao", texto: "Um bom próximo passo para hoje: chamar os clientes do “Quem chamar hoje”, aqui na Início." });
 });
 
 test("sem venda num dos 3 meses: sem mediana (unidade ainda não abria)", () => {
@@ -101,7 +102,8 @@ test("dia 31 contra mês de 30 dias = mês anterior inteiro; passou da mediana",
   perto(m.comparacao.antes, 4300); // setembro inteiro, com a de 30/09
   const t = textosInicioMes(m, brl);
   assert.equal(t.comparacao, "Até o dia 31: R$ 6000, contra R$ 4300 em setembro inteiro.");
-  assert.equal(t.proximoPasso, "Você já passou da sua mediana dos últimos 3 meses. Parabéns!");
+  // P3 S18 #8: conquista vem com tom "ok" (verde), não com o fundo do próximo passo
+  assert.deepEqual(t.proximoPasso, { tom: "ok", texto: "Você já passou da sua mediana dos últimos 3 meses. Parabéns!" });
 });
 
 test("mês ainda sem venda: sem selo de −100%", () => {
@@ -141,6 +143,58 @@ test("a receber: mesmo recorte da caixa da tela Vendas, sem contar venda repetid
   const daTelaVendas = vendasAReceber(todas.filter((s) => s.sale_date >= desde));
   assert.equal(r.n, daTelaVendas.length);
   assert.equal(corteAReceber(new Date(2026, 8, 28)), "2026-03-28");
+});
+
+test("P3 #5: venda movida de maio para setembro — vale a versão da janela principal", () => {
+  const velha = { id: "mov", sale_date: "2026-05-10", value: 100, discount_amount: 0, delivery_fee: 0, payment_confirmed: true };
+  const nova = { ...velha, sale_date: "2026-09-10", value: 900 };
+  const principal = [...sales, nova];
+  const historico = [velha];
+  const e = montarEvolucao({ sales: vendasDaInicio({ principal, historico }), hoje: HOJE });
+  assert.equal(e.find((x) => x.chave === "2026-05").valor, 0);
+  assert.equal(e.find((x) => x.chave === "2026-09").valor, 3600 + 900);
+  // controle positivo: a união da 1ª versão (histórico primeiro) guardava maio/R$ 100
+  const antiga = montarEvolucao({ sales: unirVendas(historico, principal), hoje: HOJE });
+  assert.equal(antiga.find((x) => x.chave === "2026-05").valor, 100);
+  assert.equal(antiga.find((x) => x.chave === "2026-09").valor, 3600);
+});
+
+test("P3 #3: cortes pelo dia de Brasília, não pelo relógio do aparelho", () => {
+  // 01/10/2026 01:00 UTC = 30/09 22:00 em Brasília
+  const agora = new Date("2026-10-01T01:00:00Z");
+  const j = janelasInicio(agora);
+  assert.equal(j.hoje, "2026-09-30");
+  assert.equal(j.mes, "2026-09");
+  assert.equal(j.inicioJanela, "2026-06-01"); // junho entra na mediana (jun/jul/ago)
+  assert.equal(j.historicoAte, "2026-05-31");
+  assert.ok(j.historicoDesde <= "2026-04-01"); // cobre abril (1º mês da evolução de 6)
+  // controle positivo: a fórmula da 1ª versão num aparelho em UTC (já em 01/10) cortava em julho
+  const aparelhoUtc = new Date(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate(), agora.getUTCHours());
+  assert.equal(format(startOfMonth(subMonths(aparelhoUtc, 3)), "yyyy-MM-dd"), "2026-07-01");
+  // e com o corte de julho a mediana some (junho sem venda na lista)
+  const cortada = sales.filter((s) => s.sale_date >= "2026-07-01");
+  assert.equal(montarInicioMes({ sales: cortada, hoje: new Date(2026, 8, 30) }).mediana, null);
+  assert.equal(montarInicioMes({ sales: sales.filter((s) => s.sale_date >= j.inicioJanela), hoje: new Date(2026, 8, 30) }).mediana, 4000);
+});
+
+test("P3 #6: 'Tudo em dia!' só quando tudo respondeu e nada pede ação", () => {
+  const ok = { status: "ok", n: 0 };
+  assert.equal(avaliarAgora({ aReceber: ok }).permitirTudoEmDia, true);
+  assert.equal(avaliarAgora({ aReceber: { status: "loading" } }).permitirTudoEmDia, false);
+  const erro = avaliarAgora({ aReceber: { status: "erro" } });
+  assert.equal(erro.permitirTudoEmDia, false);
+  assert.equal(erro.erro, true);
+  assert.equal(avaliarAgora({ aReceber: { status: "ok", n: 2 } }).permitirTudoEmDia, false);
+  assert.equal(avaliarAgora({ aReceber: ok, temFaixa: true }).permitirTudoEmDia, false);
+  const semPedidos = avaliarAgora({ aReceber: ok, falhas: ["pedidos"] });
+  assert.deepEqual([semPedidos.permitirTudoEmDia, semPedidos.erro, semPedidos.mostrarPrioridade], [false, true, true]);
+  // marketing/config falhou: a ação prioritária leria o vazio como pendência — some
+  assert.equal(avaliarAgora({ aReceber: ok, falhas: ["marketing"] }).mostrarPrioridade, false);
+  assert.equal(avaliarAgora({ aReceber: ok, falhas: ["config"] }).mostrarPrioridade, false);
+  assert.equal(avaliarAgora({ aReceber: ok, falhas: ["vendas"] }).permitirTudoEmDia, true); // vendas têm bloco próprio
+  // controle positivo: a regra da 1ª versão (aReceber null = nada pendente) liberava o "Tudo em dia!"
+  const temOutraPendenciaV1 = (aReceber) => false || false || (aReceber?.n || 0) > 0;
+  assert.equal(!temOutraPendenciaV1(null), true);
 });
 
 test("unirVendas não repete venda que veio nas duas listas (virada do mês)", () => {
