@@ -389,8 +389,14 @@ export default function TabLancar({
 
   // Confirm all visible pending sales (batched in groups of 10)
   const handleConfirmAllVisible = async () => {
-    const pendingSales = filteredSales.filter((s) => !s.payment_confirmed);
+    // S12.6 (P3): o lote divide a trava por venda com o "Recebi" individual e invalida o
+    // "Desfazer" de avisos anteriores dessas vendas.
+    const pendingSales = filteredSales.filter((s) => !s.payment_confirmed && !togglingRef.current.has(s.id));
     if (pendingSales.length === 0) return;
+    pendingSales.forEach((s) => {
+      togglingRef.current.add(s.id);
+      recebimentoSeqRef.current.set(s.id, (recebimentoSeqRef.current.get(s.id) || 0) + 1);
+    });
 
     setIsConfirmingAll(true);
     setShowConfirmAllDialog(false);
@@ -429,6 +435,7 @@ export default function TabLancar({
       console.error("Erro ao confirmar vendas em lote:", err);
       toast.error("Erro ao confirmar vendas.");
     } finally {
+      pendingSales.forEach((s) => togglingRef.current.delete(s.id));
       setIsConfirmingAll(false);
     }
   };
