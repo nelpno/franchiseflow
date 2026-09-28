@@ -654,7 +654,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Dica:** Pix costuma aparecer em poucos minutos. Boleto leva o tempo do banco. A verba do anúncio é à parte, no quadro de baixo (guia 22).
 
-**Erro comum:** deixar vencer. Depois do vencimento, se a cobrança ficar em atraso, o app mostra só a tela de pagamento até o pagamento cair. `[conferir]` Não achei no código um número de dias de tolerância antes do bloqueio (`supabase/functions/asaas-billing/index.ts` só tem uma janela de 7 dias para decidir QUAL fatura é a atual, não um prazo de tolerância antes de bloquear) — não afirmar um número de dias sem confirmar com o Nelson.
+**Erro comum:** deixar vencer. No 1º e no 2º dia de atraso, o app avisa com uma faixa vermelha, mas você continua usando normalmente — dá para pagar, trocar de unidade e lançar venda sem travar em nada. A partir do 3º dia de atraso, o app trava numa tela só de pagamento; mesmo travada, você ainda consegue pagar, trocar de unidade pelo seletor da própria tela e ir em "Lançar uma venda agora" (a venda continua contando, só o resto do app é que fica bloqueado até o pagamento cair) (`subscriptionStatus.js`, decisão do Nelson, 27-28/09/2026).
 
 **Se não resolver:** pagou e continua bloqueado? Toque em **Já paguei** de novo. Se seguir, Falar com a Maxi com o comprovante (guia 31).
 
