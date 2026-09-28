@@ -517,7 +517,7 @@ export default function PurchaseOrderForm({
             className="gap-2 border-brand-gold text-brand-gold-ink rounded-xl hover:bg-brand-gold/10"
           >
             <MaterialIcon icon="auto_fix_high" size={16} />
-            Usar sugestao
+            Usar sugestão
           </Button>
         )}
       </div>
