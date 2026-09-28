@@ -416,7 +416,7 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 - **Webhook do ASAAS não decide a fatura atual**: só dispara o `checkPayment` (atraso cobrável mais antigo → período → paga) e responde em até 8 s. Mexer na regra = mexer só no `checkPayment`.
 - **Publicar edge sem Docker:** `SUPABASE_ACCESS_TOKEN=<SUPABASE_MANAGEMENT_TOKEN> npx supabase@latest functions deploy <fn> --project-ref sulgicnqqopyhulglakd --no-verify-jwt --use-api`. Antes: provar que o arquivo do main = publicado (fora a mudança).
 - **Tela que REDIRECIONA com a chave desligada** espera `useFeatureFlagState(k).resolved` — no 1º load a chave vale `false` e redirecionava antes de a resposta chegar.
-- **Pedido à fábrica = RPC `create_purchase_order_with_items`** (idempotente pelo id do aparelho; mesmo id com conteúdo diferente = P0001 `S14_ENVIO_DIFERENTE`). O front só cai nas 2 chamadas antigas se a função não existir.
+- **Pedido à fábrica = RPC `create_purchase_order_with_items`** (idempotente pelo id do aparelho; mesmo id com conteúdo diferente = P0001 `S14_ENVIO_DIFERENTE`). O front só cai nas 2 chamadas antigas se a função não existir. **Preço do pedido = `preco_tabela_fabrica(nome)`** (S14.7, 28/09: `catalog_products`, alias Mariolla→Sugo 250g; fora da tabela = `cost_price`), NUNCA o `cost_price` da unidade (compra externa mexe nele); o formulário mostra o mesmo via `get_precos_pedido_fabrica` e só envia depois de carregar.
 - **Testar função SQL de trilha sem deixá-la no banco:** mandar numa requisição só o `create function` + um `do $$ … raise exception 'RESULT …' $$` com os casos (a exceção desfaz tudo, inclusive a função) e conferir depois, em consulta separada, que nada sobrou.
 
 
