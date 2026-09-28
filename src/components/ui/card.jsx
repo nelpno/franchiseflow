@@ -3,9 +3,11 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef(({ className, ...props }, ref) => (
+  // Raio 12 (rounded-xl), sem sombra — so a borda separa o cartao do fundo. Tela que
+  // precisa de destaque (ex: card de KPI) passa shadow-sm no className, caso a caso.
   <div
     ref={ref}
-    className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+    className={cn("rounded-xl border bg-card text-card-foreground", className)}
     {...props} />
 ))
 Card.displayName = "Card"

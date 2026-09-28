@@ -699,8 +699,9 @@ export default function Franchises() {
           </span>
         );
       case "manager":
+        // Texto sobre dourado usa gold-ink (6,44:1) — gold puro como texto e 2,10:1, reprova AA.
         return (
-          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-brand-gold/15 text-[#8a7023]">
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold bg-brand-gold/15 text-brand-gold-ink">
             Gerente
           </span>
         );
@@ -912,7 +913,7 @@ export default function Franchises() {
                           <div className="flex-1 h-1.5 bg-ink-shadow/5 rounded-full overflow-hidden">
                             <div className="h-full rounded-full bg-brand-gold" style={{ width: `${pct}%` }} />
                           </div>
-                          <span className="text-xs font-semibold text-brand-gold">{pct}%</span>
+                          <span className="text-xs font-semibold text-brand-gold-ink">{pct}%</span>
                         </div>
                       );
                     })()}
@@ -944,7 +945,7 @@ export default function Franchises() {
                           ))}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-brand-gold">
+                        <div className="flex items-center gap-2 text-brand-gold-ink">
                           <MaterialIcon icon="warning" size={14} />
                           <span className="text-xs font-medium">Sem usuário vinculado</span>
                         </div>

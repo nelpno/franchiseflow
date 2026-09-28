@@ -105,7 +105,8 @@ export default function NotificationBell({ size = 20 }) {
                       {n.title}
                     </p>
                     <p className="text-xs text-ink-2/70 mt-0.5 truncate">{n.message}</p>
-                    <p className="text-[10px] text-ink-2/70 mt-1">
+                    {/* ink-3 solido: ink-2 com opacidade fica ~2:1 de contraste, abaixo do AA. */}
+                    <p className="text-[10px] text-ink-3 mt-1">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                     </p>
                   </div>

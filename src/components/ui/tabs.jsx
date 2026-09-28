@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils"
 const Tabs = TabsPrimitive.Root
 
 const TabsList = React.forwardRef(({ className, ...props }, ref) => (
+  // Abas sublinhadas (padrao do token): fileira com uma linha embaixo, sem fundo em
+  // pilula. Tela que precisa do visual antigo (pilula) sobrescreve pelo className.
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+      "inline-flex h-auto w-full items-center gap-4 border-b border-surface-line text-ink-3 overflow-x-auto",
       className
     )}
     {...props} />
@@ -20,7 +22,7 @@ const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
+      "inline-flex touch-manipulation items-center justify-center gap-1.5 whitespace-nowrap border-b-2 border-transparent px-1 pb-2.5 pt-1 min-h-11 md:min-h-0 text-sm font-medium text-ink-3 ring-offset-background transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:font-semibold",
       className
     )}
     {...props} />

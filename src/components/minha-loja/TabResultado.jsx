@@ -715,7 +715,9 @@ function ResumoAnoCard({ resumo }) {
               Acumulado em {resumo.year}
             </h3>
           </div>
-          <span className="text-xs text-ink-2/70 capitalize">
+          {/* ink-3 solido (nao ink-2 com opacidade): opacidade em cima de ink-2 cai a
+              ~2:1 de contraste, abaixo do AA para texto pequeno. */}
+          <span className="text-xs text-ink-3 capitalize">
             jan → {resumo.ultimoMes}
           </span>
         </div>

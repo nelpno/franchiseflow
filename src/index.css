@@ -132,4 +132,13 @@ html, body, #root {
     font-family: 'Inter', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-feature-settings: "tnum";
   }
+  /* Numero de verdade (dinheiro, quantidade, percentual): Plus Jakarta Sans com
+     algarismo tabular (mesma largura pra todo digito, coluna nao "dança" quando o
+     numero muda). Nao confundir com .font-mono-numbers (Inter, ja usado em varias
+     telas) — .num e so para o numero que pede peso visual (destaque, ex: card de KPI). */
+  .num {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
 }

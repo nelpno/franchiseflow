@@ -1439,7 +1439,8 @@ function FranchiseSettingsContent() {
                 />
               ))}
             </div>
-            <span className="text-[10px] text-[#3d4a42]/50 italic">
+            {/* text-ink-3 solido no lugar do hex avulso com opacidade (~2:1 de contraste, abaixo do AA). */}
+            <span className="text-[10px] text-ink-3 italic">
               {getLastSavedText() || (isDirty ? "Alterações não salvas" : "")}
             </span>
           </div>
