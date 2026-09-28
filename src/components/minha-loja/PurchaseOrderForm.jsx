@@ -20,6 +20,17 @@ import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
 import { getItemWeightKg, formatWeightKg } from "@/lib/productWeight";
 import { getProductWeightMap } from "@/entities/all";
 import { formatBRL as formatBRLShared } from "@/lib/formatters";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { supabase } from "@/api/supabaseClient";
+import { estimarFreteFabrica } from "@/lib/freteFabrica";
+import { reposicaoDoItem, unidadeDeMedida } from "@/lib/reposicao";
+import {
+  enviarPedidoFabrica,
+  montarItensDoPedido,
+  mensagemErroPedido,
+  novoIdDoEnvio,
+  idDoEnvioValido,
+} from "@/lib/enviarPedidoFabrica";
 
 // Só essa tela mostra "—" pra vazio em vez de "R$ 0,00" (quantidade ainda não digitada) —
 // o formatador em si vem de @/lib/formatters (S8.4, 28/09/2026).
@@ -42,7 +53,8 @@ const getErrorMessage = (error) => {
   if (msg.includes("Tempo limite")) {
     return "Servidor demorou para responder. Tente novamente.";
   }
-  return msg || "Erro desconhecido";
+  if (msg.startsWith("Pedido:")) return mensagemErroPedido(error);
+  return safeErrorMessage(error, "Não foi possível enviar o pedido. Tente de novo.");
 };
 
 export default function PurchaseOrderForm({
@@ -53,6 +65,11 @@ export default function PurchaseOrderForm({
   primeiroPedido = false,
   onSave,
   onCancel,
+  // S14 (atrás da chave ui_v2, decidida no TabReposicao): o que já está a caminho em pedidos
+  // abertos ({ inventory_item_id: qtd }) e de onde o formulário foi aberto ("repor" = "Repor N").
+  uiV2 = false,
+  emAberto = null,
+  origem = null,
 }) {
   const DRAFT_KEY = `reposicao_draft_${franchiseId}`;
   const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
@@ -71,6 +88,13 @@ export default function PurchaseOrderForm({
   };
 
   const draft = useRef(loadDraft());
+
+  // S14.3: id do envio gerado ANTES da 1ª tentativa e mantido nas seguintes (e no rascunho,
+  // para sobreviver a fechar/abrir). A RPC grava uma vez só por id; resposta perdida + nova
+  // tentativa devolve o mesmo pedido em vez de criar outro.
+  const clientIdRef = useRef(
+    idDoEnvioValido(draft.current?.clientId) ? draft.current.clientId : novoIdDoEnvio()
+  );
 
   const [notes, setNotes] = useState(draft.current?.notes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +150,12 @@ export default function PurchaseOrderForm({
 
   const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
-  const getSuggestion = (item) => suggestionFor(item, weeklyTurnover);
+  const getSuggestion = (item) => {
+    if (!uiV2) return suggestionFor(item, weeklyTurnover);
+    const r = reposicaoDoItem(item, weeklyTurnover, emAberto);
+    return r.semBase ? null : r.repor;
+  };
+  const aCaminhoDe = (item) => (uiV2 ? parseFloat(emAberto?.[item.id]) || 0 : 0);
 
   // Quantities state: { itemId: qty } — restore from draft > initialQuantities > 0
   const [quantities, setQuantities] = useState(() => {
@@ -144,11 +173,21 @@ export default function PurchaseOrderForm({
     return init;
   });
 
+  const draftMescladoCount = useMemo(() => {
+    if (!uiV2 || !initialQuantities || !draft.current?.quantities) return 0;
+    return standardProducts.filter(
+      (item) => !initialQuantities[item.id] && (draft.current.quantities[item.id] || 0) > 0
+    ).length;
+    // só no carregamento: é o que veio do rascunho quando o formulário abriu
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const [mostrarAvisoRascunho, setMostrarAvisoRascunho] = useState(true);
+
   // Persist draft to localStorage on change
   const saveDraft = useCallback((qtys, n) => {
     const hasData = Object.values(qtys).some(v => v > 0) || n.trim().length > 0;
     if (hasData) {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, savedAt: Date.now() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, clientId: clientIdRef.current, savedAt: Date.now() }));
     } else {
       localStorage.removeItem(DRAFT_KEY);
     }
@@ -156,7 +195,9 @@ export default function PurchaseOrderForm({
 
   useEffect(() => { saveDraft(quantities, notes); }, [quantities, notes, saveDraft]);
 
-  const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
+  const clearDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* sem storage: nada a limpar */ }
+  };
 
   // Pedido modelo da Maxi (1º pedido): busca ao abrir; falha aqui NÃO bloqueia o formulário,
   // só não mostra a faixa. `modeloAplicadoRef` alimenta o evento de Clarity no envio.
@@ -252,6 +293,9 @@ export default function PurchaseOrderForm({
     return { grandWeight: total, missingWeightCount: missing };
   }, [standardProducts, quantities, weightMap]);
 
+  // S14.2: estimativa (a fábrica lança o frete de verdade; zero é legítimo em acréscimo/retirada).
+  const freteEstimado = useMemo(() => estimarFreteFabrica(grandTotal), [grandTotal]);
+
   const totalItems = useMemo(() =>
     standardProducts.filter((item) => (quantities[item.id] || 0) > 0).length,
     [standardProducts, quantities]
@@ -276,8 +320,8 @@ export default function PurchaseOrderForm({
     setIsSubmitting(true);
     const toastId = toast.loading("Enviando pedido...");
     let order = null;
-    try {
-      // Create PurchaseOrder header
+    // Caminho antigo (2 chamadas) — só roda se a RPC ainda não existir no banco.
+    const gravarPeloCaminhoAntigo = async () => {
       order = await PurchaseOrder.create({
         franchise_id: franchiseId,
         status: "pendente",
@@ -299,6 +343,18 @@ export default function PurchaseOrderForm({
         }));
 
       await PurchaseOrderItem.createMany(itemsToCreate);
+      return order;
+    };
+    try {
+      const resultado = await enviarPedidoFabrica({
+        rpc: (fn, params) => supabase.rpc(fn, params),
+        clientId: clientIdRef.current,
+        franchiseId,
+        itens: montarItensDoPedido(standardProducts, quantities),
+        notes: notes.trim() || null,
+        totalWeightKg: grandWeight,
+        legado: gravarPeloCaminhoAntigo,
+      });
 
       // Notificação por RPC removida (26/09/2026): "Pendências" na home do admin
       // (get_admin_pending_counts) substitui as notificações de pedido/pagamento.
@@ -306,12 +362,17 @@ export default function PurchaseOrderForm({
       if (modeloAplicadoRef.current) {
         try { window.clarity?.('event', 'pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }
       }
-      toast.success("Pedido enviado com sucesso!", { id: toastId });
+      if (resultado.jaExistia) {
+        toast.success("Este pedido já tinha sido enviado. Ele está no histórico.", { id: toastId });
+      } else {
+        toast.success("Pedido enviado com sucesso!", { id: toastId });
+      }
       // NÃO resetar submittingRef — componente vai desmontar via onSave
       if (onSave) onSave();
     } catch (error) {
       console.error("Erro ao criar pedido:", error);
-      // Cleanup orphan order if items failed
+      // Caminho antigo: tenta limpar o cabeçalho sem itens. (A policy de DELETE é só admin,
+      // então para a franqueada isso falha — é o defeito que a RPC atômica resolve.)
       if (order?.id) {
         PurchaseOrder.delete(order.id).catch(() => {});
       }
@@ -352,6 +413,38 @@ export default function PurchaseOrderForm({
         </div>
       )}
 
+      {uiV2 && origem === "repor" && initialQuantities && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-brand-gold/10 border border-brand-gold/30 text-sm text-ink">
+          <MaterialIcon icon="auto_fix_high" size={18} className="text-brand-gold-ink shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Preenchido com o que está acabando. Revise as quantidades antes de enviar.</p>
+            <p className="text-xs text-ink-2 mt-0.5">
+              A conta já desconta o que está a caminho em pedidos abertos.
+            </p>
+            {draftMescladoCount > 0 && mostrarAvisoRascunho && (
+              <p className="text-xs text-ink-2 mt-1">
+                {draftMescladoCount === 1
+                  ? "1 produto do seu rascunho também voltou."
+                  : `${draftMescladoCount} produtos do seu rascunho também voltaram.`}{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    usuarioMexeuRef.current = true;
+                    const next = {};
+                    standardProducts.forEach((i) => { next[i.id] = initialQuantities[i.id] || 0; });
+                    setQuantities(next);
+                    setMostrarAvisoRascunho(false);
+                  }}
+                  className="font-medium underline min-h-[32px]"
+                >
+                  Tirar do pedido
+                </button>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Draft restored indicator */}
       {draft.current && !initialQuantities && (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-[#fffbeb] border border-[#fde68a] text-sm text-brand-gold-ink">
@@ -365,6 +458,7 @@ export default function PurchaseOrderForm({
               setQuantities(reset);
               setNotes("");
               draft.current = null;
+              clientIdRef.current = novoIdDoEnvio();
             }}
             className="ml-auto text-xs font-medium underline"
           >
@@ -452,6 +546,11 @@ export default function PurchaseOrderForm({
                             </TableCell>
                             <TableCell className="text-center text-sm text-ink-2">
                               {item.quantity ?? 0}
+                              {aCaminhoDe(item) > 0 && (
+                                <span className="block text-[11px] text-ink-2">
+                                  +{aCaminhoDe(item)} a caminho
+                                </span>
+                              )}
                             </TableCell>
                             <TableCell className="text-center">
                               {suggestion !== null ? (
@@ -525,6 +624,8 @@ export default function PurchaseOrderForm({
                     </h4>
                     <p className="text-xs text-ink-2 truncate">
                       Custo: {formatBRL(item.cost_price)} · Estoque: {item.quantity ?? 0}
+                      {uiV2 ? ` ${unidadeDeMedida(item)}` : ""}
+                      {aCaminhoDe(item) > 0 ? ` · ${aCaminhoDe(item)} a caminho` : ""}
                     </p>
                   </div>
                   {suggestion !== null && (
@@ -588,10 +689,35 @@ export default function PurchaseOrderForm({
       {/* Grand total + actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-ink-4/30">
         <div>
-          <span className="text-sm text-ink-2">Total do pedido</span>
-          <p className="text-2xl font-bold text-ink font-plus-jakarta">
-            {formatBRL(grandTotal)}
-          </p>
+          {uiV2 ? (
+            <div className="space-y-1 min-w-[240px]">
+              <div className="flex items-center justify-between gap-6 text-sm text-ink-2">
+                <span>Produtos</span>
+                <span className="font-mono-numbers">{formatBRL(grandTotal)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-6 text-sm text-ink-2">
+                <span>Frete estimado</span>
+                <span className="font-mono-numbers">{hasAnyQty ? formatBRL(freteEstimado) : "—"}</span>
+              </div>
+              <div className="flex items-baseline justify-between gap-6 pt-1 border-t border-ink-4/30">
+                <span className="text-sm font-medium text-ink">Total estimado</span>
+                <span className="text-2xl font-bold text-ink font-plus-jakarta">
+                  {hasAnyQty ? formatBRL(grandTotal + freteEstimado) : "—"}
+                </span>
+              </div>
+              <p className="text-xs text-ink-2 max-w-[320px]">
+                O frete é estimado (10% do pedido, entre R$ 250 e R$ 350). A fábrica confirma o valor;
+                acréscimo a outro pedido ou retirada na fábrica pode sair sem frete.
+              </p>
+            </div>
+          ) : (
+            <>
+              <span className="text-sm text-ink-2">Total do pedido</span>
+              <p className="text-2xl font-bold text-ink font-plus-jakarta">
+                {formatBRL(grandTotal)}
+              </p>
+            </>
+          )}
           {totalItems > 0 && (
             <span className="text-xs text-ink-2">
               {totalItems} {totalItems === 1 ? "produto" : "produtos"} · {totalUnits} un.

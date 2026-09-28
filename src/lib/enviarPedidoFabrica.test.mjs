@@ -6,6 +6,8 @@ import {
   mensagemErroPedido,
   montarItensDoPedido,
   RPC_PEDIDO_FABRICA,
+  novoIdDoEnvio,
+  idDoEnvioValido,
 } from "./enviarPedidoFabrica.js";
 
 let n = 0;
@@ -96,3 +98,11 @@ await t("montarItensDoPedido: só inteiro > 0", async () => {
 });
 
 console.log(`\nenviarPedidoFabrica: ${n} grupos ok`);
+
+{
+  const a = novoIdDoEnvio(), b = novoIdDoEnvio();
+  assert.ok(idDoEnvioValido(a) && idDoEnvioValido(b) && a !== b);
+  assert.equal(idDoEnvioValido("x"), false);
+  assert.equal(idDoEnvioValido(null), false);
+  console.log("ok - id do envio (uuid v4)");
+}
