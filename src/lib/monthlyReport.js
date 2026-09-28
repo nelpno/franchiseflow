@@ -337,14 +337,21 @@ export function montarResultadoMes({
   const mesesDoAno = [];
   for (let m = 0; m <= base.getMonth(); m++) {
     const d = new Date(base.getFullYear(), m, 1);
-    mesesDoAno.push(m === base.getMonth() ? mes : resumirMes(d, { sales, saleItems, expenses }));
+    const r = m === base.getMonth() ? mes : resumirMes(d, { sales, saleItems, expenses });
+    mesesDoAno.push({ ...r, rotuloMes: format(d, "MMM", { locale: ptBR }).replace(".", "") });
   }
   const doAnoComDado = mesesDoAno.filter((r) => r.temDado);
+  // Onda 5: o Resultado antigo mostrava melhor mês, "X de Y meses no azul" e a média por mês —
+  // o novo não pode perder isso.
+  const melhorDoAno = doAnoComDado.reduce((m, r) => (m === null || r.lucroCaixa > m.lucroCaixa ? r : m), null);
   const ano = {
     ano: base.getFullYear(),
     total: mesesDoAno.reduce((s, r) => s + r.lucroCaixa, 0),
     mesesComDado: doAnoComDado.length,
     melhorMes: doAnoComDado.length >= 2 && mes.temDado && doAnoComDado.every((r) => r.lucroCaixa <= mes.lucroCaixa),
+    mesesAzul: doAnoComDado.filter((r) => r.lucroCaixa > 0).length,
+    media: doAnoComDado.length ? doAnoComDado.reduce((s, r) => s + r.lucroCaixa, 0) / doAnoComDado.length : 0,
+    melhor: melhorDoAno ? { rotulo: melhorDoAno.rotuloMes, valor: melhorDoAno.lucroCaixa } : null,
   };
 
   const relatorio = montarRelatorioMensal({ sales, saleItems, expenses, mesSelecionado: base, hoje });

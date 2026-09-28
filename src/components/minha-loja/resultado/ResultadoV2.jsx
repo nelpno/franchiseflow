@@ -312,6 +312,8 @@ function Estoque({ estoque, paradosCount, onClickEstoque }) {
         <div className="text-sm font-semibold text-ink">{formatBRL(estoque.vendaPotencial)} em estoque</div>
         <div className={CAP}>
           a preço de venda · custou {formatBRL(estoque.custoTotal)}
+          {Number.isFinite(estoque.markupMedioPct) && estoque.custoTotal > 0 ? ` · markup médio ${estoque.markupMedioPct >= 0 ? "+" : ""}${estoque.markupMedioPct}%` : ""}
+          {estoque.qtdProdutosAtivos > 0 ? ` · ${estoque.qtdProdutosAtivos} produtos ativos` : ""}
           {paradosCount > 0 ? ` · ${paradosCount} parado${paradosCount > 1 ? "s" : ""} há 28+ dias` : ""}
         </div>
       </div>
@@ -358,6 +360,8 @@ function SobrouPorMes({ modelo }) {
         <span className={CAP}>
           No ano: {formatBRL(ano.total)} {ano.total >= 0 ? "sobraram" : "de diferença"}.
           {ano.melhorMes ? ` ${modelo.nomeMes.charAt(0).toUpperCase() + modelo.nomeMes.slice(1)} é o seu melhor mês até agora.` : ""}
+          {!ano.melhorMes && ano.melhor ? ` Melhor mês: ${ano.melhor.rotulo} (${formatBRL(ano.melhor.valor)}).` : ""}
+          {` ${ano.mesesAzul} de ${ano.mesesComDado} meses no azul · média de ${formatBRL(ano.media)} por mês.`}
         </span>
       )}
     </section>

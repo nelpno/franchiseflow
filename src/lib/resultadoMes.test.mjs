@@ -195,3 +195,13 @@ test("P3 item 5: pedido aberto só conta se foi feito neste mês ou no anterior 
   // só pedidos esquecidos: nada a avisar
   assert.equal(avaliarComprasFabrica({ purchaseOrders: abertos.slice(2), expenses: [], mesSelecionado: HOJE, hoje: HOJE }), null);
 });
+
+test("o ano traz meses no azul, média e melhor mês (o Resultado antigo mostrava; Onda 5)", () => {
+  const { ano } = setembro;
+  assert.equal(typeof ano.mesesAzul, "number");
+  assert.ok(ano.mesesAzul <= ano.mesesComDado);
+  if (ano.mesesComDado > 0) {
+    assert.ok(Math.abs(ano.media * ano.mesesComDado - ano.total) < 0.01, "média × meses = total dos meses com dado");
+    assert.ok(ano.melhor && typeof ano.melhor.rotulo === "string" && ano.melhor.rotulo.length >= 3);
+  }
+});
