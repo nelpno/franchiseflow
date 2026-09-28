@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
+import { Sale, SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,10 @@ import { safeErrorMessage, ehErroDeRegra } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { calcSale } from "@/lib/saleCalc";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { nasceRecebida, patchRecebimento } from "@/lib/recebimento";
+import { fireCapiOnConfirm } from "@/lib/capiManual";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -386,6 +390,9 @@ export default function SaleForm({
   initialPhone = null,
 }) {
   const isEditing = !!sale;
+  // S6.2: com a chave ui_v2, venda nova nasce recebida; "Ainda vou receber" segura como a receber.
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const [aindaVouReceber, setAindaVouReceber] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
   // Lembrete de venda a R$ 0 — nao bloqueia, so obriga a olhar. Em 90 dias, 39 vendas
@@ -1077,10 +1084,30 @@ export default function SaleForm({
         }
       }
 
+      // S6.2: venda que nasce recebida. É um passo à parte (a RPC não grava o recebimento);
+      // se falhar, a venda fica salva como "a receber" e a franqueada fica sabendo. O evento
+      // do anúncio só sai depois de gravado (o workflow pula se capi_sent=true).
+      let recebimentoFalhou = false;
+      if (savedSaleId && nasceRecebida({ uiV2, isEditing, aindaVouReceber })) {
+        try {
+          await Sale.update(savedSaleId, patchRecebimento(true));
+          fireCapiOnConfirm(savedSaleId);
+        } catch (err) {
+          console.warn("Venda salva, mas nao marcou como recebida:", err);
+          recebimentoFalhou = true;
+        }
+      }
+
       // Success — clear draft and notify
       clearDraft(franchiseId);
       clientSaleIdRef.current = null;
       toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!");
+      if (recebimentoFalhou) {
+        toast.warning("A venda ficou como \"a receber\".", {
+          description: "Toque em Recebido na lista de vendas para marcar.",
+          duration: 8000,
+        });
+      }
 
       // O cliente pode se perder no caminho: resolveContactId devolve null em silencio
       // quando a busca nao casa e a criacao falha (RLS, telefone duplicado). A venda
@@ -1522,6 +1549,26 @@ export default function SaleForm({
                 onCheckedChange={(val) => setFeePassedToCustomer(val)}
               />
             </div>
+          </div>
+        )}
+
+        {uiV2 && !isEditing && (
+          <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5 flex items-start justify-between gap-3">
+            <div className="flex flex-col">
+              <Label className="text-sm text-ink-2 cursor-pointer" htmlFor="ainda-vou-receber-toggle">
+                Ainda vou receber
+              </Label>
+              <span className="text-xs text-ink-3 mt-0.5">
+                {aindaVouReceber
+                  ? "A venda fica em \"a receber\". Toque em Recebido na lista quando o dinheiro entrar."
+                  : "Sem marcar, a venda já entra como recebida hoje."}
+              </span>
+            </div>
+            <Switch
+              id="ainda-vou-receber-toggle"
+              checked={aindaVouReceber}
+              onCheckedChange={(val) => setAindaVouReceber(val)}
+            />
           </div>
         )}
       </MobileSection>

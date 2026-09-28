@@ -33,6 +33,8 @@ import { getSaleNetValue } from "@/lib/financialCalcs";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
+import { fireCapiOnConfirm, fireCapiBatch } from "@/lib/capiManual";
+import { patchRecebimento } from "@/lib/recebimento";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format, startOfWeek, startOfMonth, endOfMonth, addMonths, parseISO } from "date-fns";
@@ -97,38 +99,6 @@ function formatTimeSafe(dateString) {
   }
 }
 
-// CAPI Manual Sale: dispara Purchase Meta ao confirmar venda manual.
-// Workflow n8n SendCapiOnSaleManual idempotente (skipa se capi_sent=true).
-// Fire-and-forget: falha silenciosa pra nao bloquear UI.
-async function fireCapiOnConfirm(saleId) {
-  try {
-    const base = import.meta.env.VITE_N8N_WEBHOOK_BASE;
-    const token = import.meta.env.VITE_CAPI_MANUAL_TOKEN;
-    if (!base || !token || !saleId) return;
-    await fetch(`${base}/send-capi-on-sale-manual`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ sale_id: saleId }),
-    });
-  } catch {
-    /* fail silent */
-  }
-}
-
-// Throttle helper para bulk confirm: chunks de 5 com 200ms gap.
-async function fireCapiBatch(saleIds, batchSize = 5, gapMs = 200) {
-  for (let i = 0; i < saleIds.length; i += batchSize) {
-    const chunk = saleIds.slice(i, i + batchSize);
-    await Promise.all(chunk.map((id) => fireCapiOnConfirm(id)));
-    if (i + batchSize < saleIds.length) {
-      await new Promise((r) => setTimeout(r, gapMs));
-    }
-  }
-}
-
 export default function TabLancar({
   franchiseId,
   franchiseName,
@@ -175,6 +145,7 @@ export default function TabLancar({
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmationFilter, setConfirmationFilter] = useState("all");
   const [togglingIds, setTogglingIds] = useState(new Set());
+  const togglingRef = useRef(new Set());
   const [isConfirmingAll, setIsConfirmingAll] = useState(false);
   const [showConfirmAllDialog, setShowConfirmAllDialog] = useState(false);
 
@@ -294,14 +265,14 @@ export default function TabLancar({
   // Toggle payment confirmation
   const handleToggleConfirmation = async (e, sale) => {
     e.stopPropagation();
+    // Dois toques no mesmo quadro passam antes do disabled pintar: a ref segura o 2º.
+    if (togglingRef.current.has(sale.id)) return;
+    togglingRef.current.add(sale.id);
     const newValue = !sale.payment_confirmed;
 
     setTogglingIds((prev) => new Set(prev).add(sale.id));
     try {
-      await Sale.update(sale.id, {
-        payment_confirmed: newValue,
-        confirmed_at: newValue ? new Date().toISOString() : null,
-      });
+      await Sale.update(sale.id, patchRecebimento(newValue));
       toast.success(newValue ? "Pagamento confirmado!" : "Confirmação removida.");
       // Dispara CAPI Purchase apenas na flip false -> true
       if (newValue) fireCapiOnConfirm(sale.id);
@@ -310,6 +281,7 @@ export default function TabLancar({
       console.error("Erro ao confirmar pagamento:", err);
       toast.error("Erro ao atualizar confirmação.");
     } finally {
+      togglingRef.current.delete(sale.id);
       setTogglingIds((prev) => {
         const next = new Set(prev);
         next.delete(sale.id);
@@ -325,7 +297,7 @@ export default function TabLancar({
 
     setIsConfirmingAll(true);
     setShowConfirmAllDialog(false);
-    const now = new Date().toISOString();
+    const agora = new Date();
     let succeeded = 0;
     let failed = 0;
     try {
@@ -335,7 +307,7 @@ export default function TabLancar({
         const batch = pendingSales.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
           batch.map((s) =>
-            Sale.update(s.id, { payment_confirmed: true, confirmed_at: now })
+            Sale.update(s.id, patchRecebimento(true, agora))
           )
         );
         results.forEach((r, idx) => {
