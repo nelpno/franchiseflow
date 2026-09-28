@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -139,6 +140,7 @@ export default function TabLancar({
   sales,
   contacts,
   inventoryItems,
+  historicoLoading = false,
   onRefresh,
   autoOpenForm = false,
   onFormOpened,
@@ -730,7 +732,15 @@ export default function TabLancar({
       )}
 
       {/* Sales list */}
-      {filteredSales.length === 0 ? (
+      {filteredSales.length === 0 && historicoLoading ? (
+        // S8.1: estoque já chegou (o form de venda abre normal); histórico ainda vem atrás —
+        // skeleton em vez do vazio, pra não parecer "sem venda nenhuma" por engano.
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-2xl" />
+          ))}
+        </div>
+      ) : filteredSales.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <MaterialIcon icon="point_of_sale" size={64} className="text-ink-4 mb-4" />
           <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">

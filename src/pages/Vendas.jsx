@@ -37,6 +37,10 @@ export default function Vendas() {
   const [loading, setLoading] = useState(true);
   // fase 2: vendas/estoque/contatos so carregam DEPOIS que sabemos qual unidade e, filtrados por ela
   const [loadingUnidade, setLoadingUnidade] = useState(true);
+  // S8.1 (28/09/2026): "Nova venda" so precisa do estoque pra abrir — vendas (6 meses, fetchAll)
+  // e contatos carregam DEPOIS, sem travar a tela. loadingUnidade cai assim que o estoque chega;
+  // loadingHistorico segue true ate vendas+contatos terminarem (TabLancar mostra skeleton na lista).
+  const [loadingHistorico, setLoadingHistorico] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const mountedRef = useRef(true);
   const franchiseIdRef = useRef(null); // o polling le daqui, nao do render atual
@@ -79,16 +83,32 @@ export default function Vendas() {
   };
 
   // Fase 2: tudo da unidade escolhida, sempre com franchise_id no WHERE.
+  // Estoque primeiro (rápido, é o que a "Nova venda" precisa pra abrir) — libera loadingUnidade
+  // assim que chega. Vendas (6 meses, fetchAll) e contatos vêm depois, em paralelo, sem travar
+  // a tela; loadingHistorico controla só o skeleton da lista/busca em TabLancar (S8.1).
   const loadDadosDaUnidade = useCallback(async (evoId, { silencioso = false } = {}) => {
     if (!evoId) return;
-    if (!silencioso) setLoadingUnidade(true);
+    if (!silencioso) {
+      setLoadingUnidade(true);
+      setLoadingHistorico(true);
+    }
+    try {
+      const inventoryData = await InventoryItem.filter({ franchise_id: evoId }, "-updated_at", null, {
+        columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id',
+      });
+      if (!mountedRef.current) return;
+      setInventoryItems(inventoryData);
+    } catch (error) {
+      console.error("Erro ao carregar estoque:", error);
+      if (!silencioso) toast.error("Erro ao carregar o estoque.");
+    } finally {
+      if (mountedRef.current) setLoadingUnidade(false);
+    }
+
     try {
       const resultados = await Promise.allSettled([
         Sale.filter({ franchise_id: evoId }, "-created_at", null, {
           columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() },
-        }),
-        InventoryItem.filter({ franchise_id: evoId }, "-updated_at", null, {
-          columns: 'id, product_name, quantity, cost_price, sale_price, franchise_id',
         }),
         Contact.filter({ franchise_id: evoId }, '-created_at', null, {
           columns: 'id, nome, telefone, status, franchise_id, endereco, bairro',
@@ -97,17 +117,16 @@ export default function Vendas() {
       if (!mountedRef.current) return;
       const valor = (r) => (r.status === "fulfilled" ? r.value : []);
       setSales(valor(resultados[0]));
-      setInventoryItems(valor(resultados[1]));
-      setContacts(valor(resultados[2]));
+      setContacts(valor(resultados[1]));
       const falhou = resultados.filter((r) => r.status === "rejected");
       if (falhou.length > 0) {
         console.warn("Algumas queries falharam:", falhou.map((f) => f.reason?.message));
         if (!silencioso) toast.error("Alguns dados não carregaram. Tente recarregar.");
       }
     } catch (error) {
-      console.error("Erro ao carregar dados da unidade:", error);
+      console.error("Erro ao carregar histórico da unidade:", error);
     } finally {
-      if (mountedRef.current) setLoadingUnidade(false);
+      if (mountedRef.current) setLoadingHistorico(false);
     }
   }, []);
 
@@ -131,8 +150,13 @@ export default function Vendas() {
 
   useEffect(() => {
     franchiseIdRef.current = franchiseId || null;
-    if (franchiseId) loadDadosDaUnidade(franchiseId);
-    else if (!loading) setLoadingUnidade(false); // sem unidade resolvida quem decide e o picker
+    if (franchiseId) {
+      loadDadosDaUnidade(franchiseId);
+    } else if (!loading) {
+      // sem unidade resolvida quem decide e o picker
+      setLoadingUnidade(false);
+      setLoadingHistorico(false);
+    }
   }, [franchiseId, loadDadosDaUnidade, loading]);
 
   const franchiseSales = useMemo(() => {
@@ -230,6 +254,7 @@ export default function Vendas() {
           sales={franchiseSales}
           contacts={franchiseContacts}
           inventoryItems={franchiseInventory}
+          historicoLoading={loadingHistorico}
           onRefresh={handleRefreshSales}
           autoOpenForm={actionParam === "nova-venda"}
           onFormOpened={() => {
