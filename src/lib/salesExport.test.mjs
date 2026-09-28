@@ -87,7 +87,7 @@ test("linha de total soma o recebido", () => {
 });
 
 test("a consulta traz as colunas que o export usa", () => {
-  for (const c of ["sale_number", "customer_name", "contact_phone", "created_at"]) {
+  for (const c of "sale_number customer_name contact_phone created_at".split(" ")) {
     assert.ok(SALES_EXPORT_QUERY_COLUMNS.includes(c), c);
   }
 });

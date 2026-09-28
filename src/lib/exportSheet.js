@@ -5,7 +5,7 @@
 const CELL_FORMAT = {
   date: "dd/mm/yyyy",
   time: "hh:mm",
-  money: "#,##0.00",
+  brl: "#,##0.00",
   int: "0",
 };
 
@@ -25,7 +25,7 @@ function displayLength(col, raw) {
 
 /**
  * @param XLSX módulo `xlsx` (import dinâmico no navegador, import normal no teste)
- * @param data linhas (objetos por `key`)
+ * @param data linhas (objetos indexados pela chave da coluna)
  * @param columns [{ key, header, type?, format? }]
  * @returns worksheet
  */

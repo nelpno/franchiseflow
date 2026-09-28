@@ -66,7 +66,7 @@ const formatInt = (v) => (typeof v === "number" && Number.isFinite(v) ? String(v
  * Definição única das colunas exportadas para vendas.
  * Importada por TabLancar (tela Vendas) e TabResultado (Gestão > Resultado, que o admin
  * também abre em Financeiro › Por unidade). Adicionar/renomear coluna aqui propaga para os
- * exports automaticamente. `type` ∈ date | time | int | money | text.
+ * exports automaticamente. `type` ∈ date | time | int | brl | text.
  */
 export const SALES_EXPORT_COLUMNS = [
   { key: "sale_date", header: "Data", type: "date", format: formatExportDate },
@@ -75,10 +75,10 @@ export const SALES_EXPORT_COLUMNS = [
   { key: "customer", header: "Cliente", type: "text", format: formatText },
   { key: "phone", header: "Telefone", type: "text", format: formatText },
   { key: "payment_method", header: "Pagamento", type: "text", format: formatText },
-  { key: "value", header: "Valor Bruto (R$)", type: "money", format: formatExportMoney },
-  { key: "discount_amount", header: "Desconto (R$)", type: "money", format: formatExportMoney },
-  { key: "delivery_fee", header: "Frete (R$)", type: "money", format: formatExportMoney },
-  { key: "net_value", header: "Valor Recebido (R$)", type: "money", format: formatExportMoney },
+  { key: "value", header: "Valor Bruto (R$)", type: "brl", format: formatExportMoney },
+  { key: "discount_amount", header: "Desconto (R$)", type: "brl", format: formatExportMoney },
+  { key: "delivery_fee", header: "Frete (R$)", type: "brl", format: formatExportMoney },
+  { key: "net_value", header: "Valor Recebido (R$)", type: "brl", format: formatExportMoney },
   { key: "status", header: "Status", type: "text", format: formatText },
   { key: "delivery_method", header: "Tipo", type: "text", format: formatText },
   { key: "observacoes", header: "Observações", type: "text", format: formatText },
@@ -86,7 +86,7 @@ export const SALES_EXPORT_COLUMNS = [
 
 /**
  * Colunas que a CONSULTA de vendas precisa trazer para o export sair completo. Sem
- * `sale_number`/`customer_name`/`contact_phone` no select o PostgREST omite o campo e a
+ * nº do pedido, nome e telefone do cliente no select o PostgREST omite o campo e a
  * planilha sai com Nº vazio e Cliente "—" em silêncio (era o caso do Resultado e do admin).
  */
 export const SALES_EXPORT_QUERY_COLUMNS =
