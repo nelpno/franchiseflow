@@ -102,6 +102,7 @@ function formatTimeSafe(dateString) {
 export default function TabLancar({
   franchiseId,
   franchiseName,
+  unitWhatsApp = null,
   currentUser,
   sales,
   contacts,
@@ -1119,6 +1120,7 @@ export default function TabLancar({
             saleItems={shareData.saleItems}
             contact={shareData.contact}
             franchiseName={franchiseName}
+            unitWhatsApp={unitWhatsApp}
           />
         </div>
       )}

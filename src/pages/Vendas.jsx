@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
-import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
+import { Franchise, FranchiseConfiguration, Sale, InventoryItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { resolveUnitWhatsApp } from "@/lib/receiptUtils";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +35,9 @@ export default function Vendas() {
   const [sales, setSales] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [contacts, setContacts] = useState([]);
+  // WhatsApp da unidade (rodapé do cupom, S13.1) — franchise_configurations.personal_phone_for_summary,
+  // o fallback real de franchises.phone_number (quase sempre NULL na base).
+  const [franchiseConfig, setFranchiseConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   // fase 2: vendas/estoque/contatos so carregam DEPOIS que sabemos qual unidade e, filtrados por ela
   const [loadingUnidade, setLoadingUnidade] = useState(true);
@@ -68,7 +72,7 @@ export default function Vendas() {
       // sem ele o PostgREST varria a tabela inteira e deixava a RLS peneirar, e franqueado com
       // 2 unidades baixava as DUAS para descartar uma no client.
       const franchisesData = await Franchise.list(null, null, {
-        columns: 'id, evolution_instance_id, name, city, owner_name',
+        columns: 'id, evolution_instance_id, name, city, owner_name, phone_number',
       });
       if (!mountedRef.current) return;
       setCurrentUser(user);
@@ -123,11 +127,15 @@ export default function Vendas() {
         Contact.filter({ franchise_id: evoId }, '-created_at', null, {
           columns: 'id, nome, telefone, status, franchise_id, endereco, bairro',
         }),
+        FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, {
+          columns: 'franchise_evolution_instance_id, personal_phone_for_summary',
+        }),
       ]);
       if (!vigente()) return;
       const valor = (r) => (r.status === "fulfilled" ? r.value : []);
       setSales(valor(resultados[0]));
       setContacts(valor(resultados[1]));
+      setFranchiseConfig(valor(resultados[2])[0] || null);
       const falhou = resultados.filter((r) => r.status === "rejected");
       if (falhou.length > 0) {
         console.warn("Algumas queries falharam:", falhou.map((f) => f.reason?.message));
@@ -183,6 +191,12 @@ export default function Vendas() {
     if (!franchiseId) return [];
     return contacts.filter((c) => c.franchise_id === franchiseId);
   }, [contacts, franchiseId]);
+
+  // Rodapé do cupom (S13.1): mesmo número que o robô usa nessa unidade.
+  const unitWhatsApp = useMemo(
+    () => resolveUnitWhatsApp(primaryFranchise, franchiseConfig),
+    [primaryFranchise, franchiseConfig]
+  );
 
   if (loading || (franchiseId && loadingUnidade)) {
     return (
@@ -260,6 +274,7 @@ export default function Vendas() {
         <TabLancar
           franchiseId={franchiseId}
           franchiseName={primaryFranchise.name}
+          unitWhatsApp={unitWhatsApp}
           currentUser={currentUser}
           sales={franchiseSales}
           contacts={franchiseContacts}
