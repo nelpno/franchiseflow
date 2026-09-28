@@ -172,6 +172,9 @@ export default function TabLancar({
   const [visiveis, setVisiveis] = useState(PAGINA_VENDAS);
   // S12.4: aviso de descartar mudanças ao fechar a EDIÇÃO (o SaleForm conta se mudou algo).
   const formDirtyRef = useRef(false);
+  // P3 (2ª passada): enquanto o formulário envia a venda, ele não fecha (X, Esc, "Cancelar").
+  // Fechar no meio deixava a operação antiga seguir e reabrir criava outra trava -> 2ª venda.
+  const formEnviandoRef = useRef(false);
   const [confirmDescartar, setConfirmDescartar] = useState(false);
 
   // S12.5: "Vendas hoje" da Início abre a lista já em Hoje (?periodo=hoje). Aplica 1 vez,
@@ -268,16 +271,29 @@ export default function TabLancar({
     if (excluindoRef.current) return; // 2 cliques no "Excluir" enquanto lê
     excluindoRef.current = true;
     setIsDeleting(true);
-    let capiSent = !!deletingSale.capi_sent;
+    // Leitura falhou = NÃO exclui com o valor velho (P3 2ª passada): pede para tentar de novo.
+    let atual = null;
+    let leu = false;
     try {
-      const [atual] = await Sale.filter({ id: deletingSale.id }, null, 1, { columns: "id, capi_sent" });
-      if (atual) capiSent = !!atual.capi_sent;
+      [atual] = await Sale.filter({ id: deletingSale.id }, null, 1, { columns: "id, capi_sent" });
+      leu = true;
     } catch {
-      /* segue com o valor da lista */
+      leu = false;
     } finally {
       excluindoRef.current = false;
       setIsDeleting(false);
     }
+    if (!leu) {
+      toast.error("Não foi possível conferir esta venda agora. Verifique a internet e tente excluir de novo.");
+      return;
+    }
+    if (!atual) {
+      toast.error("Esta venda já não existe mais (pode ter sido excluída em outra tela).");
+      setDeletingSale(null);
+      onRefresh();
+      return;
+    }
+    const capiSent = !!atual.capi_sent;
     if (capiSent) {
       setShowCapiDeleteWarning(true);
       return;
@@ -386,6 +402,7 @@ export default function TabLancar({
   const [pendingReceiptId, setPendingReceiptId] = useState(null);
 
   const closeForm = () => {
+    if (formEnviandoRef.current) return;
     formDirtyRef.current = false;
     setConfirmDescartar(false);
     setShowFormDialog(false);
@@ -395,6 +412,10 @@ export default function TabLancar({
 
   // Fechar pelo X, Esc ou "Cancelar": na EDIÇÃO com mudança sem salvar, pergunta antes (S12.4).
   const requestCloseForm = () => {
+    if (formEnviandoRef.current) {
+      toast.info("Aguarde: a venda está sendo salva.");
+      return;
+    }
     if (uiV2 && editingSale && formDirtyRef.current) {
       setConfirmDescartar(true);
       return;
@@ -404,6 +425,7 @@ export default function TabLancar({
 
   const handleFormSave = (savedSaleId) => {
     formDirtyRef.current = false;
+    formEnviandoRef.current = false;
     const wasEditing = !!editingSale;
     setShowFormDialog(false);
     setEditingSale(null);
@@ -1389,6 +1411,7 @@ export default function TabLancar({
             onSave={handleFormSave}
             onCancel={requestCloseForm}
             onDirtyChange={(sujo) => { formDirtyRef.current = sujo; }}
+            onEnviandoChange={(enviando) => { formEnviandoRef.current = enviando; }}
             initialContactId={!editingSale ? savedContactId : null}
             initialPhone={!editingSale ? savedPhone : null}
           />

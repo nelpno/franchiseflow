@@ -391,6 +391,7 @@ export default function SaleForm({
   initialContactId = null,
   initialPhone = null,
   onDirtyChange,
+  onEnviandoChange,
 }) {
   const isEditing = !!sale;
   // S6.2: com a chave ui_v2, venda nova nasce recebida; "Ainda vou receber" segura como a receber.
@@ -958,10 +959,12 @@ export default function SaleForm({
     e?.preventDefault?.();
     if (enviandoRef.current) return;
     enviandoRef.current = true;
+    onEnviandoChange?.(true); // o pai não deixa fechar enquanto envia (P3, 2ª passada)
     try {
       await enviarVenda(opcoes);
     } finally {
       enviandoRef.current = false;
+      onEnviandoChange?.(false);
     }
   };
 
@@ -1001,6 +1004,8 @@ export default function SaleForm({
     // pelo contato e pelo telefone (duas consultas, sem teto que corte o cliente), comparadas
     // por valor em lib/vendaRepetida.js. Falha ou demora = segue sem aviso.
     if (uiV2 && !isEditing && !ignorarRepetida) {
+      // Telefone no formato canônico do banco (só dígitos, sem DDI 55): "5511987654321"
+      // digitado casa com a venda do robô gravada como "11987654321" (P3, 2ª passada).
       const telefoneCandidato = normalizePhone(
         (contactId && isValidPhone(contactPhone) ? contactPhone : null) ||
           (isValidPhone(missingPhone) ? missingPhone : null) ||
@@ -1124,6 +1129,12 @@ export default function SaleForm({
     }
 
     if (!isEditing && !clientSaleIdRef.current) clientSaleIdRef.current = novoIdVenda();
+    // O id da venda vai para o rascunho ANTES da RPC (P3, 2ª passada): se a tela morrer no meio
+    // (aba fechada, celular sem bateria), reabrir reaproveita o id e a RPC não grava de novo.
+    if (!isEditing) {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+      saveDraft(franchiseId, { ...draftData, clientSaleId: clientSaleIdRef.current });
+    }
 
     // S6.2: decidido uma vez por envio; vai no p_sale_data e a RPC grava junto com a venda
     // (só no INSERT: a nova tentativa que cai no client_id já gravado não mexe no recebimento).
