@@ -153,6 +153,7 @@ export default function TabLancar({
   const [expandedItems, setExpandedItems] = useState({});
   const [deletingSale, setDeletingSale] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const excluindoRef = useRef(false);
   const [showCapiDeleteWarning, setShowCapiDeleteWarning] = useState(false);
   const [sharingSaleId, setSharingSaleId] = useState(null);
   const [printingSaleId, setPrintingSaleId] = useState(null);
@@ -260,8 +261,24 @@ export default function TabLancar({
   // Delete sale
   const handleConfirmDelete = async () => {
     if (!deletingSale) return;
-    // Aviso quando venda ja enviou CAPI: deletar deixa Purchase fantasma no Meta
-    if (deletingSale.capi_sent) {
+    // Aviso quando venda ja enviou CAPI: deletar deixa Purchase fantasma no Meta.
+    // Lê o capi_sent ATUAL no banco (P3 S12): a lista pode estar velha (o "Recebido" dado em
+    // outra aba, ou o evento que saiu depois do último carregamento). Falhou a leitura = usa
+    // o que a lista tem.
+    if (excluindoRef.current) return; // 2 cliques no "Excluir" enquanto lê
+    excluindoRef.current = true;
+    setIsDeleting(true);
+    let capiSent = !!deletingSale.capi_sent;
+    try {
+      const [atual] = await Sale.filter({ id: deletingSale.id }, null, 1, { columns: "id, capi_sent" });
+      if (atual) capiSent = !!atual.capi_sent;
+    } catch {
+      /* segue com o valor da lista */
+    } finally {
+      excluindoRef.current = false;
+      setIsDeleting(false);
+    }
+    if (capiSent) {
       setShowCapiDeleteWarning(true);
       return;
     }
@@ -269,7 +286,8 @@ export default function TabLancar({
   };
 
   const performDeleteSale = async () => {
-    if (!deletingSale) return;
+    if (!deletingSale || excluindoRef.current) return;
+    excluindoRef.current = true;
     setIsDeleting(true);
     try {
       await Sale.delete(deletingSale.id);
@@ -281,6 +299,7 @@ export default function TabLancar({
       console.error("Erro ao excluir venda:", error);
       toast.error(safeErrorMessage(error, "Erro ao excluir venda."));
     } finally {
+      excluindoRef.current = false;
       setIsDeleting(false);
     }
   };

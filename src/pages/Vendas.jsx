@@ -13,7 +13,9 @@ import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
 import TabLancar from "@/components/minha-loja/TabLancar";
 
-const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, fee_passed_to_customer, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, contact_phone, customer_address, customer_neighborhood, delivery_method, net_value';
+const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, card_fee_amount, card_fee_percent, fee_passed_to_customer, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, contact_phone, customer_address, customer_neighborhood, delivery_method, net_value, capi_sent';
+// capi_sent (P3 S12, sem chave): sem ele o aviso "essa venda já foi contada no anúncio" antes de
+// excluir nunca aparecia (deletingSale.capi_sent vinha sempre undefined).
 const SALES_LOOKBACK_MONTHS = 6;
 const getSalesCutoff = () => format(subMonths(new Date(), SALES_LOOKBACK_MONTHS), 'yyyy-MM-dd');
 
