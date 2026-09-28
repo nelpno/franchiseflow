@@ -2,8 +2,13 @@ import React from "react";
 import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
 import { formatPhone } from "@/lib/whatsappUtils";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import {
+  resolveDeliveryLabel,
+  formatReceiptAddressLine,
+  formatCardFeePercent,
+  formatReceiptDateTime,
+  ENDERECO_NAO_INFORMADO,
+} from "@/lib/receiptUtils";
 import logoMaxi from "@/assets/logo-maxi-massas-optimized.png";
 
 function getPaymentLabel(method) {
@@ -11,28 +16,10 @@ function getPaymentLabel(method) {
   return pm?.label || method || "—";
 }
 
-function formatReceiptDate(saleDate, createdAt) {
-  try {
-    const datePart = saleDate
-      ? format(parseISO(saleDate), "dd/MM/yyyy", { locale: ptBR })
-      : null;
-    const timePart = createdAt
-      ? format(parseISO(createdAt), "HH:mm")
-      : null;
-
-    if (datePart && timePart && timePart !== "00:00") {
-      return `${datePart} às ${timePart}`;
-    }
-    return datePart || "—";
-  } catch {
-    return "—";
-  }
-}
-
 const dashedBorder = "1px dashed #999";
 
 const SaleReceipt = React.forwardRef(function SaleReceipt(
-  { sale, saleItems, contact, franchiseName },
+  { sale, saleItems, contact, franchiseName, unitWhatsApp },
   ref
 ) {
   const subtotal = saleItems.reduce(
@@ -51,10 +38,11 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
     deliveryFee +
     (showCardFeeRow ? cardFeeAmount : 0);
 
-  // Endereço: usa o contato "vivo" quando carregado; senão cai no snapshot gravado na venda
-  // (contatos antigos ficam fora da janela de ~1000 carregados na tela de Vendas).
-  const receiptAddress = contact?.endereco || sale.customer_address;
-  const receiptNeighborhood = contact?.bairro || sale.customer_neighborhood;
+  // S13.1 (28/09/2026): Entrega/Retirada explícito e endereço da VENDA primeiro (o robô grava
+  // sales.customer_address desde a S4.2), depois o do contato "vivo"; sem nenhum, avisa em vez
+  // de calar. Regra inteira em src/lib/receiptUtils.js (testada, sem depender do DOM).
+  const deliveryLabel = resolveDeliveryLabel(sale.delivery_method);
+  const receiptAddressLine = formatReceiptAddressLine({ sale, contact });
   // Telefone do cliente no cupom — o entregador liga direto em vez de acionar a franqueada.
   // Mesma cascata do endereço: contato "vivo" primeiro, snapshot da venda como fallback.
   const receiptPhone = formatPhone(contact?.telefone || sale.contact_phone || "");
@@ -153,6 +141,23 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             Pedido #{sale.sale_number}
           </div>
         ) : null}
+        {/* Entrega/Retirada explícito (S13.1) — nunca "loja"; texto puro, sem ícone (o cupom
+            pode ir pra um iframe de impressão que só carrega Inter/Plus Jakarta). */}
+        <div
+          style={{
+            display: "inline-block",
+            marginTop: 8,
+            padding: "3px 10px",
+            border: "1px solid #1b1c1d",
+            borderRadius: 999,
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+          }}
+        >
+          {deliveryLabel}
+        </div>
       </div>
 
       {/* Separador */}
@@ -172,17 +177,25 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             <span style={{ fontWeight: 600 }}>{receiptPhone}</span>
           </div>
         )}
-        {(receiptAddress || receiptNeighborhood) && (
+        {/* Só aparece em ENTREGA (retirada não precisa endereço do cliente); sem nenhum
+            endereço, avisa em vez de calar (linha vem de receiptUtils.js). */}
+        {receiptAddressLine && (
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span style={{ color: "#7a6d6d", flexShrink: 0 }}>Endereço</span>
-            <span style={{ textAlign: "right", fontWeight: 600 }}>
-              {[receiptAddress, receiptNeighborhood].filter(Boolean).join(" — ")}
+            <span
+              style={{
+                textAlign: "right",
+                fontWeight: 700,
+                color: receiptAddressLine === ENDERECO_NAO_INFORMADO ? "#dc2626" : "inherit",
+              }}
+            >
+              {receiptAddressLine}
             </span>
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <span style={{ color: "#7a6d6d" }}>Data</span>
-          <span>{formatReceiptDate(sale.sale_date, sale.created_at)}</span>
+          <span>{formatReceiptDateTime(sale.sale_date, sale.created_at)}</span>
         </div>
       </div>
 
@@ -281,7 +294,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         {showCardFeeRow && (
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#4a3d3d" }}>
-              Taxa cartão ({cardFeePercent.toFixed(0)}%)
+              Taxa cartão ({formatCardFeePercent(cardFeePercent)})
             </span>
             <span style={{ fontVariantNumeric: "tabular-nums" }}>
               {formatCurrency(cardFeeAmount)}
@@ -370,6 +383,11 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         >
           Maxi Massas
         </div>
+        {unitWhatsApp && (
+          <div style={{ fontSize: 11, color: "#4a3d3d", marginTop: 4 }}>
+            WhatsApp: {unitWhatsApp}
+          </div>
+        )}
       </div>
     </div>
   );
