@@ -12,8 +12,14 @@ import { buildExportWorksheet } from "@/lib/exportSheet";
  *   columns   – [{ key, header, format? }]
  *   filename  – base filename (no extension)
  *   title     – PDF header title
+ *   evento    – (opcional) prefixo do evento no Clarity: "<evento>_excel" / "<evento>_pdf"
  */
-export default function ExportButtons({ data, columns, filename, title }) {
+function registrarEvento(evento, formato) {
+  if (!evento) return;
+  try { window.clarity?.("event", `${evento}_${formato}`); } catch { /* telemetria não pode derrubar o download */ }
+}
+
+export default function ExportButtons({ data, columns, filename, title, evento }) {
   const handleExcel = async () => {
     try {
       const XLSX = await import("xlsx");
@@ -27,6 +33,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
       const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       saveAs(new Blob([buf], { type: "application/octet-stream" }), `${filename}.xlsx`);
       toast.success("Excel exportado com sucesso!");
+      registrarEvento(evento, "excel");
     } catch (err) {
       console.error("Erro ao exportar Excel:", err);
       toast.error("Erro ao exportar Excel.");
@@ -77,6 +84,7 @@ export default function ExportButtons({ data, columns, filename, title }) {
 
       doc.save(`${filename}.pdf`);
       toast.success("PDF exportado com sucesso!");
+      registrarEvento(evento, "pdf");
     } catch (err) {
       console.error("Erro ao exportar PDF:", err);
       toast.error("Erro ao exportar PDF.");

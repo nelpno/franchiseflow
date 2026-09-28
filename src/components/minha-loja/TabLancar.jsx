@@ -669,6 +669,7 @@ export default function TabLancar({
             columns={SALES_EXPORT_COLUMNS}
             filename={exportConfig.filename}
             title={exportConfig.title}
+            evento="planilha_vendas"
           />
         </div>
       </div>
