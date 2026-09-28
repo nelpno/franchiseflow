@@ -471,6 +471,7 @@ export default function PurchaseOrderForm({
                             <TableCell className="text-center">
                               <Input
                                 type="number"
+                                inputMode="decimal"
                                 min="0"
                                 step="1"
                                 value={qty || ""}
@@ -546,6 +547,7 @@ export default function PurchaseOrderForm({
                     </Label>
                     <Input
                       type="number"
+                      inputMode="decimal"
                       min="0"
                       step="1"
                       value={qty || ""}

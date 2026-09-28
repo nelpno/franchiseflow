@@ -348,6 +348,7 @@ export default function OrderDetailDialog({
                             {isEditable ? (
                               <Input
                                 type="number"
+                                inputMode="decimal"
                                 min="0"
                                 step="1"
                                 value={qty}
@@ -394,6 +395,7 @@ export default function OrderDetailDialog({
                     <Label className="text-xs font-bold uppercase tracking-widest text-ink-3 font-plus-jakarta">Frete (R$)</Label>
                     <Input
                       type="number"
+                      inputMode="decimal"
                       min="0"
                       step="0.01"
                       value={editedFreight}

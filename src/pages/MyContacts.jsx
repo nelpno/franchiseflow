@@ -521,6 +521,8 @@ export default function MyContacts() {
             <div className="space-y-1.5">
               <Label className="text-ink">Telefone</Label>
               <Input
+                type="tel"
+                inputMode="tel"
                 value={newContactForm.telefone}
                 onChange={(e) => setNewContactForm({ ...newContactForm, telefone: e.target.value })}
                 placeholder="(14) 99999-9999"
@@ -856,6 +858,8 @@ export default function MyContacts() {
               <Label htmlFor="edit-telefone" className="text-ink">Telefone</Label>
               <Input
                 id="edit-telefone"
+                type="tel"
+                inputMode="tel"
                 value={editForm.telefone || ""}
                 onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
                 placeholder="(11) 99999-9999"

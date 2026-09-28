@@ -196,6 +196,7 @@ export default function ExpenseForm({ expense, franchiseId, currentUser, onSave,
           <Input
             id="expense-amount"
             type="number"
+            inputMode="decimal"
             min={0.01}
             step={0.01}
             placeholder="0,00"

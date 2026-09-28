@@ -607,6 +607,7 @@ export default function AsaasSetupPanel() {
               <span className="font-medium">Mensalidade (R$)</span>
               <input
                 type="number"
+                inputMode="decimal"
                 min="5"
                 max="5000"
                 step="0.01"
@@ -917,6 +918,7 @@ export default function AsaasSetupPanel() {
               <span className="text-xs font-medium text-ink-3">Novo valor (R$)</span>
               <input
                 type="number"
+                inputMode="decimal"
                 min="5"
                 max="5000"
                 step="0.01"

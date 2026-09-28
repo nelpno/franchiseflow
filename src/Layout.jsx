@@ -586,9 +586,11 @@ export default function Layout({ children, currentPageName }) {
           </header>
 
           {/* Page content */}
+          {/* pb-20 cobre a altura do menu de baixo (h-16); a area segura do iPhone
+              (home indicator) soma por cima, senao o fim da tela fica atras do menu. */}
           <div className={`flex-1 min-h-0 overflow-auto ${
             (isAdmin || isCS) && isHomePath ? "" : "md:pt-20"
-          } pb-20 md:pb-0`}>
+          } pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0`}>
             <VoltarTrilhaBar />
             <div className="max-w-6xl mx-auto w-full">
               {children}
@@ -598,7 +600,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Mobile bottom nav — franqueado */}
         {!isAdmin && !isCS && (
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-16 flex items-center justify-around px-4 z-40">
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-4 z-40">
             {mobileBottomNav.map((item) => {
               if (item.isFab) {
                 return (
@@ -639,7 +641,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Mobile bottom nav — admin/gerente/CS: Hoje / Unidades / Mural / Mais */}
         {(isAdmin || isCS) && (
-          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-16 flex items-center justify-around px-2 z-40">
+          <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-none shadow-[0_-4px_20px_-10px_rgba(185,28,28,0.1)] h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-around px-2 z-40">
             {adminMobileBottomNav.map((item) => {
               const isActive =
                 location.pathname === item.url ||

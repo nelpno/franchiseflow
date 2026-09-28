@@ -1195,6 +1195,7 @@ export default function SaleForm({
             <div className="w-full md:w-28">
               <Input
                 type="number"
+                inputMode="decimal"
                 min={0}
                 step={0.01}
                 value={item.unit_price || ""}
@@ -1277,6 +1278,7 @@ export default function SaleForm({
           </div>
           <Input
             type="number"
+            inputMode="decimal"
             min={0}
             max={discountType === "percent" ? 100 : undefined}
             step={discountType === "percent" ? 1 : 0.01}
@@ -1323,6 +1325,7 @@ export default function SaleForm({
               <Label className="text-sm text-ink-2 whitespace-nowrap">Taxa (%)</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 min={0}
                 max={100}
                 step={0.01}
@@ -1424,6 +1427,7 @@ export default function SaleForm({
               <Label className="text-sm text-ink-2 whitespace-nowrap">Frete (R$)</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 min={0}
                 step={0.01}
                 value={deliveryFee || ""}

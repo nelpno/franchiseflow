@@ -1031,6 +1031,7 @@ export default function TabEstoque({
                                   <Input
                                     ref={editInputRef}
                                     type="number"
+                                    inputMode="decimal"
                                     min="0"
                                     step="1"
                                     value={editValue}
@@ -1063,6 +1064,7 @@ export default function TabEstoque({
                                   <Input
                                     ref={editInputRef}
                                     type="number"
+                                    inputMode="decimal"
                                     min="0"
                                     step="1"
                                     value={editValue}
@@ -1096,6 +1098,7 @@ export default function TabEstoque({
                                   <Input
                                     ref={editInputRef}
                                     type="number"
+                                    inputMode="decimal"
                                     min="0"
                                     step="0.01"
                                     value={editValue}
@@ -1321,6 +1324,7 @@ export default function TabEstoque({
                 <Label className="text-ink">Quantidade</Label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="1"
                   value={formData.quantity}
@@ -1362,6 +1366,7 @@ export default function TabEstoque({
               <Label className="text-ink">Estoque Minimo</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="1"
                 value={formData.min_stock}
@@ -1390,6 +1395,7 @@ export default function TabEstoque({
                 </Label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.01"
                   value={formData.cost_price}
@@ -1409,6 +1415,7 @@ export default function TabEstoque({
                 <Label className="text-ink">Preco de Venda (R$)</Label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   min="0"
                   step="0.01"
                   value={formData.sale_price}

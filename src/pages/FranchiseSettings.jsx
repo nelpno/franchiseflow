@@ -1087,21 +1087,21 @@ function FranchiseSettingsContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className={labelClass}>Raio máximo (km)<RequiredDot /></label>
-                      <input className={`${inputClass} font-mono`} type="number" min="1" max="60"
+                      <input className={`${inputClass} font-mono`} type="number" inputMode="decimal" min="1" max="60"
                         value={formData.max_delivery_radius_km ?? ''}
                         onChange={(e) => handleInputChange('max_delivery_radius_km', e.target.value ? Number(e.target.value) : null)}
                         placeholder="7" />
                     </div>
                     <div>
                       <label className={labelClass}>Pedido mínimo (R$)</label>
-                      <input className={`${inputClass} font-mono`} type="number" min="0"
+                      <input className={`${inputClass} font-mono`} type="number" inputMode="decimal" min="0"
                         value={formData.min_order_value ?? ''}
                         onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
                         placeholder="Sem mínimo" />
                     </div>
                     <div>
                       <label className={labelClass}>Prazo de entrega (min)</label>
-                      <input className={`${inputClass} font-mono`} type="number" min="0"
+                      <input className={`${inputClass} font-mono`} type="number" inputMode="numeric" min="0"
                         value={formData.avg_prep_time_minutes ?? ''}
                         onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
                         placeholder="Vazio" />
@@ -1296,6 +1296,7 @@ function FranchiseSettingsContent() {
                           <div className="relative">
                             <input
                               type="number"
+                              inputMode="decimal"
                               min="0"
                               max="100"
                               step="0.01"
@@ -1400,7 +1401,11 @@ function FranchiseSettingsContent() {
       )}
 
       {/* Fixed Bottom Navigation */}
-      <footer className="fixed bottom-16 md:bottom-0 right-0 left-0 md:left-[260px] bg-white border-t border-surface-line px-4 md:px-8 py-3 z-40">
+      {/* No celular o rodape fica ACIMA do menu de baixo (que ja tem sua propria area
+          segura); no desktop/PWA ele encosta no fim real da tela — pb soma a area segura
+          do iPhone (home indicator) só quando isso importa (bottom-0), sem mexer no py-3
+          do celular. */}
+      <footer className="fixed bottom-16 md:bottom-0 right-0 left-0 md:left-[260px] bg-white border-t border-surface-line px-4 md:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] z-40">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           {/* Left: Voltar */}
           <div className="w-28">

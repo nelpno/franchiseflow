@@ -132,6 +132,7 @@ export default function NovoProdutoDialog({ open, onOpenChange }) {
               </Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="0.01"
                 value={produto.cost_price}
@@ -146,6 +147,7 @@ export default function NovoProdutoDialog({ open, onOpenChange }) {
               </Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="1"
                 value={produto.min_stock}
