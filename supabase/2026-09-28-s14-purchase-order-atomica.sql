@@ -10,8 +10,8 @@
 -- mesmo modelo do save_sale_with_items da S0.1): o id do pedido É o client_id; a nova tentativa cai
 -- no ON CONFLICT (id) DO NOTHING. Duas chamadas simultâneas: a 2ª espera a 1ª no índice único.
 --
--- Reenvio com o MESMO client_id (P3 da S14, ponto 3): compara os itens+quantidades pedidos com o
--- que já está gravado.
+-- Reenvio com o MESMO client_id (P3 da S14, ponto 3): compara os itens+quantidades pedidos E a
+-- observação (normalizada: trim, vazio = null) com o que já está gravado.
 --   * iguais   -> devolve {id, ja_existia:true} (resposta perdida / clique repetido);
 --   * diferentes -> ERRO de regra P0001, detail 'S14_ENVIO_DIFERENTE', mensagem com prefixo
 --     "Pedido:" (o front mostra inteira e mantém o rascunho; ela pode gerar um envio novo, com id
@@ -76,6 +76,7 @@ declare
   v_count     integer;
   v_total     numeric;
   v_igual     boolean;
+  v_notes     text := nullif(trim(coalesce(p_notes, '')), '');  -- observação normalizada (vazio = null)
 begin
   if p_client_id is null then
     raise exception 'Pedido: identificador do envio ausente. Atualize a página e tente de novo.'
@@ -111,7 +112,7 @@ begin
   end loop;
 
   -- 2º passo: o MESMO envio já foi gravado? Igual -> devolve; diferente -> erro de regra.
-  select id, franchise_id, status into v_existing from purchase_orders where id = p_client_id;
+  select id, franchise_id, status, notes into v_existing from purchase_orders where id = p_client_id;
   if found then
     if v_existing.franchise_id is distinct from p_franchise_id then
       raise exception 'Pedido: este envio pertence a outra unidade.' using errcode = 'P0001';
@@ -125,6 +126,8 @@ begin
        except
        select inventory_item_id, quantity from purchase_order_items where order_id = p_client_id)
     ) into v_igual;
+    -- P3 2ª passada: mudar só a observação também é outro pedido (senão o rascunho sumia sem gravar).
+    v_igual := v_igual and (nullif(trim(coalesce(v_existing.notes, '')), '') is not distinct from v_notes);
     if not v_igual then
       raise exception 'Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.'
         using errcode = 'P0001', detail = 'S14_ENVIO_DIFERENTE';
@@ -158,13 +161,13 @@ begin
   insert into purchase_orders (id, franchise_id, status, total_amount, total_weight_kg, notes, ordered_at)
   values (p_client_id, p_franchise_id, 'pendente', round(v_total, 2),
           case when p_total_weight_kg is null then null else round(p_total_weight_kg, 3) end,
-          nullif(trim(coalesce(p_notes, '')), ''), now())
+          v_notes, now())
   on conflict (id) do nothing
   returning id into v_order_id;
 
   if v_order_id is null then
     -- A outra chamada simultânea gravou primeiro: mesma comparação do 2º passo.
-    select id, franchise_id, status into v_existing from purchase_orders where id = p_client_id;
+    select id, franchise_id, status, notes into v_existing from purchase_orders where id = p_client_id;
     if not found or v_existing.franchise_id is distinct from p_franchise_id then
       raise exception 'Pedido: não foi possível conferir o envio anterior. Veja o histórico antes de enviar de novo.'
         using errcode = 'P0001';
@@ -178,6 +181,8 @@ begin
        except
        select inventory_item_id, quantity from purchase_order_items where order_id = p_client_id)
     ) into v_igual;
+    -- P3 2ª passada: mudar só a observação também é outro pedido (senão o rascunho sumia sem gravar).
+    v_igual := v_igual and (nullif(trim(coalesce(v_existing.notes, '')), '') is not distinct from v_notes);
     if not v_igual then
       raise exception 'Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.'
         using errcode = 'P0001', detail = 'S14_ENVIO_DIFERENTE';
@@ -229,11 +234,25 @@ notify pgrst, 'reload schema';
 --     '11111111-1111-4111-8111-111111111111', '<evo_teste>',
 --     (select jsonb_agg(jsonb_build_object('inventory_item_id', id, 'quantity', 3)) from _t),
 --     'teste S14', 1.5);
---   -- (2) clique repetido / resposta perdida: MESMO id e MESMOS itens -> ja_existia=true, nada novo
+--   -- (2) clique repetido / resposta perdida: MESMO id, MESMOS itens e MESMA observação (com espaço
+--   --     sobrando, que a normalização ignora) -> ja_existia=true, nada novo
 --   select public.create_purchase_order_with_items(
 --     '11111111-1111-4111-8111-111111111111', '<evo_teste>',
 --     (select jsonb_agg(jsonb_build_object('inventory_item_id', id, 'quantity', 3)) from _t),
---     'outra obs', 9);
+--     '  teste S14 ', 9);
+--   -- (2b) P3 2ª passada — MESMO id e itens, observação DIFERENTE -> ERRO P0001 S14_ENVIO_DIFERENTE
+--   savepoint s2b;
+--   select public.create_purchase_order_with_items(
+--     '11111111-1111-4111-8111-111111111111', '<evo_teste>',
+--     (select jsonb_agg(jsonb_build_object('inventory_item_id', id, 'quantity', 3)) from _t),
+--     'outra obs', 1.5);
+--   rollback to savepoint s2b;
+--   savepoint s2c;   -- observação apagada (vazio = null) também diverge de 'teste S14'
+--   select public.create_purchase_order_with_items(
+--     '11111111-1111-4111-8111-111111111111', '<evo_teste>',
+--     (select jsonb_agg(jsonb_build_object('inventory_item_id', id, 'quantity', 3)) from _t),
+--     '   ', 1.5);
+--   rollback to savepoint s2c;
 --   -- (3) P3 ponto 3 — MESMO id, conteúdo DIFERENTE (outra aba / tela mudada) -> ERRO P0001
 --   --     "Pedido: um pedido anterior deste formulário já chegou à fábrica..." (detail S14_ENVIO_DIFERENTE)
 --   savepoint s3;
