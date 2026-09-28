@@ -9,6 +9,14 @@ do $$ declare r jsonb; begin perform set_config('request.jwt.claims', json_build
   r := public.create_purchase_order_with_items('00000000-0000-4000-8000-00000000a001'::uuid, 'franquiaararaquarasp', '[{"inventory_item_id":"6b09b96c-dd1c-49e3-a4b7-9944827e4eeb","quantity":2},{"inventory_item_id":"2058bbb5-0d7a-416b-ab7d-0f4256977dff","quantity":3}]'::jsonb); reset role;
   insert into _r select 'controle_antes_can_1', (select unit_price from purchase_order_items where order_id='00000000-0000-4000-8000-00000000a001' and inventory_item_id='6b09b96c-dd1c-49e3-a4b7-9944827e4eeb') = 1.00, (select unit_price from purchase_order_items where order_id='00000000-0000-4000-8000-00000000a001' and inventory_item_id='6b09b96c-dd1c-49e3-a4b7-9944827e4eeb')::text;
 end $$;
+-- S14.7 (Onda 7, 28/09/2026): pedido à fábrica precificado pela TABELA (catalog_products).
+-- Gerado a partir do corpo VIVO (.tmp/onda7/s147-gera2.mjs); na RPC só muda o 3º passo.
+-- Medido 28/09: 1.890 itens padrão com custo; 1.839 casam com a tabela pelo nome (0 com custo
+-- diferente hoje) + 39 "Molho de Tomate Mariolla - 250g" pelo alias; ~12 nomes tortos seguem no custo.
+-- ROLLBACK (nesta ordem):
+--   node supabase/cs-cockpit/_aplica-lf.mjs docs/db-backups/create_purchase_order_with_items.2026-09-28-antes.sql
+--   drop function if exists public.get_precos_pedido_fabrica(text); drop function if exists public.preco_tabela_fabrica(text);
+--   (o front cai no cost_price se get_precos_pedido_fabrica não existir)
 -- Preço da TABELA da fábrica para um nome de produto do estoque (nome exato; o molho padrão
 -- "Molho de Tomate Mariolla - 250g" das unidades = "Molho de Tomate Sugo - 250g" do catálogo).
 -- Produto desativado no catálogo mantém o preço da tabela (P3: não cair no custo da unidade).
@@ -91,7 +99,7 @@ begin
   end loop;
 
   -- 2º passo: o MESMO envio já foi gravado? Igual -> devolve; diferente -> erro de regra.
-  select id, franchise_id, status, notes into v_existing from purchase_orders where id = p_client_id;
+  select id, franchise_id, status, notes, total_amount into v_existing from purchase_orders where id = p_client_id;
   if found then
     if v_existing.franchise_id is distinct from p_franchise_id then
       raise exception 'Pedido: este envio pertence a outra unidade.' using errcode = 'P0001';
@@ -111,7 +119,7 @@ begin
       raise exception 'Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.'
         using errcode = 'P0001', detail = 'S14_ENVIO_DIFERENTE';
     end if;
-    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status);
+    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status, 'total_amount', v_existing.total_amount);
   end if;
 
   -- S14.7: preço = tabela da fábrica (preco_tabela_fabrica), não o custo da unidade (compra
@@ -148,7 +156,7 @@ begin
 
   if v_order_id is null then
     -- A outra chamada simultânea gravou primeiro: mesma comparação do 2º passo.
-    select id, franchise_id, status, notes into v_existing from purchase_orders where id = p_client_id;
+    select id, franchise_id, status, notes, total_amount into v_existing from purchase_orders where id = p_client_id;
     if not found or v_existing.franchise_id is distinct from p_franchise_id then
       raise exception 'Pedido: não foi possível conferir o envio anterior. Veja o histórico antes de enviar de novo.'
         using errcode = 'P0001';
@@ -168,7 +176,7 @@ begin
       raise exception 'Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.'
         using errcode = 'P0001', detail = 'S14_ENVIO_DIFERENTE';
     end if;
-    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status);
+    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status, 'total_amount', v_existing.total_amount);
   end if;
 
   -- 5º passo: itens, do MESMO conjunto materializado (mesma transação: falhou aqui, o cabeçalho some junto).
@@ -203,6 +211,7 @@ do $$ declare r jsonb; r2 jsonb; v numeric; begin perform set_config('request.jw
   perform set_config('request.jwt.claims', json_build_object('sub','9bcd7535-c657-4813-9b11-be456c5d467e','role','authenticated')::text, true); set local role authenticated;
   r2 := public.create_purchase_order_with_items('00000000-0000-4000-8000-00000000a002'::uuid, 'franquiaararaquarasp', '[{"inventory_item_id":"6b09b96c-dd1c-49e3-a4b7-9944827e4eeb","quantity":2},{"inventory_item_id":"2058bbb5-0d7a-416b-ab7d-0f4256977dff","quantity":3}]'::jsonb); reset role;
   insert into _r select 'reenvio_ja_existia', (r2->>'ja_existia')::boolean, r2::text;
+  insert into _r select 'reenvio_devolve_total_gravado', (r2->>'total_amount')::numeric = 64.40, r2->>'total_amount';
   insert into _r select 'reenvio_total_inalterado', (select total_amount from purchase_orders where id='00000000-0000-4000-8000-00000000a002') = 64.40, null;
   -- produto desativado no catálogo mantém o preço da tabela (não cai no custo 1,00)
   update catalog_products set active = false where name = 'Canelone 4 Queijos - 700g';

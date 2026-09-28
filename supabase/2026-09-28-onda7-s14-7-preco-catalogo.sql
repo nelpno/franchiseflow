@@ -88,7 +88,7 @@ begin
   end loop;
 
   -- 2º passo: o MESMO envio já foi gravado? Igual -> devolve; diferente -> erro de regra.
-  select id, franchise_id, status, notes into v_existing from purchase_orders where id = p_client_id;
+  select id, franchise_id, status, notes, total_amount into v_existing from purchase_orders where id = p_client_id;
   if found then
     if v_existing.franchise_id is distinct from p_franchise_id then
       raise exception 'Pedido: este envio pertence a outra unidade.' using errcode = 'P0001';
@@ -108,7 +108,7 @@ begin
       raise exception 'Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.'
         using errcode = 'P0001', detail = 'S14_ENVIO_DIFERENTE';
     end if;
-    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status);
+    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status, 'total_amount', v_existing.total_amount);
   end if;
 
   -- S14.7: preço = tabela da fábrica (preco_tabela_fabrica), não o custo da unidade (compra
@@ -145,7 +145,7 @@ begin
 
   if v_order_id is null then
     -- A outra chamada simultânea gravou primeiro: mesma comparação do 2º passo.
-    select id, franchise_id, status, notes into v_existing from purchase_orders where id = p_client_id;
+    select id, franchise_id, status, notes, total_amount into v_existing from purchase_orders where id = p_client_id;
     if not found or v_existing.franchise_id is distinct from p_franchise_id then
       raise exception 'Pedido: não foi possível conferir o envio anterior. Veja o histórico antes de enviar de novo.'
         using errcode = 'P0001';
@@ -165,7 +165,7 @@ begin
       raise exception 'Pedido: um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.'
         using errcode = 'P0001', detail = 'S14_ENVIO_DIFERENTE';
     end if;
-    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status);
+    return jsonb_build_object('id', v_existing.id, 'ja_existia', true, 'status', v_existing.status, 'total_amount', v_existing.total_amount);
   end if;
 
   -- 5º passo: itens, do MESMO conjunto materializado (mesma transação: falhou aqui, o cabeçalho some junto).

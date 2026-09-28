@@ -117,16 +117,21 @@ export default function PurchaseOrderForm({
     return () => { alive = false; };
   }, []);
 
-  // S14.7: preços da tabela da fábrica (o que a RPC grava). Falha = fica o custo da unidade.
+  // S14.7: preços da tabela da fábrica (o que a RPC grava). Envio só depois de carregar (P3: o
+  // total mostrado tem de ser o que vai gravar). Banco sem a função (PGRST202) = custo, como antes.
   const [precosTabela, setPrecosTabela] = useState(null);
+  const [precosStatus, setPrecosStatus] = useState("loading");
+  const [precosTentativa, setPrecosTentativa] = useState(0);
   useEffect(() => {
     if (!franchiseId) return undefined;
     let alive = true;
+    setPrecosStatus("loading");
     getPrecosPedidoFabrica(franchiseId)
-      .then((m) => { if (alive) setPrecosTabela(m); })
-      .catch(() => { /* sem a função/rede: o total mostrado segue o custo; a RPC grava pela tabela */ });
+      .then((m) => { if (alive) { setPrecosTabela(m); setPrecosStatus("ok"); } })
+      .catch((e) => { if (alive) setPrecosStatus(e?.code === "PGRST202" ? "ok" : "erro"); });
     return () => { alive = false; };
-  }, [franchiseId]);
+  }, [franchiseId, precosTentativa]);
+  const precosProntos = precosStatus === "ok";
 
   // Produtos da fábrica = catálogo padrão da rede (created_by_franchisee === false) com custo > 0.
   // Itens extras criados pela própria franquia (created_by_franchisee === true) NÃO podem ser
@@ -331,6 +336,10 @@ export default function PurchaseOrderForm({
   const handleSubmit = async () => {
     if (!hasAnyQty) return;
     if (submittingRef.current) return;
+    if (!precosProntos) {
+      toast.error("Espere carregar os preços da fábrica para enviar.");
+      return;
+    }
 
     if (!franchiseId) {
       toast.error("Franquia não identificada. Atualize a página.");
@@ -384,7 +393,12 @@ export default function PurchaseOrderForm({
         try { window.clarity?.('event', 'pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }
       }
       if (resultado.jaExistia) {
-        toast.success("Este pedido já tinha sido enviado. Ele está no histórico.", { id: toastId });
+        toast.success(
+          resultado.totalAmount != null
+            ? `Este pedido já tinha sido enviado (total ${formatBRLShared(resultado.totalAmount)}). Ele está no histórico.`
+            : "Este pedido já tinha sido enviado. Ele está no histórico.",
+          { id: toastId }
+        );
       } else {
         const difere = resultado.totalAmount != null && Math.abs(resultado.totalAmount - grandTotal) > 0.009;
         toast.success(
@@ -825,6 +839,16 @@ export default function PurchaseOrderForm({
         </div>
 
         <div className="flex items-center gap-2">
+          {precosStatus === "loading" && <span className="text-sm text-ink-3">Carregando preços…</span>}
+          {precosStatus === "erro" && (
+            <button
+              type="button"
+              onClick={() => setPrecosTentativa((n) => n + 1)}
+              className="text-sm text-err underline min-h-[44px] px-2 touch-manipulation"
+            >
+              Não carreguei os preços. Tentar de novo
+            </button>
+          )}
           <Button
             variant="outline"
             onClick={onCancel}
@@ -835,7 +859,7 @@ export default function PurchaseOrderForm({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!hasAnyQty || isSubmitting}
+            disabled={!hasAnyQty || isSubmitting || !precosProntos}
             className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
           >
             {isSubmitting ? (

@@ -300,6 +300,7 @@ export default function Gestao() {
 
           <TabsContent value="reposicao" className="mt-4">
             <TabReposicao
+              key={franchiseId}
               franchiseId={franchiseId}
               inventoryItems={franchiseInventory}
               saleItems={saleItems}
