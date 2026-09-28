@@ -576,6 +576,7 @@ export default function SaleForm({
   useEffect(() => {
     if (isEditing) return;
     if (!initialContactId && !initialPhone) return;
+    if (!franchiseId) return; // sem unidade definida nao resolve: o contato tem de ser DESTA unidade
     if (resolveuInicialRef.current) return;
     let cancelado = false;
 
@@ -583,7 +584,7 @@ export default function SaleForm({
       let match = null;
       try {
         if (initialContactId) {
-          const [c] = await Contact.filter({ id: initialContactId }, null, 1, {
+          const [c] = await Contact.filter({ id: initialContactId, franchise_id: franchiseId }, null, 1, {
             columns: "id, nome, telefone, endereco, bairro",
           });
           match = c || null;
