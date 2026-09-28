@@ -592,7 +592,7 @@ export default function AsaasSetupPanel() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowReview(false)} className="p-1 hover:bg-surface rounded-lg transition-colors">
+          <button type="button" onClick={() => setShowReview(false)} aria-label="Voltar" className="p-1 hover:bg-surface rounded-lg transition-colors">
             <MaterialIcon icon="arrow_back" size={20} aria-hidden="true" />
           </button>
           <h2 className="text-lg font-semibold font-plus-jakarta">Confirmar Assinaturas</h2>
