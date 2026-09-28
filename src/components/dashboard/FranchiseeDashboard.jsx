@@ -13,6 +13,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRLInteger } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { PointOfSaleIcon } from "./CriticalIcons";
 import StatsCard from "./StatsCard";
 import FranchiseeGreeting from "./FranchiseeGreeting";
 import DailyGoalProgress from "./DailyGoalProgress";
@@ -427,21 +428,52 @@ export default function FranchiseeDashboard() {
   }, [allSales]);
 
   if (isLoading) {
+    // S8.3 (28/09/2026): esqueleto no formato final da tela — mesma ordem de blocos que o
+    // corpo real (saudação, filtro de período, 4 cards, meta do dia, ação prioritária,
+    // "Quem chamar hoje", ranking/sequência, gráfico, obrigações) — pra não pular o layout
+    // quando os dados chegam. Sem ícone nenhum aqui: o esqueleto pinta antes de qualquer
+    // fonte carregar, e ícone de fonte nesse momento é a palavra crua na tela.
     return (
-      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
-        <Skeleton className="h-10 w-64" />
+      <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
+        {/* Saudação */}
+        <div className="mb-2 space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+
+        {/* Filtro de período (Hoje/Semana/Mês/Personalizado) */}
+        <Skeleton className="h-10 w-64 rounded-xl" />
+
+        {/* 4 cards de KPI */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
           <Skeleton className="h-24 rounded-xl" />
         </div>
-        <Skeleton className="h-32 rounded-xl" />
-        <div className="grid grid-cols-2 gap-4">
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-40 rounded-xl" />
+
+        {/* Meta do dia */}
+        <Skeleton className="h-16 rounded-xl" />
+
+        {/* Ação prioritária */}
+        <Skeleton className="h-20 rounded-xl" />
+
+        {/* Quem chamar hoje (compacto, algumas linhas) */}
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
         </div>
+
+        {/* Ranking + sequência */}
+        <Skeleton className="h-32 rounded-xl" />
+
+        {/* Gráfico de evolução */}
         <Skeleton className="h-48 rounded-xl" />
+
+        {/* Obrigações financeiras */}
+        <Skeleton className="h-16 rounded-xl" />
       </div>
     );
   }
@@ -751,7 +783,7 @@ export default function FranchiseeDashboard() {
           onClick={() => navigate("/Vendas?action=nova-venda")}
           className="h-12 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg flex items-center gap-2 px-6"
         >
-          <MaterialIcon icon="point_of_sale" size={18} />
+          <PointOfSaleIcon size={18} />
           Nova Venda
         </Button>
       </div>
