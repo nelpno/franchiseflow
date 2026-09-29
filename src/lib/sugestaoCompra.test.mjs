@@ -95,11 +95,20 @@ await t("o que está a caminho desconta; estoque negativo conta como zero e avis
   assert.equal(suggestionFor({ id: "a", quantity: -4, min_stock: 3 }, { a: 3 }), 10);
 });
 
-await t("mínimo é piso; sem venda e sem mínimo não sugere", () => {
-  const piso = sugestaoDeCompra(item({ quantity: 1, min_stock: 3 }), { ritmoPorDia: 0 });
+await t("mínimo é piso para o que vende; sem venda em 12 semanas não sugere, mesmo com mínimo", () => {
+  const piso = sugestaoDeCompra(item({ quantity: 1, min_stock: 3 }), { ritmoPorDia: 1 / 100 });
   assert.equal(piso.repor, 2);
   assert.equal(piso.motivo, "minimo");
-  assert.equal(piso.situacao, "acabando");
+  assert.equal(piso.situacao, null);
+  // P3 S25 (decisão): o mínimo 3 de fábrica não faz comprar produto parado
+  const parado = sugestaoDeCompra(item({ quantity: 0, min_stock: 3 }), { ritmoPorDia: 0 });
+  assert.equal(parado.semBase, true);
+  assert.equal(parado.repor, 0);
+  assert.equal(parado.situacao, "acabou");
+  assert.equal(explicarSugestao(parado), "Sem venda nos últimos 3 meses: não sugerimos compra.");
+  assert.equal(textoVenda(parado), "sem venda em 3 meses");
+  const paradoComEstoque = sugestaoDeCompra(item({ quantity: 1, min_stock: 3 }), { ritmoPorDia: 0 });
+  assert.equal(paradoComEstoque.situacao, null);
   const nada = sugestaoDeCompra(item({ quantity: 0, min_stock: 0 }), { ritmoPorDia: 0 });
   assert.equal(nada.semBase, true);
   assert.equal(nada.repor, 0);
@@ -154,17 +163,23 @@ await t("linhas: só produto da fábrica visível; ordem acabou > acabando > mai
   assert.equal(r.unidades, 52);
 });
 
-await t("carregarDatasDePedidos: pede só status válidos, limite, e rejeita no erro", async () => {
+await t("carregarDatasDePedidos: 180 dias inteiros paginados (sem teto), só status válidos, rejeita no erro", async () => {
   let pedido;
   const PurchaseOrder = { filter: async (crit, ord, lim, opts) => { pedido = { crit, ord, lim, opts }; return [
     { id: 1, status: "entregue", ordered_at: "2026-09-01T10:00:00Z" },
     { id: 2, status: "cancelado", ordered_at: "2026-09-10T10:00:00Z" },
     { id: 3, status: "pendente", ordered_at: null },
   ]; } };
-  const datas = await carregarDatasDePedidos({ PurchaseOrder, franchiseId: "x" });
+  const datas = await carregarDatasDePedidos({ PurchaseOrder, franchiseId: "x", agora: AGORA });
   assert.deepEqual(datas, ["2026-09-01T10:00:00Z"]);
   assert.deepEqual(pedido.crit.status, ["pendente", "confirmado", "em_rota", "entregue"]);
-  assert.equal(pedido.lim, 12);
+  assert.equal(pedido.lim, undefined); // P3: o teto de 12 distorcia a mediana
+  assert.equal(pedido.opts.fetchAll, true);
+  assert.equal(pedido.opts.gte.ordered_at, diasAtras(180));
+  // o caso da P3: 12 pedidos nas últimas horas + pedidos a cada 14 dias antes -> 14, não 21
+  const muitos = [...Array.from({ length: 12 }, (_, i) => new Date(AGORA.getTime() - i * 3600000).toISOString()), diasAtras(14), diasAtras(28), diasAtras(42)];
+  assert.equal(intervaloEntrePedidos(muitos, AGORA).dias, 14);
+  assert.equal(intervaloEntrePedidos(muitos.slice(0, 12), AGORA).daUnidade, false);
   await assert.rejects(carregarDatasDePedidos({ PurchaseOrder: { filter: async () => { throw new Error("rede"); } }, franchiseId: "x" }));
   await assert.rejects(carregarDatasDePedidos({ PurchaseOrder, franchiseId: null }));
 });

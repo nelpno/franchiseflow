@@ -15,6 +15,9 @@ import { intervaloEntrePedidos, INTERVALO_PADRAO_DIAS } from "@/lib/stockSuggest
 export function usePedidosDaUnidade(franchiseId, { enabled = true, refreshKey = 0 } = {}) {
   const [abertos, setAbertos] = useState({ status: "carregando", emAberto: {} });
   const [intervalo, setIntervalo] = useState({ dias: INTERVALO_PADRAO_DIAS, daUnidade: false });
+  // P3 da S25: a sugestão só fica pronta quando o intervalo também terminou (senão preenchia
+  // com 21 dias e não corrigia quando o intervalo real chegava). 21 dias só em falha/histórico curto.
+  const [intervaloPronto, setIntervaloPronto] = useState(false);
   const [tentativa, setTentativa] = useState(0);
 
   useEffect(() => {
@@ -22,6 +25,7 @@ export function usePedidosDaUnidade(franchiseId, { enabled = true, refreshKey = 
     const controller = new AbortController();
     const { signal } = controller;
     setAbertos({ status: "carregando", emAberto: {} });
+    setIntervaloPronto(false);
     carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem, franchiseId, signal })
       .then((r) => { if (!signal.aborted) setAbertos({ status: "ok", emAberto: r.emAberto }); })
       .catch((err) => {
@@ -30,15 +34,21 @@ export function usePedidosDaUnidade(franchiseId, { enabled = true, refreshKey = 
         setAbertos({ status: "erro", emAberto: {} });
       });
     carregarDatasDePedidos({ PurchaseOrder, franchiseId, signal })
-      .then((datas) => { if (!signal.aborted) setIntervalo(intervaloEntrePedidos(datas)); })
+      .then((datas) => {
+        if (signal.aborted) return;
+        setIntervalo(intervaloEntrePedidos(datas));
+        setIntervaloPronto(true);
+      })
       .catch((err) => {
         if (signal.aborted || err?.name === "AbortError") return;
         setIntervalo({ dias: INTERVALO_PADRAO_DIAS, daUnidade: false });
+        setIntervaloPronto(true);
       });
     return () => controller.abort();
   }, [enabled, franchiseId, refreshKey, tentativa]);
 
   const tentarDeNovo = useCallback(() => setTentativa((n) => n + 1), []);
 
-  return { status: abertos.status, emAberto: abertos.emAberto, intervalo, tentarDeNovo };
+  const status = abertos.status === "ok" && !intervaloPronto ? "carregando" : abertos.status;
+  return { status, emAberto: abertos.emAberto, intervalo, tentarDeNovo };
 }

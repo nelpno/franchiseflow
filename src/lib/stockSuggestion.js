@@ -60,8 +60,10 @@ export function suggestionFor(item, weeklyTurnover) {
 //     venda): 211 itens padrão com venda nos últimos 84 dias tinham ZERO nos últimos 28, e a
 //     regra antiga não sugeria nada para eles.
 // Regra nova: ritmo = o MAIOR entre a média de 4 e a de 12 semanas; cobrir o intervalo típico da
-// unidade entre pedidos + o prazo de entrega + 1 semana de folga; o mínimo cadastrado é piso;
-// desconta o que tem (negativo conta como 0) e o que já está a caminho. Backtest: 89% da procura
+// unidade entre pedidos + o prazo de entrega + 1 semana de folga; o mínimo cadastrado é piso
+// SÓ para o que vende (P3 da S25: o mínimo 3 é o de fábrica em ~80% dos itens; produto sem venda
+// em 12 semanas não recebe sugestão); desconta o que tem (negativo conta como 0) e o que já está
+// a caminho. Backtest: 89% da procura
 // atendida (antes 63%), pedindo menos unidades do que as 5 unidades pediram de fato no período.
 // ============================================================================================
 
@@ -162,13 +164,14 @@ export function sugestaoDeCompra(item, { ritmoPorDia = 0, aCaminho = 0, interval
 
   const alvoVenda = r > 0 ? Math.ceil(r * cobertura - 1e-9) : 0;
   const alvo = Math.max(alvoVenda, Math.ceil(minimo));
-  const semBase = r <= 0 && minimo <= 0;
+  // Sem venda em 12 semanas: não sugere, mesmo com mínimo (decisão da S25, P3).
+  const semBase = r <= 0;
   const repor = semBase ? 0 : Math.max(0, Math.ceil(alvo - conta - caminho - 1e-9));
-  const motivo = semBase ? null : r > 0 && alvoVenda >= minimo ? "venda" : "minimo";
+  const motivo = semBase ? null : alvoVenda >= minimo ? "venda" : "minimo";
 
   let situacao = null;
   if (conta <= 0) situacao = "acabou";
-  else if (r > 0 ? conta + caminho < r * DIAS_ACABANDO : minimo > 0 && conta + caminho < minimo) situacao = "acabando";
+  else if (r > 0 && conta + caminho < r * DIAS_ACABANDO) situacao = "acabando";
 
   return {
     estoque,
@@ -218,7 +221,7 @@ export function textoVenda(s) {
  */
 export function explicarSugestao(s, intervaloDias = INTERVALO_PADRAO_DIAS) {
   if (!s) return "";
-  if (s.semBase) return "Sem venda nos últimos 3 meses e sem mínimo cadastrado: não sugerimos compra.";
+  if (s.semBase) return "Sem venda nos últimos 3 meses: não sugerimos compra.";
   const descontos = [];
   if (s.conta > 0) descontos.push(`o que você tem (${s.conta})`);
   if (s.aCaminho > 0) descontos.push(`o que está a caminho (${s.aCaminho})`);

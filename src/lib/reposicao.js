@@ -143,17 +143,22 @@ export function comPrecoDaTabela(itens, precos) {
 /** Status que contam como "pediu à fábrica" para medir de quanto em quanto tempo a unidade pede. */
 export const STATUS_PEDIDO_FEITO = Object.freeze(["pendente", "confirmado", "em_rota", "entregue"]);
 
+/** Janela do intervalo entre pedidos (a mesma de stockSuggestion.intervaloEntrePedidos). */
+export const JANELA_INTERVALO_DIAS = 180;
+
 /**
- * Datas (ordered_at) dos últimos pedidos NÃO cancelados da unidade, para o intervalo entre
- * pedidos. Erro rejeita: quem chama cai no intervalo padrão (21 dias), que não pede em dobro.
+ * Datas (ordered_at) de TODOS os pedidos NÃO cancelados da unidade nos últimos 180 dias (paginado,
+ * sem teto: P3 da S25 — cortar em 12 antes de juntar os acréscimos distorcia a mediana).
+ * Erro rejeita: quem chama cai no intervalo padrão (21 dias).
  */
-export async function carregarDatasDePedidos({ PurchaseOrder, franchiseId, signal, limite = 12 }) {
+export async function carregarDatasDePedidos({ PurchaseOrder, franchiseId, signal, agora = new Date() }) {
   if (!franchiseId) throw new Error("Unidade não identificada");
+  const desde = new Date(new Date(agora).getTime() - JANELA_INTERVALO_DIAS * 24 * 60 * 60 * 1000).toISOString();
   const pedidos = await PurchaseOrder.filter(
     { franchise_id: franchiseId, status: [...STATUS_PEDIDO_FEITO] },
     "-ordered_at",
-    limite,
-    { signal, columns: "id, ordered_at, status" }
+    undefined,
+    { signal, fetchAll: true, gte: { ordered_at: desde }, columns: "id, ordered_at, status" }
   );
   return (pedidos || [])
     .filter((p) => p && STATUS_PEDIDO_FEITO.includes(p.status) && p.ordered_at)

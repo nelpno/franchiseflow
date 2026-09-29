@@ -150,7 +150,7 @@ export default function ReposicaoV2({
             <b className="text-ink">Como calculamos:</b> o que você vende por semana, para durar até a entrega seguinte.
             Você costuma pedir {textoIntervalo(intervalo?.dias)}
             {intervalo?.daUnidade ? "" : " (média da rede)"}, a entrega leva ~{PRAZO_ENTREGA_DIAS} dias e somamos 1 semana de
-            folga. Já descontamos o que você tem e o que está a caminho. O seu mínimo vale como piso.
+            folga. Já descontamos o que você tem e o que está a caminho. O seu mínimo vale como piso para o que vende. Produto sem venda em 3 meses não entra.
           </p>
         </>
       )}

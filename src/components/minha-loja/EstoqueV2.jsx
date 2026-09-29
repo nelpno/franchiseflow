@@ -253,7 +253,7 @@ export function ItemEstoqueSheet({
               <Dado
                 rotulo="Mínimo"
                 valor={fmtQtd(item.min_stock)}
-                apoio={info?.daFabrica ? "a sugestão nunca fica abaixo disso" : "abaixo disso, aparece como acabando"}
+                apoio={info?.daFabrica ? "para o que vende, a sugestão nunca fica abaixo disso" : "abaixo disso, aparece como acabando"}
               />
               <Dado rotulo="Categoria" valor={categoria || "—"} />
               <Dado rotulo="Unidade" valor={item.unit || "un"} />
