@@ -8,10 +8,20 @@ import { comPrecoDaTabela,
   unidadeDeMedida,
   ehProdutoDaFabrica,
   carregarPedidosAbertos,
+  ultimoPedidoParaRepetir,
 } from "./reposicao.js";
 
 let n = 0;
 const t = (nome, fn) => { fn(); n++; console.log("ok -", nome); };
+
+t("Repetir último pedido pula o cancelado", () => {
+  const a = { id: "a", status: "cancelado" }, b = { id: "b", status: "entregue" }, c = { id: "c", status: "pendente" };
+  assert.equal(ultimoPedidoParaRepetir([a, b, c]), b);   // o mais recente foi cancelado → o anterior
+  assert.equal(ultimoPedidoParaRepetir([c, b]), c);      // pendente conta
+  assert.equal(ultimoPedidoParaRepetir([a]), null);      // só cancelado → nada para repetir
+  assert.equal(ultimoPedidoParaRepetir([]), null);
+  assert.equal(ultimoPedidoParaRepetir(null), null);
+});
 
 const item = (over) => ({
   id: "a", product_name: "Nhoque de Batata - 500g", quantity: 0, min_stock: 0,

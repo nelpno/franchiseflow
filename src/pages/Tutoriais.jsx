@@ -100,7 +100,7 @@ export default function Tutoriais() {
           )
         ) : (
           <>
-            <GuiaLista titulo="Comece por aqui" ajuda="O essencial para a unidade abrir e vender." guias={comecePorAqui} onAbrir={abrirGuia} />
+            <GuiaLista titulo="Comece por aqui" ajuda="O dia a dia da unidade, em 5 guias." guias={comecePorAqui} onAbrir={abrirGuia} />
             {porArea.map(({ area, guias: guiasDaArea }) => (
               <GuiaLista key={area} titulo={area} guias={guiasDaArea} onAbrir={abrirGuia} />
             ))}

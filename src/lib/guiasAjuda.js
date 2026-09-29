@@ -50,7 +50,7 @@ export const GUIAS = [
       { titulo: "Compare os meses e os dias", texto: "O quadro Evolução mostra, em barras, quanto a unidade vendeu. Em Meses, são os últimos 6 meses: a barra vermelha é o mês atual, que vai só até hoje, e embaixo está a sua mediana dos 3 meses anteriores (o valor do meio), quando você vendeu nos 3. Toque em 7 dias para ver dia a dia os últimos 7 dias: a barra vermelha é hoje, e embaixo estão o total e a média por dia. O app lembra a sua escolha na próxima vez.", botao: "7 dias", imagem: "/tutoriais/inicio-5.webp" },
       { titulo: "Resolva o que está em Agora", texto: "O quadro Agora reúne o que pede uma ação sua: mensalidade perto de vencer (Pagar), pedido que chegou (toque para conferir), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (Registrar). Toque no aviso para ir direto à tela certa; no aviso da verba, toque em Registrar. Quando o app termina de conferir e não há avisos, aparece \"Tudo em dia!\".", botao: "Agora", imagem: "/tutoriais/inicio-6.webp" },
       { titulo: "Chame os clientes do dia", texto: "O quadro Quem chamar hoje traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em Chamar ao lado do nome: o WhatsApp abre com a mensagem pronta e o cliente já fica marcado como chamado, então confira e envie. Para abrir a lista inteira do dia, toque em Ver os outros ou em Ver lista completa. Se você nunca usou, antes dele aparece o convite \"Conheça o Quem chamar hoje\".", botao: "Chamar", imagem: "/tutoriais/inicio-7.webp" },
-      { titulo: "Use os atalhos", texto: "No fim da tela há quatro atalhos. Repor estoque abre a Reposição, dentro de Estoque. Clientes, Resultado do mês e Meu robô também ficam no botão Mais. Vendas, Nova venda e Estoque já estão na barra de baixo.", botao: "Repor estoque", imagem: "/tutoriais/inicio-8.webp" },
+      { titulo: "Use os atalhos", texto: "No fim da tela há quatro atalhos. Repor estoque abre a Reposição, dentro de Estoque. Clientes, Resultado do mês e Meu robô também ficam no botão Mais, com os nomes Meus Clientes, Gestão e Meu robô. Vendas, Nova venda e Estoque já estão na barra de baixo.", botao: "Repor estoque", imagem: "/tutoriais/inicio-8.webp" },
     ],
     whatsapp: "Quer entender cada quadro da tela Início? Este guia explica o mês, o ranking, a meta do dia, as barras por mês e por dia e o que fazer em Agora.",
   },
@@ -130,13 +130,13 @@ export const GUIAS = [
     area: "Vender",
     sinonimos: ["nova venda", "lançar venda", "registrar venda", "vender fora do robô", "vender no balcão"],
     dica: "Sempre escolha o cliente, com telefone. É assim que ele entra no Quem chamar hoje e que o anúncio aprende.",
-    erroComum: "Tocar duas vezes em \"Registrar venda\" e ficar com a venda em dobro. Toque uma vez e espere o aviso. Deu erro? Olhe em Vendas se a venda já entrou antes de tentar de novo. Aviso \"O robô já lançou esta venda?\": se for a mesma, toque em \"É a mesma, não lançar\".",
+    erroComum: "Deu erro ao registrar? Antes de lançar de novo, olhe em Vendas se a venda já entrou. Aviso \"O robô já lançou esta venda?\": se for a mesma, toque em \"É a mesma, não lançar\".",
     passos: [
       { titulo: "Abra uma venda nova", texto: "No celular, toque no botão redondo com + no meio da barra de baixo. No computador, entre em Vendas e toque em Nova Venda.", botao: "Nova venda", imagem: "/tutoriais/vendas-1.webp" },
       { titulo: "Escolha o cliente", texto: "Digite o nome ou o telefone e toque na pessoa. Cliente novo? Toque em \"Novo contato\", preencha o nome e o telefone com DDD e toque em \"Criar e selecionar\". Sem telefone, o app pede o número; se o cliente não quis dar, toque em \"Cliente não quis informar\".", botao: "Cliente", imagem: "/tutoriais/vendas-2.webp" },
       { titulo: "Inclua os produtos", texto: "Busque cada produto e digite a quantidade em Qtd. Para mais um produto, toque em \"Adicionar produto\".", botao: "Produtos", imagem: "/tutoriais/vendas-3.webp" },
-      { titulo: "Escolha como o cliente pagou", texto: "Toque na forma de pagamento. O cliente ainda vai pagar? Ligue \"Ainda vou receber\", logo abaixo. Sem isso, a venda já entra como recebida.", botao: "Pagamento", imagem: "/tutoriais/vendas-4.webp" },
-      { titulo: "Diga se foi entrega", texto: "Na entrega, toque em Delivery e confira o endereço e o Frete (R$). O frete entra no valor da venda.", botao: "Delivery", imagem: "/tutoriais/vendas-5.webp" },
+      { titulo: "Escolha como o cliente pagou", texto: "No celular, toque em Pagamento para abrir e escolha a forma. O cliente ainda vai pagar? Ligue \"Ainda vou receber\", logo abaixo. Sem isso, a venda já entra como recebida.", botao: "Pagamento", imagem: "/tutoriais/vendas-4.webp" },
+      { titulo: "Diga se foi entrega", texto: "No celular, toque em Entrega para abrir. Na entrega, toque em Delivery e confira o endereço, o bairro e o Frete (R$). O frete entra no valor da venda.", botao: "Delivery", imagem: "/tutoriais/vendas-5.webp" },
       { titulo: "Confira e registre", texto: "Confira o total no rodapé. Aparece \"Venda registrada!\", com o botão Comprovante. A venda entra no Resultado do mês e desconta do Estoque.", botao: "Registrar venda", imagem: "/tutoriais/vendas-6.webp" },
     ],
     whatsapp: "Vai lançar uma venda? Este guia mostra, passo a passo, como preencher cliente, produtos, pagamento e entrega.",
@@ -194,7 +194,7 @@ export const GUIAS = [
     erroComum: "O comprovante sai com \"ENDEREÇO NÃO INFORMADO\": o endereço não foi preenchido na venda nem no cliente. Corrija a venda ou o cliente. Papel fraco mesmo com escala 80%? Troque a bobina.",
     passos: [
       { titulo: "Abra o comprovante", texto: "Venda nova: no aviso \"Venda registrada!\", toque em Comprovante (o aviso fica alguns segundos). Venda antiga: em Vendas, toque na venda e em Enviar comprovante.", botao: "Enviar comprovante", imagem: "/tutoriais/comprovante-1.webp" },
-      { titulo: "Escolha o WhatsApp", texto: "Abre o menu de compartilhar do celular, com a imagem do comprovante. Toque no WhatsApp." },
+      { titulo: "Escolha o WhatsApp", texto: "Abre o menu de compartilhar do celular, com a imagem do comprovante. Toque no WhatsApp. Se o celular só baixar a imagem, anexe a imagem na conversa do cliente." },
       { titulo: "Mande para o cliente", texto: "Escolha o contato e toque em enviar, como manda qualquer foto." },
       { titulo: "Para imprimir", texto: "É outro caminho. Em Vendas, toque na venda e em Imprimir. Abre a janela de impressão.", botao: "Imprimir", imagem: "/tutoriais/comprovante-4.webp" },
       { titulo: "Escolha a impressora", texto: "Escolha a sua impressora e imprima." },
@@ -212,12 +212,12 @@ export const GUIAS = [
     area: "Vender",
     sinonimos: ["planilha", "excel", "exportar vendas", "relatório de vendas", "contador"],
     dica: "A mesma planilha também sai em Mais › Gestão, no quadro Planilha das vendas. Para mandar ao contador, abra o arquivo e use o compartilhar do celular.",
-    erroComum: "A planilha sai faltando vendas porque um filtro ficou ligado (A receber, Recebidas ou a busca). Deixe Todas e a busca vazia antes de baixar.",
+    erroComum: "A planilha sai faltando vendas porque um filtro ficou ligado (A receber, Recebidas ou a busca). Deixe Todas e a busca vazia antes de baixar. O botão Excel só aparece quando há vendas na lista.",
     passos: [
       { titulo: "Abra Vendas", texto: "Toque em Vendas, na barra de baixo.", botao: "Vendas", imagem: "/tutoriais/planilha-vendas-1.webp" },
-      { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês. Deixe marcado Todas, logo abaixo.", botao: "Todas", imagem: "/tutoriais/planilha-vendas-2.webp" },
-      { titulo: "Baixe", texto: "Toque em Excel, na mesma linha. O arquivo é baixado no aparelho.", botao: "Excel", imagem: "/tutoriais/planilha-vendas-3.webp" },
-      { titulo: "Abra o arquivo", texto: "No celular, ele fica em \"Downloads\" ou nas notificações. Tem uma linha por venda: data, hora, cliente, produtos, pagamento e valor." },
+      { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês. Nos botões A receber, Recebidas e Todas, deixe Todas.", botao: "Todas", imagem: "/tutoriais/planilha-vendas-2.webp" },
+      { titulo: "Baixe", texto: "Toque em Excel, perto desses botões (no celular, ele pode ficar logo abaixo). O arquivo é baixado no aparelho.", botao: "Excel", imagem: "/tutoriais/planilha-vendas-3.webp" },
+      { titulo: "Abra o arquivo", texto: "No celular, ele fica em \"Downloads\" ou nas notificações. Tem uma linha por venda: data, hora, cliente, telefone, pagamento, valores e se já foi recebida. No fim, uma linha TOTAL. Os produtos não vêm nesta planilha: para eles, veja o guia Ver as vendas por produto." },
     ],
     whatsapp: "Precisa da lista de vendas numa planilha? Este guia mostra como baixar.",
   },
@@ -234,11 +234,11 @@ export const GUIAS = [
     dica: "São no máximo 8 por dia, de propósito: mensagem pessoal, uma de cada vez, vende mais e protege o seu número.",
     erroComum: "Tocar em \"Chamar no WhatsApp\" e não enviar. O cartão já fica marcado como feito; use \"Desfazer\", no aviso que aparece embaixo, e chame depois.",
     passos: [
-      { titulo: "Veja a lista do dia", texto: "Aparece em \"Quem chamar hoje\", na tela Início, e em Mais › Meus Clientes, na aba Hoje.", botao: "Hoje", imagem: "/tutoriais/quem-chamar-hoje-1.webp" },
+      { titulo: "Veja a lista do dia", texto: "Na tela Início, o quadro \"Quem chamar hoje\" mostra até 3 clientes; toque em Ver os outros para a lista inteira. Ela também fica em Mais › Meus Clientes, na aba Hoje.", botao: "Hoje", imagem: "/tutoriais/quem-chamar-hoje-1.webp" },
       { titulo: "Leia o motivo", texto: "Cada cartão diz por que chamar: voltou a falar e não comprou, quase comprou, hora de repetir, primeira compra ou sumido.", imagem: "/tutoriais/quem-chamar-hoje-2.webp" },
-      { titulo: "Abra a conversa", texto: "A mensagem vem pronta, com o nome do cliente e o produto que ele mais pede. O WhatsApp abre com o texto, e você muda o que quiser antes de enviar.", botao: "Chamar no WhatsApp", imagem: "/tutoriais/quem-chamar-hoje-3.webp" },
+      { titulo: "Abra a conversa", texto: "A mensagem vem pronta, de acordo com o motivo (às vezes com o nome e o produto que a pessoa comprou). O WhatsApp abre com o texto, e você muda o que quiser antes de enviar.", botao: "Chamar no WhatsApp", imagem: "/tutoriais/quem-chamar-hoje-3.webp" },
       { titulo: "Use o WhatsApp da unidade", texto: "Mande pelo mesmo número do robô. Ao tocar em Chamar, o cartão já conta como feito, mesmo sem enviar. Quando você escreve, o robô pausa e deixa a conversa com você. Fique de olho na resposta." },
-      { titulo: "Tocou sem querer?", texto: "Ao tocar em Chamar, o cartão já fica marcado como feito, mesmo antes de você enviar. Para voltar atrás, use o aviso que aparece embaixo.", botao: "Desfazer" },
+      { titulo: "Tocou sem querer?", texto: "Ao tocar em Chamar, o cartão já fica marcado como feito, mesmo antes de você enviar. Para voltar atrás, use o aviso que aparece embaixo ou Desfazer, na linha do cliente, na aba Hoje.", botao: "Desfazer" },
       { titulo: "Não é hora de chamar", texto: "Escolha \"Só hoje\". Se o cliente pediu para não receber mensagens, escolha \"Não chamar mais\".", botao: "Pular", imagem: "/tutoriais/quem-chamar-hoje-4.webp" },
       { titulo: "No máximo 8 por dia", texto: "É de propósito: mensagem pessoal, uma de cada vez, vende mais e protege o seu número.", imagem: "/tutoriais/quem-chamar-hoje-5.webp" },
       { titulo: "Acompanhe o resultado", texto: "No alto você vê quantas pessoas chamou no mês e quantas compraram até 7 dias depois." },
@@ -278,7 +278,7 @@ export const GUIAS = [
     area: "Estoque e pedido à fábrica",
     sinonimos: ["contagem", "ajustar estoque", "estoque errado", "freezer", "quantidade"],
     dica: "Saiu da tela no meio? A contagem fica neste aparelho: toque em \"Continuar contagem\". Venda lançada já desconta sozinha; pedido conferido já soma sozinho.",
-    erroComum: "\"Mudou enquanto você contava\": uma venda baixou o estoque no meio. Confira o produto e salve de novo. Número abaixo de zero aparece em vermelho, com Conte o estoque: saiu mais do que entrou no app. Conte de novo e salve o número real.",
+    erroComum: "\"Mudou enquanto você contava\": o número desse produto mudou no app no meio da contagem (uma venda, por exemplo). Confira o produto e salve de novo. Número abaixo de zero aparece em vermelho, com Conte o estoque: saiu mais do que entrou no app. Conte de novo e salve o número real.",
     passos: [
       { titulo: "Abra o Estoque", texto: "Toque em Estoque: no celular, na barra de baixo; no computador, no menu à esquerda. No alto aparecem Acabando, Valor em estoque e Se vender tudo; embaixo, a lista dos produtos.", botao: "Estoque", imagem: "/tutoriais/contar-estoque-1.webp" },
       { titulo: "Comece a contar", texto: "Toque em Contar estoque, acima da lista. Cada produto ganha os botões − e +.", botao: "Contar estoque", imagem: "/tutoriais/contar-estoque-2.webp" },
@@ -301,7 +301,7 @@ export const GUIAS = [
     erroComum: "Tentar mudar o custo de um produto da Maxi. Não dá: o custo é o da tabela da Maxi. Mude só o Preço de venda.",
     passos: [
       { titulo: "Ache o produto", texto: "Toque em Estoque: no celular, na barra de baixo; no computador, no menu à esquerda. Toque no produto na lista.", imagem: "/tutoriais/mudar-preco-1.webp" },
-      { titulo: "Veja custo e venda", texto: "Abre o produto. Preço de venda é o que o cliente paga e Custo vem da tabela da Maxi. Markup compara os dois: custo R$ 10 e venda R$ 20 dá Markup de 100%.", imagem: "/tutoriais/mudar-preco-2.webp" },
+      { titulo: "Veja custo e venda", texto: "Abre o produto. Preço de venda é o que o cliente paga. Nos produtos da Maxi, o Custo vem da tabela da Maxi. Markup compara os dois: custo R$ 10 e venda R$ 20 dá Markup de 100%.", imagem: "/tutoriais/mudar-preco-2.webp" },
       { titulo: "Mude o preço", texto: "Toque em Editar produto. Apague o Preço de venda (R$), digite o novo e toque em Salvar.", botao: "Editar produto", imagem: "/tutoriais/mudar-preco-3.webp" },
       { titulo: "Confira", texto: "Espere aparecer \"Produto atualizado.\". O robô passa a usar esse preço. Atualize também a imagem do cardápio que o robô envia (guia Trocar o cardápio do robô).", imagem: "/tutoriais/mudar-preco-4.webp" },
     ],
@@ -337,14 +337,14 @@ export const GUIAS = [
     area: "Estoque e pedido à fábrica",
     sinonimos: ["reposição", "pedir produto", "repor estoque", "pedido à fábrica"],
     dica: "O app usa suas vendas para sugerir quanto pedir: cobre até a entrega seguinte, mais uma semana, e já conta o estoque e o que está a caminho. O frete é uma previsão: 10% dos produtos, no mínimo R$ 250 e no máximo R$ 350.",
-    erroComum: "Apareceu \"Já tem um pedido enviado há pouco\"? Outro celular ou outra aba já enviou um pedido: confira no Histórico antes de enviar outro. Enviou errado e ainda está Pendente? Abra o pedido no histórico e toque em \"Cancelar Pedido\".",
+    erroComum: "Apareceu \"Já tem um pedido enviado há pouco\"? O app achou um pedido recente da unidade: confira no Histórico antes de enviar outro. Enviou errado e ainda está Pendente? Abra o pedido no histórico, toque em \"Cancelar Pedido\" e confirme em \"Sim, cancelar\".",
     passos: [
       { titulo: "Abra a reposição", texto: "Toque em Estoque: no celular, na barra de baixo; no computador, no menu à esquerda. Depois, toque na aba Reposição, no alto.", botao: "Reposição", imagem: "/tutoriais/pedido-fabrica-1.webp" },
       { titulo: "Comece o pedido", texto: "No quadro Próximo pedido à fábrica, toque em Montar pedido com a sugestão: as quantidades vêm das suas vendas. No primeiro pedido, o botão é Novo pedido e abre a lista modelo da Maxi. Produto próprio fica fora do pedido.", botao: "Montar pedido com a sugestão", imagem: "/tutoriais/pedido-fabrica-2.webp" },
       { titulo: "Ajuste as quantidades", texto: "Confira as quantidades. Ajuste com − e +, ou toque no número e digite. Para incluir um produto sem sugestão, procure em Outros produtos, embaixo.", imagem: "/tutoriais/pedido-fabrica-3.webp" },
       { titulo: "Revise", texto: "Toque em Enviar pedido para abrir a revisão. O pedido ainda não foi enviado. Em Confira antes de enviar, veja produtos, quantidades, valores, frete e total. Para corrigir, toque em Voltar e ajustar.", botao: "Enviar pedido", imagem: "/tutoriais/pedido-fabrica-4.webp" },
       { titulo: "Envie para a Maxi", texto: "Para enviar à Maxi, toque em Confirmar e enviar e espere a mensagem \"Pedido enviado com sucesso!\".", botao: "Confirmar e enviar", imagem: "/tutoriais/pedido-fabrica-5.webp" },
-      { titulo: "Acompanhe", texto: "Em Histórico de Pedidos, o pedido passa por Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira o pedido: o estoque sobe com o que chegou.", imagem: "/tutoriais/pedido-fabrica-6.webp" },
+      { titulo: "Acompanhe", texto: "Em Histórico de Pedidos, o pedido passa por Pendente, Confirmado, Em Rota e Entregue. Quando aparecer \"Chegou · confira\", confira o pedido: o estoque sobe com o que chegou.", imagem: "/tutoriais/pedido-fabrica-6.webp" },
     ],
     whatsapp: "Precisa repor o Estoque? Este guia mostra como montar e enviar seu pedido à fábrica.",
   },
@@ -377,12 +377,12 @@ export const GUIAS = [
     area: "Estoque e pedido à fábrica",
     sinonimos: ["pedido chegou", "faltou produto", "conferir entrega", "recebi o pedido", "mercadoria"],
     dica: "Produto amassado ou descongelado: tire foto na hora e mande para a Maxi.",
-    erroComum: "Esquecer de conferir. Você tem 48 horas depois da entrega; depois disso, o app considera que veio tudo, mesmo sem a sua confirmação. Faltou algo e já passou? Fale com a Maxi com a foto.",
+    erroComum: "Esquecer de conferir. Você tem 48 horas (o prazo aparece em \"Confira até\"); depois disso, o app considera que veio tudo, mesmo sem a sua confirmação. Faltou algo e já passou? Fale com a Maxi com a foto.",
     passos: [
       { titulo: "Confira as caixas", texto: "Compare com o papel do pedido: quantidades, embalagem e se está congelado." },
       { titulo: "Abra a conferência", texto: "Na Início, toque em Seu pedido chegou: toque para conferir. Ou toque em Estoque e em Reposição e procure o quadro \"Seu pedido chegou. Confira!\", no alto.", botao: "Seu pedido chegou: toque para conferir", imagem: "/tutoriais/conferir-chegada-2.webp" },
       { titulo: "Só se veio tudo", texto: "Toque em Recebi tudo certo e depois em Sim, chegou tudo. O estoque sobe sozinho. Pronto, pare aqui.", botao: "Recebi tudo certo", imagem: "/tutoriais/conferir-chegada-3.webp" },
-      { titulo: "Só se faltou algo (em vez do passo 3)", texto: "Toque em Faltou algo. Em cada produto, deixe o número igual ao que chegou de verdade; se não chegou nenhuma unidade, deixe zero.", botao: "Faltou algo", imagem: "/tutoriais/conferir-chegada-4.webp" },
+      { titulo: "Só se faltou algo (em vez do passo 3)", texto: "Toque em Faltou algo. Mude só o produto que faltou: deixe o número igual ao que chegou de verdade (se não chegou nenhuma unidade, deixe zero). O resto conta como completo.", botao: "Faltou algo", imagem: "/tutoriais/conferir-chegada-4.webp" },
       { titulo: "Confirme", texto: "Confira \"Chegou R$ X de R$ Y\" e confirme. A Maxi é avisada do que faltou.", botao: "Confirmar o que chegou", imagem: "/tutoriais/conferir-chegada-5.webp" },
     ],
     nota: "Faltou item? O pedido passa a valer o que chegou, e você paga esse valor corrigido. O frete continua o mesmo que foi cobrado.",
@@ -397,11 +397,11 @@ export const GUIAS = [
     icone: "replay",
     area: "Estoque e pedido à fábrica",
     sinonimos: ["repetir pedido", "mesmo pedido", "pedido igual", "último pedido"],
-    dica: "Quer quantidades calculadas pelas suas vendas? Use Montar pedido com a sugestão. O Repetir copia o pedido anterior como ele foi.",
+    dica: "Quer quantidades calculadas pelas suas vendas? Use Montar pedido com a sugestão. O Repetir copia as quantidades do último pedido que não foi cancelado, com os preços de hoje.",
     erroComum: "Repetir um pedido grande num mês fraco e ficar com o freezer cheio. Olhe o Estoque antes.",
     passos: [
       { titulo: "Abra a reposição", texto: "Toque em Estoque: no celular, na barra de baixo; no computador, no menu à esquerda. Depois, toque na aba Reposição.", botao: "Reposição", imagem: "/tutoriais/repetir-pedido-1.webp" },
-      { titulo: "Repita", texto: "Toque em Repetir último pedido, embaixo de Montar pedido com a sugestão. Ele copia as quantidades do pedido anterior, sem ajustar às vendas recentes.", botao: "Repetir último pedido", imagem: "/tutoriais/repetir-pedido-2.webp" },
+      { titulo: "Repita", texto: "Toque em Repetir último pedido, embaixo de Montar pedido com a sugestão. Ele copia as quantidades do último pedido (cancelado não conta), sem ajustar às vendas recentes. Produto oculto fica de fora.", botao: "Repetir último pedido", imagem: "/tutoriais/repetir-pedido-2.webp" },
       { titulo: "Ajuste", texto: "Confira o que você tem e mude as quantidades com − e +.", imagem: "/tutoriais/repetir-pedido-3.webp" },
       { titulo: "Revise e envie", texto: "Toque em Enviar pedido, confira o frete e o total e toque em Confirmar e enviar. Aparece \"Pedido enviado com sucesso!\".", botao: "Confirmar e enviar", imagem: "/tutoriais/repetir-pedido-4.webp" },
     ],
@@ -420,10 +420,10 @@ export const GUIAS = [
     dica: "Pedido à fábrica entregue, verba de marketing confirmada e mensalidade paga entram sozinhos nos gastos; só os gastos do dia a dia você lança.",
     erroComum: "O número parece alto demais porque faltam gastos lançados (sacolas, gás, aluguel). Lance os gastos que faltam para o valor ficar mais próximo da realidade.",
     passos: [
-      { titulo: "Abra o resultado", texto: "No celular, toque em Mais e em Gestão; no computador, em Gestão no menu à esquerda. Abre o Resultado. Na Início, o atalho Resultado do mês leva ao mesmo lugar.", botao: "Resultado", imagem: "/tutoriais/resultado-1.webp" },
+      { titulo: "Abra o resultado", texto: "No celular, toque em Mais e em Gestão; no computador, em Gestão no menu à esquerda. Abre o Resultado. Na Início, o atalho Resultado do mês leva ao mesmo lugar.", botao: "Gestão", imagem: "/tutoriais/resultado-1.webp" },
       { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês para ver outro período.", imagem: "/tutoriais/resultado-2.webp" },
       { titulo: "Leia o valor principal", texto: "É o que entrou com as vendas (valor menos desconto, mais frete), menos a taxa de cartão que a unidade pagou e os gastos do mês. Logo abaixo, as barras Entrou e Saiu.", botao: "Sobrou em (mês)", imagem: "/tutoriais/resultado-3.webp" },
-      { titulo: "Veja para onde foi", texto: "Role para ver De onde veio, Para onde foi e Mais vendidos. Mais abaixo: O que mudou, Quanto sobrou por mês e Gastos do mês.", botao: "Para onde foi", imagem: "/tutoriais/resultado-4.webp" },
+      { titulo: "Veja para onde foi", texto: "Role para ver De onde veio, Para onde foi e Mais vendidos. Mais abaixo, Gastos do mês. Com mais meses de uso, aparecem também O que mudou e Quanto sobrou por mês.", botao: "Para onde foi", imagem: "/tutoriais/resultado-4.webp" },
       { titulo: "Guarde o relatório", texto: "Baixe o PDF de 1 página para consultar ou compartilhar.", botao: "Baixar relatório do mês (PDF)", imagem: "/tutoriais/resultado-5.webp" },
     ],
     nota: "O cálculo conta todas as vendas lançadas no mês, recebidas ou não, e só desconta os gastos já lançados. Não é o saldo da sua conta no banco.",
@@ -453,7 +453,7 @@ export const GUIAS = [
     slug: "relatorio-mes",
     publico: PUBLICO.franqueado,
     titulo: "Baixar o relatório do mês",
-    resumo: "Um PDF de 1 página com 3 meses lado a lado, os mais vendidos e o anúncio.",
+    resumo: "Um PDF de 1 página com 3 meses lado a lado, os mais vendidos e, quando há dados, o anúncio.",
     tempo: "1 minuto",
     icone: "picture_as_pdf",
     area: "Dinheiro",
@@ -464,7 +464,7 @@ export const GUIAS = [
       { titulo: "Abra o resultado", texto: "No celular, toque em Mais e em Gestão; no computador, em Gestão no menu à esquerda. Abre o Resultado.", botao: "Gestão", imagem: "/tutoriais/relatorio-mes-1.webp" },
       { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês.", imagem: "/tutoriais/relatorio-mes-2.webp" },
       { titulo: "Baixe", texto: "O botão fica logo abaixo das barras Entrou e Saiu. Aparece \"Relatório baixado!\".", botao: "Baixar relatório do mês (PDF)", imagem: "/tutoriais/relatorio-mes-3.webp" },
-      { titulo: "Abra o PDF", texto: "Pelo aviso de download. É 1 página com 3 meses lado a lado, os mais vendidos e o anúncio.", imagem: "/tutoriais/relatorio-mes-4.webp" },
+      { titulo: "Abra o PDF", texto: "Pelo aviso de download. É 1 página com 3 meses lado a lado, os mais vendidos e, quando há dados, o anúncio.", imagem: "/tutoriais/relatorio-mes-4.webp" },
     ],
     whatsapp: "Quer o resumo do mês numa folha? Este guia mostra como baixar o relatório em PDF.",
   },
@@ -524,7 +524,7 @@ export const GUIAS = [
     dica: "Sem o comprovante agora? Toque em \"Registrar sem comprovante\" e anexe depois, em \"Anexar comprovante\".",
     erroComum: "Achar que registrar no app já faz o Pix. Não faz: o Pix é no seu banco, o registro só avisa a Maxi para conferir.",
     passos: [
-      { titulo: "Abra Marketing", texto: "Toque em Mais e em Marketing. O quadro fica logo abaixo da arte do mês. Em Pagamentos, a linha \"Investimento Marketing\" leva ao mesmo quadro.", botao: "Investimento em Marketing", imagem: "/tutoriais/verba-marketing-1.webp" },
+      { titulo: "Abra Marketing", texto: "Toque em Mais e em Marketing. O quadro fica logo abaixo da arte do mês. Em Pagamentos, o aviso da verba, quando aparece, leva ao mesmo quadro.", botao: "Investimento em Marketing", imagem: "/tutoriais/verba-marketing-1.webp" },
       { titulo: "Confira o mês", texto: "Veja o mês no seletor, ao lado do título. Nos últimos 5 dias do mês, ele já abre no mês seguinte; troque se precisar.", imagem: "/tutoriais/verba-marketing-2.webp" },
       { titulo: "Faça o Pix", texto: "Copie a chave Pix (CNPJ 00.494.317/0001-21) e faça o Pix no app do seu banco. O mínimo é R$ 200 por mês.", botao: "Copiar", imagem: "/tutoriais/verba-marketing-3.webp" },
       { titulo: "Informe o valor", texto: "Digite o valor do Pix.", botao: "Valor que você pagou", imagem: "/tutoriais/verba-marketing-4.webp" },
@@ -548,11 +548,11 @@ export const GUIAS = [
     erroComum: "Achar que o app posta sozinho nas redes. Não posta: a postagem é feita por você, no Instagram ou no Facebook da unidade.",
     drive: { href: DRIVE_POSTAGENS, rotulo: "Ver mais artes no Drive (acervo completo)" },
     passos: [
-      { titulo: "Abra Marketing", texto: "Toque em Mais e em Marketing. No alto aparece a Arte do mês.", botao: "Marketing", imagem: "/tutoriais/artes-1.webp" },
+      { titulo: "Abra Marketing", texto: "Toque em Mais e em Marketing. No alto aparece a Arte do mês (ou a última arte enviada).", botao: "Marketing", imagem: "/tutoriais/artes-1.webp" },
       { titulo: "Escolha o mês", texto: "Para ver as outras, desça até os materiais e escolha o mês. Os botões de cima filtram por tipo: Imagens, Vídeos, PDFs e Links.", botao: "Mês", imagem: "/tutoriais/artes-2.webp" },
       { titulo: "Copie a legenda", texto: "Se a arte tem legenda, copie ANTES de baixar a imagem. Aparece \"Legenda copiada!\".", botao: "Copiar legenda", imagem: "/tutoriais/artes-3.webp" },
       { titulo: "Abra a arte", texto: "Na mesma arte, toque em Baixar. Abre uma tela nova só com a imagem. Link mostra \"Abrir\" e vídeo mostra \"Assistir\".", botao: "Baixar", imagem: "/tutoriais/artes-4.webp" },
-      { titulo: "Salve no celular", texto: "Toque e segure o dedo na imagem e escolha \"Salvar imagem\" (ou \"Baixar imagem\"). Depois, volte ao app pelo botão de voltar do celular." },
+      { titulo: "Salve no celular", texto: "Toque e segure o dedo na imagem e escolha \"Salvar imagem\" (ou \"Baixar imagem\"). Depois, feche essa tela da imagem e volte ao app." },
     ],
     nota: "O app não posta sozinho nas redes: a postagem é feita por você, no Instagram ou no Facebook da unidade.",
     whatsapp: "As artes do mês ficam em Marketing. Veja como achar, salvar no celular e aproveitar a legenda.",
@@ -590,13 +590,13 @@ export const GUIAS = [
     icone: "campaign",
     area: "Marketing",
     sinonimos: ["anúncio", "meta", "facebook", "instagram", "lance", "custo do anúncio", "campanha"],
-    dica: "Verba maior alcança mais gente, mas quem fecha a venda é o atendimento: responda rápido e marque Recebi em toda venda, com o telefone do cliente.",
+    dica: "Verba maior alcança mais gente, mas quem fecha a venda é o atendimento: responda rápido e lance toda venda com o telefone do cliente. Venda que ficou A receber: toque em Recebi quando o dinheiro entrar.",
     erroComum: "Achar que o valor todo vira anúncio: 14% ficam em impostos e taxas (de R$ 200, R$ 172 vão para o anúncio). E comparar um mês com o outro sem lembrar que o preço do leilão muda.",
     passos: [
       { titulo: "A verba vira anúncio na sua cidade", texto: "A Equipe Digital Maxi monta a campanha da sua unidade no Facebook e no Instagram (é o Meta), mostrando para quem mora perto de você. Quem toca no anúncio cai no WhatsApp da unidade, e o robô atende." },
       { titulo: "O Meta faz um leilão", texto: "Cada vez que alguém abre o Facebook ou o Instagram, várias empresas disputam aquele espaço. O Meta escolhe quem aparece pelo lance (quanto a empresa topa pagar) e por quanto o anúncio agrada às pessoas. A Maxi cuida do lance e da arte; você cuida da verba e do atendimento." },
       { titulo: "Por que às vezes fica mais caro", texto: "Quando muita gente anuncia ao mesmo tempo (eleição, datas comemorativas, fim de ano), o leilão fica disputado e a mesma verba chega a menos pessoas. Anúncio mostrado muitas vezes para as mesmas pessoas também cansa e rende menos: aí a Maxi troca a arte." },
-      { titulo: "O anúncio aprende com as suas vendas", texto: "Quando você marca a venda como Recebi e ela tem o telefone do cliente, o app avisa o Meta que aquela pessoa comprou. Com isso, o Meta procura gente parecida com quem compra. Venda sem telefone não ensina nada ao anúncio." },
+      { titulo: "O anúncio aprende com as suas vendas", texto: "Quando a venda está recebida e tem o telefone do cliente, o app avisa o Meta que aquela pessoa comprou. Com isso, o Meta procura gente parecida com quem compra. Venda sem telefone não ensina nada ao anúncio." },
       { titulo: "O que mais ajuda a vender", texto: "Responder rápido (o robô faz isso), ter no estoque o produto que o anúncio mostra, deixar preço e cardápio certos no Meu robô e manter a verba todo mês: campanha parada perde parte do que aprendeu." },
     ],
     nota: "Os números do mês do anúncio e do robô aparecem em Mais › Pagamentos. Para pagar a verba, veja o guia Registrar a verba do anúncio.",
@@ -641,7 +641,7 @@ export const GUIAS = [
       { titulo: "Preencha os valores", texto: "Em Por distância, cada faixa de km tem um preço. Para mais uma, toque em \"Adicionar faixa de km\".", imagem: "/tutoriais/robo-entrega-3.webp" },
       { titulo: "Pedido mínimo (se quiser)", texto: "Em branco quer dizer sem mínimo.", botao: "Pedido mínimo para entrega (R$)", imagem: "/tutoriais/robo-entrega-4.webp" },
       { titulo: "Retirada", texto: "Ligue a retirada e confira o Endereço de retirada e o horário.", botao: "Aceita RETIRADA?", imagem: "/tutoriais/robo-entrega-5.webp" },
-      { titulo: "Teste e salve", texto: "Antes de tocar em Próximo, confira o frete no Teste rápido, no fim desta etapa: o Próximo passa para a etapa seguinte. Depois toque em Próximo. Aparece \"Configurações salvas com sucesso!\".", botao: "Próximo", imagem: "/tutoriais/robo-entrega-6.webp" },
+      { titulo: "Teste e salve", texto: "Antes de tocar em Próximo, confira o frete no Teste rápido, no fim do bloco de entrega (antes da retirada): o Próximo passa para a etapa seguinte. Depois toque em Próximo. Aparece \"Configurações salvas com sucesso!\".", botao: "Próximo", imagem: "/tutoriais/robo-entrega-6.webp" },
     ],
     whatsapp: "Quer mudar o frete, o pedido mínimo ou a retirada? Este guia mostra onde ajustar no Meu robô.",
   },
@@ -654,7 +654,7 @@ export const GUIAS = [
     icone: "credit_card",
     area: "Meu robô",
     sinonimos: ["formas de pagamento", "aceita cartão", "chave pix", "vale-refeição", "dinheiro na entrega"],
-    dica: "Pix e link de pagamento são pagos ANTES da entrega: o robô pede o comprovante e só fecha o pedido depois de receber.",
+    dica: "Nos pedidos para hoje, Pix e link de pagamento são pagos ANTES da entrega: o robô pede o comprovante e só fecha o pedido depois de receber. Pedido para outro dia segue o que você escolheu no fim desta etapa.",
     erroComum: "Marcar dinheiro só em Retirada e estranhar que o robô recusa dinheiro na entrega. Marque nas duas colunas se aceita nas duas.",
     passos: [
       { titulo: "Abra a etapa de pagamento", texto: "Toque em Mais, em Meu robô e, no alto, na etapa.", botao: "Pagamento", imagem: "/tutoriais/robo-pagamento-1.webp" },
@@ -678,7 +678,7 @@ export const GUIAS = [
     dica: "O robô manda o cardápio uma vez por conversa. Mude os preços no Estoque também, para bater com a imagem.",
     erroComum: "Imagem torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.",
     passos: [
-      { titulo: "Tenha a imagem pronta", texto: "Deixe a imagem nova no celular (JPG ou PNG), feita no Canva a partir do modelo da Maxi. Na mesma etapa, \"Criar cardápio no Canva\" abre o modelo." },
+      { titulo: "Tenha a imagem pronta", texto: "Deixe a imagem nova no celular (JPG, PNG ou WebP, até 10 MB), feita no Canva a partir do modelo da Maxi. Na mesma etapa, toque em \"Criar cardápio no Canva\" e depois em \"Abrir template no Canva\"." },
       { titulo: "Abra a etapa Vendedor", texto: "Toque em Mais, em Meu robô e, no alto, na etapa Vendedor. Ache \"Catálogo / Cardápio\".", botao: "Vendedor", imagem: "/tutoriais/robo-cardapio-2.webp" },
       { titulo: "Troque a imagem", texto: "Toque em Trocar (ou na caixa \"clique para selecionar\", se ainda não tem) e escolha a imagem na galeria.", botao: "Trocar", imagem: "/tutoriais/robo-cardapio-3.webp" },
       { titulo: "Confira e siga", texto: "Espere aparecer \"Catálogo atualizado!\" e a imagem nova. Depois toque em Próximo.", botao: "Próximo", imagem: "/tutoriais/robo-cardapio-4.webp" },
@@ -699,11 +699,11 @@ export const GUIAS = [
     drive: { href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Assistir vídeos de treinamento (Drive)" },
     passos: [
       { titulo: "Use duas telas", texto: "Abra o app no computador (ou em outro celular). O celular da unidade vai ler o código que aparece nessa tela." },
-      { titulo: "Veja se está conectado", texto: "Toque em Mais e em Meu robô. No alto aparece Conectado ou Não conectado.", botao: "Não conectado", imagem: "/tutoriais/reconectar-whatsapp-2.webp" },
-      { titulo: "Gere o código", texto: "No quadro Conectar WhatsApp, toque no botão. Se ele disser Reconectar, é o mesmo. Abre a janela com o código.", botao: "Gerar QR Code", imagem: "/tutoriais/reconectar-whatsapp-3.webp" },
+      { titulo: "Veja se está conectado", texto: "Toque em Mais e em Meu robô. No alto aparece Conectado ou Não conectado: toque nele para o app conferir na hora.", botao: "Não conectado", imagem: "/tutoriais/reconectar-whatsapp-2.webp" },
+      { titulo: "Gere o código", texto: "No quadro Conectar WhatsApp, toque no botão. Se ele disser Reconectar, é o mesmo. Abre a janela com o código. Se aparecer \"Este WhatsApp já está conectado!\", a conexão está boa: teste de outro número.", botao: "Gerar QR Code", imagem: "/tutoriais/reconectar-whatsapp-3.webp" },
       { titulo: "Abra o WhatsApp da unidade", texto: "No celular da unidade: Menu, Aparelhos conectados, Conectar um aparelho.", botao: "Conectar um aparelho" },
       { titulo: "Leia o código", texto: "Aponte a câmera do celular da unidade para o QR Code da tela." },
-      { titulo: "Confira a conexão", texto: "Aparece \"WhatsApp Conectado com Sucesso!\". Toque em Fechar e mande uma mensagem de outro número para testar.", botao: "Verificar Status", imagem: "/tutoriais/reconectar-whatsapp-6.webp" },
+      { titulo: "Confira a conexão", texto: "Depois de ler o código, toque em Verificar Status. Aparece \"WhatsApp Conectado com Sucesso!\". Toque em Fechar e mande uma mensagem de outro número para testar.", botao: "Verificar Status", imagem: "/tutoriais/reconectar-whatsapp-6.webp" },
     ],
     whatsapp: "O WhatsApp do robô desconectou? Siga este guia com o celular da unidade em mãos e teste a resposta no fim.",
   },
@@ -721,7 +721,7 @@ export const GUIAS = [
     passos: [
       { titulo: "Abra a última etapa", texto: "Toque em Mais, em Meu robô e, no alto, na etapa.", botao: "Como o robô responde", imagem: "/tutoriais/testar-robo-1.webp" },
       { titulo: "Leia os exemplos", texto: "As conversas de exemplo são montadas com o que você preencheu: horário, frete, pagamento e retirada.", imagem: "/tutoriais/testar-robo-2.webp" },
-      { titulo: "Confira o frete", texto: "Volte à etapa Entrega e retirada e use o Teste rápido, no fim dela (antes de tocar em Próximo): coloque a distância, o dia e a hora do pedido.", botao: "Teste rápido", imagem: "/tutoriais/testar-robo-3.webp" },
+      { titulo: "Confira o frete", texto: "Volte à etapa Entrega e retirada e use o Teste rápido, no fim do bloco de entrega (antes da retirada e de tocar em Próximo): coloque a distância, o dia e a hora do pedido.", botao: "Teste rápido", imagem: "/tutoriais/testar-robo-3.webp" },
       { titulo: "Teste de verdade", texto: "Peça para outra pessoa (não o celular da unidade) mandar \"oi\" para o WhatsApp da unidade. Nesse teste, não conclua a compra: ali o pedido seria de verdade." },
     ],
     nota: "Resposta errada? Ajuste nas etapas do Meu robô (horários, entrega, pagamento, cardápio). Se continuar, fale com a Maxi com um print.",
@@ -875,7 +875,8 @@ export function guiasPorArea(role) {
 // Curadoria manual (não é "os 4 primeiros do array"): o essencial pra unidade nova
 // abrir e vender. Só slugs de guias que existem hoje — `guiasComecePorAqui` descarta
 // silenciosamente um slug que não bater com nenhum guia (defesa se o slug mudar).
-export const COMECE_POR_AQUI = ["primeiros-passos", "vendas", "clientes", "resultado"];
+// 29/09/2026: o mesmo "Comece por aqui" do manual em PDF (menos Falar com a Maxi, que já fecha a tela).
+export const COMECE_POR_AQUI = ["inicio", "vendas", "venda-recebida", "pedido-fabrica", "clientes"];
 
 export function guiasComecePorAqui(role) {
   return COMECE_POR_AQUI.map((slug) => acharGuia(slug, role)).filter(Boolean);
@@ -891,7 +892,7 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "Tem um manual para ler com calma ou imprimir?",
-    resposta: "Tem. No alto desta tela de Ajuda, toque em Baixar o manual (PDF): são todos estes guias, com as fotos. Dá para ler no celular ou imprimir.",
+    resposta: "Tem. No alto desta tela de Ajuda, toque em Baixar o manual (PDF): as primeiras páginas (Comece por aqui) mostram o dia a dia; o resto é para consultar. Dá para ler no celular ou imprimir.",
   },
   {
     pergunta: "Vendi fora do robô, o que eu faço?",
@@ -900,7 +901,7 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "A venda \"A receber\" conta no meu mês?",
-    resposta: "Sim, desde que foi lançada. Quando o dinheiro entrar, toque em Recebi: isso só confirma o seu caixa.",
+    resposta: "Sim, no mês da data da venda. Quando o dinheiro entrar, toque em Recebi: isso só confirma o seu caixa.",
     guiaSlug: "venda-recebida",
   },
   {
@@ -915,7 +916,7 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "O Transporte do Resultado diminuiu. Sumiu frete?",
-    resposta: "Não. O frete do pedido à fábrica agora fica junto do pedido, na linha dos pedidos à fábrica. Transporte mostra só o que você gastou com as suas entregas.",
+    resposta: "Não. O frete do pedido à fábrica agora fica junto do pedido, na linha dos pedidos à fábrica. Transporte mostra os outros gastos de transporte que você lançou (entregador, combustível).",
     guiaSlug: "resultado",
   },
   {
@@ -925,12 +926,12 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "Faltou produto no pedido. Pago tudo?",
-    resposta: "Não. Na conferência, toque em Faltou algo e diga quanto chegou: o pedido passa a valer o que chegou. O frete continua o mesmo.",
+    resposta: "Não. Na conferência, toque em Faltou algo, diga quanto chegou e toque em Confirmar o que chegou: o pedido passa a valer o que chegou. O frete continua o mesmo.",
     guiaSlug: "conferir-chegada",
   },
   {
     pergunta: "Por que meu produto próprio não aparece no pedido?",
-    resposta: "O pedido à fábrica só tem os produtos da Maxi. Os seus ficam só no Estoque.",
+    resposta: "O pedido à fábrica só tem os produtos da Maxi. Os seus ficam no Estoque e você pode vendê-los normalmente, mas eles não entram no pedido à fábrica.",
     guiaSlug: "produto-proprio",
   },
   {
@@ -950,7 +951,7 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "O robô parou de responder. E agora?",
-    resposta: "Em Mais › Meu robô, veja se está conectado. Se não, leia o QR Code de novo: precisa de duas telas. Sem outra tela, fale com a Maxi.",
+    resposta: "Em Mais › Meu robô, toque em Conectado ou Não conectado, no alto, para conferir. Se não, leia o QR Code de novo: precisa de duas telas. Sem outra tela, fale com a Maxi.",
     guiaSlug: "reconectar-whatsapp",
   },
   {

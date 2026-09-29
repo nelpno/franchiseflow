@@ -21,6 +21,7 @@ import { weeklyTurnoverMap, suggestionFor, ritmoDeVendaMap } from "@/lib/stockSu
 import {
   linhasDeCompra,
   resumoDeCompra,
+  ultimoPedidoParaRepetir,
 } from "@/lib/reposicao";
 import { usePedidosDaUnidade } from "@/hooks/usePedidosDaUnidade";
 import ReposicaoV2 from "./ReposicaoV2";
@@ -110,9 +111,10 @@ export default function TabReposicao({
     abortControllerRef.current = controller;
 
     setLoadingLastOrder(true);
-    PurchaseOrder.filter({ franchise_id: franchiseId }, "-ordered_at", 1, { signal: controller.signal })
+    // Os 10 mais recentes: o último pode ter sido cancelado, e cancelado não se repete.
+    PurchaseOrder.filter({ franchise_id: franchiseId }, "-ordered_at", 10, { signal: controller.signal })
       .then((orders) => {
-        setLastOrder(orders.length > 0 ? orders[0] : null);
+        setLastOrder(ultimoPedidoParaRepetir(orders));
       })
       .catch((err) => {
         if (err?.name === 'AbortError') return;

@@ -15,6 +15,16 @@ import { suggestionFor, sugestaoDeCompra, INTERVALO_PADRAO_DIAS } from "./stockS
 
 export const STATUS_PEDIDO_ABERTO = Object.freeze(["pendente", "confirmado", "em_rota"]);
 
+/**
+ * "Repetir último pedido" (29/09/2026): o último pedido que NÃO foi cancelado. Antes a tela pegava
+ * o mais recente de todos e repetia até pedido cancelado. Espera a lista já em ordem de ordered_at
+ * decrescente (como vem do PurchaseOrder.filter com "-ordered_at").
+ * @param {Array<{status?:string}>} pedidos
+ */
+export function ultimoPedidoParaRepetir(pedidos) {
+  return (pedidos || []).find((p) => p && p.status !== "cancelado") || null;
+}
+
 export function ehProdutoDaFabrica(item) {
   return !!item && item.created_by_franchisee !== true && (parseFloat(item.cost_price) || 0) > 0;
 }
