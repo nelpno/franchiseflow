@@ -1,6 +1,7 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import PageHeader from "@/components/shared/PageHeader";
-import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, TOM_CHEGADA } from "@/components/shared/adminUi";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, TOM_ATENCAO, TOM_CHEGADA, TOM_MAXI } from "@/components/shared/adminUi";
+import { safeHref } from "@/lib/safeHref";
 import { linkWhatsAppDoGuia } from "@/lib/guiasAjuda";
 import { linkFalarComMaxiDoGuia } from "@/lib/contatoMaxi";
 import IssoResolveu from "./IssoResolveu";
@@ -49,6 +50,46 @@ function BotaoFalarComMaxi({ guia }) {
       <MaterialIcon icon="chat" size={18} />
       Falar com a Maxi
     </a>
+  );
+}
+
+// Dica, Erro comum e link do Drive (S24.1, P3 29/09/2026): os campos v2 de guiasAjuda.js que
+// a Ajuda nova ainda não mostrava. Só com `mostrarAjudaExtra` (Ajuda v2, ui_v2 ligada): com a
+// chave desligada o guia segue idêntico ao de antes.
+export function GuiaExtras({ guia }) {
+  const driveHref = guia.drive ? safeHref(guia.drive.href) : "#";
+  return (
+    <>
+      {guia.dica && (
+        <div className={`${TOM_MAXI} flex gap-3`}>
+          <MaterialIcon icon="lightbulb" size={20} className="mt-0.5 shrink-0 text-brand-gold-ink" />
+          <p className="text-sm leading-relaxed text-ink">
+            <strong className="font-bold">Dica: </strong>
+            {guia.dica}
+          </p>
+        </div>
+      )}
+      {guia.erroComum && (
+        <div className={`${TOM_ATENCAO} flex gap-3`}>
+          <MaterialIcon icon="warning" size={20} className="mt-0.5 shrink-0 text-warn-ink" />
+          <p className="text-sm leading-relaxed text-ink">
+            <strong className="font-bold">Erro comum: </strong>
+            {guia.erroComum}
+          </p>
+        </div>
+      )}
+      {guia.drive && driveHref !== "#" && (
+        <a
+          href={driveHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`}
+        >
+          <MaterialIcon icon="open_in_new" size={18} />
+          {guia.drive.rotulo}
+        </a>
+      )}
+    </>
   );
 }
 
@@ -108,6 +149,8 @@ export default function GuiaDetalhe({ guia, voltarLabel, onVoltar, equipe, mostr
           </li>
         ))}
       </ol>
+
+      {mostrarAjudaExtra && <GuiaExtras guia={guia} />}
 
       {guia.nota && (
         <div className={`${TOM_CHEGADA} flex gap-3`}>
