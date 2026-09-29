@@ -13,10 +13,12 @@ import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { MarketingPayment, getMarketingAttribution, getFranchiseFunnelStats } from "@/entities/all";
 import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
 import { resumoEquipeDigital, mesAtualBRT } from "@/lib/pagamentos";
-import { escolherMarketing, mesAlvoMarketing } from "@/lib/inicioMes";
+import { escolherMarketing, mesAlvoMarketing, INTERVALO_REVALIDAR_MS } from "@/lib/inicioMes";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 
 // Mesmo Pix da verba do cartão de Marketing (S5.1, decisão 27/09).
 const PIX_VERBA_CNPJ = "00.494.317/0001-21";
+const MARKETING_VAZIO = { evo: null, alvo: null, ok: false, lista: [] };
 
 // S11.1 (28/09/2026) — Mais › Pagamentos. Só existe com a chave ui_v2 ligada; com ela
 // desligada (ou sem unidade) volta para a Início, que continua mostrando o cartão de sempre.
@@ -27,35 +29,56 @@ export default function Pagamentos() {
   const evoId = selectedFranchise?.evolution_instance_id;
   const isFranqueado = user?.role === "franchisee";
 
-  // Onda 7b: os 3 últimos pagamentos, com a unidade e o resultado da leitura. O cartão usa o do
+  // Onda 7b: os 3 últimos pagamentos, com a unidade e o mês-alvo da leitura. O cartão usa o do
   // MÊS-ALVO (Brasília), como a Início nova: verba do mês seguinte já registrada não esconde a
-  // do mês-alvo, e leitura falha ou de outra unidade esconde a linha em vez de dizer "pendente".
-  const [marketing, setMarketing] = useState({ evo: null, ok: false, lista: [] });
+  // do mês-alvo; carga de outra unidade/mês ou leitura falha esconde a linha (nunca "pendente"
+  // falso). Revalida ao voltar para a aba e a cada 5 min (registro feito em outra aba, admin
+  // confirmando); na revalidação, falha mantém o último dado bom.
+  const [marketing, setMarketing] = useState(MARKETING_VAZIO);
   const [resumo, setResumo] = useState(null); // null = carregando; [] = sem números
+  const [recarga, setRecarga] = useState(0);
   const mountedRef = useRef(true);
+  const chaveRef = useRef(null);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   const mes = mesAtualBRT();
   const mesNome = format(new Date(`${mes.inicio}T12:00:00`), "MMMM", { locale: ptBR });
+  const mesAlvo = mesAlvoMarketing();
+  const alvoChave = format(mesAlvo, "yyyy-MM");
+
+  useVisibilityPolling(() => setRecarga((n) => n + 1), INTERVALO_REVALIDAR_MS * 5, !!evoId && uiV2);
 
   useEffect(() => {
     if (!evoId || !uiV2) return undefined;
     const controller = new AbortController();
-    setResumo(null);
+    const chave = `${evoId}|${alvoChave}|${mes.chave}`;
+    const nova = chaveRef.current !== chave;
+    chaveRef.current = chave;
+    if (nova) {
+      setResumo(null);
+      setMarketing(MARKETING_VAZIO);
+    }
     Promise.allSettled([
       MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal: controller.signal }),
       getMarketingAttribution(mes.chave, evoId, { signal: controller.signal }),
       getFranchiseFunnelStats(evoId, mes.inicio, mes.ate, { signal: controller.signal }),
     ]).then(([mp, attr, funil]) => {
       if (!mountedRef.current || controller.signal.aborted) return;
-      setMarketing({ evo: evoId, ok: mp.status === "fulfilled", lista: mp.status === "fulfilled" ? mp.value || [] : [] });
-      setResumo(resumoEquipeDigital({
-        atribuicao: attr.status === "fulfilled" ? attr.value?.[0] || null : null,
-        funil: funil.status === "fulfilled" ? funil.value : null,
-      }));
+      if (mp.status === "fulfilled") {
+        setMarketing({ evo: evoId, alvo: alvoChave, ok: true, lista: mp.value || [] });
+      } else {
+        setMarketing((m) => (m.ok && m.evo === evoId && m.alvo === alvoChave ? m : { evo: evoId, alvo: alvoChave, ok: false, lista: [] }));
+      }
+      const semNada = attr.status !== "fulfilled" && funil.status !== "fulfilled";
+      if (nova || !semNada) {
+        setResumo(resumoEquipeDigital({
+          atribuicao: attr.status === "fulfilled" ? attr.value?.[0] || null : null,
+          funil: funil.status === "fulfilled" ? funil.value : null,
+        }));
+      }
     });
     return () => controller.abort();
-  }, [evoId, uiV2, mes.chave, mes.inicio, mes.ate]);
+  }, [evoId, uiV2, alvoChave, mes.chave, mes.inicio, mes.ate, recarga]);
 
   // Só decide com a unidade já carregada: abrindo o endereço direto, a unidade chega um instante
   // depois e, sem ela, a chave vale "resolvida e desligada" — redirecionava todo mundo (Onda 5).
@@ -79,8 +102,7 @@ export default function Pagamentos() {
 
   const situacao = classifySubscription(subscription).situacao;
   const mensalidadePaga = situacao === SITUACAO.PAGO;
-  const mesAlvo = mesAlvoMarketing();
-  const marketingPronto = marketing.evo === evoId && marketing.ok;
+  const marketingPronto = marketing.ok && marketing.evo === evoId && marketing.alvo === alvoChave;
   const marketingPayment = marketingPronto ? escolherMarketing(marketing.lista, mesAlvo) : null;
 
   return (
