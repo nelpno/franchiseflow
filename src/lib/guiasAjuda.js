@@ -581,6 +581,27 @@ export const GUIAS = [
     nota: "Os nomes das telas do Meta mudam de vez em quando. Se algum nome estiver diferente, procure a opção parecida ou veja os vídeos no Drive.",
     whatsapp: "Quer deixar as postagens do mês agendadas? Este guia mostra o caminho no Meta Business Suite.",
   },
+  {
+    slug: "como-funciona-anuncio",
+    publico: PUBLICO.franqueado,
+    titulo: "Entender como funciona o anúncio no Meta",
+    resumo: "O que acontece com a sua verba, por que o custo muda e o que faz o anúncio vender mais.",
+    tempo: "3 minutos",
+    icone: "campaign",
+    area: "Marketing",
+    sinonimos: ["anúncio", "meta", "facebook", "instagram", "lance", "custo do anúncio", "campanha"],
+    dica: "Verba maior alcança mais gente, mas quem fecha a venda é o atendimento: responda rápido e marque Recebi em toda venda, com o telefone do cliente.",
+    erroComum: "Achar que o valor todo vira anúncio: 14% ficam em impostos e taxas (de R$ 200, R$ 172 vão para o anúncio). E comparar um mês com o outro sem lembrar que o preço do leilão muda.",
+    passos: [
+      { titulo: "A verba vira anúncio na sua cidade", texto: "A Equipe Digital Maxi monta a campanha da sua unidade no Facebook e no Instagram (é o Meta), mostrando para quem mora perto de você. Quem toca no anúncio cai no WhatsApp da unidade, e o robô atende." },
+      { titulo: "O Meta faz um leilão", texto: "Cada vez que alguém abre o Facebook ou o Instagram, várias empresas disputam aquele espaço. O Meta escolhe quem aparece pelo lance (quanto a empresa topa pagar) e por quanto o anúncio agrada às pessoas. A Maxi cuida do lance e da arte; você cuida da verba e do atendimento." },
+      { titulo: "Por que às vezes fica mais caro", texto: "Quando muita gente anuncia ao mesmo tempo (eleição, datas comemorativas, fim de ano), o leilão fica disputado e a mesma verba chega a menos pessoas. Anúncio mostrado muitas vezes para as mesmas pessoas também cansa e rende menos: aí a Maxi troca a arte." },
+      { titulo: "O anúncio aprende com as suas vendas", texto: "Quando você marca a venda como Recebi e ela tem o telefone do cliente, o app avisa o Meta que aquela pessoa comprou. Com isso, o Meta procura gente parecida com quem compra. Venda sem telefone não ensina nada ao anúncio." },
+      { titulo: "O que mais ajuda a vender", texto: "Responder rápido (o robô faz isso), ter no estoque o produto que o anúncio mostra, deixar preço e cardápio certos no Meu robô e manter a verba todo mês: campanha parada perde parte do que aprendeu." },
+    ],
+    nota: "Os números do mês do anúncio e do robô aparecem em Mais › Pagamentos. Para pagar a verba, veja o guia Registrar a verba do anúncio.",
+    whatsapp: "Este guia explica, de forma simples, como funciona o anúncio da sua unidade no Facebook e no Instagram.",
+  },
   // ------------------------------------------------------------------ Meu robô
   {
     slug: "robo-horarios",
@@ -890,6 +911,11 @@ export const PERGUNTAS_FREQUENTES = [
   {
     pergunta: "O que é o \"Sobrou no mês\"?",
     resposta: "É o que entrou com as vendas (valor menos desconto, mais frete) menos a taxa de cartão que a unidade pagou e os gastos lançados. Não é o saldo do seu banco.",
+    guiaSlug: "resultado",
+  },
+  {
+    pergunta: "O Transporte do Resultado diminuiu. Sumiu frete?",
+    resposta: "Não. O frete do pedido à fábrica agora fica junto do pedido, na linha dos pedidos à fábrica. Transporte mostra só o que você gastou com as suas entregas.",
     guiaSlug: "resultado",
   },
   {

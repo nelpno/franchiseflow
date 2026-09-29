@@ -63,6 +63,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Marketing**
 23. Baixar as artes e a legenda do mês — `artes`
 24. Agendar postagens no Meta Business Suite — `agendar-postagens`
+34. Entender como funciona o anúncio no Meta — `como-funciona-anuncio`
 
 **Meu robô**
 25. Ajustar os dias e horários de entrega — `robo-horarios`
@@ -1006,6 +1007,30 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Dica:** a lista é do mês escolhido. Para ver outro mês, feche a janela, troque o mês nas setas e abra de novo.
 
 **Erro comum:** não aparece **Ver todos os produtos**? Confira o mês. Se há vendas, carregue a tela de novo. O **Valor** pode ser diferente do **Entrou** do Resultado, porque aqui não entram frete nem desconto.
+
+**Se não resolver:** Falar com a Maxi (guia 31).
+
+---
+
+## 34. Entender como funciona o anúncio no Meta
+`slug: como-funciona-anuncio` · **Onde começa:** é só leitura (não tem tela própria) · **Tempo:** 3 minutos
+
+**Quando usar:** O que acontece com a sua verba, por que o custo muda e o que faz o anúncio vender mais.
+
+**Passos**
+1. **A verba vira anúncio na sua cidade.** A Equipe Digital Maxi monta a campanha da sua unidade no Facebook e no Instagram (é o Meta), mostrando para quem mora perto de você. Quem toca no anúncio cai no WhatsApp da unidade, e o robô atende.
+2. **O Meta faz um leilão.** Cada vez que alguém abre o Facebook ou o Instagram, várias empresas disputam aquele espaço. O Meta escolhe quem aparece pelo lance (quanto a empresa topa pagar) e por quanto o anúncio agrada às pessoas. A Maxi cuida do lance e da arte; você cuida da verba e do atendimento.
+3. **Por que às vezes fica mais caro.** Quando muita gente anuncia ao mesmo tempo (eleição, datas comemorativas, fim de ano), o leilão fica disputado e a mesma verba chega a menos pessoas. Anúncio mostrado muitas vezes para as mesmas pessoas também cansa e rende menos: aí a Maxi troca a arte.
+4. **O anúncio aprende com as suas vendas.** Quando você marca a venda como Recebi e ela tem o telefone do cliente, o app avisa o Meta que aquela pessoa comprou. Com isso, o Meta procura gente parecida com quem compra. Venda sem telefone não ensina nada ao anúncio.
+5. **O que mais ajuda a vender.** Responder rápido (o robô faz isso), ter no estoque o produto que o anúncio mostra, deixar preço e cardápio certos no Meu robô e manter a verba todo mês: campanha parada perde parte do que aprendeu.
+
+**Deu certo quando:** você entende para onde vai a verba e o que pode fazer para o anúncio vender mais.
+
+**Dica:** Verba maior alcança mais gente, mas quem fecha a venda é o atendimento: responda rápido e marque Recebi em toda venda, com o telefone do cliente.
+
+**Erro comum:** Achar que o valor todo vira anúncio: 14% ficam em impostos e taxas (de R$ 200, R$ 172 vão para o anúncio). E comparar um mês com o outro sem lembrar que o preço do leilão muda.
+
+> Os números do mês do anúncio e do robô aparecem em Mais › Pagamentos. Para pagar a verba, veja o guia Registrar a verba do anúncio.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
