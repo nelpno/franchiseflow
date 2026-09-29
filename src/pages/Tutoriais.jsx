@@ -8,6 +8,7 @@ import GuiaDetalhe from "@/components/ajuda/GuiaDetalhe";
 import VideosAntigos from "@/components/ajuda/VideosAntigos";
 import AjudaFaq from "@/components/ajuda/AjudaFaq";
 import FalarComMaxiCard from "@/components/ajuda/FalarComMaxiCard";
+import MaterialIcon from "@/components/ui/MaterialIcon";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { MENSAGEM_AJUDA, linkWhatsAppMaxi } from "@/lib/contatoMaxi";
@@ -75,6 +76,20 @@ export default function Tutoriais() {
             />
           }
         />
+        {/* Onda 7c: o manual inteiro (os mesmos guias, com as fotos) para baixar ou imprimir */}
+        <a
+          href="/manual-maxi.pdf"
+          download="Manual-Maxi-Massas.pdf"
+          onClick={() => { try { window.clarity?.("event", "manual_pdf_baixado"); } catch { /* sem Clarity */ } }}
+          className={`${CARTAO} flex items-center gap-3 min-h-[56px] hover:border-brand/40 transition-colors`}
+        >
+          <MaterialIcon icon="picture_as_pdf" size={24} className="text-brand shrink-0" aria-hidden="true" />
+          <span className="flex-1 min-w-0">
+            <span className="block font-bold text-ink">Baixar o manual (PDF)</span>
+            <span className="block text-xs text-ink-2">Todos os guias com as fotos, para ler com calma ou imprimir.</span>
+          </span>
+          <MaterialIcon icon="download" size={20} className="text-ink-3 shrink-0" aria-hidden="true" />
+        </a>
         {termo ? (
           resultados.length ? (
             <GuiaLista titulo={`Resultados para "${termo}"`} guias={resultados} onAbrir={abrirGuia} />
