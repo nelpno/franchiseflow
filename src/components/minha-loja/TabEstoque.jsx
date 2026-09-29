@@ -665,7 +665,7 @@ export default function TabEstoque({
       setItems((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, active: newActive } : i))
       );
-      toast.success(newActive ? "Produto reativado." : "Produto oculto — não aparece para o bot nem na reposição.");
+      toast.success(newActive ? "Produto reativado." : "Produto oculto — não aparece para o robô nem na reposição.");
       if (onRefresh) onRefresh();
     } catch (error) {
       console.error("Erro ao ocultar/mostrar:", error);

@@ -203,7 +203,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-ink">
                       {order.ordered_at
-                        ? format(new Date(order.ordered_at), "dd/MM/yyyy 'as' HH:mm", {
+                        ? format(new Date(order.ordered_at), "dd/MM/yyyy 'às' HH:mm", {
                             locale: ptBR,
                           })
                         : "—"}
@@ -230,7 +230,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                     {order.estimated_delivery && (
                       <span className="text-xs text-ink-2 flex items-center gap-1">
                         <MaterialIcon icon="calendar_today" size={12} />
-                        Previsao: {formatDateOnly(order.estimated_delivery)}
+                        Previsão: {formatDateOnly(order.estimated_delivery)}
                       </span>
                     )}
 
