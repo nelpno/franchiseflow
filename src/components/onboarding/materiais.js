@@ -3,16 +3,17 @@
 // "Meu Vendedor") e pelo guia de Tutoriais. Trocar um link é mudar aqui — um lugar só.
 // Ver CLAUDE.md raiz do dashboard, seção "Primeiros passos (onboarding)".
 
-// Drive reorganizado em 28/09/2026 em 6 pastas (1. Comece aqui · 2. Vender e atender ·
-// 3. Estoque e fábrica · 4. Marketing e postagens · 5. Robô vendedor · 6. Marca e artes) +
-// Arquivo. Mover no Drive NÃO muda o link: os ids abaixo seguem valendo; o comentário diz
+// Drive reorganizado em 4 pastas (reunião Nelson × Celso, 29/09/2026): 1. Configurações
+// (WhatsApp, Meta Business Suite, Robô) · 2. Universidade Maxi Massas (Maxi Treinamento,
+// Papo Massa) · 3. Marketing (Postagens, Papelaria, Artes editáveis) · 4. Manuais.
+// (Antes, 28/09: 6 pastas, de "1. Comece aqui" a "6. Marca e artes".) Mover no Drive NÃO muda o link: os ids abaixo seguem valendo; o comentário diz
 // onde cada pasta mora hoje. Tudo abre para qualquer um com o link (leitura).
 export const DRIVE_FRANQUEADOS = "https://drive.google.com/drive/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh"; // raiz "Franqueados"
-export const DRIVE_VIDEOS_TREINAMENTO = "https://drive.google.com/drive/folders/1DwQLHOKo2Lf8RJ83-ADAqJcIYmi5m-VH"; // 1. Comece aqui › Vídeos de configuração (WhatsApp e Meta)
-export const DRIVE_ROBO = "https://drive.google.com/drive/folders/18W51ZqadWPZ5Fta6TSfIt0PWwC4y6fDV"; // 5. Robô vendedor › Vídeos do robô
-export const DRIVE_SACOLA = "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9"; // 3. Estoque e fábrica › Sacola e embalagens
+export const DRIVE_VIDEOS_TREINAMENTO = "https://drive.google.com/drive/folders/1DwQLHOKo2Lf8RJ83-ADAqJcIYmi5m-VH"; // 1. Configurações (WhatsApp e Meta)
+export const DRIVE_ROBO = "https://drive.google.com/drive/folders/18W51ZqadWPZ5Fta6TSfIt0PWwC4y6fDV"; // 1. Configurações › Robô
+export const DRIVE_SACOLA = "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9"; // 3. Marketing › Papelaria (sacola e embalagens)
 export const DRIVE_META_BUSINESS = "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU"; // …Vídeos de configuração › 2. Meta Business Suite
-export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC"; // 4. Marketing e postagens › Postagens redes sociais
+export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC"; // 3. Marketing › Postagens redes sociais
 
 // Link para a franqueada COPIAR o cardápio (Nelson, 17/09/2026). É um link de edição: a
 // trilha pede "Faça uma cópia do modelo" antes de trocar cidade e telefone. Se alguém
