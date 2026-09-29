@@ -5,7 +5,7 @@ import { format, startOfMonth, subDays, subMonths } from "date-fns";
 import {
   montarInicioMes, textosInicioMes, montarEvolucao, aReceberDesde, corteAReceber, hojeBrasilia, unirVendas,
   vendasDaInicio, janelasInicio, avaliarAgora, marketingDoMesAlvo, escolherMarketing, mesAlvoMarketing, estadoDaCargaV2, planoRevalidacao, janelaConversao,
-  metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto,
+  metaDoDia, diasSeguidosBatendoMeta, deltaRanking, faturamentoDoDia, arredondarPerto, montarUltimosDias,
 } from "./inicioMes.js";
 import { resumirMes } from "./monthlyReport.js";
 import { vendasAReceber } from "./vendasLista.js";
@@ -357,4 +357,15 @@ test("S18.3 P3: verba antecipada não esconde a do mês-alvo; mês-alvo pelo dia
   // 26/09 01:00Z = 25/09 22:00 em Brasília: mês-alvo ainda setembro, em qualquer fuso do aparelho
   assert.equal(format(mesAlvoMarketing(new Date("2026-09-26T01:00:00Z")), "yyyy-MM"), "2026-09");
   assert.equal(format(mesAlvoMarketing(new Date("2026-09-26T04:00:00Z")), "yyyy-MM"), "2026-10");
+});
+
+test("7 dias: dia a dia até hoje, dias sem venda = 0, venda futura fora", () => {
+  const d = montarUltimosDias({ sales, hoje: HOJE });
+  assert.equal(d.length, 7);
+  assert.deepEqual(d.map((x) => x.chave), ["2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28"]);
+  assert.deepEqual(d.map((x) => x.atual), [false, false, false, false, false, false, true]);
+  assert.equal(d[6].rotulo, "Seg"); // 28/09/2026 é segunda
+  assert.equal(d.reduce((a, x) => a + x.valor, 0), sales.filter((s) => s.sale_date >= "2026-09-22" && s.sale_date <= "2026-09-28").reduce((a, s) => a + s.value - s.discount_amount + s.delivery_fee, 0));
+  const soHoje = montarUltimosDias({ sales: [venda("2026-09-28", 250, { discount_amount: 50, delivery_fee: 20 })], hoje: HOJE });
+  assert.deepEqual(soHoje.map((x) => x.valor), [0, 0, 0, 0, 0, 0, 220]);
 });

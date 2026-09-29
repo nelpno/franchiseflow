@@ -209,6 +209,24 @@ export function montarEvolucao({ sales = [], hoje = dataCivilBRT(), meses = MESE
   return lista;
 }
 
+export const DIAS_EVOLUCAO = 7;
+const DIA_CURTO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+/**
+ * Faturamento dia a dia dos últimos `dias` dias até hoje (Brasília), do mais antigo para hoje.
+ * Aba "7 dias" da Evolução (pedido de Santos, 29/09: a Início antiga tinha as barras da semana).
+ */
+export function montarUltimosDias({ sales = [], hoje = dataCivilBRT(), dias = DIAS_EVOLUCAO } = {}) {
+  const lista = [];
+  for (let i = dias - 1; i >= 0; i--) {
+    const d = subDays(hoje, i);
+    const chave = fmt(d);
+    const { total, vendas } = faturamentoDoDia(sales, chave);
+    lista.push({ chave, rotulo: DIA_CURTO[d.getDay()], valor: total, vendas, atual: i === 0 });
+  }
+  return lista;
+}
+
 /**
  * Junta listas de vendas sem repetir (mesmo id): a PRIMEIRA lista ganha. A janela principal e o
  * histórico não se cruzam, mas na virada do mês uma pode ter sido carregada antes da outra mudar

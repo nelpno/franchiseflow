@@ -18,7 +18,7 @@ import { cenarioPrioritario } from "../PriorityAction";
 import { faixaMensalidade } from "@/lib/pagamentos";
 import {
   MESES_EVOLUCAO, aReceberDesde, avaliarAgora, marketingDoMesAlvo, mesAlvoMarketing, diasSeguidosBatendoMeta, faturamentoDoDia,
-  metaDoDia, montarEvolucao, montarInicioMes, vendasDaInicio,
+  metaDoDia, montarEvolucao, montarUltimosDias, montarInicioMes, vendasDaInicio,
 } from "@/lib/inicioMes";
 import InicioMesCard from "./InicioMesCard";
 import EspacoMetaBimestre from "./EspacoMetaBimestre";
@@ -95,6 +95,8 @@ export default function InicioV2({
         : comHistorico
           ? { status: "ok", ...aReceberDesde(todas, corteAReceber) }
           : { status: historico?.status === "erro" ? "erro" : "loading" },
+      // 7 dias: só a janela principal (cobre os 3 meses anteriores), recarregada a cada 5 min
+      dias: montarUltimosDias({ sales: allSales, hoje }),
       doDia,
       metaHoje: metaDoDia(summaries, hojeStr, { franchiseId: evoId }),
       sequencia: diasSeguidosBatendoMeta(summaries, { hoje: hojeStr, franchiseId: evoId, faturamentoHoje: doDia.total }),
@@ -169,6 +171,7 @@ export default function InicioV2({
         {vendasOk && (
           <InicioEvolucao
             meses={dados.evolucao}
+            dias={dados.dias}
             status={statusHistorico}
             mediana={dados.mes.mediana}
             nomeMes={dados.mes.nomeMes}
