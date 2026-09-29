@@ -495,7 +495,7 @@ export default function TabLancar({
     if (!nova) return;
     setPendingReceiptId(null);
     toast.success("Venda registrada!", {
-      id: "venda-salva",
+      id: `venda-salva-${nova.id}`,
       action: {
         label: "Comprovante",
         onClick: () => handleShareSaleRef.current?.(nova),

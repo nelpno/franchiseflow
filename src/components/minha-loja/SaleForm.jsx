@@ -1248,8 +1248,9 @@ export default function SaleForm({
       // Success — clear draft and notify
       clearDraft(franchiseId);
       clientSaleIdRef.current = null;
-      // id fixo: a lista (TabLancar) troca este aviso pelo mesmo com o botão Comprovante, sem mostrar 2×
-      toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!", { id: "venda-salva" });
+      // id POR VENDA: a lista (TabLancar) troca este aviso pelo mesmo com o botão Comprovante, sem mostrar 2×
+      // (id fixo herdava o botão da venda anterior: o sonner mescla as propriedades — P3 7c)
+      toast.success(isEditing ? "Venda atualizada!" : "Venda registrada!", { id: `venda-salva-${savedSaleId || "x"}` });
 
       // O cliente pode se perder no caminho: resolveContactId devolve null em silencio
       // quando a busca nao casa e a criacao falha (RLS, telefone duplicado). A venda
