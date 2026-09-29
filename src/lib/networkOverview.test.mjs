@@ -150,7 +150,7 @@ test("sem venda: a régua usa DIAS_SEM_VENDA", () => {
 });
 
 test("unidade nova: protegida até 30 dias sem venda; trilha aprovada = régua normal", () => {
-  const nova = u({ is_new: true, age_days: 40, days_since_last_sale: null, onboarding_status: "in_progress" });
+  const nova = u({ is_new: true, age_days: 20, days_since_last_sale: null, onboarding_status: "in_progress" });
   assert.equal(ehNova(nova), true);
   assert.equal(novaNaTrilha(nova), true);
   assert.equal(semVenda(nova), false);
@@ -161,7 +161,8 @@ test("unidade nova: protegida até 30 dias sem venda; trilha aprovada = régua n
   assert.equal(semVenda(aprovada), true);
   assert.equal(FILTROS.novas.match(aprovada), false);
   // age_days manda sobre is_new
-  assert.equal(ehNova(u({ is_new: true, age_days: 60 })), false);
+  assert.equal(ehNova(u({ is_new: true, age_days: 30 })), false); // 29/09: nova é < 30 dias
+  assert.equal(ehNova(u({ is_new: true, age_days: 29 })), true);
 });
 
 test("sem verba: mês do calendário OU mês-alvo pago basta (26/09)", () => {

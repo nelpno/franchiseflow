@@ -34,7 +34,7 @@ export default function UnidadeHeader({ unit, diagnostico, podeVerFinanceiro = t
   const stateFicha = { from: location.pathname + location.search, label: `a ficha de ${nomeCurto(unit.franchise_name)}` };
   // Item 4, 26/09: age_days vem de franchises.created_at, que é a data de MIGRAÇÃO pro
   // painel (não de abertura da unidade) — ~39 das 66 caem em março/2026 e mostravam "6
-  // meses" mesmo em unidades de anos. Só mostra quando é claramente recente (< 60 dias);
+  // meses" mesmo em unidades de anos. Só mostra quando é claramente recente (< IDADE_NOVA_DIAS, 30 dias);
   // acima disso, "na rede há X" nunca aparece (decisão do orquestrador, 26/09).
   const mostrarIdade = unit.age_days != null && unit.age_days < IDADE_NOVA_DIAS;
 

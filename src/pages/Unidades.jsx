@@ -189,7 +189,7 @@ export default function Unidades() {
           </div>
 
           <p className="px-1 text-xs text-ink-3">
-            Unidades com menos de 60 dias ficam em &quot;Novas na trilha&quot;.
+            Unidades com menos de 30 dias ficam em &quot;Novas na trilha&quot;.
           </p>
         </>
       )}

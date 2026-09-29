@@ -9,6 +9,8 @@ import {
   novaNaTrilha,
   infoMesSeguinte,
   FILTROS_REV_90D,
+  ehNova,
+  IDADE_NOVA_DIAS,
 } from "@/lib/networkOverview";
 
 // Colunas: Unidade / Faturamento no mês / Sem venda há / Robô / Último pedido / Verba / Ação.
@@ -22,12 +24,13 @@ const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v)
 
 // created_at é a data de CADASTRO no painel (a migração de março jogou 39 das 66 unidades
 // nela), não a de abertura — então só mostramos a idade quando é recente o bastante para
-// não mentir (decisão 1 do orquestrador, 26/09). Acima de 60 dias, "" (sem idade nenhuma).
+// não mentir (decisão 1 do orquestrador, 26/09). A partir de IDADE_NOVA_DIAS (30), "" (sem idade nenhuma).
 // Se o Nelson quiser a idade real, criar franchises.opened_at e usar essa coluna aqui.
 export function idadeLabel(row) {
-  if (row.is_new) return "Nova";
+  // ehNova (não o is_new cru): a régua de "nova" é uma só, a do networkOverview (30 dias).
+  if (ehNova(row)) return "Nova";
   const d = num(row.age_days);
-  if (d == null || d >= 60) return "";
+  if (d == null || d >= IDADE_NOVA_DIAS) return "";
   return `${d} ${d === 1 ? "dia" : "dias"}`;
 }
 
@@ -64,7 +67,7 @@ export function faturamentoInfo(row, filtro) {
   };
 }
 
-// Nova na trilha (< 60 dias, régua protegida): nunca vermelho por "nunca vendeu" —
+// Nova na trilha (< 30 dias, régua protegida): nunca vermelho por "nunca vendeu" —
 // SALVO quem já passou dos 30 dias parada, que é problema de verdade (decisões 3/4;
 // mesma régua de sinaisUnidade — achado médio 26/09: antes `destaque` ficava sempre false
 // pra unidade nova, mesmo com 30+ dias sem venda, contradizendo o chip vermelho da Ficha).

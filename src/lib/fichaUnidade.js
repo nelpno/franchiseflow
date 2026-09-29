@@ -92,7 +92,7 @@ export function diagnosticar(unit) {
       if (s.days_since_last_sale != null && s.days_since_last_sale >= 7 && s.days_since_last_sale <= DIAS_SEM_VENDA_NOVA) {
         partes.push(`Sem venda há ${s.days_since_last_sale} dias.`);
       }
-      detalhe = "Menos de 60 dias de rede — só entra nos alertas de venda depois de 30 dias sem vender.";
+      detalhe = "Menos de 30 dias de rede: ainda não entra nos alertas de venda e de verba.";
       break;
     }
     case "sem_venda": {

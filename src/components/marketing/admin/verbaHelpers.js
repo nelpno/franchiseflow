@@ -37,8 +37,8 @@ export function obsNaoPagou(row) {
   if (novaNaTrilha(row)) {
     const idade = num(row.age_days);
     if (idade === null || idade < 14) return "nova · começando";
-    const meses = Math.max(1, Math.round(idade / 30));
-    return `nova · ${meses} ${meses === 1 ? "mês" : "meses"}`;
+    // Nova agora é < 30 dias (29/09): a idade vai em dias, não em meses.
+    return `nova · ${idade} dias`;
   }
   if (caiu(row)) return `vendendo ${formatPct(Math.abs(deltaVendas(row)))} menos`;
   return "";

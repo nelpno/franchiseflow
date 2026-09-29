@@ -23,8 +23,9 @@ function test(name, fn) {
 
 test("obsNaoPagou: nova começando vs nova com meses", () => {
   assert.equal(obsNaoPagou({ is_new: true, age_days: 5 }), "nova · começando");
-  assert.equal(obsNaoPagou({ is_new: true, age_days: 32 }), "nova · 1 mês");
-  assert.equal(obsNaoPagou({ is_new: true, age_days: 50 }), "nova · 2 meses");
+  assert.equal(obsNaoPagou({ is_new: true, age_days: 20 }), "nova · 20 dias");
+  // Nova é < 30 dias (29/09): com 32 dias e sem venda nenhuma, já é "nunca vendeu".
+  assert.equal(obsNaoPagou({ is_new: true, age_days: 32 }), "também nunca vendeu");
   // Trilha aprovada deixa de ser "nova" (régua única): sem motivo aparente → vazio.
   assert.equal(obsNaoPagou({ age_days: 20, onboarding_status: "approved", days_since_last_sale: 1 }), "");
   // Nova parada há mais de 30 dias: sem venda ganha de nova.

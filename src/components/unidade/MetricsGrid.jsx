@@ -127,7 +127,7 @@ export default function MetricsGrid({ unit }) {
   const cobertoPeloAlvo = mesPago && !pagouMes;
   const mesNome = rotuloMesVerba(row);
   const proximoMes = infoMesSeguinte(row); // só preenche nos últimos 5 dias do mês (tom sempre neutro)
-  // Unidade nova (< 60 dias) na trilha: nunca vermelho por "não pagou" — tom neutro
+  // Unidade nova (< 30 dias) na trilha: nunca vermelho por "não pagou" — tom neutro
   // (decisão 4). Sem isso, uma unidade com 5 dias de rede aparecia cobrada de verba
   // que ainda nem fazia sentido pagar.
   const nova = novaNaTrilha(row);
@@ -191,7 +191,7 @@ export default function MetricsGrid({ unit }) {
           {meses.length > 0 && (
             <>
               {meses.map((m) => (
-                // Item do orquestrador (26/09): unidade nova (<60 dias) não pode aparecer
+                // Item do orquestrador (26/09): unidade nova (<30 dias) não pode aparecer
                 // cobrada em vermelho por meses anteriores à entrada na rede (não temos a
                 // data de abertura real — só sabemos que ela é nova, decisão 4/5). Fica
                 // neutro em vez de "não pagou".

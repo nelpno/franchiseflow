@@ -16,8 +16,11 @@ export const LIMITE_ALTA_PCT = 20;
 export const PISO_BASE_QUEDA = 3000;
 export const DIAS_SEM_VENDA = 7;
 export const DIAS_ROBO_PARADO = 7;
-// Unidade com menos de 60 dias é "Nova na trilha" (tom neutro, sem cobrança de venda/verba)...
-export const IDADE_NOVA_DIAS = 60;
+// Unidade com menos de 30 dias é "Nova na trilha" (tom neutro, sem cobrança de venda/verba)...
+// Era 60; Nelson baixou para 30 em 29/09/2026 (reunião com o Celso: "nova é inauguração,
+// uns 30 dias; passou disso, sai"). O get_unit_360 ainda manda is_new com 60, mas aqui
+// age_days manda sobre is_new, então a régua do front é 30 em todo lugar.
+export const IDADE_NOVA_DIAS = 30;
 // ...a não ser que esteja parada de verdade: mais de 30 dias sem venda (ou trilha aprovada).
 export const DIAS_SEM_VENDA_NOVA = 30;
 
@@ -33,7 +36,7 @@ export function semVendaDias(row) {
   return num(row?.days_since_last_sale);
 }
 
-// < 60 dias na rede. Usa age_days quando existe; senão o is_new do banco.
+// < IDADE_NOVA_DIAS na rede. Usa age_days quando existe; senão o is_new do banco.
 export function ehNova(row) {
   if (!row) return false;
   const idade = num(row.age_days);
@@ -314,7 +317,7 @@ export const FILTROS = {
   novas: {
     chip: "Novas na trilha",
     titulo: (n) => `${n} ${n === 1 ? "unidade nova" : "unidades novas"} na trilha`,
-    oQueFazer: "Menos de 60 dias. Veja em que passo dos Primeiros passos cada uma parou e ajude a dar o próximo.",
+    oQueFazer: "Menos de 30 dias. Veja em que passo dos Primeiros passos cada uma parou e ajude a dar o próximo.",
     match: novaNaTrilha,
     ordem: (a, b) => (num(a.onboarding_pct) ?? 0) - (num(b.onboarding_pct) ?? 0),
   },
