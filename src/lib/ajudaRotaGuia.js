@@ -12,7 +12,8 @@ export const ROTA_PARA_GUIA = {
   Marketing: "artes",
   FranchiseSettings: "reconectar-whatsapp",
   "Gestao:resultado": "resultado",
-  "Gestao:estoque": "pedido-fabrica",
+  // S24.1 (29/09/2026): a aba Estoque tem guia próprio ("Contar o estoque"); antes abria o pedido.
+  "Gestao:estoque": "contar-estoque",
   "Gestao:reposicao": "pedido-fabrica",
   Gestao: "resultado",
   Pagamentos: "pagamentos",

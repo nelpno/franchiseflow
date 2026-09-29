@@ -17,10 +17,18 @@ t("Dashboard, Vendas e MyContacts abrem o guia certo", () => {
 
 t("Gestão escolhe o guia pela aba (tab), com fallback pra 'resultado' sem aba", () => {
   assert.equal(guiaDaRota("Gestao", "resultado"), "resultado");
-  assert.equal(guiaDaRota("Gestao", "estoque"), "pedido-fabrica");
+  assert.equal(guiaDaRota("Gestao", "estoque"), "contar-estoque"); // S24.1: guia próprio da aba Estoque
   assert.equal(guiaDaRota("Gestao", "reposicao"), "pedido-fabrica");
   assert.equal(guiaDaRota("Gestao"), "resultado");
   assert.equal(guiaDaRota("Gestao", "aba-que-nao-existe"), "resultado"); // cai no fallback da página
+});
+
+// Controle positivo da S24.1: o mapa de antes (aba Estoque → pedido à fábrica) é o que o teste
+// acima reprova — a checagem não passaria com a regra velha.
+t("controle positivo: a regra antiga da aba Estoque (pedido à fábrica) é reprovada", () => {
+  const antigo = { ...ROTA_PARA_GUIA, "Gestao:estoque": "pedido-fabrica" };
+  assert.notEqual(antigo["Gestao:estoque"], guiaDaRota("Gestao", "estoque"));
+  assert.equal(guiaDaRota("Gestao", "reposicao"), "pedido-fabrica"); // a Reposição segue no pedido
 });
 
 t("página sem guia mapeado (ex.: Onboarding) devolve null — o '?' não aparece", () => {
