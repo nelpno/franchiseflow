@@ -148,9 +148,11 @@ export default function PurchaseOrderForm({
       (item) =>
         item.created_by_franchisee !== true &&
         item.cost_price &&
-        parseFloat(item.cost_price) > 0
+        parseFloat(item.cost_price) > 0 &&
+        // S25 P3: produto oculto (active=false) não entra no pedido nem no preenchimento automático
+        (!uiV2 || item.active !== false)
     ), precosTabela);
-  }, [inventoryItems, precosTabela]);
+  }, [inventoryItems, precosTabela, uiV2]);
 
   // Group products by type (first word of product_name)
   const productGroups = useMemo(() => {
@@ -360,6 +362,13 @@ export default function PurchaseOrderForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uiV2, standardProducts, quantities, ritmo, sugestaoIndisponivel, emAberto]);
   const [verOutros, setVerOutros] = useState(false);
+  // S25 P3: "Enviar pedido" abre a revisão; só "Confirmar e enviar" grava.
+  const [revisando, setRevisando] = useState(false);
+  const corpoRef = useRef(null);
+  const abrirRevisao = () => {
+    setRevisando(true);
+    try { corpoRef.current?.scrollTo({ top: 0 }); } catch { /* sem scroll */ }
+  };
 
   const passo = (itemId, delta) => {
     usuarioMexeuRef.current = true;
@@ -457,6 +466,15 @@ export default function PurchaseOrderForm({
       await PurchaseOrderItem.createMany(itemsToCreate);
       return order;
     };
+    // S25 P3: o id do envio e o conteúdo desta tentativa vão para o rascunho ANTES da RPC (mesmo
+    // quando a lista veio da sugestão automática, que não vira rascunho). Fechar e reabrir com o
+    // envio ainda pendente reusa o MESMO id: a RPC devolve o pedido já gravado em vez de criar outro.
+    // Sai só no sucesso (clearDraft abaixo); na falha fica, para a nova tentativa usar o mesmo id.
+    if (uiV2) {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities, notes, clientId: clientIdRef.current, savedAt: Date.now(), enviando: true }));
+      } catch { /* sem storage: segue a guarda de clique duplo desta tela */ }
+    }
     try {
       const resultado = await enviarPedidoFabrica({
         rpc: (fn, params) => supabase.rpc(fn, params),
@@ -589,7 +607,42 @@ export default function PurchaseOrderForm({
 
     return (
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+        <div ref={corpoRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+          {revisando ? (
+            <section aria-labelledby="titulo-revisao" className="space-y-3">
+              <div>
+                <h3 id="titulo-revisao" className="font-plus-jakarta text-base font-bold text-ink">Confira antes de enviar</h3>
+                <p className="mt-0.5 text-sm text-ink-2">Veja cada produto e a quantidade. Se algo estiver errado, toque em Voltar e ajustar.</p>
+              </div>
+              <ul className="rounded-2xl border border-surface-line bg-white px-4">
+                {standardProducts
+                  .filter((item) => (parseInt(quantities[item.id], 10) || 0) > 0)
+                  .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"))
+                  .map((item) => {
+                    const q = parseInt(quantities[item.id], 10) || 0;
+                    return (
+                      <li key={item.id} className="flex items-start justify-between gap-3 border-t border-surface-line py-2.5 first:border-t-0">
+                        <span className="min-w-0 text-sm text-ink">
+                          <b className="font-semibold">{q}×</b> {item.product_name}
+                          <span className="block text-xs text-ink-3 tabular-nums">{formatBRL(item.cost_price)} cada</span>
+                        </span>
+                        <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{formatBRL(getLineTotal(item))}</span>
+                      </li>
+                    );
+                  })}
+              </ul>
+              <dl className="space-y-1 rounded-2xl bg-surface-2 p-4 text-sm tabular-nums">
+                <div className="flex justify-between gap-3"><dt className="text-ink-2">{totalItems} {totalItems === 1 ? "produto" : "produtos"} · {totalUnits} un.</dt><dd className="text-ink">{grandWeight > 0 ? formatWeightKg(grandWeight) : ""}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-ink-2">Produtos</dt><dd className="text-ink">{formatBRL(grandTotal)}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-ink-2">Frete estimado</dt><dd className="text-ink">{formatBRL(freteEstimado)}</dd></div>
+                <div className="flex justify-between gap-3 border-t border-surface-line pt-1"><dt className="font-semibold text-ink">Total estimado</dt><dd className="font-plus-jakarta text-lg font-extrabold text-ink">{formatBRL(grandTotal + freteEstimado)}</dd></div>
+              </dl>
+              {notes.trim() && (
+                <p className="text-sm text-ink-2"><b className="text-ink">Comentário:</b> {notes.trim()}</p>
+              )}
+            </section>
+          ) : (
+          <>
           {primeiroPedido && pedidoModeloItens && (
             <div className="flex flex-col gap-3 rounded-2xl border border-brand-gold-line bg-brand-gold-soft p-4 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
@@ -608,7 +661,11 @@ export default function PurchaseOrderForm({
           {draft.current && !initialQuantities && (
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-warn/40 bg-warn-soft p-3 text-sm text-ink">
               <MaterialIcon icon="history" size={18} className="text-warn-ink" aria-hidden="true" />
-              <span className="flex-1">Voltou o pedido que você tinha começado.</span>
+              <span className="flex-1">
+                {draft.current?.enviando
+                  ? "Você já tinha tocado em enviar este pedido. Confira no Histórico de Pedidos antes de enviar de novo."
+                  : "Voltou o pedido que você tinha começado."}
+              </span>
               <button
                 type="button"
                 onClick={() => {
@@ -687,6 +744,9 @@ export default function PurchaseOrderForm({
             />
           </div>
 
+          </>
+          )}
+
           {envioDiferente && (
             <div role="alert" className="space-y-3 rounded-2xl border border-err/30 bg-err-soft p-4">
               <p className="text-sm text-ink">
@@ -744,12 +804,18 @@ export default function PurchaseOrderForm({
             )}
           </div>
           <div className="mt-2 flex gap-2">
-            <button type="button" onClick={onCancel} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
-              Cancelar
-            </button>
+            {revisando ? (
+              <button type="button" onClick={() => setRevisando(false)} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
+                Voltar e ajustar
+              </button>
+            ) : (
+              <button type="button" onClick={onCancel} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
+                Cancelar
+              </button>
+            )}
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={revisando ? handleSubmit : abrirRevisao}
               disabled={!hasAnyQty || isSubmitting || !precosProntos}
               className={`${BTN_PRIMARIO} min-h-11 flex-1`}
             >
@@ -757,6 +823,11 @@ export default function PurchaseOrderForm({
                 <>
                   <MaterialIcon icon="progress_activity" size={18} className="animate-spin" aria-hidden="true" />
                   Enviando…
+                </>
+              ) : revisando ? (
+                <>
+                  <MaterialIcon icon="send" size={18} aria-hidden="true" />
+                  Confirmar e enviar
                 </>
               ) : (
                 <>
