@@ -600,7 +600,7 @@ export const GUIAS = [
       { titulo: "Horário limite (se quiser)", texto: "Até que horas o pedido ainda sai no mesmo dia.", botao: "Pedidos até", imagem: "/tutoriais/robo-horarios-4.webp" },
       { titulo: "Salve", texto: "O botão Próximo, embaixo, salva o que mudou. Aparece \"Configurações salvas com sucesso!\".", botao: "Próximo", imagem: "/tutoriais/robo-horarios-5.webp" },
     ],
-    nota: "Ao tocar em Meu robô, o título da tela aparece como \"Meu Vendedor\": é a mesma tela. Ela tem 5 etapas no alto e não tem botão Salvar: o Próximo salva e passa para a etapa seguinte. A caixa \"O vendedor vai dizer\" mostra como o robô vai falar os horários.",
+    nota: "A tela Meu robô tem 5 etapas no alto e não tem botão Salvar: o Próximo salva e passa para a etapa seguinte. A caixa \"O vendedor vai dizer\" mostra como o robô vai falar os horários.",
     whatsapp: "Mudou o dia ou o horário de entrega? Este guia mostra como ajustar no Meu robô.",
   },
   {
@@ -867,6 +867,10 @@ export const PERGUNTAS_FREQUENTES = [
     pergunta: "Por onde eu começo?",
     resposta: "Na Início, toque em Continuar, no cartão vermelho \"Primeiros passos\" (ou em Mais › Primeiros passos). A trilha mostra o que fazer agora.",
     guiaSlug: "primeiros-passos",
+  },
+  {
+    pergunta: "Tem um manual para ler com calma ou imprimir?",
+    resposta: "Tem. No alto desta tela de Ajuda, toque em Baixar o manual (PDF): são todos estes guias, com as fotos. Dá para ler no celular ou imprimir.",
   },
   {
     pergunta: "Vendi fora do robô, o que eu faço?",

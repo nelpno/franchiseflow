@@ -760,7 +760,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 # MEU ROBÔ
 
-> Ao tocar em **Meu robô**, o título da tela aparece como "Meu Vendedor": é a mesma tela. Ela tem 5 etapas no alto: **Sua unidade**, **Entrega e retirada**, **Pagamento**, **Vendedor** e **Como o robô responde**. Toque na etapa para ir direto a ela. Não há botão "Salvar": o botão **Próximo**, embaixo, salva o que mudou e passa para a etapa seguinte (na última, **Concluir**). Aparece "Configurações salvas com sucesso!".
+> A tela **Meu robô** tem 5 etapas no alto: **Sua unidade**, **Entrega e retirada**, **Pagamento**, **Vendedor** e **Como o robô responde**. Toque na etapa para ir direto a ela. Não há botão "Salvar": o botão **Próximo**, embaixo, salva o que mudou e passa para a etapa seguinte (na última, **Concluir**). Aparece "Configurações salvas com sucesso!".
 
 ## 25. Ajustar os dias e horários de entrega
 `slug: robo-horarios` · **Onde começa:** Mais › Meu robô › etapa **Entrega e retirada** · **Tempo:** 5 minutos
@@ -1056,7 +1056,7 @@ Busca feita nos textos dos 31 guias e das perguntas frequentes. No app, a trava 
 
 | Palavra ou expressão proibida | Resultado |
 |---|---|
-| margem | não aparece (usa "markup recomendado de 100%"). Obs.: a TELA do Estoque ainda escreve "Margem: N%" e "margem 80%" (fora do escopo dos guias; ver relatório S24.1) |
+| margem | não aparece (usa "markup recomendado de 100%"). A tela do Estoque também passou a dizer "markup" (Onda 7c) |
 | amanhã | não aparece; nenhuma data prometida |
 | loja | não aparece |
 | Líquido, Ticket Médio, Inventário | não aparecem (sempre "Estoque") |
