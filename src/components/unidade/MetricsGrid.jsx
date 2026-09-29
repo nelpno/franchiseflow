@@ -216,7 +216,7 @@ export default function MetricsGrid({ unit }) {
         </div>
       </Card>
 
-      <Card titulo="CLIENTES QUE VOLTAM">
+      <Card titulo="CLIENTES QUE VOLTAM" className="col-span-2 lg:col-span-1">
         {!customers.buyers ? (
           <div className="mt-1.5 text-sm font-semibold text-ink-3">Ainda sem clientes com compra registrada.</div>
         ) : (

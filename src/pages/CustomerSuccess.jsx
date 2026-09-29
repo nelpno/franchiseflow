@@ -31,7 +31,20 @@ function gravarPref(chave, valor) {
   try { localStorage.setItem(chave, valor ? "1" : "0"); } catch { /* sem armazenamento: só nesta visita */ }
 }
 
-function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo = false, recolhida = false, onRecolher }) {
+function BotaoAbrirTodos({ compacto, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!compacto)}
+      className="inline-flex min-h-10 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-ink-3 hover:bg-surface"
+    >
+      <MaterialIcon icon={compacto ? "expand_more" : "expand_less"} size={18} aria-hidden="true" />
+      {compacto ? "Abrir todos" : "Fechar todos"}
+    </button>
+  );
+}
+
+function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo = false, recolhida = false, onRecolher, onCompacto }) {
   if (recolhida) {
     return (
       <button
@@ -50,6 +63,7 @@ function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo 
     <div className="min-w-0 flex-1">
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
         <h2 className={H3_CARTAO}>{titulo} <span className="font-semibold text-ink-3">· {cards.length}</span></h2>
+        {onCompacto && <BotaoAbrirTodos compacto={compacto} onChange={onCompacto} />}
         {onRecolher && (
           <button
             type="button"
@@ -92,13 +106,13 @@ function OrdemDoDia({ contagens }) {
     { n: 3, rotulo: "Caiu 20% ou mais", filtro: "caiu" },
   ];
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-surface-line bg-white px-4 py-3">
-      <span className="text-sm font-semibold text-ink-2">Por onde começar:</span>
+    <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:rounded-2xl sm:border sm:border-surface-line sm:bg-white sm:px-4 sm:py-3">
+      <span className="shrink-0 text-sm font-semibold text-ink-2">Por onde começar:</span>
       {passos.map((p) => (
         <Link
           key={p.filtro}
           to={`/Unidades?filtro=${p.filtro}`}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-surface-line bg-surface px-3 text-sm font-semibold text-ink hover:bg-white"
+          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-surface-line bg-white px-3 text-sm font-semibold text-ink hover:bg-surface sm:bg-surface sm:hover:bg-white"
         >
           <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">{p.n}</span>
           {p.rotulo} · {contagens[p.filtro] ?? 0}
@@ -218,16 +232,6 @@ export default function CustomerSuccess() {
       ) : (
         <>
           <OrdemDoDia contagens={contagens} />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => mudarCompacto(!compacto)}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-ink-3 hover:bg-surface"
-            >
-              <MaterialIcon icon={compacto ? "expand_more" : "expand_less"} size={18} aria-hidden="true" />
-              {compacto ? "Abrir todos os cartões" : "Fechar todos os cartões"}
-            </button>
-          </div>
           {/* Celular: uma raia por vez, por chip (?raia=) */}
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
             {RAIAS.map((r) => (
@@ -250,12 +254,13 @@ export default function CustomerSuccess() {
               lane={raia}
               compacto={compacto}
               porMotivo={raia === "falar_hoje"}
+              onCompacto={mudarCompacto}
             />
           </div>
 
           {/* Desktop: 3 colunas lado a lado */}
           <div className="hidden gap-4 lg:flex">
-            <Coluna titulo="Falar hoje" cards={grupos.falar_hoje} vazioTexto={VAZIO_TEXTO.falar_hoje} onMudou={reload} lane="falar_hoje" compacto={compacto} porMotivo />
+            <Coluna titulo="Falar hoje" cards={grupos.falar_hoje} vazioTexto={VAZIO_TEXTO.falar_hoje} onMudou={reload} lane="falar_hoje" compacto={compacto} porMotivo onCompacto={mudarCompacto} />
             <Coluna titulo="Esperando resposta" cards={grupos.esperando} vazioTexto={VAZIO_TEXTO.esperando} onMudou={reload} lane="esperando" compacto={compacto} />
             <Coluna titulo="Resolvidos" cards={grupos.resolvidos} vazioTexto={VAZIO_TEXTO.resolvidos} onMudou={reload} lane="resolvidos" compacto={compacto} recolhida={resolvidosRecolhidos} onRecolher={recolherResolvidos} />
           </div>

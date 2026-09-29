@@ -16,6 +16,7 @@ import {
   pedidoLabel,
   roboLabel,
   rotuloColunaFaturamento,
+  rotuloColunaFaturamentoCurto,
   semVendaLabel,
   verbaInfo,
 } from "./unidadeDisplay";
@@ -95,7 +96,10 @@ export default function UnidadeRow({ row, filtro }) {
   const robo = roboLabel(row);
   const pedido = pedidoLabel(row);
   const verba = verbaInfo(row);
-  const sinal = sinaisUnidade(row)[0] || null;
+  // Com a lista filtrada (ex.: Sem verba), o chip mostra O MOTIVO DO FILTRO, não o 1º sinal
+  // da régua — senão a lista "Sem verba" aparecia cheia de "Sem venda"/"Robô parado" (29/09).
+  const sinais = sinaisUnidade(row);
+  const sinal = (filtro && sinais.find((x) => x.filtro === filtro)) || sinais[0] || null;
   const rotuloFat = rotuloColunaFaturamento(filtro);
   // Telefone vem da overview (row.phone): supabase/2026-09-26-admin-08-overview-enxuta.sql.
   // Investigado 26/09 (item 7): não é bug de regex — Itapevi, Itatiba e Lapa de Baixo
@@ -115,23 +119,21 @@ export default function UnidadeRow({ row, filtro }) {
           (a grade abaixo cobre >=md). */}
       <div className="flex flex-col gap-2 md:hidden">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-semibold leading-snug text-ink">{nomeCurto(row.franchise_name)}</p>
-            <p className="truncate text-sm text-ink-3">
-              {row.owner_name || "—"}
-              {idade ? ` · ${idade}` : ""}
-            </p>
-          </div>
+          <p className="min-w-0 font-semibold leading-snug text-ink">{nomeCurto(row.franchise_name)}</p>
           <SinalChip sinal={sinal} />
         </div>
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-ink-3">{rotuloFat}</span>
-          <span className="text-right tabular-nums">
+        <div className="-mt-1 flex items-baseline justify-between gap-2">
+          <p className="min-w-0 truncate text-sm text-ink-3">
+            {row.owner_name || "—"}
+            {idade ? ` · ${idade}` : ""}
+          </p>
+          <span className="shrink-0 text-right tabular-nums" title={rotuloFat}>
+            <span className="mr-1 text-xs text-ink-3">{rotuloColunaFaturamentoCurto(filtro)}</span>
             <span className="font-semibold text-ink">{fat.valor}</span>
             {fat.deltaLabel && <span className={`ml-1.5 text-sm font-semibold ${fat.tone}`}>{fat.deltaLabel}</span>}
           </span>
         </div>
-        <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex items-center justify-between gap-2">
           {phone ? (
             <a
               href={safeHref(getWhatsAppLink(phone))}

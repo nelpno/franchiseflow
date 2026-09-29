@@ -143,16 +143,17 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
       </>)}
 
       {!somenteLeitura && (
-        <div className={`${aberto ? "mt-3" : "mt-2"} flex flex-wrap items-center gap-2`}>
+        <div className={`${aberto ? "mt-3" : "mt-2"} grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center`}>
           {linkWhats ? (
             <a
               href={safeHref(linkWhats)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-ok-ink px-4 text-sm font-semibold text-white hover:bg-ok-ink/90"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-ok-ink px-3 text-sm font-semibold text-white hover:bg-ok-ink/90 sm:px-4"
             >
               <MaterialIcon icon="chat" size={18} aria-hidden="true" />
-              Chamar no WhatsApp
+              <span className="sm:hidden">WhatsApp</span>
+              <span className="hidden sm:inline">Chamar no WhatsApp</span>
             </a>
           ) : temUnidade ? (
             <Link to={toFicha} state={stateFicha} className={LINK_ACAO}>
@@ -162,7 +163,7 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
           <button
             type="button"
             onClick={() => setRegistrarAberto(true)}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-surface-line bg-white px-4 text-sm font-semibold text-ink-2 hover:bg-surface"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-surface-line bg-white px-3 text-sm font-semibold text-ink-2 hover:bg-surface sm:px-4"
           >
             <MaterialIcon icon="edit" size={18} aria-hidden="true" />
             Registrar
