@@ -411,6 +411,8 @@ export default function TabEstoque({
   }, [formData.product_name, standardCatalog, existingNames, editingItem]);
 
   const [selectedFromCatalog, setSelectedFromCatalog] = useState(false);
+  // Comparar nomes de produto: sem diferença de maiúsculas e de espaços repetidos (29/09).
+  const normalizarNome = (nome) => String(nome || "").toLowerCase().replace(/\s+/g, " ").trim();
 
   const handleSelectStandard = (product) => {
     setFormData((prev) => ({
@@ -494,6 +496,11 @@ export default function TabEstoque({
       }
 
       if (editingItem) {
+        if (payload.product_name && items.some((i) => i.id !== editingItem.id
+          && normalizarNome(i.product_name) === normalizarNome(payload.product_name))) {
+          toast.error("Já existe outro produto com esse nome no seu Estoque.");
+          return;
+        }
         const updated = await InventoryItem.update(editingItem.id, {
           ...payload,
           updated_at: new Date().toISOString(),
@@ -503,13 +510,16 @@ export default function TabEstoque({
         );
         toast.success("Produto atualizado.");
       } else {
-        const nomeNovo = payload.product_name.toLowerCase();
-        if (existingNames.has(nomeNovo)) {
+        const nomeNovo = normalizarNome(payload.product_name);
+        if (items.some((i) => normalizarNome(i.product_name) === nomeNovo)) {
           toast.error("Esse produto já está no seu Estoque. Procure na lista (ou em produtos ocultos).");
           return;
         }
+        const daTabela = standardCatalog.find((p) => normalizarNome(p.product_name) === nomeNovo);
+        // Nome da fábrica sempre grava como está na tabela (maiúsculas/espaços da digitação não).
+        if (daTabela) payload.product_name = daTabela.product_name;
         const nomeDaFabrica = standardCatalog.length > 0
-          ? standardCatalog.some((p) => p.product_name.toLowerCase() === nomeNovo)
+          ? !!daTabela
           : selectedFromCatalog; // catálogo não carregou: vale a escolha na sugestão, como antes
         const newItem = await InventoryItem.create({
           ...payload,
