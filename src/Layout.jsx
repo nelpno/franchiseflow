@@ -454,7 +454,7 @@ export default function Layout({ children, currentPageName }) {
   // "?" de ajuda no topo (S10.2, 28/09/2026): mapa PURO rota → guia (ajudaRotaGuia.js,
   // testado). Só franqueado, só atrás de ui_v2, só quando a tela tem guia mapeado —
   // com a chave desligada, `uiV2` já é false e o botão nem aparece.
-  const guiaDaTela = uiV2 ? guiaDaRota(currentPageName, new URLSearchParams(location.search).get("tab")) : null;
+  const guiaDaTela = uiV2 ? guiaDaRota(currentPageName, new URLSearchParams(location.search).get("tab"), { trilhaAtiva: hasActiveOnboarding }) : null;
   // Só usado pra tirar Início/Vendas/Estoque do Sheet "Mais" no celular com ui_v2
   // (P3, 28/09/2026) — eles já estão no menu de baixo, repetir é ruído. Desktop
   // (isMobile=false) mantém a lista cheia de sempre.

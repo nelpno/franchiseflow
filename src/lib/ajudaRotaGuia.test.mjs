@@ -8,6 +8,8 @@ const t = (nome, fn) => { fn(); n++; };
 
 t("Dashboard, Vendas e MyContacts abrem o guia certo", () => {
   assert.equal(guiaDaRota("Dashboard"), "inicio"); // Onda 7c: antes abria os Primeiros passos
+  assert.equal(guiaDaRota("Dashboard", null, { trilhaAtiva: true }), "primeiros-passos"); // P3: na trilha o "?" fica nela
+  assert.equal(guiaDaRota("Vendas", null, { trilhaAtiva: true }), "vendas"); // só a Início muda
   assert.equal(guiaDaRota("Vendas"), "vendas");
   assert.equal(guiaDaRota("MyContacts"), "clientes");
   assert.equal(guiaDaRota("Marketing"), "artes");

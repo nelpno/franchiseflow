@@ -956,28 +956,28 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** entender para que serve cada quadro da Início e o que fazer com ele.
 
 **Passos**
-1. Toque em **Início**, o primeiro botão da barra de baixo. É a tela que abre quando você entra no app.
+1. Toque em **Início**. No celular, é o primeiro botão da barra de baixo; no computador, fica no menu à esquerda. É a tela que abre quando você entra no app.
    - Imagem: barra de baixo. Contorno em **Início**. (existe: `inicio-1.webp`)
-2. O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mês passado (por exemplo, **−8% que agosto**). Logo abaixo, o app diz onde o mês deve fechar, se o ritmo continuar, e sugere o próximo passo. Toque em **Ver o resultado do mês** para abrir o Resultado.
+2. O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mesmo trecho do mês passado (por exemplo, **−8% que agosto**) e só aparece quando há base para comparar. Logo abaixo, o app sugere o próximo passo. A projeção de onde o mês deve fechar aparece a partir do dia 8, e a mediana só quando você vendeu nos 3 meses anteriores. Toque em **Ver o resultado do mês** para abrir o Resultado.
    - Imagem: quadro do mês. (existe: `inicio-2.webp`)
-3. O troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, **12º de 58 em setembro**). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje.
+3. Quando há dado, o troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, **12º de 58 em setembro**). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje, se já houve venda hoje.
    - Imagem: quadro do ranking. (existe: `inicio-3.webp`)
-4. O quadro **Hoje** mostra quanto você vendeu hoje. A barra enche até a **Meta do dia**, que é a sua média dos últimos 30 dias mais 10%. Ao bater, aparece "meta do dia batida". Embaixo, os dias seguidos em que você bateu a meta. Toque em **Vendas de hoje** para ver as vendas.
+4. O quadro **Hoje** mostra quanto você vendeu hoje. A barra enche até a **Meta do dia**, que é a sua média dos últimos 30 dias mais 10%; ela aparece quando o app tem pelo menos 7 dias de histórico nesses 30 dias. Ao bater, aparece "meta do dia batida". Embaixo, os dias seguidos em que você bateu a meta. Toque em **Vendas de hoje** para ver as vendas.
    - Imagem: quadro Hoje com a barra e os dias seguidos. (existe: `inicio-4.webp`)
-5. O quadro **Evolução** mostra, em barras, quanto a unidade vendeu em cada um dos últimos 6 meses. A barra vermelha é o mês atual, que vai só até hoje. Embaixo está a sua mediana dos 3 meses anteriores: o valor do meio, que serve de referência.
+5. O quadro **Evolução** mostra, em barras, quanto a unidade vendeu em cada um dos últimos 6 meses. A barra vermelha é o mês atual, que vai só até hoje. Embaixo está a sua mediana dos 3 meses anteriores (o valor do meio), quando você vendeu nos 3.
    - Imagem: quadro Evolução. (existe: `inicio-5.webp`)
-6. O quadro **Agora** reúne o que pede uma ação sua: mensalidade perto de vencer (**Pagar**), pedido que chegou (toque para conferir), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (**Registrar**). Toque no aviso para ir direto à tela certa. Sem pendências, aparece "Tudo em dia!".
+6. O quadro **Agora** reúne o que pede uma ação sua: mensalidade perto de vencer (**Pagar**), pedido que chegou (toque para conferir), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (**Registrar**). Toque no aviso para ir direto à tela certa; no aviso da verba, toque em **Registrar**. Quando o app termina de conferir e não há avisos, aparece "Tudo em dia!".
    - Imagem: quadro Agora. (existe: `inicio-6.webp`)
-7. O quadro **Quem chamar hoje** traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em **Chamar** ao lado do nome. **Ver lista completa** abre a lista inteira do dia. Se você nunca usou, antes dele aparece o convite "Conheça o Quem chamar hoje".
+7. O quadro **Quem chamar hoje** traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em **Chamar** ao lado do nome: o WhatsApp abre com a mensagem pronta e o cliente já fica marcado como chamado, então confira e envie. Para abrir a lista inteira do dia, toque em **Ver os outros** ou em **Ver lista completa**. Se você nunca usou, antes dele aparece o convite "Conheça o Quem chamar hoje".
    - Imagem: quadro Quem chamar hoje. (existe: `inicio-7.webp`)
-8. No fim da tela, quatro botões levam direto ao que fica dentro do Mais: **Repor estoque**, **Clientes**, **Resultado do mês** e **Meu robô**. Vendas, Nova venda e Estoque já estão na barra de baixo.
+8. No fim da tela, quatro botões levam direto a telas que, no celular, ficam dentro do Mais: **Repor estoque**, **Clientes**, **Resultado do mês** e **Meu robô**. Vendas, Nova venda e Estoque já estão na barra de baixo.
    - Imagem: os quatro atalhos. (existe: `inicio-8.webp`)
 
 **Deu certo quando:** você acha na Início quanto vendeu no mês, como está no ranking, quanto falta para a meta de hoje e o que precisa fazer agora.
 
 **Dica:** comece o dia pelo quadro **Agora** e pelo **Quem chamar hoje**: são os dois que pedem uma ação sua.
 
-**Erro comum:** não vê a meta do dia ou o ranking? A meta aparece depois de uma semana de vendas e o ranking com a primeira venda do mês. Nos Primeiros passos, antes da 1ª venda, a Início mostra só os avisos de pagamento.
+**Erro comum:** não vê a meta do dia, o ranking ou a projeção? Cada um só aparece quando o app tem base para calcular. Nos Primeiros passos, antes da 1ª venda, a Início mostra o cartão da trilha, a orientação da 1ª venda e os avisos de pagamento.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -990,22 +990,22 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** saber quanto você vendeu de cada produto no mês, em unidades e em reais.
 
 **Passos**
-1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**.
+1. No celular, toque em **Mais** e em **Gestão**; no computador, toque em **Gestão** no menu à esquerda. Abre na aba **Resultado**.
    - Imagem: lista do Mais. Contorno em **Gestão**. (existe: `vendas-por-produto-1.webp`)
 2. Use as setas ao lado do nome do mês para escolher o mês.
    - Imagem: setas do mês. (existe: `vendas-por-produto-2.webp`)
-3. Role até **Mais vendidos**, que mostra os 5 que mais saíram, em unidades. No fim do quadro, toque em **Ver todos os produtos**. O número entre parênteses é quantos produtos você vendeu no mês.
+3. Role até **Mais vendidos**, que mostra os 5 que mais saíram, em unidades. No fim do quadro, toque em **Ver todos os produtos**. O número entre parênteses é quantos produtos diferentes você vendeu no mês.
    - Imagem: botão **Ver todos os produtos**. (existe: `vendas-por-produto-3.webp`)
-4. A janela **Vendas por produto** tem quatro colunas: **Produto**, **Qtd** (quantas unidades saíram), **Valor** (quantidade vezes o preço) e **%** (quanto o produto pesa no total). Os que mais saíram vêm primeiro. Role para ver todos.
+4. A janela **Vendas por produto** tem quatro colunas: **Produto**, **Qtd** (quantas unidades saíram), **Valor** (quantidade vezes o preço) e **%** (a parte do valor vendido que é daquele produto). Os que mais saíram vêm primeiro. Role para ver todos.
    - Imagem: tabela. (existe: `vendas-por-produto-4.webp`)
-5. Toque em **Excel** para a planilha, ou em **PDF** para uma folha. O arquivo baixa com uma linha por produto e uma linha TOTAL no fim. Aparece "Excel exportado com sucesso!" (ou "PDF exportado com sucesso!").
+5. Toque em **Excel** para a planilha, ou em **PDF** para consultar ou imprimir. O arquivo baixa com uma linha por produto e uma linha TOTAL no fim. Aparece "Excel exportado com sucesso!" (ou "PDF exportado com sucesso!").
    - Imagem: botões **Excel** e **PDF**. (existe: `vendas-por-produto-5.webp`)
 
 **Deu certo quando:** a planilha abre com uma linha por produto (produto, quantidade, valor e % do total) e o TOTAL no fim.
 
 **Dica:** a lista é do mês escolhido. Para ver outro mês, feche a janela, troque o mês nas setas e abra de novo.
 
-**Erro comum:** não aparece **Ver todos os produtos**? O mês escolhido não tem venda. O **Valor** daqui não é igual ao **Entrou** do Resultado: aqui é quantidade vezes o preço de cada produto, sem frete e sem desconto.
+**Erro comum:** não aparece **Ver todos os produtos**? Confira o mês. Se há vendas, carregue a tela de novo. O **Valor** pode ser diferente do **Entrou** do Resultado, porque aqui não entram frete nem desconto.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
