@@ -11,7 +11,7 @@
 // (created_by_franchisee !== true, custo > 0) e visível (active !== false): extras da unidade
 // não vão para a fábrica (bug Santos 28/06, memória project_reposicao_so_itens_padrao).
 
-import { suggestionFor } from "./stockSuggestion.js";
+import { suggestionFor, sugestaoDeCompra, INTERVALO_PADRAO_DIAS } from "./stockSuggestion.js";
 
 export const STATUS_PEDIDO_ABERTO = Object.freeze(["pendente", "confirmado", "em_rota"]);
 
@@ -133,4 +133,75 @@ export function comPrecoDaTabela(itens, precos) {
     const p = precos[item.id];
     return p > 0 && p !== parseFloat(item.cost_price) ? { ...item, cost_price: p } : item;
   });
+}
+
+// ============================================================================================
+// S25 (29/09/2026, chave ui_v2): a mesma regra nova (stockSuggestion.sugestaoDeCompra) para a
+// Reposição, o Estoque, o selo "Repor" e o Novo Pedido.
+// ============================================================================================
+
+/** Status que contam como "pediu à fábrica" para medir de quanto em quanto tempo a unidade pede. */
+export const STATUS_PEDIDO_FEITO = Object.freeze(["pendente", "confirmado", "em_rota", "entregue"]);
+
+/**
+ * Datas (ordered_at) dos últimos pedidos NÃO cancelados da unidade, para o intervalo entre
+ * pedidos. Erro rejeita: quem chama cai no intervalo padrão (21 dias), que não pede em dobro.
+ */
+export async function carregarDatasDePedidos({ PurchaseOrder, franchiseId, signal, limite = 12 }) {
+  if (!franchiseId) throw new Error("Unidade não identificada");
+  const pedidos = await PurchaseOrder.filter(
+    { franchise_id: franchiseId, status: [...STATUS_PEDIDO_FEITO] },
+    "-ordered_at",
+    limite,
+    { signal, columns: "id, ordered_at, status" }
+  );
+  return (pedidos || [])
+    .filter((p) => p && STATUS_PEDIDO_FEITO.includes(p.status) && p.ordered_at)
+    .map((p) => p.ordered_at);
+}
+
+const ORDEM_SITUACAO = { acabou: 0, acabando: 1 };
+
+/**
+ * Uma linha por produto da FÁBRICA visível (padrão, custo > 0, não oculto), com a sugestão nova.
+ * Ordem: acabou, acabando, depois quem tem mais a pedir, depois o nome.
+ * @param {Array} inventoryItems
+ * @param {{ ritmo?: Record<string, number>, emAberto?: Record<string, number>, intervaloDias?: number }} ctx
+ */
+export function linhasDeCompra(inventoryItems, { ritmo = {}, emAberto = {}, intervaloDias = INTERVALO_PADRAO_DIAS } = {}) {
+  return (inventoryItems || [])
+    .filter((item) => ehProdutoDaFabrica(item) && item.active !== false)
+    .map((item) => ({
+      item,
+      unidade: unidadeDeMedida(item),
+      ...sugestaoDeCompra(item, {
+        ritmoPorDia: ritmo?.[item.id] || 0,
+        aCaminho: parseFloat(emAberto?.[item.id]) || 0,
+        intervaloDias,
+      }),
+    }))
+    .sort(
+      (a, b) =>
+        (ORDEM_SITUACAO[a.situacao] ?? 2) - (ORDEM_SITUACAO[b.situacao] ?? 2) ||
+        b.repor - a.repor ||
+        String(a.item.product_name || "").localeCompare(String(b.item.product_name || ""), "pt-BR")
+    );
+}
+
+/** Resumo para o cartão da Reposição e o selo do Estoque. */
+export function resumoDeCompra(linhas) {
+  const paraPedir = (linhas || []).filter((l) => l.repor > 0);
+  const quantidades = {};
+  let unidades = 0;
+  for (const l of paraPedir) {
+    quantidades[l.item.id] = l.repor;
+    unidades += l.repor;
+  }
+  return {
+    paraPedir,
+    quantidades,
+    unidades,
+    acabando: (linhas || []).filter((l) => l.situacao === "acabou" || l.situacao === "acabando").length,
+    negativos: (linhas || []).filter((l) => l.estoqueNegativo).length,
+  };
 }
