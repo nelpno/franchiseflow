@@ -21,7 +21,7 @@ import {
   linhaVenda,
   linhaAcordo,
   linhaUltimoCombinado,
-  fraseReabertura,
+  linhaCurta,
   rotuloVoltaEm,
 } from "@/lib/csMural";
 import RegistrarSheet from "./RegistrarSheet";
@@ -36,8 +36,12 @@ const MOTIVO_PARA_MENSAGEM = {
   sem_comprar: "stopped_buying",
 };
 
-export default function MuralCard({ card, lane, onMudou }) {
+// `compacto` (29/09, pedido do Celso): o cartão fechado mostra só nome, motivo, UMA frase e os
+// botões; a seta abre o resto (venda, acordo, combinado, ficha, mais ações). Menos rolagem.
+export default function MuralCard({ card, lane, onMudou, compacto = false }) {
   const location = useLocation();
+  const [abertoAqui, setAbertoAqui] = useState(null); // null = segue o modo da tela
+  const aberto = abertoAqui ?? !compacto;
   const [registrarAberto, setRegistrarAberto] = useState(false);
   const [modoAcao, setModoAcao] = useState(null);
 
@@ -45,7 +49,6 @@ export default function MuralCard({ card, lane, onMudou }) {
   const linha = linhaVenda(card);
   const acordo = linhaAcordo(card.agreement);
   const combinado = linhaUltimoCombinado(card.last_event);
-  const reabertura = card.reopen_count > 0 ? fraseReabertura(card) : null;
   const chipMotivo = MOTIVO_LABEL[card.motive_key] || null;
 
   const mensagem = montarMensagemFranqueado({
@@ -81,12 +84,12 @@ export default function MuralCard({ card, lane, onMudou }) {
   const acoes = [
     !somenteLeitura && { label: "Concluir", icon: "check_circle", onClick: () => setModoAcao("concluir") },
     !somenteLeitura && lane !== "com_nelson" && { label: "Vai para o Nelson", icon: "arrow_forward", onClick: () => setModoAcao("nelson") },
-    !somenteLeitura && lane !== "estacionado" && { label: "Estacionar", icon: "schedule", onClick: () => setModoAcao("estacionar") },
+    !somenteLeitura && lane !== "estacionado" && { label: "Estacionar (pausar até uma data)", icon: "schedule", onClick: () => setModoAcao("estacionar") },
     lane === "estacionado" && { label: "Retomar agora", icon: "play_circle", onClick: retomar },
   ].filter(Boolean);
 
   return (
-    <div className={CARTAO}>
+    <div className={aberto ? CARTAO : "rounded-2xl border border-surface-line bg-white px-4 py-3"}>
       <div className="flex items-start justify-between gap-2">
         {temUnidade ? (
           <Link to={toFicha} state={stateFicha} className="font-plus-jakarta text-base font-bold text-ink hover:underline">
@@ -95,12 +98,28 @@ export default function MuralCard({ card, lane, onMudou }) {
         ) : (
           <h3 className="font-plus-jakarta text-base font-bold text-ink">{card.title || "Tarefa geral"}</h3>
         )}
-        {chipMotivo && (
-          <span className={`min-h-6 shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${motivoChipClasse(card.motive_key)}`}>
-            {chipMotivo}
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {chipMotivo && (
+            <span className={`min-h-6 shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${motivoChipClasse(card.motive_key)}`}>
+              {chipMotivo}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setAbertoAqui(!aberto)}
+            aria-expanded={aberto}
+            aria-label={aberto ? "Fechar detalhes" : "Ver detalhes"}
+            className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-xl text-ink-3 hover:bg-surface"
+          >
+            <MaterialIcon icon={aberto ? "expand_less" : "expand_more"} size={22} aria-hidden="true" />
+          </button>
+        </div>
       </div>
+
+      {!aberto && linhaCurta(card) && <p className="mt-0.5 line-clamp-1 text-sm text-ink-2">{linhaCurta(card)}</p>}
+      {!aberto && lane === "esperando" && card.next_at && <p className="mt-0.5 text-sm font-semibold text-ink-2">{rotuloVoltaEm(card.next_at)}</p>}
+
+      {aberto && (<>
 
       {temUnidade && ehManual && (card.title || card.description) && (
         <div className="mt-1">
@@ -113,7 +132,6 @@ export default function MuralCard({ card, lane, onMudou }) {
       {card.motive_evidence && <p className="mt-1 text-sm text-ink-2">{card.motive_evidence}</p>}
       {acordo && <p className="mt-1 text-sm text-ink-3">{acordo}</p>}
       {combinado && <p className="mt-1 text-sm text-ink-3">{combinado}</p>}
-      {reabertura && <p className="mt-1 text-sm text-warn-ink">{reabertura}</p>}
       {lane === "esperando" && card.next_at && <p className="mt-1 text-sm font-semibold text-ink-2">{rotuloVoltaEm(card.next_at)}</p>}
       {lane === "resolvidos" && card.closed_reason && (
         <p className="mt-1 text-sm text-ink-3">
@@ -122,9 +140,10 @@ export default function MuralCard({ card, lane, onMudou }) {
       )}
       {lane === "com_nelson" && card.escalated_note && <p className="mt-1 text-sm text-ink-3">"{card.escalated_note}"</p>}
       {lane === "estacionado" && card.parked_reason && <p className="mt-1 text-sm text-ink-3">Estacionado: {card.parked_reason}</p>}
+      </>)}
 
       {!somenteLeitura && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className={`${aberto ? "mt-3" : "mt-2"} flex flex-wrap items-center gap-2`}>
           {linkWhats ? (
             <a
               href={safeHref(linkWhats)}
@@ -148,11 +167,11 @@ export default function MuralCard({ card, lane, onMudou }) {
             <MaterialIcon icon="edit" size={18} aria-hidden="true" />
             Registrar
           </button>
-          {acoes.length > 0 && <MaisAcoesMenu actions={acoes} />}
+          {aberto && acoes.length > 0 && <MaisAcoesMenu actions={acoes} />}
         </div>
       )}
 
-      {temUnidade && (
+      {aberto && temUnidade && (
         <div className="mt-2">
           <Link to={toFicha} state={stateFicha} className={LINK_ACAO}>
             Abrir ficha →

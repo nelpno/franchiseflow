@@ -9,10 +9,18 @@ import { comPrecoDaTabela,
   ehProdutoDaFabrica,
   carregarPedidosAbertos,
   ultimoPedidoParaRepetir,
+  sobeParaSugeridos,
 } from "./reposicao.js";
 
 let n = 0;
 const t = (nome, fn) => { fn(); n++; console.log("ok -", nome); };
+
+t("Novo pedido: item digitado agora não pula para cima; sugestão e quantidade que já veio sobem", () => {
+  assert.equal(sobeParaSugeridos({ quantidade: 4, sugestao: null, digitadoAgora: true }), false);
+  assert.equal(sobeParaSugeridos({ quantidade: 4, sugestao: null, digitadoAgora: false }), true);
+  assert.equal(sobeParaSugeridos({ quantidade: 0, sugestao: 6, digitadoAgora: true }), true);
+  assert.equal(sobeParaSugeridos({ quantidade: "", sugestao: 0, digitadoAgora: false }), false);
+});
 
 t("Repetir último pedido pula o cancelado", () => {
   const a = { id: "a", status: "cancelado" }, b = { id: "b", status: "entregue" }, c = { id: "c", status: "pendente" };

@@ -24,7 +24,7 @@ import { formatBRL as formatBRLShared } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { estimarFreteFabrica } from "@/lib/freteFabrica";
-import { comPrecoDaTabela, reposicaoDoItem, unidadeDeMedida } from "@/lib/reposicao";
+import { comPrecoDaTabela, reposicaoDoItem, unidadeDeMedida, sobeParaSugeridos } from "@/lib/reposicao";
 import { pedidosNovosDesde } from "@/lib/reposicao";
 import {
   enviarPedidoFabrica,
@@ -314,6 +314,7 @@ export default function PurchaseOrderForm({
 
   const setQty = (itemId, value) => {
     usuarioMexeuRef.current = true;
+    digitadosRef.current.add(itemId);
     if (value === "" || value === undefined) {
       setQuantities((prev) => ({ ...prev, [itemId]: "" }));
       return;
@@ -347,6 +348,8 @@ export default function PurchaseOrderForm({
   // Produtos que aparecem em cima ("Sugeridos"): quem tem sugestão ou quantidade. Só ACRESCENTA
   // (zerar um item não faz ele pular para "Outros produtos" embaixo do dedo).
   const [emCima, setEmCima] = useState(() => new Set());
+  // Produtos em que ela mexeu nesta tela: ficam no lugar (ver sobeParaSugeridos).
+  const digitadosRef = useRef(new Set());
   useEffect(() => {
     if (!uiV2 || !ritmo || prefillFeitoRef.current) return;
     if (!primeiroPedidoPronto || revisandoRef.current) return;
@@ -379,7 +382,7 @@ export default function PurchaseOrderForm({
       standardProducts.forEach((item) => {
         if (next.has(item.id)) return;
         const sug = getSuggestion(item);
-        if ((quantities[item.id] || 0) > 0 || (sug !== null && sug > 0)) { next.add(item.id); mudou = true; }
+        if (sobeParaSugeridos({ quantidade: quantities[item.id], sugestao: sug, digitadoAgora: digitadosRef.current.has(item.id) })) { next.add(item.id); mudou = true; }
       });
       return mudou ? next : prev;
     });
@@ -434,6 +437,7 @@ export default function PurchaseOrderForm({
 
   const passo = (itemId, delta) => {
     usuarioMexeuRef.current = true;
+    digitadosRef.current.add(itemId);
     setQuantities((prev) => {
       const atual = parseInt(prev[itemId], 10) || 0;
       return { ...prev, [itemId]: Math.max(0, atual + delta) };
@@ -830,7 +834,14 @@ export default function PurchaseOrderForm({
                 aria-expanded={verOutros || sugeridos.length === 0}
                 className="flex min-h-11 w-full items-center justify-between px-4 text-left text-sm font-bold text-ink-2"
               >
-                Outros produtos ({outros.length})
+                <span>
+                  Outros produtos ({outros.length})
+                  {outros.some((i) => (parseInt(quantities[i.id], 10) || 0) > 0) && (
+                    <span className="ml-1 font-semibold text-brand-dark">
+                      · {outros.filter((i) => (parseInt(quantities[i.id], 10) || 0) > 0).length} no pedido
+                    </span>
+                  )}
+                </span>
                 <MaterialIcon icon={verOutros || sugeridos.length === 0 ? "expand_less" : "expand_more"} size={20} aria-hidden="true" />
               </button>
               {(verOutros || sugeridos.length === 0) && <ul className="px-4 pb-2">{outros.map(linhaProduto)}</ul>}

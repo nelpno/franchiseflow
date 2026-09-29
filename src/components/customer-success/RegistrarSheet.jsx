@@ -147,7 +147,8 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
           </div>
 
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-            Combinado (opcional)
+            Combinado com a unidade (opcional)
+            <span className="-mt-1 text-xs font-normal text-ink-3">O que vocês acertaram. Aparece no cartão.</span>
             <input
               type="text"
               value={commitment}
@@ -180,13 +181,14 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
           )}
 
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-            Nota (opcional)
+            Nota interna (opcional)
+            <span className="-mt-1 text-xs font-normal text-ink-3">Só para você lembrar. A unidade não vê.</span>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
               maxLength={1000}
-              placeholder="O que mais vale registrar…"
+              placeholder="Ex.: já pedi isso 2 vezes; acho que está enrolando"
               className="font-normal"
             />
           </label>

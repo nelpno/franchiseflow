@@ -177,6 +177,31 @@ export function validarRegistro({ channel, outcome, nextAtChave, nextAtData, not
   return null;
 }
 
+// ---------- Mural enxuto (pedido do Celso, reunião de 29/09/2026) ----------
+
+/**
+ * "Falar hoje" em blocos por motivo, na ordem de gravidade (ORDEM_MOTIVOS: sem venda
+ * primeiro, depois caiu...). Motivo desconhecido vai para o fim, sem sumir. Bloco vazio não entra.
+ * → [{ motivo, label, cards }]
+ */
+export function agruparPorMotivo(cards) {
+  const grupos = new Map();
+  (cards || []).forEach((c) => {
+    const k = MOTIVO_LABEL[c.motive_key] ? c.motive_key : "outros";
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(c);
+  });
+  const ordem = [...ORDEM_MOTIVOS, "outros"];
+  return ordem
+    .filter((k) => grupos.has(k))
+    .map((k) => ({ motivo: k, label: MOTIVO_LABEL[k] || "Outros", cards: grupos.get(k) }));
+}
+
+/** A frase que aparece no cartão fechado: a prova do motivo; sem ela, a venda; sem ela, o título. */
+export function linhaCurta(card) {
+  return card?.motive_evidence || linhaVenda(card) || card?.title || card?.description || null;
+}
+
 /** Cor/tom do chip de motivo (classes do padrão visual — tokens, sem cor crua). */
 export function motivoChipClasse(motivo) {
   if (motivo === "sem_venda" || motivo === "caiu") return "border-err/40 bg-err/10 text-err";

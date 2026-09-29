@@ -25,6 +25,16 @@ export function ultimoPedidoParaRepetir(pedidos) {
   return (pedidos || []).find((p) => p && p.status !== "cancelado") || null;
 }
 
+/**
+ * Novo Pedido: o produto vai para a lista de cima ("Sugeridos")? Sobe o que tem sugestão ou
+ * já veio com quantidade (rascunho, repetir, modelo). O que a pessoa DIGITOU agora em "Outros
+ * produtos" fica onde está: subir na hora tirava o item de baixo do dedo (Celso, 29/09).
+ */
+export function sobeParaSugeridos({ quantidade, sugestao, digitadoAgora }) {
+  if (sugestao !== null && sugestao !== undefined && sugestao > 0) return true;
+  return (parseInt(quantidade, 10) || 0) > 0 && !digitadoAgora;
+}
+
 export function ehProdutoDaFabrica(item) {
   return !!item && item.created_by_franchisee !== true && (parseFloat(item.cost_price) || 0) > 0;
 }

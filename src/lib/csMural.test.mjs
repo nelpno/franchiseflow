@@ -7,6 +7,8 @@ import {
   MOTIVO_LABEL,
   VOLTAR_EM_OPCOES,
   agruparPorRaia,
+  agruparPorMotivo,
+  linhaCurta,
   calcularNextAt,
   linhaVenda,
   rotuloVoltaEm,
@@ -172,6 +174,23 @@ test("motivoChipClasse usa tokens, nunca cor crua", () => {
     assert.ok(!/#[0-9a-fA-F]{3,6}/.test(c), `sem hex em ${m}`);
     assert.ok(!/text-gray-|bg-red-|text-red-|text-green-/.test(c), `sem cor crua em ${m}`);
   }
+});
+
+test("agruparPorMotivo: blocos na ordem de gravidade, desconhecido no fim, vazio fora", () => {
+  const g = agruparPorMotivo([
+    { id: 1, motive_key: "caiu" }, { id: 2, motive_key: "sem_venda" }, { id: 3, motive_key: "xyz" }, { id: 4, motive_key: "sem_venda" },
+  ]);
+  assert.deepEqual(g.map((b) => b.motivo), ["sem_venda", "caiu", "outros"]);
+  assert.deepEqual(g[0].cards.map((c) => c.id), [2, 4]); // mantém a ordem da RPC dentro do bloco
+  assert.equal(g[2].label, "Outros");
+  assert.deepEqual(agruparPorMotivo(null), []);
+});
+
+test("linhaCurta: prova do motivo > venda > título", () => {
+  assert.equal(linhaCurta({ motive_evidence: "9 dias sem venda", title: "x" }), "9 dias sem venda");
+  assert.match(linhaCurta({ rev_month_before: 900, rev_mtd: 0 }), /^vendia R\$\s?900\/mês · agora sem vendas$/);
+  assert.equal(linhaCurta({ title: "Ligar para a Ana" }), "Ligar para a Ana");
+  assert.equal(linhaCurta({}), null);
 });
 
 console.log(`csMural.test.mjs: ${n} testes OK`);
