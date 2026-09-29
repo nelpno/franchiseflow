@@ -373,7 +373,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: barra de baixo. Seta em **Estoque**.
 2. Toque em **Contar estoque**, no alto da lista. Cada produto ganha os botões **−** e **+**.
    - Imagem: alto da aba Estoque. Seta em **Contar estoque**.
-3. Abra o freezer e conte um produto de cada vez. Acerte o número com **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta lançar uma venda ou conferir um pedido que chegou.
+3. Abra o freezer e conte um produto de cada vez. Acerte o número com **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta conferir um pedido que chegou (guia 16) ou se uma venda foi lançada 2 vezes (guia 6).
    - Imagem: um produto no modo de contar. Círculo no **−**, no número e no **+**.
 4. No fim, toque em **Salvar** (ele mostra quantos produtos você mudou). Aparece "Contagem salva".
    - Imagem: alto da contagem. Seta em **Salvar (3)**.
@@ -384,7 +384,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Dica:** saiu da tela no meio? A contagem fica guardada neste aparelho: toque em **Continuar contagem**. Venda lançada já desconta sozinha; pedido conferido já soma sozinho.
 
-**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número negativo quase sempre é venda não lançada: lance a venda (guia 4).
+**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número negativo quer dizer que saiu mais do que entrou no app (pedido que chegou e não foi conferido, contagem antiga, venda lançada 2 vezes): conte de novo e salve o número real. Só lance uma venda (guia 4) se ela de fato faltou.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -803,10 +803,10 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: campo do pedido mínimo e o "?". Seta no campo.
 5. Para retirada, ligue **Aceita RETIRADA?** e confira o **Endereço de retirada** e o horário.
    - Imagem: bloco da retirada. Círculo na chave **Aceita RETIRADA?**.
-6. Toque em **Próximo**, embaixo. Aparece "Configurações salvas com sucesso!".
+6. Antes de tocar em **Próximo**, confira o frete no **Teste rápido**, no fim desta etapa (o Próximo passa para a etapa seguinte). Depois toque em **Próximo**, embaixo. Aparece "Configurações salvas com sucesso!".
    - Imagem: rodapé. Seta em **Próximo**.
 
-**Deu certo quando:** o **Teste rápido**, no fim da etapa, mostra o frete certo (guia 30).
+**Deu certo quando:** o **Teste rápido** mostrou o frete certo e apareceu "Configurações salvas com sucesso!".
 
 **Dica:** o robô calcula a distância até o endereço do cliente antes de falar o frete. Por isso o endereço da unidade, na etapa **Sua unidade**, precisa estar certo.
 
@@ -828,7 +828,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: tabela das formas. Círculo na coluna **Entrega**.
 3. Na coluna **Retirada**, marque o que você aceita na retirada.
    - Imagem: mesma tabela. Círculo na coluna **Retirada**.
-4. Confira o bloco **Pix**: **Chave Pix** e **Nome do titular**.
+4. No bloco **Pix**, confira ou troque a **Chave Pix** e o **Nome do titular**. O titular tem de ser o dono da conta que recebe o Pix.
    - Imagem: bloco Pix. Seta em **Chave Pix**.
 5. Toque em **Próximo**, embaixo. Aparece "Configurações salvas com sucesso!".
    - Imagem: rodapé. Seta em **Próximo**.
@@ -839,7 +839,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** marcar dinheiro só em Retirada e estranhar que o robô recusa dinheiro na entrega. Marque nas duas colunas se aceita nas duas.
 
-**Se não resolver:** o nome do titular precisa bater com a conta do Pix. Para trocar a chave ou o titular, Falar com a Maxi (guia 31).
+**Se não resolver:** trocou de chave Pix? Mude aqui mesmo, na etapa **Pagamento**, e toque em **Próximo** para salvar. Só fale com a Maxi (guia 31) se a tela não deixar salvar.
 
 ---
 
@@ -907,7 +907,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: etapas no alto. Seta em **Como o robô responde**.
 2. Leia as conversas de exemplo. Elas são montadas com o que você preencheu: horário, frete, pagamento e retirada.
    - Imagem: conversas de exemplo. Círculo numa resposta.
-3. Para conferir o frete, volte à etapa **Entrega e retirada** e use o **Teste rápido**, no fim: coloque a distância, o dia e a hora do pedido.
+3. Para conferir o frete, volte à etapa **Entrega e retirada** e use o **Teste rápido**, no fim dela (antes de tocar em Próximo): coloque a distância, o dia e a hora do pedido.
    - Imagem: Teste rápido. Seta no valor do frete.
 4. Para testar o WhatsApp de verdade, peça para outra pessoa (não o celular da unidade) mandar "oi" para o número da unidade. Nesse teste, não conclua a compra: ali o pedido seria de verdade.
    - Imagem: sem recorte do app (conversa de teste no WhatsApp).
@@ -927,7 +927,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 ## 31. Falar com a Maxi
 `slug: falar-com-maxi` · **Onde começa:** Mais › Ajuda (no fim da tela) · **Tempo:** 1 minuto
 
-**Quando usar:** um guia não resolveu, ou é algo que só a equipe faz (troca de titular, chave Pix, Instagram, cobrança).
+**Quando usar:** um guia não resolveu, ou é algo que só a equipe faz (troca de dono da unidade, Instagram, cobrança).
 
 **Passos**
 1. Toque em **Mais** e em **Ajuda**. Desça até o fim e toque em **Falar com a Maxi**. (Dentro de um guia, o botão fica no fim do guia.)
