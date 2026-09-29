@@ -164,7 +164,9 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
           Nenhum pedido realizado ainda.
         </h4>
         <p className="text-xs text-ink-2">
-          Faca seu primeiro pedido clicando em "Fazer Pedido" acima.
+          {uiV2
+            ? "Faça seu primeiro pedido tocando em \"Novo pedido\" acima."
+            : "Faça seu primeiro pedido clicando em \"Novo Pedido\" acima."}
         </p>
       </div>
     );

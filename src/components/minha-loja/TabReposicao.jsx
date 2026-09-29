@@ -17,13 +17,13 @@ import {
 } from "@/components/ui/tooltip";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
+import { weeklyTurnoverMap, suggestionFor, ritmoDeVendaMap } from "@/lib/stockSuggestion";
 import {
-  itensParaRepor,
-  carregarPedidosAbertos,
-  quantidadesParaRepor,
-  reposicaoDoItem,
+  linhasDeCompra,
+  resumoDeCompra,
 } from "@/lib/reposicao";
+import { usePedidosDaUnidade } from "@/hooks/usePedidosDaUnidade";
+import ReposicaoV2 from "./ReposicaoV2";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { useAuth } from "@/lib/AuthContext";
@@ -58,22 +58,11 @@ export default function TabReposicao({
   const [origemPedido, setOrigemPedido] = useState(null);
   // O que está A CAMINHO: consulta própria só dos pedidos ABERTOS, com todos os itens (P3,
   // ponto 4). Enquanto carrega ou se der erro, o Repor fica DESLIGADO com aviso — "nada a
-  // caminho" por falha de rede faria pedir em dobro.
-  const [abertos, setAbertos] = useState({ status: "carregando", emAberto: {} });
-  const [abertosTentativa, setAbertosTentativa] = useState(0);
-  useEffect(() => {
-    if (!uiV2 || !franchiseId) return undefined;
-    const controller = new AbortController();
-    setAbertos({ status: "carregando", emAberto: {} });
-    carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem, franchiseId, signal: controller.signal })
-      .then((r) => { if (!controller.signal.aborted) setAbertos({ status: "ok", emAberto: r.emAberto }); })
-      .catch((err) => {
-        if (controller.signal.aborted || err?.name === "AbortError") return;
-        console.error("Erro ao carregar pedidos abertos:", err);
-        setAbertos({ status: "erro", emAberto: {} });
-      });
-    return () => controller.abort();
-  }, [uiV2, franchiseId, orderRefreshKey, abertosTentativa]);
+  // caminho" por falha de rede faria pedir em dobro. S25: a mesma consulta vira um hook,
+  // que também traz de quanto em quanto tempo a unidade pede (intervalo da conta nova).
+  const pedidosUnidade = usePedidosDaUnidade(franchiseId, { enabled: uiV2, refreshKey: orderRefreshKey });
+  const abertos = { status: pedidosUnidade.status, emAberto: pedidosUnidade.emAberto };
+  const setAbertosTentativa = pedidosUnidade.tentarDeNovo;
   const pedidosProntos = abertos.status === "ok";
 
   // S15 (chave ui_v2): conferiu a entrega -> o estoque mudou no banco. Relê o estoque aqui
@@ -136,19 +125,19 @@ export default function TabReposicao({
 
   const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
-  const linhasRepor = useMemo(
-    () => (uiV2 ? itensParaRepor(inventoryItems, weeklyTurnover, emAberto) : []),
-    [uiV2, inventoryItems, weeklyTurnover, emAberto]
-  );
-  const reporTudo = useMemo(() => quantidadesParaRepor(linhasRepor), [linhasRepor]);
-  const reporTudoCount = Object.keys(reporTudo).length;
-
-  const abrirRepor = (quantidades) => {
-    if (!pedidosProntos) return; // botões já ficam desligados; defesa extra
-    setOrigemPedido(Object.keys(quantidades).length > 0 ? "repor" : null);
-    setInitialQuantities(Object.keys(quantidades).length > 0 ? quantidades : null);
+  // S25: conta nova (a mesma do Estoque e do Novo Pedido).
+  const ritmoV2 = useMemo(() => (uiV2 ? ritmoDeVendaMap(saleItems) : {}), [uiV2, saleItems]);
+  const resumoV2 = useMemo(() => {
+    if (!uiV2) return null;
+    return resumoDeCompra(
+      linhasDeCompra(inventoryItems, { ritmo: ritmoV2, emAberto, intervaloDias: pedidosUnidade.intervalo.dias })
+    );
+  }, [uiV2, inventoryItems, ritmoV2, emAberto, pedidosUnidade.intervalo.dias]);
+  const abrirNovoPedidoV2 = (origem) => {
+    setOrigemPedido(origem);
+    setInitialQuantities(null);
     setShowOrderDialog(true);
-    try { window.clarity?.("event", "pedido_repor_aberto"); } catch { /* telemetria */ }
+    try { window.clarity?.("event", origem === "sugestao" ? "pedido_sugestao_aberto" : "pedido_novo_aberto"); } catch { /* telemetria */ }
   };
 
   const suggestions = useMemo(() => {
@@ -161,13 +150,11 @@ export default function TabReposicao({
         item.cost_price &&
         parseFloat(item.cost_price) > 0
     );
-    // Com a chave e sem o "a caminho" (carregando/erro): nada de sugestão calculada com zero.
-    if (uiV2 && !pedidosProntos) return [];
+    // Com a chave, a sugestão é o bloco da S25 (ReposicaoV2); este cartão é só o de sempre.
+    if (uiV2) return [];
     return items
       .map((item) => {
-        const sug = uiV2
-          ? (() => { const r = reposicaoDoItem(item, weeklyTurnover, emAberto); return r.semBase ? null : r.repor; })()
-          : suggestionFor(item, weeklyTurnover);
+        const sug = suggestionFor(item, weeklyTurnover);
         if (sug === null || sug <= 0) return null;
         return {
           id: item.id,
@@ -180,7 +167,7 @@ export default function TabReposicao({
       .filter(Boolean)
       .sort((a, b) => b.suggestion - a.suggestion)
       .slice(0, 5);
-  }, [inventoryItems, weeklyTurnover, uiV2, emAberto, pedidosProntos]);
+  }, [inventoryItems, weeklyTurnover, uiV2]);
 
   const hasHistory = Object.keys(weeklyTurnover).length > 0;
 
@@ -235,96 +222,20 @@ export default function TabReposicao({
           esperando, o cartão não desenha nada. */}
       <ConferirEntregaCard franchiseId={franchiseId} refreshKey={orderRefreshKey} onConfirmado={aoConfirmarEntrega} />
 
-      {/* S14.1 — Acabando + Repor N (chave ui_v2) */}
-      {uiV2 && linhasRepor.length > 0 && (
-        <Card className="rounded-2xl shadow-sm border border-err/20 bg-white">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <MaterialIcon icon="warning" size={20} className="text-err shrink-0" />
-                <h3 className="text-base font-bold text-ink font-plus-jakarta">
-                  Acabando ({linhasRepor.length})
-                </h3>
-              </div>
-              {reporTudoCount > 1 && (
-                <Button
-                  type="button"
-                  disabled={!pedidosProntos}
-                  onClick={() => abrirRepor(reporTudo)}
-                  className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-h-[44px]"
-                >
-                  <MaterialIcon icon="add_shopping_cart" size={18} />
-                  Repor todos ({reporTudoCount})
-                </Button>
-              )}
-            </div>
-            {abertos.status === "erro" && (
-              <div role="alert" className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3 p-3 rounded-xl bg-warn/10 text-sm text-ink">
-                <span className="flex-1">
-                  Não conseguimos ver seus pedidos abertos agora. O Repor fica desligado para não pedir em dobro.
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAbertosTentativa((n) => n + 1)}
-                  className="min-h-[40px] rounded-xl border-ink-4 text-ink shrink-0"
-                >
-                  Tentar de novo
-                </Button>
-              </div>
-            )}
-            {abertos.status === "carregando" && (
-              <p className="text-xs text-ink-2 mb-2">Conferindo o que já está a caminho…</p>
-            )}
-            <div className="space-y-2">
-              {linhasRepor.slice(0, 12).map((l) => (
-                <div
-                  key={l.item.id}
-                  className="flex items-center justify-between gap-3 py-2 px-3 rounded-xl bg-err/5"
-                >
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-ink block truncate">{l.item.product_name}</span>
-                    <span className="text-xs text-ink-2">
-                      {l.zerado ? "acabou" : `sobram ${l.estoque} ${l.unidade}`}
-                      {l.minimo > 0 ? ` · mínimo ${l.minimo}` : ""}
-                      {l.aCaminho > 0 ? ` · ${l.aCaminho} a caminho` : ""}
-                    </span>
-                  </div>
-                  {l.repor > 0 ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={!pedidosProntos}
-                      onClick={() => abrirRepor({ [l.item.id]: l.repor })}
-                      className="shrink-0 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl min-h-[44px] px-4"
-                    >
-                      Repor {l.repor}
-                    </Button>
-                  ) : l.aCaminho > 0 ? (
-                    <span className="shrink-0 text-xs font-medium text-ok-ink">já pedido</span>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={!pedidosProntos}
-                      onClick={() => abrirRepor({})}
-                      className="shrink-0 border-brand text-brand font-bold rounded-xl min-h-[44px] px-4"
-                    >
-                      Pedir
-                    </Button>
-                  )}
-                </div>
-              ))}
-              {linhasRepor.length > 12 && (
-                <p className="text-xs text-ink-2 text-center">
-                  +{linhasRepor.length - 12} produtos acabando. Veja todos em "Novo pedido".
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* S25 — Reposição num bloco só (chave ui_v2) */}
+      {uiV2 && (
+        <ReposicaoV2
+          status={abertos.status}
+          onTentarDeNovo={() => setAbertosTentativa()}
+          resumo={resumoV2}
+          intervalo={pedidosUnidade.intervalo}
+          temVenda={Object.keys(ritmoV2).length > 0}
+          primeiroPedido={primeiroPedido}
+          onMontar={() => abrirNovoPedidoV2("sugestao")}
+          onNovo={() => abrirNovoPedidoV2(null)}
+          onRepetir={handleRepeatLastOrder}
+          podeRepetir={!!lastOrder && !loadingLastOrder}
+        />
       )}
 
       {/* Critical stock alert */}
@@ -367,31 +278,7 @@ export default function TabReposicao({
       )}
 
       {/* Suggestion card */}
-      {uiV2 && !pedidosProntos ? (
-        <Card className="rounded-2xl shadow-sm border border-ink/10 bg-white">
-          <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex items-start gap-2 flex-1">
-              <MaterialIcon icon="lightbulb" size={20} className="text-brand-gold shrink-0 mt-0.5" />
-              <p className="text-sm text-ink">
-                {abertos.status === "erro"
-                  ? "Não conseguimos ver seus pedidos abertos agora. A sugestão de reposição fica desligada para não pedir em dobro."
-                  : "Conferindo o que já está a caminho…"}
-              </p>
-            </div>
-            {abertos.status === "erro" && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAbertosTentativa((n) => n + 1)}
-                className="min-h-[40px] rounded-xl border-ink-4 text-ink shrink-0"
-              >
-                Tentar de novo
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : suggestions.length > 0 ? (
+      {!uiV2 && (suggestions.length > 0 ? (
         <Card className="bg-gradient-to-r from-brand-gold/5 to-brand-gold/10 rounded-2xl shadow-sm border border-brand-gold/20">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-3">
@@ -452,9 +339,10 @@ export default function TabReposicao({
             </div>
           </CardContent>
         </Card>
-      )}
+      ))}
 
       {/* Header */}
+      {!uiV2 && (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-ink font-plus-jakarta">
@@ -498,6 +386,7 @@ export default function TabReposicao({
           </Button>
         </div>
       </div>
+      )}
 
       {/* Purchase Order History */}
       <PurchaseOrderHistory
@@ -505,17 +394,27 @@ export default function TabReposicao({
         refreshKey={orderRefreshKey}
         uiV2={uiV2}
         franchiseName={franchiseName}
-        onChanged={() => setAbertosTentativa((n) => n + 1)}
+        onChanged={() => setAbertosTentativa()}
       />
 
       {/* Purchase Order Dialog */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="sm:max-w-4xl max-h-[90dvh] rounded-2xl p-4 sm:p-6">
-          <DialogHeader>
+        <DialogContent
+          className={
+            uiV2
+              ? "flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none p-0 sm:h-[90dvh] sm:max-h-[90dvh] sm:max-w-3xl sm:rounded-2xl"
+              : "sm:max-w-4xl max-h-[90dvh] rounded-2xl p-4 sm:p-6"
+          }
+          onInteractOutside={uiV2 ? (e) => e.preventDefault() : undefined}
+          onOpenAutoFocus={uiV2 ? (e) => e.preventDefault() : undefined}
+        >
+          <DialogHeader className={uiV2 ? "shrink-0 border-b border-surface-line px-4 py-3 pr-14 text-left sm:px-6" : undefined}>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink min-w-0">
               <MaterialIcon icon="local_shipping" size={20} className="text-brand-gold shrink-0" />
               <span className="truncate">
-                {origemPedido === "repor" ? "Repor estoque" : initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
+                {uiV2
+                  ? initialQuantities && origemPedido !== "repor" ? "Repetir pedido" : "Novo pedido à fábrica"
+                  : origemPedido === "repor" ? "Repor estoque" : initialQuantities ? "Repetir Pedido" : "Novo Pedido de Compra"}
               </span>
             </DialogTitle>
           </DialogHeader>
@@ -528,6 +427,8 @@ export default function TabReposicao({
             uiV2={uiV2}
             emAberto={uiV2 && pedidosProntos ? emAberto : null}
             abertosStatus={abertos.status}
+            ritmo={uiV2 ? ritmoV2 : null}
+            intervaloDias={pedidosUnidade.intervalo.dias}
             origem={origemPedido}
             onSave={() => {
               setShowOrderDialog(false);
