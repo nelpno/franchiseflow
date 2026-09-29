@@ -178,6 +178,7 @@ export default function TabEstoque({
   }
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
+  const nomeTravado = !isAdmin && !!editingItem && !editingItem.created_by_franchisee;
 
   // Sync items from parent prop
   useEffect(() => {
@@ -475,9 +476,11 @@ export default function TabEstoque({
         payload.quantity = parseInt(formData.quantity, 10) || 0;
       }
 
-      // Cost price: admin always edits; franchisee only for items they created
+      // Cost price e nome: admin always edits; franchisee only for items they created
+      // (nome da fábrica é o que o pedido à fábrica e o robô usam; o banco também preserva, 29/09).
       if (!isAdmin && editingItem && !editingItem.created_by_franchisee) {
         delete payload.cost_price;
+        delete payload.product_name;
       }
 
       // Minimum price validation (warning only, not blocking)
@@ -1940,9 +1943,16 @@ export default function TabEstoque({
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="Ex: Lasanha Bolonhesa 500g"
                 required
+                readOnly={nomeTravado}
+                aria-describedby={nomeTravado ? "nome-fabrica-aviso" : undefined}
                 autoComplete="off"
                 className="bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20"
               />
+              {nomeTravado && (
+                <p id="nome-fabrica-aviso" className="text-xs text-ink-2">
+                  Produto da fábrica: o nome é o da tabela da Maxi e não muda.
+                </p>
+              )}
               {showSuggestions && filteredSuggestions.length > 0 && !editingItem && (
                 <div
                   ref={suggestionsRef}
