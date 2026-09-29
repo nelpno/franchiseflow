@@ -496,7 +496,9 @@ export default function TabEstoque({
       }
 
       if (editingItem) {
-        if (payload.product_name && items.some((i) => i.id !== editingItem.id
+        if (payload.product_name
+          && normalizarNome(payload.product_name) !== normalizarNome(editingItem.product_name)
+          && items.some((i) => i.id !== editingItem.id
           && normalizarNome(i.product_name) === normalizarNome(payload.product_name))) {
           toast.error("Já existe outro produto com esse nome no seu Estoque.");
           return;
