@@ -350,7 +350,7 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - Aplicar SQL: `node supabase/cs-cockpit/_aplica-lf.mjs <arquivo.sql>` (normaliza LF). Mudou o `RETURNS TABLE`? O arquivo precisa de `drop function if exists` antes (senão 42P13).
 - Prévias com mocks (`.tmp/harness-*`): mock VELHO gera print que mente (depósito R$ 0, "2 pedidos") — recarregar dados por SELECT via MCP antes de mostrar. Harness com `root` fora do repo perde o Tailwind (fix: `.tmp/harness-shared/postcss-root/`); vários vite ao mesmo tempo dão "Invalid hook call" (cache compartilhado) → `--force`.
 - Subagente não cria usuário admin temporário em produção (contorna o guard de privilégio e é recusado): prints com dados reais = harness + snapshot por MCP.
-- `eslint .` pega `.tmp/harness-*/.vite-cache` → apagar antes. `icons:check` acusa palavra entre crases em comentário que é nome de ícone (`files`, `orders`, `tooltip`) → reescrever o comentário.
+- `eslint .` pega `.tmp/harness-*/.vite-cache` e qualquer `.js` solto em `.tmp/` (ex.: cópia de Code node do n8n) → apagar o cache e salvar essas cópias como `.txt`. `icons:check` acusa palavra entre crases em comentário que é nome de ícone (`files`, `orders`, `tooltip`) → reescrever o comentário.
 
 ## Features Removidas (NÃO recriar)
 Base44, Catalog.jsx/CatalogProduct, Sales.jsx/Inventory.jsx (redirects), Login Google, WhatsAppHistory.jsx, Personalidade bot UI, catalog_distributions, Weekly Bot Report (`JSzGEHQBo6Jmxhi3`), EnviaPedidoFechado V1 (`ORNRLkFLnMcIQ9Ke`), Sparklines KPI cards admin, BotCoachSheet.jsx, ActionPanel.jsx (my-contacts), LeadAnalysisModal.jsx.
