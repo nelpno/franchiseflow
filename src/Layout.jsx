@@ -334,6 +334,8 @@ export default function Layout({ children, currentPageName }) {
     setOnboardingApproved(false);
     setHasActiveOnboarding(false);
     setNeedsOnboardingWelcome(false);
+    // Estado da trilha volta a "desconhecido" (o "?" da Início espera por ele, P3 7c)
+    setOnboardingLoaded(false);
 
     if (currentUser.role === "admin" || currentUser.role === "manager") {
       setOnboardingLoaded(true);
@@ -454,7 +456,8 @@ export default function Layout({ children, currentPageName }) {
   // "?" de ajuda no topo (S10.2, 28/09/2026): mapa PURO rota → guia (ajudaRotaGuia.js,
   // testado). Só franqueado, só atrás de ui_v2, só quando a tela tem guia mapeado —
   // com a chave desligada, `uiV2` já é false e o botão nem aparece.
-  const guiaDaTela = uiV2 ? guiaDaRota(currentPageName, new URLSearchParams(location.search).get("tab")) : null;
+  // Na Início, o "?" só aparece depois de saber se a trilha está ativa (senão abriria o guia errado).
+  const guiaDaTela = uiV2 && !(currentPageName === "Dashboard" && !onboardingLoaded) ? guiaDaRota(currentPageName, new URLSearchParams(location.search).get("tab"), { trilhaAtiva: hasActiveOnboarding }) : null;
   // Só usado pra tirar Início/Vendas/Estoque do Sheet "Mais" no celular com ui_v2
   // (P3, 28/09/2026) — eles já estão no menu de baixo, repetir é ruído. Desktop
   // (isMobile=false) mantém a lista cheia de sempre.

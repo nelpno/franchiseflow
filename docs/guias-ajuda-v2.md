@@ -1,7 +1,7 @@
 # Guia de Ajuda do franqueado (v2) — texto final
 
 > Fechado em 29/09/2026 (S24.1, Onda 7b) contra as telas FINAIS, com a chave `ui_v2` ligada (ligada na rede desde 28/09). Todos os rótulos foram conferidos no código (`src/`); nenhuma marca `[tela nova]`, `[conferir]` ou `[decisão Nelson]` sobrou.
-> Os 31 guias estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
+> Os 33 guias (31 da S24.1 + `inicio` e `vendas-por-produto`, Onda 7c) estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
 > Público: franqueada leiga, 55+, no celular. Cada passo = uma ação. **Negrito** = nome exato do botão ou do título na tela.
 > Fotos: `public/tutoriais/<slug>-<n>.webp`, onde `<n>` é o número do passo NESTE documento. Exceções antigas: `primeiros-passos-*` e `quem-chamar-hoje-*` (numeração própria, já ligadas no app).
 >
@@ -30,6 +30,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 1. Seguir os Primeiros passos — `primeiros-passos`
 2. Entrar quando esqueci a senha ou o link venceu — `esqueci-senha`
 3. Trocar de unidade — `trocar-unidade`
+32. Entender a tela Início — `inicio`
 
 **Vender**
 4. Lançar uma venda — `vendas`
@@ -55,6 +56,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 18. Ver quanto sobrou no mês — `resultado`
 19. Lançar um gasto — `lancar-gasto`
 20. Baixar o relatório do mês — `relatorio-mes`
+33. Ver as vendas por produto — `vendas-por-produto`
 21. Pagar a mensalidade da Equipe Digital Maxi — `pagamentos` (aliases `mensalidade`, `pagar-equipe-digital`)
 22. Registrar a verba do anúncio — `verba-marketing`
 
@@ -758,7 +760,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 # MEU ROBÔ
 
-> Ao tocar em **Meu robô**, o título da tela aparece como "Meu Vendedor": é a mesma tela. Ela tem 5 etapas no alto: **Sua unidade**, **Entrega e retirada**, **Pagamento**, **Vendedor** e **Como o robô responde**. Toque na etapa para ir direto a ela. Não há botão "Salvar": o botão **Próximo**, embaixo, salva o que mudou e passa para a etapa seguinte (na última, **Concluir**). Aparece "Configurações salvas com sucesso!".
+> A tela **Meu robô** tem 5 etapas no alto: **Sua unidade**, **Entrega e retirada**, **Pagamento**, **Vendedor** e **Como o robô responde**. Toque na etapa para ir direto a ela. Não há botão "Salvar": o botão **Próximo**, embaixo, salva o que mudou e passa para a etapa seguinte (na última, **Concluir**). Aparece "Configurações salvas com sucesso!".
 
 ## 25. Ajustar os dias e horários de entrega
 `slug: robo-horarios` · **Onde começa:** Mais › Meu robô › etapa **Entrega e retirada** · **Tempo:** 5 minutos
@@ -947,6 +949,68 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ---
 
+## 32. Entender a tela Início
+`slug: inicio` · **Onde começa:** Início (primeiro botão da barra de baixo) · **Tempo:** 3 minutos
+> Fotos (Onda 7c): `inicio-1.webp`..`inicio-8.webp`, uma por passo.
+
+**Quando usar:** entender para que serve cada quadro da Início e o que fazer com ele.
+
+**Passos**
+1. Toque em **Início**. No celular, é o primeiro botão da barra de baixo; no computador, fica no menu à esquerda. É a tela que abre quando você entra no app.
+   - Imagem: barra de baixo. Contorno em **Início**. (existe: `inicio-1.webp`)
+2. O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mesmo trecho do mês passado (por exemplo, **−8% que agosto**) e só aparece quando há base para comparar. Logo abaixo, o app sugere o próximo passo. A projeção de onde o mês deve fechar aparece a partir do dia 8, e a mediana só quando você vendeu nos 3 meses anteriores. Toque em **Ver o resultado do mês** para abrir o Resultado.
+   - Imagem: quadro do mês. (existe: `inicio-2.webp`)
+3. Quando há dado, o troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, **12º de 58 em setembro**). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje, se já houve venda hoje.
+   - Imagem: quadro do ranking. (existe: `inicio-3.webp`)
+4. O quadro **Hoje** mostra quanto você vendeu hoje. A barra enche até a **Meta do dia**, que é a sua média dos últimos 30 dias mais 10%; ela aparece quando o app tem pelo menos 7 dias de histórico nesses 30 dias. Ao bater, aparece "meta do dia batida". Embaixo, os dias seguidos em que você bateu a meta. Toque em **Vendas de hoje** para ver as vendas.
+   - Imagem: quadro Hoje com a barra e os dias seguidos. (existe: `inicio-4.webp`)
+5. O quadro **Evolução** mostra, em barras, quanto a unidade vendeu em cada um dos últimos 6 meses. A barra vermelha é o mês atual, que vai só até hoje. Embaixo está a sua mediana dos 3 meses anteriores (o valor do meio), quando você vendeu nos 3.
+   - Imagem: quadro Evolução. (existe: `inicio-5.webp`)
+6. O quadro **Agora** reúne o que pede uma ação sua: mensalidade perto de vencer (**Pagar**), pedido que chegou (toque para conferir), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (**Registrar**). Toque no aviso para ir direto à tela certa; no aviso da verba, toque em **Registrar**. Quando o app termina de conferir e não há avisos, aparece "Tudo em dia!".
+   - Imagem: quadro Agora. (existe: `inicio-6.webp`)
+7. O quadro **Quem chamar hoje** traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em **Chamar** ao lado do nome: o WhatsApp abre com a mensagem pronta e o cliente já fica marcado como chamado, então confira e envie. Para abrir a lista inteira do dia, toque em **Ver os outros** ou em **Ver lista completa**. Se você nunca usou, antes dele aparece o convite "Conheça o Quem chamar hoje".
+   - Imagem: quadro Quem chamar hoje. (existe: `inicio-7.webp`)
+8. No fim da tela, quatro botões levam direto a telas que, no celular, ficam dentro do Mais: **Repor estoque**, **Clientes**, **Resultado do mês** e **Meu robô**. Vendas, Nova venda e Estoque já estão na barra de baixo.
+   - Imagem: os quatro atalhos. (existe: `inicio-8.webp`)
+
+**Deu certo quando:** você acha na Início quanto vendeu no mês, como está no ranking, quanto falta para a meta de hoje e o que precisa fazer agora.
+
+**Dica:** comece o dia pelo quadro **Agora** e pelo **Quem chamar hoje**: são os dois que pedem uma ação sua.
+
+**Erro comum:** não vê a meta do dia, o ranking ou a projeção? Cada um só aparece quando o app tem base para calcular. Nos Primeiros passos, antes da 1ª venda, a Início mostra o cartão da trilha, a orientação da 1ª venda e os avisos de pagamento.
+
+**Se não resolver:** Falar com a Maxi (guia 31).
+
+---
+
+## 33. Ver as vendas por produto
+`slug: vendas-por-produto` · **Onde começa:** Mais › Gestão (aba Resultado) › **Mais vendidos** › **Ver todos os produtos** · **Tempo:** 2 minutos
+> Fotos (Onda 7c): `vendas-por-produto-1.webp`..`vendas-por-produto-5.webp`, uma por passo.
+
+**Quando usar:** saber quanto você vendeu de cada produto no mês, em unidades e em reais.
+
+**Passos**
+1. No celular, toque em **Mais** e em **Gestão**; no computador, toque em **Gestão** no menu à esquerda. Abre na aba **Resultado**.
+   - Imagem: lista do Mais. Contorno em **Gestão**. (existe: `vendas-por-produto-1.webp`)
+2. Use as setas ao lado do nome do mês para escolher o mês.
+   - Imagem: setas do mês. (existe: `vendas-por-produto-2.webp`)
+3. Role até **Mais vendidos**, que mostra os 5 que mais saíram, em unidades. No fim do quadro, toque em **Ver todos os produtos**. O número entre parênteses é quantos produtos diferentes você vendeu no mês.
+   - Imagem: botão **Ver todos os produtos**. (existe: `vendas-por-produto-3.webp`)
+4. A janela **Vendas por produto** tem quatro colunas: **Produto**, **Qtd** (quantas unidades saíram), **Valor** (quantidade vezes o preço) e **%** (a parte do valor vendido que é daquele produto). Os que mais saíram vêm primeiro. Role para ver todos.
+   - Imagem: tabela. (existe: `vendas-por-produto-4.webp`)
+5. Toque em **Excel** para a planilha, ou em **PDF** para consultar ou imprimir. O arquivo baixa com uma linha por produto e uma linha TOTAL no fim. Aparece "Excel exportado com sucesso!" (ou "PDF exportado com sucesso!").
+   - Imagem: botões **Excel** e **PDF**. (existe: `vendas-por-produto-5.webp`)
+
+**Deu certo quando:** a planilha abre com uma linha por produto (produto, quantidade, valor e % do total) e o TOTAL no fim.
+
+**Dica:** a lista é do mês escolhido. Para ver outro mês, feche a janela, troque o mês nas setas e abra de novo.
+
+**Erro comum:** não aparece **Ver todos os produtos**? Confira o mês. Se há vendas, carregue a tela de novo. O **Valor** pode ser diferente do **Entrou** do Resultado, porque aqui não entram frete nem desconto.
+
+**Se não resolver:** Falar com a Maxi (guia 31).
+
+---
+
 # (1) Fotos: o que existe e o que falta
 
 Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste documento, 390 px, contorno vermelho da marca no elemento, unidade e clientes fictícios.
@@ -958,6 +1022,8 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 | vendas | `vendas-1..6` | — |
 | pedido-fabrica | `pedido-fabrica-1..6` | — |
 | resultado | `resultado-1..5` | — |
+| inicio | `inicio-1..8` (Onda 7c) | — |
+| vendas-por-produto | `vendas-por-produto-1..5` (Onda 7c) | — |
 | pagamentos | `pagamentos-2,3,4,7` | 1, 5, 6 |
 | demais 25 guias | — | todos os passos com recorte do app (passos marcados "sem recorte do app" não levam foto) |
 
@@ -977,9 +1043,10 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 10. **Paguei a mensalidade e continua em aberto.** Abra Pagamentos e toque em "Já paguei, verificar agora". → `pagamentos`
 11. **O comprovante sai fraco na impressora.** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina. → `comprovante`
 12. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez. → `esqueci-senha`
-13. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
+13. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão, na aba Resultado, toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF. → `vendas-por-produto`
+14. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
 
-No app (`PERGUNTAS_FREQUENTES`) ficam as 9 que já existiam (algumas passaram a apontar para o guia novo que responde melhor) mais 4 novas.
+No app (`PERGUNTAS_FREQUENTES`) ficam as 9 que já existiam (algumas passaram a apontar para o guia novo que responde melhor) mais 5 novas.
 
 ---
 
@@ -989,7 +1056,7 @@ Busca feita nos textos dos 31 guias e das perguntas frequentes. No app, a trava 
 
 | Palavra ou expressão proibida | Resultado |
 |---|---|
-| margem | não aparece (usa "markup recomendado de 100%"). Obs.: a TELA do Estoque ainda escreve "Margem: N%" e "margem 80%" (fora do escopo dos guias; ver relatório S24.1) |
+| margem | não aparece (usa "markup recomendado de 100%"). A tela do Estoque também passou a dizer "markup" (Onda 7c) |
 | amanhã | não aparece; nenhuma data prometida |
 | loja | não aparece |
 | Líquido, Ticket Médio, Inventário | não aparecem (sempre "Estoque") |

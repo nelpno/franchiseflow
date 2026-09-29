@@ -6,7 +6,9 @@
 // Layout.jsx). Tela sem guia próprio ainda (ex.: Onboarding, que já tem a trilha
 // dentro dela) fica de fora do mapa: `guiaDaRota` devolve null e o "?" não aparece.
 export const ROTA_PARA_GUIA = {
-  Dashboard: "primeiros-passos",
+  // Onda 7c: a Início tem guia próprio, mas enquanto a trilha está ativa o "?" continua nos
+  // Primeiros passos (ver `trilhaAtiva` em guiaDaRota).
+  Dashboard: "inicio",
   Vendas: "vendas",
   MyContacts: "clientes",
   Marketing: "artes",
@@ -22,10 +24,13 @@ export const ROTA_PARA_GUIA = {
 /**
  * @param {string} pageName nome da página (createPageUrl), ex.: "Gestao"
  * @param {string|null} tab query `tab` da URL, quando existir
+ * @param {{trilhaAtiva?: boolean}} [opcoes] trilha "Primeiros passos" ainda não concluída
  * @returns {string|null} slug do guia, ou null se a tela não tem guia mapeado
  */
-export function guiaDaRota(pageName, tab) {
+export function guiaDaRota(pageName, tab, { trilhaAtiva = false } = {}) {
   if (!pageName) return null;
+  // Na trilha a Início mostra o cartão da trilha (não os quadros do guia "inicio"): o "?" fica nela.
+  if (pageName === "Dashboard" && trilhaAtiva) return "primeiros-passos";
   if (tab) {
     const chave = `${pageName}:${tab}`;
     if (Object.prototype.hasOwnProperty.call(ROTA_PARA_GUIA, chave)) {
