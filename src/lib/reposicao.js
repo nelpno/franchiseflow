@@ -210,3 +210,17 @@ export function resumoDeCompra(linhas) {
     negativos: (linhas || []).filter((l) => l.estoqueNegativo).length,
   };
 }
+
+/** Margem para relógio do aparelho × servidor ao comparar ordered_at. */
+export const MARGEM_PEDIDO_NOVO_MS = 2 * 60 * 1000;
+
+/**
+ * S25 (P3): pedidos (não cancelados) feitos DEPOIS que o formulário abriu — por outro aparelho ou
+ * aba. O pedido deste próprio envio (id = idProprio) não conta. Mais recente primeiro.
+ */
+export function pedidosNovosDesde(pedidos, desdeMs, idProprio = null) {
+  const corte = desdeMs - MARGEM_PEDIDO_NOVO_MS;
+  return (pedidos || [])
+    .filter((p) => p && p.status !== "cancelado" && p.id !== idProprio && new Date(p.ordered_at).getTime() >= corte)
+    .sort((a, b) => new Date(b.ordered_at).getTime() - new Date(a.ordered_at).getTime());
+}

@@ -15,7 +15,8 @@ import {
   explicarSugestao,
   INTERVALO_PADRAO_DIAS,
 } from "./stockSuggestion.js";
-import { linhasDeCompra, resumoDeCompra, carregarDatasDePedidos } from "./reposicao.js";
+import { linhasDeCompra, resumoDeCompra, carregarDatasDePedidos, pedidosNovosDesde, MARGEM_PEDIDO_NOVO_MS } from "./reposicao.js";
+import { enviarPedidoFabrica } from "./enviarPedidoFabrica.js";
 
 let n = 0;
 const t = async (nome, fn) => { await fn(); n++; console.log("ok -", nome); };
@@ -212,6 +213,29 @@ await t("backtest sintético: venda salteada, pedido a cada 3 semanas -> a regra
   const nova = simular((hist, est, aCaminho) => sugestaoDeCompra({ quantity: est, min_stock: 3 }, { ritmoPorDia: ritmoDeVendaMap(hist, AGORA).a || 0, aCaminho, intervaloDias: 21 }).repor);
   console.log(`   faltou: antiga ${(antiga * 100).toFixed(0)}% x nova ${(nova * 100).toFixed(0)}% da procura`);
   assert.ok(nova < antiga / 2, `nova ${nova.toFixed(2)} x antiga ${antiga.toFixed(2)}`);
+});
+
+await t("dois aparelhos: pedido feito depois que o formulário abriu é pego; o próprio e o cancelado não", () => {
+  const aberto = Date.parse("2026-09-29T12:00:00Z");
+  const ID = "11111111-2222-4333-8444-555555555555";
+  const pedidos = [
+    { id: "velho", status: "entregue", ordered_at: "2026-09-20T10:00:00Z" },
+    { id: "outro", status: "pendente", ordered_at: "2026-09-29T12:05:00Z" },
+    { id: "cancelado", status: "cancelado", ordered_at: "2026-09-29T12:06:00Z" },
+    { id: ID, status: "pendente", ordered_at: "2026-09-29T12:07:00Z" },
+    { id: "relogio", status: "pendente", ordered_at: new Date(aberto - MARGEM_PEDIDO_NOVO_MS + 1000).toISOString() },
+  ];
+  assert.deepEqual(pedidosNovosDesde(pedidos, aberto, ID).map((p) => p.id), ["outro", "relogio"]);
+  assert.deepEqual(pedidosNovosDesde(null, aberto, ID), []);
+});
+
+await t("envio: pedido que já existia devolve o status (cancelado pela Maxi não passa por sucesso comum)", async () => {
+  const r = await enviarPedidoFabrica({
+    rpc: async (f, p) => ({ data: { id: p.p_client_id, ja_existia: true, status: "cancelado", total_amount: 10 }, error: null }),
+    clientId: "11111111-2222-4333-8444-555555555555", franchiseId: "u", itens: [{ inventory_item_id: "a", quantity: 1 }], notes: null,
+  });
+  assert.equal(r.jaExistia, true);
+  assert.equal(r.status, "cancelado");
 });
 
 console.log(`\n${n} testes ok`);

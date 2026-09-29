@@ -89,7 +89,8 @@ export async function enviarPedidoFabrica({ rpc, clientId, franchiseId, itens, n
   }
   if (!data?.id) throw new Error("Resposta sem o número do pedido");
   const total = data.total_amount == null ? NaN : Number(data.total_amount);
-  return { id: data.id, jaExistia: data.ja_existia === true, via: "rpc", totalAmount: Number.isFinite(total) ? total : null };
+  // S25: a RPC devolve o status do pedido que já existia (ex.: "cancelado" pela Maxi).
+  return { id: data.id, jaExistia: data.ja_existia === true, via: "rpc", totalAmount: Number.isFinite(total) ? total : null, ...(data.status ? { status: data.status } : {}) };
 }
 
 /** uuid v4 do envio (gerado ANTES da 1ª tentativa). crypto.randomUUID quando existe. */

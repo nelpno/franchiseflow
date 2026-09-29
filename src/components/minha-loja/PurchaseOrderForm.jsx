@@ -25,13 +25,7 @@ import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { estimarFreteFabrica } from "@/lib/freteFabrica";
 import { comPrecoDaTabela, reposicaoDoItem, unidadeDeMedida } from "@/lib/reposicao";
-import {
-  gravarEnvioPendente,
-  apagarEnvioPendente,
-  reconciliarEnvioPendente,
-  lerEnvioPendente,
-  pedidosNovosDesde,
-} from "@/lib/envioPendente";
+import { pedidosNovosDesde } from "@/lib/reposicao";
 import {
   enviarPedidoFabrica,
   montarItensDoPedido,
@@ -111,10 +105,13 @@ export default function PurchaseOrderForm({
   // S14.3: id do envio gerado ANTES da 1ª tentativa e mantido nas seguintes (e no rascunho,
   // para sobreviver a fechar/abrir). A RPC grava uma vez só por id; resposta perdida + nova
   // tentativa devolve o mesmo pedido em vez de criar outro.
-  // S25 P3 (chave): Repetir e pedido novo SEMPRE com id novo; a tentativa sem resposta fica numa
-  // chave própria (@/lib/envioPendente) e é reconciliada ao abrir, com o id e o conteúdo dela.
+  // S25 (chave): o rascunho (com o id) é a única memória do envio, como na S14. Com a chave, a
+  // sugestão/modelo automáticos também viram rascunho: fechar e reabrir retoma o MESMO id, e a
+  // idempotência da RPC cobre o reenvio. "Repetir" é sempre um pedido novo (id novo).
   const clientIdRef = useRef(
-    !uiV2 && idDoEnvioValido(draft.current?.clientId) ? draft.current.clientId : novoIdDoEnvio()
+    uiV2 && initialQuantities
+      ? novoIdDoEnvio()
+      : idDoEnvioValido(draft.current?.clientId) ? draft.current.clientId : novoIdDoEnvio()
   );
   const abertoEmRef = useRef(Date.now());
 
@@ -125,10 +122,8 @@ export default function PurchaseOrderForm({
   const [revisando, setRevisando] = useState(false);
   const revisandoRef = useRef(false);
   revisandoRef.current = revisando;
-  // Tentativa pendente (chave): "verificando" | "erro" | "ok". Enquanto não fica "ok", nada de
-  // sugestão, modelo ou envio novo.
-  const [reconc, setReconc] = useState(() => (uiV2 && lerEnvioPendente(localStorage, franchiseId) ? "verificando" : "ok"));
-  const [reconcTentativa, setReconcTentativa] = useState(0);
+  // Pedido que a RPC diz já existir, mas CANCELADO pela Maxi (id deste rascunho reaproveitado).
+  const [pedidoCancelado, setPedidoCancelado] = useState(false);
   // Pedido feito por outro aparelho/aba depois que o formulário abriu.
   const [pedidoNovoAviso, setPedidoNovoAviso] = useState(null);
   const ignorarPedidoNovoRef = useRef(false);
@@ -252,20 +247,18 @@ export default function PurchaseOrderForm({
   // Persist draft to localStorage on change
   const saveDraft = useCallback((qtys, n) => {
     const hasData = Object.values(qtys).some(v => v > 0) || n.trim().length > 0;
-    if (hasData) {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, clientId: clientIdRef.current, savedAt: Date.now() }));
-    } else {
-      localStorage.removeItem(DRAFT_KEY);
-    }
+    try {
+      if (hasData) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, clientId: clientIdRef.current, savedAt: Date.now() }));
+      } else {
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    } catch { /* storage cheio/privado: segue sem rascunho, o pedido não depende dele */ }
   }, [DRAFT_KEY]);
 
-  // S25: o preenchimento AUTOMÁTICO com a sugestão não vira rascunho (senão, ao reabrir, a
-  // sugestão velha "voltava" como se fosse um pedido que ela começou). Só grava depois que ela mexe.
-  const prefillAutoRef = useRef(false);
-  useEffect(() => {
-    if (prefillAutoRef.current && !usuarioMexeuRef.current) return;
-    saveDraft(quantities, notes);
-  }, [quantities, notes, saveDraft]);
+
+
+  useEffect(() => { saveDraft(quantities, notes); }, [quantities, notes, saveDraft]);
 
   const clearDraft = () => {
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* sem storage: nada a limpar */ }
@@ -307,14 +300,14 @@ export default function PurchaseOrderForm({
   // (rascunho > modelo, mesma prioridade que já vale para initialQuantities).
   useEffect(() => {
     if (!pedidoModeloItens || standardProducts.length === 0) return;
-    if (reconc !== "ok" || revisandoRef.current) return;
+    if (revisandoRef.current) return;
     if (modeloAplicadoUmaVezRef.current) return;
     modeloAplicadoUmaVezRef.current = true;
     if (usuarioMexeuRef.current) return;
     const draftTemQuantidade = draft.current?.quantities
       && Object.values(draft.current.quantities).some((v) => v > 0);
     if (!draftTemQuantidade) aplicarModelo();
-  }, [pedidoModeloItens, standardProducts, aplicarModelo, reconc]);
+  }, [pedidoModeloItens, standardProducts, aplicarModelo]);
 
   const setQty = (itemId, value) => {
     usuarioMexeuRef.current = true;
@@ -353,7 +346,7 @@ export default function PurchaseOrderForm({
   const [emCima, setEmCima] = useState(() => new Set());
   useEffect(() => {
     if (!uiV2 || !ritmo || prefillFeitoRef.current) return;
-    if (reconc !== "ok" || !primeiroPedidoPronto || revisandoRef.current) return;
+    if (!primeiroPedidoPronto || revisandoRef.current) return;
     const draftTemQuantidade = draft.current?.quantities && Object.values(draft.current.quantities).some((v) => v > 0);
     if (initialQuantities || draftTemQuantidade || primeiroPedido || usuarioMexeuRef.current) {
       prefillFeitoRef.current = true;
@@ -369,41 +362,12 @@ export default function PurchaseOrderForm({
       if (next[item.id] > 0) algum = true;
     });
     if (algum) {
-      prefillAutoRef.current = true;
       setQuantities(next);
       setPreenchidoComSugestao(true);
     }
     // getSuggestion lê as mesmas props listadas
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiV2, ritmo, sugestaoIndisponivel, standardProducts, initialQuantities, primeiroPedido, primeiroPedidoPronto, reconc]);
-
-  // S25 P3: ao abrir com uma tentativa sem resposta, reconcilia ANTES de qualquer outra coisa:
-  // reenvia o conteúdo guardado com o mesmo id (a RPC devolve o pedido se ele já existe).
-  useEffect(() => {
-    if (!uiV2 || reconc === "ok") return undefined;
-    let vivo = true;
-    setReconc("verificando");
-    reconciliarEnvioPendente({ rpc: (fn, params) => supabase.rpc(fn, params), storage: localStorage, franchiseId })
-      .then((r) => {
-        if (!vivo) return;
-        if (r.estado === "ja_existia" || r.estado === "enviado") {
-          clearDraft();
-          const total = r.totalAmount != null ? ` (total ${formatBRLShared(r.totalAmount)})` : "";
-          toast.success(
-            r.estado === "ja_existia"
-              ? `Você já tinha enviado este pedido${total}. Ele está no Histórico de Pedidos.`
-              : `Seu último pedido não tinha chegado à fábrica. Enviamos agora${total}. Ele está no Histórico de Pedidos.`,
-            { duration: 12000 }
-          );
-          if (onSave) onSave();
-          return;
-        }
-        setReconc(r.estado === "erro" ? "erro" : "ok");
-      });
-    return () => { vivo = false; };
-    // roda ao abrir e em "Tentar de novo"
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reconcTentativa]);
+  }, [uiV2, ritmo, sugestaoIndisponivel, standardProducts, initialQuantities, primeiroPedido, primeiroPedidoPronto]);
   useEffect(() => {
     if (!uiV2) return;
     setEmCima((prev) => {
@@ -422,8 +386,15 @@ export default function PurchaseOrderForm({
   const corpoRef = useRef(null);
   // S25 P3 (2ª passada): antes de gravar, reconsulta os pedidos da unidade. Se entrou pedido
   // DEPOIS que este formulário abriu (outro aparelho/aba), não envia sem ela ver.
+  // Validade da confirmação: voltar, fechar, trocar de unidade (remonta) ou desmontar durante a
+  // reconsulta invalida o token, e a resposta que chega depois NÃO envia.
+  const confirmacaoRef = useRef(0);
+  const montadoRef = useRef(true);
+  useEffect(() => { montadoRef.current = true; return () => { montadoRef.current = false; confirmacaoRef.current += 1; }; }, []);
   const confirmarEnvio = async () => {
     if (conferindoAbertos || isSubmitting) return;
+    const token = ++confirmacaoRef.current;
+    const aindaValida = () => montadoRef.current && token === confirmacaoRef.current && revisandoRef.current;
     if (!ignorarPedidoNovoRef.current) {
       setConferindoAbertos(true);
       try {
@@ -433,19 +404,22 @@ export default function PurchaseOrderForm({
           10,
           { columns: "id, status, total_amount, ordered_at", gte: { ordered_at: new Date(abertoEmRef.current - 5 * 60 * 1000).toISOString() } }
         );
+        if (!aindaValida()) return;
         const novos = pedidosNovosDesde(recentes, abertoEmRef.current, clientIdRef.current);
         if (novos.length > 0) {
           setPedidoNovoAviso(novos[0]);
           return;
         }
       } catch (err) {
+        if (!aindaValida()) return;
         console.error("Erro ao conferir pedidos recentes:", err);
         toast.error("Não deu para conferir seus pedidos agora. Tente de novo.");
         return;
       } finally {
-        setConferindoAbertos(false);
+        if (montadoRef.current) setConferindoAbertos(false);
       }
     }
+    if (!aindaValida()) return;
     handleSubmit();
   };
   const abrirRevisao = () => {
@@ -520,16 +494,6 @@ export default function PurchaseOrderForm({
       return;
     }
 
-    if (uiV2 && !gravarEnvioPendente(localStorage, franchiseId, {
-      clientId: clientIdRef.current,
-      itens: montarItensDoPedido(standardProducts, quantities),
-      notes: notes.trim() || null,
-      totalWeightKg: Number.isFinite(grandWeight) && grandWeight > 0 ? grandWeight : null,
-    })) {
-      toast.error("Não deu para guardar o pedido neste aparelho antes de enviar. Feche outras abas ou libere espaço e tente de novo.");
-      return;
-    }
-
     submittingRef.current = true;
     setIsSubmitting(true);
     const toastId = toast.loading("Enviando pedido...");
@@ -559,8 +523,6 @@ export default function PurchaseOrderForm({
       await PurchaseOrderItem.createMany(itemsToCreate);
       return order;
     };
-    // S25 P3: com a chave, a tentativa (id + conteúdo) vai para uma chave PRÓPRIA antes da RPC
-    // (ver @/lib/envioPendente) e o envio usa exatamente o que foi gravado.
     const itensDoEnvio = montarItensDoPedido(standardProducts, quantities);
     try {
       const resultado = await enviarPedidoFabrica({
@@ -575,8 +537,16 @@ export default function PurchaseOrderForm({
 
       // Notificação por RPC removida (26/09/2026): "Pendências" na home do admin
       // (get_admin_pending_counts) substitui as notificações de pedido/pagamento.
+      // S25: o id deste rascunho já virou um pedido que a Maxi CANCELOU — não é sucesso.
+      if (uiV2 && resultado.jaExistia && resultado.status === "cancelado") {
+        toast.error("Esse pedido foi cancelado pela Maxi. Para pedir de novo, toque em Fazer pedido novo.", { id: toastId });
+        setPedidoCancelado(true);
+        setRevisando(false);
+        submittingRef.current = false;
+        setIsSubmitting(false);
+        return;
+      }
       clearDraft();
-      if (uiV2) apagarEnvioPendente(localStorage, franchiseId);
       if (modeloAplicadoRef.current) {
         try { window.clarity?.('event', 'pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }
       }
@@ -604,7 +574,6 @@ export default function PurchaseOrderForm({
         PurchaseOrder.delete(order.id).catch(() => {});
       }
       if (ehEnvioDiferente(error)) {
-        if (uiV2) apagarEnvioPendente(localStorage, franchiseId);
         setEnvioDiferente(true);
         toast.error(
           "Um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.",
@@ -722,23 +691,26 @@ export default function PurchaseOrderForm({
               </div>
             </div>
           )}
-          {reconc !== "ok" ? (
-            <div role="status" className="space-y-3 rounded-2xl border border-surface-line bg-white p-4">
-              {reconc === "verificando" ? (
-                <p className="text-sm text-ink-2">Conferindo o seu último envio…</p>
-              ) : (
-                <>
-                  <p className="text-sm text-ink">
-                    Não conseguimos confirmar se o seu último pedido chegou à fábrica. Tente de novo antes de fazer outro,
-                    para não pedir em dobro.
-                  </p>
-                  <button type="button" onClick={() => setReconcTentativa((n) => n + 1)} className={`${BTN_PRIMARIO} min-h-11`}>
-                    Tentar de novo
-                  </button>
-                </>
-              )}
+          {pedidoCancelado && (
+            <div role="alert" className="space-y-3 rounded-2xl border border-err/30 bg-err-soft p-4">
+              <p className="text-sm text-ink">
+                Esse pedido foi cancelado pela Maxi. As quantidades continuam aqui: confira e faça um pedido novo.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  clientIdRef.current = novoIdDoEnvio();
+                  saveDraft(quantities, notes);
+                  setPedidoCancelado(false);
+                  abrirRevisao();
+                }}
+                className={`${BTN_PRIMARIO} min-h-11`}
+              >
+                Fazer pedido novo
+              </button>
             </div>
-          ) : revisando ? (
+          )}
+          {revisando ? (
             <section aria-labelledby="titulo-revisao" className="space-y-3">
               <div>
                 <h3 id="titulo-revisao" className="font-plus-jakarta text-base font-bold text-ink">Confira antes de enviar</h3>
@@ -890,6 +862,7 @@ export default function PurchaseOrderForm({
                   onClick={() => {
                     // S25 P3: pedido novo = id novo e REVISÃO do conteúdo atual; só "Confirmar e enviar" grava.
                     clientIdRef.current = novoIdDoEnvio();
+                    saveDraft(quantities, notes);
                     setEnvioDiferente(false);
                     abrirRevisao();
                   }}
@@ -933,7 +906,12 @@ export default function PurchaseOrderForm({
           </div>
           <div className="mt-2 flex gap-2">
             {revisando ? (
-              <button type="button" onClick={() => setRevisando(false)} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
+              <button
+                type="button"
+                onClick={() => { confirmacaoRef.current += 1; setRevisando(false); }}
+                disabled={isSubmitting || conferindoAbertos}
+                className={`${BTN_SECUNDARIO} min-h-11`}
+              >
                 Voltar e ajustar
               </button>
             ) : (
@@ -944,7 +922,7 @@ export default function PurchaseOrderForm({
             <button
               type="button"
               onClick={revisando ? confirmarEnvio : abrirRevisao}
-              disabled={!hasAnyQty || isSubmitting || !precosProntos || reconc !== "ok" || conferindoAbertos || !!pedidoNovoAviso}
+              disabled={!hasAnyQty || isSubmitting || !precosProntos || conferindoAbertos || !!pedidoNovoAviso || pedidoCancelado}
               className={`${BTN_PRIMARIO} min-h-11 flex-1`}
             >
               {isSubmitting ? (
