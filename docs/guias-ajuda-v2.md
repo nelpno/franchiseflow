@@ -1,22 +1,24 @@
-# Guia de Ajuda do franqueado (v2) — texto para revisão
+# Guia de Ajuda do franqueado (v2) — texto final
 
-> Rascunho de 28/09/2026 para o redesenho do lado do franqueado. Ainda NÃO está no app.
-> Base: `src/lib/guiasAjuda.js` (formato `{titulo, texto, botao?, imagem?}` e travas do `guiasAjuda.test.mjs`), `src/components/onboarding/journeySteps.js`, `src/lib/helpTips.js`, plano `franqueado-redesign-backlog.md` (27/09) e a descrição das telas novas.
-> Público: franqueada leiga, 55+, no celular. Cada passo = uma ação. **Negrito** = nome exato do botão na tela.
-> Marcações para quem revisa (não vão para o app):
-> - `[conferir]` = rótulo ou comportamento que depende da tela nova e precisa ser confirmado no código antes de publicar.
-> - `[decisão Nelson]` = depende de algo que ainda não foi decidido.
+> Fechado em 29/09/2026 (S24.1, Onda 7b) contra as telas FINAIS, com a chave `ui_v2` ligada (ligada na rede desde 28/09). Todos os rótulos foram conferidos no código (`src/`); nenhuma marca `[tela nova]`, `[conferir]` ou `[decisão Nelson]` sobrou.
+> Os 31 guias estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
+> Público: franqueada leiga, 55+, no celular. Cada passo = uma ação. **Negrito** = nome exato do botão ou do título na tela.
+> Fotos: `public/tutoriais/<slug>-<n>.webp`, onde `<n>` é o número do passo NESTE documento. Exceções antigas: `primeiros-passos-*` e `quem-chamar-hoje-*` (numeração própria, já ligadas no app).
 >
-> Slugs antigos mantidos (os links já enviados no WhatsApp continuam abrindo): `primeiros-passos`, `vendas`, `clientes`, `resultado`, `pedido-fabrica` (alias `estoque`), `verba-marketing`, `artes`, `reconectar-whatsapp`.
-> `[conferir]` o alias `estoque` hoje abre "Fazer pedido à fábrica". Com a aba nova chamada "Estoque", talvez seja melhor apontar `estoque` para "Contar o estoque" (mudar o teste `deep-links antigos` junto).
+> Slugs antigos mantidos (os links já enviados no WhatsApp continuam abrindo): `primeiros-passos`, `vendas`, `clientes`, `resultado`, `pedido-fabrica`, `verba-marketing`, `artes`, `reconectar-whatsapp`; `pagamentos` também abre por `mensalidade` e `pagar-equipe-digital`.
+> O alias `estoque` passou a abrir "Contar o estoque" (`contar-estoque`) em 29/09/2026: a aba se chama Estoque. O "?" da aba Estoque abre o mesmo guia; o da aba Reposição continua em "Fazer pedido à fábrica".
 
 ## Mapa do app (para situar a franqueada)
 
-**No celular**, a barra de baixo tem 5 botões: **Início** · **Vendas** · **+ Nova venda** (o redondo do meio) · **Estoque** · **Mais**.
-- **Estoque** tem duas abas no topo: **Estoque** e **Pedir à fábrica**.
-- **Mais** abre a lista: Meus clientes, Resultado do mês, Pagamentos, Marketing, Meu robô, Ajuda, Minha unidade, Falar com a Maxi, Sair.
+**No celular**, a barra de baixo tem 5 botões: **Início** · **Vendas** · **Nova venda** (o redondo com +, no meio) · **Estoque** · **Mais**.
+- **Estoque** abre a tela Gestão na aba **Estoque**. No alto dessa tela há três abas: **Resultado**, **Estoque** e **Reposição** (a Reposição é onde se faz o pedido à fábrica).
+- **Mais** abre a lista: Gestão, Meus Clientes, Marketing, Meu robô, Pagamentos e Ajuda. Enquanto a unidade está começando, "Primeiros passos" aparece em primeiro.
+- **Mais › Gestão** abre direto na aba **Resultado** (quanto sobrou no mês). Na Início, o atalho **Resultado do mês** leva ao mesmo lugar.
+- **Falar com a Maxi** fica em **Mais › Ajuda** (no fim da tela) e no fim de cada guia.
+- Para sair do app: toque na bolinha com a sua inicial, no alto à direita, e em **Sair da conta**.
+- O **?** no alto de cada tela abre o guia daquela tela.
 
-**No computador**, a barra da esquerda tem **Nova venda** no topo e, abaixo, os mesmos itens.
+**No computador**, a barra da esquerda tem os mesmos itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu robô, Estoque, Pagamentos, Ajuda). A venda nova começa em **Vendas › Nova Venda**.
 
 Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagamentos" = toque em **Mais** e depois em **Pagamentos**.
 
@@ -41,19 +43,19 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 10. Cadastrar ou corrigir um cliente — `cadastrar-cliente`
 
 **Estoque e pedido à fábrica**
-11. Contar o estoque — `contar-estoque`
+11. Contar o estoque — `contar-estoque` (alias `estoque`)
 12. Mudar o preço de venda — `mudar-preco`
 13. Cadastrar produto próprio ou ocultar um produto — `produto-proprio`
 14. Fazer pedido à fábrica — `pedido-fabrica`
 15. Imprimir o pedido — `imprimir-pedido`
 16. Conferir o pedido quando chegar — `conferir-chegada`
-17. Repetir um pedido — `repetir-pedido`
+17. Repetir o último pedido — `repetir-pedido`
 
 **Dinheiro**
 18. Ver quanto sobrou no mês — `resultado`
 19. Lançar um gasto — `lancar-gasto`
 20. Baixar o relatório do mês — `relatorio-mes`
-21. Pagar a Equipe Digital Maxi — `pagar-equipe-digital`
+21. Pagar a mensalidade da Equipe Digital Maxi — `pagamentos` (aliases `mensalidade`, `pagar-equipe-digital`)
 22. Registrar a verba do anúncio — `verba-marketing`
 
 **Marketing**
@@ -61,12 +63,12 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 24. Agendar postagens no Meta Business Suite — `agendar-postagens`
 
 **Meu robô**
-25. Ajustar os horários do robô — `robo-horarios`
+25. Ajustar os dias e horários de entrega — `robo-horarios`
 26. Ajustar entrega, frete e retirada — `robo-entrega`
 27. Escolher as formas de pagamento — `robo-pagamento`
 28. Trocar o cardápio do robô — `robo-cardapio`
 29. Reconectar o WhatsApp do robô — `reconectar-whatsapp`
-30. Testar o robô como um cliente — `testar-robo`
+30. Conferir o que o robô vai responder — `testar-robo`
 
 **Ajuda**
 31. Falar com a Maxi — `falar-com-maxi`
@@ -81,26 +83,26 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** sua unidade está abrindo e você quer saber o que fazer primeiro.
 
 **Passos**
-1. Na tela Início, toque em **Continuar**, no cartão vermelho. Abre a trilha com os 5 passos.
-   - Imagem: tela Início no celular. Recorte do cartão vermelho "Primeiros passos". Círculo vermelho no botão **Continuar**. (já existe: `primeiros-passos-6.webp`)
-2. Leia o cartão "Agora". Ele mostra a próxima tarefa e um botão que leva à tela certa.
-   - Imagem: topo da trilha. Recorte do cartão "Agora". Seta vermelha no botão vermelho do cartão. (já existe: `primeiros-passos-1.webp`)
+1. Na tela Início, toque em **Continuar**, no cartão vermelho (ou toque em **Mais** e em **Primeiros passos**). Abre a trilha com os 5 passos.
+   - Imagem: cartão vermelho "Primeiros passos" da Início. Círculo em **Continuar**. (existe: `primeiros-passos-6.webp`)
+2. No alto da trilha, leia o cartão "Agora". Ele mostra a próxima tarefa. Toque no botão vermelho dele para ir à tela certa.
+   - Imagem: cartão "Agora". (existe: `primeiros-passos-1.webp`)
 3. Siga os 5 passos na ordem: seus dados, seu robô vendedor, seu espaço e seus preços, primeiro pedido, lançamento e primeira venda. Passo pronto fica verde.
-   - Imagem: lista dos 5 passos. Círculo no passo que está verde. (já existe: `primeiros-passos-2.webp`)
+   - Imagem: lista dos 5 passos. (existe: `primeiros-passos-2.webp`)
 4. Toque num passo para ver as tarefas. Em **Como fazer** está o passo a passo.
-   - Imagem: passo aberto com as tarefas. Seta em **Como fazer**. (já existe: `primeiros-passos-3.webp`)
+   - Imagem: passo aberto. (existe: `primeiros-passos-3.webp`)
 5. O que acontece fora do app, você confirma. Toque em **Marcar como feito**. A tarefa fica verde.
-   - Imagem: tarefa de confirmação. Círculo vermelho em **Marcar como feito**. (já existe: `primeiros-passos-4.webp`)
-6. Veja no bloco dourado o que a Maxi faz com você: contrato, reunião de início, redes sociais, grupo, teste do robô e anúncios.
-   - Imagem: bloco dourado "A Maxi faz por você". Seta no título do bloco. (já existe: `primeiros-passos-5.webp`)
+   - Imagem: tarefa de confirmação. (existe: `primeiros-passos-4.webp`)
+6. Veja no bloco dourado **A Maxi faz por você** a parte da equipe: contrato, reunião de início, redes sociais, grupo, teste do robô e anúncios.
+   - Imagem: bloco dourado. (existe: `primeiros-passos-5.webp`)
 
 **O que o app marca sozinho:** seus dados, o cardápio, o Meu robô preenchido, o robô respondendo, o primeiro pedido, a entrega e a primeira venda.
 
 **Deu certo quando:** os 5 passos ficam verdes. A equipe Maxi é avisada e confere tudo com você. Depois disso, "Primeiros passos" sai do menu.
 
-**Dica:** quando a trilha leva você para outra tela, aparece uma faixa no topo. Toque em **Voltar aos Primeiros passos** para voltar.
+**Dica:** quando a trilha leva você para outra tela, aparece uma faixa no alto. Toque em **Voltar aos Primeiros passos** para voltar.
 
-**Erro comum:** tocou em **Marcar como feito** sem querer. Toque de novo no mesmo botão para desfazer.
+**Erro comum:** tocou em **Marcar como feito** sem querer. O botão passa a dizer **Feito · toque para desfazer**: toque nele de novo.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -109,107 +111,105 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 ## 2. Entrar quando esqueci a senha ou o link venceu
 `slug: esqueci-senha` · **Onde começa:** tela de entrada do app (app.maximassas.tech) · **Tempo:** 5 minutos
 
-**Quando usar:** é seu primeiro acesso, você esqueceu a senha, ou o link do e-mail diz que venceu.
+**Quando usar:** é seu primeiro acesso, você esqueceu a senha, ou o link do e-mail venceu.
 
 **Passos**
-1. Na tela de entrada, toque em **Primeiro acesso ou esqueceu a senha?**. O título muda para "Receber link de acesso".
-   - Imagem: tela de entrada no celular. Seta vermelha no link **Primeiro acesso ou esqueceu a senha?**, abaixo do botão Entrar.
-2. Digite o seu e-mail, o mesmo que a Maxi cadastrou.
-   - Imagem: mesma tela, modo "Receber link de acesso". Círculo no campo de e-mail.
+1. Na tela de entrada, toque em **Primeiro acesso ou esqueceu a senha?**, abaixo do botão Entrar. O título muda para "Receber link de acesso".
+   - Imagem: tela de entrada no celular. Seta no link **Primeiro acesso ou esqueceu a senha?**.
+2. Digite o seu e-mail, o mesmo que recebeu o convite da Maxi.
+   - Imagem: modo "Receber link de acesso". Círculo no campo E-mail.
 3. Toque em **Enviar link**. Aparece a mensagem: "Se (seu e-mail) estiver cadastrado, o link chega em alguns minutos."
-   - Imagem: aviso verde embaixo da tela. Seta no aviso, com o e-mail escrito nele.
+   - Imagem: aviso com o e-mail escrito. Seta no aviso.
 4. Abra o seu e-mail e toque no link da Maxi Massas.
-   - Imagem: e-mail recebido (exemplo com e-mail fictício). Círculo no botão do link.
-5. Crie a senha nova e toque em **Criar senha e entrar**. O app abre na tela Início.
-   - Imagem: tela de criar senha. Seta no botão **Criar senha e entrar**.
+   - Imagem: e-mail recebido (e-mail fictício). Círculo no link.
+5. Na tela "Crie sua senha", digite a senha em **Nova senha** e de novo em **Repita a senha**. Toque em **Criar senha e entrar**. O app abre na Início.
+   - Imagem: tela "Crie sua senha". Seta em **Criar senha e entrar**.
 
-**Deu certo quando:** você entra e vê a tela Início com o nome da sua unidade.
+**Deu certo quando:** você entra e vê a tela Início da sua unidade.
 
-**Dica:** o link vale por 24 horas e serve uma vez só. Se passar disso, peça outro pelo mesmo caminho.
+**Dica:** o link vale por 24 horas e serve uma vez só. A senha precisa de 8 caracteres ou mais, com letras e números.
 
-**Erro comum:** o e-mail não chega. Olhe a caixa de spam e confira se digitou o e-mail certo: o app mostra o endereço que você digitou. Se apareceu "Esse link já foi usado ou venceu", peça um link novo (passo 1).
+**Erro comum:** o e-mail não chega. Olhe a caixa de spam e confira o e-mail digitado: a mensagem mostra o endereço que você escreveu. Se aparecer "Esse link já foi usado ou venceu", peça um link novo (passo 1).
 
-**Se não resolver:** na própria tela de entrada tem o botão do WhatsApp da Maxi. Diga o e-mail que você usa. Veja o guia 31.
+**Se não resolver:** na tela de entrada, toque em **Falar com a Maxi no WhatsApp** e diga o e-mail que você usa.
 
 ---
 
 ## 3. Trocar de unidade
-`slug: trocar-unidade` · **Onde começa:** topo de qualquer tela (nome da unidade) · **Tempo:** 1 minuto
+`slug: trocar-unidade` · **Onde começa:** alto da tela (nome da unidade) · **Tempo:** 1 minuto
 
 **Quando usar:** você cuida de duas ou mais unidades e quer ver ou lançar na outra.
 
 **Passos**
-1. Toque no nome da unidade, no topo da tela. Abre a lista das suas unidades.
-   - Imagem: topo da tela Início no celular. Seta vermelha no nome da unidade, no alto.
+1. No celular, toque no nome da unidade, no alto da tela, à esquerda (no computador, fica à direita). Abre a lista das suas unidades.
+   - Imagem: alto da tela Início no celular. Seta no nome da unidade.
 2. Toque na unidade que você quer.
-   - Imagem: lista aberta com duas unidades de exemplo. Círculo na segunda unidade.
-3. Confira o nome no topo. Agora tudo que você vê e lança é dessa unidade.
-   - Imagem: topo com o nome novo. Círculo no nome.
+   - Imagem: lista aberta com duas unidades de exemplo. Círculo na segunda.
+3. Confira o nome no alto. Agora tudo que você vê e lança é dessa unidade.
+   - Imagem: alto da tela com o nome novo. Círculo no nome.
 
-**Deu certo quando:** o nome no topo mudou e as vendas mostradas são da outra unidade.
+**Deu certo quando:** o nome no alto mudou e as vendas mostradas são da outra unidade.
 
 **Dica:** o app lembra a última unidade escolhida neste aparelho.
 
-**Erro comum:** lançar uma venda na unidade errada. Antes de tocar em **+ Nova venda**, olhe o nome no topo. Se já lançou, veja o guia 6 para excluir e lance de novo na unidade certa.
+**Erro comum:** lançar uma venda na unidade errada. Antes de tocar em **Nova venda**, olhe o nome no alto. Se já lançou, exclua (guia 6) e lance de novo na unidade certa.
 
-**Se não resolver:** se o seletor não aparece e você tem duas unidades, a Maxi precisa ligar a segunda ao seu acesso. Guia 31.
+**Se não resolver:** o nome da unidade só aparece para quem tem duas ou mais. Se você tem duas e não aparece, a Maxi precisa ligar a segunda ao seu acesso (guia 31).
 
 ---
 
 # VENDER
 
 ## 4. Lançar uma venda
-`slug: vendas` · **Onde começa:** botão **+ Nova venda** (no meio da barra de baixo; no computador, no topo da barra da esquerda) · **Tempo:** 2 a 4 minutos
-> Fotos feitas (S21.1, 28/09/2026): `vendas-1.webp`..`vendas-6.webp`, telas finais reais (harness `.tmp/harness-s211`, ui_v2 ligada), destaque = anel vermelho da marca no elemento certo. Ligadas em `guiasAjuda.js`.
+`slug: vendas` · **Onde começa:** botão redondo **Nova venda**, no meio da barra de baixo (no computador: Vendas › **Nova Venda**) · **Tempo:** 2 a 4 minutos
+> Fotos (S21.1): `vendas-1.webp`..`vendas-6.webp`, uma por passo.
 
 **Quando usar:** você vendeu fora do robô (telefone, conhecido, balcão) e quer que a venda conte no mês e desconte do estoque.
 
 **Passos**
-1. Toque em **+ Nova venda**. Abre o formulário de venda.
-   - Imagem: tela Início no celular, barra de baixo inteira. Seta vermelha no botão redondo **+ Nova venda**, no meio da barra.
-2. Em **Cliente**, digite o nome e toque na pessoa. Cliente novo? Digite o nome e o telefone com DDD.
-   - Imagem: formulário, parte de cima. Círculo no campo **Cliente** com uma sugestão aparecendo.
-3. Em **Produtos**, busque cada produto e acerte a quantidade. O total aparece embaixo.
-   - Imagem: lista de produtos da venda com dois itens. Seta no campo de quantidade de um item.
-4. Escolha como o cliente pagou em **Pagamento** (Pix, Dinheiro, Crédito, Débito…).
-   - Imagem: botões de pagamento. Círculo no botão **Pix** selecionado.
-5. Se foi entrega, toque em **Delivery** e confira o endereço e o frete. O frete entra no valor da venda.
-   - Imagem: bloco de entrega. Seta em **Delivery** e círculo no campo do frete.
-6. Deixe **Já recebi o dinheiro** ligado se o cliente já pagou. Desligue se ele ainda vai pagar.
-   - Imagem: chave **Já recebi o dinheiro** ligada (verde). Círculo na chave. `[tela nova]`
-7. Toque em **Registrar Venda**. Abre o comprovante da venda.
-   - Imagem: fim do formulário. Seta vermelha no botão **Registrar Venda**.
+1. Toque em **Nova venda**, o botão redondo com + no meio da barra de baixo. Abre a venda nova.
+   - Imagem: barra de baixo. Seta no botão redondo. (existe: `vendas-1.webp`)
+2. Em **Cliente**, digite o nome ou o telefone e toque na pessoa. Cliente novo? Toque em **Novo contato**, preencha o nome e o telefone com DDD e toque em **Criar e selecionar**.
+   - Imagem: campo **Cliente** com uma sugestão. (existe: `vendas-2.webp`)
+3. Em **Produtos**, busque cada produto e digite a quantidade em **Qtd.**. Para mais um produto, toque em **Adicionar produto**.
+   - Imagem: produtos da venda. (existe: `vendas-3.webp`)
+4. Em **Pagamento**, toque em como o cliente pagou (PIX, Dinheiro, Crédito…). O cliente ainda vai pagar? Ligue **Ainda vou receber**, logo abaixo.
+   - Imagem: botões de pagamento. (existe: `vendas-4.webp`)
+5. Em **Entrega**, toque em **Delivery** se foi entrega. Confira o endereço e o **Frete (R$)**. O frete entra no valor da venda.
+   - Imagem: bloco Entrega. (existe: `vendas-5.webp`)
+6. Confira o total no rodapé e toque em **Registrar venda**. Aparece "Venda registrada!", com o botão **Comprovante**.
+   - Imagem: rodapé com o total. Seta em **Registrar venda**. (existe: `vendas-6.webp`)
 
-**Deu certo quando:** o comprovante aparece na tela e a venda está na lista de **Vendas**, com o valor certo.
+**Deu certo quando:** aparece "Venda registrada!" e a venda está na lista de **Vendas**, com o valor certo.
 
-**Dica:** sempre escolha o cliente. É assim que ele entra no "Quem chamar hoje" e você sabe quem voltou a comprar.
+**Dica:** sempre escolha o cliente, com telefone. É assim que ele entra no "Quem chamar hoje" e que o anúncio aprende. Se o cliente não quis dar o número, toque em **Cliente não quis informar**.
 
-**Erro comum:** tocar duas vezes em **Registrar Venda** e ficar com a venda em dobro. Toque uma vez e espere o comprovante. Se duplicou, exclua a repetida (guia 6).
+**Erro comum:** tocar duas vezes em **Registrar venda**. Toque uma vez e espere o aviso. Deu erro? Antes de tentar de novo, olhe em **Vendas** se a venda já entrou. Se duplicou, exclua a repetida (guia 6). Aviso "O robô já lançou esta venda?": se for a mesma, toque em **É a mesma, não lançar**.
 
 **Se não resolver:** produto não aparece na busca? Veja se ele está oculto no Estoque (guia 13). Senão, Falar com a Maxi (guia 31).
 
 ---
 
 ## 5. Marcar que recebi o dinheiro
-`slug: venda-recebida` · **Onde começa:** Vendas › "A receber" · **Tempo:** 1 minuto
+`slug: venda-recebida` · **Onde começa:** Vendas › quadro "A receber" · **Tempo:** 1 minuto
 
-**Quando usar:** você lançou uma venda que ainda não estava paga e agora o dinheiro caiu.
+**Quando usar:** você lançou uma venda com **Ainda vou receber** e agora o dinheiro caiu.
 
 **Passos**
-1. Toque em **Vendas**, na barra de baixo. Abre a lista de vendas do mês.
-   - Imagem: barra de baixo. Seta vermelha em **Vendas**.
-2. Procure a venda com a etiqueta **A receber**.
-   - Imagem: lista de vendas com uma venda marcada "A receber". Círculo na etiqueta. `[tela nova]`
+1. Toque em **Vendas**, na barra de baixo.
+   - Imagem: barra de baixo. Seta em **Vendas**.
+2. No alto, o quadro **A receber** mostra as vendas que faltam receber, de todos os meses. Ache a venda. Na lista, ela aparece com **A receber**, em amarelo.
+   - Imagem: quadro "A receber" com duas vendas. Círculo no quadro.
 3. Confira no banco, no Pix ou na maquininha se o dinheiro entrou mesmo.
-   - Imagem: sem recorte do app (passo fora do app). Pode ser um ícone de banco.
-4. Toque em **Recebi**. A etiqueta muda para "Recebido em" e a data do dia.
-   - Imagem: mesma venda. Seta vermelha no botão **Recebi**, ao lado da etiqueta. `[tela nova]`
+   - Imagem: sem recorte do app (passo fora do app).
+4. Toque em **Recebi**, ao lado da venda. Aparece "Recebido!" e a venda passa a mostrar "Recebido em" e a data.
+   - Imagem: venda com o botão **Recebi**. Seta no botão.
 
-**Deu certo quando:** a venda mostra "Recebido em" com a data, e sai da lista "A receber".
+**Deu certo quando:** a venda mostra "Recebido em" com a data e sai do quadro "A receber".
 
-**Dica:** a venda já conta no Resultado do mês desde que foi lançada. Marcar "Recebi" serve para conferir o caixa e ajuda o anúncio a achar clientes parecidos com quem comprou.
+**Dica:** a venda já conta no Resultado do mês desde que foi lançada. Marcar **Recebi** confere o seu caixa e ensina o anúncio a achar clientes parecidos com quem comprou.
 
-**Erro comum:** achar que "A receber" quer dizer que a venda não foi feita. A venda está lançada; só falta você confirmar que o dinheiro entrou. Tocou em **Recebi** na venda errada? É o mesmo botão: toque nele de novo e a venda volta para "A receber" (confirmado no código atual, `TabLancar.jsx`: o botão liga e desliga `payment_confirmed`).
+**Erro comum:** tocou em **Recebi** na venda errada. Toque em **Desfazer**, no aviso que aparece embaixo. Se o aviso já sumiu, toque na venda para abrir e em **Voltar para a receber**.
 
 **Se não resolver:** guia 6 (corrigir venda) ou Falar com a Maxi (guia 31).
 
@@ -221,88 +221,84 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** a venda saiu com produto, quantidade, cliente ou valor errado, ou foi lançada duas vezes.
 
 **Passos**
-1. Toque em **Vendas** e ache a venda. Use as setas ao lado do mês se ela for de outro mês.
-   - Imagem: topo da tela Vendas. Seta nas setas ◀ ▶ ao lado do nome do mês.
-2. Toque na venda para abrir as opções. São dois caminhos separados: siga só um, o que você precisa.
-   - Imagem: lista de vendas. Círculo em uma venda.
+1. Toque em **Vendas** e ache a venda. Se for de outro mês, use as setas ao lado do nome do mês, no alto.
+   - Imagem: alto da tela Vendas. Seta nas setas ◀ ▶ do mês.
+2. Toque na venda. Ela se abre ali mesmo, com os botões embaixo. São dois caminhos: siga só o que você precisa.
+   - Imagem: venda aberta. Círculo nos botões.
 
 **Caminho A — corrigir**
-3. Toque em **Editar Venda**. Abre o formulário já preenchido.
-   - Imagem: opções da venda. Seta vermelha em **Editar Venda**.
-4. Mude o que estava errado e toque em **Atualizar Venda**. A venda aparece corrigida na lista. Pronto, não precisa mexer mais nela.
-   - Imagem: formulário em modo edição. Seta no botão **Atualizar Venda**, no fim.
+3. Toque em **Editar**. Abre a venda já preenchida.
+   - Imagem: venda aberta. Seta em **Editar**.
+4. Mude o que estava errado e toque em **Salvar mudanças**. Pronto, não precisa mexer mais nela.
+   - Imagem: rodapé da venda em edição. Seta em **Salvar mudanças**.
 
 **Caminho B — apagar**
-5. Toque em **Excluir**. Aparece a pergunta "Excluir venda?".
-   - Imagem: opções da venda. Círculo vermelho no botão **Excluir**.
-6. Confirme em **Excluir** só se a venda está mesmo errada (repetida ou por engano). Ela some da lista.
-   - Imagem: janela "Excluir venda?". Seta no botão de confirmar.
+5. Toque em **Excluir venda**, no canto de baixo, à direita. Aparece a pergunta "Excluir venda?".
+   - Imagem: venda aberta. Círculo em **Excluir venda**.
+6. Toque em **Excluir** só se a venda está mesmo errada (repetida ou por engano). Ela some da lista.
+   - Imagem: janela "Excluir venda?". Seta em **Excluir**.
 
-**Deu certo quando:** a lista mostra a venda com os dados certos, ou a venda repetida sumiu, e o total do mês mudou.
+**Deu certo quando:** a venda aparece com os dados certos, ou a repetida sumiu, e o total do mês mudou.
 
-**Dica:** para mudar só a forma de pagamento ou o cliente, use **Editar Venda**. Não precisa excluir e lançar de novo.
+**Dica:** para mudar só a forma de pagamento ou o cliente, use **Editar**. Não precisa excluir e lançar de novo.
 
-**Erro comum:** aparecer um aviso sobre o anúncio ao excluir. É porque essa venda já foi contada para o anúncio. Se ela for repetida ou lançada por engano, pode confirmar com **Excluir mesmo assim**.
+**Erro comum:** aparecer "Atenção" ao excluir. É porque a venda já foi contada no anúncio. Se ela é repetida ou foi por engano, toque em **Excluir mesmo assim**. Venda que o robô lançou não se apaga: é ela que conta para o anúncio.
 
 **Se não resolver:** Falar com a Maxi (guia 31), dizendo a data e o valor da venda.
 
 ---
 
 ## 7. Mandar e imprimir o comprovante
-`slug: comprovante` · **Onde começa:** aviso "Venda registrada!" depois de **Registrar Venda** (ou Vendas › toque na venda para abrir e usar os botões **Compartilhar**/**Imprimir**) · **Tempo:** 1 minuto
+`slug: comprovante` · **Onde começa:** aviso "Venda registrada!" (venda nova) ou Vendas › toque na venda (venda antiga) · **Tempo:** 1 minuto
 
 **Quando usar:** mandar o comprovante para o cliente ou imprimir para o entregador.
 
-`[conferir]` Passos 1-2 descrevem o comportamento REAL de hoje (`TabLancar.jsx`): não existe uma tela fixa de comprovante com botões "Mandar no WhatsApp"/"Imprimir" — o app usa o compartilhamento do próprio celular. Isso pode mudar com a tela nova; reconferir antes de publicar as imagens.
-
-**Passos**
-
 **Para mandar no WhatsApp**
-1. Registre a venda. Aparece o aviso "Venda registrada!" com o botão **Comprovante**. Numa venda antiga, ache-a em **Vendas** e toque nela para abrir os botões **Compartilhar** e **Imprimir**.
-   - Imagem: aviso "Venda registrada!" com o botão **Comprovante**. Seta vermelha no botão.
-2. Toque em **Comprovante** (venda nova) ou **Compartilhar** (venda antiga). Abre o menu de compartilhar do próprio celular, com o WhatsApp entre as opções.
-   - Imagem: menu de compartilhar do celular (Android/iPhone) com o WhatsApp na lista. Círculo no ícone do WhatsApp.
-3. Escolha o WhatsApp e o contato. A imagem do comprovante (cliente, telefone, endereço, produtos e total) já vai anexada. Toque em enviar, como manda qualquer foto no WhatsApp.
-   - Imagem: WhatsApp com a imagem do comprovante pronta para enviar (cliente fictício). Seta no botão de enviar.
+1. Venda nova: no aviso "Venda registrada!", toque em **Comprovante** (o aviso fica alguns segundos). Venda antiga: em **Vendas**, toque na venda e em **Enviar comprovante**.
+   - Imagem: venda aberta. Seta em **Enviar comprovante**.
+2. Abre o menu de compartilhar do celular, com a imagem do comprovante. Escolha o WhatsApp.
+   - Imagem: menu de compartilhar do celular. Círculo no WhatsApp.
+3. Escolha o contato e toque em enviar, como manda qualquer foto.
+   - Imagem: WhatsApp com a imagem do comprovante (cliente fictício). Seta no enviar.
 
-**Para imprimir (é outro caminho, não precisa ter mandado no WhatsApp antes)**
-4. Na mesma venda, toque em **Imprimir**. Abre a janela de impressão do aparelho.
-   - Imagem: rodapé da venda. Seta vermelha em **Imprimir**.
-5. Escolha a sua impressora e toque em imprimir.
-   - Imagem: janela de impressão do Android/computador. Círculo no nome da impressora.
-6. Saiu fraco ou apagado na impressora térmica? Na janela de impressão, mude a **Escala** para **80%** e imprima de novo.
-   - Imagem: janela de impressão com "Mais opções" aberto. Seta vermelha no campo **Escala**, com 80 escrito.
+**Para imprimir (é outro caminho)**
+4. Em **Vendas**, toque na venda e em **Imprimir**. Abre a janela de impressão.
+   - Imagem: venda aberta. Seta em **Imprimir**.
+5. Escolha a sua impressora e imprima.
+   - Imagem: janela de impressão. Círculo no nome da impressora.
+6. Saiu fraco na impressora térmica? Na janela de impressão, mude a **Escala** para **80%** e imprima de novo.
+   - Imagem: janela de impressão com "Mais opções". Seta no campo **Escala**.
 
 **Deu certo quando:** o cliente recebeu a imagem no WhatsApp, ou o papel saiu legível, com o endereço e o telefone.
 
-**Dica:** o comprovante serve para bobina de 58 mm e de 80 mm sem ajuste. O entregador pode ligar para o telefone que sai no papel.
+**Dica:** o comprovante serve para bobina de 58 mm e de 80 mm. No computador, **Enviar comprovante** baixa a imagem; depois é só anexar no WhatsApp.
 
-**Erro comum:** o comprovante sai sem endereço. Quase sempre o endereço não foi preenchido na venda ou no cliente. Edite a venda (guia 6) ou o cliente (guia 10). Papel ainda fraco com escala 80%? Troque a bobina (bobina velha apaga) ou aumente a "densidade" nas configurações da impressora.
+**Erro comum:** o comprovante sai com "ENDEREÇO NÃO INFORMADO". O endereço não foi preenchido na venda nem no cliente. Corrija a venda (guia 6) ou o cliente (guia 10). Papel ainda fraco com 80%? Troque a bobina.
 
 **Se não resolver:** Falar com a Maxi (guia 31), com uma foto do papel impresso.
 
 ---
 
 ## 8. Baixar a planilha de vendas
-`slug: planilha-vendas` · **Onde começa:** Mais › Resultado do mês · **Tempo:** 2 minutos
+`slug: planilha-vendas` · **Onde começa:** Vendas · **Tempo:** 2 minutos
 
 **Quando usar:** você quer a lista de vendas do mês numa planilha (para o contador ou para conferir).
 
 **Passos**
-1. Toque em **Mais** e depois em **Resultado do mês**.
-   - Imagem: lista do Mais. Seta vermelha em **Resultado do mês**.
-2. Escolha o mês com as setas ao lado do nome do mês.
-   - Imagem: topo do Resultado. Círculo nas setas ◀ ▶.
-3. Role até o fim e toque em **Baixar planilha**. O arquivo é baixado no aparelho.
-   - Imagem: fim da tela do Resultado. Seta vermelha em **Baixar planilha**. `[tela nova]`
+1. Toque em **Vendas**, na barra de baixo.
+   - Imagem: barra de baixo. Seta em **Vendas**.
+2. Escolha o mês com as setas ao lado do nome do mês. Deixe marcado **Todas**, logo abaixo.
+   - Imagem: alto da tela Vendas. Círculo nas setas ◀ ▶ e em **Todas**.
+3. Toque em **Excel**, na mesma linha. O arquivo é baixado no aparelho.
+   - Imagem: linha dos filtros. Seta em **Excel**.
 4. Abra o arquivo baixado. No celular, ele fica em "Downloads" ou nas notificações.
    - Imagem: aviso de download do celular. Círculo no nome do arquivo.
 
 **Deu certo quando:** a planilha abre com uma linha por venda: data, hora, cliente, produtos, pagamento e valor.
 
-**Dica:** para mandar ao contador, abra o arquivo e use o botão de compartilhar do celular.
+**Dica:** a mesma planilha sai em **Mais › Gestão**, no quadro **Planilha das vendas**. Para mandar ao contador, abra o arquivo e use o compartilhar do celular.
 
-**Erro comum:** a planilha sai vazia porque o mês escolhido é outro. Confira o mês no topo antes de baixar.
+**Erro comum:** a planilha sai faltando vendas porque um filtro ficou ligado (**A receber**, **Recebidas** ou a busca). Deixe **Todas** e a busca vazia antes de baixar.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -311,54 +307,55 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 # CLIENTES
 
 ## 9. Chamar clientes (Quem chamar hoje)
-`slug: clientes` · **Onde começa:** Início › "Quem chamar hoje" (ou Mais › Meus clientes › **Chamar hoje**) · **Tempo:** 3 a 5 minutos por dia
+`slug: clientes` · **Onde começa:** Início › "Quem chamar hoje" (ou Mais › Meus Clientes › aba **Hoje**) · **Tempo:** 3 a 5 minutos por dia
+> Fotos já no app: `quem-chamar-hoje-1..6.webp` (numeração própria, anterior a este documento).
 
 **Quando usar:** todo dia, para chamar no WhatsApp quem tem mais chance de comprar.
 
 **Passos**
-1. Toque em **Mais**, depois em **Meus clientes**. Abre a aba **Chamar hoje**.
-   - Imagem: tela Meus clientes com a aba **Chamar hoje** aberta. Seta na aba. (pode reusar `quem-chamar-hoje-1.webp` se a aba mantiver o visual)
-2. Leia o motivo de cada cartão: quase comprou, hora de repetir, primeira compra, sumido ou voltou a falar.
-   - Imagem: um cartão. Círculo na frase do motivo. (já existe: `quem-chamar-hoje-2.webp`)
-3. Toque em **Chamar no WhatsApp**. O WhatsApp abre com a mensagem pronta, com o nome do cliente.
-   - Imagem: cartão. Seta vermelha em **Chamar no WhatsApp**. (já existe: `quem-chamar-hoje-3.webp`)
-4. Leia a mensagem, mude o que quiser e envie pelo WhatsApp da unidade (o mesmo número do robô). Depois de enviar, volte para o app com o botão de voltar do celular.
-   - Imagem: conversa do WhatsApp com o texto pronto (cliente fictício). Seta no botão de enviar.
-5. De volta ao app, o cartão já sumiu da lista. Não é hora de chamar alguém? Toque em **Pular** e escolha "Só hoje". Se a pessoa pediu para não receber, escolha "Não chamar mais".
-   - Imagem: menu do Pular aberto. Círculo em "Só hoje". (já existe: `quem-chamar-hoje-4.webp`)
+1. Toque em **Mais** e em **Meus Clientes**. A tela abre na aba **Hoje**.
+   - Imagem: Meus Clientes, aba **Hoje**. (existe: `quem-chamar-hoje-1.webp`)
+2. Leia o motivo de cada cartão: voltou a falar e não comprou, quase comprou, hora de repetir, primeira compra ou sumido.
+   - Imagem: um cartão. (existe: `quem-chamar-hoje-2.webp`)
+3. Toque em **Chamar no WhatsApp**. O WhatsApp abre com a mensagem pronta, com o nome do cliente. O cartão já conta como feito nessa hora, mesmo que você não envie (dá para desfazer).
+   - Imagem: cartão. (existe: `quem-chamar-hoje-3.webp`)
+4. Leia a mensagem, mude o que quiser e envie pelo WhatsApp da unidade (o mesmo número do robô). Depois, volte para o app.
+   - Imagem: conversa com o texto pronto (cliente fictício). Seta no enviar.
+5. Não é hora de chamar alguém? Toque em **Pular** e escolha **Só hoje**. Se a pessoa pediu para não receber, escolha **Não chamar mais**.
+   - Imagem: menu do Pular. (existe: `quem-chamar-hoje-4.webp`)
 
-**Deu certo quando:** o cartão fica marcado como feito e desce na lista. No topo, o número de chamados do mês sobe.
+**Deu certo quando:** o cartão vira "Chamado hoje" e, no alto, o número de feitos do dia sobe.
 
-**Dica:** são no máximo 8 por dia, de propósito: mandar mensagem pessoal para poucas pessoas por vez, em vez de uma só mensagem igual para todo mundo, vende mais e evita que o WhatsApp marque seu número como suspeito. Quando você escreve para o cliente, o robô pausa e deixa a conversa com você.
+**Dica:** são no máximo 8 por dia, de propósito: mensagem pessoal, para poucas pessoas por vez, vende mais e protege o seu número. Quando você escreve, o robô pausa e deixa a conversa com você.
 
-**Erro comum:** tocar em **Chamar no WhatsApp** e não enviar. O cartão já conta como feito. Use **Desfazer**, no aviso que aparece embaixo, e chame depois.
+**Erro comum:** tocar em **Chamar no WhatsApp** e não enviar. O cartão já conta como feito. Toque em **Desfazer**, no aviso embaixo, e chame depois.
 
 **Se não resolver:** cliente sem telefone não entra na lista. Complete o número (guia 10).
 
 ---
 
 ## 10. Cadastrar ou corrigir um cliente
-`slug: cadastrar-cliente` · **Onde começa:** Mais › Meus clientes › **Todos** · **Tempo:** 2 minutos
+`slug: cadastrar-cliente` · **Onde começa:** Mais › Meus Clientes › aba **Todos** · **Tempo:** 2 minutos
 
 **Quando usar:** cliente novo que ainda não comprou, ou telefone, nome ou endereço errado.
 
 **Passos**
-1. Toque em **Mais**, depois em **Meus clientes**, e na aba **Todos**.
-   - Imagem: Meus clientes, aba **Todos**. Seta vermelha na aba **Todos**.
-2. Para cliente novo, toque em **+ Cliente**. Abre o cadastro.
-   - Imagem: topo da aba Todos. Círculo vermelho em **+ Cliente**. `[tela nova]`
-3. Para corrigir, busque o nome e toque no cliente.
-   - Imagem: busca com um nome digitado. Seta no cliente encontrado.
-4. Preencha ou corrija nome, telefone com DDD e endereço.
-   - Imagem: formulário do cliente. Círculo no campo do telefone.
-5. Toque em **Salvar**. O cliente aparece na lista com os dados novos.
-   - Imagem: fim do formulário. Seta vermelha em **Salvar**.
+1. Toque em **Mais**, em **Meus Clientes** e na aba **Todos**.
+   - Imagem: Meus Clientes. Seta na aba **Todos**.
+2. Cliente novo: toque em **Novo Cliente**, no alto (no celular é o botão com o desenho de uma pessoa e o +).
+   - Imagem: alto da tela. Círculo no botão **Novo Cliente**.
+3. Corrigir: busque o nome e toque no cartão do cliente. Abre "Editar Contato".
+   - Imagem: busca com um nome digitado. Seta no cliente.
+4. Preencha ou corrija nome, telefone com DDD, endereço e bairro.
+   - Imagem: formulário. Círculo no campo **Telefone**.
+5. Toque em **Criar Contato** (cliente novo) ou **Salvar** (correção).
+   - Imagem: fim do formulário. Seta no botão.
 
-**Deu certo quando:** o cliente aparece em **Todos** com o telefone certo, e pode ser escolhido na próxima venda.
+**Deu certo quando:** o cliente aparece em **Todos** com o telefone certo e pode ser escolhido na próxima venda.
 
-**Dica:** telefone só com DDD e número, sem o 55. Cliente de outro país: digite com o código do país.
+**Dica:** telefone só com DDD e número, sem o 55. Cliente de outro país: comece com + e o código do país.
 
-**Erro comum:** cadastrar a mesma pessoa duas vezes. Antes de tocar em **+ Cliente**, busque o nome e o telefone. Se o app avisar que o telefone já existe, use o cadastro que já está lá.
+**Erro comum:** cadastrar a mesma pessoa duas vezes. Antes de criar, busque o nome e o telefone. Se aparecer "Contato com este telefone já existe", use o cadastro que já está lá.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -367,52 +364,52 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 # ESTOQUE E PEDIDO À FÁBRICA
 
 ## 11. Contar o estoque
-`slug: contar-estoque` · **Onde começa:** Estoque › aba **Estoque** · **Tempo:** 10 a 20 minutos (conforme o freezer)
+`slug: contar-estoque` (alias `estoque`) · **Onde começa:** Estoque (barra de baixo) › **Contar estoque** · **Tempo:** 10 a 20 minutos (conforme o freezer)
 
 **Quando usar:** uma vez por semana, ou quando o número do app não bate com o freezer.
 
 **Passos**
 1. Toque em **Estoque**, na barra de baixo. Abre a aba **Estoque** com os produtos.
-   - Imagem: barra de baixo. Seta vermelha em **Estoque**.
-2. Abra o freezer e conte um produto de cada vez.
-   - Imagem: sem recorte do app (passo fora do app).
-3. Toque no produto e mude a **Quantidade** para o que você contou.
-   - Imagem: produto aberto. Círculo no campo **Quantidade**. `[conferir: contagem direto na lista, com − e +, na tela nova]`
-4. Toque em **Salvar**. Aparece "Produto atualizado."
-   - Imagem: fim do formulário. Seta vermelha em **Salvar**.
-5. Repita para os outros produtos.
-   - Imagem: lista do estoque com as quantidades novas. Círculo em uma quantidade.
+   - Imagem: barra de baixo. Seta em **Estoque**.
+2. Toque em **Contar estoque**, no alto da lista. Cada produto ganha os botões **−** e **+**.
+   - Imagem: alto da aba Estoque. Seta em **Contar estoque**.
+3. Abra o freezer e conte um produto de cada vez. Acerte o número com **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta lançar uma venda ou conferir um pedido que chegou.
+   - Imagem: um produto no modo de contar. Círculo no **−**, no número e no **+**.
+4. No fim, toque em **Salvar** (ele mostra quantos produtos você mudou). Aparece "Contagem salva".
+   - Imagem: alto da contagem. Seta em **Salvar (3)**.
+5. Confira a lista: os números devem bater com o freezer.
+   - Imagem: lista do estoque com as quantidades novas. Círculo numa quantidade.
 
-**Deu certo quando:** os números da lista batem com o freezer.
+**Deu certo quando:** aparece "Contagem salva" e os números da lista batem com o freezer.
 
-**Dica:** conte com o freezer organizado por tipo (massas, molhos, outros). Venda lançada já desconta sozinha; pedido entregue já soma sozinho.
+**Dica:** saiu da tela no meio? A contagem fica guardada neste aparelho: toque em **Continuar contagem**. Venda lançada já desconta sozinha; pedido conferido já soma sozinho.
 
-**Erro comum:** o número fica negativo ou errado porque uma venda não foi lançada. Lance a venda que faltou (guia 4) em vez de só mudar o número.
+**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número negativo quase sempre é venda não lançada: lance a venda (guia 4).
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 12. Mudar o preço de venda
-`slug: mudar-preco` · **Onde começa:** Estoque › aba **Estoque** › toque no produto · **Tempo:** 2 minutos por produto
+`slug: mudar-preco` · **Onde começa:** Estoque › aba **Estoque** · **Tempo:** 2 minutos por produto
 
 **Quando usar:** você quer subir ou ajustar o preço que o cliente paga.
 
 **Passos**
-1. Toque em **Estoque** e depois no produto.
-   - Imagem: lista do estoque. Seta vermelha em um produto.
-2. Veja o custo (vem da Maxi) e o **Preço de venda**.
-   - Imagem: produto aberto. Círculo no custo e no **Preço de venda**.
-3. Digite o novo **Preço de venda**. Mexa só nesse campo — o custo é fixo, vem da tabela da Maxi. O app mostra o markup, um número que diz o quanto o preço está acima do custo.
-   - Imagem: mesmo formulário. Seta no número do markup.
-4. Toque em **Salvar**. Aparece "Preço de venda atualizado."
-   - Imagem: fim do formulário. Seta vermelha em **Salvar**.
+1. Toque em **Estoque** e ache o produto na lista.
+   - Imagem: lista do estoque. Seta num produto.
+2. No cartão do produto, veja **Custo** (vem da tabela da Maxi) e **Venda** (o preço que o cliente paga).
+   - Imagem: cartão do produto. Círculo em **Custo** e em **Venda**.
+3. Toque no valor de **Venda**, digite o preço novo e toque fora do campo.
+   - Imagem: campo **Venda** aberto para digitar. Seta no campo.
+4. Aparece "Preço de venda atualizado." e a lista mostra o preço novo.
+   - Imagem: aviso "Preço de venda atualizado.". Círculo no aviso.
 
 **Deu certo quando:** a lista mostra o preço novo. O robô passa a usar esse preço com os clientes.
 
 **Dica:** o markup recomendado é de 100%: o preço de venda é o dobro do custo. Exemplo: produto que custa R$ 10, venda por R$ 20. Os preços já vêm assim.
 
-**Erro comum:** mudar o custo em vez do preço de venda. O custo é o da tabela da Maxi; mexa só no **Preço de venda**.
+**Erro comum:** tentar mudar o custo de um produto da Maxi. Não dá: o custo é o da tabela da Maxi. Mude só a **Venda**.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -421,130 +418,132 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 ## 13. Cadastrar produto próprio ou ocultar um produto
 `slug: produto-proprio` · **Onde começa:** Estoque › aba **Estoque** · **Tempo:** 3 minutos
 
-**Quando usar:** você vende algo que não é da Maxi (queijo ralado, um molho seu), ou quer parar de vender um produto. São dois caminhos separados: siga só o que você precisa.
+**Quando usar:** você vende algo que não é da Maxi (queijo ralado, um molho seu), ou quer parar de vender um produto. São dois caminhos: siga só o que você precisa.
 
 **Caminho A — cadastrar produto próprio**
-1. Toque em **Estoque** e em **Adicionar Produto**.
-   - Imagem: topo da aba Estoque. Seta vermelha em **Adicionar Produto**.
-2. Preencha **Nome do Produto**, custo, preço de venda e quantidade.
-   - Imagem: formulário de produto novo. Círculo em **Nome do Produto**.
-3. Toque em **Salvar**. Aparece "Produto adicionado ao estoque." Pronto, não precisa fazer mais nada.
-   - Imagem: fim do formulário. Seta em **Salvar**.
+1. Toque em **Estoque** e em **Adicionar**, no alto da lista.
+   - Imagem: alto da aba Estoque. Seta em **Adicionar**.
+2. Preencha **Nome do Produto**, a quantidade, o custo e o preço de venda.
+   - Imagem: formulário "Adicionar Produto". Círculo em **Nome do Produto**.
+3. Toque em **Adicionar**, no fim do formulário. Aparece "Produto adicionado ao estoque." Pronto.
+   - Imagem: fim do formulário. Seta em **Adicionar**.
 
-**Caminho B — ocultar um produto que já existe**
-4. Toque no produto (próprio ou da Maxi) e em **Ocultar do catálogo**.
-   - Imagem: produto aberto. Círculo vermelho em **Ocultar do catálogo**.
-5. Confira: o produto oculto continua na lista do Estoque, mas com o nome apagado (cinza claro), para você lembrar que ele está oculto. Ele só some das ofertas do robô e da **+ Nova venda**.
-   - Imagem: lista com um produto apagado. Seta nele. `[conferir visual exato do oculto na tela nova]`
+**Caminho B — ocultar um produto**
+4. No cartão do produto, toque no botão do olho riscado (**Ocultar do catálogo**). Aparece "Produto oculto".
+   - Imagem: cartão do produto. Círculo no botão do olho riscado.
+5. O produto sai da lista e vai para o fim da tela, em "produtos ocultos". Para voltar a vender, toque ali e em **Reativar**.
+   - Imagem: fim da lista, "produtos ocultos" aberto. Seta em **Reativar**.
 
-**Deu certo quando:** o produto próprio aparece na lista e na **+ Nova venda**; o oculto continua na lista do Estoque (apagado), mas não aparece mais nas ofertas do robô.
+**Deu certo quando:** o produto próprio aparece na lista e na venda nova; o oculto aparece só em "produtos ocultos" e o robô não oferece mais.
 
-**Dica:** oculto é diferente de zerado. Oculto: o robô não oferece, mesmo que tenha estoque. Zerado (quantidade 0): o robô continua oferecendo, mas avisa que está em falta no momento.
+**Dica:** oculto é diferente de zerado. Oculto: o robô não oferece, mesmo com estoque. Zerado (quantidade 0): o robô avisa que está em falta no momento.
 
-**Erro comum:** procurar o produto próprio em **Pedir à fábrica**. Ele não aparece lá: o pedido à fábrica só tem os produtos da Maxi.
+**Erro comum:** procurar o produto próprio no pedido à fábrica. Ele não aparece lá: o pedido à fábrica só tem os produtos da Maxi.
 
 **Se não resolver:** sumiu um produto da Maxi do seu pedido? Falar com a Maxi (guia 31) para recolocar.
 
 ---
 
 ## 14. Fazer pedido à fábrica
-`slug: pedido-fabrica` (alias `estoque`) · **Onde começa:** Estoque › aba **Pedir à fábrica** · **Tempo:** 5 a 10 minutos
-> Fotos feitas (S21.1, 28/09/2026): `pedido-fabrica-1.webp`..`pedido-fabrica-6.webp` (tela real é a aba **Reposição** de Gestão, não uma aba "Pedir à fábrica" separada — ver nota no relatório da sessão). Ligadas em `guiasAjuda.js`.
+`slug: pedido-fabrica` · **Onde começa:** Estoque › aba **Reposição** · **Tempo:** 5 a 10 minutos
+> Fotos (S21.1): `pedido-fabrica-1.webp`..`pedido-fabrica-6.webp`, uma por passo.
 
 **Quando usar:** repor o freezer com os produtos da Maxi.
 
 **Passos**
-1. Toque em **Estoque** e na aba **Pedir à fábrica**. A lista já vem com uma sugestão pronta.
-   - Imagem: aba **Pedir à fábrica**. Seta vermelha no nome da aba, no topo. `[tela nova]`
-2. Ajuste cada produto com **−** e **+**.
-   - Imagem: um produto da lista. Círculo nos botões **−** e **+**. `[tela nova]`
-3. Confira o total, o peso e o **frete estimado**, no fim da lista.
-   - Imagem: rodapé do pedido. Círculo no frete estimado. `[tela nova]`
-4. Toque em **Enviar pedido à fábrica**. Aparece a confirmação de pedido enviado.
-   - Imagem: rodapé. Seta vermelha em **Enviar pedido à fábrica**. `[tela nova]`
-5. Acompanhe no cartão do pedido a caminho, no topo da aba.
-   - Imagem: cartão do pedido a caminho. Círculo no cartão. `[tela nova]`
+1. Toque em **Estoque** e na aba **Reposição**, no alto.
+   - Imagem: abas no alto. Seta em **Reposição**. (existe: `pedido-fabrica-1.webp`)
+2. Toque em **Novo Pedido**. Ou, no quadro **Acabando**, toque em **Repor** no produto (ou em **Repor todos**): a lista já vem com o que está acabando.
+   - Imagem: botão **Novo Pedido**. (existe: `pedido-fabrica-2.webp`)
+3. Digite a quantidade de cada produto. Para a conta pronta, toque em **Usar sugestão** e depois ajuste o que quiser.
+   - Imagem: produtos com o campo Quantidade. (existe: `pedido-fabrica-3.webp`)
+4. Confira no fim: **Produtos**, **Frete estimado** e **Total estimado**.
+   - Imagem: rodapé do pedido. (existe: `pedido-fabrica-4.webp`)
+5. Toque em **Enviar Pedido**. Espere a mensagem "Pedido enviado com sucesso!".
+   - Imagem: botão **Enviar Pedido**. (existe: `pedido-fabrica-5.webp`)
+6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira (guia 16).
+   - Imagem: histórico com um pedido. (existe: `pedido-fabrica-6.webp`)
 
-**Deu certo quando:** o cartão do pedido aparece no topo da aba **Pedir à fábrica**.
+**Deu certo quando:** o pedido aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** a sugestão olha o que você vendeu nas últimas semanas. No primeiro pedido, a lista vem com o pedido modelo da Maxi. Os pedidos fecham no domingo; a Maxi avisa a data de entrega.
+**Dica:** o frete é estimado: 10% do pedido, entre R$ 250 e R$ 350. A Maxi confirma o valor. No primeiro pedido, a lista já vem com o pedido modelo da Maxi.
 
-**Erro comum:** enviar sem conferir as quantidades da sugestão. Ela é um ponto de partida: mude o que precisar antes de enviar. Enviou errado? Fale com a Maxi logo (guia 31).
+**Erro comum:** enviar sem conferir as quantidades. A sugestão é um ponto de partida: mude o que precisar antes de enviar. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 15. Imprimir o pedido
-`slug: imprimir-pedido` · **Onde começa:** Estoque › **Pedir à fábrica** › cartão do pedido · **Tempo:** 2 minutos
+`slug: imprimir-pedido` · **Onde começa:** Estoque › aba **Reposição** › Histórico de Pedidos · **Tempo:** 2 minutos
 
-**Quando usar:** ter o pedido no papel para controle ou para conferir a mercadoria quando chegar.
+**Quando usar:** ter o pedido no papel para conferir a mercadoria quando chegar, ou para o seu controle.
 
 **Passos**
-1. Em **Pedir à fábrica**, toque no cartão do pedido.
-   - Imagem: cartão do pedido. Seta no cartão. `[tela nova]`
-2. Toque em **Imprimir pedido**. Aparecem duas opções.
-   - Imagem: cartão aberto. Círculo vermelho em **Imprimir pedido**. `[tela nova]`
-3. Escolha **só quantidades** (para conferir a chegada) ou **com valores** (para seu controle).
-   - Imagem: as duas opções. Seta em "só quantidades". `[tela nova]` `[conferir rótulos exatos]`
-4. Na janela de impressão, escolha a impressora e imprima (ou salve em PDF).
-   - Imagem: janela de impressão. Círculo no nome da impressora.
+1. Em **Reposição**, desça até **Histórico de Pedidos** e toque no pedido. Ele se abre com os produtos.
+   - Imagem: histórico. Seta num pedido.
+2. Toque em **Imprimir pedido**, embaixo dos produtos. Aparecem duas opções.
+   - Imagem: pedido aberto. Círculo em **Imprimir pedido**.
+3. Escolha **Só quantidades** (sem valores, para quem recebe conferir) ou **Com valores** (preços e total, para o seu controle).
+   - Imagem: as duas opções. Seta em **Só quantidades**.
+4. O app baixa o pedido em PDF. Abra o arquivo e imprima.
+   - Imagem: aviso de download do PDF. Círculo no nome do arquivo.
 
-**Deu certo quando:** o papel sai com a lista de produtos e as quantidades, e uma coluna em branco para marcar o que chegou.
+**Deu certo quando:** o papel sai com a lista de produtos, as quantidades e um espaço para marcar o que chegou.
 
-**Dica:** imprima "só quantidades" antes da entrega e deixe perto do freezer. Assim quem recebe confere sem ver valores.
+**Dica:** imprima **Só quantidades** antes da entrega e deixe perto do freezer. Assim quem recebe confere sem ver valores.
 
-**Erro comum:** o PDF abre mas não imprime no celular. Use o botão de compartilhar do celular e escolha a impressora, ou mande o PDF para o seu WhatsApp e imprima no computador.
+**Erro comum:** o PDF abre, mas não imprime no celular. Use o compartilhar do celular e escolha a impressora, ou mande o PDF para o seu WhatsApp e imprima no computador.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 16. Conferir o pedido quando chegar
-`slug: conferir-chegada` · **Onde começa:** Estoque › **Pedir à fábrica** › cartão do pedido a caminho · **Tempo:** 10 minutos
+`slug: conferir-chegada` · **Onde começa:** Início › "Seu pedido chegou: toque para conferir" (ou Estoque › aba **Reposição**, no alto) · **Tempo:** 10 minutos
 
 **Quando usar:** a mercadoria chegou e você precisa conferir antes de pôr no freezer.
 
 **Passos**
 1. Confira as caixas com o papel do pedido (guia 15): quantidades, embalagem e se está congelado.
-   - Imagem: sem recorte do app. Pode ser foto do papel impresso com marcações.
-2. Abra o cartão do pedido a caminho, em **Pedir à fábrica**.
-   - Imagem: cartão do pedido a caminho. Seta no cartão. `[tela nova]`
-3. Veio tudo? Toque em **Recebi tudo certo**. O estoque sobe sozinho.
-   - Imagem: cartão aberto. Seta vermelha em **Recebi tudo certo**. `[tela nova]`
-4. Faltou algo? Toque em **Faltou algo** e marque o que não veio.
-   - Imagem: tela do "Faltou algo". Círculo em um produto marcado. `[tela nova]` `[decisão Nelson: o que acontece com o valor cobrado]`
-5. Toque em enviar `[conferir rótulo]`. A Maxi é avisada.
-   - Imagem: fim da tela. Seta no botão de enviar. `[tela nova]`
+   - Imagem: sem recorte do app (foto do papel com marcações).
+2. Toque em **Seu pedido chegou: toque para conferir**, na Início. Abre o quadro "Seu pedido chegou. Confira!", no alto da Reposição.
+   - Imagem: quadro "Seu pedido chegou. Confira!". Seta no quadro.
+3. **Só se veio tudo:** toque em **Recebi tudo certo** e depois em **Sim, chegou tudo**. O estoque sobe sozinho. Pronto, pare aqui.
+   - Imagem: quadro com os dois botões. Seta em **Recebi tudo certo**.
+4. **Só se faltou algo (em vez do passo 3):** toque em **Faltou algo**. Em cada produto que faltou, use o **−** até ficar o que chegou de verdade.
+   - Imagem: produtos com − e +. Círculo num produto com "faltou 2".
+5. Confira "Chegou R$ X de R$ Y" e toque em **Confirmar o que chegou**. A Maxi é avisada do que faltou.
+   - Imagem: fim do quadro. Seta em **Confirmar o que chegou**.
 
-**Deu certo quando:** o pedido aparece como entregue e as quantidades do Estoque subiram.
+**Deu certo quando:** aparece "Pronto!" e o estoque subiu com o que chegou.
 
-**Dica:** você paga o pedido depois de conferir, pelo Pix. Produto amassado ou descongelado: tire foto na hora.
+**Dica:** faltou item? O pedido passa a valer o que chegou, e você paga esse valor corrigido. O frete continua o mesmo que foi cobrado. Produto amassado ou descongelado: tire foto na hora.
 
-**Erro comum:** tocar em **Recebi tudo certo** antes de conferir. Confira primeiro; se já tocou e faltou algo, fale com a Maxi com a foto (guia 31).
+**Erro comum:** esquecer de conferir. O quadro mostra até quando conferir: 48 horas depois da entrega. Passou disso, o pedido conta como recebido completo. Faltou algo e já passou? Fale com a Maxi com a foto (guia 31).
 
 **Se não resolver:** Falar com a Maxi (guia 31), com fotos do que veio errado.
 
 ---
 
-## 17. Repetir um pedido
-`slug: repetir-pedido` · **Onde começa:** Estoque › **Pedir à fábrica** · **Tempo:** 3 minutos
+## 17. Repetir o último pedido
+`slug: repetir-pedido` · **Onde começa:** Estoque › aba **Reposição** · **Tempo:** 3 minutos
 
 **Quando usar:** você quer pedir igual ao último pedido.
 
 **Passos**
-1. Em **Pedir à fábrica**, ache o último pedido.
-   - Imagem: lista de pedidos anteriores. Seta no último pedido. `[tela nova]`
-2. Toque em **Repetir**. A lista se enche com as mesmas quantidades.
-   - Imagem: cartão do pedido. Círculo vermelho em **Repetir**. `[tela nova]`
-3. Ajuste com **−** e **+** o que mudou.
-   - Imagem: lista preenchida. Círculo em **−** e **+**.
-4. Toque em **Enviar pedido à fábrica**. Aparece a confirmação.
-   - Imagem: rodapé. Seta vermelha em **Enviar pedido à fábrica**.
+1. Toque em **Estoque** e na aba **Reposição**.
+   - Imagem: abas no alto. Seta em **Reposição**.
+2. Toque em **Repetir último**, ao lado de Novo Pedido. Abre "Repetir Pedido" com as mesmas quantidades.
+   - Imagem: botões do alto. Círculo em **Repetir último**.
+3. Mude a quantidade do que precisar.
+   - Imagem: lista preenchida. Círculo num campo Quantidade.
+4. Toque em **Enviar Pedido**. Aparece "Pedido enviado com sucesso!".
+   - Imagem: rodapé. Seta em **Enviar Pedido**.
 
-**Deu certo quando:** o pedido novo aparece no cartão do pedido a caminho.
+**Deu certo quando:** o pedido novo aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** compare com a sugestão pronta. Ela olha o que você vendeu de verdade, o último pedido não.
+**Dica:** compare com **Usar sugestão**. A sugestão olha o que você vendeu de verdade; o último pedido, não.
 
 **Erro comum:** repetir um pedido grande num mês fraco e ficar com o freezer cheio. Olhe o Estoque antes.
 
@@ -555,139 +554,141 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 # DINHEIRO
 
 ## 18. Ver quanto sobrou no mês
-`slug: resultado` · **Onde começa:** Mais › Resultado do mês · **Tempo:** 3 a 5 minutos
-> Fotos feitas (S21.1, 28/09/2026): `resultado-1.webp`..`resultado-5.webp`, tela real ResultadoV2 (aba Resultado de Gestão). `resultado-4` destaca "Para onde foi" (a tela não tem mais um bloco separado "Despesas do mês" — ver nota no relatório). Ligadas em `guiasAjuda.js`.
+`slug: resultado` · **Onde começa:** Mais › Gestão (abre na aba **Resultado**) · **Tempo:** 3 a 5 minutos
+> Fotos (S21.1): `resultado-1.webp`..`resultado-5.webp`, uma por passo.
 
 **Quando usar:** saber se o mês deu resultado e para onde foi o dinheiro.
 
 **Passos**
-1. Toque em **Mais** e em **Resultado do mês**.
-   - Imagem: lista do Mais. Seta vermelha em **Resultado do mês**.
+1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**. (Na Início, o atalho **Resultado do mês** leva ao mesmo lugar.)
+   - Imagem: aba **Resultado**. (existe: `resultado-1.webp`)
 2. Escolha o mês com as setas ao lado do nome do mês.
-   - Imagem: topo da tela. Círculo nas setas ◀ ▶.
-3. Leia o número grande **Sobrou no mês**.
-   - Imagem: topo do Resultado. Seta vermelha no **Sobrou no mês**. `[tela nova]`
-4. Veja **Entrou × Saiu**, logo abaixo.
-   - Imagem: bloco Entrou × Saiu. Círculo no bloco. `[tela nova]`
-5. Role para ver **De onde veio**, **Para onde foi**, **Mais vendidos** e **O que mudou**.
-   - Imagem: meio da tela. Setas nos títulos **Para onde foi** e **O que mudou**. `[tela nova]`
-6. No fim, veja **Quanto sobrou por mês**, para comparar com os meses anteriores.
-   - Imagem: gráfico de barras. Círculo na barra do mês atual. `[tela nova]`
+   - Imagem: setas do mês. (existe: `resultado-2.webp`)
+3. Leia o número grande **Sobrou em (mês)**. Logo abaixo, as barras **Entrou** e **Saiu**.
+   - Imagem: topo do Resultado. (existe: `resultado-3.webp`)
+4. Role para ver **De onde veio**, **Para onde foi** e **Mais vendidos**. Mais abaixo: **O que mudou**, **Quanto sobrou por mês** e **Gastos do mês**.
+   - Imagem: bloco **Para onde foi**. (existe: `resultado-4.webp`)
+5. Para ter o mês numa folha, toque em **Baixar relatório do mês (PDF)** (guia 20).
+   - Imagem: botão do relatório. (existe: `resultado-5.webp`)
 
 **Deu certo quando:** você sabe quanto entrou, quanto saiu e quanto sobrou no mês.
 
-**Dica:** "Sobrou no mês" = o que entrou com as vendas (com frete, menos desconto) menos a taxa de cartão que a unidade pagou e os gastos lançados. Não é o dinheiro que está no seu banco agora: é a conta do app, que pode estar à frente ou atrás do banco (por exemplo, venda "A receber" já conta aqui mesmo sem o dinheiro ter caído ainda).
+**Dica:** "Sobrou" = o que entrou com as vendas (com frete, menos desconto) menos a taxa de cartão que a unidade pagou e os gastos lançados. Não é o saldo do seu banco: venda "A receber" já conta aqui, e gasto que você ainda não lançou ainda não foi descontado.
 
-**Erro comum:** o número parece alto demais porque faltam gastos (gás, sacolas, aluguel). Lance os gastos (guia 19) para o número ficar mais próximo da realidade. Já o pedido à fábrica entregue, a verba de anúncio confirmada e a mensalidade paga entram como gasto sozinhos, sem você lançar — só os gastos do dia a dia (guia 19) dependem de você.
+**Erro comum:** o número parece alto demais porque faltam gastos (gás, sacolas, aluguel). Lance os gastos (guia 19). O pedido à fábrica, a verba confirmada e a mensalidade paga entram sozinhos.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 19. Lançar um gasto
-`slug: lancar-gasto` · **Onde começa:** Mais › Resultado do mês › **+ Registrar gasto** · **Tempo:** 1 a 2 minutos
+`slug: lancar-gasto` · **Onde começa:** Mais › Gestão (aba Resultado) › **Registrar gasto** · **Tempo:** 1 a 2 minutos
 
 **Quando usar:** você pagou algo da unidade: sacolas, gás, entregador, aluguel, embalagem.
 
 **Passos**
-1. Toque em **Mais** e em **Resultado do mês**.
-   - Imagem: lista do Mais. Seta em **Resultado do mês**.
-2. Toque em **+ Registrar gasto**. Abre o formulário.
-   - Imagem: tela do Resultado. Seta vermelha em **+ Registrar gasto**. `[tela nova]`
-3. Escolha o tipo do gasto (por exemplo, embalagem ou transporte).
-   - Imagem: lista de tipos. Círculo em um tipo.
-4. Digite o valor e confira a data.
+1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**.
+   - Imagem: lista do Mais. Seta em **Gestão**.
+2. Role até **Gastos do mês** e toque em **Registrar gasto**. Escolha **Um gasto do dia a dia**.
+   - Imagem: janela "Registrar gasto". Seta em **Um gasto do dia a dia**.
+3. Em **Categoria**, escolha o tipo (por exemplo, Embalagem ou Transporte).
+   - Imagem: lista de categorias. Círculo numa categoria.
+4. Escreva a **Descrição**, o **Valor (R$)** e confira a **Data**.
    - Imagem: formulário. Círculo no valor.
-5. Toque em **Salvar**. O gasto aparece em **Para onde foi** e o "Sobrou no mês" diminui.
-   - Imagem: fim do formulário. Seta em **Salvar**.
+5. Toque em **Lançar despesa**. O gasto aparece em **Gastos do mês** e o "Sobrou" diminui.
+   - Imagem: fim do formulário. Seta em **Lançar despesa**.
 
-**Deu certo quando:** o gasto aparece na lista do mês e o "Sobrou no mês" mudou.
+**Deu certo quando:** aparece "Despesa lançada!", o gasto está em **Gastos do mês** e o "Sobrou" mudou.
 
-**Dica:** lance o gasto no dia em que pagou. No fim do mês fica difícil lembrar.
+**Dica:** lance o gasto no dia em que pagou. Comprou produto para revender fora da fábrica? No passo 2, escolha **Produto comprado fora da fábrica**: ele entra no estoque e vira gasto junto.
 
-**Erro comum:** lançar à mão o pedido à fábrica, a verba do anúncio ou a mensalidade. Esses entram sozinhos. Lançar de novo conta em dobro. Se já lançou, apague o repetido na lista **Para onde foi** `[conferir como excluir gasto na tela nova]`.
+**Erro comum:** lançar à mão o pedido à fábrica, a verba do anúncio ou a mensalidade. Esses entram sozinhos; lançar de novo conta em dobro. Para apagar o repetido, toque na lixeira ao lado dele, em **Gastos do mês**, e em **Excluir**.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 20. Baixar o relatório do mês
-`slug: relatorio-mes` · **Onde começa:** Mais › Resultado do mês · **Tempo:** 1 minuto
+`slug: relatorio-mes` · **Onde começa:** Mais › Gestão (aba Resultado) · **Tempo:** 1 minuto
 
 **Quando usar:** ter o resumo do mês numa folha, para consultar ou mostrar a alguém.
 
 **Passos**
-1. Toque em **Mais** e em **Resultado do mês**.
-   - Imagem: lista do Mais. Seta em **Resultado do mês**.
+1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**.
+   - Imagem: lista do Mais. Seta em **Gestão**.
 2. Escolha o mês com as setas.
-   - Imagem: topo da tela. Círculo nas setas ◀ ▶.
-3. Toque em **Baixar relatório do mês (PDF)**. O arquivo é baixado.
-   - Imagem: tela do Resultado. Seta vermelha em **Baixar relatório do mês (PDF)**.
+   - Imagem: setas do mês. Círculo nas setas ◀ ▶.
+3. Toque em **Baixar relatório do mês (PDF)**, logo abaixo das barras Entrou e Saiu. Aparece "Relatório baixado!".
+   - Imagem: botão **Baixar relatório do mês (PDF)**. Seta no botão.
 4. Abra o PDF pelo aviso de download.
    - Imagem: página do PDF (unidade fictícia). Círculo nos três meses lado a lado.
 
 **Deu certo quando:** abre um PDF de 1 página com 3 meses lado a lado, os mais vendidos e o anúncio.
 
-**Dica:** para mandar a alguém, abra o PDF e use o botão de compartilhar do celular.
+**Dica:** para mandar a alguém, abra o PDF e use o compartilhar do celular.
 
-**Erro comum:** o relatório sai com o mês errado. Escolha o mês antes de tocar no botão. Se aparecer aviso de que o anúncio não carregou, o resto do relatório está certo; tente de novo mais tarde.
+**Erro comum:** o relatório sai com o mês errado. Escolha o mês antes de tocar no botão. Se o PDF avisar que o anúncio não carregou, o resto está certo; tente de novo mais tarde.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
-## 21. Pagar a Equipe Digital Maxi
-`slug: pagar-equipe-digital` · **Onde começa:** Mais › Pagamentos · **Tempo:** 3 minutos
-> Fotos feitas (S21.1, 28/09/2026): `pagamentos-2.webp`, `pagamentos-3.webp`, `pagamentos-4.webp`, `pagamentos-7.webp` (guia vive no app como `guiasAjuda.js` slug `pagamentos`, alias `pagar-equipe-digital`). Sem foto: passo 1 (abrir Mais › Pagamentos — teria que fotografar o Sheet "Mais"), passo 5 (boleto) e passo 6 (Atualizar cobrança) — o mock do harness não tem esses estados; ver relatório da sessão.
+## 21. Pagar a mensalidade da Equipe Digital Maxi
+`slug: pagamentos` (aliases `mensalidade`, `pagar-equipe-digital`) · **Onde começa:** Mais › Pagamentos · **Tempo:** 3 minutos
+> Fotos (S21.1): `pagamentos-2`, `-3`, `-4`, `-7.webp`. Faltam os passos 1, 5 e 6 (S24.2).
 
 **Quando usar:** pagar a mensalidade de R$ 150 (gestão dos anúncios, painel, robô e artes).
 
 **Passos**
 1. Toque em **Mais** e em **Pagamentos**.
-   - Imagem: lista do Mais. Seta vermelha em **Pagamentos**. `[tela nova]`
-2. No quadro **Equipe Digital Maxi**, confira o valor e o vencimento.
-   - Imagem: quadro Equipe Digital Maxi. Círculo no valor R$ 150 e no vencimento. `[tela nova]`
-3. Para Pix, toque em **Copiar código Pix**. Abra o app do seu banco, vá em "Pix Copia e Cola" (ou "Pagar com Pix") e cole o código lá. Se preferir, abra a câmera do banco em outro celular e aponte para o QR Code que aparece na tela.
-   - Imagem: quadro com o QR. Seta vermelha em **Copiar código Pix**. `[tela nova]`
-4. Prefere boleto? Toque em **Baixar boleto**. O PDF é baixado no celular; abra-o e pague pelo app do banco (ler o código de barras) ou impresso, no caixa.
-   - Imagem: mesmo quadro. Círculo em **Baixar boleto**. `[tela nova]`
-5. Depois de pagar, toque em **Já paguei**. O app confere se o pagamento chegou.
-   - Imagem: mesmo quadro. Seta em **Já paguei**. `[tela nova]`
+   - Imagem: lista do Mais. Seta em **Pagamentos**.
+2. Veja o quadro **Equipe Digital Maxi**. Em aberto, mostra o valor e o vencimento. Vencida, mostra "Regularize para evitar bloqueio". Paga, mostra Pago.
+   - Imagem: quadro da mensalidade. (existe: `pagamentos-2.webp`)
+3. Toque em **Pagar →** (ou **Regularizar**, se já venceu). Abre a cobrança com as formas de pagar.
+   - Imagem: cobrança aberta. (existe: `pagamentos-3.webp`)
+4. Para Pix, toque em **Copiar código PIX** e cole no app do banco, em "Pix Copia e Cola". Ou leia o QR Code com o celular do banco.
+   - Imagem: QR e botão. (existe: `pagamentos-4.webp`)
+5. Prefere boleto? Toque em **Abrir boleto bancário** e pague pelo app do banco ou impresso.
+   - Imagem: cobrança com boleto. Seta em **Abrir boleto bancário**.
+6. Não apareceu o QR Code nem o código Pix? Toque em **Atualizar cobrança**.
+   - Imagem: cobrança sem QR. Seta em **Atualizar cobrança**.
+7. Depois de pagar, toque em **Já paguei, verificar agora**. Pago, o quadro fica verde.
+   - Imagem: botão de verificar. (existe: `pagamentos-7.webp`)
 
-**Deu certo quando:** o quadro mostra a mensalidade como paga.
+**Deu certo quando:** o quadro mostra Pago e aparece "Mensalidade em dia.".
 
-**Dica:** Pix costuma aparecer em poucos minutos. Boleto leva o tempo do banco. A verba do anúncio é à parte, no quadro de baixo (guia 22).
+**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 22).
 
-**Erro comum:** deixar vencer. No 1º e no 2º dia de atraso, o app avisa com uma faixa vermelha, mas você continua usando normalmente — dá para pagar, trocar de unidade e lançar venda sem travar em nada. A partir do 3º dia de atraso, o app trava numa tela só de pagamento; mesmo travada, você ainda consegue pagar, trocar de unidade pelo seletor da própria tela e ir em "Lançar uma venda agora" (a venda continua contando, só o resto do app é que fica bloqueado até o pagamento cair) (`subscriptionStatus.js`, decisão do Nelson, 27-28/09/2026).
+**Erro comum:** deixar vencer. No 1º e no 2º dia de atraso aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; mesmo assim dá para pagar, trocar de unidade e lançar venda.
 
-**Se não resolver:** pagou e continua bloqueado? Toque em **Já paguei** de novo. Se seguir, Falar com a Maxi com o comprovante (guia 31).
+**Se não resolver:** pagou e continua em aberto? Não pague de novo. Toque em **Já paguei, verificar agora** mais uma vez. Se seguir em aberto, Falar com a Maxi com o comprovante (guia 31).
 
 ---
 
 ## 22. Registrar a verba do anúncio
-`slug: verba-marketing` · **Onde começa:** Mais › Pagamentos (quadro da verba do anúncio) · **Tempo:** 5 minutos
+`slug: verba-marketing` · **Onde começa:** Mais › Marketing › quadro "Investimento em Marketing" · **Tempo:** 5 minutos
 
 **Quando usar:** todo mês, quando você paga o dinheiro dos anúncios da sua unidade.
 
 **Passos**
-1. Toque em **Mais** e em **Pagamentos**. Role até o quadro da verba do anúncio.
-   - Imagem: tela Pagamentos. Seta vermelha no quadro da verba. `[tela nova]`
-2. Confira o mês no título do quadro. Nos últimos 5 dias do mês, ele já mostra o mês seguinte: mesmo assim dá para pagar o mês atual normalmente, o quadro só está adiantado.
-   - Imagem: título do quadro. Círculo no nome do mês. `[tela nova]`
-3. Faça o Pix no CNPJ da Maxi: **00.494.317/0001-21**. O mínimo é R$ 200.
-   - Imagem: quadro com a chave Pix. Seta no CNPJ e no botão de copiar `[conferir se há botão de copiar]`. `[tela nova]`
-4. Digite o valor que você pagou.
-   - Imagem: campo do valor. Círculo no campo. `[tela nova]`
-5. Toque em **Anexar** e escolha o comprovante do Pix na galeria do celular (foto da tela do banco) ou nos arquivos (se for PDF).
-   - Imagem: botão de anexar aberto, com a galeria do celular. Seta no botão. `[tela nova]`
-6. Toque em **Registrar verba**. O registro fica aguardando a conferência da Maxi.
-   - Imagem: fim do quadro. Seta vermelha em **Registrar verba**. `[tela nova]`
+1. Toque em **Mais** e em **Marketing**. Logo abaixo da arte do mês está o quadro **Investimento em Marketing**. (Em Pagamentos, a linha "Investimento Marketing" leva ao mesmo quadro.)
+   - Imagem: tela Marketing. Seta no quadro **Investimento em Marketing**.
+2. Confira o mês no seletor, ao lado do título. Nos últimos 5 dias do mês, ele já abre no mês seguinte; troque se precisar.
+   - Imagem: seletor do mês. Círculo no mês.
+3. Toque em **Copiar**, ao lado da chave Pix (CNPJ 00.494.317/0001-21), e faça o Pix no app do seu banco. O mínimo é R$ 200.
+   - Imagem: linha da chave Pix. Seta em **Copiar**.
+4. Digite em **Valor que você pagou** o valor do Pix.
+   - Imagem: campo do valor. Círculo no campo.
+5. Toque em **Anexar** e escolha o comprovante do Pix (foto da tela do banco ou PDF).
+   - Imagem: caixa **Anexar**. Seta na caixa.
+6. Toque em **Registrar Pagamento**. O registro fica **Aguardando** até a Maxi conferir.
+   - Imagem: fim do quadro. Seta em **Registrar Pagamento**.
 
-**Deu certo quando:** o quadro mostra a verba do mês como registrada, aguardando conferência. Depois muda para confirmada.
+**Deu certo quando:** o quadro mostra o valor com **Aguardando**. Depois muda para **Confirmado**.
 
-**Dica:** do valor pago, 14% ficam em impostos e taxas: de R$ 200, R$ 172 vão para o anúncio. A verba é à parte da mensalidade (sem fundo de marketing). Confirmada quer dizer que a Maxi conferiu o pagamento; a campanha entra no ar depois.
+**Dica:** do valor pago, 14% ficam em impostos e taxas: de R$ 200, R$ 172 vão para o anúncio. A verba é à parte da mensalidade (sem fundo de marketing). Confirmado quer dizer que a Maxi conferiu; a campanha entra no ar depois.
 
-**Erro comum:** achar que registrar no app faz o Pix. Não faz: o Pix é no seu banco. Sem o comprovante agora? Dá para registrar e anexar depois.
+**Erro comum:** achar que registrar no app faz o Pix. Não faz: o Pix é no seu banco. Sem o comprovante agora? Toque em **Registrar sem comprovante** e anexe depois, em **Anexar comprovante**.
 
 **Se não resolver:** Falar com a Maxi (guia 31), com o comprovante.
 
@@ -701,16 +702,16 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** pegar as artes prontas do mês para postar no Instagram e no Facebook da unidade.
 
 **Passos**
-1. Toque em **Mais** e em **Marketing**.
-   - Imagem: lista do Mais. Seta vermelha em **Marketing**.
-2. Escolha o mês no filtro **Mês**. Os botões de cima filtram por tipo: Imagens, Vídeos, PDFs e Links.
-   - Imagem: topo dos materiais. Círculo no filtro **Mês**.
-3. Se a arte tem legenda, toque em **Copiar legenda** ANTES de baixar a imagem. O texto fica guardado no celular, pronto para colar depois.
+1. Toque em **Mais** e em **Marketing**. No alto aparece a **Arte do mês**.
+   - Imagem: lista do Mais. Seta em **Marketing**.
+2. Para ver as outras, desça até os materiais e escolha o mês em **Mês**. Os botões de cima filtram por tipo: Imagens, Vídeos, PDFs e Links.
+   - Imagem: filtros dos materiais. Círculo em **Mês**.
+3. Se a arte tem legenda, toque em **Copiar legenda** ANTES de baixar a imagem. Aparece "Legenda copiada!".
    - Imagem: cartão da arte. Seta em **Copiar legenda**.
-4. Toque em **Baixar** na mesma arte. Uma tela nova abre só com a imagem, maior.
-   - Imagem: cartão de uma arte. Seta vermelha em **Baixar**.
-5. Nessa tela, toque e segure o dedo em cima da imagem. Aparece um menu do próprio celular: escolha "Salvar imagem" (ou "Baixar imagem"). Depois, use o botão de voltar do celular para retornar ao Marketing e repetir para as próximas artes.
-   - Imagem: imagem aberta com o menu do celular. Círculo em "Salvar imagem" (ou "Baixar imagem").
+4. Toque em **Baixar** na mesma arte. Abre uma tela nova só com a imagem.
+   - Imagem: cartão da arte. Seta em **Baixar**.
+5. Toque e segure o dedo na imagem e escolha "Salvar imagem" (ou "Baixar imagem"). Depois, volte ao app pelo botão de voltar do celular.
+   - Imagem: imagem aberta com o menu do celular. Círculo em "Salvar imagem".
 
 **Deu certo quando:** a arte está na galeria do celular e a legenda está copiada, pronta para colar.
 
@@ -727,27 +728,27 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Quando usar:** deixar as postagens do mês programadas de uma vez, no Instagram e no Facebook da unidade.
 
-> `[conferir]` Os rótulos do Meta mudam com frequência. Tirar os prints da versão atual antes de publicar e ajustar os nomes (Planejador × Planner, Criar publicação, Agendar).
+> Este guia é sobre um app de fora (Meta). Os nomes das telas do Meta mudam de vez em quando; o texto usa os nomes gerais. As fotos, se houver, são tiradas da versão do dia.
 
 **Passos**
 1. Baixe as artes e copie as legendas (guia 23).
-   - Imagem: sem recorte novo (reusar a imagem do guia 23).
+   - Imagem: sem recorte novo (reusar a do guia 23).
 2. Abra o **Meta Business Suite** e entre na página da unidade.
-   - Imagem: tela inicial do Meta Business Suite. Círculo no nome da página da unidade.
-3. Toque em **Planejador**. Abre o calendário do mês.
-   - Imagem: menu do Meta Business Suite. Seta vermelha em **Planejador**.
-4. Toque em **Criar publicação** e marque Facebook e Instagram.
-   - Imagem: tela de criar publicação. Círculo nas duas marcações (Facebook e Instagram).
+   - Imagem: tela inicial do Meta Business Suite. Círculo no nome da página.
+3. Abra o **Planejador** (em alguns aparelhos aparece como "Planner"). Abre o calendário do mês.
+   - Imagem: menu do Meta Business Suite. Seta no Planejador.
+4. Comece uma publicação nova e marque o Facebook e o Instagram da unidade.
+   - Imagem: tela de publicação. Círculo nas duas marcações.
 5. Adicione a foto e cole a legenda.
-   - Imagem: mesma tela. Seta em "Adicionar foto" e no campo do texto.
-6. Toque na setinha ao lado de **Publicar**, escolha **Agendar** e a data e hora.
-   - Imagem: opções de publicação. Seta vermelha em **Agendar**.
-7. Confirme em **Agendar**. A postagem aparece no calendário do Planejador.
-   - Imagem: calendário com a postagem no dia. Círculo na postagem.
+   - Imagem: mesma tela. Seta na foto e no texto.
+6. Em vez de publicar agora, escolha a opção de agendar e marque a data e a hora.
+   - Imagem: opções de publicação. Seta na opção de agendar.
+7. Confirme. A postagem aparece no calendário do Planejador.
+   - Imagem: calendário com a postagem. Círculo na postagem.
 
 **Deu certo quando:** o calendário do Planejador mostra as postagens nos dias escolhidos.
 
-**Dica:** poste em dias e horários variados, de 3 a 4 vezes por semana. Os vídeos "Planner" e "Planner Reforço" no Drive mostram o mesmo passo a passo.
+**Dica:** poste em dias e horários variados, de 3 a 4 vezes por semana. Os vídeos "Planner" e "Planner Reforço", no Drive, mostram o mesmo passo a passo.
 
 **Erro comum:** o Instagram não aparece para marcar. Ele não está ligado à página da unidade. A Maxi faz essa ligação: fale com a equipe (guia 31).
 
@@ -757,163 +758,165 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 # MEU ROBÔ
 
-## 25. Ajustar os horários do robô
-`slug: robo-horarios` · **Onde começa:** Mais › Meu robô › **Horários** · **Tempo:** 5 minutos
+> Ao tocar em **Meu robô**, o título da tela aparece como "Meu Vendedor": é a mesma tela. Ela tem 5 etapas no alto: **Sua unidade**, **Entrega e retirada**, **Pagamento**, **Vendedor** e **Como o robô responde**. Toque na etapa para ir direto a ela. Não há botão "Salvar": o botão **Próximo**, embaixo, salva o que mudou e passa para a etapa seguinte (na última, **Concluir**). Aparece "Configurações salvas com sucesso!".
 
-**Quando usar:** mudou o dia ou o horário de atender e de entregar.
+## 25. Ajustar os dias e horários de entrega
+`slug: robo-horarios` · **Onde começa:** Mais › Meu robô › etapa **Entrega e retirada** · **Tempo:** 5 minutos
+
+**Quando usar:** mudou o dia ou o horário de entregar.
 
 **Passos**
 1. Toque em **Mais** e em **Meu robô**.
-   - Imagem: lista do Mais. Seta vermelha em **Meu robô**.
-2. Toque em **Horários**.
-   - Imagem: lista do Meu robô. Círculo em **Horários**. `[tela nova]`
-3. Marque os dias em que a unidade entrega e o horário de cada faixa.
-   - Imagem: tela de horários. Círculo nos dias marcados.
-4. Se quiser, escolha **Pedidos até**: o horário limite para sair no mesmo dia.
-   - Imagem: mesma tela. Seta no campo **Pedidos até** (e no "?" ao lado).
-5. Toque em **Salvar** `[conferir rótulo]`. Aparece a confirmação.
-   - Imagem: fim da tela. Seta no botão de salvar.
+   - Imagem: lista do Mais. Seta em **Meu robô**.
+2. No alto, toque na etapa **Entrega e retirada**. Desça até **Dias, horários e taxas**.
+   - Imagem: etapas no alto. Círculo em **Entrega e retirada**.
+3. Marque os dias (Seg, Ter, Qua…) e acerte a **Janela de entrega** (das tantas às tantas).
+   - Imagem: dias marcados e janela de entrega. Círculo nos dias.
+4. Se quiser, escolha **Pedidos até**: o horário limite para o pedido sair no mesmo dia.
+   - Imagem: campo **Pedidos até** e o "?" ao lado. Seta no campo.
+5. Toque em **Próximo**, embaixo. Aparece "Configurações salvas com sucesso!".
+   - Imagem: rodapé. Seta em **Próximo**.
 
-**Deu certo quando:** a tela mostra os dias e horários novos. O robô passa a falar esses horários.
+**Deu certo quando:** a caixa **O vendedor vai dizer** mostra os dias e horários novos. O robô passa a falar esses horários.
 
-**Dica:** depois do horário de **Pedidos até**, o robô continua atendendo: anota o pedido e combina para o próximo horário de entrega.
+**Dica:** dias com horário diferente? Toque em **Adicionar dias com horário diferente**. Depois do horário de **Pedidos até**, o robô continua atendendo e combina para o próximo horário de entrega.
 
-**Erro comum:** apagar o horário para fechar um dia. Use **Remover estes dias**. Apagar o horário deixa a tela com erro e não salva.
+**Erro comum:** apagar o horário para fechar um dia. Desmarque o dia, ou toque em **Remover estes dias** no grupo que não vale mais. Apagar o horário deixa a tela com erro e não salva.
 
 **Se não resolver:** "Só funciona em outro celular"? Pode ser um rascunho antigo neste aparelho. Falar com a Maxi (guia 31).
 
 ---
 
 ## 26. Ajustar entrega, frete e retirada
-`slug: robo-entrega` · **Onde começa:** Mais › Meu robô › **Entrega e frete** (e **Retirada**) · **Tempo:** 5 a 10 minutos
+`slug: robo-entrega` · **Onde começa:** Mais › Meu robô › etapa **Entrega e retirada** · **Tempo:** 5 a 10 minutos
 
-**Quando usar:** mudar o frete, o pedido mínimo, a distância de entrega ou o endereço de retirada.
+**Quando usar:** mudar o frete, o pedido mínimo, a distância de entrega ou a retirada.
 
 **Passos**
-1. Toque em **Mais**, **Meu robô** e **Entrega e frete**.
-   - Imagem: lista do Meu robô. Seta vermelha em **Entrega e frete**. `[tela nova]`
-2. Escolha o tipo de taxa: **Valor único**, **Por distância** ou **Grátis**.
+1. Toque em **Mais**, **Meu robô** e, no alto, na etapa **Entrega e retirada**.
+   - Imagem: etapas no alto. Seta em **Entrega e retirada**.
+2. Em **Taxa**, escolha o tipo: **Valor único**, **Por distância** ou **Grátis**.
    - Imagem: botões da taxa. Círculo em **Por distância**.
-3. Preencha os valores. Em **Por distância**, cada faixa de km tem um preço.
-   - Imagem: faixas de km. Círculo em uma faixa.
-4. Se quiser, preencha o **Pedido mínimo**. Em branco = sem mínimo.
-   - Imagem: campo **Pedido mínimo**. Seta no campo e no "?".
-5. Toque em **Salvar** `[conferir rótulo]`. Aparece a confirmação.
-   - Imagem: fim da tela. Seta no botão de salvar.
-6. Para retirada, volte e toque em **Retirada**. Ligue a retirada e confira o endereço e o horário.
-   - Imagem: tela de Retirada. Círculo na chave de retirada. `[tela nova]`
+3. Preencha os valores. Em **Por distância**, cada faixa de km tem um preço; para mais uma, toque em **Adicionar faixa de km**.
+   - Imagem: faixas de km. Círculo numa faixa.
+4. Se quiser, preencha o **Pedido mínimo para entrega (R$)**. Em branco = sem mínimo.
+   - Imagem: campo do pedido mínimo e o "?". Seta no campo.
+5. Para retirada, ligue **Aceita RETIRADA?** e confira o **Endereço de retirada** e o horário.
+   - Imagem: bloco da retirada. Círculo na chave **Aceita RETIRADA?**.
+6. Toque em **Próximo**, embaixo. Aparece "Configurações salvas com sucesso!".
+   - Imagem: rodapé. Seta em **Próximo**.
 
-**Deu certo quando:** o robô cobra o frete novo. Confira com o **Testar como um cliente** (guia 30).
+**Deu certo quando:** o **Teste rápido**, no fim da etapa, mostra o frete certo (guia 30).
 
-**Dica:** o robô calcula a distância até o endereço do cliente antes de falar o frete. Por isso o endereço da unidade precisa estar certo em **Minha unidade**.
+**Dica:** o robô calcula a distância até o endereço do cliente antes de falar o frete. Por isso o endereço da unidade, na etapa **Sua unidade**, precisa estar certo.
 
-**Erro comum:** tocar em outro tipo de taxa só para olhar e salvar sem querer. Antes de salvar, confira se o tipo escolhido é o que você quer.
+**Erro comum:** tocar em outro tipo de taxa só para olhar e salvar sem querer. Antes de tocar em **Próximo**, confira se o tipo escolhido é o que você quer.
 
 **Se não resolver:** o robô fala um frete diferente do que está na tela? Falar com a Maxi (guia 31), com um print da conversa.
 
 ---
 
 ## 27. Escolher as formas de pagamento
-`slug: robo-pagamento` · **Onde começa:** Mais › Meu robô › **Formas de pagamento** · **Tempo:** 3 minutos
+`slug: robo-pagamento` · **Onde começa:** Mais › Meu robô › etapa **Pagamento** · **Tempo:** 3 minutos
 
 **Quando usar:** passou a aceitar (ou deixou de aceitar) cartão, dinheiro, Pix ou vale-refeição.
 
 **Passos**
-1. Toque em **Mais**, **Meu robô** e **Formas de pagamento**.
-   - Imagem: lista do Meu robô. Seta vermelha em **Formas de pagamento**. `[tela nova]`
-2. Em **Entrega**, marque o que você aceita na entrega.
-   - Imagem: bloco Entrega. Círculo nas opções marcadas.
-3. Em **Retirada**, marque o que você aceita na retirada.
-   - Imagem: bloco Retirada. Círculo nas opções marcadas.
-4. Confira a chave Pix da unidade.
-   - Imagem: campo da chave Pix. Seta no campo.
-5. Toque em **Salvar** `[conferir rótulo]`. Aparece a confirmação.
-   - Imagem: fim da tela. Seta no botão de salvar.
+1. Toque em **Mais**, **Meu robô** e, no alto, na etapa **Pagamento**.
+   - Imagem: etapas no alto. Seta em **Pagamento**.
+2. Na coluna **Entrega**, marque o que você aceita na entrega.
+   - Imagem: tabela das formas. Círculo na coluna **Entrega**.
+3. Na coluna **Retirada**, marque o que você aceita na retirada.
+   - Imagem: mesma tabela. Círculo na coluna **Retirada**.
+4. Confira o bloco **Pix**: **Chave Pix** e **Nome do titular**.
+   - Imagem: bloco Pix. Seta em **Chave Pix**.
+5. Toque em **Próximo**, embaixo. Aparece "Configurações salvas com sucesso!".
+   - Imagem: rodapé. Seta em **Próximo**.
 
 **Deu certo quando:** o robô oferece só as formas marcadas em cada caso.
 
-**Dica:** Pix e link de pagamento (um link que abre a tela de pagamento por cartão) são formas de pagar ANTES da entrega: o robô pede o comprovante e só fecha o pedido depois de receber.
+**Dica:** Pix e link de pagamento são pagos ANTES da entrega: o robô pede o comprovante e só fecha o pedido depois de receber.
 
-**Erro comum:** marcar dinheiro só em Retirada e estranhar que o robô recusa dinheiro na entrega. Marque nos dois blocos se aceita nos dois.
+**Erro comum:** marcar dinheiro só em Retirada e estranhar que o robô recusa dinheiro na entrega. Marque nas duas colunas se aceita nas duas.
 
-**Se não resolver:** o nome no Pix precisa bater com o titular da conta. Para trocar a chave ou o titular, Falar com a Maxi (guia 31).
+**Se não resolver:** o nome do titular precisa bater com a conta do Pix. Para trocar a chave ou o titular, Falar com a Maxi (guia 31).
 
 ---
 
 ## 28. Trocar o cardápio do robô
-`slug: robo-cardapio` · **Onde começa:** Mais › Meu robô › **Cardápio** · **Tempo:** 3 minutos (com a foto pronta)
+`slug: robo-cardapio` · **Onde começa:** Mais › Meu robô › etapa **Vendedor** · **Tempo:** 3 minutos (com a imagem pronta)
 
 **Quando usar:** mudou preço ou produto e o cardápio que o robô manda precisa ser o novo.
 
 **Passos**
-1. Deixe a imagem nova do cardápio no celular (JPG, feita no Canva a partir do modelo da Maxi).
+1. Deixe a imagem nova do cardápio no celular (JPG ou PNG, feita no Canva a partir do modelo da Maxi).
    - Imagem: sem recorte do app (passo fora do app).
-2. Toque em **Mais**, **Meu robô** e **Cardápio**.
-   - Imagem: lista do Meu robô. Seta vermelha em **Cardápio**. `[tela nova]`
-3. Toque para enviar a foto nova e escolha a imagem na galeria `[conferir rótulo do botão]`.
-   - Imagem: tela do cardápio com a foto atual. Seta no botão de trocar a foto.
-4. Espere a foto nova aparecer na tela.
-   - Imagem: tela com a foto nova. Círculo na foto.
+2. Toque em **Mais**, **Meu robô** e, no alto, na etapa **Vendedor**. Ache **Catálogo / Cardápio**.
+   - Imagem: etapa Vendedor. Seta em **Catálogo / Cardápio**.
+3. Toque em **Trocar** (ou na caixa **clique para selecionar**, se ainda não tem) e escolha a imagem na galeria.
+   - Imagem: cardápio atual. Seta em **Trocar**.
+4. Espere aparecer "Catálogo atualizado!" e a imagem nova. Depois toque em **Próximo**.
+   - Imagem: imagem nova na tela. Círculo na imagem.
 
-**Deu certo quando:** a tela mostra o cardápio novo. Nas próximas conversas, o robô manda essa foto.
+**Deu certo quando:** a tela mostra o cardápio novo. Nas próximas conversas, o robô manda essa imagem.
 
-**Dica:** o robô manda o cardápio uma vez por conversa. Mude os preços no Estoque também (guia 12), para bater com a foto.
+**Dica:** o robô manda o cardápio uma vez por conversa. Mude os preços no Estoque também (guia 12), para bater com a imagem. Para fazer a imagem, abra **Criar cardápio no Canva**, na mesma etapa.
 
-**Erro comum:** foto torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.
+**Erro comum:** imagem torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.
 
 **Se não resolver:** o robô ainda manda o cardápio antigo depois de algumas horas? Falar com a Maxi (guia 31).
 
 ---
 
 ## 29. Reconectar o WhatsApp do robô
-`slug: reconectar-whatsapp` · **Onde começa:** Mais › Meu robô › **Verificar** · **Tempo:** 3 a 5 minutos
+`slug: reconectar-whatsapp` · **Onde começa:** Mais › Meu robô (quadro "Conectar WhatsApp", no alto) · **Tempo:** 3 a 5 minutos
 
 **Quando usar:** o robô parou de responder os clientes.
 
 **Passos**
-1. Abra o app no computador ou em outro celular. O celular da unidade vai ler o código dessa tela.
+1. Abra o app no computador ou em outro celular. O celular da unidade vai ler o código que aparece nessa tela.
    - Imagem: sem recorte (ilustração de dois aparelhos).
-2. Toque em **Mais**, **Meu robô** e **Verificar**. O app mostra se o WhatsApp está conectado.
-   - Imagem: topo do Meu robô. Seta vermelha em **Verificar**. `[tela nova]`
-3. Desconectado? Toque em **Gerar QR Code** `[conferir rótulo na tela nova]`. Aparece o código.
-   - Imagem: quadro da conexão com o QR Code. Seta no botão.
+2. Toque em **Mais** e em **Meu robô**. No alto aparece **Conectado** ou **Não conectado**.
+   - Imagem: alto do Meu robô. Círculo em **Não conectado**.
+3. No quadro **Conectar WhatsApp**, toque em **Gerar QR Code** (ou **Reconectar**). Abre a janela com o código.
+   - Imagem: quadro da conexão. Seta em **Gerar QR Code**.
 4. No celular da unidade, abra o WhatsApp: **Menu**, **Aparelhos conectados**, **Conectar um aparelho**.
-   - Imagem: WhatsApp Business do celular, tela Aparelhos conectados. Círculo em **Conectar um aparelho**.
+   - Imagem: WhatsApp Business do celular, Aparelhos conectados. Círculo em **Conectar um aparelho**.
 5. Aponte a câmera para o QR Code da tela.
    - Imagem: sem recorte do app (foto do celular lendo a tela).
-6. Toque em **Verificar** de novo. Aparece a mensagem de conectado.
-   - Imagem: quadro da conexão com o aviso verde. Círculo no aviso.
+6. Toque em **Verificar Status**. Aparece "WhatsApp Conectado com Sucesso!". Toque em **Fechar**.
+   - Imagem: janela com o aviso verde. Círculo no aviso.
 
-**Deu certo quando:** o app diz que está conectado e o robô responde uma mensagem de teste (guia 30).
+**Deu certo quando:** o alto do Meu robô diz **Conectado** e o robô responde uma mensagem de teste (guia 30).
 
 **Dica:** a conexão cai quando o celular da unidade fica muito tempo sem internet ou sem bateria. Deixe-o carregando e no Wi-Fi.
 
-**Erro comum:** tentar ler o QR com o próprio celular que mostra o código. Precisa de duas telas: uma mostra, a outra lê.
+**Erro comum:** tentar ler o QR Code com o próprio celular que mostra o código. Precisa de duas telas: uma mostra, a outra lê.
 
 **Se não resolver:** conectou e o robô não responde? Falar com a Maxi (guia 31).
 
 ---
 
-## 30. Testar o robô como um cliente
-`slug: testar-robo` · **Onde começa:** Mais › Meu robô › **Testar como um cliente** · **Tempo:** 5 minutos
+## 30. Conferir o que o robô vai responder
+`slug: testar-robo` · **Onde começa:** Mais › Meu robô › etapa **Como o robô responde** · **Tempo:** 5 minutos
 
-**Quando usar:** depois de mudar horário, frete, pagamento ou cardápio, ou quando um cliente reclamou. Este teste é dentro do app, uma conversa de mentira — não é o mesmo que mandar mensagem de verdade pelo WhatsApp (isso é a Dica, abaixo, e não cria pedido nenhum).
+**Quando usar:** depois de mudar horário, frete, pagamento ou cardápio, ou quando um cliente reclamou.
 
 **Passos**
-1. Toque em **Mais**, **Meu robô** e **Testar como um cliente**.
-   - Imagem: lista do Meu robô. Seta vermelha em **Testar como um cliente**. `[tela nova]` `[conferir o que o botão abre]`
-2. Escreva "oi", como um cliente faria.
-   - Imagem: tela do teste com a primeira mensagem. Círculo no campo de escrever.
-3. Peça um produto e diga um endereço de entrega. É só um teste: não vira pedido de verdade, não gera cobrança nem entrega.
-   - Imagem: conversa de teste. Círculo na resposta com o frete.
-4. Confira: horário, frete, formas de pagamento e cardápio estão certos?
-   - Imagem: resposta do robô. Setas no valor do frete e nas formas de pagamento.
+1. Toque em **Mais**, **Meu robô** e, no alto, na etapa **Como o robô responde**.
+   - Imagem: etapas no alto. Seta em **Como o robô responde**.
+2. Leia as conversas de exemplo. Elas são montadas com o que você preencheu: horário, frete, pagamento e retirada.
+   - Imagem: conversas de exemplo. Círculo numa resposta.
+3. Para conferir o frete, volte à etapa **Entrega e retirada** e use o **Teste rápido**, no fim: coloque a distância, o dia e a hora do pedido.
+   - Imagem: Teste rápido. Seta no valor do frete.
+4. Para testar o WhatsApp de verdade, peça para outra pessoa (não o celular da unidade) mandar "oi" para o número da unidade. Nesse teste, não conclua a compra: ali o pedido seria de verdade.
+   - Imagem: sem recorte do app (conversa de teste no WhatsApp).
 
-**Deu certo quando:** o robô responde com o que você configurou.
+**Deu certo quando:** as respostas de exemplo e o Teste rápido mostram o que você configurou.
 
-**Dica:** o teste acima é só dentro do app. Se quiser testar o WhatsApp de verdade, peça para outra pessoa (não pelo celular da unidade) mandar "oi" para o número da unidade.
+**Dica:** os exemplos e o Teste rápido não mandam mensagem a ninguém e não criam pedido. Só o teste de outra pessoa passa pelo WhatsApp de verdade.
 
-**Erro comum:** testar o WhatsApp de verdade pelo próprio celular da unidade. O robô não conversa com o próprio número; use o teste dentro do app (acima) nesse caso.
+**Erro comum:** testar pelo próprio celular da unidade. O robô não conversa com o próprio número; peça para outra pessoa mandar a mensagem.
 
 **Se não resolver:** resposta errada? Ajuste no Meu robô (guias 25 a 28). Se continuar, Falar com a Maxi com um print (guia 31).
 
@@ -922,21 +925,21 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 # AJUDA
 
 ## 31. Falar com a Maxi
-`slug: falar-com-maxi` · **Onde começa:** Mais › Falar com a Maxi · **Tempo:** 1 minuto
+`slug: falar-com-maxi` · **Onde começa:** Mais › Ajuda (no fim da tela) · **Tempo:** 1 minuto
 
 **Quando usar:** um guia não resolveu, ou é algo que só a equipe faz (troca de titular, chave Pix, Instagram, cobrança).
 
 **Passos**
-1. Toque em **Mais** e em **Falar com a Maxi**.
-   - Imagem: lista do Mais. Seta vermelha em **Falar com a Maxi**. `[tela nova]`
-2. O WhatsApp da Maxi abre com uma mensagem inicial pronta. Você pode enviar ela do jeito que está, ou apagar e escrever o que aconteceu em poucas palavras, dizendo qual tela.
-   - Imagem: conversa aberta no WhatsApp com o texto inicial. Círculo no texto. `[conferir o texto pronto]`
-3. Se puder, anexe uma foto de tela do celular (aperte os dois botões do celular ao mesmo tempo — ligar e volume — para tirar a foto da tela, ela fica salva na galeria) ou uma foto comum. Depois, toque no botão de enviar.
-   - Imagem: WhatsApp com a foto anexada. Seta no botão de enviar.
+1. Toque em **Mais** e em **Ajuda**. Desça até o fim e toque em **Falar com a Maxi**. (Dentro de um guia, o botão fica no fim do guia.)
+   - Imagem: fim da tela Ajuda. Seta em **Falar com a Maxi**.
+2. O WhatsApp da Maxi abre com uma mensagem pronta ("Olá! Preciso de ajuda com o app da Maxi Massas."). Acrescente o que aconteceu, em poucas palavras, e qual tela.
+   - Imagem: conversa aberta com o texto pronto. Círculo no texto.
+3. Se puder, anexe uma foto da tela (aperte ao mesmo tempo o botão de ligar e o de abaixar o volume) e toque em enviar.
+   - Imagem: WhatsApp com a foto anexada. Seta no enviar.
 
-**Deu certo quando:** a mensagem foi enviada e aparece com os dois tiques.
+**Deu certo quando:** a mensagem foi enviada. Um tique = enviada; dois tiques = chegou no celular da Maxi.
 
-**Dica:** diga o nome da unidade, a tela e o que você tocou. Print ajuda muito.
+**Dica:** diga o nome da unidade, a tela e o que você tocou. Print ajuda muito. Não consegue entrar no app? Na tela de entrada tem **Falar com a Maxi no WhatsApp**.
 
 **Erro comum:** mandar no grupo das franquias. Dúvida da sua unidade vai no privado da Maxi.
 
@@ -944,105 +947,55 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ---
 
-# (1) Lista de imagens a produzir
+# (1) Fotos: o que existe e o que falta
 
-Padrão: `/public/tutoriais/<slug>-<n>.webp`, recorte no celular (390 px), seta ou círculo vermelho (#b91c1c), unidade e clientes fictícios (nunca número real de outra unidade).
+Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste documento, 390 px, contorno vermelho da marca no elemento, unidade e clientes fictícios.
 
-## A. Já dá para tirar das telas ATUAIS (não mudam no redesenho)
-
-| Arquivo | Tela | Recorte e marcação |
+| Guia | Já existe | Falta (passos) |
 |---|---|---|
-| `primeiros-passos-1..6.webp` | Trilha Primeiros passos | JÁ EXISTEM (reusar) |
-| `quem-chamar-hoje-2..6.webp` | Meus clientes, cartões do dia | JÁ EXISTEM (reusar; o `-1` depende da aba nova "Chamar hoje") |
-| `esqueci-senha-1.webp` | Entrada do app | seta no link "Primeiro acesso ou esqueceu a senha?" |
-| `esqueci-senha-2.webp` | Entrada, modo "Receber link de acesso" | círculo no campo de e-mail |
-| `esqueci-senha-3.webp` | Aviso após "Enviar link" | seta no aviso verde com o e-mail |
-| `esqueci-senha-4.webp` | E-mail do link (caixa de entrada fictícia) | círculo no botão do link |
-| `esqueci-senha-5.webp` | Tela de criar senha | seta no botão de salvar |
-| `trocar-unidade-1..3.webp` | Seletor de unidade no topo | seta no nome; círculo na 2ª unidade; círculo no nome novo |
-| `vendas-2..5.webp` | Formulário de venda (cliente, produtos, pagamento, Delivery) | círculo em Cliente; seta na quantidade; círculo em Pix; seta em Delivery e no frete |
-| `vendas-7.webp` | Fim do formulário | seta em "Registrar Venda" |
-| `corrigir-venda-3..6.webp` | Opções da venda, formulário em edição, janela "Excluir venda?" | seta em "Editar Venda"; seta no salvar; círculo em "Excluir"; seta no confirmar |
-| `comprovante-1..5.webp` | Comprovante e janela de impressão | círculo em Telefone/Endereço; seta em "Mandar no WhatsApp"; seta em "Imprimir"; círculo na impressora; seta no campo Escala = 80% |
-| `cadastrar-cliente-3..5.webp` | Busca de cliente e formulário | seta no cliente; círculo no telefone; seta em "Salvar" |
-| `mudar-preco-2..4.webp` | Formulário do produto no Estoque | círculo no custo e no Preço de venda; seta no markup; seta em "Salvar" |
-| `produto-proprio-2..4.webp` | Formulário "Adicionar Produto" e produto aberto | círculo em "Nome do Produto"; seta em "Salvar"; círculo em "Ocultar do catálogo" |
-| `relatorio-mes-4.webp` | Página do PDF do relatório (unidade fictícia) | círculo nos 3 meses lado a lado |
-| `artes-2..5.webp` | Marketing, materiais do mês | círculo no filtro Mês; seta em "Copiar legenda"; seta em "Baixar"; círculo em "Salvar imagem" |
-| `agendar-postagens-2..7.webp` | Meta Business Suite (fora do app) | nome da página; seta em Planejador; marcações FB/IG; foto e legenda; seta em Agendar; postagem no calendário |
-| `robo-horarios-3..5.webp` | Cartão de horários do wizard atual | dias marcados; seta em "Pedidos até"; seta no salvar |
-| `robo-entrega-2..5.webp` | Cartão "Entrega" do wizard atual | círculo em "Por distância"; faixa de km; seta em Pedido mínimo e "?"; salvar |
-| `robo-pagamento-2..5.webp` | Etapa de pagamento do wizard atual | blocos Entrega e Retirada; chave Pix; salvar |
-| `reconectar-whatsapp-3..6.webp` | Quadro de conexão com QR e WhatsApp Business do celular | botão do QR; "Conectar um aparelho"; aviso verde |
-| `pedido-fabrica-*`, `conferir-chegada-1.webp` | Foto do papel impresso com marcações | (depois que a impressão existir) |
-
-## B. Dependem das telas NOVAS (tirar depois do redesenho)
-
-| Arquivo | Tela | Recorte e marcação |
-|---|---|---|
-| `vendas-1.webp` | Início com a barra de baixo nova | seta no botão redondo "+ Nova venda", no meio |
-| `vendas-6.webp` | Formulário de venda | círculo na chave "Já recebi o dinheiro" |
-| `venda-recebida-1,2,4.webp` | Vendas com "A receber" | seta em Vendas na barra; círculo na etiqueta "A receber"; seta em "Recebi" |
-| `corrigir-venda-1,2.webp` | Lista de Vendas nova | setas ◀ ▶ do mês; círculo numa venda |
-| `planilha-vendas-1..4.webp` | Mais e fim do Resultado | seta em "Resultado do mês"; setas do mês; seta em "Baixar planilha"; aviso de download |
-| `quem-chamar-hoje-1.webp` (ou `clientes-1`) | Meus clientes, aba "Chamar hoje" | seta na aba |
-| `cadastrar-cliente-1,2.webp` | Meus clientes, aba "Todos" | seta em "Todos"; círculo em "+ Cliente" |
-| `contar-estoque-1,3,4,5.webp` | Aba Estoque nova | seta em Estoque na barra; campo Quantidade (ou − +); Salvar; lista atualizada |
-| `mudar-preco-1.webp`, `produto-proprio-1,5.webp` | Lista do Estoque nova | seta num produto; "Adicionar Produto"; produto oculto apagado |
-| `pedido-fabrica-1..5.webp` | Aba "Pedir à fábrica" | nome da aba; − e +; frete estimado; "Enviar pedido à fábrica"; cartão a caminho |
-| `imprimir-pedido-1..4.webp` | Cartão do pedido, opções de impressão | cartão; "Imprimir pedido"; "só quantidades"; impressora |
-| `conferir-chegada-2..5.webp` | Cartão a caminho, "Recebi tudo certo", "Faltou algo" | botões e itens marcados |
-| `repetir-pedido-1..4.webp` | Pedidos anteriores | último pedido; "Repetir"; − e +; enviar |
-| `resultado-1..6.webp` | Resultado do mês novo | Resultado do mês no Mais; setas do mês; "Sobrou no mês"; Entrou × Saiu; Para onde foi / O que mudou; Quanto sobrou por mês |
-| `lancar-gasto-1..5.webp` | Resultado, "+ Registrar gasto" e formulário | botão; tipo; valor; Salvar |
-| `relatorio-mes-1..3.webp` | Resultado novo | Resultado do mês; setas; "Baixar relatório do mês (PDF)" |
-| `pagar-equipe-digital-1..5.webp` | Mais › Pagamentos | Pagamentos; valor e vencimento; "Copiar código Pix"; "Baixar boleto"; "Já paguei" |
-| `verba-marketing-1..6.webp` | Pagamentos, quadro da verba | quadro; mês; CNPJ; valor; anexar; "Registrar verba" |
-| `artes-1.webp` | Lista do Mais | seta em Marketing |
-| `robo-horarios-1,2.webp`, `robo-entrega-1,6.webp`, `robo-pagamento-1.webp`, `robo-cardapio-2..4.webp` | Lista do Meu robô e itens | seta no item certo; Retirada; foto do cardápio |
-| `reconectar-whatsapp-2.webp` | Meu robô, botão "Verificar" | seta em "Verificar" |
-| `testar-robo-1..4.webp` | "Testar como um cliente" | botão; campo de escrever; resposta com frete |
-| `falar-com-maxi-1,2,3.webp` | Mais e WhatsApp da Maxi | seta em "Falar com a Maxi"; texto pronto; enviar |
+| primeiros-passos | `primeiros-passos-1..6` (numeração própria) | — |
+| clientes | `quem-chamar-hoje-1..6` (numeração própria) | — |
+| vendas | `vendas-1..6` | — |
+| pedido-fabrica | `pedido-fabrica-1..6` | — |
+| resultado | `resultado-1..5` | — |
+| pagamentos | `pagamentos-2,3,4,7` | 1, 5, 6 |
+| demais 25 guias | — | todos os passos com recorte do app (passos marcados "sem recorte do app" não levam foto) |
 
 ---
 
 # (2) Perguntas frequentes
 
-1. **A venda "A receber" conta no meu mês?** Sim. Ela conta desde que foi lançada. "Recebi" só confirma que o dinheiro entrou.
-2. **Por que marcar "Recebi"?** Para conferir o caixa. E ajuda o anúncio a achar clientes parecidos com quem comprou.
-3. **"Sobrou no mês" é o saldo do meu banco?** Não. É o que entrou com as vendas menos a taxa de cartão e os gastos lançados.
-4. **Preciso lançar o pedido à fábrica como gasto?** Não. Ele entra sozinho quando o pedido é entregue. A verba e a mensalidade também.
-5. **Qual preço devo cobrar?** O markup recomendado é de 100%: o preço de venda é o dobro do custo (produto que custa R$ 10, venda por R$ 20). Você pode ajustar no Estoque.
-6. **Por que meu produto próprio não aparece no pedido?** O pedido à fábrica só tem os produtos da Maxi. Os seus ficam só no Estoque.
-7. **O robô parou de responder. E agora?** Vá em Mais › Meu robô › Verificar. Se estiver desconectado, leia o QR Code de novo (guia 29).
-8. **Quanto vai para o anúncio da verba?** Do valor pago, 14% ficam em impostos e taxas. De R$ 200, R$ 172 vão para o anúncio.
-9. **A mensalidade de R$ 150 inclui a verba?** Não. Os R$ 150 pagam a Equipe Digital Maxi. A verba do anúncio é à parte, a partir de R$ 200, sem fundo de marketing.
-10. **O comprovante sai fraco na impressora. O que faço?** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina.
-11. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez.
-12. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business.
+1. **Por onde eu começo?** Na Início, toque em Continuar no cartão vermelho "Primeiros passos" (ou em Mais › Primeiros passos). → `primeiros-passos`
+2. **A venda "A receber" conta no meu mês?** Sim, desde que foi lançada. "Recebi" só confirma que o dinheiro entrou. → `venda-recebida`
+3. **"Sobrou no mês" é o saldo do meu banco?** Não. É o que entrou com as vendas menos a taxa de cartão e os gastos lançados. → `resultado`
+4. **Preciso lançar o pedido à fábrica como gasto?** Não. Ele entra sozinho quando chega. A verba confirmada e a mensalidade paga também. → `lancar-gasto`
+5. **Faltou produto no pedido. Pago tudo?** Não. Na conferência, diga quanto chegou: o pedido passa a valer o que chegou. O frete continua o mesmo. → `conferir-chegada`
+6. **Qual preço devo cobrar?** O markup recomendado é de 100%: o preço de venda é o dobro do custo. → `mudar-preco`
+7. **Por que meu produto próprio não aparece no pedido?** O pedido à fábrica só tem os produtos da Maxi. Os seus ficam só no Estoque. → `produto-proprio`
+8. **O robô parou de responder. E agora?** Em Mais › Meu robô, veja se está conectado. Se não, leia o QR Code de novo: precisa de duas telas. Sem outra tela, fale com a Maxi. → `reconectar-whatsapp`
+9. **Quanto da verba vai para o anúncio?** Do valor pago, 14% ficam em impostos e taxas: de R$ 200, R$ 172 vão para o anúncio. → `verba-marketing`
+10. **Paguei a mensalidade e continua em aberto.** Abra Pagamentos e toque em "Já paguei, verificar agora". → `pagamentos`
+11. **O comprovante sai fraco na impressora.** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina. → `comprovante`
+12. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez. → `esqueci-senha`
+13. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
+
+No app (`PERGUNTAS_FREQUENTES`) ficam as 9 que já existiam (algumas passaram a apontar para o guia novo que responde melhor) mais 4 novas.
 
 ---
 
 # (3) Conferência de linguagem
 
-Busca feita no texto dos guias e das perguntas frequentes (fora desta seção e das notas de revisão):
+Busca feita nos textos dos 31 guias e das perguntas frequentes. No app, a trava automática é o `guiasAjuda.test.mjs` (palavras proibidas, "fábrica" só como "à fábrica", "sem fundo de marketing").
 
 | Palavra ou expressão proibida | Resultado |
 |---|---|
-| margem | não aparece (usa "markup recomendado de 100%") |
-| amanhã | não aparece; nenhuma data prometida (pedido: "a Maxi avisa a data de entrega") |
-| "sua loja", "na loja", "loja da unidade" | não aparece; a aba se chama Estoque |
-| fábrica/cozinha como sendo a unidade | não aparece; "fábrica" só em "à fábrica" (Pedir à fábrica, Enviar pedido à fábrica, pedido à fábrica) |
-| Líquido | não aparece |
-| Ticket Médio | não aparece |
-| Inventário | não aparece (sempre "Estoque") |
+| margem | não aparece (usa "markup recomendado de 100%"). Obs.: a TELA do Estoque ainda escreve "Margem: N%" e "margem 80%" (fora do escopo dos guias; ver relatório S24.1) |
+| amanhã | não aparece; nenhuma data prometida |
+| loja | não aparece |
+| Líquido, Ticket Médio, Inventário | não aparecem (sempre "Estoque") |
 | reservar, reserva, separar, guardar | não aparecem |
-| desconto, promoção, grátis em mensagem a cliente | não aparecem em mensagem a cliente. Aparecem só como nome de tela ou opção: "desconto" na conta do "Sobrou no mês" (guia 18), **Grátis** como tipo de taxa de entrega (guia 26) e "Promoções e avisos" como item do Meu robô (sem guia). Se o teste do app for ampliado para essas palavras, o guia 26 precisa de exceção para o rótulo **Grátis**. |
-| taxa de marketing / fundo de marketing | só "sem fundo de marketing" (guia 22 e pergunta 9) |
-| jargão: sincronizar, status, dashboard, CAPI, IA | não aparecem (usa "painel", "robô", "Verificar"; o Status do WhatsApp virou "aba Atualizações do WhatsApp") |
+| fábrica como sendo a unidade | não aparece; "fábrica" só em "à fábrica" e no rótulo da tela "Produto comprado fora da fábrica" (guia 19, só neste documento; no app o texto diz "comprado fora do pedido à fábrica") |
+| taxa de marketing / fundo de marketing | só "sem fundo de marketing" |
+| jargão: sincronizar, status, dashboard, CAPI, IA | não aparecem ("Verificar Status" é o rótulo exato do botão da janela do WhatsApp) |
 
-Busca real rodada em 28/09/2026 (`grep -P` com UTF-8, até o início desta seção): sobraram só "desconto" (guia 18, conta do "Sobrou no mês") e **Grátis** (guia 26, rótulo da opção de taxa), os dois fora de mensagem a cliente.
-
-Reconferido em 28/09/2026 (S3.1/S3.2, após os ajustes desta rodada — `grep -niE` com os mesmos padrões): nenhuma palavra nova proibida entrou nos guias 1-31 com as reescritas da revisão leiga (Codex `gpt-6-astra`, S3.2).
-
-Observação para quem for passar para o `guiasAjuda.js`: a trava `'fábrica' só como à fábrica` olha 12 caracteres antes da palavra. Títulos como "ESTOQUE E PEDIDO À FÁBRICA" ficam só neste documento (não vão para o app).
+Observação: a trava `'fábrica' só como à fábrica` olha 12 caracteres antes da palavra. Títulos como "ESTOQUE E PEDIDO À FÁBRICA" ficam só neste documento.

@@ -90,7 +90,7 @@ t("slugs únicos, passos numerados e mensagem de WhatsApp em todo guia", () => {
 // Campos v2 (S3, 28/09/2026): a tela nova (S10) usa area/sinonimos/dica/erroComum para
 // busca e para os blocos "Dica"/"Erro comum" do guia. `drive` é o único opcional.
 t("todo guia tem area, sinônimos, dica e erro comum (campos v2)", () => {
-  const AREAS_VALIDAS = ["Começar", "Vender", "Clientes", "Estoque e pedido à fábrica", "Dinheiro", "Marketing", "Meu robô", "Equipe"];
+  const AREAS_VALIDAS = ["Começar", "Vender", "Clientes", "Estoque e pedido à fábrica", "Dinheiro", "Marketing", "Meu robô", "Ajuda", "Equipe"];
   for (const g of GUIAS) {
     assert.ok(AREAS_VALIDAS.includes(g.area), `${g.slug}: area "${g.area}" não está na lista`);
     assert.ok(Array.isArray(g.sinonimos) && g.sinonimos.length >= 2, `${g.slug}: sinonimos`);
@@ -101,10 +101,15 @@ t("todo guia tem area, sinônimos, dica e erro comum (campos v2)", () => {
   }
 });
 
-t("deep-links antigos continuam abrindo (primeiros-passos, clientes, estoque)", () => {
+// S24.1 (29/09/2026): o alias "estoque" passou a abrir "Contar o estoque" (a aba se chama
+// Estoque); os links antigos da mensalidade continuam no guia de pagamentos.
+t("deep-links antigos continuam abrindo (primeiros-passos, clientes, estoque, mensalidade)", () => {
+  assert.equal(acharGuia("pedido-fabrica", "franchisee")?.slug, "pedido-fabrica");
+  assert.equal(acharGuia("mensalidade", "franchisee")?.slug, "pagamentos");
+  assert.equal(acharGuia("pagar-equipe-digital", "franchisee")?.slug, "pagamentos");
   assert.equal(acharGuia("primeiros-passos", "franchisee")?.slug, "primeiros-passos");
   assert.equal(acharGuia("clientes", "franchisee")?.slug, "clientes");
-  assert.equal(acharGuia("estoque", "franchisee")?.slug, "pedido-fabrica");
+  assert.equal(acharGuia("estoque", "franchisee")?.slug, "contar-estoque");
   assert.equal(acharGuia("nao-existe", "admin"), null);
   assert.equal(acharGuia(null, "admin"), null);
 });
@@ -156,6 +161,60 @@ t("guias prioritários da S21.1 têm pelo menos 1 imagem cada", () => {
     assert.ok(g, slug);
     assert.ok(g.passos.some((p) => p.imagem), `${slug}: nenhum passo com imagem`);
   }
+});
+
+// S24.1 (29/09/2026): o documento docs/guias-ajuda-v2.md e o app andam juntos. Todo slug do
+// índice do documento existe no app com a mesma quantidade de passos (a foto <slug>-<n>.webp
+// é o passo n do documento), e o texto dos guias não tem mais marca de revisão pendente.
+const DOC = fs
+  .readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../docs/guias-ajuda-v2.md"), "utf8")
+  .replace(/\r\n/g, "\n");
+
+function guiasDoDocumento(doc) {
+  const indice = doc.slice(doc.indexOf("## Índice"), doc.indexOf("# COMEÇAR"));
+  const slugs = [...indice.matchAll(/^\d+\. .+? — `([a-z0-9-]+)`/gm)].map((m) => m[1]);
+  const corpo = doc.slice(doc.indexOf("# COMEÇAR"), doc.indexOf("# (1)"));
+  const passos = {};
+  for (const sec of corpo.split(/^## \d+\. /m).slice(1)) {
+    const slug = (sec.match(/slug: ([a-z0-9-]+)/) || [])[1];
+    if (slug) passos[slug] = (sec.match(/^\d+\. /gm) || []).length;
+  }
+  return { slugs, passos, corpo };
+}
+
+// Guias com fotos de numeração própria (anteriores ao documento): o app tem mais passos que o texto.
+const NUMERACAO_PROPRIA = new Set(["primeiros-passos", "clientes"]);
+
+t("documento × app: os 31 guias do índice existem no app, com o mesmo número de passos", () => {
+  const { slugs, passos } = guiasDoDocumento(DOC);
+  assert.equal(slugs.length, 31, "o índice do documento tem 31 guias");
+  for (const slug of slugs) {
+    const g = acharGuia(slug, "franchisee");
+    assert.ok(g && g.slug === slug, `${slug}: não está no app com esse slug`);
+    if (!NUMERACAO_PROPRIA.has(slug)) {
+      assert.equal(g.passos.length, passos[slug], `${slug}: app ${g.passos.length} passos × documento ${passos[slug]}`);
+    }
+  }
+});
+
+t("documento: nenhum guia com marca de revisão pendente", () => {
+  const { corpo } = guiasDoDocumento(DOC);
+  for (const marca of ["[tela nova]", "[conferir", "[decisão Nelson"]) assert.ok(!corpo.includes(marca), marca);
+});
+
+// Controle positivo das duas travas acima: documento adulterado tem de ser pego.
+t("controle positivo: guia a mais, marca pendente ou passo a menos no documento são pegos", () => {
+  const ultimo = "31. Falar com a Maxi — `falar-com-maxi`";
+  assert.ok(DOC.includes(ultimo), "âncora do índice");
+  const comGuiaFalso = guiasDoDocumento(DOC.replace(ultimo, `${ultimo}\n32. Guia inventado — \`guia-inventado\``));
+  assert.equal(comGuiaFalso.slugs.length, 32);
+  assert.equal(acharGuia("guia-inventado", "franchisee"), null);
+  const comMarca = guiasDoDocumento(DOC.replace("## 11. Contar o estoque", "## 11. Contar o estoque [tela nova]"));
+  assert.ok(comMarca.corpo.includes("[tela nova]"));
+  const passoFinal = "5. Confira a lista: os números devem bater com o freezer.";
+  assert.ok(DOC.includes(passoFinal), "âncora do passo");
+  const menosUm = guiasDoDocumento(DOC.replace(passoFinal, "Confira a lista."));
+  assert.notEqual(menosUm.passos["contar-estoque"], acharGuia("contar-estoque", "franchisee").passos.length);
 });
 
 t("vídeos têm id do YouTube", () => {
