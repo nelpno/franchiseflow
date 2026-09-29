@@ -11,14 +11,14 @@
 ## Mapa do app (para situar a franqueada)
 
 **No celular**, a barra de baixo tem 5 botões: **Início** · **Vendas** · **Nova venda** (o redondo com +, no meio) · **Estoque** · **Mais**.
-- **Estoque** abre a tela Gestão na aba **Estoque**. No alto dessa tela há três abas: **Resultado**, **Estoque** e **Reposição** (a Reposição é onde se faz o pedido à fábrica).
+- **Estoque** abre a tela Estoque, com duas abas no alto: **Estoque** (o que você tem e quanto vende) e **Reposição** (onde se faz o pedido à fábrica).
 - **Mais** abre a lista: Gestão, Meus Clientes, Marketing, Meu robô, Pagamentos e Ajuda. Enquanto a unidade está começando, "Primeiros passos" aparece em primeiro.
-- **Mais › Gestão** abre direto na aba **Resultado** (quanto sobrou no mês). Na Início, o atalho **Resultado do mês** leva ao mesmo lugar.
+- **Mais › Gestão** abre o **Resultado** (quanto sobrou no mês). Na Início, o atalho **Resultado do mês** leva ao mesmo lugar.
 - **Falar com a Maxi** fica em **Mais › Ajuda** (no fim da tela) e no fim de cada guia.
 - Para sair do app: toque na bolinha com a sua inicial, no alto à direita, e em **Sair da conta**.
 - O **?** no alto de cada tela abre o guia daquela tela.
 
-**No computador**, a barra da esquerda tem os mesmos itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu robô, Estoque, Pagamentos, Ajuda). A venda nova começa em **Vendas › Nova Venda**.
+**No computador**, a barra da esquerda tem os mesmos itens (Início, Vendas, Gestão, Meus Clientes, Marketing, Meu robô, Estoque, Pagamentos, Ajuda). A venda nova começa em **Vendas › Nova Venda**. **Estoque** abre o Estoque e a Reposição; **Gestão** abre o Resultado.
 
 Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagamentos" = toque em **Mais** e depois em **Pagamentos**.
 
@@ -366,111 +366,111 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 # ESTOQUE E PEDIDO À FÁBRICA
 
 ## 11. Contar o estoque
-`slug: contar-estoque` (alias `estoque`) · **Onde começa:** Estoque (barra de baixo) › **Contar estoque** · **Tempo:** 10 a 20 minutos (conforme o freezer)
+`slug: contar-estoque` (alias `estoque`) · **Onde começa:** Estoque (barra de baixo no celular; menu à esquerda no computador) › **Contar estoque** · **Tempo:** 10 a 20 minutos (conforme o freezer)
 
 **Quando usar:** uma vez por semana, ou quando o número do app não bate com o freezer.
 
 **Passos**
-1. Toque em **Estoque**, na barra de baixo. Abre a aba **Estoque** com os produtos.
-   - Imagem: barra de baixo. Seta em **Estoque**.
-2. Toque em **Contar estoque**, no alto da lista. Cada produto ganha os botões **−** e **+**.
-   - Imagem: alto da aba Estoque. Seta em **Contar estoque**.
+1. Toque em **Estoque**: no celular, na barra de baixo; no computador, no menu à esquerda. No alto aparecem **Acabando**, **Valor em estoque** e **Se vender tudo**; embaixo, a lista dos produtos.
+   - Imagem: barra de baixo. Contorno em **Estoque**. (existe: `contar-estoque-1.webp`)
+2. Toque em **Contar estoque**, acima da lista. Cada produto ganha os botões **−** e **+**.
+   - Imagem: botões acima da lista. Contorno em **Contar estoque**. (existe: `contar-estoque-2.webp`)
 3. Abra o freezer e conte um produto de cada vez. Acerte o número com **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta conferir um pedido que chegou (guia 16) ou se uma venda foi lançada 2 vezes (guia 6).
-   - Imagem: um produto no modo de contar. Círculo no **−**, no número e no **+**.
+   - Imagem: um produto no modo de contar. Contorno no produto. (existe: `contar-estoque-3.webp`)
 4. No fim, toque em **Salvar** (ele mostra quantos produtos você mudou). Aparece "Contagem salva".
-   - Imagem: alto da contagem. Seta em **Salvar (3)**.
+   - Imagem: alto da contagem. Contorno em **Salvar (1)**. (existe: `contar-estoque-4.webp`)
 5. Confira a lista: os números devem bater com o freezer.
-   - Imagem: lista do estoque com as quantidades novas. Círculo numa quantidade.
+   - Imagem: lista do estoque depois de salvar. O número depois de **Tem** é o que o app tem. (existe: `contar-estoque-5.webp`)
 
 **Deu certo quando:** aparece "Contagem salva" e os números da lista batem com o freezer.
 
 **Dica:** saiu da tela no meio? A contagem fica guardada neste aparelho: toque em **Continuar contagem**. Venda lançada já desconta sozinha; pedido conferido já soma sozinho.
 
-**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número negativo quer dizer que saiu mais do que entrou no app (pedido que chegou e não foi conferido, contagem antiga, venda lançada 2 vezes): conte de novo e salve o número real. Só lance uma venda (guia 4) se ela de fato faltou.
+**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número abaixo de zero aparece em vermelho, com o aviso **Conte o estoque**: saiu mais do que entrou no app (pedido que chegou e não foi conferido, contagem antiga, venda lançada 2 vezes). Conte de novo e salve o número real. Só lance uma venda (guia 4) se ela de fato faltou.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 12. Mudar o preço de venda
-`slug: mudar-preco` · **Onde começa:** Estoque › aba **Estoque** · **Tempo:** 2 minutos por produto
+`slug: mudar-preco` · **Onde começa:** Estoque › toque no produto · **Tempo:** 2 minutos por produto
 
 **Quando usar:** você quer subir ou ajustar o preço que o cliente paga.
 
 **Passos**
-1. Toque em **Estoque** e ache o produto na lista.
-   - Imagem: lista do estoque. Seta num produto.
-2. No cartão do produto, veja **Custo** (vem da tabela da Maxi) e **Venda** (o preço que o cliente paga).
-   - Imagem: cartão do produto. Círculo em **Custo** e em **Venda**.
-3. Toque no valor de **Venda**, digite o preço novo e toque fora do campo.
-   - Imagem: campo **Venda** aberto para digitar. Seta no campo.
-4. Aparece "Preço de venda atualizado." e a lista mostra o preço novo.
-   - Imagem: aviso "Preço de venda atualizado.". Círculo no aviso.
+1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e toque no produto na lista.
+   - Imagem: lista do estoque. Contorno num produto. (existe: `mudar-preco-1.webp`)
+2. Abre o produto. **Preço de venda** é o que o cliente paga; **Custo** vem da tabela da Maxi; **Markup** mostra quanto a venda está acima do custo.
+   - Imagem: produto aberto. Contorno em **Preço de venda** e **Custo**. (existe: `mudar-preco-2.webp`)
+3. Toque em **Editar produto**. Apague o **Preço de venda (R$)**, digite o novo e toque em **Salvar**.
+   - Imagem: formulário "Editar Produto". Contorno no campo **Preço de venda (R$)**. (existe: `mudar-preco-3.webp`)
+4. Aparece "Produto atualizado.". O robô passa a usar o preço novo.
+   - Imagem: aviso "Produto atualizado." no alto. (existe: `mudar-preco-4.webp`)
 
-**Deu certo quando:** a lista mostra o preço novo. O robô passa a usar esse preço com os clientes.
+**Deu certo quando:** ao abrir o produto de novo, o **Preço de venda** é o novo. O robô passa a usar esse preço com os clientes.
 
 **Dica:** o markup recomendado é de 100%: o preço de venda é o dobro do custo. Exemplo: produto que custa R$ 10, venda por R$ 20. Os preços já vêm assim.
 
-**Erro comum:** tentar mudar o custo de um produto da Maxi. Não dá: o custo é o da tabela da Maxi. Mude só a **Venda**.
+**Erro comum:** tentar mudar o custo de um produto da Maxi. Não dá: o custo é o da tabela da Maxi. Mude só o **Preço de venda**.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
 ---
 
 ## 13. Cadastrar produto próprio ou ocultar um produto
-`slug: produto-proprio` · **Onde começa:** Estoque › aba **Estoque** · **Tempo:** 3 minutos
+`slug: produto-proprio` · **Onde começa:** Estoque · **Tempo:** 3 minutos
 
 **Quando usar:** você vende algo que não é da Maxi (queijo ralado, um molho seu), ou quer parar de vender um produto. São dois caminhos: siga só o que você precisa.
 
 **Caminho A — cadastrar produto próprio**
-1. Toque em **Estoque** e em **Adicionar**, no alto da lista.
-   - Imagem: alto da aba Estoque. Seta em **Adicionar**.
+1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e em **Adicionar**, acima da lista.
+   - Imagem: botões acima da lista. Contorno em **Adicionar**. (existe: `produto-proprio-1.webp`)
 2. Preencha **Nome do Produto**, a quantidade, o custo e o preço de venda.
-   - Imagem: formulário "Adicionar Produto". Círculo em **Nome do Produto**.
+   - Imagem: formulário "Adicionar Produto". (existe: `produto-proprio-2.webp`)
 3. Toque em **Adicionar**, no fim do formulário. Aparece "Produto adicionado ao estoque." Pronto.
-   - Imagem: fim do formulário. Seta em **Adicionar**.
+   - Imagem: fim do formulário. Contorno em **Adicionar**. (existe: `produto-proprio-3.webp`)
 
 **Caminho B — ocultar um produto**
-4. No cartão do produto, toque no botão do olho riscado (**Ocultar do catálogo**). Aparece "Produto oculto".
-   - Imagem: cartão do produto. Círculo no botão do olho riscado.
-5. O produto sai da lista e vai para o fim da tela, em "produtos ocultos". Para voltar a vender, toque ali e em **Reativar**.
-   - Imagem: fim da lista, "produtos ocultos" aberto. Seta em **Reativar**.
+4. Toque no produto na lista e em **Ocultar**. Aparece "Produto oculto" e o robô para de oferecer.
+   - Imagem: produto aberto. Contorno em **Ocultar**. (existe: `produto-proprio-4.webp`)
+5. O produto sai da lista e vai para o fim da tela, em "produto oculto". Para voltar a vender, toque ali e em **Reativar**.
+   - Imagem: fim da lista, produtos ocultos aberto. Contorno em **Reativar**. (existe: `produto-proprio-5.webp`)
 
-**Deu certo quando:** o produto próprio aparece na lista e na venda nova; o oculto aparece só em "produtos ocultos" e o robô não oferece mais.
+**Deu certo quando:** o produto próprio aparece na lista e na venda nova; o oculto aparece só no fim, em produtos ocultos, e o robô não oferece mais.
 
 **Dica:** oculto é diferente de zerado. Oculto: o robô não oferece, mesmo com estoque. Zerado (quantidade 0): o robô avisa que está em falta no momento.
 
-**Erro comum:** procurar o produto próprio no pedido à fábrica. Ele não aparece lá: o pedido à fábrica só tem os produtos da Maxi.
+**Erro comum:** procurar o produto próprio no pedido à fábrica. Ele não aparece lá: o pedido à fábrica só tem os produtos da Maxi. Produto oculto também fica fora do pedido.
 
-**Se não resolver:** sumiu um produto da Maxi do seu pedido? Falar com a Maxi (guia 31) para recolocar.
+**Se não resolver:** sumiu um produto da Maxi do seu pedido? Veja se ele não está oculto. Se não estiver, Falar com a Maxi (guia 31).
 
 ---
 
 ## 14. Fazer pedido à fábrica
 `slug: pedido-fabrica` · **Onde começa:** Estoque › aba **Reposição** · **Tempo:** 5 a 10 minutos
-> Fotos (S21.1): `pedido-fabrica-1.webp`..`pedido-fabrica-6.webp`, uma por passo.
+> Fotos (S25): `pedido-fabrica-1.webp`..`pedido-fabrica-6.webp`, uma por passo.
 
 **Quando usar:** repor o freezer com os produtos da Maxi.
 
 **Passos**
-1. Toque em **Estoque** e na aba **Reposição**, no alto.
-   - Imagem: abas no alto. Seta em **Reposição**. (existe: `pedido-fabrica-1.webp`)
-2. Toque em **Novo Pedido**. Ou, no quadro **Acabando**, toque em **Repor** no produto (ou em **Repor todos**): a lista já vem com o que está acabando.
-   - Imagem: botão **Novo Pedido**. (existe: `pedido-fabrica-2.webp`)
-3. Digite a quantidade de cada produto. Para a conta pronta, toque em **Usar sugestão** e depois ajuste o que quiser.
-   - Imagem: produtos com o campo Quantidade. (existe: `pedido-fabrica-3.webp`)
-4. Confira no fim: **Produtos**, **Frete estimado** e **Total estimado**.
-   - Imagem: rodapé do pedido. (existe: `pedido-fabrica-4.webp`)
-5. Toque em **Enviar Pedido**. Espere a mensagem "Pedido enviado com sucesso!".
-   - Imagem: botão **Enviar Pedido**. (existe: `pedido-fabrica-5.webp`)
+1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e na aba **Reposição**, no alto.
+   - Imagem: abas no alto. Contorno em **Reposição**. (existe: `pedido-fabrica-1.webp`)
+2. No quadro **Próximo pedido à fábrica**, toque em **Montar pedido com a sugestão**. No primeiro pedido, o botão é **Novo pedido** e a lista vem com o pedido modelo da Maxi. Produto próprio fica fora do pedido.
+   - Imagem: quadro da sugestão. Contorno em **Montar pedido com a sugestão**. (existe: `pedido-fabrica-2.webp`)
+3. A lista já vem preenchida pelas suas vendas. Ajuste com **−** e **+**, ou toque no número e digite. Os produtos sem sugestão ficam em **Outros produtos**, embaixo.
+   - Imagem: um produto com − e +. (existe: `pedido-fabrica-3.webp`)
+4. Toque em **Enviar pedido**. Abre **Confira antes de enviar**: cada produto com a quantidade e o valor, o frete estimado e o total. Algo errado? Toque em **Voltar e ajustar**.
+   - Imagem: a revisão do pedido. (existe: `pedido-fabrica-4.webp`)
+5. Toque em **Confirmar e enviar** e espere a mensagem "Pedido enviado com sucesso!".
+   - Imagem: rodapé da revisão. Contorno em **Confirmar e enviar**. (existe: `pedido-fabrica-5.webp`)
 6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira (guia 16).
    - Imagem: histórico com um pedido. (existe: `pedido-fabrica-6.webp`)
 
 **Deu certo quando:** o pedido aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** o frete é estimado: 10% do pedido, entre R$ 250 e R$ 350. A Maxi confirma o valor. No primeiro pedido, a lista já vem com o pedido modelo da Maxi.
+**Dica:** a sugestão vem das suas vendas: o que você vende por semana, para durar até a entrega seguinte (você costuma pedir a cada ~3 semanas e a entrega leva ~5 dias), mais 1 semana de folga. Já desconta o que você tem e o que está a caminho. Produto sem venda em 3 meses não entra. O frete é estimado: 10% do pedido, entre R$ 250 e R$ 350. A Maxi confirma o valor.
 
-**Erro comum:** enviar sem conferir as quantidades. A sugestão é um ponto de partida: mude o que precisar antes de enviar. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
+**Erro comum:** enviar sem conferir as quantidades. A sugestão é um ponto de partida: na revisão, veja a lista e mude o que precisar. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -482,8 +482,8 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** ter o pedido no papel para conferir a mercadoria quando chegar, ou para o seu controle.
 
 **Passos**
-1. Em **Reposição**, desça até **Histórico de Pedidos** e toque no pedido. Ele se abre com os produtos.
-   - Imagem: histórico. Seta num pedido.
+1. Em **Estoque**, toque na aba **Reposição**, desça até **Histórico de Pedidos** e toque no pedido. Ele se abre com os produtos.
+   - Imagem: histórico. Contorno num pedido. (existe: `imprimir-pedido-1.webp`)
 2. Toque em **Imprimir pedido**, embaixo dos produtos. Aparecem duas opções.
    - Imagem: pedido aberto. Círculo em **Imprimir pedido**.
 3. Escolha **Só quantidades** (sem valores, para quem recebe conferir) ou **Com valores** (preços e total, para o seu controle).
@@ -509,8 +509,8 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Confira as caixas com o papel do pedido (guia 15): quantidades, embalagem e se está congelado.
    - Imagem: sem recorte do app (foto do papel com marcações).
-2. Toque em **Seu pedido chegou: toque para conferir**, na Início. Abre o quadro "Seu pedido chegou. Confira!", no alto da Reposição.
-   - Imagem: quadro "Seu pedido chegou. Confira!". Seta no quadro.
+2. Toque em **Seu pedido chegou: toque para conferir**, na Início. Abre o quadro "Seu pedido chegou. Confira!", no alto da Reposição (em Estoque).
+   - Imagem: quadro "Seu pedido chegou. Confira!". Contorno no quadro. (existe: `conferir-chegada-2.webp`)
 3. **Só se veio tudo:** toque em **Recebi tudo certo** e depois em **Sim, chegou tudo**. O estoque sobe sozinho. Pronto, pare aqui.
    - Imagem: quadro com os dois botões. Seta em **Recebi tudo certo**.
 4. **Só se faltou algo (em vez do passo 3):** toque em **Faltou algo**. Em cada produto que faltou, use o **−** até ficar o que chegou de verdade.
@@ -534,18 +534,18 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Quando usar:** você quer pedir igual ao último pedido.
 
 **Passos**
-1. Toque em **Estoque** e na aba **Reposição**.
-   - Imagem: abas no alto. Seta em **Reposição**.
-2. Toque em **Repetir último**, ao lado de Novo Pedido. Abre "Repetir Pedido" com as mesmas quantidades.
-   - Imagem: botões do alto. Círculo em **Repetir último**.
-3. Mude a quantidade do que precisar.
-   - Imagem: lista preenchida. Círculo num campo Quantidade.
-4. Toque em **Enviar Pedido**. Aparece "Pedido enviado com sucesso!".
-   - Imagem: rodapé. Seta em **Enviar Pedido**.
+1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e na aba **Reposição**.
+   - Imagem: abas no alto. Contorno em **Reposição**. (existe: `repetir-pedido-1.webp`)
+2. Toque em **Repetir último pedido**, embaixo de **Montar pedido com a sugestão**. Abre "Repetir pedido" com as mesmas quantidades.
+   - Imagem: botões do quadro. Contorno em **Repetir último pedido**. (existe: `repetir-pedido-2.webp`)
+3. Mude a quantidade do que precisar com **−** e **+**.
+   - Imagem: lista preenchida. (existe: `repetir-pedido-3.webp`)
+4. Toque em **Enviar pedido**, confira a lista e o total e toque em **Confirmar e enviar**. Aparece "Pedido enviado com sucesso!".
+   - Imagem: rodapé da revisão. Contorno em **Confirmar e enviar**. (existe: `repetir-pedido-4.webp`)
 
 **Deu certo quando:** o pedido novo aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** compare com **Usar sugestão**. A sugestão olha o que você vendeu de verdade; o último pedido, não.
+**Dica:** compare com **Montar pedido com a sugestão**. A sugestão olha o que você vendeu de verdade; o último pedido, não.
 
 **Erro comum:** repetir um pedido grande num mês fraco e ficar com o freezer cheio. Olhe o Estoque antes.
 
@@ -556,14 +556,14 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 # DINHEIRO
 
 ## 18. Ver quanto sobrou no mês
-`slug: resultado` · **Onde começa:** Mais › Gestão (abre na aba **Resultado**) · **Tempo:** 3 a 5 minutos
+`slug: resultado` · **Onde começa:** Mais › Gestão (abre o **Resultado**) · **Tempo:** 3 a 5 minutos
 > Fotos (S21.1): `resultado-1.webp`..`resultado-5.webp`, uma por passo.
 
 **Quando usar:** saber se o mês deu resultado e para onde foi o dinheiro.
 
 **Passos**
-1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**. (Na Início, o atalho **Resultado do mês** leva ao mesmo lugar.)
-   - Imagem: aba **Resultado**. (existe: `resultado-1.webp`)
+1. No celular, toque em **Mais** e em **Gestão**; no computador, em **Gestão** no menu à esquerda. Abre o **Resultado**. (Na Início, o atalho **Resultado do mês** leva ao mesmo lugar.)
+   - Imagem: tela **Resultado**. (existe: `resultado-1.webp`)
 2. Escolha o mês com as setas ao lado do nome do mês.
    - Imagem: setas do mês. (existe: `resultado-2.webp`)
 3. Leia o número grande **Sobrou em (mês)**. Logo abaixo, as barras **Entrou** e **Saiu**.
@@ -584,12 +584,12 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 ---
 
 ## 19. Lançar um gasto
-`slug: lancar-gasto` · **Onde começa:** Mais › Gestão (aba Resultado) › **Registrar gasto** · **Tempo:** 1 a 2 minutos
+`slug: lancar-gasto` · **Onde começa:** Mais › Gestão (Resultado) › **Registrar gasto** · **Tempo:** 1 a 2 minutos
 
 **Quando usar:** você pagou algo da unidade: sacolas, gás, entregador, aluguel, embalagem.
 
 **Passos**
-1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**.
+1. No celular, toque em **Mais** e em **Gestão**; no computador, em **Gestão** no menu à esquerda. Abre o **Resultado**.
    - Imagem: lista do Mais. Seta em **Gestão**.
 2. Role até **Gastos do mês** e toque em **Registrar gasto**. Escolha **Um gasto do dia a dia**.
    - Imagem: janela "Registrar gasto". Seta em **Um gasto do dia a dia**.
@@ -611,12 +611,12 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 ---
 
 ## 20. Baixar o relatório do mês
-`slug: relatorio-mes` · **Onde começa:** Mais › Gestão (aba Resultado) · **Tempo:** 1 minuto
+`slug: relatorio-mes` · **Onde começa:** Mais › Gestão (Resultado) · **Tempo:** 1 minuto
 
 **Quando usar:** ter o resumo do mês numa folha, para consultar ou mostrar a alguém.
 
 **Passos**
-1. Toque em **Mais** e em **Gestão**. Abre na aba **Resultado**.
+1. No celular, toque em **Mais** e em **Gestão**; no computador, em **Gestão** no menu à esquerda. Abre o **Resultado**.
    - Imagem: lista do Mais. Seta em **Gestão**.
 2. Escolha o mês com as setas.
    - Imagem: setas do mês. Círculo nas setas ◀ ▶.
@@ -984,13 +984,13 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 ---
 
 ## 33. Ver as vendas por produto
-`slug: vendas-por-produto` · **Onde começa:** Mais › Gestão (aba Resultado) › **Mais vendidos** › **Ver todos os produtos** · **Tempo:** 2 minutos
+`slug: vendas-por-produto` · **Onde começa:** Mais › Gestão (Resultado) › **Mais vendidos** › **Ver todos os produtos** · **Tempo:** 2 minutos
 > Fotos (Onda 7c): `vendas-por-produto-1.webp`..`vendas-por-produto-5.webp`, uma por passo.
 
 **Quando usar:** saber quanto você vendeu de cada produto no mês, em unidades e em reais.
 
 **Passos**
-1. No celular, toque em **Mais** e em **Gestão**; no computador, toque em **Gestão** no menu à esquerda. Abre na aba **Resultado**.
+1. No celular, toque em **Mais** e em **Gestão**; no computador, toque em **Gestão** no menu à esquerda. Abre o **Resultado**.
    - Imagem: lista do Mais. Contorno em **Gestão**. (existe: `vendas-por-produto-1.webp`)
 2. Use as setas ao lado do nome do mês para escolher o mês.
    - Imagem: setas do mês. (existe: `vendas-por-produto-2.webp`)
@@ -1043,7 +1043,7 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 10. **Paguei a mensalidade e continua em aberto.** Abra Pagamentos e toque em "Já paguei, verificar agora". → `pagamentos`
 11. **O comprovante sai fraco na impressora.** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina. → `comprovante`
 12. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez. → `esqueci-senha`
-13. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão, na aba Resultado, toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF. → `vendas-por-produto`
+13. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF. → `vendas-por-produto`
 14. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
 
 No app (`PERGUNTAS_FREQUENTES`) ficam as 9 que já existiam (algumas passaram a apontar para o guia novo que responde melhor) mais 5 novas.
