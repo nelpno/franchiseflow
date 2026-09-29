@@ -495,6 +495,7 @@ export default function TabLancar({
     if (!nova) return;
     setPendingReceiptId(null);
     toast.success("Venda registrada!", {
+      id: "venda-salva",
       action: {
         label: "Comprovante",
         onClick: () => handleShareSaleRef.current?.(nova),
@@ -1309,8 +1310,8 @@ export default function TabLancar({
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 bg-[#fffbeb]">
             <h2 className="font-plus-jakarta font-bold text-ink">
               A receber · <span className="font-mono-numbers">{aReceber.length}</span>
-              {/* S12.6: a caixa soma TODOS os meses carregados; o chip e o resumo abaixo, só o período */}
-              <span className="ml-1.5 text-xs font-medium text-ink-2">de todos os meses</span>
+              {/* S12.6: a caixa soma TODOS os meses carregados (Vendas carrega 6 meses); o chip e o resumo abaixo, só o período */}
+              <span className="ml-1.5 text-xs font-medium text-ink-2">dos últimos 6 meses</span>
             </h2>
             <span className="font-bold text-ink font-mono-numbers">{formatCurrency(aReceberTotal)}</span>
             <p className="w-full text-xs text-ink-2">

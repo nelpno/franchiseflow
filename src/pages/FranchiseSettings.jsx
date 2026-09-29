@@ -29,6 +29,8 @@ import CatalogUpload from "@/components/vendedor/CatalogUpload";
 import { ToggleCard, RadioCards } from "@/components/vendedor/WizardFields";
 import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
 import { listarFranquias } from "@/lib/franchisesCache";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
 
 const initialFormData = {
   franchise_evolution_instance_id: '',
@@ -176,6 +178,8 @@ function buildDbPayload(form) {
 }
 
 function FranchiseSettingsContent() {
+  // Título igual ao menu novo (S24.1/7c): com a chave, "Meu robô"; sem ela, como era.
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
   const { selectedFranchise, setSelectedFranchise } = useAuth();
   // Deep-link do admin/gerente: /FranchiseSettings?franchise=<evolution_instance_id>
   // (Ficha da unidade, "Configurar robô →"). Antes o wizard sempre abria a 1ª config
@@ -890,7 +894,7 @@ function FranchiseSettingsContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-ink">Meu Vendedor</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-ink">{uiV2 ? "Meu robô" : "Meu Vendedor"}</h2>
             <p className="text-sm text-ink-2/70 mt-0.5">
               {/* Com 2+ unidades, dizer QUAL está aberta — o wizard mostra o nome
                   da unidade nos campos, e sem isso não dá pra ter certeza. */}

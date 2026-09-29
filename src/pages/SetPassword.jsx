@@ -190,7 +190,7 @@ export default function SetPassword() {
               </button>
 
               <p className="text-sm leading-relaxed text-ink-3 text-center">
-                Esqueceu depois? Na tela de entrar, toque em Esqueci a senha.
+                Esqueceu depois? Na tela de entrar, toque em “Primeiro acesso ou esqueceu a senha?”.
               </p>
             </form>
           </div>
