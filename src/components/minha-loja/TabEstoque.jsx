@@ -503,9 +503,19 @@ export default function TabEstoque({
         );
         toast.success("Produto atualizado.");
       } else {
+        const nomeNovo = payload.product_name.toLowerCase();
+        if (existingNames.has(nomeNovo)) {
+          toast.error("Esse produto já está no seu Estoque. Procure na lista (ou em produtos ocultos).");
+          return;
+        }
+        const nomeDaFabrica = standardCatalog.length > 0
+          ? standardCatalog.some((p) => p.product_name.toLowerCase() === nomeNovo)
+          : selectedFromCatalog; // catálogo não carregou: vale a escolha na sugestão, como antes
         const newItem = await InventoryItem.create({
           ...payload,
-          created_by_franchisee: isAdmin ? false : !selectedFromCatalog,
+          // Produto da fábrica = nome IGUAL ao da tabela (escolhido na sugestão ou digitado igual);
+          // nome mudado depois de escolher vira produto próprio (29/09).
+          created_by_franchisee: isAdmin ? false : !nomeDaFabrica,
         });
         setItems((prev) => [newItem, ...prev]);
         toast.success("Produto adicionado ao estoque.");
