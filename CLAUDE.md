@@ -265,6 +265,12 @@ Pedido da franqueada de Suzano: "recebi X contatos no mês, quantos compraram?".
 - Comparar DIA com dia: mesmo dia da semana 4 semanas antes (dia − 28), nunca o mesmo número do mês anterior (sábado contra quarta dava "+R$ 10 mil" falso). Total do mês continua contra o mesmo trecho do mês anterior (`get_faturamento_por_dia`, `4b14fa5`).
 - Nota fiscal pré-pronta no branch `wip/nfe-cadastro`: rebase no main e aplicar `fiscal-01` ANTES do deploy (o front manda colunas novas → 400).
 
+### Estoque, Reposição e Novo Pedido (S25, 29/09/2026, `199f5cd`) e manual no app
+- **Uma regra de sugestão só:** `sugestaoDeCompra` em [stockSuggestion.js](src/lib/stockSuggestion.js) (Estoque, Reposição, "Acabando" e Novo Pedido). Cobre o intervalo típico de pedidos da unidade (mediana 180 dias) + 5 de entrega + 7 de folga; desconta o que está a caminho; mínimo só é piso para o que vende (sem venda em 12 semanas = não sugere). Backtest com vendas reais: 88,4% da procura atendida (a regra antiga, 62,6%). Testes: `node src/lib/sugestaoCompra.test.mjs`.
+- 🔴 **Memória do envio do pedido = o rascunho com o `clientId` (modelo da S14).** O preenchimento automático já nasce como rascunho; a RPC idempotente resolve o reenvio. Uma "tentativa pendente" separada foi tentada e reprovada 3× na P3 (bloqueava pedido, perdia conteúdo): não recriar. Confirmação invalidada ao fechar a janela (prop `aberto`) ou gerar id novo.
+- **Frete do pedido à fábrica fica na linha do pedido, não em Transporte** (Resultado novo). A tela antiga somava os dois e franqueada descontava de cabeça (Santos, 29/09): pergunta frequente "O Transporte do Resultado diminuiu?".
+- **Manual em PDF:** `public/manual-maxi.pdf`, gerado de `guiasAjuda.js` + fotos por `.tmp/onda7b-manual/gera.mjs` (gitignored). Mudou guia = regerar e copiar no mesmo deploy (o teste doc × app não pega o PDF velho).
+
 ### Relatório do mês em PDF (11/09/2026, `ce61e6d`)
 - Botão no topo do Resultado (`HeroMetric`) → PDF de 1 página: 3 meses lado a lado, mais vendidos, anúncio. Lógica em `src/lib/monthlyReport.js` (+ `.test.mjs`), render em `monthlyReportPdf.js`. Reusa os dados da tela + `calculatePnL` (sem consulta nova); o anúncio (`get_marketing_attribution`) só no clique, e falha vira aviso no PDF, não bloqueia.
 - "Mais vendidos" ordena por QUANTIDADE, igual ao card da tela (item de kit sobe ao topo) — mudar para valor = mudar a tela junto.
