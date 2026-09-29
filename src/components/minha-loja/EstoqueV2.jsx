@@ -101,7 +101,7 @@ export function ResumoEstoque({ resumo, sugestaoStatus, onTentarDeNovo, onContar
 
 function TextoPedir({ info }) {
   if (!info?.daFabrica) return <span className="text-ink-3">—</span>;
-  if (!info.pronta) return <span className="text-ink-3">…</span>;
+  if (!info.pronta) return <span className="text-ink-3">{info.status === "erro" ? "—" : "…"}</span>;
   const s = info.s;
   if (s.repor > 0) return <span className="font-semibold text-brand-dark">Pedir {s.repor}</span>;
   if (s.aCaminho > 0) return <span className="text-ok-ink">{fmtQtd(s.aCaminho)} a caminho</span>;

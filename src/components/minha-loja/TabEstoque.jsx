@@ -264,6 +264,7 @@ export default function TabEstoque({
       out[item.id] = {
         daFabrica: ehProdutoDaFabrica(item),
         pronta: sugestaoPronta,
+        status: pedidosUnidade.status,
         s: sugestaoDeCompra(item, {
           ritmoPorDia: ritmoV2[item.id] || 0,
           aCaminho: sugestaoPronta ? parseFloat(pedidosUnidade.emAberto?.[item.id]) || 0 : 0,
@@ -272,7 +273,7 @@ export default function TabEstoque({
       };
     }
     return out;
-  }, [uiV2, items, ritmoV2, sugestaoPronta, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
+  }, [uiV2, items, ritmoV2, sugestaoPronta, pedidosUnidade.status, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
   const resumoV2 = useMemo(() => {
     if (!uiV2) return null;
     const ativos = items.filter((i) => i.active !== false);
@@ -283,14 +284,19 @@ export default function TabEstoque({
     });
     const r = resumoDeCompra(linhas);
     const somar = (campo) => ativos.reduce((t, i) => t + Math.max(parseFloat(i.quantity) || 0, 0) * (parseFloat(i[campo]) || 0), 0);
+    // "Acabando" = o mesmo critério do filtro da lista (acabou, acabando ou negativo; inclui produto seu).
+    const acabando = ativos.filter((i) => {
+      const s2 = infoV2[i.id]?.s;
+      return s2 && (s2.situacao === "acabou" || s2.situacao === "acabando" || s2.estoqueNegativo);
+    }).length;
     return {
-      acabando: r.acabando,
+      acabando,
       paraPedir: sugestaoPronta ? r.paraPedir.length : 0,
       negativos: ativos.filter((i) => (parseFloat(i.quantity) || 0) < 0).length,
       valorCusto: somar("cost_price"),
       valorVenda: somar("sale_price"),
     };
-  }, [uiV2, items, ritmoV2, sugestaoPronta, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
+  }, [uiV2, items, infoV2, ritmoV2, sugestaoPronta, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
   const [filtroV2, setFiltroV2] = useState("todos");
   const [itemAbertoId, setItemAbertoId] = useState(null);
   const itemAberto = itemAbertoId ? items.find((i) => i.id === itemAbertoId) || null : null;
