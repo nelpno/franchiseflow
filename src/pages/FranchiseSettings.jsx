@@ -1363,12 +1363,12 @@ function FranchiseSettingsContent() {
                 <ToggleCard
                   icon="event_available"
                   label="Aceitar reserva para outro dia sem pagamento antecipado?"
-                  description="Vale para entrega e retirada. Ligado, o robô aceita pedido para outro dia sem cobrar na hora e avisa você para preparar e confirmar."
+                  description="Vale para entrega e retirada. Ligado, quando o cliente pede para outro dia (até 14 dias à frente, só em dia que você atende), o robô fecha o pedido sem cobrar na hora: ele entra em Vendas como “a receber”, na data da entrega, e você recebe o resumo no WhatsApp. O cliente paga na entrega ou na retirada (no Pix, paga no dia). Pedido para hoje continua como sempre."
                   checked={formData.accepts_reservation_without_payment ?? false}
                   onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
                 />
                 <p className="text-xs text-ink-3 mt-1 ml-1">
-                  Desligado por padrão. Ligue só se você aceita preparar o produto antes de receber: o risco do cliente sumir é seu.
+                  Desligado por padrão. Desligado, para outro dia o robô só fecha sem cobrar na hora se o cliente pagar em dinheiro ou cartão na entrega/retirada; no Pix, o cliente paga hoje. Se o cliente sumir, exclua a venda em Vendas.
                 </p>
               </div>
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (

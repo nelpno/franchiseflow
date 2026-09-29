@@ -1,6 +1,6 @@
 // Etapa 5 "Como o robô vai responder": respostas montadas pelo motor do robô com o cadastro da tela.
 import assert from "node:assert/strict";
-import { montarSimulacoes, montarConferencias, modeloDaSimulacao, preposicaoBairro } from "./simulacoesRobo.js";
+import { montarSimulacoes, montarConferencias, modeloDaSimulacao, preposicaoBairro, simulacaoOutroDia } from "./simulacoesRobo.js";
 
 assert.equal(preposicaoBairro("Vila Nova"), "na");
 assert.equal(preposicaoBairro("Maré Mansa"), "na");
@@ -75,11 +75,36 @@ assert.ok(confS.some((c) => c.texto.startsWith("Sem catálogo")));
 const MODALIDADE = { has_delivery: true, has_pickup: true, catalog_image_url: "x", payment_delivery: ["pix"], payment_pickup: ["pix"],
   delivery_schedule: [{ days: semana, delivery_start: "10:00", delivery_end: "18:00", charges_fee: true, fee_rules: { mode: "modality", rules: [{ label: "Centro", fee: "8" }] } }] };
 assert.equal(modeloDaSimulacao(MODALIDADE), null);
-assert.deepEqual(montarSimulacoes(MODALIDADE, HOJE).map((x) => x.rotulo), ["Pagamento e retirada"]);
+assert.deepEqual(montarSimulacoes(MODALIDADE, HOJE).map((x) => x.rotulo), ["Pede para outro dia, sem pagar agora", "Pagamento e retirada"]);
 assert.ok(montarConferencias(MODALIDADE).some((c) => c.texto.startsWith("Seu frete está em texto livre")));
 
 // ---- só retirada
 assert.deepEqual(montarSimulacoes({ has_delivery: false, has_pickup: true, pickup_requires_scheduling: false, payment_pickup: ["cash"], street_address: "Rua A, 1" }, HOJE),
   [{ rotulo: "Pagamento e retirada", pergunta: "Aceita cartão? Posso buscar aí?", resposta: "Na retirada, dinheiro. Pode buscar sim, é só vir no horário, na Rua A, 1." }]);
+
+// ---- pede para outro dia, sem pagar agora (Onda 7c): as duas variantes da chave de reserva
+// HOJE = segunda 14/09; abre seg-sex -> 2º dia aberto = quarta 16/09
+const OUTRO = { has_delivery: true, has_pickup: false, payment_delivery: ["pix", "cash", "card_machine"],
+  delivery_schedule: [{ days: semana, delivery_start: "10:00", delivery_end: "18:00" }] };
+const ligada = simulacaoOutroDia({ ...OUTRO, accepts_reservation_without_payment: true }, HOJE);
+assert.equal(ligada.rotulo, "Pede para outro dia, sem pagar agora");
+assert.equal(ligada.pergunta, "Quero para quarta, 16/09. Posso pagar só no dia?");
+assert.equal(ligada.resposta, "Pode sim! Seu pedido fica registrado para quarta, 16/09 e você paga no dia: dinheiro, crédito ou débito na entrega ou Pix até a saída da entrega. O resumo do pedido já chega aqui para você.");
+assert.match(ligada.tag, /a receber/);
+const desligada = simulacaoOutroDia({ ...OUTRO, accepts_reservation_without_payment: false }, HOJE);
+assert.equal(desligada.resposta, "Pode sim! Para quarta, 16/09, você paga em dinheiro, crédito ou débito na entrega. Se preferir o Pix, ele é feito hoje: te mando a chave e, com o comprovante, seu pedido fica confirmado para esse dia.");
+assert.equal(desligada.tag, "Reserva desligada");
+// só Pix, desligada: paga hoje; ligada: Pix no dia
+assert.equal(simulacaoOutroDia({ ...OUTRO, payment_delivery: ["pix"] }, HOJE).resposta, "Para quarta, 16/09, o pagamento é feito hoje pelo Pix: te mando a chave e, com o comprovante, seu pedido fica confirmado para esse dia.");
+assert.match(simulacaoOutroDia({ ...OUTRO, payment_delivery: ["pix"], accepts_reservation_without_payment: true }, HOJE).resposta, /você paga no dia: Pix até a saída da entrega./);
+// só retirada com horário próprio (sáb): usa os dias da retirada
+const ret = simulacaoOutroDia({ has_delivery: false, has_pickup: true, has_custom_pickup_hours: true, payment_pickup: ["cash"], accepts_reservation_without_payment: true,
+  pickup_schedule: [{ days: ["sab"], open: "09:00", close: "12:00" }] }, HOJE);
+assert.equal(ret.pergunta, "Quero para sábado, 26/09. Posso pagar só no dia?");
+assert.match(ret.resposta, /dinheiro na retirada/);
+// sem dias abertos: sem cenário
+assert.equal(simulacaoOutroDia({ has_delivery: true, delivery_schedule: [] }, HOJE), null);
+// texto sem palavras proibidas na tela
+for (const x of [ligada, desligada, ret]) assert.doesNotMatch([x.pergunta, x.resposta, x.tag].join(" "), /amanhã|separ|reservar|reservo|margem|loja|prepar/i);
 
 console.log("simulacoesRobo: ok");

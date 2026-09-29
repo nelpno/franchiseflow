@@ -177,7 +177,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
           { label: "Catálogo", value: formData.catalog_image_url ? "Enviado" : "", warning: !formData.catalog_image_url },
           // vazio é o normal (32 unidades): não é alerta
           { label: "Promoções", value: formData.promotions_combo ? "Configuradas" : "Nenhuma" },
-          { label: "Reserva sem pagar", value: formData.accepts_reservation_without_payment ? "Aceita" : "Não aceita" },
+          { label: "Outro dia sem pagar", value: formData.accepts_reservation_without_payment ? "Aceita (entra como a receber)" : "Não aceita" },
         ]}
       />
     </div>

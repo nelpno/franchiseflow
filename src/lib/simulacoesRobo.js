@@ -220,6 +220,10 @@ export function montarSimulacoes(form, hoje) {
     }
   }
 
+  // pedido para outro dia sem pagar agora (Onda 7c, 29/09/2026): o que o robô faz com a chave "reserva" ligada ou desligada
+  const outroDia = simulacaoOutroDia(form, hoje);
+  if (outroDia) itens.push(outroDia);
+
   // pagamento e retirada
   const endereco = form?.pickup_address || [form?.street_address, form?.neighborhood].filter(preenchido).join(", ");
   const partes = [];
@@ -241,6 +245,50 @@ export function montarSimulacoes(form, hoje) {
     });
   }
   return itens;
+}
+
+// Dias em que o robô abre, pela mesma regra do Customer Context: entrega = delivery_schedule com início e fim;
+// retirada com horário próprio = pickup_schedule (open/close); sem horário próprio, os dias da entrega.
+function diasAbertos(form, modalidade) {
+  const deEntrega = (form?.delivery_schedule || []).filter((g) => g && Array.isArray(g.days) && g.delivery_start && g.delivery_end).flatMap((g) => g.days);
+  if (modalidade === "entrega") return new Set(deEntrega);
+  if (form?.has_custom_pickup_hours) return new Set((form?.pickup_schedule || []).filter((g) => g && Array.isArray(g.days) && g.open && g.close).flatMap((g) => g.days));
+  return new Set(deEntrega);
+}
+const juntarOu = (xs) => (xs.length <= 1 ? xs[0] || "" : `${xs.slice(0, -1).join(", ")} ou ${xs.at(-1)}`);
+const PAGA_NO_DIA = new Set(["cash", "credit", "debit", "nfc", "meal_voucher"]);
+
+/** Cenário "Pede para outro dia, sem pagar agora": o 2º dia aberto a partir de hoje (até 14 dias). */
+export function simulacaoOutroDia(form, hoje) {
+  const modalidade = form?.has_delivery !== false ? "entrega" : (form?.has_pickup ? "retirada" : null);
+  if (!modalidade) return null;
+  const abertos = diasAbertos(form, modalidade);
+  const datas = [];
+  for (let i = 1; i <= 14; i++) { const d = somaDias(hoje, i); if (abertos.has(diaDaSemana(d))) datas.push(d); }
+  const d = datas[1] || datas[0];
+  if (!d) return null;
+  const quando = `${NOME[diaDaSemana(d)]}, ${d.slice(8)}/${d.slice(5, 7)}`;
+  const lista = modalidade === "entrega" ? form?.payment_delivery : (form?.payment_pickup?.length ? form.payment_pickup : form?.payment_delivery);
+  const valores = [...new Set((lista || []).flatMap((v) => LEGACY_PAYMENT_MAP[v] || [v]))];
+  const noDia = valores.filter((v) => PAGA_NO_DIA.has(v));
+  const temPix = valores.includes("pix");
+  const na = modalidade === "entrega" ? "na entrega" : "na retirada";
+  const ligada = !!form?.accepts_reservation_without_payment;
+  let resposta;
+  if (ligada) {
+    const formas = [noDia.length ? `${juntarOu(noDia.map((v) => PAGAMENTO[v] || v))} ${na}` : "", temPix ? (modalidade === "entrega" ? "Pix até a saída da entrega" : "Pix na retirada") : ""].filter(Boolean);
+    resposta = `Pode sim! Seu pedido fica registrado para ${quando} e você paga no dia: ${formas.join(" ou ") || na}. O resumo do pedido já chega aqui para você.`;
+  } else if (noDia.length) {
+    resposta = `Pode sim! Para ${quando}, você paga em ${juntarOu(noDia.map((v) => PAGAMENTO[v] || v))} ${na}.${temPix ? " Se preferir o Pix, ele é feito hoje: te mando a chave e, com o comprovante, seu pedido fica confirmado para esse dia." : ""}`;
+  } else {
+    resposta = `Para ${quando}, o pagamento é feito hoje${temPix ? " pelo Pix: te mando a chave e, com o comprovante, seu pedido fica confirmado para esse dia" : ""}.`;
+  }
+  return {
+    rotulo: "Pede para outro dia, sem pagar agora",
+    tag: ligada ? "Reserva ligada: entra em Vendas como a receber" : "Reserva desligada",
+    pergunta: `Quero para ${quando}. Posso pagar só no dia?`,
+    resposta,
+  };
 }
 
 /**
