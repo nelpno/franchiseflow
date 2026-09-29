@@ -424,6 +424,7 @@ export default function TabReposicao({
             saleItems={saleItems}
             initialQuantities={initialQuantities}
             primeiroPedido={primeiroPedido}
+            primeiroPedidoPronto={!loadingLastOrder}
             uiV2={uiV2}
             emAberto={uiV2 && pedidosProntos ? emAberto : null}
             abertosStatus={abertos.status}
