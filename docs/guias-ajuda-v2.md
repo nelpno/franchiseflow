@@ -375,7 +375,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: barra de baixo. Contorno em **Estoque**. (existe: `contar-estoque-1.webp`)
 2. Toque em **Contar estoque**, acima da lista. Cada produto ganha os botões **−** e **+**.
    - Imagem: botões acima da lista. Contorno em **Contar estoque**. (existe: `contar-estoque-2.webp`)
-3. Abra o freezer e conte um produto de cada vez. Acerte o número com **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta conferir um pedido que chegou (guia 16) ou se uma venda foi lançada 2 vezes (guia 6).
+3. Abra o freezer e conte quantas unidades de cada produto há. Deixe esse total no app: se contou 12, o número fica 12 (não digite só a diferença). Use **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta conferir um pedido que chegou (guia 16) ou se uma venda foi lançada 2 vezes (guia 6).
    - Imagem: um produto no modo de contar. Contorno no produto. (existe: `contar-estoque-3.webp`)
 4. No fim, toque em **Salvar** (ele mostra quantos produtos você mudou). Aparece "Contagem salva".
    - Imagem: alto da contagem. Contorno em **Salvar (1)**. (existe: `contar-estoque-4.webp`)
@@ -400,11 +400,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e toque no produto na lista.
    - Imagem: lista do estoque. Contorno num produto. (existe: `mudar-preco-1.webp`)
-2. Abre o produto. **Preço de venda** é o que o cliente paga; **Custo** vem da tabela da Maxi; **Markup** mostra quanto a venda está acima do custo.
+2. Abre o produto. **Preço de venda** é o que o cliente paga e **Custo** vem da tabela da Maxi. **Markup** compara os dois: custo R$ 10 e venda R$ 20 dá Markup de 100%.
    - Imagem: produto aberto. Contorno em **Preço de venda** e **Custo**. (existe: `mudar-preco-2.webp`)
 3. Toque em **Editar produto**. Apague o **Preço de venda (R$)**, digite o novo e toque em **Salvar**.
    - Imagem: formulário "Editar Produto". Contorno no campo **Preço de venda (R$)**. (existe: `mudar-preco-3.webp`)
-4. Aparece "Produto atualizado.". O robô passa a usar o preço novo.
+4. Espere aparecer "Produto atualizado.". O robô passa a usar esse preço. Atualize também a imagem do cardápio que o robô envia (guia 28).
    - Imagem: aviso "Produto atualizado." no alto. (existe: `mudar-preco-4.webp`)
 
 **Deu certo quando:** ao abrir o produto de novo, o **Preço de venda** é o novo. O robô passa a usar esse preço com os clientes.
@@ -425,7 +425,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Caminho A — cadastrar produto próprio**
 1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e em **Adicionar**, acima da lista.
    - Imagem: botões acima da lista. Contorno em **Adicionar**. (existe: `produto-proprio-1.webp`)
-2. Preencha **Nome do Produto**, a quantidade, o custo e o preço de venda.
+2. Em **Nome do Produto**, escreva o nome do que você vende. Depois, a quantidade que você tem, o custo (quanto você paga por uma unidade) e o preço de venda (quanto o cliente paga por uma unidade).
    - Imagem: formulário "Adicionar Produto". (existe: `produto-proprio-2.webp`)
 3. Toque em **Adicionar**, no fim do formulário. Aparece "Produto adicionado ao estoque." Pronto.
    - Imagem: fim do formulário. Contorno em **Adicionar**. (existe: `produto-proprio-3.webp`)
@@ -455,22 +455,22 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e na aba **Reposição**, no alto.
    - Imagem: abas no alto. Contorno em **Reposição**. (existe: `pedido-fabrica-1.webp`)
-2. No quadro **Próximo pedido à fábrica**, toque em **Montar pedido com a sugestão**. No primeiro pedido, o botão é **Novo pedido** e a lista vem com o pedido modelo da Maxi. Produto próprio fica fora do pedido.
+2. No quadro **Próximo pedido à fábrica**, toque em **Montar pedido com a sugestão**: as quantidades vêm das suas vendas. No primeiro pedido, o botão é **Novo pedido** e abre a lista modelo da Maxi. Produto próprio fica fora do pedido.
    - Imagem: quadro da sugestão. Contorno em **Montar pedido com a sugestão**. (existe: `pedido-fabrica-2.webp`)
-3. A lista já vem preenchida pelas suas vendas. Ajuste com **−** e **+**, ou toque no número e digite. Os produtos sem sugestão ficam em **Outros produtos**, embaixo.
+3. Confira as quantidades. Ajuste com **−** e **+**, ou toque no número e digite. Para incluir um produto sem sugestão, procure em **Outros produtos**, embaixo.
    - Imagem: um produto com − e +. (existe: `pedido-fabrica-3.webp`)
-4. Toque em **Enviar pedido**. Abre **Confira antes de enviar**: cada produto com a quantidade e o valor, o frete estimado e o total. Algo errado? Toque em **Voltar e ajustar**.
+4. Toque em **Enviar pedido** para abrir a revisão. O pedido ainda não foi enviado. Em **Confira antes de enviar**, veja produtos, quantidades, valores, frete e total. Para corrigir, toque em **Voltar e ajustar**.
    - Imagem: a revisão do pedido. (existe: `pedido-fabrica-4.webp`)
-5. Toque em **Confirmar e enviar** e espere a mensagem "Pedido enviado com sucesso!".
+5. Para enviar à Maxi, toque em **Confirmar e enviar** e espere a mensagem "Pedido enviado com sucesso!".
    - Imagem: rodapé da revisão. Contorno em **Confirmar e enviar**. (existe: `pedido-fabrica-5.webp`)
 6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira (guia 16).
    - Imagem: histórico com um pedido. (existe: `pedido-fabrica-6.webp`)
 
 **Deu certo quando:** o pedido aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** a sugestão vem das suas vendas: o que você vende por semana, para durar até a entrega seguinte (você costuma pedir a cada ~3 semanas e a entrega leva ~5 dias), mais 1 semana de folga. Já desconta o que você tem e o que está a caminho. Produto sem venda em 3 meses não entra. O frete é estimado: 10% do pedido, entre R$ 250 e R$ 350. A Maxi confirma o valor.
+**Dica:** o app usa suas vendas para sugerir quanto pedir. A conta cobre até a entrega seguinte (você costuma pedir a cada ~3 semanas e a entrega leva ~5 dias), mais uma semana, e já considera o estoque e os produtos a caminho. Produto sem venda em 3 meses não entra. Confira se as quantidades atendem ao que você precisa. O frete mostrado é uma previsão: 10% do valor dos produtos, no mínimo R$ 250 e no máximo R$ 350. A Maxi confirma o valor.
 
-**Erro comum:** enviar sem conferir as quantidades. A sugestão é um ponto de partida: na revisão, veja a lista e mude o que precisar. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
+**Erro comum:** apareceu "Já tem um pedido enviado há pouco"? Outro celular ou outra aba já enviou um pedido: confira no **Histórico de Pedidos** antes de enviar outro. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
 
 **Se não resolver:** Falar com a Maxi (guia 31).
 
@@ -488,7 +488,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: pedido aberto. Círculo em **Imprimir pedido**.
 3. Escolha **Só quantidades** (sem valores, para quem recebe conferir) ou **Com valores** (preços e total, para o seu controle).
    - Imagem: as duas opções. Seta em **Só quantidades**.
-4. O app baixa o pedido em PDF. Abra o arquivo e imprima.
+4. O pedido é salvo num arquivo PDF; isso ainda não imprime. Abra o arquivo (se não achar, procure em **Arquivos** ou **Downloads** do celular), toque em **Imprimir** ou em **Compartilhar**, escolha a impressora e confirme.
    - Imagem: aviso de download do PDF. Círculo no nome do arquivo.
 
 **Deu certo quando:** o papel sai com a lista de produtos, as quantidades e um espaço para marcar o que chegou.
@@ -509,11 +509,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Confira as caixas com o papel do pedido (guia 15): quantidades, embalagem e se está congelado.
    - Imagem: sem recorte do app (foto do papel com marcações).
-2. Toque em **Seu pedido chegou: toque para conferir**, na Início. Abre o quadro "Seu pedido chegou. Confira!", no alto da Reposição (em Estoque).
+2. Na Início, toque em **Seu pedido chegou: toque para conferir**. Ou toque em **Estoque** e em **Reposição** e procure o quadro "Seu pedido chegou. Confira!", no alto.
    - Imagem: quadro "Seu pedido chegou. Confira!". Contorno no quadro. (existe: `conferir-chegada-2.webp`)
 3. **Só se veio tudo:** toque em **Recebi tudo certo** e depois em **Sim, chegou tudo**. O estoque sobe sozinho. Pronto, pare aqui.
    - Imagem: quadro com os dois botões. Seta em **Recebi tudo certo**.
-4. **Só se faltou algo (em vez do passo 3):** toque em **Faltou algo**. Em cada produto que faltou, use o **−** até ficar o que chegou de verdade.
+4. **Só se faltou algo (em vez do passo 3):** toque em **Faltou algo**. Em cada produto, deixe o número igual ao que chegou de verdade; se não chegou nenhuma unidade, deixe zero.
    - Imagem: produtos com − e +. Círculo num produto com "faltou 2".
 5. Confira "Chegou R$ X de R$ Y" e toque em **Confirmar o que chegou**. A Maxi é avisada do que faltou.
    - Imagem: fim do quadro. Seta em **Confirmar o que chegou**.
@@ -522,7 +522,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Dica:** faltou item? O pedido passa a valer o que chegou, e você paga esse valor corrigido. O frete continua o mesmo que foi cobrado. Produto amassado ou descongelado: tire foto na hora.
 
-**Erro comum:** esquecer de conferir. O quadro mostra até quando conferir: 48 horas depois da entrega. Passou disso, o pedido conta como recebido completo. Faltou algo e já passou? Fale com a Maxi com a foto (guia 31).
+**Erro comum:** esquecer de conferir. Você tem 48 horas depois da entrega; depois disso, o app considera que veio tudo, mesmo sem a sua confirmação. Faltou algo e já passou? Fale com a Maxi com a foto (guia 31).
 
 **Se não resolver:** Falar com a Maxi (guia 31), com fotos do que veio errado.
 
@@ -536,16 +536,16 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e na aba **Reposição**.
    - Imagem: abas no alto. Contorno em **Reposição**. (existe: `repetir-pedido-1.webp`)
-2. Toque em **Repetir último pedido**, embaixo de **Montar pedido com a sugestão**. Abre "Repetir pedido" com as mesmas quantidades.
+2. Toque em **Repetir último pedido**, embaixo de **Montar pedido com a sugestão**. Ele copia as quantidades do pedido anterior, sem ajustar às vendas recentes.
    - Imagem: botões do quadro. Contorno em **Repetir último pedido**. (existe: `repetir-pedido-2.webp`)
-3. Mude a quantidade do que precisar com **−** e **+**.
+3. Confira o que você tem e mude as quantidades com **−** e **+**.
    - Imagem: lista preenchida. (existe: `repetir-pedido-3.webp`)
-4. Toque em **Enviar pedido**, confira a lista e o total e toque em **Confirmar e enviar**. Aparece "Pedido enviado com sucesso!".
+4. Toque em **Enviar pedido**, confira o frete e o total e toque em **Confirmar e enviar**. Aparece "Pedido enviado com sucesso!".
    - Imagem: rodapé da revisão. Contorno em **Confirmar e enviar**. (existe: `repetir-pedido-4.webp`)
 
 **Deu certo quando:** o pedido novo aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** compare com **Montar pedido com a sugestão**. A sugestão olha o que você vendeu de verdade; o último pedido, não.
+**Dica:** quer quantidades calculadas pelas suas vendas? Use **Montar pedido com a sugestão**. O Repetir copia o pedido anterior como ele foi.
 
 **Erro comum:** repetir um pedido grande num mês fraco e ficar com o freezer cheio. Olhe o Estoque antes.
 
@@ -958,7 +958,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Toque em **Início**. No celular, é o primeiro botão da barra de baixo; no computador, fica no menu à esquerda. É a tela que abre quando você entra no app.
    - Imagem: barra de baixo. Contorno em **Início**. (existe: `inicio-1.webp`)
-2. O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mesmo trecho do mês passado (por exemplo, **−8% que agosto**) e só aparece quando há base para comparar. Logo abaixo, o app sugere o próximo passo. A projeção de onde o mês deve fechar aparece a partir do dia 8, e a mediana só quando você vendeu nos 3 meses anteriores. Toque em **Ver o resultado do mês** para abrir o Resultado.
+2. O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mesmo trecho do mês passado (por exemplo, **−8% que agosto**) e só aparece quando há base para comparar. Logo abaixo, o app sugere o próximo passo. A partir do dia 8, aparece uma previsão de quanto você pode vender até o fim do mês; não é um valor garantido. A mediana aparece se houve vendas nos 3 meses anteriores: é o valor do meio (R$ 800, R$ 1.000 e R$ 1.500 dão mediana de R$ 1.000). Toque em **Ver o resultado do mês** para abrir o Resultado.
    - Imagem: quadro do mês. (existe: `inicio-2.webp`)
 3. Quando há dado, o troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, **12º de 58 em setembro**). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje, se já houve venda hoje.
    - Imagem: quadro do ranking. (existe: `inicio-3.webp`)
@@ -970,7 +970,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: quadro Agora. (existe: `inicio-6.webp`)
 7. O quadro **Quem chamar hoje** traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em **Chamar** ao lado do nome: o WhatsApp abre com a mensagem pronta e o cliente já fica marcado como chamado, então confira e envie. Para abrir a lista inteira do dia, toque em **Ver os outros** ou em **Ver lista completa**. Se você nunca usou, antes dele aparece o convite "Conheça o Quem chamar hoje".
    - Imagem: quadro Quem chamar hoje. (existe: `inicio-7.webp`)
-8. No fim da tela, quatro botões levam direto a telas que, no celular, ficam dentro do Mais: **Repor estoque**, **Clientes**, **Resultado do mês** e **Meu robô**. Vendas, Nova venda e Estoque já estão na barra de baixo.
+8. No fim da tela há quatro atalhos. **Repor estoque** abre a Reposição, dentro de Estoque. **Clientes**, **Resultado do mês** e **Meu robô** também ficam no botão **Mais**. Vendas, Nova venda e Estoque já estão na barra de baixo.
    - Imagem: os quatro atalhos. (existe: `inicio-8.webp`)
 
 **Deu certo quando:** você acha na Início quanto vendeu no mês, como está no ranking, quanto falta para a meta de hoje e o que precisa fazer agora.
@@ -996,7 +996,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: setas do mês. (existe: `vendas-por-produto-2.webp`)
 3. Role até **Mais vendidos**, que mostra os 5 que mais saíram, em unidades. No fim do quadro, toque em **Ver todos os produtos**. O número entre parênteses é quantos produtos diferentes você vendeu no mês.
    - Imagem: botão **Ver todos os produtos**. (existe: `vendas-por-produto-3.webp`)
-4. A janela **Vendas por produto** tem quatro colunas: **Produto**, **Qtd** (quantas unidades saíram), **Valor** (quantidade vezes o preço) e **%** (a parte do valor vendido que é daquele produto). Os que mais saíram vêm primeiro. Role para ver todos.
+4. A janela **Vendas por produto** já está aberta. **Qtd** mostra quantas unidades você vendeu no mês escolhido. **Valor** mostra o total vendido do produto, sem frete e sem tirar descontos. **%** mostra a parte do produto nesse total: 20% são R$ 20 de cada R$ 100. Deslize para cima para ver o resto da lista.
    - Imagem: tabela. (existe: `vendas-por-produto-4.webp`)
 5. Toque em **Excel** para a planilha, ou em **PDF** para consultar ou imprimir. O arquivo baixa com uma linha por produto e uma linha TOTAL no fim. Aparece "Excel exportado com sucesso!" (ou "PDF exportado com sucesso!").
    - Imagem: botões **Excel** e **PDF**. (existe: `vendas-por-produto-5.webp`)
