@@ -13,6 +13,7 @@ import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { MarketingPayment, getMarketingAttribution, getFranchiseFunnelStats } from "@/entities/all";
 import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
 import { resumoEquipeDigital, mesAtualBRT } from "@/lib/pagamentos";
+import { escolherMarketing, mesAlvoMarketing } from "@/lib/inicioMes";
 
 // Mesmo Pix da verba do cartão de Marketing (S5.1, decisão 27/09).
 const PIX_VERBA_CNPJ = "00.494.317/0001-21";
@@ -26,7 +27,10 @@ export default function Pagamentos() {
   const evoId = selectedFranchise?.evolution_instance_id;
   const isFranqueado = user?.role === "franchisee";
 
-  const [marketingPayment, setMarketingPayment] = useState(null);
+  // Onda 7b: os 3 últimos pagamentos, com a unidade e o resultado da leitura. O cartão usa o do
+  // MÊS-ALVO (Brasília), como a Início nova: verba do mês seguinte já registrada não esconde a
+  // do mês-alvo, e leitura falha ou de outra unidade esconde a linha em vez de dizer "pendente".
+  const [marketing, setMarketing] = useState({ evo: null, ok: false, lista: [] });
   const [resumo, setResumo] = useState(null); // null = carregando; [] = sem números
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -39,12 +43,12 @@ export default function Pagamentos() {
     const controller = new AbortController();
     setResumo(null);
     Promise.allSettled([
-      MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 1, { signal: controller.signal }),
+      MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal: controller.signal }),
       getMarketingAttribution(mes.chave, evoId, { signal: controller.signal }),
       getFranchiseFunnelStats(evoId, mes.inicio, mes.ate, { signal: controller.signal }),
     ]).then(([mp, attr, funil]) => {
       if (!mountedRef.current || controller.signal.aborted) return;
-      setMarketingPayment(mp.status === "fulfilled" ? mp.value?.[0] || null : null);
+      setMarketing({ evo: evoId, ok: mp.status === "fulfilled", lista: mp.status === "fulfilled" ? mp.value || [] : [] });
       setResumo(resumoEquipeDigital({
         atribuicao: attr.status === "fulfilled" ? attr.value?.[0] || null : null,
         funil: funil.status === "fulfilled" ? funil.value : null,
@@ -75,6 +79,9 @@ export default function Pagamentos() {
 
   const situacao = classifySubscription(subscription).situacao;
   const mensalidadePaga = situacao === SITUACAO.PAGO;
+  const mesAlvo = mesAlvoMarketing();
+  const marketingPronto = marketing.evo === evoId && marketing.ok;
+  const marketingPayment = marketingPronto ? escolherMarketing(marketing.lista, mesAlvo) : null;
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4 bg-surface">
@@ -90,7 +97,11 @@ export default function Pagamentos() {
         </div>
       )}
 
-      <FinancialObligationsCard marketingPayment={marketingPayment} />
+      <FinancialObligationsCard
+        marketingPayment={marketingPayment}
+        ocultarMarketing={!marketingPronto}
+        mesAlvo={mesAlvo}
+      />
 
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 space-y-3">
