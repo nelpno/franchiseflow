@@ -131,7 +131,7 @@ export const GUIAS = [
     erroComum: "Tocou em Recebi na venda errada. Toque em \"Desfazer\", no aviso que aparece embaixo. Se o aviso já sumiu, toque na venda para abrir e em \"Voltar para a receber\".",
     passos: [
       { titulo: "Abra Vendas", texto: "Toque em Vendas, na barra de baixo.", botao: "Vendas" },
-      { titulo: "Ache a venda", texto: "No alto, o quadro \"A receber\" mostra as vendas que faltam receber, de todos os meses. Na lista, elas aparecem com \"A receber\", em amarelo." },
+      { titulo: "Ache a venda", texto: "No alto, o quadro \"A receber\" mostra as vendas dos últimos 6 meses que faltam receber. Na lista, elas aparecem com \"A receber\", em amarelo." },
       { titulo: "Confira o dinheiro", texto: "Veja no banco, no Pix ou na maquininha se o dinheiro entrou mesmo." },
       { titulo: "Marque como recebida", texto: "Toque no botão ao lado da venda. Aparece \"Recebido!\" e a venda passa a mostrar \"Recebido em\" e a data.", botao: "Recebi" },
     ],
@@ -147,7 +147,7 @@ export const GUIAS = [
     area: "Vender",
     sinonimos: ["editar venda", "apagar venda", "venda duplicada", "venda errada", "excluir venda"],
     dica: "Para mudar só a forma de pagamento ou o cliente, use Editar. Não precisa excluir e lançar de novo.",
-    erroComum: "Aparecer \"Atenção\" ao excluir: a venda já foi contada no anúncio. Se ela é repetida ou foi por engano, toque em \"Excluir mesmo assim\". Venda que o robô lançou não se apaga: é ela que conta para o anúncio.",
+    erroComum: "Aparecer \"Atenção\" ao excluir: a venda já foi contada no anúncio. Se ela é repetida ou foi por engano, toque em \"Excluir mesmo assim\". Lançou à mão uma venda que o robô já tinha lançado? Exclua a sua e fique com a do robô: é ela que conta para o anúncio.",
     passos: [
       { titulo: "Ache a venda", texto: "Toque em Vendas. Se a venda for de outro mês, use as setas ao lado do nome do mês, no alto." },
       { titulo: "Abra a venda", texto: "Toque na venda. Ela se abre ali mesmo, com os botões embaixo. São dois caminhos: siga só o que você precisa." },

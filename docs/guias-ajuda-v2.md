@@ -198,7 +198,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Toque em **Vendas**, na barra de baixo.
    - Imagem: barra de baixo. Seta em **Vendas**.
-2. No alto, o quadro **A receber** mostra as vendas que faltam receber, de todos os meses. Ache a venda. Na lista, ela aparece com **A receber**, em amarelo.
+2. No alto, o quadro **A receber** mostra as vendas dos últimos 6 meses que faltam receber. Ache a venda. Na lista, ela aparece com **A receber**, em amarelo.
    - Imagem: quadro "A receber" com duas vendas. Círculo no quadro.
 3. Confira no banco, no Pix ou na maquininha se o dinheiro entrou mesmo.
    - Imagem: sem recorte do app (passo fora do app).
@@ -242,7 +242,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Dica:** para mudar só a forma de pagamento ou o cliente, use **Editar**. Não precisa excluir e lançar de novo.
 
-**Erro comum:** aparecer "Atenção" ao excluir. É porque a venda já foi contada no anúncio. Se ela é repetida ou foi por engano, toque em **Excluir mesmo assim**. Venda que o robô lançou não se apaga: é ela que conta para o anúncio.
+**Erro comum:** aparecer "Atenção" ao excluir. É porque a venda já foi contada no anúncio. Se ela é repetida ou foi por engano, toque em **Excluir mesmo assim**. Lançou à mão uma venda que o robô já tinha lançado? Exclua a sua e fique com a do robô: é ela que conta para o anúncio.
 
 **Se não resolver:** Falar com a Maxi (guia 31), dizendo a data e o valor da venda.
 
