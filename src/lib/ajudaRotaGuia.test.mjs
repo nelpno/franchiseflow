@@ -7,7 +7,7 @@ let n = 0;
 const t = (nome, fn) => { fn(); n++; };
 
 t("Dashboard, Vendas e MyContacts abrem o guia certo", () => {
-  assert.equal(guiaDaRota("Dashboard"), "primeiros-passos");
+  assert.equal(guiaDaRota("Dashboard"), "inicio"); // Onda 7c: antes abria os Primeiros passos
   assert.equal(guiaDaRota("Vendas"), "vendas");
   assert.equal(guiaDaRota("MyContacts"), "clientes");
   assert.equal(guiaDaRota("Marketing"), "artes");

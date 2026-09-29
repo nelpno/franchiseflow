@@ -1,7 +1,7 @@
 // Guias escritos da tela Ajuda/Tutoriais (Fase 4 do redesenho, 26/09/2026; campos v2 da S3, 28/09/2026).
 // Cada texto foi conferido contra o comportamento REAL (código + prompt LIVE do robô):
 // provas em `.tmp/onda2/conferencia-textos.md`. Mudou o comportamento? Mude o guia junto.
-// Os 31 guias de `docs/guias-ajuda-v2.md` estão aqui (S24.1, 29/09/2026), com os MESMOS slugs
+// Os 33 guias de `docs/guias-ajuda-v2.md` estão aqui (31 da S24.1, 29/09/2026 + inicio e vendas-por-produto da Onda 7c), com os MESMOS slugs
 // e a MESMA quantidade de passos do documento (a foto <slug>-<n>.webp é o passo n): o teste
 // confere. Exceções de numeração: primeiros-passos e clientes (fotos anteriores ao documento).
 // Travas de linguagem: `node src/lib/guiasAjuda.test.mjs` (palavras proibidas, links).
@@ -95,6 +95,29 @@ export const GUIAS = [
     ],
     nota: "O nome da unidade só aparece para quem tem duas ou mais. Se você tem duas e ele não aparece, a Maxi precisa ligar a segunda ao seu acesso.",
     whatsapp: "Cuida de mais de uma unidade? Este guia mostra como trocar de unidade no app.",
+  },
+  {
+    slug: "inicio",
+    publico: PUBLICO.franqueado,
+    titulo: "Entender a tela Início",
+    resumo: "Para que serve cada quadro da Início: o mês, o ranking, a meta do dia, o Agora, o Quem chamar hoje e os atalhos.",
+    tempo: "3 minutos",
+    icone: "wb_sunny",
+    area: "Começar",
+    sinonimos: ["início", "tela inicial", "meta do dia", "ranking", "dias seguidos", "agora"],
+    dica: "Comece o dia pelo quadro Agora e pelo Quem chamar hoje: são os dois que pedem uma ação sua.",
+    erroComum: "Não vê a meta do dia ou o ranking? A meta aparece depois de uma semana de vendas e o ranking com a primeira venda do mês. Nos Primeiros passos, antes da 1ª venda, a Início mostra só os avisos de pagamento.",
+    passos: [
+      { titulo: "Abra a Início", texto: "Toque em Início, o primeiro botão da barra de baixo. É a tela que abre quando você entra no app.", botao: "Início", imagem: "/tutoriais/inicio-1.webp" },
+      { titulo: "Veja o mês até hoje", texto: "O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mês passado (por exemplo, \"−8% que agosto\"). Logo abaixo, o app diz onde o mês deve fechar, se o ritmo continuar, e sugere o próximo passo. Toque em Ver o resultado do mês para abrir o Resultado.", botao: "Ver o resultado do mês", imagem: "/tutoriais/inicio-2.webp" },
+      { titulo: "Veja o seu ranking", texto: "O troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, \"12º de 58 em setembro\"). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje.", imagem: "/tutoriais/inicio-3.webp" },
+      { titulo: "Acompanhe a meta do dia", texto: "O quadro Hoje mostra quanto você vendeu hoje. A barra enche até a Meta do dia, que é a sua média dos últimos 30 dias mais 10%. Ao bater, aparece \"meta do dia batida\". Embaixo, os dias seguidos em que você bateu a meta. Toque em Vendas de hoje para ver as vendas.", botao: "Vendas de hoje", imagem: "/tutoriais/inicio-4.webp" },
+      { titulo: "Compare os últimos meses", texto: "O quadro Evolução mostra, em barras, quanto a unidade vendeu em cada um dos últimos 6 meses. A barra vermelha é o mês atual, que vai só até hoje. Embaixo está a sua mediana dos 3 meses anteriores: o valor do meio, que serve de referência.", botao: "Evolução", imagem: "/tutoriais/inicio-5.webp" },
+      { titulo: "Resolva o que está em Agora", texto: "O quadro Agora reúne o que pede uma ação sua: mensalidade perto de vencer (Pagar), pedido que chegou (toque para conferir), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (Registrar). Toque no aviso para ir direto à tela certa. Sem pendências, aparece \"Tudo em dia!\".", botao: "Agora", imagem: "/tutoriais/inicio-6.webp" },
+      { titulo: "Chame os clientes do dia", texto: "O quadro Quem chamar hoje traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em Chamar ao lado do nome. Ver lista completa abre a lista inteira do dia. Se você nunca usou, antes dele aparece o convite \"Conheça o Quem chamar hoje\".", botao: "Chamar", imagem: "/tutoriais/inicio-7.webp" },
+      { titulo: "Use os atalhos", texto: "No fim da tela, quatro botões levam direto ao que fica dentro do Mais: Repor estoque, Clientes, Resultado do mês e Meu robô. Vendas, Nova venda e Estoque já estão na barra de baixo.", botao: "Repor estoque", imagem: "/tutoriais/inicio-8.webp" },
+    ],
+    whatsapp: "Quer entender cada quadro da tela Início? Este guia explica o mês, o ranking, a meta do dia e o que fazer em Agora.",
   },
   // ------------------------------------------------------------------ Vender
   {
@@ -444,6 +467,26 @@ export const GUIAS = [
       { titulo: "Abra o PDF", texto: "Pelo aviso de download. É 1 página com 3 meses lado a lado, os mais vendidos e o anúncio.", imagem: "/tutoriais/relatorio-mes-4.webp" },
     ],
     whatsapp: "Quer o resumo do mês numa folha? Este guia mostra como baixar o relatório em PDF.",
+  },
+  {
+    slug: "vendas-por-produto",
+    publico: PUBLICO.franqueado,
+    titulo: "Ver as vendas por produto",
+    resumo: "Quanto você vendeu de cada produto no mês, em unidades e em reais, com planilha para baixar.",
+    tempo: "2 minutos",
+    icone: "bar_chart",
+    area: "Dinheiro",
+    sinonimos: ["vendas por produto", "o que mais vende", "mais vendidos", "planilha de produtos", "quantidade por produto"],
+    dica: "A lista é do mês escolhido. Para ver outro mês, feche a janela, troque o mês nas setas e abra de novo.",
+    erroComum: "Não aparece Ver todos os produtos? O mês escolhido não tem venda. O Valor daqui não é igual ao Entrou do Resultado: aqui é quantidade vezes o preço de cada produto, sem frete e sem desconto.",
+    passos: [
+      { titulo: "Abra o Resultado", texto: "Toque em Mais e em Gestão. Abre na aba Resultado.", botao: "Gestão", imagem: "/tutoriais/vendas-por-produto-1.webp" },
+      { titulo: "Escolha o mês", texto: "Use as setas ao lado do nome do mês.", imagem: "/tutoriais/vendas-por-produto-2.webp" },
+      { titulo: "Abra a lista completa", texto: "Role até Mais vendidos, que mostra os 5 que mais saíram, em unidades. No fim do quadro, toque em Ver todos os produtos. O número entre parênteses é quantos produtos você vendeu no mês.", botao: "Ver todos os produtos", imagem: "/tutoriais/vendas-por-produto-3.webp" },
+      { titulo: "Leia a tabela", texto: "A janela Vendas por produto tem quatro colunas: Produto, Qtd (quantas unidades saíram), Valor (quantidade vezes o preço) e % (quanto o produto pesa no total). Os que mais saíram vêm primeiro. Role para ver todos.", botao: "Vendas por produto", imagem: "/tutoriais/vendas-por-produto-4.webp" },
+      { titulo: "Baixe a planilha", texto: "Toque em Excel para a planilha, ou em PDF para uma folha. O arquivo baixa com uma linha por produto e uma linha TOTAL no fim. Aparece \"Excel exportado com sucesso!\" (ou \"PDF exportado com sucesso!\").", botao: "Excel", imagem: "/tutoriais/vendas-por-produto-5.webp" },
+    ],
+    whatsapp: "Quer saber quanto vendeu de cada produto no mês? Este guia mostra a lista e como baixar a planilha.",
   },
   {
     slug: "pagamentos",
@@ -889,6 +932,11 @@ export const PERGUNTAS_FREQUENTES = [
     pergunta: "O comprovante sai fraco na impressora. O que faço?",
     resposta: "Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina.",
     guiaSlug: "comprovante",
+  },
+  {
+    pergunta: "Onde vejo quanto vendi de cada produto?",
+    resposta: "Em Mais › Gestão, na aba Resultado, toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF.",
+    guiaSlug: "vendas-por-produto",
   },
 ];
 

@@ -185,9 +185,9 @@ function guiasDoDocumento(doc) {
 // Guias com fotos de numeração própria (anteriores ao documento): o app tem mais passos que o texto.
 const NUMERACAO_PROPRIA = new Set(["primeiros-passos", "clientes"]);
 
-t("documento × app: os 31 guias do índice existem no app, com o mesmo número de passos", () => {
+t("documento × app: os 33 guias do índice existem no app, com o mesmo número de passos", () => {
   const { slugs, passos } = guiasDoDocumento(DOC);
-  assert.equal(slugs.length, 31, "o índice do documento tem 31 guias");
+  assert.equal(slugs.length, 33, "o índice do documento tem 33 guias");
   for (const slug of slugs) {
     const g = acharGuia(slug, "franchisee");
     assert.ok(g && g.slug === slug, `${slug}: não está no app com esse slug`);
@@ -204,10 +204,10 @@ t("documento: nenhum guia com marca de revisão pendente", () => {
 
 // Controle positivo das duas travas acima: documento adulterado tem de ser pego.
 t("controle positivo: guia a mais, marca pendente ou passo a menos no documento são pegos", () => {
-  const ultimo = "31. Falar com a Maxi — `falar-com-maxi`";
+  const ultimo = "33. Ver as vendas por produto — `vendas-por-produto`";
   assert.ok(DOC.includes(ultimo), "âncora do índice");
   const comGuiaFalso = guiasDoDocumento(DOC.replace(ultimo, `${ultimo}\n32. Guia inventado — \`guia-inventado\``));
-  assert.equal(comGuiaFalso.slugs.length, 32);
+  assert.equal(comGuiaFalso.slugs.length, 34);
   assert.equal(acharGuia("guia-inventado", "franchisee"), null);
   const comMarca = guiasDoDocumento(DOC.replace("## 11. Contar o estoque", "## 11. Contar o estoque [tela nova]"));
   assert.ok(comMarca.corpo.includes("[tela nova]"));

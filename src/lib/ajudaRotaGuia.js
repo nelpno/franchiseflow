@@ -6,7 +6,8 @@
 // Layout.jsx). Tela sem guia próprio ainda (ex.: Onboarding, que já tem a trilha
 // dentro dela) fica de fora do mapa: `guiaDaRota` devolve null e o "?" não aparece.
 export const ROTA_PARA_GUIA = {
-  Dashboard: "primeiros-passos",
+  // Onda 7c: a Início tem guia próprio; os Primeiros passos seguem no menu e na trilha.
+  Dashboard: "inicio",
   Vendas: "vendas",
   MyContacts: "clientes",
   Marketing: "artes",
