@@ -68,6 +68,9 @@ export default function PurchaseOrderForm({
   primeiroPedido = false,
   onSave,
   onCancel,
+  // P3 4ª passada: a janela pode fechar (X/Esc) antes de o formulário desmontar (animação);
+  // o pai avisa, e a confirmação em andamento deixa de valer na hora.
+  aberto = true,
   // S14 (atrás da chave ui_v2, decidida no TabReposicao): o que já está a caminho em pedidos
   // abertos ({ inventory_item_id: qtd }) e de onde o formulário foi aberto ("repor" = "Repor N").
   uiV2 = false,
@@ -391,10 +394,12 @@ export default function PurchaseOrderForm({
   const confirmacaoRef = useRef(0);
   const montadoRef = useRef(true);
   useEffect(() => { montadoRef.current = true; return () => { montadoRef.current = false; confirmacaoRef.current += 1; }; }, []);
+  const abertoRef = useRef(aberto);
+  useEffect(() => { abertoRef.current = aberto; if (!aberto) confirmacaoRef.current += 1; }, [aberto]);
   const confirmarEnvio = async () => {
     if (conferindoAbertos || isSubmitting) return;
     const token = ++confirmacaoRef.current;
-    const aindaValida = () => montadoRef.current && token === confirmacaoRef.current && revisandoRef.current;
+    const aindaValida = () => montadoRef.current && abertoRef.current && token === confirmacaoRef.current && revisandoRef.current;
     if (!ignorarPedidoNovoRef.current) {
       setConferindoAbertos(true);
       try {
@@ -861,12 +866,13 @@ export default function PurchaseOrderForm({
                   type="button"
                   onClick={() => {
                     // S25 P3: pedido novo = id novo e REVISÃO do conteúdo atual; só "Confirmar e enviar" grava.
+                    confirmacaoRef.current += 1; // id novo invalida qualquer confirmação em andamento
                     clientIdRef.current = novoIdDoEnvio();
                     saveDraft(quantities, notes);
                     setEnvioDiferente(false);
                     abrirRevisao();
                   }}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || conferindoAbertos}
                   className={`${BTN_PRIMARIO} min-h-11`}
                 >
                   Enviar como pedido novo
