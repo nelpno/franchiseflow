@@ -35,7 +35,12 @@ import FilterBar from "@/components/shared/FilterBar";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
+import { weeklyTurnoverMap, suggestionFor, ritmoDeVendaMap, sugestaoDeCompra } from "@/lib/stockSuggestion";
+import { ehProdutoDaFabrica, linhasDeCompra, resumoDeCompra } from "@/lib/reposicao";
+import { usePedidosDaUnidade } from "@/hooks/usePedidosDaUnidade";
+import { ResumoEstoque, ListaEstoqueV2, ItemEstoqueSheet } from "./EstoqueV2";
+import EmptyState from "@/components/shared/EmptyState";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, CHIP, CHIP_ATIVO, CHIP_INATIVO } from "@/components/shared/adminUi";
 import { ptBR } from "date-fns/locale";
 import {
   validateCount,
@@ -248,6 +253,48 @@ export default function TabEstoque({
 
   const giroByItem = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
+  // --- S25 (chave ui_v2): a conta nova, a mesma da Reposição e do Novo Pedido ---
+  const pedidosUnidade = usePedidosDaUnidade(franchiseId, { enabled: uiV2 });
+  const ritmoV2 = useMemo(() => (uiV2 ? ritmoDeVendaMap(saleItems) : {}), [uiV2, saleItems]);
+  const sugestaoPronta = pedidosUnidade.status === "ok";
+  const infoV2 = useMemo(() => {
+    if (!uiV2) return {};
+    const out = {};
+    for (const item of items) {
+      out[item.id] = {
+        daFabrica: ehProdutoDaFabrica(item),
+        pronta: sugestaoPronta,
+        s: sugestaoDeCompra(item, {
+          ritmoPorDia: ritmoV2[item.id] || 0,
+          aCaminho: sugestaoPronta ? parseFloat(pedidosUnidade.emAberto?.[item.id]) || 0 : 0,
+          intervaloDias: pedidosUnidade.intervalo.dias,
+        }),
+      };
+    }
+    return out;
+  }, [uiV2, items, ritmoV2, sugestaoPronta, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
+  const resumoV2 = useMemo(() => {
+    if (!uiV2) return null;
+    const ativos = items.filter((i) => i.active !== false);
+    const linhas = linhasDeCompra(ativos, {
+      ritmo: ritmoV2,
+      emAberto: sugestaoPronta ? pedidosUnidade.emAberto : {},
+      intervaloDias: pedidosUnidade.intervalo.dias,
+    });
+    const r = resumoDeCompra(linhas);
+    const somar = (campo) => ativos.reduce((t, i) => t + Math.max(parseFloat(i.quantity) || 0, 0) * (parseFloat(i[campo]) || 0), 0);
+    return {
+      acabando: r.acabando,
+      paraPedir: sugestaoPronta ? r.paraPedir.length : 0,
+      negativos: ativos.filter((i) => (parseFloat(i.quantity) || 0) < 0).length,
+      valorCusto: somar("cost_price"),
+      valorVenda: somar("sale_price"),
+    };
+  }, [uiV2, items, ritmoV2, sugestaoPronta, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
+  const [filtroV2, setFiltroV2] = useState("todos");
+  const [itemAbertoId, setItemAbertoId] = useState(null);
+  const itemAberto = itemAbertoId ? items.find((i) => i.id === itemAbertoId) || null : null;
+
   // --- Filtering ---
 
   const hiddenItems = useMemo(() => items.filter((i) => i.active === false), [items]);
@@ -279,6 +326,32 @@ export default function TabEstoque({
   // --- Grouping by product type (first word of product_name) ---
 
   const itemGroups = useMemo(() => groupItemsByType(filteredItems), [filteredItems]);
+
+  // S25: lista do Estoque novo — busca + um filtro por situação (sem categoria repetida).
+  const filtrosV2 = useMemo(() => {
+    if (!uiV2) return [];
+    const ativos = items.filter((i) => i.active !== false);
+    const eAcabando = (i) => ["acabou", "acabando"].includes(infoV2[i.id]?.s?.situacao) || !!infoV2[i.id]?.s?.estoqueNegativo;
+    const ePedir = (i) => !!(infoV2[i.id]?.daFabrica && infoV2[i.id]?.pronta && infoV2[i.id]?.s?.repor > 0);
+    const eSemVenda = (i) => !(infoV2[i.id]?.s?.porSemana > 0);
+    return [
+      { key: "todos", rotulo: "Todos", teste: () => true, n: ativos.length },
+      { key: "acabando", rotulo: "Acabando", teste: eAcabando, n: ativos.filter(eAcabando).length },
+      { key: "pedir", rotulo: "Para pedir", teste: ePedir, n: ativos.filter(ePedir).length },
+      { key: "sem_venda", rotulo: "Sem venda", teste: eSemVenda, n: ativos.filter(eSemVenda).length },
+    ];
+  }, [uiV2, items, infoV2]);
+  const gruposV2 = useMemo(() => {
+    if (!uiV2) return [];
+    const filtro = filtrosV2.find((f) => f.key === filtroV2) || filtrosV2[0];
+    const termo = searchTerm.trim().toLowerCase();
+    const lista = items.filter((item) =>
+      item.active !== false &&
+      (!termo || item.product_name?.toLowerCase().includes(termo)) &&
+      (!filtro || filtro.teste(item))
+    );
+    return groupItemsByType(lista);
+  }, [uiV2, items, filtrosV2, filtroV2, searchTerm]);
 
   // --- Modo "Contar estoque": lista independente do filtro de nivel de estoque
   // (que depende da quantidade — mudaria embaixo do dedo enquanto ela conta),
@@ -341,7 +414,7 @@ export default function TabEstoque({
       const minPrice = item.cost_price * 1.8;
       if (newValue < minPrice) {
         toast.warning(
-          `Preço mínimo recomendado: ${formatBRL(minPrice)} (margem 80%). Preço salvo mesmo assim.`
+          `Preço mínimo recomendado: ${formatBRL(minPrice)} (markup de 80%). Preço salvo mesmo assim.`
         );
       }
     }
@@ -490,7 +563,7 @@ export default function TabEstoque({
         const minPrice = payload.cost_price * 1.8;
         if (payload.sale_price < minPrice) {
           toast.warning(
-            `Preco minimo recomendado: ${formatBRL(minPrice)} (margem 80%). Salvo mesmo assim.`
+            `Preco minimo recomendado: ${formatBRL(minPrice)} (markup de 80%). Salvo mesmo assim.`
           );
         }
       }
@@ -1116,8 +1189,47 @@ export default function TabEstoque({
 
   return (
     <div className="space-y-4">
+      {/* S25 (chave ui_v2): resumo que diz algo útil + ações */}
+      {uiV2 && !countMode && resumoV2 && (
+        <>
+          <ResumoEstoque
+            resumo={resumoV2}
+            sugestaoStatus={pedidosUnidade.status}
+            onTentarDeNovo={pedidosUnidade.tentarDeNovo}
+            onContar={handleEnterCountMode}
+          />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <label className="relative flex-1 md:max-w-sm">
+              <span className="sr-only">Buscar produto</span>
+              <MaterialIcon icon="search" size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" aria-hidden="true" />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar produto"
+                className="h-11 w-full rounded-xl border border-surface-line bg-white pl-10 pr-3 text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-brand/20"
+              />
+            </label>
+            <div className="flex gap-2 md:ml-auto">
+              <button type="button" onClick={handleEnterCountMode} className={`${BTN_SECUNDARIO} min-h-11 flex-1 whitespace-nowrap md:flex-none`}>
+                <MaterialIcon icon="checklist" size={18} aria-hidden="true" />
+                Contar estoque
+              </button>
+              <button type="button" onClick={handleExportCSV} className={`${BTN_SECUNDARIO} min-h-11 min-w-11 px-3`} title="Baixar planilha do estoque (CSV)">
+                <MaterialIcon icon="upload" size={18} aria-hidden="true" />
+                <span className="sr-only sm:not-sr-only">CSV</span>
+              </button>
+              <button type="button" onClick={handleOpenAddDialog} className={`${BTN_PRIMARIO} min-h-11`}>
+                <MaterialIcon icon="add" size={18} aria-hidden="true" />
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Header actions */}
-      {!countMode && (
+      {!uiV2 && !countMode && (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-ink-2">
@@ -1374,8 +1486,25 @@ export default function TabEstoque({
         </div>
       )}
 
+      {/* S25: filtro por situação (chips) */}
+      {uiV2 && !countMode && (
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible" role="group" aria-label="Filtrar produtos">
+          {filtrosV2.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              aria-pressed={filtroV2 === f.key}
+              onClick={() => setFiltroV2(f.key)}
+              className={`${CHIP} ${filtroV2 === f.key ? CHIP_ATIVO : CHIP_INATIVO}`}
+            >
+              {f.rotulo} · {f.n}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Filters */}
-      {!countMode && <FilterBar
+      {!uiV2 && !countMode && <FilterBar
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         searchPlaceholder="Buscar por produto ou categoria..."
@@ -1411,13 +1540,36 @@ export default function TabEstoque({
           <MaterialIcon icon="warning" size={20} className="text-brand-gold-ink shrink-0" />
           <p className="text-sm text-brand-gold-ink flex-1">
             <strong>{missingPriceCount} de {items.length}</strong> produtos sem preco de venda definido.
-            {" "}Clique no valor para editar.
+            {" "}{uiV2 ? "Toque no produto e em Editar produto para pôr o preço." : "Clique no valor para editar."}
           </p>
         </div>
       )}
 
+      {/* S25: lista enxuta; detalhes ao tocar no produto */}
+      {uiV2 && !countMode && (gruposV2.length === 0 ? (
+        items.filter((i) => i.active !== false).length === 0 ? (
+          <EmptyState
+            cartao
+            icone="package_2"
+            titulo="Nenhum produto no estoque"
+            texto="Comece pelos produtos da fábrica: toque em Adicionar."
+            acao={{ rotulo: "Adicionar produto", onClick: handleOpenAddDialog }}
+          />
+        ) : (
+          <EmptyState
+            cartao
+            icone="search_off"
+            titulo="Nenhum produto com esse filtro"
+            texto="Troque o filtro ou limpe a busca."
+            acao={{ rotulo: "Ver todos", onClick: () => { setFiltroV2("todos"); setSearchTerm(""); } }}
+          />
+        )
+      ) : (
+        <ListaEstoqueV2 grupos={gruposV2} infoDe={(item) => infoV2[item.id]} onAbrir={(item) => setItemAbertoId(item.id)} />
+      ))}
+
       {/* Content */}
-      {!countMode && (filteredItems.length === 0 ? (
+      {!uiV2 && !countMode && (filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <MaterialIcon icon="package_2" size={64} className="text-ink-4 mb-4" />
           <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
@@ -1938,6 +2090,21 @@ export default function TabEstoque({
         </div>
       )}
 
+      {/* S25: detalhes do produto (custo, venda, markup, mínimo, categoria) e ações */}
+      {uiV2 && (
+        <ItemEstoqueSheet
+          item={countMode ? null : itemAberto}
+          info={itemAberto ? infoV2[itemAberto.id] : null}
+          intervaloDias={pedidosUnidade.intervalo.dias}
+          categoria={itemAberto ? itemAberto.category || getCategoryFromName(itemAberto.product_name) : ""}
+          onFechar={() => setItemAbertoId(null)}
+          onEditar={() => { const it = itemAberto; setItemAbertoId(null); if (it) handleOpenEditDialog(it); }}
+          onOcultar={() => { const it = itemAberto; setItemAbertoId(null); if (it) handleToggleActive(it); }}
+          onExcluir={() => { const it = itemAberto; setItemAbertoId(null); if (it) setDeleteConfirmId(it.id); }}
+          onContar={() => { setItemAbertoId(null); handleEnterCountMode(); }}
+        />
+      )}
+
       {/* Add/Edit product dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md rounded-2xl">
@@ -2150,7 +2317,7 @@ export default function TabEstoque({
                             ? "text-brand-gold-ink"
                             : "text-red-600"
                       }`}>
-                        Margem: {(((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price)) * 100).toFixed(0)}%
+                        Markup: {(((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price)) * 100).toFixed(0)}%
                       </span>
                     )}
                   </p>
