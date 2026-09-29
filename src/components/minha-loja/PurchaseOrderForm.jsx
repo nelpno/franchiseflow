@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/table";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
-import { weeklyTurnoverMap, suggestionFor } from "@/lib/stockSuggestion";
+import { weeklyTurnoverMap, suggestionFor, sugestaoDeCompra, textoVenda, INTERVALO_PADRAO_DIAS } from "@/lib/stockSuggestion";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, LINK_ACAO } from "@/components/shared/adminUi";
 import { getItemWeightKg, formatWeightKg } from "@/lib/productWeight";
 import { getProductWeightMap } from "@/entities/all";
 import { formatBRL as formatBRLShared } from "@/lib/formatters";
@@ -74,6 +75,11 @@ export default function PurchaseOrderForm({
   // Estado do "a caminho" (P3 2ª passada): "ok" | "carregando" | "erro". Só vale com a chave;
   // fora de "ok" a sugestão automática fica desligada (calcularia zero a caminho = pedir em dobro).
   abertosStatus = "ok",
+  // S25 (chave): venda média por dia de cada produto (stockSuggestion.ritmoDeVendaMap) e de
+  // quanto em quanto tempo a unidade pede. Com os dois, a sugestão é a conta nova (a mesma do
+  // Estoque e da Reposição) e o formulário já abre preenchido com ela.
+  ritmo = null,
+  intervaloDias = INTERVALO_PADRAO_DIAS,
 }) {
   const DRAFT_KEY = `reposicao_draft_${franchiseId}`;
   const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // 24h
@@ -174,13 +180,19 @@ export default function PurchaseOrderForm({
   const weeklyTurnover = useMemo(() => weeklyTurnoverMap(saleItems), [saleItems]);
 
   const sugestaoIndisponivel = uiV2 && abertosStatus !== "ok";
+  const aCaminhoDe = (item) => (uiV2 ? parseFloat(emAberto?.[item.id]) || 0 : 0);
+  const sugestaoV2De = (item) =>
+    sugestaoDeCompra(item, { ritmoPorDia: ritmo?.[item.id] || 0, aCaminho: aCaminhoDe(item), intervaloDias });
   const getSuggestion = (item) => {
     if (!uiV2) return suggestionFor(item, weeklyTurnover);
     if (sugestaoIndisponivel) return null;
+    if (ritmo) {
+      const s2 = sugestaoV2De(item);
+      return s2.semBase ? null : s2.repor;
+    }
     const r = reposicaoDoItem(item, weeklyTurnover, emAberto);
     return r.semBase ? null : r.repor;
   };
-  const aCaminhoDe = (item) => (uiV2 ? parseFloat(emAberto?.[item.id]) || 0 : 0);
 
   // Quantities state: { itemId: qty } — restore from draft > initialQuantities > 0
   const [quantities, setQuantities] = useState(() => {
@@ -218,7 +230,13 @@ export default function PurchaseOrderForm({
     }
   }, [DRAFT_KEY]);
 
-  useEffect(() => { saveDraft(quantities, notes); }, [quantities, notes, saveDraft]);
+  // S25: o preenchimento AUTOMÁTICO com a sugestão não vira rascunho (senão, ao reabrir, a
+  // sugestão velha "voltava" como se fosse um pedido que ela começou). Só grava depois que ela mexe.
+  const prefillAutoRef = useRef(false);
+  useEffect(() => {
+    if (prefillAutoRef.current && !usuarioMexeuRef.current) return;
+    saveDraft(quantities, notes);
+  }, [quantities, notes, saveDraft]);
 
   const clearDraft = () => {
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* sem storage: nada a limpar */ }
@@ -293,6 +311,70 @@ export default function PurchaseOrderForm({
     });
     setQuantities(newQtys);
     toast.success("Quantidades preenchidas com sugestão.");
+  };
+
+  // S25 (chave): o formulário já abre com a sugestão. Rascunho, "Repetir último"/"Repor" e o
+  // pedido modelo (1º pedido) continuam ganhando, como antes; e se ela já mexeu, não sobrescreve.
+  // Espera o "a caminho" carregar (sem ele a conta pediria em dobro).
+  const prefillFeitoRef = useRef(false);
+  const [preenchidoComSugestao, setPreenchidoComSugestao] = useState(false);
+  // Produtos que aparecem em cima ("Sugeridos"): quem tem sugestão ou quantidade. Só ACRESCENTA
+  // (zerar um item não faz ele pular para "Outros produtos" embaixo do dedo).
+  const [emCima, setEmCima] = useState(() => new Set());
+  useEffect(() => {
+    if (!uiV2 || !ritmo || prefillFeitoRef.current) return;
+    const draftTemQuantidade = draft.current?.quantities && Object.values(draft.current.quantities).some((v) => v > 0);
+    if (initialQuantities || draftTemQuantidade || primeiroPedido || usuarioMexeuRef.current) {
+      prefillFeitoRef.current = true;
+      return;
+    }
+    if (sugestaoIndisponivel || standardProducts.length === 0) return;
+    prefillFeitoRef.current = true;
+    const next = {};
+    let algum = false;
+    standardProducts.forEach((item) => {
+      const sug = getSuggestion(item);
+      next[item.id] = sug !== null && sug > 0 ? sug : 0;
+      if (next[item.id] > 0) algum = true;
+    });
+    if (algum) {
+      prefillAutoRef.current = true;
+      setQuantities(next);
+      setPreenchidoComSugestao(true);
+    }
+    // getSuggestion lê as mesmas props listadas
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiV2, ritmo, sugestaoIndisponivel, standardProducts, initialQuantities, primeiroPedido]);
+  useEffect(() => {
+    if (!uiV2) return;
+    setEmCima((prev) => {
+      let mudou = false;
+      const next = new Set(prev);
+      standardProducts.forEach((item) => {
+        if (next.has(item.id)) return;
+        const sug = getSuggestion(item);
+        if ((quantities[item.id] || 0) > 0 || (sug !== null && sug > 0)) { next.add(item.id); mudou = true; }
+      });
+      return mudou ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uiV2, standardProducts, quantities, ritmo, sugestaoIndisponivel, emAberto]);
+  const [verOutros, setVerOutros] = useState(false);
+
+  const passo = (itemId, delta) => {
+    usuarioMexeuRef.current = true;
+    setQuantities((prev) => {
+      const atual = parseInt(prev[itemId], 10) || 0;
+      return { ...prev, [itemId]: Math.max(0, atual + delta) };
+    });
+  };
+
+  const zerarTudo = () => {
+    usuarioMexeuRef.current = true;
+    const next = {};
+    standardProducts.forEach((i) => { next[i.id] = 0; });
+    setQuantities(next);
+    setPreenchidoComSugestao(false);
   };
 
   // Line total
@@ -432,6 +514,265 @@ export default function PurchaseOrderForm({
   const hasSuggestions = standardProducts.some(
     (item) => getSuggestion(item) !== null && getSuggestion(item) > 0
   );
+
+  if (uiV2) {
+    // "Usar a sugestão" só quando alguma quantidade está diferente da sugestão.
+    const difereDaSugestao = standardProducts.some((item) => {
+      const sug = getSuggestion(item);
+      return sug !== null && sug > 0 && (parseInt(quantities[item.id], 10) || 0) !== sug;
+    });
+    const sugeridos = standardProducts
+      .filter((item) => emCima.has(item.id))
+      .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"));
+    const outros = standardProducts
+      .filter((item) => !emCima.has(item.id))
+      .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"));
+    const linhaProduto = (item) => {
+      const qty = parseInt(quantities[item.id], 10) || 0;
+      const sug = getSuggestion(item);
+      const s2 = ritmo ? sugestaoV2De(item) : null;
+      const tem = parseFloat(item.quantity) || 0;
+      const caminho = aCaminhoDe(item);
+      const apoio = [
+        s2 ? textoVenda(s2) : null,
+        `tem ${tem.toLocaleString("pt-BR", { maximumFractionDigits: 2 }).replace("-", "−")}`,
+        caminho > 0 ? `${caminho} a caminho` : null,
+      ].filter(Boolean).join(" · ");
+      return (
+        <li key={item.id} className="flex flex-col gap-2 border-t border-surface-line py-3 first:border-t-0 sm:flex-row sm:items-center sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold leading-snug text-ink">{item.product_name}</p>
+            <p className="mt-0.5 text-sm text-ink-2 tabular-nums">{apoio}</p>
+            <p className="text-xs text-ink-3 tabular-nums">
+              {formatBRL(item.cost_price)} cada
+              {sug !== null && sug > 0 && sug !== qty ? ` · sugestão ${sug}` : ""}
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-3 sm:justify-end">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => passo(item.id, -1)}
+                disabled={qty <= 0 || isSubmitting}
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink hover:bg-surface disabled:opacity-40"
+                aria-label={`Diminuir ${item.product_name}`}
+              >
+                <MaterialIcon icon="remove" size={20} aria-hidden="true" />
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="1"
+                value={quantities[item.id] === "" ? "" : qty}
+                onChange={(e) => setQty(item.id, e.target.value)}
+                onFocus={(e) => e.target.select()}
+                disabled={isSubmitting}
+                aria-label={`Quantidade de ${item.product_name}`}
+                className="h-11 w-16 rounded-xl border border-surface-line bg-surface-2 text-center text-base font-bold tabular-nums text-ink focus:outline-none focus:ring-2 focus:ring-brand/20 [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                onClick={() => passo(item.id, 1)}
+                disabled={isSubmitting}
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink hover:bg-surface disabled:opacity-40"
+                aria-label={`Aumentar ${item.product_name}`}
+              >
+                <MaterialIcon icon="add" size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <span className="w-24 text-right text-sm font-semibold tabular-nums text-ink">{qty > 0 ? formatBRL(getLineTotal(item)) : "—"}</span>
+          </div>
+        </li>
+      );
+    };
+
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
+          {primeiroPedido && pedidoModeloItens && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-brand-gold-line bg-brand-gold-soft p-4 sm:flex-row sm:items-center">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-brand-gold-ink">Pedido modelo da Maxi</p>
+                <p className="mt-0.5 text-sm text-ink-2">
+                  Já preenchemos com a sugestão da Maxi para começar com variedade. Mude o que quiser antes de enviar.
+                </p>
+              </div>
+              <button type="button" onClick={aplicarModelo} className={`${BTN_SECUNDARIO} shrink-0`}>
+                <MaterialIcon icon="replay" size={18} aria-hidden="true" />
+                Voltar ao modelo
+              </button>
+            </div>
+          )}
+
+          {draft.current && !initialQuantities && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-warn/40 bg-warn-soft p-3 text-sm text-ink">
+              <MaterialIcon icon="history" size={18} className="text-warn-ink" aria-hidden="true" />
+              <span className="flex-1">Voltou o pedido que você tinha começado.</span>
+              <button
+                type="button"
+                onClick={() => {
+                  clearDraft();
+                  zerarTudo();
+                  setNotes("");
+                  draft.current = null;
+                  clientIdRef.current = novoIdDoEnvio();
+                }}
+                className={LINK_ACAO}
+              >
+                Começar do zero
+              </button>
+            </div>
+          )}
+
+          {sugestaoIndisponivel ? (
+            <div role="status" className="flex flex-col gap-2 rounded-xl border border-warn/40 bg-warn-soft p-3 text-sm text-ink sm:flex-row sm:items-center">
+              <span className="flex-1">
+                {abertosStatus === "erro"
+                  ? "Não conseguimos ver seus pedidos abertos agora. A sugestão fica desligada para não pedir em dobro."
+                  : "Conferindo o que já está a caminho…"}
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <p className="flex-1 text-sm text-ink-2">
+                {preenchidoComSugestao
+                  ? "Já preenchemos com a sugestão pelas suas vendas. Ajuste com − e +."
+                  : "Escolha as quantidades com − e +, ou digite."}
+              </p>
+              {difereDaSugestao && (
+                <button type="button" onClick={() => { handleUseSuggestions(); setPreenchidoComSugestao(true); }} className={LINK_ACAO}>
+                  Usar a sugestão
+                </button>
+              )}
+              {hasAnyQty && (
+                <button type="button" onClick={zerarTudo} className={LINK_ACAO}>
+                  Zerar tudo
+                </button>
+              )}
+            </div>
+          )}
+
+          {sugeridos.length > 0 && (
+            <section aria-label="Produtos sugeridos">
+              <h3 className="text-sm font-bold text-ink-2">Sugeridos ({sugeridos.length})</h3>
+              <ul>{sugeridos.map(linhaProduto)}</ul>
+            </section>
+          )}
+
+          {outros.length > 0 && (
+            <section aria-label="Outros produtos" className="rounded-2xl border border-surface-line">
+              <button
+                type="button"
+                onClick={() => setVerOutros((v) => !v)}
+                aria-expanded={verOutros || sugeridos.length === 0}
+                className="flex min-h-11 w-full items-center justify-between px-4 text-left text-sm font-bold text-ink-2"
+              >
+                Outros produtos ({outros.length})
+                <MaterialIcon icon={verOutros || sugeridos.length === 0 ? "expand_less" : "expand_more"} size={20} aria-hidden="true" />
+              </button>
+              {(verOutros || sugeridos.length === 0) && <ul className="px-4 pb-2">{outros.map(linhaProduto)}</ul>}
+            </section>
+          )}
+
+          <div className="space-y-2">
+            <label htmlFor="obs-pedido" className="text-sm font-semibold text-ink">Comentário para a fábrica</label>
+            <textarea
+              id="obs-pedido"
+              value={notes}
+              onChange={(e) => { usuarioMexeuRef.current = true; setNotes(e.target.value); }}
+              placeholder="Se quiser, escreva algo sobre o pedido"
+              rows={2}
+              className="w-full resize-none rounded-xl border border-surface-line bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+          </div>
+
+          {envioDiferente && (
+            <div role="alert" className="space-y-3 rounded-2xl border border-err/30 bg-err-soft p-4">
+              <p className="text-sm text-ink">
+                Um pedido anterior deste formulário já chegou à fábrica. Confira no histórico antes de enviar de novo.
+                Seu rascunho continua aqui.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button type="button" onClick={onCancel} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
+                  Ver o histórico
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clientIdRef.current = novoIdDoEnvio();
+                    saveDraft(quantities, notes);
+                    setEnvioDiferente(false);
+                    handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                  className={`${BTN_PRIMARIO} min-h-11`}
+                >
+                  Enviar como pedido novo
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Rodapé fixo: sempre à vista */}
+        <div className="shrink-0 border-t border-surface-line bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] sm:px-6">
+          <div className="flex items-end justify-between gap-3">
+            <p className="min-w-0 text-sm text-ink-2 tabular-nums">
+              {totalItems > 0
+                ? `${totalItems} ${totalItems === 1 ? "produto" : "produtos"} · ${totalUnits} un.${grandWeight > 0 ? ` · ${formatWeightKg(grandWeight)}` : ""}`
+                : "Nenhum produto ainda"}
+              <br />
+              <span className="text-xs text-ink-3">
+                Produtos {formatBRL(grandTotal)} + frete estimado {hasAnyQty ? formatBRL(freteEstimado) : "—"}
+                {missingWeightCount > 0 ? ` · ${missingWeightCount} sem peso cadastrado` : ""}
+              </span>
+            </p>
+            <p className="shrink-0 text-right">
+              <span className="block text-xs text-ink-3">Total estimado</span>
+              <span className="font-plus-jakarta text-2xl font-extrabold tabular-nums text-ink">
+                {hasAnyQty ? formatBRL(grandTotal + freteEstimado) : "—"}
+              </span>
+            </p>
+          </div>
+          <div role="status" aria-live="polite" className={precosStatus === "ok" ? "sr-only" : "mt-1 text-sm"}>
+            {precosStatus === "loading" && <span className="text-ink-3">Carregando preços…</span>}
+            {precosStatus === "erro" && (
+              <button type="button" onClick={() => setPrecosTentativa((n) => n + 1)} className="min-h-11 text-err underline">
+                Não carreguei os preços. Tentar de novo
+              </button>
+            )}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <button type="button" onClick={onCancel} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!hasAnyQty || isSubmitting || !precosProntos}
+              className={`${BTN_PRIMARIO} min-h-11 flex-1`}
+            >
+              {isSubmitting ? (
+                <>
+                  <MaterialIcon icon="progress_activity" size={18} className="animate-spin" aria-hidden="true" />
+                  Enviando…
+                </>
+              ) : (
+                <>
+                  <MaterialIcon icon="send" size={18} aria-hidden="true" />
+                  Enviar pedido
+                </>
+              )}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-ink-3">
+            O frete é estimado (10% do pedido, entre R$ 250 e R$ 350). A fábrica confirma o valor.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
