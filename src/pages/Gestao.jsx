@@ -18,6 +18,17 @@ import TabReposicao from "@/components/minha-loja/TabReposicao";
 // entrar no bundle de quem nem abre a aba Resultado (Vendas, Estoque não puxam mais esse peso).
 const TabResultado = lazy(() => import("@/components/minha-loja/TabResultado"));
 import { listarFranquias } from "@/lib/franchisesCache";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { H1, PAGINA, SUBTITULO } from "@/components/shared/adminUi";
+
+// S25 (chave ui_v2): um cabeçalho só. "Gestão" no menu = Resultado; "Estoque" no menu = abas
+// Estoque e Reposição. Mesmas rotas de sempre (/Gestao?tab=resultado|estoque|reposicao).
+const CABECALHO_V2 = {
+  resultado: { titulo: "Resultado", subtitulo: "Quanto entrou, quanto saiu e quanto sobrou no mês." },
+  estoque: { titulo: "Estoque", subtitulo: "O que você tem, quanto vende e o que pedir à fábrica." },
+  reposicao: { titulo: "Estoque", subtitulo: "O que você tem, quanto vende e o que pedir à fábrica." },
+};
 
 const TAB_MAP = {
   resultado: "resultado",
@@ -34,6 +45,7 @@ export default function Gestao() {
   const { selectedFranchise } = useAuth();
   const tabParam = searchParams.get("tab");
   const activeTab = TAB_MAP[tabParam] || "resultado";
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
 
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
@@ -243,9 +255,23 @@ export default function Gestao() {
     );
   }
 
+  const cabecalhoV2 = CABECALHO_V2[activeTab];
+  const abasV2 = activeTab === "resultado"
+    ? []
+    : [
+        { value: "estoque", icon: "inventory_2", label: "Estoque" },
+        { value: "reposicao", icon: "local_shipping", label: "Reposição" },
+      ];
+
   return (
     <div className="bg-surface">
-      <div className="p-4 md:p-8 space-y-6">
+      <div className={uiV2 ? `${PAGINA} pb-24 md:pb-6` : "p-4 md:p-8 space-y-6"}>
+        {uiV2 ? (
+          <header>
+            <h1 className={H1}>{cabecalhoV2.titulo}</h1>
+            <p className={SUBTITULO}>{cabecalhoV2.subtitulo}</p>
+          </header>
+        ) : (
         <div className="flex items-center gap-3">
           <div className="p-2 bg-brand-gold-ink/10 rounded-xl">
             <MaterialIcon icon="bar_chart" size={24} className="text-brand-gold-ink" />
@@ -257,8 +283,25 @@ export default function Gestao() {
             </p>
           </div>
         </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
+          {uiV2 ? (
+            abasV2.length > 0 && (
+              <TabsList className="flex h-auto w-full justify-start gap-1 rounded-none border-b border-surface-line bg-transparent p-0">
+                {abasV2.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="-mb-px min-h-11 flex-1 gap-1.5 rounded-none border-b-2 border-transparent px-3 text-sm font-medium text-ink-2 shadow-none data-[state=active]:border-brand data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-ink data-[state=active]:shadow-none sm:flex-none"
+                  >
+                    <MaterialIcon icon={tab.icon} size={18} />
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            )
+          ) : (
           <TabsList className="w-full md:w-auto flex">
             {[
               { value: "resultado", icon: "analytics", label: "Resultado", shortLabel: "Resultado" },
@@ -276,6 +319,7 @@ export default function Gestao() {
               </TabsTrigger>
             ))}
           </TabsList>
+          )}
 
           <TabsContent value="resultado" className="mt-4">
             <Suspense fallback={<Skeleton className="h-64 rounded-xl" />}>

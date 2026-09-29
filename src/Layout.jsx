@@ -103,7 +103,7 @@ const navigationItems = [
     // destacar os dois ao mesmo tempo (P3, 28/09/2026). Sem a chave, "Estoque" nem
     // existe no menu, então "Gestão" volta a acender pra qualquer aba (comportamento
     // de sempre) — daí o `excludeTabsWhenV2` só valer quando uiV2 está ligada.
-    excludeTabsWhenV2: ["estoque"],
+    excludeTabsWhenV2: ["estoque", "reposicao"],
   },
   {
     title: "Meus Clientes",
@@ -141,7 +141,7 @@ const navigationItems = [
     // Mesma tela de sempre (rota /Gestao) — o destaque tem que casar path+tab, senão
     // acende em QUALQUER aba de Gestão (P3, 28/09/2026). Ver `tabMatch` no cálculo
     // de isActive. Já está no menu de baixo — não repetir dentro do Sheet "Mais".
-    tabMatch: "estoque",
+    tabMatch: ["estoque", "reposicao"],
     hideFromMaisSheetWhenV2: true,
   },
   {
@@ -206,7 +206,7 @@ const mobileBottomNavV2 = [
   { label: "Nova venda", materialIcon: "add", url: "/Vendas?action=nova-venda", isFab: true },
   // tabMatch: mesmo critério do item da sidebar — só acende com tab=estoque, nunca
   // nas outras abas de Gestão (P3, 28/09/2026).
-  { label: "Estoque", materialIcon: "package_2", url: "/Gestao?tab=estoque", tabMatch: "estoque" },
+  { label: "Estoque", materialIcon: "package_2", url: "/Gestao?tab=estoque", tabMatch: ["estoque", "reposicao"] },
 ];
 
 // Mobile bottom nav para admin/gerente/CS: Hoje / Unidades / Mural / Mais (Mais abre
@@ -301,7 +301,10 @@ function isNavItemActive(item, { pathname, search, currentPageName, uiV2 }) {
   const [itemPath] = item.url.split("?");
   const currentTab = new URLSearchParams(search).get("tab");
   if (item.tabMatch) {
-    return pathname === itemPath && currentTab === item.tabMatch;
+    // S25: tabMatch pode ser lista — "Estoque" cobre as abas Estoque e Reposição (pedido à
+    // fábrica), e "Gestão" fica só com o Resultado. Mesmas rotas e deep-links de sempre.
+    const abas = Array.isArray(item.tabMatch) ? item.tabMatch : [item.tabMatch];
+    return pathname === itemPath && abas.includes(currentTab);
   }
   if (uiV2 && item.excludeTabsWhenV2?.includes(currentTab)) {
     return false;
