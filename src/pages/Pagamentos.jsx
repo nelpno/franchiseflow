@@ -33,7 +33,7 @@ export default function Pagamentos() {
   // MÊS-ALVO (Brasília), como a Início nova: verba do mês seguinte já registrada não esconde a
   // do mês-alvo; carga de outra unidade/mês ou leitura falha esconde a linha (nunca "pendente"
   // falso). Revalida ao voltar para a aba e a cada 5 min (registro feito em outra aba, admin
-  // confirmando); na revalidação, falha mantém o último dado bom.
+  // confirmando); na revalidação, falha mantém o último dado bom. O resumo do mês segue como antes.
   const [marketing, setMarketing] = useState(MARKETING_VAZIO);
   const [resumo, setResumo] = useState(null); // null = carregando; [] = sem números
   const [recarga, setRecarga] = useState(0);
@@ -46,39 +46,44 @@ export default function Pagamentos() {
   const mesAlvo = mesAlvoMarketing();
   const alvoChave = format(mesAlvo, "yyyy-MM");
 
-  useVisibilityPolling(() => setRecarga((n) => n + 1), INTERVALO_REVALIDAR_MS * 5, !!evoId && uiV2);
+  const ativo = !!evoId && !!uiV2 && isFranqueado;
+  useVisibilityPolling(() => setRecarga((n) => n + 1), INTERVALO_REVALIDAR_MS * 5, ativo);
 
   useEffect(() => {
-    if (!evoId || !uiV2) return undefined;
-    const controller = new AbortController();
-    const chave = `${evoId}|${alvoChave}|${mes.chave}`;
-    const nova = chaveRef.current !== chave;
-    chaveRef.current = chave;
-    if (nova) {
-      setResumo(null);
-      setMarketing(MARKETING_VAZIO);
+    if (!ativo) {
+      chaveRef.current = null;
+      return undefined;
     }
+    const controller = new AbortController();
+    const chave = `${evoId}|${alvoChave}`;
+    if (chaveRef.current !== chave) setMarketing(MARKETING_VAZIO);
+    chaveRef.current = chave;
+    MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal: controller.signal })
+      .then((lista) => ({ ok: true, lista: lista || [] }), () => ({ ok: false, lista: [] }))
+      .then(({ ok, lista }) => {
+        if (!mountedRef.current || controller.signal.aborted) return;
+        if (ok) setMarketing({ evo: evoId, alvo: alvoChave, ok: true, lista });
+        else setMarketing((m) => (m.ok && m.evo === evoId && m.alvo === alvoChave ? m : { evo: evoId, alvo: alvoChave, ok: false, lista: [] }));
+      });
+    return () => controller.abort();
+  }, [ativo, evoId, alvoChave, recarga]);
+
+  useEffect(() => {
+    if (!ativo) return undefined;
+    const controller = new AbortController();
+    setResumo(null);
     Promise.allSettled([
-      MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal: controller.signal }),
       getMarketingAttribution(mes.chave, evoId, { signal: controller.signal }),
       getFranchiseFunnelStats(evoId, mes.inicio, mes.ate, { signal: controller.signal }),
-    ]).then(([mp, attr, funil]) => {
+    ]).then(([attr, funil]) => {
       if (!mountedRef.current || controller.signal.aborted) return;
-      if (mp.status === "fulfilled") {
-        setMarketing({ evo: evoId, alvo: alvoChave, ok: true, lista: mp.value || [] });
-      } else {
-        setMarketing((m) => (m.ok && m.evo === evoId && m.alvo === alvoChave ? m : { evo: evoId, alvo: alvoChave, ok: false, lista: [] }));
-      }
-      const semNada = attr.status !== "fulfilled" && funil.status !== "fulfilled";
-      if (nova || !semNada) {
-        setResumo(resumoEquipeDigital({
-          atribuicao: attr.status === "fulfilled" ? attr.value?.[0] || null : null,
-          funil: funil.status === "fulfilled" ? funil.value : null,
-        }));
-      }
+      setResumo(resumoEquipeDigital({
+        atribuicao: attr.status === "fulfilled" ? attr.value?.[0] || null : null,
+        funil: funil.status === "fulfilled" ? funil.value : null,
+      }));
     });
     return () => controller.abort();
-  }, [evoId, uiV2, alvoChave, mes.chave, mes.inicio, mes.ate, recarga]);
+  }, [ativo, evoId, mes.chave, mes.inicio, mes.ate]);
 
   // Só decide com a unidade já carregada: abrindo o endereço direto, a unidade chega um instante
   // depois e, sem ela, a chave vale "resolvida e desligada" — redirecionava todo mundo (Onda 5).
