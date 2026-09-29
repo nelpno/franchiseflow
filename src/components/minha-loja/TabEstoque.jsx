@@ -2241,7 +2241,7 @@ export default function TabEstoque({
 
             {/* Min stock */}
             <div className="space-y-2">
-              <Label className="text-ink">Estoque Minimo</Label>
+              <Label className="text-ink">{uiV2 ? "Estoque mínimo" : "Estoque Minimo"}</Label>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -2266,9 +2266,9 @@ export default function TabEstoque({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label className="text-ink">
-                  Preco de Custo (R$)
+                  {uiV2 ? "Custo (R$)" : "Preco de Custo (R$)"}
                   {!isAdmin && editingItem && !canEditCostPrice(editingItem) && (
-                    <span className="text-xs text-ink-2 ml-1">(somente admin)</span>
+                    <span className="text-xs text-ink-2 ml-1">{uiV2 ? "(tabela da Maxi)" : "(somente admin)"}</span>
                   )}
                 </Label>
                 <Input
@@ -2290,7 +2290,7 @@ export default function TabEstoque({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-ink">Preco de Venda (R$)</Label>
+                <Label className="text-ink">{uiV2 ? "Preço de venda (R$)" : "Preco de Venda (R$)"}</Label>
                 <Input
                   type="number"
                   inputMode="decimal"
