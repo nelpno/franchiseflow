@@ -5,13 +5,14 @@
 
 // Drive reorganizado em 4 pastas (reunião Nelson × Celso, 29/09/2026): 1. Configurações
 // (WhatsApp, Meta Business Suite, Robô) · 2. Universidade Maxi Massas (Maxi Treinamento,
-// Papo Massa) · 3. Marketing (Postagens, Papelaria, Artes editáveis) · 4. Manuais.
+// Papo Massa) · 3. Marketing (Postagens, Papelaria, Prontas para imprimir, Sacola e embalagens,
+// Artes editáveis) · 4. Manuais. Conferido no Drive em 29/09 à noite.
 // (Antes, 28/09: 6 pastas, de "1. Comece aqui" a "6. Marca e artes".) Mover no Drive NÃO muda o link: os ids abaixo seguem valendo; o comentário diz
 // onde cada pasta mora hoje. Tudo abre para qualquer um com o link (leitura).
 export const DRIVE_FRANQUEADOS = "https://drive.google.com/drive/folders/1JuqdvhWBdK7-YvLhZEMX0mh9xfrel3lh"; // raiz "Franqueados"
 export const DRIVE_VIDEOS_TREINAMENTO = "https://drive.google.com/drive/folders/1DwQLHOKo2Lf8RJ83-ADAqJcIYmi5m-VH"; // 1. Configurações (WhatsApp e Meta)
 export const DRIVE_ROBO = "https://drive.google.com/drive/folders/18W51ZqadWPZ5Fta6TSfIt0PWwC4y6fDV"; // 1. Configurações › Robô
-export const DRIVE_SACOLA = "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9"; // 3. Marketing › Papelaria (sacola e embalagens)
+export const DRIVE_SACOLA = "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9"; // 3. Marketing › Sacola e embalagens
 export const DRIVE_META_BUSINESS = "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU"; // …Vídeos de configuração › 2. Meta Business Suite
 export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC"; // 3. Marketing › Postagens redes sociais
 
