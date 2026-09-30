@@ -274,7 +274,12 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
             </p>
           </div>
           <div className={CARTAO}>
-            <p className="text-xs font-semibold text-ink-3">PAGO · DEPOSITADO NO META</p>
+            {/* Com verMesAlvo o valor é só o que as unidades pagaram (depósito é do mês do
+                calendário): o rótulo "DEPOSITADO NO META" ali fez o Nelson achar que o depósito
+                de outubro já tinha sido registrado (30/09). */}
+            <p className="text-xs font-semibold text-ink-3">
+              {verMesAlvo ? "PAGO PELAS UNIDADES" : "PAGO · DEPOSITADO NO META"}
+            </p>
             <p className="mt-1.5 font-plus-jakarta text-2xl font-extrabold text-ink">
               {formatBRLInteger(resumoAtivo.brutoPago)}
               {/* O depósito sempre acompanha o mês do CALENDÁRIO (a campanha no ar), nunca o
