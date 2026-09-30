@@ -1319,8 +1319,16 @@ export default function TabLancar({
             </p>
           </div>
           <ul className="divide-y divide-ink-shadow/5">
-            {aReceber.slice(0, 5).map((s) => (
-              <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+            {/* Tocar abre a venda aqui mesmo: a de data futura (robô, entrega amanhã) não
+                aparece na lista do mês/dia e só era alcançável por esta caixa (Bárbara, 30/09). */}
+            {aReceber.slice(0, 5).map((s) => expandedSaleId === s.id ? (
+              <li key={s.id} className="p-2">{renderSaleCard(s)}</li>
+            ) : (
+              <li
+                key={s.id}
+                className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-surface/50 transition-colors"
+                onClick={() => handleToggleExpand(s.id)}
+              >
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-ink truncate">{getContactName(s)}</p>
                   <p className="text-xs text-ink-2 truncate">
