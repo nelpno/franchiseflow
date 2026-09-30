@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { listarFranquias } from "@/lib/franchisesCache";
+import { chaveTelefone, listarBloqueios, bloquearNumero, desbloquearNumero } from "@/lib/roboBloqueios";
 
 // Aba Todos: cartões renderizados de 50 em 50 (há unidade com 3 mil contatos)
 const PAGE_SIZE = 50;
@@ -66,6 +67,8 @@ export default function MyContacts() {
   const [activeFilter, setActiveFilter] = useState("todos");
   const [editingContact, setEditingContact] = useState(null);
   const [editForm, setEditForm] = useState({});
+  // Robô não responde este número (bot_blocked_numbers). carregado=false: a lista não veio, não mexe no bloqueio ao salvar
+  const [bloqueioEdit, setBloqueioEdit] = useState({ carregado: false, id: null, chave: null });
   const [isCreating, setIsCreating] = useState(false);
   const [newContactForm, setNewContactForm] = useState({ nome: "", telefone: "", endereco: "", bairro: "", notas: "" });
   const [isSaving, setIsSaving] = useState(false);
@@ -275,7 +278,22 @@ export default function MyContacts() {
       bairro: contact.bairro || "",
       notas: contact.notas || "",
       do_not_contact_at: contact.do_not_contact_at || null,
+      robo_bloqueado: false,
     });
+    setBloqueioEdit({ carregado: false, id: null, chave: null });
+    const unidade = contact.franchise_id;
+    const chave = chaveTelefone(telefone);
+    if (unidade && chave) {
+      listarBloqueios(unidade)
+        .then((linhas) => {
+          const achado = linhas.find((l) => chaveTelefone(l.phone_raw) === chave);
+          setBloqueioEdit({ carregado: true, id: achado?.id || null, chave });
+          setEditForm((atual) => ({ ...atual, robo_bloqueado: !!achado }));
+        })
+        .catch(() => setBloqueioEdit({ carregado: false, id: null, chave: null }));
+    } else if (unidade) {
+      setBloqueioEdit({ carregado: true, id: null, chave: null });
+    }
   };
 
   const handleCreate = async () => {
@@ -331,6 +349,21 @@ export default function MyContacts() {
         updateData.do_not_contact_at = editForm.do_not_contact_at || null;
       }
       await Contact.update(editingContact.id, updateData);
+      // Robô não responde: grava só se a lista carregou e algo mudou (marcação ou o próprio telefone)
+      if (bloqueioEdit.carregado && editingContact.franchise_id) {
+        const quer = !!editForm.robo_bloqueado;
+        const chaveNova = chaveTelefone(updateData.telefone);
+        const mudouNumero = !!bloqueioEdit.id && chaveNova !== bloqueioEdit.chave;
+        try {
+          if (bloqueioEdit.id && (!quer || mudouNumero)) await desbloquearNumero(bloqueioEdit.id);
+          if (quer && chaveNova && (!bloqueioEdit.id || mudouNumero)) {
+            await bloquearNumero(editingContact.franchise_id, updateData.telefone, updateData.nome || "cliente");
+          }
+          if (quer && !chaveNova) toast.error("Para o robô não responder, o contato precisa de telefone com DDD.");
+        } catch (erroBloqueio) {
+          toast.error(safeErrorMessage(erroBloqueio, "Contato salvo, mas não consegui mudar o bloqueio do robô."));
+        }
+      }
       toast.success("Contato atualizado");
       setEditingContact(null);
       loadContacts();
@@ -915,6 +948,22 @@ export default function MyContacts() {
                 <span className="block text-xs text-ink-3">Não aparece em &quot;Quem chamar hoje&quot;.</span>
               </span>
             </label>
+
+            {/* Robô não responde este número (fornecedor, família, maquininha) */}
+            {bloqueioEdit.carregado && (
+              <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-ink-shadow/10 p-3 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+                  checked={!!editForm.robo_bloqueado}
+                  onChange={(event) => setEditForm({ ...editForm, robo_bloqueado: event.target.checked })}
+                />
+                <span>
+                  <span className="block font-medium">Robô não responde este número</span>
+                  <span className="block text-xs text-ink-3">Para quem não é cliente: fornecedor, família, maquininha. Você continua conversando normalmente.</span>
+                </span>
+              </label>
+            )}
 
             {/* Notas */}
             <div className="space-y-1.5">

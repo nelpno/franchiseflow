@@ -26,6 +26,7 @@ import ComoRoboResponde from "@/components/vendedor/ComoRoboResponde";
 import EntregaCard from "@/components/vendedor/EntregaCard";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
+import NumerosBloqueados from "@/components/vendedor/NumerosBloqueados";
 import { ToggleCard, RadioCards } from "@/components/vendedor/WizardFields";
 import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
 import { listarFranquias } from "@/lib/franchisesCache";
@@ -1341,6 +1342,11 @@ function FranchiseSettingsContent() {
                   onChange={(url) => handleInputChange('catalog_image_url', url)}
                   franchiseId={editingConfig?.franchise_evolution_instance_id || 'default'}
                 />
+              </div>
+              <div>
+                <label className={labelClass}>Números que o robô não responde</label>
+                <NumerosBloqueados franchiseId={editingConfig?.franchise_evolution_instance_id} />
+                <FieldHint text="Fornecedor, maquininha, banco, família: quem não é cliente. O robô ignora esse número na hora; você continua conversando normalmente. Pode digitar do jeito que quiser, com ou sem o 9." />
               </div>
               <div>
                 <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa)</label>
