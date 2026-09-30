@@ -55,23 +55,91 @@ const corsHeaders = {
 
 // --- ASAAS API helpers ---
 
+const ASAAS_TIMEOUT_MS = 15000;
+const ASAAS_ESPERAS_MS = [800, 2000];
+const pausa = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Os lotes rodam em paralelo (30/09/2026), então cada chamada tem prazo próprio e repete
+// quando o ASAAS NÃO processou: 429 (limite de requisições) em qualquer método; erro de rede
+// ou 5xx só em leitura (GET). Escrita que falhou no meio não se repete: poderia duplicar.
 async function asaasRequest(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${ASAAS_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      access_token: ASAAS_API_KEY,
-      ...((options.headers as Record<string, string>) || {}),
-    },
-  });
-  // DELETE costuma retornar 204 sem body; text() seguido de JSON.parse tolera body vazio
-  if (res.status === 204) return {};
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
-  if (!res.ok) {
-    throw new Error(data?.errors?.[0]?.description || `ASAAS error ${res.status}`);
+  const leitura = !options.method || options.method === "GET";
+  for (let tentativa = 0; ; tentativa++) {
+    const podeRepetir = tentativa < ASAAS_ESPERAS_MS.length;
+    let res: Response;
+    try {
+      res = await fetch(`${ASAAS_BASE_URL}${path}`, {
+        ...options,
+        signal: AbortSignal.timeout(ASAAS_TIMEOUT_MS),
+        headers: {
+          "Content-Type": "application/json",
+          access_token: ASAAS_API_KEY,
+          ...((options.headers as Record<string, string>) || {}),
+        },
+      });
+    } catch (err) {
+      if (leitura && podeRepetir) {
+        await pausa(ASAAS_ESPERAS_MS[tentativa]);
+        continue;
+      }
+      throw new Error(`ASAAS sem resposta (${(err as Error).name})`);
+    }
+    if (podeRepetir && (res.status === 429 || (leitura && res.status >= 500))) {
+      await res.text().catch(() => "");
+      await pausa(ASAAS_ESPERAS_MS[tentativa]);
+      continue;
+    }
+    // DELETE costuma retornar 204 sem body; text() seguido de JSON.parse tolera body vazio
+    if (res.status === 204) return {};
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error(`ASAAS error ${res.status}`);
+    }
+    if (!res.ok) {
+      throw new Error(data?.errors?.[0]?.description || `ASAAS error ${res.status}`);
+    }
+    return data;
   }
-  return data;
+}
+
+/** Roda `fn` em cada item com no máximo `limite` ao mesmo tempo; o resultado sai na ordem da entrada. */
+async function emParalelo<T, R>(itens: T[], limite: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const saida: R[] = new Array(itens.length);
+  let proximo = 0;
+  const trabalhador = async () => {
+    while (proximo < itens.length) {
+      const i = proximo++;
+      saida[i] = await fn(itens[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limite, itens.length) }, trabalhador));
+  return saida;
+}
+
+/**
+ * Agrupa as franquias pelo CPF/CNPJ do cadastro. Dono com mais de uma unidade divide o MESMO
+ * cliente no ASAAS: cadastrar as unidades dele ao mesmo tempo criaria dois clientes. Cada grupo
+ * roda em sequência; grupos diferentes, em paralelo.
+ */
+async function gruposPorDocumento(franchiseIds: string[]): Promise<string[][]> {
+  if (franchiseIds.length === 0) return [];
+  const { data } = await supabase
+    .from("franchises")
+    .select("evolution_instance_id, cpf_cnpj")
+    .in("evolution_instance_id", franchiseIds);
+  const docDe = new Map<string, string>();
+  for (const f of data || []) {
+    docDe.set(f.evolution_instance_id as string, String(f.cpf_cnpj ?? "").replace(/\D/g, ""));
+  }
+  const grupos = new Map<string, string[]>();
+  for (const fid of franchiseIds) {
+    const chave = docDe.get(fid) || `sem-documento:${fid}`;
+    grupos.set(chave, [...(grupos.get(chave) || []), fid]);
+  }
+  return [...grupos.values()];
 }
 
 /**
@@ -109,11 +177,19 @@ function isValidCpfCnpj(value: string | null | undefined): boolean {
 
 async function registerCustomer(franchiseId: string) {
   // Get franchise data (inclui billing_email — fonte primária do email de cobrança)
-  const { data: franchise, error: fErr } = await supabase
-    .from("franchises")
-    .select("id, name, owner_name, cpf_cnpj, city, phone_number, state_uf, address_number, address_complement, neighborhood, evolution_instance_id, billing_email")
-    .eq("evolution_instance_id", franchiseId)
-    .single();
+  // Franquia e endereço em paralelo (leituras independentes).
+  const [{ data: franchise, error: fErr }, { data: config }] = await Promise.all([
+    supabase
+      .from("franchises")
+      .select("id, name, owner_name, cpf_cnpj, city, phone_number, state_uf, address_number, address_complement, neighborhood, evolution_instance_id, billing_email")
+      .eq("evolution_instance_id", franchiseId)
+      .single(),
+    supabase
+      .from("franchise_configurations")
+      .select("street_address, cep, franchise_name")
+      .eq("franchise_evolution_instance_id", franchiseId)
+      .single(),
+  ]);
   if (fErr || !franchise) throw new Error("Franquia não encontrada");
   if (!franchise.cpf_cnpj) throw new Error("CPF/CNPJ não preenchido");
   if (!isValidCpfCnpj(franchise.cpf_cnpj)) {
@@ -121,13 +197,6 @@ async function registerCustomer(franchiseId: string) {
       `CPF/CNPJ inválido no cadastro (${franchise.cpf_cnpj}) — confira os dígitos em Franquias → Editar dados`
     );
   }
-
-  // Get config for address
-  const { data: config } = await supabase
-    .from("franchise_configurations")
-    .select("street_address, cep, franchise_name")
-    .eq("franchise_evolution_instance_id", franchiseId)
-    .single();
 
   // Email de cobrança: billing_email é fonte primária; fallback para último invite válido
   let billingEmail: string | null = franchise.billing_email || null;
@@ -418,12 +487,13 @@ async function attachPixFields(
   }
 }
 
-async function checkPayment(franchiseId: string) {
-  const { data: sub } = await supabase
+// `subJaLida`: o lote lê todas as assinaturas numa consulta só e passa a linha pronta.
+async function checkPayment(franchiseId: string, subJaLida?: { asaas_subscription_id?: string | null }) {
+  const sub = subJaLida ?? (await supabase
     .from("system_subscriptions")
-    .select("*")
+    .select("asaas_subscription_id")
     .eq("franchise_id", franchiseId)
-    .single();
+    .single()).data;
   if (!sub?.asaas_subscription_id) throw new Error("Sem assinatura ativa");
 
   // Get the payments (most recent dueDate first). ASAAS auto-creates next-cycle
@@ -503,26 +573,26 @@ async function checkPayment(franchiseId: string) {
 async function checkPaymentBatch() {
   const { data: subs, error } = await supabase
     .from("system_subscriptions")
-    .select("franchise_id")
+    .select("franchise_id, asaas_subscription_id")
     .not("asaas_subscription_id", "is", null)
     .neq("subscription_status", "CANCELLED");
   if (error) throw error;
 
-  const ids = (subs || []).map(s => s.franchise_id as string);
+  // 30/09/2026: era uma unidade por vez com pausa de 250 ms (44 s para 64 unidades). Agora
+  // 6 por vez; cada unidade só toca a própria linha, então a ordem não importa.
   const errors: { franchise_id: string; error: string }[] = [];
   let updated = 0;
-
-  for (const fid of ids) {
+  await emParalelo(subs || [], LOTE_LEITURA, async (s) => {
+    const fid = s.franchise_id as string;
     try {
-      await checkPayment(fid);
+      await checkPayment(fid, s);
       updated++;
     } catch (err) {
       errors.push({ franchise_id: fid, error: (err as Error).message });
     }
-    await new Promise(r => setTimeout(r, 250));
-  }
+  });
 
-  return { total: ids.length, updated, errors };
+  return { total: (subs || []).length, updated, errors };
 }
 
 async function handleWebhook(body: Record<string, unknown>) {
@@ -567,17 +637,26 @@ async function handleWebhook(body: Record<string, unknown>) {
   return result ?? { updated: "pending", event };
 }
 
+// Quantas unidades ao mesmo tempo: leitura aguenta mais; escrita (criar, reajustar) vai mais devagar.
+const LOTE_LEITURA = 6;
+const LOTE_ESCRITA = 4;
+
 async function registerBatch(franchiseIds: string[]) {
-  const results = [];
-  for (const fid of franchiseIds) {
-    try {
-      const res = await registerCustomer(fid);
-      results.push({ franchise_id: fid, success: true, ...res });
-    } catch (err) {
-      results.push({ franchise_id: fid, success: false, error: (err as Error).message });
+  const ids = Array.isArray(franchiseIds) ? franchiseIds : [];
+  const grupos = await gruposPorDocumento(ids);
+  // deno-lint-ignore no-explicit-any
+  const porId = new Map<string, any>();
+  await emParalelo(grupos, LOTE_ESCRITA, async (grupo) => {
+    for (const fid of grupo) {
+      try {
+        const res = await registerCustomer(fid);
+        porId.set(fid, { franchise_id: fid, success: true, ...res });
+      } catch (err) {
+        porId.set(fid, { franchise_id: fid, success: false, error: (err as Error).message });
+      }
     }
-  }
-  return results;
+  });
+  return ids.map((fid) => porId.get(fid));
 }
 
 async function subscribeBatch(value: number = 150, franchiseIds?: string[]) {
@@ -594,16 +673,21 @@ async function subscribeBatch(value: number = 150, franchiseIds?: string[]) {
   }
   const { data: subs } = await query;
 
-  const results = [];
-  for (const sub of subs || []) {
-    try {
-      const res = await createSubscription(sub.franchise_id, value);
-      results.push({ franchise_id: sub.franchise_id, success: true, ...res });
-    } catch (err) {
-      results.push({ franchise_id: sub.franchise_id, success: false, error: (err as Error).message });
+  const ids = (subs || []).map((s) => s.franchise_id as string);
+  const grupos = await gruposPorDocumento(ids);
+  // deno-lint-ignore no-explicit-any
+  const porId = new Map<string, any>();
+  await emParalelo(grupos, LOTE_ESCRITA, async (grupo) => {
+    for (const fid of grupo) {
+      try {
+        const res = await createSubscription(fid, value);
+        porId.set(fid, { franchise_id: fid, success: true, ...res });
+      } catch (err) {
+        porId.set(fid, { franchise_id: fid, success: false, error: (err as Error).message });
+      }
     }
-  }
-  return results;
+  });
+  return ids.map((fid) => porId.get(fid));
 }
 
 async function cancelSubscription(franchiseId: string) {
@@ -626,11 +710,11 @@ async function cancelSubscription(franchiseId: string) {
   // Cancela faturas PENDING restantes (ASAAS não faz automático)
   try {
     const payments = await asaasRequest(`/v3/subscriptions/${subId}/payments?status=PENDING`);
-    for (const pay of (payments as { data?: Array<{ id: string }> }).data || []) {
+    await emParalelo((payments as { data?: Array<{ id: string }> }).data || [], LOTE_ESCRITA, async (pay) => {
       try {
         await asaasRequest(`/v3/payments/${pay.id}`, { method: "DELETE" });
       } catch { /* segue cancelando os próximos */ }
-    }
+    });
   } catch { /* sub já removida — não conseguimos listar payments */ }
 
   // Atualiza banco: limpa subscription e payment, MANTÉM customer para facilitar recriar
@@ -682,20 +766,23 @@ async function updateSubscriptionValue({
     throw new Error("Informe franchise_ids ou all_active=true");
   }
 
-  const results: Array<{ franchise_id: string; success: boolean; error?: string }> = [];
+  // Uma consulta para todas as assinaturas; depois LOTE_ESCRITA unidades por vez (cada uma
+  // mexe só na própria assinatura e na própria linha).
+  const { data: linhas, error: subsErr } = await supabase
+    .from("system_subscriptions")
+    .select("franchise_id, asaas_subscription_id, current_payment_id, current_payment_status")
+    .in("franchise_id", targets);
+  if (subsErr) throw new Error(`Falha ao ler as assinaturas: ${subsErr.message}`);
+  const subDe = new Map((linhas || []).map((l) => [l.franchise_id as string, l]));
 
-  for (const fid of targets) {
+  type Resultado = { franchise_id: string; success: boolean; error?: string; warning?: string };
+  const results = await emParalelo(targets, LOTE_ESCRITA, async (fid): Promise<Resultado> => {
     try {
-      const { data: sub } = await supabase
-        .from("system_subscriptions")
-        .select("asaas_subscription_id, current_payment_id, current_payment_status")
-        .eq("franchise_id", fid)
-        .single();
-
+      const sub = subDe.get(fid);
       if (!sub?.asaas_subscription_id) {
-        results.push({ franchise_id: fid, success: false, error: "Sem assinatura ativa" });
-        continue;
+        return { franchise_id: fid, success: false, error: "Sem assinatura ativa" };
       }
+      let warning: string | undefined;
 
       // Atualiza subscription ASAAS (vale para próximos ciclos)
       await asaasRequest(`/v3/subscriptions/${sub.asaas_subscription_id}`, {
@@ -705,8 +792,10 @@ async function updateSubscriptionValue({
 
       const patch: Record<string, unknown> = { last_synced_at: new Date().toISOString() };
 
-      // Opcionalmente aplica ao payment do ciclo atual (refaz fatura + PIX)
-      if (applyToCurrent && sub.current_payment_id) {
+      // Opcionalmente aplica ao payment do ciclo atual (refaz fatura + PIX). Fatura já paga
+      // ou cancelada não se altera no ASAAS: só tenta nas que ainda dá para pagar.
+      const faturaAberta = sub.current_payment_status === "PENDING" || sub.current_payment_status === "OVERDUE";
+      if (applyToCurrent && sub.current_payment_id && faturaAberta) {
         try {
           const updated = await asaasRequest(`/v3/payments/${sub.current_payment_id}`, {
             method: "POST",
@@ -720,27 +809,32 @@ async function updateSubscriptionValue({
           await attachPixFields(
             patch,
             sub.current_payment_id as string,
-            (sub.current_payment_status as string) || "PENDING",
+            sub.current_payment_status as string,
           );
         } catch (payErr) {
+          // A assinatura mudou, a fatura do mês não: antes isso só ia para o log e a tela
+          // dizia "atualizada". Agora volta como aviso.
+          warning = `fatura deste mês não mudou: ${(payErr as Error).message}`;
           console.warn(`[asaas-billing] Falha ao atualizar payment de ${fid}: ${(payErr as Error).message}`);
         }
       }
 
-      await supabase
+      const { error: upErr } = await supabase
         .from("system_subscriptions")
         .update(patch)
         .eq("franchise_id", fid);
+      if (upErr) warning = `${warning ? `${warning}; ` : ""}painel não gravou: ${upErr.message}`;
 
-      results.push({ franchise_id: fid, success: true });
+      return { franchise_id: fid, success: true, ...(warning ? { warning } : {}) };
     } catch (err) {
-      results.push({ franchise_id: fid, success: false, error: (err as Error).message });
+      return { franchise_id: fid, success: false, error: (err as Error).message };
     }
-  }
+  });
 
   return {
     total: targets.length,
     updated: results.filter((r) => r.success).length,
+    warnings: results.filter((r) => r.warning).length,
     results,
   };
 }

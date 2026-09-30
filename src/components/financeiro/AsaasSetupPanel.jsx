@@ -330,8 +330,7 @@ export default function AsaasSetupPanel() {
     try {
       await invokeAsaas({ action: "register", franchise_id: evoId });
       toast.success(`${franchise.name} cadastrado no ASAAS`);
-      // Reload data after a short delay for n8n to process
-      setTimeout(() => loadData(), 3000);
+      await loadData();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao cadastrar no ASAAS."));
     } finally {
@@ -380,7 +379,7 @@ export default function AsaasSetupPanel() {
         setShowReview(false);
         setExcludedSubIds(new Set());
       }
-      setTimeout(() => loadData(), 5000);
+      await loadData();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao criar assinaturas."));
     } finally {
@@ -395,7 +394,7 @@ export default function AsaasSetupPanel() {
       await invokeAsaas({ action: "cancel-subscription", franchise_id: cancellingSub.evolution_instance_id });
       toast.success(`Assinatura de ${cancellingSub.name} cancelada`);
       setCancellingSub(null);
-      setTimeout(() => loadData(), 2000);
+      await loadData();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao cancelar."));
     } finally {
@@ -418,10 +417,20 @@ export default function AsaasSetupPanel() {
       });
       const updated = data?.updated ?? 0;
       const total = data?.total ?? 0;
-      toast.success(`${updated}/${total} assinaturas atualizadas para R$ ${monthlyValue.toFixed(2)}`);
+      const avisos = data?.warnings ?? 0;
+      if (updated < total || avisos > 0) {
+        // A edge responde 200 mesmo com falha por unidade: dizer quantas ficaram para trás.
+        toast.warning(
+          `${updated}/${total} assinaturas atualizadas para R$ ${monthlyValue.toFixed(2)}` +
+            (avisos > 0 ? ` — em ${avisos} a fatura deste mês não mudou` : ""),
+          { duration: 15000 }
+        );
+      } else {
+        toast.success(`${updated}/${total} assinaturas atualizadas para R$ ${monthlyValue.toFixed(2)}`);
+      }
       setShowValueDialog(false);
       setApplyToCurrent(false);
-      setTimeout(() => loadData(), 3000);
+      await loadData();
     } catch (err) {
       toast.error(safeErrorMessage(err, "Erro ao atualizar valor."));
     } finally {
@@ -523,7 +532,7 @@ export default function AsaasSetupPanel() {
               { duration: 15000 }
             );
           }
-          setTimeout(() => loadData(), 5000);
+          await loadData();
         } catch (err) {
           toast.error(safeErrorMessage(err, "Erro no cadastro batch."));
         } finally {
