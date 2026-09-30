@@ -1003,6 +1003,28 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   // Top produtos
   const topProducts = useMemo(() => getTopProducts(monthSaleItems, 5), [monthSaleItems]);
 
+  // Vendas por produto de data a data (Bragança, 30/09/2026): mesma régua do mês — vendas por
+  // sale_date, itens pelo sale_id em blocos de 500. Erro sobe: a tela avisa e mantém o que tinha.
+  const carregarProdutosDoPeriodo = useCallback(async (de, ate) => {
+    if (!franchiseId) return [];
+    const vendas = await Sale.filter({ franchise_id: franchiseId }, null, null, {
+      columns: "id, sale_date",
+      fetchAll: true,
+      gte: { sale_date: de },
+      lte: { sale_date: ate },
+    });
+    const ids = vendas.map((s) => s.id);
+    const itens = [];
+    for (let i = 0; i < ids.length; i += 500) {
+      const parte = await SaleItem.filter({ sale_id: ids.slice(i, i + 500) }, null, null, {
+        columns: "id, sale_id, quantity, unit_price, product_name",
+        fetchAll: true,
+      });
+      itens.push(...parte);
+    }
+    return getTopProducts(itens, Infinity);
+  }, [franchiseId]);
+
   // Parados no freezer (28+ dias sem venda, com estoque > 0)
   const paradosCount = useMemo(() => {
     const cutoff = format(subDays(new Date(), 28), "yyyy-MM-dd");
@@ -1309,6 +1331,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
             evento: "planilha_resultado",
           }}
           auditLogs={auditLogs}
+          carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
           mostrarDicaClientes={!hideFranchiseeLinks}
           pedidosNaoConferidos={pedidosFalharam}
         />

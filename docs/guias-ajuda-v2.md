@@ -976,7 +976,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Deu certo quando:** a planilha abre com uma linha por produto (produto, quantidade, valor e % do total) e o TOTAL no fim.
 
-**Dica:** a lista é do mês escolhido. Para ver outro mês, feche a janela, troque o mês nas setas e abra de novo.
+**Dica:** a lista abre no mês escolhido. Quer outras datas? Mude **De** e **Até** e toque em **Ver período**: a lista e a planilha passam a ser desse período.
 
 **Erro comum:** não aparece **Ver todos os produtos**? Confira o mês. Se há vendas, carregue a tela de novo. O **Valor** pode ser diferente do **Entrou** do Resultado, porque aqui não entram frete nem desconto.
 
@@ -1039,7 +1039,7 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 9. **Paguei a mensalidade e continua em aberto.** Abra Pagamentos e toque em "Já paguei, verificar agora". → `pagamentos`
 10. **O comprovante sai fraco na impressora.** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina. → `comprovante`
 11. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez. → `esqueci-senha`
-12. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF. → `vendas-por-produto`
+12. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista abre no mês escolhido; para outras datas, mude De e Até e toque em Ver período. Dá para baixar em Excel ou PDF. → `vendas-por-produto`
 13. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
 
 No app (`PERGUNTAS_FREQUENTES`) ficam as 9 que já existiam (algumas passaram a apontar para o guia novo que responde melhor) mais 5 novas.

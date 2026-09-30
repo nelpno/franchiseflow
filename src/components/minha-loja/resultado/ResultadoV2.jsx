@@ -2,7 +2,8 @@
 // Com a chave desligada o TabResultado renderiza a tela de sempre e este arquivo nem roda.
 // Os números vêm prontos de montarResultadoMes (src/lib/monthlyReport.js) — o MESMO modelo
 // do PDF. Contrato do dinheiro: docs/claude/sobrou-no-mes.md (caixa puro, "a receber" entra).
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -12,6 +13,7 @@ import { formatBRL, formatBRLCompactResultado } from "@/lib/formatters";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { textoComparacaoSobrou, blocosDoResultado } from "@/lib/resultadoTela";
 import { buildProductsExportRows, productsExportColumns, produtosComPercentual } from "@/lib/productsExport";
+import { limitesDoMes, validarPeriodo, rotuloPeriodo } from "@/lib/periodoProdutos";
 import { CARTAO, H2, TOM_ATENCAO, BTN_SECUNDARIO, BTN_PRIMARIO } from "@/components/shared/adminUi";
 
 const LBL = "text-xs font-bold uppercase tracking-wide text-ink-3";
@@ -191,7 +193,7 @@ function ParaOndeFoi({ modelo }) {
 }
 
 // --------------------------------------------------------------- Mais vendidos
-function MaisVendidos({ modelo, monthLabel }) {
+function MaisVendidos({ modelo, monthLabel, carregarProdutosDoPeriodo }) {
   const top = modelo.maisVendidos;
   const [todos, setTodos] = useState(false);
   return (
@@ -209,42 +211,122 @@ function MaisVendidos({ modelo, monthLabel }) {
             <span className={`${VAL} text-sm`}>{p.quantity.toLocaleString("pt-BR")}</span>
           </div>
         ))}
-        {modelo.produtos.length > 0 && (
+        {(modelo.produtos.length > 0 || carregarProdutosDoPeriodo) && (
           <button type="button" onClick={() => setTodos(true)} className="flex min-h-[44px] w-full items-center justify-between px-4 text-sm font-semibold text-brand-dark hover:bg-surface">
-            Ver todos os produtos ({modelo.produtos.length})
+            {modelo.produtos.length > 0 ? `Ver todos os produtos (${modelo.produtos.length})` : "Ver outro período"}
             <MaterialIcon icon="arrow_forward" size={16} aria-hidden="true" />
           </button>
         )}
       </div>
-      <VendasPorProduto open={todos} onOpenChange={setTodos} produtos={modelo.produtos} chave={modelo.chave} monthLabel={monthLabel} />
+      <VendasPorProduto
+        open={todos}
+        onOpenChange={setTodos}
+        produtos={modelo.produtos}
+        chave={modelo.chave}
+        monthLabel={monthLabel}
+        carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
+      />
     </section>
   );
 }
 
 // --------------------------------------------------------------- Vendas por produto (todos)
 // Pedido de Bragança (28/09/2026): vendas por produto no período = o mês do Resultado.
-function VendasPorProduto({ open, onOpenChange, produtos, chave, monthLabel }) {
-  const lista = produtosComPercentual(produtos);
+// 30/09/2026 (mesma unidade): período de data a data. Abre no mês; "Ver período" busca as
+// vendas daquele intervalo (carregarProdutosDoPeriodo, em TabResultado) e a planilha sai dele.
+function VendasPorProduto({ open, onOpenChange, produtos, chave, monthLabel, carregarProdutosDoPeriodo }) {
+  const mes = limitesDoMes(chave);
+  const [de, setDe] = useState(mes.de);
+  const [ate, setAte] = useState(mes.ate);
+  const [periodo, setPeriodo] = useState(null); // { de, ate, produtos } quando não é o mês
+  const [buscando, setBuscando] = useState(false);
+  const pedidoRef = useRef(0);
+
+  // Mudou o mês do Resultado (ou reabriu): volta para o mês.
+  useEffect(() => {
+    pedidoRef.current += 1;
+    setDe(mes.de);
+    setAte(mes.ate);
+    setPeriodo(null);
+    setBuscando(false);
+  }, [chave, open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const verPeriodo = async () => {
+    const erro = validarPeriodo(de, ate);
+    if (erro) {
+      toast.error(erro);
+      return;
+    }
+    if (de === mes.de && ate === mes.ate) {
+      setPeriodo(null);
+      return;
+    }
+    const pedido = ++pedidoRef.current;
+    setBuscando(true);
+    try {
+      const lista = await carregarProdutosDoPeriodo(de, ate);
+      if (pedido !== pedidoRef.current) return;
+      setPeriodo({ de, ate, produtos: lista });
+    } catch (err) {
+      if (pedido !== pedidoRef.current) return;
+      console.error("Erro ao buscar vendas por produto do período:", err);
+      toast.error("Não foi possível buscar esse período. Confira sua internet e tente de novo.");
+    } finally {
+      if (pedido === pedidoRef.current) setBuscando(false);
+    }
+  };
+
+  const ativos = periodo ? periodo.produtos : produtos;
+  const rotulo = periodo ? rotuloPeriodo(periodo.de, periodo.ate) : monthLabel;
+  const lista = produtosComPercentual(ativos);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90dvh] w-[calc(100vw-1rem)] flex-col p-4 sm:w-full sm:max-w-lg sm:p-6">
         <DialogHeader>
           <DialogTitle className="font-plus-jakarta">Vendas por produto</DialogTitle>
         </DialogHeader>
+        {carregarProdutosDoPeriodo && (
+          <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-3">
+              De
+              <input
+                type="date"
+                value={de}
+                max={ate || undefined}
+                onChange={(e) => setDe(e.target.value)}
+                className="h-11 w-full min-w-0 rounded-xl border border-surface-line bg-white px-3 text-sm font-normal text-ink"
+              />
+            </label>
+            <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-3">
+              Até
+              <input
+                type="date"
+                value={ate}
+                min={de || undefined}
+                onChange={(e) => setAte(e.target.value)}
+                className="h-11 w-full min-w-0 rounded-xl border border-surface-line bg-white px-3 text-sm font-normal text-ink"
+              />
+            </label>
+            <button type="button" onClick={verPeriodo} disabled={buscando} className={`${BTN_SECUNDARIO} col-span-2 min-h-11 sm:col-span-1`}>
+              {buscando ? "Buscando..." : "Ver período"}
+            </button>
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className={CAP}>
-            <span className="capitalize">{monthLabel}</span> · valor = quantidade × preço do item (sem frete e desconto)
+            <span className={periodo ? "" : "capitalize"}>{rotulo}</span> · valor = quantidade × preço do item (sem frete e desconto)
           </p>
           <ExportButtons
-            data={buildProductsExportRows(produtos, { includeTotalsRow: true })}
-            columns={productsExportColumns(produtos)}
-            filename={`vendas-por-produto-${chave}`}
-            title={`Vendas por produto · ${monthLabel}`}
+            data={buildProductsExportRows(ativos, { includeTotalsRow: true })}
+            columns={productsExportColumns(ativos)}
+            filename={periodo ? `vendas-por-produto-${periodo.de}-a-${periodo.ate}` : `vendas-por-produto-${chave}`}
+            title={`Vendas por produto · ${rotulo}`}
             evento="planilha_produtos"
           />
         </div>
         <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <table className="w-full text-sm">
+          {lista.length === 0 && <p className="px-1 py-6 text-center text-sm text-ink-3">Sem vendas nesse período.</p>}
+          <table className={`w-full text-sm ${lista.length === 0 ? "hidden" : ""}`}>
             <thead>
               <tr className="text-left text-xs text-ink-3">
                 <th className="px-1 py-2 font-semibold">Produto</th>
@@ -497,6 +579,7 @@ export default function ResultadoV2({
   auditLogs,
   mostrarDicaClientes,
   pedidosNaoConferidos = false,
+  carregarProdutosDoPeriodo,
 }) {
   const [escolhendo, setEscolhendo] = useState(false);
   const abrirEscolha = () => setEscolhendo(true);
@@ -537,7 +620,7 @@ export default function ResultadoV2({
             <div className="hidden md:block">{estoqueCard}</div>
           </div>
           <ParaOndeFoi modelo={modelo} />
-          <MaisVendidos modelo={modelo} monthLabel={monthLabel} />
+          <MaisVendidos modelo={modelo} monthLabel={monthLabel} carregarProdutosDoPeriodo={carregarProdutosDoPeriodo} />
         </div>
       )}
       {tem("vazio") && (

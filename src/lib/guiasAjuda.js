@@ -451,12 +451,12 @@ export const GUIAS = [
     slug: "vendas-por-produto",
     publico: PUBLICO.franqueado,
     titulo: "Ver as vendas por produto",
-    resumo: "Quanto você vendeu de cada produto no mês, em unidades e em reais, com planilha para baixar.",
+    resumo: "Quanto você vendeu de cada produto no mês ou entre duas datas, em unidades e em reais, com planilha para baixar.",
     tempo: "2 minutos",
     icone: "bar_chart",
     area: "Dinheiro",
     sinonimos: ["vendas por produto", "o que mais vende", "mais vendidos", "planilha de produtos", "quantidade por produto"],
-    dica: "A lista é do mês escolhido. Para ver outro mês, feche a janela, troque o mês nas setas e abra de novo.",
+    dica: "A lista abre no mês escolhido. Quer outras datas? Mude De e Até e toque em Ver período: a lista e a planilha passam a ser desse período.",
     erroComum: "Não aparece Ver todos os produtos? Confira o mês. Se há vendas, carregue a tela de novo. O Valor pode ser diferente do Entrou do Resultado, porque aqui não entram frete nem desconto.",
     passos: [
       { titulo: "Abra o Resultado", texto: "No celular, toque em Mais e em Gestão; no computador, toque em Gestão no menu à esquerda. Abre o Resultado.", botao: "Gestão", imagem: "/tutoriais/vendas-por-produto-1.webp" },
@@ -942,7 +942,7 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "Onde vejo quanto vendi de cada produto?",
-    resposta: "Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF.",
+    resposta: "Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista abre no mês escolhido; para outras datas, mude De e Até e toque em Ver período. Dá para baixar em Excel ou PDF.",
     guiaSlug: "vendas-por-produto",
   },
 ];
