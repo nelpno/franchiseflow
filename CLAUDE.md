@@ -11,6 +11,8 @@ npm run lint    # eslint --quiet — ⚠️ no-undef DESLIGADO (símbolo não-im
 node src/lib/financialCalcs.test.mjs   # 27 testes do dinheiro (DRE, taxa repassada × absorvida)
 node src/lib/franchiseUtils.test.mjs   # multi-unidade (resolveActiveFranchise)
 node .tmp/deploy.mjs                   # force update do serviço no Portainer (depois do push)
+npx supabase functions deploy asaas-billing --no-verify-jwt --project-ref sulgicnqqopyhulglakd   # SUPABASE_ACCESS_TOKEN = SUPABASE_MANAGEMENT_TOKEN do .env; conferir tipos antes: npx deno check index.ts
+# Testar o lote do ASAAS sem o painel: select public.cron_sync_asaas_subscriptions(); e ler net._http_response (a service role do .env dá 401 na edge)
 ```
 Deploy = `git push origin main` → `node .tmp/deploy.mjs` → verificar por **CONTEÚDO** no live (~75s de 502). ⚠️ `git push` puro TRAVA (GCM headless no Windows): `TOK=$(gh auth token); git -c credential.helper= push "https://x-access-token:$TOK@github.com/nelpno/franchiseflow.git" main` (mascarar o token na saída; `$LASTEXITCODE`/`PUSH_RC=0` é a prova, não a cor). ⚠️ **Push por URL com token NÃO atualiza `origin/main`** → `git status` segue dizendo *"ahead 1"* com o push já feito, e o sinal *"ahead = deploy nunca aconteceu"* do CLAUDE.md raiz passa a MENTIR. Provar com `git ls-remote origin main` (bate com `git rev-parse main`?) e rodar `git fetch origin` para ressincronizar.
 
@@ -52,6 +54,9 @@ Ordem: **1) chave → 2) front → 3) SQL → 4) n8n.** A chave resolve em segun
 - **SQL:** `.sql` do Windows injeta `\r` (aplicar por `node supabase/cs-cockpit/_aplica-lf.mjs`); conferir UPDATE em consulta SEPARADA; `CURRENT_DATE` é UTC; `\b` no regex PG é backspace (use `\y`); `DROP TABLE` quebra plpgsql que cita a tabela. → supabase-schema, cs-admin
 - **Dinheiro:** receita = `value − discount_amount + delivery_fee` via `getSaleNetValue`; taxa repassada ao cliente não é custo; "a receber" entra no Sobrou; `confirmed_at` é do servidor; `save_sale_with_items` ENUMERA colunas. → vendas-financeiro, `docs/claude/sobrou-no-mes.md`
 - **Pedido à fábrica:** RPC idempotente `create_purchase_order_with_items`; preço = `preco_tabela_fabrica`; `entregue` é terminal; reposição só catálogo padrão (`created_by_franchisee !== true`); memória do envio = rascunho com `clientId`. → telas-franqueado, historico-ondas
+- **Entrega do pedido (30/09):** "entregue" do admin fecha na hora (estoque e despesa). A conferência pela unidade (S15) segue no código, desligada pela chave `conferir_entrega` (sem linha = desligada); religar = `set_feature_flag('conferir_entrega', null, true, …)`. → `supabase/2026-09-30-entrega-direta.sql`
+- **Lista em grade (cabeçalho e linhas são grades separadas):** colunas em `minmax(0,Nfr)` e a de ação em `rem` fixo, nunca `auto` nem `fr` puro (cada linha calcula sozinha e desalinha). Medir a largura real da ação antes (Mensalidades precisa de 21.5rem).
+- **Sentinela avisa só os admins** (`notify_admins`); o franqueado não vê o alerta. Venda duplicada manual + robô sem telefone na manual escapa da regra.
 - **Meu Vendedor/robô:** salvar só o que mudou (`configSave.js`); frete calculado só pela RPC `salvar_frete_estruturado`; forma de pagamento nova toca 3 pontos no bot. → supabase-schema, n8n-bot
 - **Onboarding:** papel nunca do metadado; `approved` só pela RPC `set_onboarding_status`; item grava por `set_onboarding_item`. → telas-franqueado
 - **Régua da rede:** tudo em `src/lib/networkOverview.js` (queda −20% com base R$ 3 mil, sem venda 7 dias, verba, nova < 30 dias desde 29/09). Mensagem à franqueada só por `mensagemFranqueado.js`. → cs-admin
@@ -76,6 +81,7 @@ Comentário no código citando "CLAUDE.md § X" (ex.: Primeiros passos, Features
 ### Prévias, fotos e o manual (29/09/2026)
 - Prévia sem login = `.tmp/harness-*` (uma por vez, cache do Vite compartilhado; `--force` e apagar `.tmp/harness-*/.vite-cache` antes do `npm run lint`). Mock novo do Layout precisa de `getFeatureFlags` (senão tela branca no harness).
 - Fotos da Ajuda: `node .tmp/harness-s242/s*.mjs` **da raiz do dashboard** (os roteiros gravam em `.tmp/prints-s242` relativo). Manual: `.tmp/onda7b-manual/gera.mjs` → copiar para `public/manual-maxi.pdf`; estrutura e regra `G("slug")` em telas-franqueado.
+- Tirar ou criar guia da Ajuda toca 4 pontos: `guiasAjuda.js`, `docs/guias-ajuda-v2.md` (índice, numeração e os "guia N" cruzados), as contagens em `guiasAjuda.test.mjs` e a página "Comece por aqui" em `.tmp/onda7b-manual/gera.mjs`. Fotos de Reposição/Início: `.tmp/harness-s242/s-entrega-direta.mjs` (o mock de vendas precisa de `created_at`, senão a sugestão some).
 - Conferência no ar: lib compartilhada pode virar chunk PRÓPRIO (ex.: `networkOverview-*.js`) — baixar TODOS os chunks citados, não só o `index-*.js`, antes de concluir "não subiu".
 - Drive da franquia (29/09): 4 pastas (1. Configurações · 2. Universidade Maxi Massas · 3. Marketing · 4. Manuais) + Arquivo. Onde cada link mora: comentário de `src/components/onboarding/materiais.js`.
 
