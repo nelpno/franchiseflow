@@ -19,7 +19,8 @@ import {
  */
 
 // Grade da tabela no desktop; no celular cada linha vira cartão empilhado.
-const GRID = "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,1.2fr)_auto]";
+// Última coluna em largura fixa (não auto): cabeçalho e linhas são grades separadas.
+const GRID = "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,1.2fr)_11.5rem]";
 
 // Decisão 7: todo link para a Ficha leva state {from, label} — sem isso a Ficha caía no
 // padrão "← Unidades" e quem veio do Financeiro perdia o mês/lista em que estava (achado

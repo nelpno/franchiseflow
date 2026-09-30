@@ -787,7 +787,7 @@ export default function AsaasSetupPanel() {
         // linhas não têm bg própria, então não sobram cantos quadrados visíveis.
         <div className="rounded-2xl border border-surface-line bg-white">
           {/* Cabeçalho desktop */}
-          <div className="hidden gap-3 rounded-t-2xl border-b border-surface-line bg-surface-2 px-5 py-3 text-xs font-bold uppercase tracking-wide text-ink-3 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto]">
+          <div className="hidden gap-3 rounded-t-2xl border-b border-surface-line bg-surface-2 px-5 py-3 text-xs font-bold uppercase tracking-wide text-ink-3 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_14rem]">
             <span>Unidade</span>
             <span>Situação</span>
             <span>Vencimento</span>
@@ -824,7 +824,7 @@ export default function AsaasSetupPanel() {
                   </div>
 
                   {/* Desktop: colunas alinhadas com o cabeçalho. */}
-                  <div className="hidden items-center gap-3 px-5 py-3.5 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_auto]">
+                  <div className="hidden items-center gap-3 px-5 py-3.5 md:grid md:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.7fr)_14rem]">
                     <div className="min-w-0">
                       <p className="font-semibold leading-snug text-ink">{displayFranchiseName(f.name)}</p>
                       <p className="truncate text-sm text-ink-3">{f.owner_name}</p>

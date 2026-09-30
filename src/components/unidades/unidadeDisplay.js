@@ -18,7 +18,9 @@ import {
 // arbitrária — fica igual no header e em cada linha. Robô e Verba ganharam mais espaço
 // (achado do print 26/09: "parado há 28 dias" e "não pagou · Out: ainda pode pagar"
 // quebravam em 2-4 linhas); Ação e Sem venda encolheram para compensar (texto curto e fixo).
-export const GRID_COLS = "md:grid-cols-[1.85fr_1.1fr_0.75fr_1.3fr_1.1fr_1.15fr_0.85fr]";
+// minmax(0,fr) + ação em largura fixa: cabeçalho e linhas são grades separadas, e fr puro
+// cresce com o conteúdo de cada linha (colunas desalinhadas, 30/09).
+export const GRID_COLS = "md:grid-cols-[minmax(0,1.45fr)_minmax(0,1.3fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_minmax(0,0.85fr)_minmax(0,1.05fr)_9.5rem]";
 
 const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
 

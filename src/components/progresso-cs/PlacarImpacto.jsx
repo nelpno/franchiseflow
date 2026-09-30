@@ -41,7 +41,7 @@ function GrupoCard({ grupo }) {
 function LinhaEpisodio({ ep }) {
   return (
     <div className="border-t border-surface-line px-5 py-4 text-sm">
-      <div className="hidden md:grid md:grid-cols-[1.3fr_1.1fr_0.9fr_0.9fr_0.9fr_auto] md:items-center md:gap-4">
+      <div className="hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_6.5rem] md:items-center md:gap-4">
         <div className="min-w-0">
           <p className="font-semibold text-ink">{ep.franchise_name}</p>
           <p className="text-sm text-ink-3">
@@ -137,7 +137,7 @@ export default function PlacarImpacto({ impacto }) {
       {episodios.length > 0 && (
         <>
           <div className={LISTA}>
-            <div className={`hidden md:grid md:grid-cols-[1.3fr_1.1fr_0.9fr_0.9fr_0.9fr_auto] md:gap-4 ${CABECALHO_LISTA}`}>
+            <div className={`hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_6.5rem] md:gap-4 ${CABECALHO_LISTA}`}>
               <span>Unidade</span>
               <span className="text-right">R$/dia antes → depois</span>
               <span className="text-right">Já vinha</span>

@@ -30,7 +30,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 1. Seguir os Primeiros passos — `primeiros-passos`
 2. Entrar quando esqueci a senha ou o link venceu — `esqueci-senha`
 3. Trocar de unidade — `trocar-unidade`
-32. Entender a tela Início — `inicio`
+31. Entender a tela Início — `inicio`
 
 **Vender**
 4. Lançar uma venda — `vendas`
@@ -49,32 +49,31 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 13. Cadastrar produto próprio ou ocultar um produto — `produto-proprio`
 14. Fazer pedido à fábrica — `pedido-fabrica`
 15. Imprimir o pedido — `imprimir-pedido`
-16. Conferir o pedido quando chegar — `conferir-chegada`
-17. Repetir o último pedido — `repetir-pedido`
+16. Repetir o último pedido — `repetir-pedido`
 
 **Dinheiro**
-18. Ver quanto sobrou no mês — `resultado`
-19. Lançar um gasto — `lancar-gasto`
-20. Baixar o relatório do mês — `relatorio-mes`
-33. Ver as vendas por produto — `vendas-por-produto`
-21. Pagar a mensalidade da Equipe Digital Maxi — `pagamentos` (aliases `mensalidade`, `pagar-equipe-digital`)
-22. Registrar a verba do anúncio — `verba-marketing`
+17. Ver quanto sobrou no mês — `resultado`
+18. Lançar um gasto — `lancar-gasto`
+19. Baixar o relatório do mês — `relatorio-mes`
+32. Ver as vendas por produto — `vendas-por-produto`
+20. Pagar a mensalidade da Equipe Digital Maxi — `pagamentos` (aliases `mensalidade`, `pagar-equipe-digital`)
+21. Registrar a verba do anúncio — `verba-marketing`
 
 **Marketing**
-23. Baixar as artes e a legenda do mês — `artes`
-24. Agendar postagens no Meta Business Suite — `agendar-postagens`
-34. Entender como funciona o anúncio no Meta — `como-funciona-anuncio`
+22. Baixar as artes e a legenda do mês — `artes`
+23. Agendar postagens no Meta Business Suite — `agendar-postagens`
+33. Entender como funciona o anúncio no Meta — `como-funciona-anuncio`
 
 **Meu robô**
-25. Ajustar os dias e horários de entrega — `robo-horarios`
-26. Ajustar entrega, frete e retirada — `robo-entrega`
-27. Escolher as formas de pagamento — `robo-pagamento`
-28. Trocar o cardápio do robô — `robo-cardapio`
-29. Reconectar o WhatsApp do robô — `reconectar-whatsapp`
-30. Conferir o que o robô vai responder — `testar-robo`
+24. Ajustar os dias e horários de entrega — `robo-horarios`
+25. Ajustar entrega, frete e retirada — `robo-entrega`
+26. Escolher as formas de pagamento — `robo-pagamento`
+27. Trocar o cardápio do robô — `robo-cardapio`
+28. Reconectar o WhatsApp do robô — `reconectar-whatsapp`
+29. Conferir o que o robô vai responder — `testar-robo`
 
 **Ajuda**
-31. Falar com a Maxi — `falar-com-maxi`
+30. Falar com a Maxi — `falar-com-maxi`
 
 ---
 
@@ -107,7 +106,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** tocou em **Marcar como feito** sem querer. O botão passa a dizer **Feito · toque para desfazer**: toque nele de novo.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -157,7 +156,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** lançar uma venda na unidade errada. Antes de tocar em **Nova venda**, olhe o nome no alto. Se já lançou, exclua (guia 6) e lance de novo na unidade certa.
 
-**Se não resolver:** o nome da unidade só aparece para quem tem duas ou mais. Se você tem duas e não aparece, a Maxi precisa ligar a segunda ao seu acesso (guia 31).
+**Se não resolver:** o nome da unidade só aparece para quem tem duas ou mais. Se você tem duas e não aparece, a Maxi precisa ligar a segunda ao seu acesso (guia 30).
 
 ---
 
@@ -189,7 +188,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** tocar duas vezes em **Registrar venda**. Toque uma vez e espere o aviso. Deu erro? Antes de tentar de novo, olhe em **Vendas** se a venda já entrou. Se duplicou, exclua a repetida (guia 6). Aviso "O robô já lançou esta venda?": se for a mesma, toque em **É a mesma, não lançar**.
 
-**Se não resolver:** produto não aparece na busca? Veja se ele está oculto no Estoque (guia 13). Senão, Falar com a Maxi (guia 31).
+**Se não resolver:** produto não aparece na busca? Veja se ele está oculto no Estoque (guia 13). Senão, Falar com a Maxi (guia 30).
 
 ---
 
@@ -214,7 +213,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** tocou em **Recebi** na venda errada. Toque em **Desfazer**, no aviso que aparece embaixo. Se o aviso já sumiu, toque na venda para abrir e em **Voltar para a receber**.
 
-**Se não resolver:** guia 6 (corrigir venda) ou Falar com a Maxi (guia 31).
+**Se não resolver:** guia 6 (corrigir venda) ou Falar com a Maxi (guia 30).
 
 ---
 
@@ -247,7 +246,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** aparecer "Atenção" ao excluir. É porque a venda já foi contada no anúncio. Se ela é repetida ou foi por engano, toque em **Excluir mesmo assim**. Lançou à mão uma venda que o robô já tinha lançado? Exclua a sua e fique com a do robô: é ela que conta para o anúncio.
 
-**Se não resolver:** Falar com a Maxi (guia 31), dizendo a data e o valor da venda.
+**Se não resolver:** Falar com a Maxi (guia 30), dizendo a data e o valor da venda.
 
 ---
 
@@ -278,7 +277,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** o comprovante sai com "ENDEREÇO NÃO INFORMADO". O endereço não foi preenchido na venda nem no cliente. Corrija a venda (guia 6) ou o cliente (guia 10). Papel ainda fraco com 80%? Troque a bobina.
 
-**Se não resolver:** Falar com a Maxi (guia 31), com uma foto do papel impresso.
+**Se não resolver:** Falar com a Maxi (guia 30), com uma foto do papel impresso.
 
 ---
 
@@ -303,7 +302,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** a planilha sai faltando vendas porque um filtro ficou ligado (**A receber**, **Recebidas** ou a busca). Deixe **Todas** e a busca vazia antes de baixar.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -360,7 +359,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** cadastrar a mesma pessoa duas vezes. Antes de criar, busque o nome e o telefone. Se aparecer "Contato com este telefone já existe", use o cadastro que já está lá.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -376,7 +375,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: barra de baixo. Contorno em **Estoque**. (existe: `contar-estoque-1.webp`)
 2. Toque em **Contar estoque**, acima da lista. Cada produto ganha os botões **−** e **+**.
    - Imagem: botões acima da lista. Contorno em **Contar estoque**. (existe: `contar-estoque-2.webp`)
-3. Abra o freezer e conte quantas unidades de cada produto há. Deixe esse total no app: se contou 12, o número fica 12 (não digite só a diferença). Use **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se falta conferir um pedido que chegou (guia 16) ou se uma venda foi lançada 2 vezes (guia 6).
+3. Abra o freezer e conte quantas unidades de cada produto há. Deixe esse total no app: se contou 12, o número fica 12 (não digite só a diferença). Use **−** e **+**, ou toque no número e digite. Número muito diferente? Antes, veja se uma venda foi lançada 2 vezes (guia 6).
    - Imagem: um produto no modo de contar. Contorno no produto. (existe: `contar-estoque-3.webp`)
 4. No fim, toque em **Salvar** (ele mostra quantos produtos você mudou). Aparece "Contagem salva".
    - Imagem: alto da contagem. Contorno em **Salvar (1)**. (existe: `contar-estoque-4.webp`)
@@ -385,11 +384,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Deu certo quando:** aparece "Contagem salva" e os números da lista batem com o freezer.
 
-**Dica:** saiu da tela no meio? A contagem fica guardada neste aparelho: toque em **Continuar contagem**. Venda lançada já desconta sozinha; pedido conferido já soma sozinho.
+**Dica:** saiu da tela no meio? A contagem fica guardada neste aparelho: toque em **Continuar contagem**. Venda lançada já desconta sozinha; pedido entregue já soma sozinho.
 
-**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número abaixo de zero aparece em vermelho, com o aviso **Conte o estoque**: saiu mais do que entrou no app (pedido que chegou e não foi conferido, contagem antiga, venda lançada 2 vezes). Conte de novo e salve o número real. Só lance uma venda (guia 4) se ela de fato faltou.
+**Erro comum:** aparecer "Mudou enquanto você contava". Uma venda baixou o estoque durante a contagem. Confira o produto destacado e toque em **Salvar** de novo. Número abaixo de zero aparece em vermelho, com o aviso **Conte o estoque**: saiu mais do que entrou no app (contagem antiga, venda lançada 2 vezes). Conte de novo e salve o número real. Só lance uma venda (guia 4) se ela de fato faltou.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -405,7 +404,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: produto aberto. Contorno em **Preço de venda** e **Custo**. (existe: `mudar-preco-2.webp`)
 3. Toque em **Editar produto**. Apague o **Preço de venda (R$)**, digite o novo e toque em **Salvar**.
    - Imagem: formulário "Editar Produto". Contorno no campo **Preço de venda (R$)**. (existe: `mudar-preco-3.webp`)
-4. Espere aparecer "Produto atualizado.". O robô passa a usar esse preço. Atualize também a imagem do cardápio que o robô envia (guia 28).
+4. Espere aparecer "Produto atualizado.". O robô passa a usar esse preço. Atualize também a imagem do cardápio que o robô envia (guia 27).
    - Imagem: aviso "Produto atualizado." no alto. (existe: `mudar-preco-4.webp`)
 
 **Deu certo quando:** ao abrir o produto de novo, o **Preço de venda** é o novo. O robô passa a usar esse preço com os clientes.
@@ -414,7 +413,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** tentar mudar o custo de um produto da Maxi. Não dá: o custo é o da tabela da Maxi. Mude só o **Preço de venda**.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -443,7 +442,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** procurar o produto próprio no pedido à fábrica. Ele não aparece lá: o pedido à fábrica só tem os produtos da Maxi. Produto oculto também fica fora do pedido.
 
-**Se não resolver:** sumiu um produto da Maxi do seu pedido? Veja se ele não está oculto. Se não estiver, Falar com a Maxi (guia 31).
+**Se não resolver:** sumiu um produto da Maxi do seu pedido? Veja se ele não está oculto. Se não estiver, Falar com a Maxi (guia 30).
 
 ---
 
@@ -464,7 +463,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: a revisão do pedido. (existe: `pedido-fabrica-4.webp`)
 5. Para enviar à Maxi, toque em **Confirmar e enviar** e espere a mensagem "Pedido enviado com sucesso!".
    - Imagem: rodapé da revisão. Contorno em **Confirmar e enviar**. (existe: `pedido-fabrica-5.webp`)
-6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira (guia 16).
+6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira as caixas com o motorista: faltou algo, avise na hora. O estoque sobe sozinho quando a Maxi marca o pedido como Entregue.
    - Imagem: histórico com um pedido. (existe: `pedido-fabrica-6.webp`)
 
 **Deu certo quando:** o pedido aparece em **Histórico de Pedidos** como Pendente.
@@ -473,7 +472,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** apareceu "Já tem um pedido enviado há pouco"? Outro celular ou outra aba já enviou um pedido: confira no **Histórico de Pedidos** antes de enviar outro. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -498,38 +497,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** o PDF abre, mas não imprime no celular. Use o compartilhar do celular e escolha a impressora, ou mande o PDF para o seu WhatsApp e imprima no computador.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
-## 16. Conferir o pedido quando chegar
-`slug: conferir-chegada` · **Onde começa:** Início › "Seu pedido chegou: toque para conferir" (ou Estoque › aba **Reposição**, no alto) · **Tempo:** 10 minutos
-
-**Quando usar:** a mercadoria chegou e você precisa conferir antes de pôr no freezer.
-
-**Passos**
-1. Confira as caixas com o papel do pedido (guia 15): quantidades, embalagem e se está congelado.
-   - Imagem: sem recorte do app (foto do papel com marcações).
-2. Na Início, toque em **Seu pedido chegou: toque para conferir**. Ou toque em **Estoque** e em **Reposição** e procure o quadro "Seu pedido chegou. Confira!", no alto.
-   - Imagem: quadro "Seu pedido chegou. Confira!". Contorno no quadro. (existe: `conferir-chegada-2.webp`)
-3. **Só se veio tudo:** toque em **Recebi tudo certo** e depois em **Sim, chegou tudo**. O estoque sobe sozinho. Pronto, pare aqui.
-   - Imagem: quadro com os dois botões. Seta em **Recebi tudo certo**.
-4. **Só se faltou algo (em vez do passo 3):** toque em **Faltou algo**. Em cada produto, deixe o número igual ao que chegou de verdade; se não chegou nenhuma unidade, deixe zero.
-   - Imagem: produtos com − e +. Círculo num produto com "faltou 2".
-5. Confira "Chegou R$ X de R$ Y" e toque em **Confirmar o que chegou**. A Maxi é avisada do que faltou.
-   - Imagem: fim do quadro. Seta em **Confirmar o que chegou**.
-
-**Deu certo quando:** aparece "Pronto!" e o estoque subiu com o que chegou.
-
-**Dica:** faltou item? O pedido passa a valer o que chegou, e você paga esse valor corrigido. O frete continua o mesmo que foi cobrado. Produto amassado ou descongelado: tire foto na hora.
-
-**Erro comum:** esquecer de conferir. Você tem 48 horas depois da entrega; depois disso, o app considera que veio tudo, mesmo sem a sua confirmação. Faltou algo e já passou? Fale com a Maxi com a foto (guia 31).
-
-**Se não resolver:** Falar com a Maxi (guia 31), com fotos do que veio errado.
-
----
-
-## 17. Repetir o último pedido
+## 16. Repetir o último pedido
 `slug: repetir-pedido` · **Onde começa:** Estoque › aba **Reposição** · **Tempo:** 3 minutos
 
 **Quando usar:** você quer pedir igual ao último pedido.
@@ -550,13 +522,13 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** repetir um pedido grande num mês fraco e ficar com o freezer cheio. Olhe o Estoque antes.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
 # DINHEIRO
 
-## 18. Ver quanto sobrou no mês
+## 17. Ver quanto sobrou no mês
 `slug: resultado` · **Onde começa:** Mais › Gestão (abre o **Resultado**) · **Tempo:** 3 a 5 minutos
 > Fotos (S21.1): `resultado-1.webp`..`resultado-5.webp`, uma por passo.
 
@@ -571,20 +543,20 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: topo do Resultado. (existe: `resultado-3.webp`)
 4. Role para ver **De onde veio**, **Para onde foi** e **Mais vendidos**. Mais abaixo: **O que mudou**, **Quanto sobrou por mês** e **Gastos do mês**.
    - Imagem: bloco **Para onde foi**. (existe: `resultado-4.webp`)
-5. Para ter o mês numa folha, toque em **Baixar relatório do mês (PDF)** (guia 20).
+5. Para ter o mês numa folha, toque em **Baixar relatório do mês (PDF)** (guia 19).
    - Imagem: botão do relatório. (existe: `resultado-5.webp`)
 
 **Deu certo quando:** você sabe quanto entrou, quanto saiu e quanto sobrou no mês.
 
 **Dica:** "Sobrou" = o que entrou com as vendas (com frete, menos desconto) menos a taxa de cartão que a unidade pagou e os gastos lançados. Não é o saldo do seu banco: venda "A receber" já conta aqui, e gasto que você ainda não lançou ainda não foi descontado.
 
-**Erro comum:** o número parece alto demais porque faltam gastos (gás, sacolas, aluguel). Lance os gastos (guia 19). O pedido à fábrica, a verba confirmada e a mensalidade paga entram sozinhos.
+**Erro comum:** o número parece alto demais porque faltam gastos (gás, sacolas, aluguel). Lance os gastos (guia 18). O pedido à fábrica, a verba confirmada e a mensalidade paga entram sozinhos.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
-## 19. Lançar um gasto
+## 18. Lançar um gasto
 `slug: lancar-gasto` · **Onde começa:** Mais › Gestão (Resultado) › **Registrar gasto** · **Tempo:** 1 a 2 minutos
 
 **Quando usar:** você pagou algo da unidade: sacolas, gás, entregador, aluguel, embalagem.
@@ -607,11 +579,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** lançar à mão o pedido à fábrica, a verba do anúncio ou a mensalidade. Esses entram sozinhos; lançar de novo conta em dobro. Para apagar o repetido, toque na lixeira ao lado dele, em **Gastos do mês**, e em **Excluir**.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
-## 20. Baixar o relatório do mês
+## 19. Baixar o relatório do mês
 `slug: relatorio-mes` · **Onde começa:** Mais › Gestão (Resultado) · **Tempo:** 1 minuto
 
 **Quando usar:** ter o resumo do mês numa folha, para consultar ou mostrar a alguém.
@@ -632,11 +604,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** o relatório sai com o mês errado. Escolha o mês antes de tocar no botão. Se o PDF avisar que o anúncio não carregou, o resto está certo; tente de novo mais tarde.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
-## 21. Pagar a mensalidade da Equipe Digital Maxi
+## 20. Pagar a mensalidade da Equipe Digital Maxi
 `slug: pagamentos` (aliases `mensalidade`, `pagar-equipe-digital`) · **Onde começa:** Mais › Pagamentos · **Tempo:** 3 minutos
 > Fotos (S21.1): `pagamentos-2`, `-3`, `-4`, `-7.webp`. Faltam os passos 1, 5 e 6 (S24.2).
 
@@ -660,15 +632,15 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Deu certo quando:** o quadro mostra Pago e aparece "Mensalidade em dia.".
 
-**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 22).
+**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 21).
 
 **Erro comum:** deixar vencer. No 1º e no 2º dia de atraso aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; mesmo assim dá para pagar, trocar de unidade e lançar venda.
 
-**Se não resolver:** pagou e continua em aberto? Não pague de novo. Toque em **Já paguei, verificar agora** mais uma vez. Se seguir em aberto, Falar com a Maxi com o comprovante (guia 31).
+**Se não resolver:** pagou e continua em aberto? Não pague de novo. Toque em **Já paguei, verificar agora** mais uma vez. Se seguir em aberto, Falar com a Maxi com o comprovante (guia 30).
 
 ---
 
-## 22. Registrar a verba do anúncio
+## 21. Registrar a verba do anúncio
 `slug: verba-marketing` · **Onde começa:** Mais › Marketing › quadro "Investimento em Marketing" · **Tempo:** 5 minutos
 
 **Quando usar:** todo mês, quando você paga o dinheiro dos anúncios da sua unidade.
@@ -693,13 +665,13 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** achar que registrar no app faz o Pix. Não faz: o Pix é no seu banco. Sem o comprovante agora? Toque em **Registrar sem comprovante** e anexe depois, em **Anexar comprovante**.
 
-**Se não resolver:** Falar com a Maxi (guia 31), com o comprovante.
+**Se não resolver:** Falar com a Maxi (guia 30), com o comprovante.
 
 ---
 
 # MARKETING
 
-## 23. Baixar as artes e a legenda do mês
+## 22. Baixar as artes e a legenda do mês
 `slug: artes` · **Onde começa:** Mais › Marketing · **Tempo:** 5 a 10 minutos
 
 **Quando usar:** pegar as artes prontas do mês para postar no Instagram e no Facebook da unidade.
@@ -718,15 +690,15 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Deu certo quando:** a arte está na galeria do celular e a legenda está copiada, pronta para colar.
 
-**Dica:** baixe as artes do mês de uma vez e agende tudo no Meta Business Suite (guia 24). Poste também na aba Atualizações do WhatsApp.
+**Dica:** baixe as artes do mês de uma vez e agende tudo no Meta Business Suite (guia 23). Poste também na aba Atualizações do WhatsApp.
 
 **Erro comum:** achar que o app posta sozinho. Não posta: a postagem é feita por você, no Instagram ou no Facebook da unidade.
 
-**Se não resolver:** não achou a arte do mês? Falar com a Maxi (guia 31).
+**Se não resolver:** não achou a arte do mês? Falar com a Maxi (guia 30).
 
 ---
 
-## 24. Agendar postagens no Meta Business Suite
+## 23. Agendar postagens no Meta Business Suite
 `slug: agendar-postagens` · **Onde começa:** app **Meta Business Suite** no celular (ou business.facebook.com no computador), fora do app da Maxi · **Tempo:** 20 a 30 minutos para o mês todo
 
 **Quando usar:** deixar as postagens do mês programadas de uma vez, no Instagram e no Facebook da unidade.
@@ -734,8 +706,8 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 > Este guia é sobre um app de fora (Meta). Os nomes das telas do Meta mudam de vez em quando; o texto usa os nomes gerais. As fotos, se houver, são tiradas da versão do dia.
 
 **Passos**
-1. Baixe as artes e copie as legendas (guia 23).
-   - Imagem: sem recorte novo (reusar a do guia 23).
+1. Baixe as artes e copie as legendas (guia 22).
+   - Imagem: sem recorte novo (reusar a do guia 22).
 2. Abra o **Meta Business Suite** e entre na página da unidade.
    - Imagem: tela inicial do Meta Business Suite. Círculo no nome da página.
 3. Abra o **Planejador** (em alguns aparelhos aparece como "Planner"). Abre o calendário do mês.
@@ -753,9 +725,9 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Dica:** poste em dias e horários variados, de 3 a 4 vezes por semana. Os vídeos "Planner" e "Planner Reforço", no Drive, mostram o mesmo passo a passo.
 
-**Erro comum:** o Instagram não aparece para marcar. Ele não está ligado à página da unidade. A Maxi faz essa ligação: fale com a equipe (guia 31).
+**Erro comum:** o Instagram não aparece para marcar. Ele não está ligado à página da unidade. A Maxi faz essa ligação: fale com a equipe (guia 30).
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -763,7 +735,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 > A tela **Meu robô** tem 5 etapas no alto: **Sua unidade**, **Entrega e retirada**, **Pagamento**, **Vendedor** e **Como o robô responde**. Toque na etapa para ir direto a ela. Não há botão "Salvar": o botão **Próximo**, embaixo, salva o que mudou e passa para a etapa seguinte (na última, **Concluir**). Aparece "Configurações salvas com sucesso!".
 
-## 25. Ajustar os dias e horários de entrega
+## 24. Ajustar os dias e horários de entrega
 `slug: robo-horarios` · **Onde começa:** Mais › Meu robô › etapa **Entrega e retirada** · **Tempo:** 5 minutos
 
 **Quando usar:** mudou o dia ou o horário de entregar.
@@ -786,11 +758,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** apagar o horário para fechar um dia. Desmarque o dia, ou toque em **Remover estes dias** no grupo que não vale mais. Apagar o horário deixa a tela com erro e não salva.
 
-**Se não resolver:** "Só funciona em outro celular"? Pode ser um rascunho antigo neste aparelho. Falar com a Maxi (guia 31).
+**Se não resolver:** "Só funciona em outro celular"? Pode ser um rascunho antigo neste aparelho. Falar com a Maxi (guia 30).
 
 ---
 
-## 26. Ajustar entrega, frete e retirada
+## 25. Ajustar entrega, frete e retirada
 `slug: robo-entrega` · **Onde começa:** Mais › Meu robô › etapa **Entrega e retirada** · **Tempo:** 5 a 10 minutos
 
 **Quando usar:** mudar o frete, o pedido mínimo, a distância de entrega ou a retirada.
@@ -815,11 +787,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** tocar em outro tipo de taxa só para olhar e salvar sem querer. Antes de tocar em **Próximo**, confira se o tipo escolhido é o que você quer.
 
-**Se não resolver:** o robô fala um frete diferente do que está na tela? Falar com a Maxi (guia 31), com um print da conversa.
+**Se não resolver:** o robô fala um frete diferente do que está na tela? Falar com a Maxi (guia 30), com um print da conversa.
 
 ---
 
-## 27. Escolher as formas de pagamento
+## 26. Escolher as formas de pagamento
 `slug: robo-pagamento` · **Onde começa:** Mais › Meu robô › etapa **Pagamento** · **Tempo:** 3 minutos
 
 **Quando usar:** passou a aceitar (ou deixou de aceitar) cartão, dinheiro, Pix ou vale-refeição.
@@ -842,11 +814,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** marcar dinheiro só em Retirada e estranhar que o robô recusa dinheiro na entrega. Marque nas duas colunas se aceita nas duas.
 
-**Se não resolver:** trocou de chave Pix? Mude aqui mesmo, na etapa **Pagamento**, e toque em **Próximo** para salvar. Só fale com a Maxi (guia 31) se a tela não deixar salvar.
+**Se não resolver:** trocou de chave Pix? Mude aqui mesmo, na etapa **Pagamento**, e toque em **Próximo** para salvar. Só fale com a Maxi (guia 30) se a tela não deixar salvar.
 
 ---
 
-## 28. Trocar o cardápio do robô
+## 27. Trocar o cardápio do robô
 `slug: robo-cardapio` · **Onde começa:** Mais › Meu robô › etapa **Vendedor** · **Tempo:** 3 minutos (com a imagem pronta)
 
 **Quando usar:** mudou preço ou produto e o cardápio que o robô manda precisa ser o novo.
@@ -867,11 +839,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** imagem torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.
 
-**Se não resolver:** o robô ainda manda o cardápio antigo depois de algumas horas? Falar com a Maxi (guia 31).
+**Se não resolver:** o robô ainda manda o cardápio antigo depois de algumas horas? Falar com a Maxi (guia 30).
 
 ---
 
-## 29. Reconectar o WhatsApp do robô
+## 28. Reconectar o WhatsApp do robô
 `slug: reconectar-whatsapp` · **Onde começa:** Mais › Meu robô (quadro "Conectar WhatsApp", no alto) · **Tempo:** 3 a 5 minutos
 
 **Quando usar:** o robô parou de responder os clientes.
@@ -890,17 +862,17 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 6. Toque em **Verificar Status**. Aparece "WhatsApp Conectado com Sucesso!". Toque em **Fechar**.
    - Imagem: janela com o aviso verde. Círculo no aviso.
 
-**Deu certo quando:** o alto do Meu robô diz **Conectado** e o robô responde uma mensagem de teste (guia 30).
+**Deu certo quando:** o alto do Meu robô diz **Conectado** e o robô responde uma mensagem de teste (guia 29).
 
 **Dica:** a conexão cai quando o celular da unidade fica muito tempo sem internet ou sem bateria. Deixe-o carregando e no Wi-Fi.
 
 **Erro comum:** tentar ler o QR Code com o próprio celular que mostra o código. Precisa de duas telas: uma mostra, a outra lê.
 
-**Se não resolver:** conectou e o robô não responde? Falar com a Maxi (guia 31).
+**Se não resolver:** conectou e o robô não responde? Falar com a Maxi (guia 30).
 
 ---
 
-## 30. Conferir o que o robô vai responder
+## 29. Conferir o que o robô vai responder
 `slug: testar-robo` · **Onde começa:** Mais › Meu robô › etapa **Como o robô responde** · **Tempo:** 5 minutos
 
 **Quando usar:** depois de mudar horário, frete, pagamento ou cardápio, ou quando um cliente reclamou.
@@ -921,13 +893,13 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** testar pelo próprio celular da unidade. O robô não conversa com o próprio número; peça para outra pessoa mandar a mensagem.
 
-**Se não resolver:** resposta errada? Ajuste no Meu robô (guias 25 a 28). Se continuar, Falar com a Maxi com um print (guia 31).
+**Se não resolver:** resposta errada? Ajuste no Meu robô (guias 24 a 27). Se continuar, Falar com a Maxi com um print (guia 30).
 
 ---
 
 # AJUDA
 
-## 31. Falar com a Maxi
+## 30. Falar com a Maxi
 `slug: falar-com-maxi` · **Onde começa:** Mais › Ajuda (no fim da tela) · **Tempo:** 1 minuto
 
 **Quando usar:** um guia não resolveu, ou é algo que só a equipe faz (troca de dono da unidade, Instagram, cobrança).
@@ -950,7 +922,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ---
 
-## 32. Entender a tela Início
+## 31. Entender a tela Início
 `slug: inicio` · **Onde começa:** Início (primeiro botão da barra de baixo) · **Tempo:** 3 minutos
 > Fotos (Onda 7c): `inicio-1.webp`..`inicio-8.webp`, uma por passo.
 
@@ -967,7 +939,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: quadro Hoje com a barra e os dias seguidos. (existe: `inicio-4.webp`)
 5. O quadro **Evolução** mostra, em barras, quanto a unidade vendeu em cada um dos últimos 6 meses. A barra vermelha é o mês atual, que vai só até hoje. Embaixo está a sua mediana dos 3 meses anteriores (o valor do meio), quando você vendeu nos 3.
    - Imagem: quadro Evolução. (existe: `inicio-5.webp`)
-6. O quadro **Agora** reúne o que pede uma ação sua: mensalidade perto de vencer (**Pagar**), pedido que chegou (toque para conferir), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (**Registrar**). Toque no aviso para ir direto à tela certa; no aviso da verba, toque em **Registrar**. Quando o app termina de conferir e não há avisos, aparece "Tudo em dia!".
+6. O quadro **Agora** reúne o que pede uma ação sua: mensalidade perto de vencer (**Pagar**), vendas esperando você marcar como recebidas e o aviso da verba do anúncio (**Registrar**). Toque no aviso para ir direto à tela certa; no aviso da verba, toque em **Registrar**. Quando o app termina de conferir e não há avisos, aparece "Tudo em dia!".
    - Imagem: quadro Agora. (existe: `inicio-6.webp`)
 7. O quadro **Quem chamar hoje** traz até 3 clientes para chamar no WhatsApp, com a mensagem pronta. Toque em **Chamar** ao lado do nome: o WhatsApp abre com a mensagem pronta e o cliente já fica marcado como chamado, então confira e envie. Para abrir a lista inteira do dia, toque em **Ver os outros** ou em **Ver lista completa**. Se você nunca usou, antes dele aparece o convite "Conheça o Quem chamar hoje".
    - Imagem: quadro Quem chamar hoje. (existe: `inicio-7.webp`)
@@ -980,11 +952,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** não vê a meta do dia, o ranking ou a projeção? Cada um só aparece quando o app tem base para calcular. Nos Primeiros passos, antes da 1ª venda, a Início mostra o cartão da trilha, a orientação da 1ª venda e os avisos de pagamento.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
-## 33. Ver as vendas por produto
+## 32. Ver as vendas por produto
 `slug: vendas-por-produto` · **Onde começa:** Mais › Gestão (Resultado) › **Mais vendidos** › **Ver todos os produtos** · **Tempo:** 2 minutos
 > Fotos (Onda 7c): `vendas-por-produto-1.webp`..`vendas-por-produto-5.webp`, uma por passo.
 
@@ -1008,11 +980,11 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** não aparece **Ver todos os produtos**? Confira o mês. Se há vendas, carregue a tela de novo. O **Valor** pode ser diferente do **Entrou** do Resultado, porque aqui não entram frete nem desconto.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
-## 34. Entender como funciona o anúncio no Meta
+## 33. Entender como funciona o anúncio no Meta
 `slug: como-funciona-anuncio` · **Onde começa:** é só leitura (não tem tela própria) · **Tempo:** 3 minutos
 
 **Quando usar:** O que acontece com a sua verba, por que o custo muda e o que faz o anúncio vender mais.
@@ -1032,7 +1004,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 > Os números do mês do anúncio e do robô aparecem em Mais › Pagamentos. Para pagar a verba, veja o guia Registrar a verba do anúncio.
 
-**Se não resolver:** Falar com a Maxi (guia 31).
+**Se não resolver:** Falar com a Maxi (guia 30).
 
 ---
 
@@ -1050,7 +1022,7 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 | inicio | `inicio-1..8` (Onda 7c) | — |
 | vendas-por-produto | `vendas-por-produto-1..5` (Onda 7c) | — |
 | pagamentos | `pagamentos-2,3,4,7` | 1, 5, 6 |
-| demais 25 guias | — | todos os passos com recorte do app (passos marcados "sem recorte do app" não levam foto) |
+| demais 24 guias | — | todos os passos com recorte do app (passos marcados "sem recorte do app" não levam foto) |
 
 ---
 
@@ -1060,16 +1032,15 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 2. **A venda "A receber" conta no meu mês?** Sim, desde que foi lançada. "Recebi" só confirma que o dinheiro entrou. → `venda-recebida`
 3. **"Sobrou no mês" é o saldo do meu banco?** Não. É o que entrou com as vendas menos a taxa de cartão e os gastos lançados. → `resultado`
 4. **Preciso lançar o pedido à fábrica como gasto?** Não. Ele entra sozinho quando chega. A verba confirmada e a mensalidade paga também. → `lancar-gasto`
-5. **Faltou produto no pedido. Pago tudo?** Não. Na conferência, diga quanto chegou: o pedido passa a valer o que chegou. O frete continua o mesmo. → `conferir-chegada`
-6. **Qual preço devo cobrar?** O markup recomendado é de 100%: o preço de venda é o dobro do custo. → `mudar-preco`
-7. **Por que meu produto próprio não aparece no pedido?** O pedido à fábrica só tem os produtos da Maxi. Os seus ficam só no Estoque. → `produto-proprio`
-8. **O robô parou de responder. E agora?** Em Mais › Meu robô, veja se está conectado. Se não, leia o QR Code de novo: precisa de duas telas. Sem outra tela, fale com a Maxi. → `reconectar-whatsapp`
-9. **Quanto da verba vai para o anúncio?** Do valor pago, 14% ficam em impostos e taxas: de R$ 200, R$ 172 vão para o anúncio. → `verba-marketing`
-10. **Paguei a mensalidade e continua em aberto.** Abra Pagamentos e toque em "Já paguei, verificar agora". → `pagamentos`
-11. **O comprovante sai fraco na impressora.** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina. → `comprovante`
-12. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez. → `esqueci-senha`
-13. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF. → `vendas-por-produto`
-14. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
+5. **Qual preço devo cobrar?** O markup recomendado é de 100%: o preço de venda é o dobro do custo. → `mudar-preco`
+6. **Por que meu produto próprio não aparece no pedido?** O pedido à fábrica só tem os produtos da Maxi. Os seus ficam só no Estoque. → `produto-proprio`
+7. **O robô parou de responder. E agora?** Em Mais › Meu robô, veja se está conectado. Se não, leia o QR Code de novo: precisa de duas telas. Sem outra tela, fale com a Maxi. → `reconectar-whatsapp`
+8. **Quanto da verba vai para o anúncio?** Do valor pago, 14% ficam em impostos e taxas: de R$ 200, R$ 172 vão para o anúncio. → `verba-marketing`
+9. **Paguei a mensalidade e continua em aberto.** Abra Pagamentos e toque em "Já paguei, verificar agora". → `pagamentos`
+10. **O comprovante sai fraco na impressora.** Na janela de impressão, ponha a escala em 80%. Se continuar, troque a bobina. → `comprovante`
+11. **O link do e-mail venceu.** Peça outro em "Primeiro acesso ou esqueceu a senha?". O link vale 24 horas e serve uma vez. → `esqueci-senha`
+12. **Onde vejo quanto vendi de cada produto?** Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista é do mês escolhido e dá para baixar em Excel ou PDF. → `vendas-por-produto`
+13. **Posso usar meu número pessoal no robô?** Não. Use um número só da unidade, com WhatsApp Business. (sem guia próprio)
 
 No app (`PERGUNTAS_FREQUENTES`) ficam as 9 que já existiam (algumas passaram a apontar para o guia novo que responde melhor) mais 5 novas.
 
@@ -1086,7 +1057,7 @@ Busca feita nos textos dos 31 guias e das perguntas frequentes. No app, a trava 
 | loja | não aparece |
 | Líquido, Ticket Médio, Inventário | não aparecem (sempre "Estoque") |
 | reservar, reserva, separar, guardar | não aparecem |
-| fábrica como sendo a unidade | não aparece; "fábrica" só em "à fábrica" e no rótulo da tela "Produto comprado fora da fábrica" (guia 19, só neste documento; no app o texto diz "comprado fora do pedido à fábrica") |
+| fábrica como sendo a unidade | não aparece; "fábrica" só em "à fábrica" e no rótulo da tela "Produto comprado fora da fábrica" (guia 18, só neste documento; no app o texto diz "comprado fora do pedido à fábrica") |
 | taxa de marketing / fundo de marketing | só "sem fundo de marketing" |
 | jargão: sincronizar, status, dashboard, CAPI, IA | não aparecem ("Verificar Status" é o rótulo exato do botão da janela do WhatsApp) |
 

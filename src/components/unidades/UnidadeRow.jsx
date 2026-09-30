@@ -24,7 +24,7 @@ import {
 // Célula da grade — só desktop (o cabeçalho da tabela já nomeia a coluna). O celular usa
 // o cartão compacto acima, não esta grade (T9: nada de 5 linhas de rótulo/valor).
 function Field({ children }) {
-  return <div className="hidden md:block md:text-left">{children}</div>;
+  return <div className="hidden min-w-0 md:block md:text-left">{children}</div>;
 }
 
 const VERBA_TOM = {
@@ -172,7 +172,7 @@ export default function UnidadeRow({ row, filtro }) {
       </Field>
 
       <Field>
-        <span className={`whitespace-nowrap ${robo.destaque ? "font-semibold text-err" : "text-ink-2"}`}>{robo.texto}</span>
+        <span className={robo.destaque ? "font-semibold text-err" : "text-ink-2"}>{robo.texto}</span>
       </Field>
 
       <Field>
@@ -184,7 +184,7 @@ export default function UnidadeRow({ row, filtro }) {
         <span className={`whitespace-nowrap ${VERBA_TOM[verba.status]}`} title={verba.tooltip || undefined}>
           {verba.texto}
         </span>
-        {verba.secundario && <span className="ml-1.5 block text-xs text-ink-3 md:inline md:ml-1.5">{verba.secundario}</span>}
+        {verba.secundario && <span className="block text-xs text-ink-3">{verba.secundario}</span>}
       </Field>
 
       <div className="hidden items-center justify-end gap-1 md:flex">
