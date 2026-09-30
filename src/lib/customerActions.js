@@ -68,7 +68,9 @@ export const ACTION_TYPES = {
   },
 };
 
-export const ACTION_ORDER = ["voltou_a_falar", "quase_comprou", "repetir", "primeira_compra", "sumido"];
+// Ordem = a do banco (supabase/2026-09-30-crm-folga-e-recompra.sql): quem já comprou vem antes de
+// quem só conversou (compram ~12% contra 4,5%, medido de 16 a 30/09/2026).
+export const ACTION_ORDER = ["voltou_a_falar", "repetir", "quase_comprou", "primeira_compra", "sumido"];
 
 // ---------- nomes ----------
 

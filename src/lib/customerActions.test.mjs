@@ -192,7 +192,7 @@ test("filtrarClientes", () => {
 });
 
 test("5 tipos, na ordem da RPC", () => {
-  assert.deepEqual(ACTION_ORDER, ["voltou_a_falar", "quase_comprou", "repetir", "primeira_compra", "sumido"]);
+  assert.deepEqual(ACTION_ORDER, ["voltou_a_falar", "repetir", "quase_comprou", "primeira_compra", "sumido"]);
   for (const key of ACTION_ORDER) assert.equal(ACTION_TYPES[key].key, key);
 });
 

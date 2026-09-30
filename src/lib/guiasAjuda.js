@@ -235,7 +235,7 @@ export const GUIAS = [
     erroComum: "Tocar em \"Chamar no WhatsApp\" e não enviar. O cartão já fica marcado como feito; use \"Desfazer\", no aviso que aparece embaixo, e chame depois.",
     passos: [
       { titulo: "Veja a lista do dia", texto: "Na tela Início, o quadro \"Quem chamar hoje\" mostra até 3 clientes; toque em Ver os outros para a lista inteira. Ela também fica em Mais › Meus Clientes, na aba Hoje.", botao: "Hoje", imagem: "/tutoriais/quem-chamar-hoje-1.webp" },
-      { titulo: "Leia o motivo", texto: "Cada cartão diz por que chamar: voltou a falar e não comprou, quase comprou, hora de repetir, primeira compra ou sumido.", imagem: "/tutoriais/quem-chamar-hoje-2.webp" },
+      { titulo: "Leia o motivo", texto: "Cada cartão diz por que chamar: voltou a falar e não comprou, hora de repetir, quase comprou, primeira compra ou sumido.", imagem: "/tutoriais/quem-chamar-hoje-2.webp" },
       { titulo: "Abra a conversa", texto: "A mensagem vem pronta, de acordo com o motivo (às vezes com o nome e o produto que a pessoa comprou). O WhatsApp abre com o texto, e você muda o que quiser antes de enviar.", botao: "Chamar no WhatsApp", imagem: "/tutoriais/quem-chamar-hoje-3.webp" },
       { titulo: "Use o WhatsApp da unidade", texto: "Mande pelo mesmo número do robô. Ao tocar em Chamar, o cartão já conta como feito, mesmo sem enviar. Quando você escreve, o robô pausa e deixa a conversa com você. Fique de olho na resposta." },
       { titulo: "Tocou sem querer?", texto: "Ao tocar em Chamar, o cartão já fica marcado como feito, mesmo antes de você enviar. Para voltar atrás, use o aviso que aparece embaixo ou Desfazer, na linha do cliente, na aba Hoje.", botao: "Desfazer" },

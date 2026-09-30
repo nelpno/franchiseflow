@@ -317,7 +317,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Passos**
 1. Toque em **Mais** e em **Meus Clientes**. A tela abre na aba **Hoje**.
    - Imagem: Meus Clientes, aba **Hoje**. (existe: `quem-chamar-hoje-1.webp`)
-2. Leia o motivo de cada cartão: voltou a falar e não comprou, quase comprou, hora de repetir, primeira compra ou sumido.
+2. Leia o motivo de cada cartão: voltou a falar e não comprou, hora de repetir, quase comprou, primeira compra ou sumido.
    - Imagem: um cartão. (existe: `quem-chamar-hoje-2.webp`)
 3. Toque em **Chamar no WhatsApp**. O WhatsApp abre com a mensagem pronta, com o nome do cliente. O cartão já conta como feito nessa hora, mesmo que você não envie (dá para desfazer).
    - Imagem: cartão. (existe: `quem-chamar-hoje-3.webp`)
