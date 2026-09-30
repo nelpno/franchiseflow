@@ -1,4 +1,3 @@
-<!-- Last Updated: 2026-08-12 -->
 # FranchiseFlow — Dashboard Maxi Massas
 
 > Stack, paleta, ícones, fontes, scripts e regras gerais de deploy/n8n/RLS estão no CLAUDE.md raiz. Este arquivo contém APENAS especificidades do dashboard.
@@ -6,7 +5,7 @@
 ## Comandos
 ```bash
 npm run dev     # Vite :5173 — no Windows/OneDrive NÃO imprime o banner, mas sobe
-npm run build   # pode terminar sem output: conferir timestamp de dist/index.html
+npm run build   # não imprime nada além de `> vite build`: confiar em EXIT=0 + timestamp de dist/index.html (~10-20 s)
 npm run lint    # eslint --quiet — ⚠️ no-undef DESLIGADO (símbolo não-importado passa e vira tela branca)
 node src/lib/financialCalcs.test.mjs   # 27 testes do dinheiro (DRE, taxa repassada × absorvida)
 node src/lib/franchiseUtils.test.mjs   # multi-unidade (resolveActiveFranchise)
@@ -26,8 +25,7 @@ Ordem: **1) chave → 2) front → 3) SQL → 4) n8n.** A chave resolve em segun
 ## Stack & Deploy
 > 📄 Verificação detalhada (qual chunk grepar, hash local × VPS, smoke Playwright, casos reais): [docs/claude/deploy-verificacao.md](docs/claude/deploy-verificacao.md). Movido do arquivo em 11/09/2026.
 - React 18 + Vite 6 + Tailwind 3 + shadcn/ui + Supabase Cloud + react-query 5. Stack Portainer 39 | service `2zb27nndn5sg8zweyie6wscpc` | GitHub `nelpno/franchiseflow`.
-- Deploy: `git push` → `node .tmp/deploy.mjs` (force update) → **verificar por CONTEÚDO** no live (~75 s de 502). Status 200 e hash do bundle não bastam.
-- Achar o chunk: página lazy = `<Page>-*.js`; componente compartilhado ganha chunk próprio (`TabResultado-*.js`, `FranchiseForm-*.js`); entity layer, libs compartilhadas, telas de auth e `SaleForm` = entrada `index-*.js`. Conferir o TAMANHO do que baixou (3 dígitos de bytes = index.html). Troca de texto: nova presente E antiga ausente; constante: grepar a constante-fonte, não o valor derivado.
+- Achar o chunk: página lazy = `<Page>-*.js`; entity layer, libs compartilhadas, telas de auth e `SaleForm` = entrada `index-*.js`. Componente ou lib compartilhada pode virar chunk PRÓPRIO e FILHO, que não aparece no `index-*.js` (`TabResultado-*.js` vem do `Gestao-*.js`, `AsaasSetupPanel-*.js` do `Financeiro-*.js`, `networkOverview-*.js`): baixar o chunk da página e seguir os `.js` citados nele antes de concluir "não subiu". Conferir o TAMANHO do que baixou (3 dígitos de bytes = index.html; `index.html` sem `assets/index-` = deploy ainda subindo). Troca de texto: nova presente E antiga ausente; constante: grepar a constante-fonte, não o valor derivado.
 - **Build verde ≠ app funciona:** símbolo indefinido/não importado compila e dá tela BRANCA — `npm run lint:undef` antes de deployar.
 - `.tmp/` é gitignored e tem segredo (`deploy.mjs` com a API key do Portainer) — nunca `git add -A`.
 - jspdf-autotable v5: `autoTable(doc, opts)` por import dinâmico (o `doc.autoTable()` antigo só explode em runtime).
@@ -57,11 +55,12 @@ Ordem: **1) chave → 2) front → 3) SQL → 4) n8n.** A chave resolve em segun
 - **Entrega do pedido (30/09):** "entregue" do admin fecha na hora (estoque e despesa). A conferência pela unidade (S15) segue no código, desligada pela chave `conferir_entrega` (sem linha = desligada); religar = `set_feature_flag('conferir_entrega', null, true, …)`. → `supabase/2026-09-30-entrega-direta.sql`
 - **Lista em grade (cabeçalho e linhas são grades separadas):** colunas em `minmax(0,Nfr)` e a de ação em `rem` fixo, nunca `auto` nem `fr` puro (cada linha calcula sozinha e desalinha). Medir a largura real da ação antes (Mensalidades precisa de 21.5rem).
 - **Sentinela avisa só os admins** (`notify_admins`); o franqueado não vê o alerta. Venda duplicada manual + robô sem telefone na manual escapa da regra.
+- **Quem chamar hoje (30/09):** regra só na RPC `get_daily_customer_actions` (constantes no topo): conversa com o robô entra no 2º e 3º dia; "repetir" inclui 1 compra há 20-30 dias; sumido não entra com mensagem nos últimos 30 dias. A ordem dos motivos vive em DOIS lugares: `ordem_tipo` na RPC e `ACTION_ORDER` em `customerActions.js` (o teste trava). Medir em 14/10. → `supabase/2026-09-30-crm-folga-e-recompra.sql`
 - **Meu Vendedor/robô:** salvar só o que mudou (`configSave.js`); frete calculado só pela RPC `salvar_frete_estruturado`; forma de pagamento nova toca 3 pontos no bot. → supabase-schema, n8n-bot
 - **Onboarding:** papel nunca do metadado; `approved` só pela RPC `set_onboarding_status`; item grava por `set_onboarding_item`. → telas-franqueado
 - **Régua da rede:** tudo em `src/lib/networkOverview.js` (queda −20% com base R$ 3 mil, sem venda 7 dias, verba, nova < 30 dias desde 29/09). Mensagem à franqueada só por `mensagemFranqueado.js`. → cs-admin
 - **Mural do CS:** colunas prontas de `get_cs_mural()`; registro só pelas RPCs `registrar_cs_conversa`/`concluir_cs_cartao`/`estacionar_cs_cartao`; cartão manual nunca é reescrito pelo reconcile. O banco ainda trata "nova" como < 60 dias. → cs-admin, `docs/claude/customer-success.md`
-- **Multi-unidade:** toda tela resolve por `resolveActiveFranchise`, nunca `managed_franchise_ids[0]`. `managed_franchise_ids` guarda UUID E evo da mesma unidade.
+- **Multi-unidade:** toda tela resolve por `resolveActiveFranchise(franchises, user, selectedFranchise)` (com 2+ unidades devolve `null` e a tela mostra `<FranchisePicker>`), nunca `managed_franchise_ids[0]`/`configs[0]`. Listagem SEM filtro de franquia vaza igual (a RLS libera as duas). `managed_franchise_ids` guarda UUID E evo da mesma unidade. Teste: `node src/lib/franchiseUtils.test.mjs`.
 - **Excluir franquia:** `delete_franchise_cascade` (com `p_dry_run`); `evolution_instance_id` é reutilizado pela cidade. → cs-admin, `docs/claude/excluir-franquia.md`
 - **Cupom:** WhatsApp da unidade só de `franchises.whatsapp_publico`, nunca `personal_phone_for_summary`. → historico-ondas
 - **Features removidas: NÃO recriar** (Acompanhamento/health score, Relatórios, BotIntelligence, SmartActions, onboarding de 9 blocos, shadcn órfãos…). Lista: historico-ondas.
@@ -82,8 +81,6 @@ Comentário no código citando "CLAUDE.md § X" (ex.: Primeiros passos, Features
 - Prévia sem login = `.tmp/harness-*` (uma por vez, cache do Vite compartilhado; `--force` e apagar `.tmp/harness-*/.vite-cache` antes do `npm run lint`). Mock novo do Layout precisa de `getFeatureFlags` (senão tela branca no harness).
 - Fotos da Ajuda: `node .tmp/harness-s242/s*.mjs` **da raiz do dashboard** (os roteiros gravam em `.tmp/prints-s242` relativo). Manual: `.tmp/onda7b-manual/gera.mjs` → copiar para `public/manual-maxi.pdf`; estrutura e regra `G("slug")` em telas-franqueado.
 - Tirar ou criar guia da Ajuda toca 4 pontos: `guiasAjuda.js`, `docs/guias-ajuda-v2.md` (índice, numeração e os "guia N" cruzados), as contagens em `guiasAjuda.test.mjs` e a página "Comece por aqui" em `.tmp/onda7b-manual/gera.mjs`. Fotos de Reposição/Início: `.tmp/harness-s242/s-entrega-direta.mjs` (o mock de vendas precisa de `created_at`, senão a sugestão some).
-- Conferência no ar: lib compartilhada pode virar chunk PRÓPRIO (ex.: `networkOverview-*.js`) — baixar TODOS os chunks citados, não só o `index-*.js`, antes de concluir "não subiu".
-- Drive da franquia (29/09): 4 pastas (1. Configurações · 2. Universidade Maxi Massas · 3. Marketing · 4. Manuais) + Arquivo. Onde cada link mora: comentário de `src/components/onboarding/materiais.js`.
 
 ### Auth (AuthContext.jsx)
 - Race conditions: `lastAuthUserRef` + `lastSignedInTimeRef` + safety timeouts (8s init, 10s login). NÃO há mutex
@@ -93,9 +90,8 @@ Comentário no código citando "CLAUDE.md § X" (ex.: Primeiros passos, Features
 - Detecção convite: `user_metadata.password_set` (PKCE não passa `type=invite`)
 - NUNCA `window.location.href` após signIn — `onAuthStateChange` cuida do redirect
 - `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (8s timeout)
-- **Franqueado com 2+ unidades: toda tela resolve a unidade por `resolveActiveFranchise(franchises, user, selectedFranchise)`** ([franchiseUtils.js](src/lib/franchiseUtils.js)) — com 2+ ele devolve `null` em vez de chutar a primeira, e a tela mostra `<FranchisePicker>`. NUNCA `managed_franchise_ids[0]` / `configs[0]` (é ordem do banco, não escolha do usuário). Listagem SEM filtro de franquia vaza igual: a RLS libera as DUAS unidades (caso do MyContacts). Testes: `node src/lib/franchiseUtils.test.mjs`. Bug Araras×Limeira 05/08/2026 (deploy `b95599b`)
-- **`resetPasswordForEmail` devolve SUCESSO para e-mail que NÃO existe** (anti-enumeração do Supabase) → NUNCA exibir "email enviado"; mostrar o endereço digitado ("Se X estiver cadastrado..."). Custou 12min de franqueado achando que o e-mail sumiu (fix `6369d06`, 12/08/2026)
-- **Diagnosticar "não chegou o e-mail" do Auth**: a prova está em `query_logs` source `auth_logs` — `POST /recover` em **~1ms SEM bloco `auth_event`** = e-mail não casa com nenhum usuário, **nada foi enviado**; **~3,5s COM `user_recovery_requested`** = saiu de verdade. ⚠️ `auth.audit_log_entries` está SEMPRE VAZIA (0 linhas) e `recovery_sent_at` é **zerado quando o link é usado** (mede recovery pendente, não envio) — os dois mentem, erram para o lado de "nunca enviou". O `referer` do log do GoTrue é o `redirect_to`, não a tela de origem. SMTP do Auth = `smtp.gmail.com`/`fabrica@maximassas.com.br`, 30/h (estouro dá 429, nunca 200). Detalhe: memória `project_diagnostico_email_auth_supabase`
+- `resetPasswordForEmail` devolve SUCESSO para e-mail que NÃO existe (anti-enumeração): nunca exibir "email enviado"; mostrar o endereço digitado ("Se X estiver cadastrado...").
+- "Não chegou o e-mail" do Auth: a prova está em `query_logs` source `auth_logs` (`POST /recover` ~1 ms sem `auth_event` = nada enviado; ~3,5 s com `user_recovery_requested` = saiu). `auth.audit_log_entries` (sempre vazia) e `recovery_sent_at` mentem. SMTP `fabrica@`, 30/h. → memória `project_diagnostico_email_auth_supabase`
 
 ### Frontend Patterns
 > 📄 Detalhe e casos (Clarity e dead clicks, Dialog/Sheet shadcn, overflow mobile, texto livre que vai pro prompt do bot, lazy-load, filtros de mês): [docs/claude/frontend-ux.md](docs/claude/frontend-ux.md). Movido do arquivo em 11/09/2026.
@@ -113,7 +109,6 @@ Comentário no código citando "CLAUDE.md § X" (ex.: Primeiros passos, Features
 - NUNCA alterar `franchise_configurations` sem verificar compatibilidade com vendedor genérico
 - NUNCA commitar credenciais. Testar mobile. Empty states obrigatórios
 - Management API SQL com `$$`: salvar em arquivo (delimitadores corrompidos em JSON)
-- PUT API n8n pode desativar workflows — verificar `active` e reativar após updates
 
 ## Variáveis de Ambiente
 ```
@@ -127,9 +122,6 @@ ZUCKZAPGO_URL / ZUCKZAPGO_ADMIN_TOKEN
 ```
 
 ## Convenções de UI e build (movido do CLAUDE.md do projeto-pai em 25/09/2026)
-<!-- movido do CLAUDE.md pai 25/09/2026 -->
 - Componentes: shadcn/ui + Material Symbols Outlined. Ícone = `<MaterialIcon icon="name" />`, NUNCA Lucide direto.
 - Fontes: Inter (body) + Plus Jakarta Sans (headings). Paleta: `#b91c1c` (primary), `#d4af37` (gold).
-- Edge Functions: SEMPRE validar JWT (`supabase.auth.getUser(token)`) + role check. Webhook externo: HMAC/token secreto (fail-closed).
-- **`npm run build` suprime o output do Vite** (18/05): mostra só `> vite build` e termina. Confiar em `EXIT=0` + timestamp de `dist/index.html` (build real ~10-20 s).
 - **TS LSP em `.jsx`** emite `implicit any` (TS7006) em parâmetro JS — pré-existente do strict do tsserver, NÃO causado pelo Edit. Ignorar se já existia antes da mudança.
