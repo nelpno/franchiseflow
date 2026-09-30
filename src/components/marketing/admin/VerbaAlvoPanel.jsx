@@ -90,9 +90,9 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
         // "A confirmar" é qualquer mês pendente (mesma régua de marketing_a_confirmar na RPC
         // de pendências) — senão o número clicado no card Hoje não bate com a lista (achado alto)
         MarketingPayment.filter({ status: "pending" }, "created_at", 300),
-        // Depósito no Meta é sempre do mês do CALENDÁRIO (a campanha que está no ar agora) —
-        // achado "alto" 26/09: essa tarefa do admin só existia dentro de "Mais ações".
-        MarketingMetaDeposit.filter({ reference_month: mesAtual }, "deposit_date", 100),
+        // Depósitos dos dois meses: o Nelson deposita no Meta a verba do mês seguinte assim que
+        // as unidades pagam (30/09: não havia onde lançar o depósito de outubro).
+        MarketingMetaDeposit.filter({ reference_month: mesesReferencia }, "deposit_date", 200),
       ]);
       if (!mountedRef.current) return;
       setPayments(pg || []);
@@ -125,10 +125,11 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
     [overview, payments, pendentes, mesAtual, mesAlvo]
   );
 
-  const totalDepositado = useMemo(
-    () => deposits.reduce((s, d) => s + (Number(d.amount) || 0), 0),
-    [deposits]
-  );
+  const depositadoPorMes = useMemo(() => {
+    const m = {};
+    for (const d of deposits) m[d.reference_month] = (m[d.reference_month] || 0) + (Number(d.amount) || 0);
+    return m;
+  }, [deposits]);
 
   const handleConfirm = async (paymentId) => {
     setActionLoading(paymentId);
@@ -206,10 +207,11 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
   const resumoAtivo = verMesAlvo && janela ? resumo.alvo : resumo;
   const mesResumoAtivo = verMesAlvo && janela ? mesAlvo : mesAtual;
   const brutoLiquido = marketingLiquid(resumoAtivo.brutoPago);
-  // Saldo a depositar no Meta é sempre do mês do CALENDÁRIO (o depósito acompanha a campanha
-  // que está no ar), nunca do mês-alvo que `verMesAlvo` mostra — achado "alto" 26/09: essa
-  // conta ficava escondida dentro de "Mais ações".
-  const saldoDepositar = Math.max(0, resumo.brutoPago - totalDepositado);
+  // Depósito acompanha o mês que está na tela (pago daquele mês × depositado daquele mês).
+  // O mês do calendário continua avisado quando o mês seguinte está aberto e ainda falta depósito.
+  const totalDepositado = depositadoPorMes[mesResumoAtivo] || 0;
+  const saldoDepositar = Math.max(0, resumoAtivo.brutoPago - totalDepositado);
+  const saldoDepositarMesAtual = Math.max(0, resumo.brutoPago - (depositadoPorMes[mesAtual] || 0));
   const filtroValido = filtro && FILTRO_LABELS[filtro];
   // Chegada filtrada esconde "A confirmar" (só a fila de origem aparece) — sem a versão
   // "Todas", o card "N sem verba"/"N sem comprovante" do Hoje levava a uma lista mais curta
@@ -274,22 +276,12 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
             </p>
           </div>
           <div className={CARTAO}>
-            {/* Com verMesAlvo o valor é só o que as unidades pagaram (depósito é do mês do
-                calendário): o rótulo "DEPOSITADO NO META" ali fez o Nelson achar que o depósito
-                de outubro já tinha sido registrado (30/09). */}
-            <p className="text-xs font-semibold text-ink-3">
-              {verMesAlvo ? "PAGO PELAS UNIDADES" : "PAGO · DEPOSITADO NO META"}
-            </p>
+            <p className="text-xs font-semibold text-ink-3">PAGO · DEPOSITADO NO META</p>
             <p className="mt-1.5 font-plus-jakarta text-2xl font-extrabold text-ink">
               {formatBRLInteger(resumoAtivo.brutoPago)}
-              {/* O depósito sempre acompanha o mês do CALENDÁRIO (a campanha no ar), nunca o
-                  mês-alvo — misturar os dois na mesma linha sem rótulo confundia dois meses
-                  diferentes (achado "medio" 26/09). Com verMesAlvo ligado, mostra só o pago. */}
-              {!verMesAlvo && (
-                <span className="text-base font-semibold text-ink-3"> · {formatBRLInteger(totalDepositado)}</span>
-              )}
+              <span className="text-base font-semibold text-ink-3"> · {formatBRLInteger(totalDepositado)}</span>
             </p>
-            {!verMesAlvo && (saldoDepositar > 0 ? (
+            {saldoDepositar > 0 ? (
               <button
                 type="button"
                 onClick={() => setShowDepositDialog(true)}
@@ -297,17 +289,13 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
               >
                 Falta depositar {formatBRLInteger(saldoDepositar)} → Registrar depósito
               </button>
-            ) : resumo.brutoPago > 0 ? (
+            ) : resumoAtivo.brutoPago > 0 ? (
               <p className="mt-1 text-sm text-ok-ink">Tudo depositado</p>
-            ) : null)}
-            {verMesAlvo && saldoDepositar > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowDepositDialog(true)}
-                className="mt-1 text-sm font-semibold text-warn-ink hover:underline"
-              >
-                {nomeMes(mesAtual, { maiuscula: true })}: falta depositar {formatBRLInteger(saldoDepositar)} → Registrar depósito
-              </button>
+            ) : null}
+            {mesResumoAtivo !== mesAtual && saldoDepositarMesAtual > 0 && (
+              <p className="mt-1 text-xs text-warn-ink">
+                {nomeMes(mesAtual, { maiuscula: true })}: falta depositar {formatBRLInteger(saldoDepositarMesAtual)} (veja em {nomeMes(mesAtual, { maiuscula: true })})
+              </p>
             )}
             {resumoAtivo.brutoPago > 0 && (
               <p
@@ -625,7 +613,7 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
       <MetaDepositDialog
         open={showDepositDialog}
         onOpenChange={setShowDepositDialog}
-        referenceMonth={mesAtual}
+        referenceMonth={mesResumoAtivo}
         onSaved={recarregarTudo}
       />
 
