@@ -632,7 +632,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Deu certo quando:** o quadro mostra Pago e aparece "Mensalidade em dia.".
 
-**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 21). Mais abaixo, o quadro **O que sua Equipe Digital fez** mostra a verba, as vendas e os clientes novos que vieram do anúncio; as setas trocam o mês.
+**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 21). O que o anúncio e o robô trouxeram no mês fica em **Marketing**, no quadro **Resumo do mês** (guia 33).
 
 **Erro comum:** deixar vencer. No 1º e no 2º dia de atraso aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; mesmo assim dá para pagar, trocar de unidade e lançar venda.
 
@@ -995,14 +995,16 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 3. **Por que às vezes fica mais caro.** Quando muita gente anuncia ao mesmo tempo (eleição, datas comemorativas, fim de ano), o leilão fica disputado e a mesma verba chega a menos pessoas. Anúncio mostrado muitas vezes para as mesmas pessoas também cansa e rende menos: aí a Maxi troca a arte.
 4. **O anúncio aprende com as suas vendas.** Quando você marca a venda como Recebi e ela tem o telefone do cliente, o app avisa o Meta que aquela pessoa comprou. Com isso, o Meta procura gente parecida com quem compra. Venda sem telefone não ensina nada ao anúncio.
 5. **O que mais ajuda a vender.** Responder rápido (o robô faz isso), ter no estoque o produto que o anúncio mostra, deixar preço e cardápio certos no Meu robô e manter a verba todo mês: campanha parada perde parte do que aprendeu.
+6. **Veja o que o anúncio trouxe.** Em **Mais › Marketing**, logo abaixo da verba, o quadro **Resumo do mês** mostra a verba, as vendas e os clientes novos que vieram do anúncio e quantas pessoas o robô atendeu. Ele abre no mês que já fechou; as setas trocam o mês. Para ter numa folha ou mostrar a alguém, toque em **Baixar em PDF**.
+   - Imagem: quadro Resumo do mês (unidade fictícia). Seta no botão **Baixar em PDF**. (existe: `como-funciona-anuncio-6.webp`)
 
-**Deu certo quando:** você entende para onde vai a verba e o que pode fazer para o anúncio vender mais.
+**Deu certo quando:** você entende para onde vai a verba, o que pode fazer para o anúncio vender mais e onde ver o que ele trouxe no mês.
 
 **Dica:** Verba maior alcança mais gente, mas quem fecha a venda é o atendimento: responda rápido e marque Recebi em toda venda, com o telefone do cliente.
 
 **Erro comum:** Achar que o valor todo vira anúncio: 14% ficam em impostos e taxas (de R$ 200, R$ 172 vão para o anúncio). E comparar um mês com o outro sem lembrar que o preço do leilão muda.
 
-> Os números do anúncio e do robô (verba, vendas e clientes novos que vieram do anúncio) aparecem em Mais › Pagamentos. Use as setas do quadro para ver um mês que já fechou, como o mês passado. Para pagar a verba, veja o guia Registrar a verba do anúncio.
+> Para pagar a verba, veja o guia Registrar a verba do anúncio.
 
 **Se não resolver:** Falar com a Maxi (guia 30).
 

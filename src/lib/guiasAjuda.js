@@ -488,7 +488,7 @@ export const GUIAS = [
       { titulo: "Não apareceu nem QR Code nem código Pix?", texto: "Toque para gerar a cobrança de novo. Se ainda não aparecer, use o boleto ou fale com a Maxi. Se só o QR Code faltar, copie o código Pix.", botao: "Atualizar cobrança", imagem: "/tutoriais/pagamentos-6.webp" },
       { titulo: "Confirme", texto: "Depois de pagar, peça ao app para conferir. Pago, o quadro fica verde.", botao: "Já paguei, verificar agora", imagem: "/tutoriais/pagamentos-7.webp" },
     ],
-    nota: "Se atrasar: no 1º e no 2º dia depois do vencimento aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; ainda dá para pagar, trocar de unidade e lançar venda. A verba do anúncio é à parte (sem fundo de marketing): mínimo de R$ 200, no Pix CNPJ 00.494.317/0001-21. Mais abaixo, o quadro \"O que sua Equipe Digital fez\" mostra a verba, as vendas e os clientes novos que vieram do anúncio; as setas trocam o mês.",
+    nota: "Se atrasar: no 1º e no 2º dia depois do vencimento aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; ainda dá para pagar, trocar de unidade e lançar venda. A verba do anúncio é à parte (sem fundo de marketing): mínimo de R$ 200, no Pix CNPJ 00.494.317/0001-21. O que o anúncio e o robô trouxeram no mês fica em Marketing, no quadro Resumo do mês.",
     whatsapp: "Este guia mostra onde pagar a mensalidade da Equipe Digital Maxi, por Pix ou boleto, e o que acontece se atrasar.",
   },
   {
@@ -568,7 +568,7 @@ export const GUIAS = [
     tempo: "3 minutos",
     icone: "campaign",
     area: "Marketing",
-    sinonimos: ["anúncio", "meta", "facebook", "instagram", "lance", "custo do anúncio", "campanha"],
+    sinonimos: ["anúncio", "meta", "facebook", "instagram", "lance", "custo do anúncio", "campanha", "resumo do mês", "mês passado", "resultado do anúncio", "pdf do anúncio"],
     dica: "Verba maior alcança mais gente, mas quem fecha a venda é o atendimento: responda rápido e lance toda venda com o telefone do cliente. Venda que ficou A receber: toque em Recebi quando o dinheiro entrar.",
     erroComum: "Achar que o valor todo vira anúncio: 14% ficam em impostos e taxas (de R$ 200, R$ 172 vão para o anúncio). E comparar um mês com o outro sem lembrar que o preço do leilão muda.",
     passos: [
@@ -577,8 +577,9 @@ export const GUIAS = [
       { titulo: "Por que às vezes fica mais caro", texto: "Quando muita gente anuncia ao mesmo tempo (eleição, datas comemorativas, fim de ano), o leilão fica disputado e a mesma verba chega a menos pessoas. Anúncio mostrado muitas vezes para as mesmas pessoas também cansa e rende menos: aí a Maxi troca a arte." },
       { titulo: "O anúncio aprende com as suas vendas", texto: "Quando a venda está recebida e tem o telefone do cliente, o app avisa o Meta que aquela pessoa comprou. Com isso, o Meta procura gente parecida com quem compra. Venda sem telefone não ensina nada ao anúncio." },
       { titulo: "O que mais ajuda a vender", texto: "Responder rápido (o robô faz isso), ter no estoque o produto que o anúncio mostra, deixar preço e cardápio certos no Meu robô e manter a verba todo mês: campanha parada perde parte do que aprendeu." },
+      { titulo: "Veja o que o anúncio trouxe", texto: "Em Mais › Marketing, logo abaixo da verba, o quadro Resumo do mês mostra a verba, as vendas e os clientes novos que vieram do anúncio e quantas pessoas o robô atendeu. Ele abre no mês que já fechou; as setas trocam o mês. Para ter numa folha ou mostrar a alguém, toque em Baixar em PDF.", botao: "Baixar em PDF", imagem: "/tutoriais/como-funciona-anuncio-6.webp" },
     ],
-    nota: "Os números do anúncio e do robô (verba, vendas e clientes novos que vieram do anúncio) aparecem em Mais › Pagamentos. Use as setas do quadro para ver um mês que já fechou, como o mês passado. Para pagar a verba, veja o guia Registrar a verba do anúncio.",
+    nota: "Para pagar a verba, veja o guia Registrar a verba do anúncio.",
     whatsapp: "Este guia explica, de forma simples, como funciona o anúncio da sua unidade no Facebook e no Instagram.",
   },
   // ------------------------------------------------------------------ Meu robô

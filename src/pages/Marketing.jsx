@@ -34,6 +34,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import MarketingPaymentSection from "@/components/marketing/MarketingPaymentSection";
+import ResumoMesCard from "@/components/marketing/ResumoMesCard";
 import MarketingAdminHome from "@/components/marketing/admin/MarketingAdminHome";
 import PageHeader from "@/components/shared/PageHeader";
 import ErrorState from "@/components/shared/ErrorState";
@@ -1248,8 +1249,12 @@ export default function Marketing() {
           onClearFiltro={clearFiltro}
         />
       ) : (
-        // Franqueado: card de pagamento marketing (tela do franqueado, INTOCADA)
-        <MarketingPaymentSection />
+        // Franqueado: verba do anúncio + o resumo do mês logo abaixo (01/10/2026: saiu de
+        // Pagamentos, as franqueadas procuravam aqui).
+        <>
+          <MarketingPaymentSection />
+          <ResumoMesCard />
+        </>
       )}
 
       {isAdminOuManager && (
