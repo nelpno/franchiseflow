@@ -632,7 +632,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Deu certo quando:** o quadro mostra Pago e aparece "Mensalidade em dia.".
 
-**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 21).
+**Dica:** pelo Pix a liberação costuma sair em poucos minutos. O boleto leva o tempo do banco. A verba do anúncio é à parte (guia 21). Mais abaixo, o quadro **O que sua Equipe Digital fez** mostra a verba, as vendas e os clientes novos que vieram do anúncio; as setas trocam o mês.
 
 **Erro comum:** deixar vencer. No 1º e no 2º dia de atraso aparece uma faixa vermelha, mas o app segue normal. A partir do 3º dia o app mostra só a tela de pagamento; mesmo assim dá para pagar, trocar de unidade e lançar venda.
 
@@ -933,7 +933,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: barra de baixo. Contorno em **Início**. (existe: `inicio-1.webp`)
 2. O quadro de cima mostra quanto a unidade vendeu no mês até hoje, quantas vendas e o valor médio. O selo no canto compara com o mesmo trecho do mês passado (por exemplo, **−8% que agosto**) e só aparece quando há base para comparar. Logo abaixo, o app sugere o próximo passo. A partir do dia 8, aparece uma previsão de quanto você pode vender até o fim do mês; não é um valor garantido. A mediana aparece se houve vendas nos 3 meses anteriores: é o valor do meio (R$ 800, R$ 1.000 e R$ 1.500 dão mediana de R$ 1.000). Toque em **Ver o resultado do mês** para abrir o Resultado.
    - Imagem: quadro do mês. (existe: `inicio-2.webp`)
-3. Quando há dado, o troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, **12º de 58 em setembro**). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje, se já houve venda hoje.
+3. Quando há dado, o troféu mostra a sua posição entre as unidades da Maxi que venderam no mês (por exemplo, **12º de 58 em setembro**). A seta diz se você subiu ou caiu posições desde o mês passado. Ao lado aparece a posição de hoje, se já houve venda hoje. Embaixo, a posição em que você fechou o mês passado.
    - Imagem: quadro do ranking. (existe: `inicio-3.webp`)
 4. O quadro **Hoje** mostra quanto você vendeu hoje. A barra enche até a **Meta do dia**, que é a sua média dos últimos 30 dias mais 10%; ela aparece quando o app tem pelo menos 7 dias de histórico nesses 30 dias. Ao bater, aparece "meta do dia batida". Embaixo, os dias seguidos em que você bateu a meta. Toque em **Vendas de hoje** para ver as vendas.
    - Imagem: quadro Hoje com a barra e os dias seguidos. (existe: `inicio-4.webp`)
@@ -1002,7 +1002,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Erro comum:** Achar que o valor todo vira anúncio: 14% ficam em impostos e taxas (de R$ 200, R$ 172 vão para o anúncio). E comparar um mês com o outro sem lembrar que o preço do leilão muda.
 
-> Os números do mês do anúncio e do robô aparecem em Mais › Pagamentos. Para pagar a verba, veja o guia Registrar a verba do anúncio.
+> Os números do anúncio e do robô (verba, vendas e clientes novos que vieram do anúncio) aparecem em Mais › Pagamentos. Use as setas do quadro para ver um mês que já fechou, como o mês passado. Para pagar a verba, veja o guia Registrar a verba do anúncio.
 
 **Se não resolver:** Falar com a Maxi (guia 30).
 

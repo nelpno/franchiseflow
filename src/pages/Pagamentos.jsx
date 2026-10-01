@@ -12,13 +12,15 @@ import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { MarketingPayment, getMarketingAttribution, getFranchiseFunnelStats } from "@/entities/all";
 import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
-import { resumoEquipeDigital, mesAtualBRT } from "@/lib/pagamentos";
+import { resumoEquipeDigital, mesBRT } from "@/lib/pagamentos";
 import { escolherMarketing, mesAlvoMarketing, INTERVALO_REVALIDAR_MS } from "@/lib/inicioMes";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 
 // Mesmo Pix da verba do cartão de Marketing (S5.1, decisão 27/09).
 const PIX_VERBA_CNPJ = "00.494.317/0001-21";
 const MARKETING_VAZIO = { evo: null, alvo: null, ok: false, lista: [] };
+// Setas do resumo: até 12 meses para trás (01/10/2026, Vila Formosa queria ver setembro fechado).
+const MESES_ATRAS = 11;
 
 // S11.1 (28/09/2026) — Mais › Pagamentos. Só existe com a chave ui_v2 ligada; com ela
 // desligada (ou sem unidade) volta para a Início, que continua mostrando o cartão de sempre.
@@ -37,12 +39,13 @@ export default function Pagamentos() {
   const [marketing, setMarketing] = useState(MARKETING_VAZIO);
   const [resumo, setResumo] = useState(null); // null = carregando; [] = sem números
   const [recarga, setRecarga] = useState(0);
+  const [deslocamento, setDeslocamento] = useState(0); // 0 = mês atual, -1 = anterior...
   const mountedRef = useRef(true);
   const chaveRef = useRef(null);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const mes = mesAtualBRT();
-  const mesNome = format(new Date(`${mes.inicio}T12:00:00`), "MMMM", { locale: ptBR });
+  const mes = mesBRT({ deslocamento });
+  const mesNome = format(new Date(`${mes.inicio}T12:00:00`), mes.chave.slice(0, 4) !== mesBRT().chave.slice(0, 4) ? "MMMM 'de' yyyy" : "MMMM", { locale: ptBR });
   const mesAlvo = mesAlvoMarketing();
   const alvoChave = format(mesAlvo, "yyyy-MM");
 
@@ -132,9 +135,31 @@ export default function Pagamentos() {
 
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 space-y-3">
-          <h2 className="font-plus-jakarta text-base font-bold text-ink">
-            O que sua Equipe Digital fez em {mesNome}
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 font-plus-jakarta text-base font-bold text-ink">
+              O que sua Equipe Digital fez em {mesNome}
+            </h2>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setDeslocamento((d) => Math.max(-MESES_ATRAS, d - 1))}
+                disabled={deslocamento <= -MESES_ATRAS}
+                aria-label="Mês anterior"
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-2 hover:bg-surface disabled:opacity-30"
+              >
+                <MaterialIcon icon="chevron_left" size={22} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeslocamento((d) => Math.min(0, d + 1))}
+                disabled={deslocamento >= 0}
+                aria-label="Próximo mês"
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-ink-2 hover:bg-surface disabled:opacity-30"
+              >
+                <MaterialIcon icon="chevron_right" size={22} aria-hidden="true" />
+              </button>
+            </div>
+          </div>
           {resumo === null ? (
             <div className="space-y-2">
               <Skeleton className="h-5 w-3/4" />
@@ -142,7 +167,11 @@ export default function Pagamentos() {
               <Skeleton className="h-5 w-1/2" />
             </div>
           ) : resumo.length === 0 ? (
-            <p className="text-sm text-ink-2">Os números do mês aparecem aqui assim que o anúncio e o robô começarem a trabalhar.</p>
+            <p className="text-sm text-ink-2">
+              {deslocamento < 0
+                ? `Sem números do anúncio e do robô em ${mesNome}.`
+                : "Os números do mês aparecem aqui assim que o anúncio e o robô começarem a trabalhar."}
+            </p>
           ) : (
             <ul className="space-y-2">
               {resumo.map((l) => (

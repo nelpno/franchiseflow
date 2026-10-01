@@ -70,10 +70,18 @@ export function resumoEquipeDigital({ atribuicao = null, funil = null } = {}) {
 
 /** Primeiro e último dia do mês de `hoje` (em Brasília) no formato yyyy-MM-dd, e a chave yyyy-MM. */
 export function mesAtualBRT({ hoje = new Date() } = {}) {
+  return mesBRT({ hoje });
+}
+
+/**
+ * Mês de Brasília deslocado de `deslocamento` meses (0 = atual, -1 = anterior...). O atual vai
+ * até hoje; mês passado vai até o último dia (pergunta da Vila Formosa, 01/10/2026: "e setembro?").
+ */
+export function mesBRT({ hoje = new Date(), deslocamento = 0 } = {}) {
   const d = dataCivilBRT(hoje);
-  const y = d.getFullYear();
-  const m = d.getMonth() + 1;
-  const mm = String(m).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return { chave: `${y}-${mm}`, inicio: `${y}-${mm}-01`, ate: `${y}-${mm}-${dd}` };
+  const alvo = new Date(d.getFullYear(), d.getMonth() + deslocamento, 1);
+  const y = alvo.getFullYear();
+  const mm = String(alvo.getMonth() + 1).padStart(2, "0");
+  const ultimo = deslocamento >= 0 ? d.getDate() : new Date(y, alvo.getMonth() + 1, 0).getDate();
+  return { chave: `${y}-${mm}`, inicio: `${y}-${mm}-01`, ate: `${y}-${mm}-${String(ultimo).padStart(2, "0")}` };
 }

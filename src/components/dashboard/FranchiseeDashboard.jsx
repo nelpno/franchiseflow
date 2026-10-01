@@ -313,15 +313,22 @@ export default function FranchiseeDashboard() {
   useEffect(() => {
     if (!uiV2 || !evoId || !mesV2) return undefined;
     const controller = new AbortController();
-    setRankingMesV2({ evo: evoId, mes: mesV2, status: "loading", dado: null });
-    getFranchiseRankingMonthly(mesV2, evoId, { signal: controller.signal })
-      .then((r) => {
-        if (mountedRef.current && !controller.signal.aborted) setRankingMesV2({ evo: evoId, mes: mesV2, status: "ok", dado: r });
-      })
-      .catch((err) => {
-        if (err?.name === "AbortError" || controller.signal.aborted || !mountedRef.current) return;
-        setRankingMesV2({ evo: evoId, mes: mesV2, status: "erro", dado: null });
-      });
+    setRankingMesV2({ evo: evoId, mes: mesV2, status: "loading", dado: null, anterior: null });
+    // Posição FECHADA do mês passado (01/10/2026, Mogi: "onde está o ranking do mês passado?").
+    // Falha nela não derruba o cartão: só some a linha.
+    const mesAnterior = format(subMonths(new Date(`${mesV2}-01T12:00:00`), 1), "yyyy-MM");
+    Promise.allSettled([
+      getFranchiseRankingMonthly(mesV2, evoId, { signal: controller.signal }),
+      getFranchiseRankingMonthly(mesAnterior, evoId, { signal: controller.signal }),
+    ]).then(([atual, anterior]) => {
+      if (!mountedRef.current || controller.signal.aborted) return;
+      if (atual.status === "rejected") {
+        setRankingMesV2({ evo: evoId, mes: mesV2, status: "erro", dado: null, anterior: null });
+        return;
+      }
+      const dadoAnterior = anterior.status === "fulfilled" && anterior.value?.rank_position ? anterior.value : null;
+      setRankingMesV2({ evo: evoId, mes: mesV2, status: "ok", dado: atual.value, anterior: dadoAnterior ? { ...dadoAnterior, mes: mesAnterior } : null });
+    });
     return () => controller.abort();
   }, [uiV2, evoId, mesV2, recargaRankingMes]);
 

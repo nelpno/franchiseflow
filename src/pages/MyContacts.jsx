@@ -213,11 +213,10 @@ export default function MyContacts() {
     loadContacts();
   }, [isAdmin, activeEvoId, franchises.length, loadContacts]);
 
-  const filteredContacts = useMemo(() => {
+  // Busca, origem e data valem ANTES dos chips: assim os números dos chips seguem os filtros
+  // (01/10/2026, Vila Formosa: "selecionando os últimos 30 dias, permanece os mesmos números").
+  const baseContacts = useMemo(() => {
     let result = contacts;
-
-    // Chips: Todos / Fiéis / Nunca compraram / Sumidos / Sem telefone / Não chamar
-    result = filtrarClientes(result, activeFilter);
 
     // Filter by search term
     if (searchTerm.trim()) {
@@ -246,6 +245,12 @@ export default function MyContacts() {
         );
       }
     }
+    return result;
+  }, [contacts, searchTerm, dateFilter, sourceFilter]);
+
+  const filteredContacts = useMemo(() => {
+    // Chips: Todos / Fiéis / Nunca compraram / Sumidos / Sem telefone / Não chamar
+    let result = filtrarClientes(baseContacts, activeFilter);
 
     // Sort
     result = [...result].sort((a, b) => {
@@ -265,7 +270,7 @@ export default function MyContacts() {
     });
 
     return result;
-  }, [contacts, activeFilter, searchTerm, dateFilter, sourceFilter, sortBy]);
+  }, [baseContacts, activeFilter, sortBy]);
 
   const openEdit = (contact) => {
     const telefone = contact.telefone || contact.contact_phone || "";
@@ -603,7 +608,7 @@ export default function MyContacts() {
       </Dialog>
 
       {activeTab === "todos" && <>
-      <ContactFilterChips contacts={contacts} activeFilter={activeFilter} onChange={setActiveFilter} />
+      <ContactFilterChips contacts={baseContacts} activeFilter={activeFilter} onChange={setActiveFilter} />
 
       {/* Search + Filters */}
       <FilterBar

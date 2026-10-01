@@ -3,6 +3,8 @@
 // diasSeguidosBatendoMeta) — as mesmas do RankingStreak da Início de sempre.
 import React from "react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRLInteger } from "@/lib/formatters";
 import { deltaRanking } from "@/lib/inicioMes";
@@ -33,6 +35,11 @@ export function InicioRanking({ ranking, rankingDiaOk, rankingDiaFalhou = false,
   const temDia = ranking?.position && ranking?.total_franchises;
   const delta = deltaRanking(monthlyRanking);
   const textoDia = rankingDiaOk ? (temDia ? `${ranking.position}º hoje` : "sem venda hoje ainda") : null;
+  // Posição fechada do mês passado (01/10/2026): no dia 1º o mês novo ainda não tem posição.
+  const anterior = rankingMes.anterior;
+  const textoAnterior = anterior?.rank_position && anterior?.total_franchises
+    ? `Em ${format(new Date(`${anterior.mes}-01T12:00:00`), "MMMM", { locale: ptBR })} você fechou em ${anterior.rank_position}º de ${anterior.total_franchises}.`
+    : null;
 
   return (
     <section className={`${CARTAO} flex flex-wrap items-center gap-3`} aria-label="Ranking">
@@ -60,6 +67,7 @@ export function InicioRanking({ ranking, rankingDiaOk, rankingDiaFalhou = false,
       ) : (
         <p className="min-w-0 text-sm text-ink-2">Sua posição no ranking aparece com a primeira venda do mês.</p>
       )}
+      {textoAnterior && <p className="basis-full text-sm text-ink-2">{textoAnterior}</p>}
       {/* P3-2 #5: só a posição do dia falhou — diz isso e deixa tentar de novo */}
       {rankingDiaFalhou && (
         <div className="basis-full">

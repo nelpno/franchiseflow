@@ -4,7 +4,7 @@
 process.env.TZ = "UTC";
 
 import assert from "node:assert";
-import { faixaMensalidade, resumoEquipeDigital, mesAtualBRT, FAIXA_DIAS_ANTES } from "./pagamentos.js";
+import { faixaMensalidade, resumoEquipeDigital, mesAtualBRT, mesBRT, FAIXA_DIAS_ANTES } from "./pagamentos.js";
 
 const sub = (over = {}) => ({
   asaas_customer_id: "cus_1",
@@ -67,5 +67,13 @@ for (const l of r) assert.ok(!/margem|amanh|loja|reserv|separ|invent|ticket|líq
 // ── mês atual em Brasília ──
 assert.deepEqual(mesAtualBRT({ hoje: new Date("2026-10-01T02:00:00Z") }), { chave: "2026-09", inicio: "2026-09-01", ate: "2026-09-30" });
 assert.deepEqual(mesAtualBRT({ hoje: dia("2026-10-07") }), { chave: "2026-10", inicio: "2026-10-01", ate: "2026-10-07" });
+
+// ── mês anterior fechado (setas do card) ──
+assert.deepEqual(mesBRT({ hoje: dia("2026-10-01"), deslocamento: -1 }), { chave: "2026-09", inicio: "2026-09-01", ate: "2026-09-30" });
+assert.deepEqual(mesBRT({ hoje: dia("2026-03-15"), deslocamento: -1 }), { chave: "2026-02", inicio: "2026-02-01", ate: "2026-02-28" });
+assert.deepEqual(mesBRT({ hoje: dia("2026-01-10"), deslocamento: -1 }), { chave: "2025-12", inicio: "2025-12-01", ate: "2025-12-31" });
+// 23h de 31/10 em Brasília já é 01/11 em UTC: o "anterior" continua setembro
+assert.equal(mesBRT({ hoje: new Date("2026-11-01T02:00:00Z"), deslocamento: -1 }).chave, "2026-09");
+assert.deepEqual(mesBRT({ hoje: dia("2026-10-07") }), mesAtualBRT({ hoje: dia("2026-10-07") }));
 
 console.log("pagamentos.test.mjs: ok");
