@@ -385,7 +385,7 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
                 <div>
                   <p className="font-semibold text-ink">{row ? nomeCurto(row.franchise_name) : payment.franchise_id}</p>
                   <p className="text-sm text-ink-2">
-                    {formatBRL(Number(payment.amount) || 0)} · verba de {nomeMes(payment.reference_month)}
+                    {formatBRL(Number(payment.amount) || 0)} · {payment.kind === "complemento" ? "valor adicional" : "verba"} de {nomeMes(payment.reference_month)}
                     {" · enviado "}{haDias(diasDesde(payment.created_at))}
                     {!payment.proof_url && <span className="text-warn-ink"> · sem comprovante</span>}
                   </p>
@@ -436,12 +436,13 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
             <p className="mt-2 text-sm text-ink-3">Nenhuma na fila.</p>
           ) : (
             <div className="mt-2 divide-y divide-surface-line">
-              {faltaSubir.map(({ row, payment, mes, valor, dias }) => (
-                <div key={row.franchise_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              {faltaSubir.map(({ row, payment, mes, valor, dias, adicional }) => (
+                <div key={payment?.id || row.franchise_id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                   <div>
                     <p className="font-semibold text-ink">{nomeCurto(row.franchise_name)}</p>
                     <p className="text-sm text-ink-3">
                       {formatBRL(Number(valor) || 0)}
+                      {adicional ? " · valor adicional" : ""}
                       {mes && mes !== mesAtual ? ` · ${nomeMes(mes, { ano: true })}` : ""}
                       {dias !== null ? ` · paga ${haDias(dias)}` : ""}
                     </p>

@@ -125,9 +125,18 @@ export function montarListasVerba({
       pernas.sort((a, b) => (a.mes || "").localeCompare(b.mes || ""));
       const perna = pernas[0] || { mes: row.marketing_target_month, valor: num(row.marketing_target_amount) };
       const payment =
-        pagamentos.find((p) => p.franchise_id === row.franchise_id && p.reference_month === perna.mes) || null;
-      return { row, payment, mes: perna.mes, valor: perna.valor, dias: diasDesde(payment?.created_at, agora) };
+        pagamentos.find((p) => p.franchise_id === row.franchise_id && p.reference_month === perna.mes && p.kind !== "complemento") || null;
+      // A overview soma mensal + adicional; o botão marca só o mensal, então o valor é o dele.
+      const valor = num(payment?.amount) ?? perna.valor;
+      return { row, payment, mes: perna.mes, valor, dias: diasDesde(payment?.created_at, agora) };
     })
+    // Valor adicional do mês (kind 'complemento', 03/10/2026): item próprio na fila, porque a
+    // campanha sobe por pagamento e a overview só enxerga o mês inteiro.
+    .concat(
+      pagamentos
+        .filter((p) => p.kind === "complemento" && p.status === "confirmed" && !p.campaign_raised_at)
+        .map((p) => ({ row: porFid.get(p.franchise_id), payment: p, mes: p.reference_month, valor: num(p.amount), dias: diasDesde(p.created_at, agora), adicional: true }))
+    )
     .sort((a, b) => (num(a.dias) ?? 0) - (num(b.dias) ?? 0));
 
   // Só pagamento CONFIRMADO sem foto entra aqui — pendente sem comprovante é problema de

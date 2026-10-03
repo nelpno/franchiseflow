@@ -187,7 +187,7 @@ export default function FranchiseeDashboard() {
           : Promise.resolve([]),                          // [6] purchase orders (health: reposição)
         evoId ? FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, { signal })
           : Promise.resolve([]),                          // [7] config (health: setup/whatsapp)
-        evoId ? MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal })
+        evoId ? MarketingPayment.filter({ franchise_id: evoId, kind: "mensal" }, "-reference_month", 3, { signal })
           : Promise.resolve([]),                          // [8] marketing payment (priority action)
       ]);
 

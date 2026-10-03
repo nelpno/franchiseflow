@@ -74,6 +74,9 @@ export default function MarketingPaymentSection() {
   // editMode de propósito — aqui só se acrescenta o arquivo; valor e status não mudam
   // (o admin já validou o pagamento e a despesa do DRE já foi gerada).
   const [attachOnly, setAttachOnly] = useState(false);
+  // Valor ADICIONAL no mesmo mês (03/10/2026): nova linha kind='complemento', depois que o
+  // mensal já foi registrado. Confirma, gera despesa e sobe campanha sozinha.
+  const [extraMode, setExtraMode] = useState(false);
   const [showProofReminder, setShowProofReminder] = useState(false);
   const [copiedPix, setCopiedPix] = useState(false);
 
@@ -112,7 +115,14 @@ export default function MarketingPaymentSection() {
     return () => { mountedRef.current = false; };
   }, [loadPayments]);
 
-  const currentPayment = payments.find((p) => p.reference_month === selectedMonth);
+  const currentPayment = payments.find((p) => p.reference_month === selectedMonth && p.kind !== "complemento");
+  const extras = payments
+    .filter((p) => p.reference_month === selectedMonth && p.kind === "complemento")
+    .sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+  const totalMes = [currentPayment, ...extras]
+    .filter((p) => p && p.status !== "rejected")
+    .reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+  const minAmount = extraMode ? 1 : MIN_AMOUNT;
   const monthLabel = cap(
     monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth
   );
@@ -145,10 +155,10 @@ export default function MarketingPaymentSection() {
       toast.error("Digite quanto você pagou no PIX");
       return;
     }
-    if (numAmount < MIN_AMOUNT) {
+    if (numAmount < minAmount) {
       setAmountError(true);
       amountInputRef.current?.focus();
-      toast.error(`Valor mínimo: ${formatBRL(MIN_AMOUNT)}`);
+      toast.error(`Valor mínimo: ${formatBRL(minAmount)}`);
       return;
     }
     setAmountError(false);
@@ -190,8 +200,8 @@ export default function MarketingPaymentSection() {
 
   const handleSubmit = async () => {
     const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount < MIN_AMOUNT) {
-      toast.error(`Valor minimo: ${formatBRL(MIN_AMOUNT)}`);
+    if (!numAmount || numAmount < minAmount) {
+      toast.error(`Valor mínimo: ${formatBRL(minAmount)}`);
       return;
     }
 
@@ -215,9 +225,10 @@ export default function MarketingPaymentSection() {
         amount: numAmount,
         status: "pending",
         proof_url: proofUrl,
+        kind: extraMode ? "complemento" : "mensal",
       };
 
-      if (editMode && currentPayment) {
+      if (editMode && currentPayment && !extraMode) {
         const updatePayload = {
           amount: numAmount,
           status: "pending",
@@ -231,10 +242,11 @@ export default function MarketingPaymentSection() {
         await MarketingPayment.create(payload);
       }
 
-      toast.success("Pagamento registrado!");
+      toast.success(extraMode ? "Valor adicional registrado!" : "Pagamento registrado!");
       setAmount("");
       setFile(null);
       setEditMode(false);
+      setExtraMode(false);
       await loadPayments();
 
       // Notificação por RPC removida (26/09/2026): "Pendências" na home do admin
@@ -277,6 +289,7 @@ export default function MarketingPaymentSection() {
               setSelectedMonth(v);
               setAttachOnly(false);
               setEditMode(false);
+              setExtraMode(false);
               setFile(null);
               setAmount("");
             }}
@@ -313,7 +326,7 @@ export default function MarketingPaymentSection() {
         </div>
 
         {/* ─── Ja registrou ─── */}
-        {currentPayment && !editMode && !attachOnly ? (
+        {currentPayment && !editMode && !attachOnly && !extraMode ? (
           <div>
             <div className="flex items-center justify-between p-3 bg-surface rounded-xl">
               <div>
@@ -415,6 +428,41 @@ export default function MarketingPaymentSection() {
                 </p>
               </div>
             )}
+
+            {extras.length > 0 && (
+              <div className="mt-3 space-y-1.5">
+                {extras.map((x) => (
+                  <div key={x.id} className="flex items-center justify-between gap-2 px-3 py-2 bg-surface rounded-xl text-xs">
+                    <span className="text-ink">
+                      + {formatBRL(parseFloat(x.amount))} <span className="text-ink-3">adicional · {format(parseISO(x.created_at), "dd/MM")}</span>
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {x.proof_url && (
+                        <a href={safeHref(x.proof_url)} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                          Comprovante
+                        </a>
+                      )}
+                      <span className={x.status === "confirmed" ? "text-ok-ink" : x.status === "rejected" ? "text-err" : "text-brand-gold-ink"}>
+                        {x.status === "confirmed" ? "Confirmado" : x.status === "rejected" ? (x.rejection_reason || "Recusado") : "Aguardando"}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+                <p className="text-xs font-medium text-ink px-1">Total do mês: {formatBRL(totalMes)}</p>
+              </div>
+            )}
+
+            {currentPayment.status !== "rejected" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-2 h-8 text-xs text-brand"
+                onClick={() => { setExtraMode(true); setAmount(""); setFile(null); }}
+              >
+                <MaterialIcon icon="add" size={14} className="mr-1" />
+                Mandar valor adicional
+              </Button>
+            )}
           </div>
         ) : attachOnly && currentPayment ? (
           /* ─── Anexo tardio: só o arquivo, valor travado ─── */
@@ -472,7 +520,7 @@ export default function MarketingPaymentSection() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-ink-2">Valor que você pagou</Label>
+                <Label className="text-xs text-ink-2">{extraMode ? "Valor adicional" : "Valor que você pagou"}</Label>
                 <div className="relative mt-0.5">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-ink-3">
                     R$
@@ -480,7 +528,7 @@ export default function MarketingPaymentSection() {
                   <Input
                     ref={amountInputRef}
                     type="number"
-                    min={MIN_AMOUNT}
+                    min={minAmount}
                     step="0.01"
                     placeholder="Digite o valor"
                     value={amount}
@@ -521,16 +569,16 @@ export default function MarketingPaymentSection() {
                 ) : (
                   <>
                     <MaterialIcon icon="send" size={16} className="mr-1.5" />
-                    {editMode ? "Reenviar" : "Registrar Pagamento"}
+                    {editMode ? "Reenviar" : extraMode ? "Enviar valor adicional" : "Registrar Pagamento"}
                   </>
                 )}
               </Button>
-              {editMode && (
+              {(editMode || extraMode) && (
                 <Button
                   variant="outline"
                   size="sm"
                   className="h-9 text-xs"
-                  onClick={() => { setEditMode(false); setAmount(""); setFile(null); }}
+                  onClick={() => { setEditMode(false); setExtraMode(false); setAmount(""); setFile(null); }}
                 >
                   Cancelar
                 </Button>

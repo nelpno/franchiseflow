@@ -296,4 +296,26 @@ test("montarMensagemVerba: nunca promete desconto/prazo, sempre cita o mínimo e
   }
 });
 
+test("montarListasVerba: valor adicional confirmado e não subido vira item próprio; o mensal leva o valor dele", () => {
+  // Tatuapé 03/10/2026: mensal R$ 500 já subido + adicional R$ 200 confirmado → só o adicional na fila.
+  const base = {
+    franchise_id: "t", franchise_name: "T", marketing_month: "2026-10", marketing_month_paid: true,
+    marketing_target_month: "2026-10", marketing_target_paid: true, marketing_month_amount: 700, marketing_target_amount: 700,
+  };
+  const mensal = { id: "m", franchise_id: "t", reference_month: "2026-10", status: "confirmed", kind: "mensal", amount: 500, proof_url: "x", created_at: "2026-10-01T00:00:00Z", campaign_raised_at: "2026-10-01T12:00:00Z" };
+  const extra = { id: "c", franchise_id: "t", reference_month: "2026-10", status: "confirmed", kind: "complemento", amount: 200, proof_url: "y", created_at: "2026-10-03T00:00:00Z", campaign_raised_at: null };
+  const ag = new Date("2026-10-03T12:00:00Z");
+  let r = montarListasVerba({ overview: [{ ...base, marketing_month_raised_at: "2026-10-01T12:00:00Z", marketing_target_raised_at: "2026-10-01T12:00:00Z" }], payments: [extra, mensal], pendentes: [], mesAtual: "2026-10", mesAlvo: "2026-10", agora: ag });
+  assert.equal(r.faltaSubir.length, 1);
+  assert.equal(r.faltaSubir[0].payment.id, "c");
+  assert.equal(r.faltaSubir[0].valor, 200);
+  assert.equal(r.faltaSubir[0].adicional, true);
+  // Mensal ainda não subido: o item do mensal mostra 500 (não os 700 da overview) e não pega o adicional.
+  r = montarListasVerba({ overview: [{ ...base, marketing_month_raised_at: null, marketing_target_raised_at: null }], payments: [extra, { ...mensal, campaign_raised_at: null }], pendentes: [], mesAtual: "2026-10", mesAlvo: "2026-10", agora: ag });
+  assert.equal(r.faltaSubir.length, 2);
+  const m = r.faltaSubir.find((x) => !x.adicional);
+  assert.equal(m.payment.id, "m");
+  assert.equal(m.valor, 500);
+});
+
 console.log(`verbaHelpers: ok (${passed} testes)`);

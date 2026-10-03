@@ -56,7 +56,8 @@ export default function Pagamentos() {
     const chave = `${evoId}|${alvoChave}`;
     if (chaveRef.current !== chave) setMarketing(MARKETING_VAZIO);
     chaveRef.current = chave;
-    MarketingPayment.filter({ franchise_id: evoId }, "-reference_month", 3, { signal: controller.signal })
+    // Só o mensal: o valor adicional (kind 'complemento', 03/10/2026) não muda o "pagou o mês?".
+    MarketingPayment.filter({ franchise_id: evoId, kind: "mensal" }, "-reference_month", 3, { signal: controller.signal })
       .then((lista) => ({ ok: true, lista: lista || [] }), () => ({ ok: false, lista: [] }))
       .then(({ ok, lista }) => {
         if (!mountedRef.current || controller.signal.aborted) return;

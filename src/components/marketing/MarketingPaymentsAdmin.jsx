@@ -144,7 +144,7 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
   const totalLiquid = marketingLiquid(totalCollected);
   const totalDeposited = deposits.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
   const balance = totalCollected - totalDeposited;
-  const paidCount = payments.filter((p) => p.status !== "rejected").length;
+  const paidCount = payments.filter((p) => p.status !== "rejected" && p.kind !== "complemento").length;
 
   // A fila do mes: pagou e a campanha AINDA nao foi subida no Meta.
   //
@@ -162,7 +162,7 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
 
   // ─── Merge franquias + pagamentos ───
   const franchiseRows = franchises.map((f) => {
-    const payment = payments.find((p) => p.franchise_id === f.evolution_instance_id);
+    const payment = payments.find((p) => p.franchise_id === f.evolution_instance_id && p.kind !== "complemento");
     let status = "not_paid";
     if (payment) status = payment.status;
     // `subiu` NAO e um status: e uma segunda dimensao sobre o pagamento confirmado. Manter
@@ -170,6 +170,14 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
     const subiu = Boolean(payment?.campaign_raised_at);
     return { franchise: f, payment, status, subiu };
   });
+  // Valor adicional do mês (kind 'complemento', 03/10/2026): linha própria, para confirmar e
+  // marcar a campanha separado do mensal.
+  for (const f of franchises) {
+    for (const p of payments) {
+      if (p.franchise_id !== f.evolution_instance_id || p.kind !== "complemento") continue;
+      franchiseRows.push({ franchise: f, payment: p, status: p.status, subiu: Boolean(p.campaign_raised_at), adicional: true });
+    }
+  }
 
   // Sort: pending > confirmed > not_paid > rejected
   const statusOrder = { pending: 0, confirmed: 1, not_paid: 2, rejected: 3 };
@@ -459,7 +467,7 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
           ) : (
             <div className="divide-y divide-surface-line">
               {filteredRows.map((row) => {
-                const { franchise: f, payment: p, status, subiu } = row;
+                const { franchise: f, payment: p, status, subiu, adicional } = row;
                 const cfg = STATUS_CONFIG[status];
                 const amount = p ? parseFloat(p.amount) || 0 : 0;
                 const liquid = p ? marketingLiquid(amount) : 0;
@@ -467,7 +475,7 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
 
                 return (
                   <div
-                    key={f.id}
+                    key={p?.id || f.id}
                     className="py-3 md:grid md:grid-cols-12 md:gap-2 md:items-center flex flex-col gap-2"
                   >
                     {/* Franquia */}
@@ -475,7 +483,7 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
                       <p className="text-sm font-medium text-ink">
                         {getFranchiseDisplayName(f)}
                       </p>
-                      <p className="text-xs text-ink-3">{f.owner_name || f.city}{f.state_uf ? ` — ${f.state_uf}` : ""}</p>
+                      <p className="text-xs text-ink-3">{adicional ? "Valor adicional" : <>{f.owner_name || f.city}{f.state_uf ? ` — ${f.state_uf}` : ""}</>}</p>
                     </div>
 
                     {/* Valor */}
