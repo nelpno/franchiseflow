@@ -452,7 +452,9 @@ export default function MarketingPaymentSection() {
               </div>
             )}
 
-            {currentPayment.status !== "rejected" && (
+            {/* Só com o mensal CONFIRMADO: a overview do admin conta "pagou o mês" por qualquer
+                linha confirmada, então adicional com mensal pendente/recusado marcaria o mês pago. */}
+            {currentPayment.status === "confirmed" && (
               <Button
                 size="sm"
                 variant="ghost"

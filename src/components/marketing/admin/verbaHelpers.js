@@ -130,12 +130,17 @@ export function montarListasVerba({
       const valor = num(payment?.amount) ?? perna.valor;
       return { row, payment, mes: perna.mes, valor, dias: diasDesde(payment?.created_at, agora) };
     })
-    // Valor adicional do mês (kind 'complemento', 03/10/2026): item próprio na fila, porque a
-    // campanha sobe por pagamento e a overview só enxerga o mês inteiro.
+  // Valor adicional do mês (kind 'complemento', 03/10/2026): a campanha sobe POR PAGAMENTO, mas a
+  // overview só enxerga o mês inteiro (max(campaign_raised_at) de todas as linhas). Então toda linha
+  // confirmada e não subida que a overview não trouxe entra aqui como item próprio: o adicional, e
+  // também o mensal quando o adicional foi marcado antes dele (senão o mensal sumia da fila).
+  const jaNaFila = new Set(faltaSubir.map((x) => x.payment?.id).filter(Boolean));
+  const faltaSubirTudo = faltaSubir
     .concat(
       pagamentos
-        .filter((p) => p.kind === "complemento" && p.status === "confirmed" && !p.campaign_raised_at)
-        .map((p) => ({ row: porFid.get(p.franchise_id), payment: p, mes: p.reference_month, valor: num(p.amount), dias: diasDesde(p.created_at, agora), adicional: true }))
+        .filter((p) => p.status === "confirmed" && !p.campaign_raised_at && !jaNaFila.has(p.id) && porFid.has(p.franchise_id)
+          && (p.kind === "complemento" || pagamentos.some((o) => o.kind === "complemento" && o.franchise_id === p.franchise_id && o.reference_month === p.reference_month)))
+        .map((p) => ({ row: porFid.get(p.franchise_id), payment: p, mes: p.reference_month, valor: num(p.amount), dias: diasDesde(p.created_at, agora), adicional: p.kind === "complemento" }))
     )
     .sort((a, b) => (num(a.dias) ?? 0) - (num(b.dias) ?? 0));
 
@@ -179,7 +184,7 @@ export function montarListasVerba({
   return {
     naoPagaram,
     naoPagaramTodas,
-    faltaSubir,
+    faltaSubir: faltaSubirTudo,
     semComprovante,
     semComprovanteTodos,
     aConfirmar,

@@ -318,4 +318,21 @@ test("montarListasVerba: valor adicional confirmado e não subido vira item pró
   assert.equal(m.valor, 500);
 });
 
+test("montarListasVerba: adicional subido ANTES do mensal não esconde o mensal (overview usa max do mês)", () => {
+  const overview = [{
+    franchise_id: "t", franchise_name: "T", marketing_month: "2026-10", marketing_month_paid: true,
+    marketing_month_raised_at: "2026-10-03T13:00:00Z", marketing_month_amount: 700,
+    marketing_target_month: "2026-10", marketing_target_paid: true, marketing_target_raised_at: "2026-10-03T13:00:00Z", marketing_target_amount: 700,
+  }];
+  const payments = [
+    { id: "m", franchise_id: "t", reference_month: "2026-10", status: "confirmed", kind: "mensal", amount: 500, proof_url: "x", created_at: "2026-10-01T00:00:00Z", campaign_raised_at: null },
+    { id: "c", franchise_id: "t", reference_month: "2026-10", status: "confirmed", kind: "complemento", amount: 200, proof_url: "y", created_at: "2026-10-02T00:00:00Z", campaign_raised_at: "2026-10-03T13:00:00Z" },
+  ];
+  const r = montarListasVerba({ overview, payments, pendentes: [], mesAtual: "2026-10", mesAlvo: "2026-10", agora: new Date("2026-10-03T14:00:00Z") });
+  assert.equal(r.faltaSubir.length, 1);
+  assert.equal(r.faltaSubir[0].payment.id, "m");
+  assert.equal(r.faltaSubir[0].valor, 500);
+  assert.equal(r.faltaSubir[0].adicional, false);
+});
+
 console.log(`verbaHelpers: ok (${passed} testes)`);
