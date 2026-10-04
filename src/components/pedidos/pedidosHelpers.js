@@ -402,6 +402,10 @@ export function resumoEntregas(orders) {
 // de entregues continua abrindo (só sem o rótulo da conferência).
 export const COLUNAS_CONFERENCIA = "received_mode, ordered_total_amount";
 
+// Pix do pedido (P12, 04/10/2026, supabase/2026-10-04-pix-pedido.sql). Mesma volta: sem a coluna
+// no banco, a lista abre como antes.
+export const COLUNAS_PIX = "payment_status, payment_proof_url, paid_at, payment_rejection_reason, payment_request_status";
+
 /** Erro de coluna que ainda não existe no banco (42703 do Postgres / PGRST204). */
 export function colunaAusente(error) {
   if (!error) return false;

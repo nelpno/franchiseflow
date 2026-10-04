@@ -15,6 +15,7 @@ import { PurchaseOrder, PurchaseOrderItem, FranchiseConfiguration, getProductWei
 import { supabase } from "@/api/supabaseClient";
 import { avisarEntregaPedidos } from "@/api/functions";
 import { montarAvisoEntrega } from "@/lib/mensagemFranqueado";
+import { pedirPixDaBaixa } from "@/components/pedidos/pixNaBaixa";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { resolveDeliveryAddress } from "@/lib/addressUtils";
 import { formatBRLInteger } from "@/lib/formatters";
@@ -528,6 +529,10 @@ export default function PurchaseOrders() {
       if (entregues.length > 0) toast.success(`${entregues.length === 1 ? "1 pedido entregue" : `${entregues.length} pedidos entregues`}. Estoque das unidades atualizado.`);
       if (aConferir.length > 0) toast.success(`${aConferir.length === 1 ? "1 pedido espera" : `${aConferir.length} pedidos esperam`} a unidade conferir o que chegou (até 2 dias).`);
       if (falhou.length > 0) toast.error(`Não marcou como entregue: ${nomesDe(falhou)}. Tente de novo.`);
+      // P12: pedido de Pix (só unidade com a chave pix_na_baixa); o valor é o da linha salva.
+      const pix = await pedirPixDaBaixa(entregues.map((o) => salvos.get(o.id)), getContato);
+      if (pix.enviados > 0) toast.success(pix.enviados === 1 ? "Pedido de Pix na fila do WhatsApp." : `${pix.enviados} pedidos de Pix na fila do WhatsApp.`);
+      if (pix.falhou > 0) toast.error("Não consegui mandar o pedido de Pix agora. Mande pelo WhatsApp.");
       loadData({ silent: true });
       invalidarAdmin(queryClient);
     } finally {

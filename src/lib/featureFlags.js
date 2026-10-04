@@ -5,9 +5,11 @@
 //
 // Chaves conhecidas (documentar aqui ao criar):
 //   ui_v2 — telas novas do franqueado (menu, Ajuda...). Liga no lançamento (S9/S10).
+//   pix_na_baixa — pedido de Pix pelo WhatsApp na baixa "entregue" + comprovante em Reposição (P12, 04/10).
 
 export const FEATURE_KEYS = Object.freeze({
   UI_V2: "ui_v2",
+  PIX_NA_BAIXA: "pix_na_baixa",
 });
 
 export function isFeatureOn(flags, key) {

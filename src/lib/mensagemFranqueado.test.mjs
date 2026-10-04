@@ -2,8 +2,10 @@
 import assert from "node:assert/strict";
 import {
   MOTIVOS_MENSAGEM, PALAVRAS_PROIBIDAS, mensagemDaFicha, mensagemParaUnidade, montarMensagemFranqueado,
-  temPalavraProibida, montarAvisoEntrega, quandoEntrega,
+  temPalavraProibida, montarAvisoEntrega, quandoEntrega, montarPedidoPix, CONFERENCIA_AVISO, CNPJ_PIX_MAXI,
 } from "./mensagemFranqueado.js";
+import { isValidCpfCnpj } from "./documentUtils.js";
+import { checar } from "file:///C:/Users/nelpn/.claude/skills/whatsapp-zuck/guard.mjs";
 import { montarMensagemUnidade } from "./fichaUnidade.js";
 import { montarMensagemVerba } from "../components/marketing/admin/verbaHelpers.js";
 
@@ -133,6 +135,33 @@ test("aviso de entrega: acréscimo soma, frete zero vira Valor, sem nome", () =>
   const m = montarAvisoEntrega({ pedidos: [{ total: "100" }, { total: 50.5, frete: 0 }], data: "2026-10-03", hoje: "2026-09-27" });
   assert.ok(m.startsWith("Oi! Seus 2 pedidos da Maxi saem para entrega no sábado (03/10)."), m);
   assert.ok(m.includes("Valor: R$\u00a0150,50") && !m.includes("Frete"), m);
+});
+
+test("aviso de entrega (L3): pede a conferência no fim, sem o fecho antigo", () => {
+  const m = montarAvisoEntrega({ nome: "Ana", pedidos: [{ total: 1000, frete: 250 }], data: "2026-10-06", hoje: "2026-10-05" });
+  assert.ok(m.endsWith(CONFERENCIA_AVISO), m);
+  assert.ok(!m.includes("Qualquer dúvida"), m);
+  assert.deepEqual(checar(m), []);
+});
+
+test("pix: um pedido com frete", () => {
+  const m = montarPedidoPix({ nome: "Maria Aparecida", pedidos: [{ total: 2564.2, frete: 256.42, data: "2026-09-27T19:59:24Z" }] });
+  assert.ok(m.startsWith("Oi, Maria! Dei baixa no seu pedido de 27/09, já está no seu estoque."), m);
+  assert.ok(m.includes("Produtos: R$ 2.564,20") && m.includes("Frete: R$ 256,42") && m.includes("Total do Pix: R$ 2.820,62"), m);
+  assert.ok(m.includes(`CNPJ ${CNPJ_PIX_MAXI}`) && m.includes("anexa o comprovante"), m);
+  assert.ok(!EMOJI.test(m) && !TRAVESSAO.test(m) && !temPalavraProibida(m) && !m.includes("**"));
+  assert.deepEqual(checar(m), []);
+  assert.ok(m.length <= 600, `longo: ${m.length}`);
+});
+
+test("pix: dois pedidos somam, frete zero vira só Total, sem nome", () => {
+  const m = montarPedidoPix({ pedidos: [{ total: "1000", data: "2026-09-27" }, { total: 200.5, frete: 0, data: "2026-09-29" }] });
+  assert.ok(m.startsWith("Oi! Dei baixa nos seus 2 pedidos de 27/09 e 29/09,"), m);
+  assert.ok(m.includes("Total do Pix: R$ 1.200,50") && !m.includes("Frete") && !m.includes("Produtos"), m);
+});
+
+test("pix: CNPJ da mensagem é válido", () => {
+  assert.ok(isValidCpfCnpj(CNPJ_PIX_MAXI));
 });
 
 test("quando entrega: hoje / dia útil com artigo", () => {

@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { STATUS_LABEL, isAtrasado, isDeletable, freteSugerido, dataBRT, meioDiaBRT } from "./pedidosHelpers";
 import { salvarEdicaoPedido, mensagemErroPedido } from "./edicaoPedido";
+import { pedirPixDaBaixa } from "./pixNaBaixa";
 
 const STATUS_ICON = {
   pendente: "schedule",
@@ -231,6 +232,12 @@ export default function OrderDetailDialog({
 
       if (foiParaConferencia) toast.success("Marcado. A unidade confere o que chegou (até 2 dias); aí o estoque e a despesa entram.");
       else if (newStatus === "entregue") toast.success("Pedido entregue! Estoque da franquia atualizado.");
+      // P12: pedido de Pix (só com a chave pix_na_baixa da unidade). Não lança.
+      if (newStatus === "entregue" && !foiParaConferencia) {
+        const pix = await pedirPixDaBaixa([salvo], () => franchiseContact);
+        if (pix.enviados > 0) toast.success("Pedido de Pix na fila do WhatsApp.");
+        if (pix.falhou > 0) toast.error("Não consegui mandar o pedido de Pix agora. Mande pelo WhatsApp.");
+      }
       else if (newStatus === "cancelado") toast.success("Pedido cancelado.");
       else toast.success(`Status alterado para ${STATUS_LABEL[newStatus] || newStatus}.`);
 

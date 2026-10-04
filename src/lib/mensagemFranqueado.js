@@ -154,6 +154,36 @@ export function montarAvisoEntrega({ nome, pedidos = [], data, hoje } = {}) {
   } else {
     linhas.push(`Valor: ${formatBRL(produtos)}`);
   }
-  linhas.push("", "Qualquer dúvida, me chama.");
+  // L3 (P12, 04/10): o aviso já pede a conferência; a baixa e o Pix vêm depois do ok dela.
+  linhas.push("", CONFERENCIA_AVISO);
+  return linhas.join("\n");
+}
+
+export const CONFERENCIA_AVISO =
+  'Quando chegar, confere com a ficha e me manda "chegou tudo certo" ou o que faltou. Aí dou a baixa, entra no seu estoque e te mando o valor do Pix.';
+
+// Pix do pedido (P12, 04/10): sai pelo WhatsApp do Nelson quando o pedido é dado como ENTREGUE.
+// Uma mensagem por unidade (pedidos entregues juntos somam). O valor é o do pedido JÁ editado
+// (falta de item o Nelson tira antes da baixa) + frete. Comprovante: Estoque › Reposição.
+//   montarPedidoPix({ nome: owner_name, pedidos: [{ total, frete, data: 'YYYY-MM-DD' (do pedido) }] })
+export const CNPJ_PIX_MAXI = "00.494.317/0001-21";
+
+export function montarPedidoPix({ nome, pedidos = [] } = {}) {
+  const primeiro = primeiroNome(nome);
+  const produtos = pedidos.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
+  const frete = pedidos.reduce((s, p) => s + (parseFloat(p.frete) || 0), 0);
+  const datas = [...new Set(pedidos.map((p) => dataCurta(p.data)).filter(Boolean))];
+  const deQuando = datas.length ? ` de ${datas.join(" e ")}` : "";
+  const varios = pedidos.length > 1;
+  const linhas = [
+    `${primeiro ? `Oi, ${primeiro}!` : "Oi!"} Dei baixa ${varios ? `nos seus ${pedidos.length} pedidos` : "no seu pedido"}${deQuando}, já está no seu estoque.`,
+    "",
+  ];
+  if (frete > 0) {
+    linhas.push(`Produtos: ${formatBRL(produtos)}`, `Frete: ${formatBRL(frete)}`, `Total do Pix: ${formatBRL(produtos + frete)}`);
+  } else {
+    linhas.push(`Total do Pix: ${formatBRL(produtos)}`);
+  }
+  linhas.push("", `Faz o Pix para o CNPJ ${CNPJ_PIX_MAXI} e anexa o comprovante no app, em Estoque › Reposição. Obrigado!`);
   return linhas.join("\n");
 }

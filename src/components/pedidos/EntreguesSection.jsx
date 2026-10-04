@@ -35,8 +35,10 @@ import {
   ateDiaBRT,
   resumoEntregas,
   COLUNAS_CONFERENCIA,
+  COLUNAS_PIX,
   colunaAusente,
 } from "./pedidosHelpers";
+import PixAdminAcoes, { ChipPix } from "./PixAdminLinha";
 import { rotuloConferencia } from "@/lib/conferenciaEntrega";
 
 // "5,3 dias" / "5 dias" (sem decimal quando é número inteiro) / "1 dia".
@@ -224,9 +226,11 @@ const EntreguesSection = forwardRef(function EntreguesSection(
         gte: { [colunaRef]: limitesDoMes.inicio },
         lte: { [colunaRef]: limitesDoMes.fim },
       });
-    // S15: tenta com as colunas da conferência; banco sem elas -> busca de sempre.
-    buscar(`${COLUNAS_PEDIDO}, ${COLUNAS_CONFERENCIA}`)
-      .catch((error) => (colunaAusente(error) ? buscar(COLUNAS_PEDIDO) : Promise.reject(error)))
+    // S15/P12: tenta com as colunas da conferência e do Pix; banco sem elas -> um degrau a menos.
+    const volta = (cols) => (error) => (colunaAusente(error) ? buscar(cols) : Promise.reject(error));
+    buscar(`${COLUNAS_PEDIDO}, ${COLUNAS_CONFERENCIA}, ${COLUNAS_PIX}`)
+      .catch(volta(`${COLUNAS_PEDIDO}, ${COLUNAS_CONFERENCIA}`))
+      .catch(volta(COLUNAS_PEDIDO))
       .then((data) => {
         if (!alive) return;
         const semTeste = (data || []).filter((o) => !testFranchiseIds?.has(o.franchise_id));
@@ -370,12 +374,14 @@ const EntreguesSection = forwardRef(function EntreguesSection(
                               {rotuloConferencia(order.received_mode)}
                             </span>
                           )}
+                          {order.status === "entregue" && <ChipPix order={order} />}
                         </p>
                         <p className="text-sm text-ink-3">
                           {order.status === "entregue" && order.delivered_at
                             ? `entregue em ${new Date(order.delivered_at).toLocaleDateString("pt-BR")}`
                             : `pedido em ${order.ordered_at ? new Date(order.ordered_at).toLocaleDateString("pt-BR") : "—"}`}
                         </p>
+                        {order.status === "entregue" && <PixAdminAcoes order={order} onChanged={() => setRefetchToken((t) => t + 1)} />}
                       </div>
                       <span className="hidden text-sm text-ink-2 sm:inline">
                         {formatBRL(order.total_amount)}
