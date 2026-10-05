@@ -148,7 +148,7 @@ test("pix: um pedido com frete", () => {
   const m = montarPedidoPix({ nome: "Maria Aparecida", pedidos: [{ total: 2564.2, frete: 256.42, data: "2026-09-27T19:59:24Z" }] });
   assert.ok(m.startsWith("Oi, Maria! Dei baixa no seu pedido de 27/09, já está no seu estoque."), m);
   assert.ok(m.includes("Produtos: R$ 2.564,20") && m.includes("Frete: R$ 256,42") && m.includes("Total do Pix: R$ 2.820,62"), m);
-  assert.ok(m.includes(`CNPJ ${CNPJ_PIX_MAXI}`) && m.includes("anexa o comprovante"), m);
+  assert.ok(m.includes(`CNPJ ${CNPJ_PIX_MAXI}`) && m.includes("anexa o comprovante no app") && m.includes("ou me manda aqui"), m);
   assert.ok(!EMOJI.test(m) && !TRAVESSAO.test(m) && !temPalavraProibida(m) && !m.includes("**"));
   assert.deepEqual(checar(m), []);
   assert.ok(m.length <= 600, `longo: ${m.length}`);
