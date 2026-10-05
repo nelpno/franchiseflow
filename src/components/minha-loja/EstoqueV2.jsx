@@ -103,6 +103,14 @@ function TextoPedir({ info }) {
   if (!info?.daFabrica) return <span className="text-ink-3">—</span>;
   if (!info.pronta) return <span className="text-ink-3">{info.status === "erro" ? "—" : "…"}</span>;
   const s = info.s;
+  // Com pedido a caminho, mostra os dois: só "Pedir 1" fazia a unidade achar que o pedido não salvou (Santos, 04/10).
+  if (s.repor > 0 && s.aCaminho > 0)
+    return (
+      <span className="inline-flex flex-col items-end leading-tight">
+        <span className="text-ok-ink">{fmtQtd(s.aCaminho)} a caminho</span>
+        <span className="font-semibold text-brand-dark">pedir +{s.repor}</span>
+      </span>
+    );
   if (s.repor > 0) return <span className="font-semibold text-brand-dark">Pedir {s.repor}</span>;
   if (s.aCaminho > 0) return <span className="text-ok-ink">{fmtQtd(s.aCaminho)} a caminho</span>;
   return <span className="text-ink-3">—</span>;

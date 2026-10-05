@@ -431,6 +431,7 @@ export default function TabReposicao({
             aberto={showOrderDialog}
             emAberto={uiV2 && pedidosProntos ? emAberto : null}
             abertosStatus={abertos.status}
+            pedidosAbertos={uiV2 && pedidosProntos ? pedidosUnidade.pedidos : null}
             ritmo={uiV2 ? ritmoV2 : null}
             intervaloDias={pedidosUnidade.intervalo.dias}
             origem={origemPedido}

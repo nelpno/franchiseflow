@@ -123,7 +123,7 @@ export async function carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem,
     { franchise_id: franchiseId, status: [...STATUS_PEDIDO_ABERTO] },
     "-ordered_at",
     undefined,
-    { signal, fetchAll: true, columns: "id, status" }
+    { signal, fetchAll: true, columns: "id, status, ordered_at" }
   );
   const abertos = (pedidos || []).filter((p) => STATUS_PEDIDO_ABERTO.includes(p?.status));
   const itensPorPedido = {};

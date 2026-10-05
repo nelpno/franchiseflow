@@ -60,6 +60,16 @@ const getErrorMessage = (error) => {
   return safeErrorMessage(error, "Não foi possível enviar o pedido. Tente de novo.");
 };
 
+const STATUS_ABERTO_TEXTO = { pendente: "aguardando a fábrica", confirmado: "confirmado", em_rota: "em rota" };
+const descreverPedidoAberto = (p) => {
+  const d = p?.ordered_at ? new Date(p.ordered_at) : null;
+  const data = d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" })
+    : null;
+  const status = STATUS_ABERTO_TEXTO[p?.status] || "aberto";
+  return data ? `${data} (${status})` : status;
+};
+
 export default function PurchaseOrderForm({
   franchiseId,
   inventoryItems,
@@ -79,6 +89,9 @@ export default function PurchaseOrderForm({
   // Estado do "a caminho" (P3 2ª passada): "ok" | "carregando" | "erro". Só vale com a chave;
   // fora de "ok" a sugestão automática fica desligada (calcularia zero a caminho = pedir em dobro).
   abertosStatus = "ok",
+  // Pedidos à fábrica ainda abertos ({ id, status, ordered_at }): aviso no topo do pedido novo,
+  // para a unidade não pedir de novo o que já está a caminho (Santos pediu os 40 nhoques 2x em 04/10).
+  pedidosAbertos = null,
   // S25 (chave): venda média por dia de cada produto (stockSuggestion.ritmoDeVendaMap) e de
   // quanto em quanto tempo a unidade pede. Com os dois, a sugestão é a conta nova (a mesma do
   // Estoque e da Reposição) e o formulário já abre preenchido com ela.
@@ -754,6 +767,21 @@ export default function PurchaseOrderForm({
             </section>
           ) : (
           <>
+          {pedidosAbertos?.length > 0 && (
+            <div role="status" className="flex items-start gap-3 rounded-2xl border border-ok/30 bg-ok-soft p-4">
+              <MaterialIcon icon="local_shipping" size={20} className="mt-0.5 shrink-0 text-ok-ink" aria-hidden="true" />
+              <div className="min-w-0 text-sm">
+                <p className="font-bold text-ink">
+                  {pedidosAbertos.length === 1 ? "Você já tem um pedido a caminho" : `Você já tem ${pedidosAbertos.length} pedidos a caminho`}
+                  {": "}
+                  {pedidosAbertos.map(descreverPedidoAberto).join(" · ")}
+                </p>
+                <p className="mt-0.5 text-ink-2">
+                  O que está nele já aparece como “a caminho” em cada produto. Peça aqui só o que falta.
+                </p>
+              </div>
+            </div>
+          )}
           {primeiroPedido && pedidoModeloItens && (
             <div className="flex flex-col gap-3 rounded-2xl border border-brand-gold-line bg-brand-gold-soft p-4 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">

@@ -13,7 +13,7 @@ import { intervaloEntrePedidos, INTERVALO_PADRAO_DIAS } from "@/lib/stockSuggest
  * Usado pelo Estoque e pela Reposição (as abas não ficam montadas juntas).
  */
 export function usePedidosDaUnidade(franchiseId, { enabled = true, refreshKey = 0 } = {}) {
-  const [abertos, setAbertos] = useState({ status: "carregando", emAberto: {} });
+  const [abertos, setAbertos] = useState({ status: "carregando", emAberto: {}, pedidos: [] });
   const [intervalo, setIntervalo] = useState({ dias: INTERVALO_PADRAO_DIAS, daUnidade: false });
   // P3 da S25: a sugestão só fica pronta quando o intervalo também terminou (senão preenchia
   // com 21 dias e não corrigia quando o intervalo real chegava). 21 dias só em falha/histórico curto.
@@ -24,14 +24,14 @@ export function usePedidosDaUnidade(franchiseId, { enabled = true, refreshKey = 
     if (!enabled || !franchiseId) return undefined;
     const controller = new AbortController();
     const { signal } = controller;
-    setAbertos({ status: "carregando", emAberto: {} });
+    setAbertos({ status: "carregando", emAberto: {}, pedidos: [] });
     setIntervaloPronto(false);
     carregarPedidosAbertos({ PurchaseOrder, PurchaseOrderItem, franchiseId, signal })
-      .then((r) => { if (!signal.aborted) setAbertos({ status: "ok", emAberto: r.emAberto }); })
+      .then((r) => { if (!signal.aborted) setAbertos({ status: "ok", emAberto: r.emAberto, pedidos: r.pedidos }); })
       .catch((err) => {
         if (signal.aborted || err?.name === "AbortError") return;
         console.error("Erro ao carregar pedidos abertos:", err);
-        setAbertos({ status: "erro", emAberto: {} });
+        setAbertos({ status: "erro", emAberto: {}, pedidos: [] });
       });
     carregarDatasDePedidos({ PurchaseOrder, franchiseId, signal })
       .then((datas) => {
@@ -50,5 +50,5 @@ export function usePedidosDaUnidade(franchiseId, { enabled = true, refreshKey = 
   const tentarDeNovo = useCallback(() => setTentativa((n) => n + 1), []);
 
   const status = abertos.status === "ok" && !intervaloPronto ? "carregando" : abertos.status;
-  return { status, emAberto: abertos.emAberto, intervalo, tentarDeNovo };
+  return { status, emAberto: abertos.emAberto, pedidos: abertos.pedidos, intervalo, tentarDeNovo };
 }
