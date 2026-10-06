@@ -125,8 +125,11 @@ export default function Vendas() {
         Sale.filter({ franchise_id: evoId }, "-created_at", null, {
           columns: SALES_COLUMNS, fetchAll: true, gte: { sale_date: getSalesCutoff() },
         }),
+        // fetchAll: sem ele o Supabase corta em 1.000 e o cliente antigo some do mapa —
+        // a venda dele aparece com o nome do WhatsApp e sem telefone (Guarujá tem 3,3 mil; 06/10/2026).
         Contact.filter({ franchise_id: evoId }, '-created_at', null, {
           columns: 'id, nome, telefone, status, franchise_id, endereco, bairro',
+          fetchAll: true,
         }),
       ]);
       if (!vigente()) return;

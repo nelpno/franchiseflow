@@ -1,5 +1,5 @@
 import React from "react";
-import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
+import { getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { formatPhone } from "@/lib/whatsappUtils";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
 import {
@@ -11,10 +11,7 @@ import {
 } from "@/lib/receiptUtils";
 import logoMaxi from "@/assets/logo-maxi-massas-optimized.png";
 
-function getPaymentLabel(method) {
-  const pm = PAYMENT_METHODS.find((p) => p.value === method);
-  return pm?.label || method || "—";
-}
+const getPaymentLabel = getPaymentMethodLabel;
 
 const dashedBorder = "1px dashed #999";
 

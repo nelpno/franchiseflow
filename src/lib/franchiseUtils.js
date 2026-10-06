@@ -86,6 +86,8 @@ export const LEGACY_PAYMENT_MAP = { card_machine: ["credit", "debit"] };
  */
 export function getPaymentMethodLabel(value) {
   if (!value) return "—";
+  // O robô ainda grava "card_machine" (maquininha na retirada/entrega): 141 vendas em 30 dias (06/10/2026).
+  if (value === "card_machine") return "Maquininha";
   return PAYMENT_METHODS.find((m) => m.value === value)?.label || value;
 }
 

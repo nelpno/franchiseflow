@@ -27,7 +27,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
 import SaleReceipt from "./SaleReceipt";
 import ExportButtons from "@/components/shared/ExportButtons";
-import { PAYMENT_METHODS } from "@/lib/franchiseUtils";
+import { PAYMENT_METHODS, getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
@@ -86,10 +86,7 @@ function getPaymentIcon(method) {
   return pm?.icon || "payments";
 }
 
-function getPaymentLabel(method) {
-  const pm = PAYMENT_METHODS.find((p) => p.value === method);
-  return pm?.label || method || "—";
-}
+const getPaymentLabel = getPaymentMethodLabel;
 
 function formatDateSafe(dateString) {
   if (!dateString) return "—";
@@ -241,24 +238,27 @@ export default function TabLancar({
   const aReceber = useMemo(() => (uiV2 ? vendasAReceber(sales) : []), [uiV2, sales]);
   const aReceberTotal = useMemo(() => resumoVendas(aReceber).total, [aReceber]);
 
-  // Load sale items for expanded view
-  const handleToggleExpand = async (saleId) => {
-    if (expandedSaleId === saleId) {
-      setExpandedSaleId(null);
-      return;
-    }
-    setExpandedSaleId(saleId);
+  const handleToggleExpand = (saleId) => {
+    setExpandedSaleId((atual) => (atual === saleId ? null : saleId));
+  };
 
-    if (!expandedItems[saleId]) {
-      try {
-        const items = await SaleItem.filter({ sale_id: saleId });
-        setExpandedItems((prev) => ({ ...prev, [saleId]: items }));
-      } catch (err) {
+  // Itens da venda aberta: carrega ao abrir E de novo depois de salvar uma edição
+  // (handleFormSave limpa o cache; antes o card aberto ficava "Sem detalhamento de
+  // produtos" até fechar e abrir de novo — Luzia/Guarujá, 06/10/2026).
+  useEffect(() => {
+    if (!expandedSaleId || expandedItems[expandedSaleId]) return;
+    let vivo = true;
+    SaleItem.filter({ sale_id: expandedSaleId })
+      .then((items) => {
+        if (vivo) setExpandedItems((prev) => ({ ...prev, [expandedSaleId]: items }));
+      })
+      .catch((err) => {
+        if (!vivo) return;
         console.error("Erro ao carregar itens:", err);
         toast.error("Erro ao carregar itens da venda.");
-      }
-    }
-  };
+      });
+    return () => { vivo = false; };
+  }, [expandedSaleId, expandedItems]);
 
   // Open form for new sale
   const handleNewSale = () => {
@@ -964,7 +964,7 @@ export default function TabLancar({
                   </div>
                 ) : (
                   <p className="text-xs text-ink-2">
-                    Sem detalhamento de produtos
+                    {expandedItems[sale.id] ? "Sem detalhamento de produtos" : "Carregando produtos…"}
                   </p>
                 )}
 

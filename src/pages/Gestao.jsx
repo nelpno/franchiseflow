@@ -169,8 +169,10 @@ export default function Gestao() {
           fetchAll: true,
           gte: { created_at: cutoff90dIso },
         }),
+        // fetchAll: sem ele o Supabase corta em 1.000 contatos (27 unidades passam disso, 06/10/2026).
         Contact.filter({ franchise_id: evoId }, '-created_at', null, {
           columns: 'id, nome, telefone, franchise_id',
+          fetchAll: true,
         }),
       ]);
       if (!mountedRef.current) return;
