@@ -1411,11 +1411,13 @@ export default function TabLancar({
       ) : filteredSales.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
           <MaterialIcon icon="point_of_sale" size={64} className="text-ink-4 mb-4" />
+          {/* Unidade com vendas em outros meses (ex.: só a caixa "A receber" mostra algo):
+              o vazio é do PERÍODO, não da unidade (teste do Chamar Uber, 08/10/2026). */}
           <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
-            Nenhuma venda registrada
+            {sales?.length > 0 ? "Nenhuma venda neste período" : "Nenhuma venda registrada"}
           </h3>
           <p className="text-sm text-ink-2 max-w-sm">
-            Comece lançando sua primeira venda!
+            {sales?.length > 0 ? "Troque o período acima ou lance uma nova venda." : "Comece lançando sua primeira venda!"}
           </p>
           <Button
             onClick={handleNewSale}
