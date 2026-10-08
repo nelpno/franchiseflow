@@ -26,6 +26,7 @@ import {
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import SaleForm from "./SaleForm";
 import SaleReceipt from "./SaleReceipt";
+import ChamarUber from "./ChamarUber";
 import ExportButtons from "@/components/shared/ExportButtons";
 import { PAYMENT_METHODS, getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
@@ -129,6 +130,8 @@ export default function TabLancar({
   // S12 (28/09/2026): lista nova ("A receber" com "Recebi", WhatsApp na linha, dias,
   // paginação de 50) só com a chave ui_v2. Desligada = a tela de sempre.
   const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const uberLigado = useFeatureFlag(FEATURE_KEYS.CHAMAR_UBER);
+  const temUber = (sale) => uberLigado && sale.delivery_method === "delivery" && !!sale.customer_address?.trim();
   const [showFormDialog, setShowFormDialog] = useState(autoOpenForm);
   // Persist initial contact params in state so they survive URL param clearing
   const [savedContactId, setSavedContactId] = useState(initialContactId);
@@ -644,6 +647,7 @@ export default function TabLancar({
   const renderAcoesV2 = (sale) => (
     <div className="space-y-2 pt-1">
       <div className="flex flex-wrap gap-2">
+        {temUber(sale) && <ChamarUber saleId={sale.id} />}
         <Button
           variant="outline"
           size="sm"
@@ -1066,6 +1070,7 @@ export default function TabLancar({
                 {uiV2 && renderAcoesV2(sale)}
                 {!uiV2 && (
                 <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
+                  {temUber(sale) && <ChamarUber saleId={sale.id} />}
                   <Button
                     variant="outline"
                     size="sm"
