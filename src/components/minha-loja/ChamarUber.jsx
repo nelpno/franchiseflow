@@ -7,15 +7,17 @@ import { supabase } from "@/api/supabaseClient";
 // preenchidas: conta e preço dela, ela só confirma. O link vem da Edge Function uber-link
 // (o endereço do cliente precisa virar lat/lng, e a chave do Google fica no servidor).
 // Só busca quando a venda está aberta; erro = botão some (a franqueada chama como sempre).
-export default function ChamarUber({ saleId }) {
+// O endereço entra na chave do cache: editar a venda gera link novo na hora.
+export default function ChamarUber({ saleId, endereco }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["uber-link", saleId],
+    queryKey: ["uber-link", saleId, endereco],
     queryFn: async () => {
       const { data: resp, error } = await supabase.functions.invoke("uber-link", { body: { sale_id: saleId } });
       if (error || !resp?.url) throw new Error("sem link");
       return resp;
     },
     staleTime: 30 * 60 * 1000,
+    gcTime: 30 * 60 * 1000, // cada busca é uma consulta paga ao Google
     retry: false,
   });
 

@@ -164,6 +164,8 @@ export default function TabLancar({
   const [monthOffset, setMonthOffset] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmationFilter, setConfirmationFilter] = useState("all");
+  // Lista vazia só por causa do PERÍODO (sem busca nem filtro de recebido): a unidade tem vendas em outros meses.
+  const soPeriodoVazio = sales?.length > 0 && !searchTerm.trim() && confirmationFilter === "all";
   const [togglingIds, setTogglingIds] = useState(new Set());
   const togglingRef = useRef(new Set());
   // S12.6 (P3): o "Desfazer" do aviso só vale enquanto nada mudou — nem a venda (outro
@@ -647,7 +649,7 @@ export default function TabLancar({
   const renderAcoesV2 = (sale) => (
     <div className="space-y-2 pt-1">
       <div className="flex flex-wrap gap-2">
-        {temUber(sale) && <ChamarUber saleId={sale.id} />}
+        {temUber(sale) && <ChamarUber saleId={sale.id} endereco={`${sale.customer_address}|${sale.customer_neighborhood || ""}`} />}
         <Button
           variant="outline"
           size="sm"
@@ -1070,7 +1072,7 @@ export default function TabLancar({
                 {uiV2 && renderAcoesV2(sale)}
                 {!uiV2 && (
                 <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
-                  {temUber(sale) && <ChamarUber saleId={sale.id} />}
+                  {temUber(sale) && <ChamarUber saleId={sale.id} endereco={`${sale.customer_address}|${sale.customer_neighborhood || ""}`} />}
                   <Button
                     variant="outline"
                     size="sm"
@@ -1414,10 +1416,10 @@ export default function TabLancar({
           {/* Unidade com vendas em outros meses (ex.: só a caixa "A receber" mostra algo):
               o vazio é do PERÍODO, não da unidade (teste do Chamar Uber, 08/10/2026). */}
           <h3 className="text-lg font-medium text-ink mb-1 font-plus-jakarta">
-            {sales?.length > 0 ? "Nenhuma venda neste período" : "Nenhuma venda registrada"}
+            {soPeriodoVazio ? "Nenhuma venda neste período" : "Nenhuma venda registrada"}
           </h3>
           <p className="text-sm text-ink-2 max-w-sm">
-            {sales?.length > 0 ? "Troque o período acima ou lance uma nova venda." : "Comece lançando sua primeira venda!"}
+            {soPeriodoVazio ? "Troque o período acima ou lance uma nova venda." : "Comece lançando sua primeira venda!"}
           </p>
           <Button
             onClick={handleNewSale}

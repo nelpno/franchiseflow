@@ -4,6 +4,7 @@
 // empresa, que cobra mais). Aqui só porque o endereço do cliente precisa de lat/lng e a chave
 // do Google não pode ir para o navegador.
 // POST { sale_id } com o JWT do usuário → { url, precisao, endereco_google }.
+// No PC o site da Uber não preenche o destino; no celular abre o app com tudo (Nathallie, 08/10).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -23,6 +24,14 @@ const json = (body: unknown, status = 200) =>
 
 // Endereço exato o bastante para o pino cair na porta (o resto cai no meio da rua ou do bairro).
 const PRECISOS = new Set(["ROOFTOP", "RANGE_INTERPOLATED"]);
+const RAIO_KM = 40; // entrega mais longe que isso da unidade = provável rua homônima noutra cidade
+
+function distanciaKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const rad = (g: number) => (g * Math.PI) / 180;
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 +
+    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -36,7 +45,8 @@ Deno.serve(async (req) => {
   try { saleId = String((await req.json())?.sale_id || ""); } catch { /* corpo inválido */ }
   if (!/^[0-9a-f-]{36}$/i.test(saleId)) return json({ error: "venda inválida" }, 400);
 
-  // A venda é lida com o JWT de quem pediu: o RLS de sales decide se essa pessoa pode vê-la.
+  // A venda é lida com o JWT de quem pediu (RLS de sales) E o papel é conferido no perfil,
+  // como no asaas-billing: a localização exata da unidade só sai para quem cuida dela.
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: { Authorization: auth } },
   });
@@ -48,50 +58,71 @@ Deno.serve(async (req) => {
     .eq("id", saleId)
     .maybeSingle();
   if (!sale) return json({ error: "venda não encontrada" }, 404);
+  const { data: perfil } = await admin.from("profiles").select("role, managed_franchise_ids").eq("id", user.id).maybeSingle();
+  const podeVer = perfil?.role === "admin" || perfil?.role === "manager" ||
+    (perfil?.managed_franchise_ids || []).includes(sale.franchise_id);
+  if (!podeVer) return json({ error: "venda não encontrada" }, 404);
   if (sale.delivery_method !== "delivery" || !sale.customer_address?.trim()) {
     return json({ error: "venda sem endereço de entrega" }, 422);
   }
 
-  const [{ data: geo }, { data: cfg }] = await Promise.all([
-    admin.from("unidade_geo").select("lat, lng, endereco_google").eq("id", sale.franchise_id).maybeSingle(),
-    admin.from("franchise_configurations").select("city").eq("franchise_evolution_instance_id", sale.franchise_id).maybeSingle(),
+  const [{ data: geo }, { data: cfg }, { data: fr }] = await Promise.all([
+    admin.from("unidade_geo").select("lat, lng, endereco_google, precisao").eq("id", sale.franchise_id).maybeSingle(),
+    admin.from("franchise_configurations").select("city, unit_address").eq("franchise_evolution_instance_id", sale.franchise_id).maybeSingle(),
+    admin.from("franchises").select("state_uf").eq("evolution_instance_id", sale.franchise_id).maybeSingle(),
   ]);
   if (!geo?.lat || !geo?.lng) return json({ error: "endereço da unidade sem localização" }, 422);
 
-  // Texto livre do robô ("Rua X 8 casa 2"): completa com bairro e cidade da unidade, e
-  // o viés de região pela própria unidade evita cair numa rua homônima de outra cidade.
-  const busca = [sale.customer_address, sale.customer_neighborhood, cfg?.city, "SP"]
+  // Texto livre do robô ("Rua X 8 casa 2"): completa com bairro, cidade e UF da unidade
+  // ("Americana - SP" no cadastro vira "Americana"); o viés de região é a própria unidade.
+  const uf = (fr?.state_uf || "SP").trim().toUpperCase();
+  const cidade = (cfg?.city || "").replace(/\s*[-/,]\s*[A-Z]{2}\s*$/i, "").trim();
+  const busca = [sale.customer_address, sale.customer_neighborhood, cidade, uf]
     .map((s) => (s || "").trim()).filter(Boolean).join(", ");
-  const d = 0.25; // ~25 km em volta da unidade
+  const d = 0.25; // ~25 km em volta da unidade (só viés: o Google pode responder fora)
   const params = new URLSearchParams({
     address: busca,
     region: "br",
     language: "pt-BR",
+    components: "country:BR",
     bounds: `${geo.lat - d},${geo.lng - d}|${geo.lat + d},${geo.lng + d}`,
     key: GOOGLE_MAPS_KEY,
   });
   let r;
   try {
     const resp = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params}`);
-    r = (await resp.json())?.results?.[0];
-  } catch { /* cai no 502 abaixo */ }
-  if (!r?.geometry?.location) return json({ error: "não achei o endereço do cliente no mapa" }, 502);
+    const corpo = await resp.json();
+    if (corpo?.status !== "OK") {
+      // REQUEST_DENIED/OVER_QUERY_LIMIT = problema da chave (some o botão da rede inteira); log separa do endereço ruim
+      console.error("geocode", resp.status, corpo?.status, corpo?.error_message || "");
+      if (corpo?.status !== "ZERO_RESULTS") return json({ error: "mapa indisponível" }, 503);
+    }
+    r = corpo?.results?.[0];
+  } catch (e) {
+    console.error("geocode fetch", String(e));
+    return json({ error: "mapa indisponível" }, 503);
+  }
+  if (!r?.geometry?.location) return json({ error: "não achei o endereço do cliente no mapa" }, 422);
+
+  const destino = { lat: r.geometry.location.lat, lng: r.geometry.location.lng };
+  const exato = PRECISOS.has(r.geometry.location_type) && !r.partial_match &&
+    distanciaKm(geo, destino) <= RAIO_KM && PRECISOS.has(geo.precisao || "ROOFTOP");
 
   const q = new URLSearchParams({
     action: "setPickup",
     "pickup[latitude]": String(geo.lat),
     "pickup[longitude]": String(geo.lng),
     "pickup[nickname]": "Maxi Massas",
-    "pickup[formatted_address]": geo.endereco_google || "",
-    "dropoff[latitude]": String(r.geometry.location.lat),
-    "dropoff[longitude]": String(r.geometry.location.lng),
+    "pickup[formatted_address]": geo.endereco_google || cfg?.unit_address || "",
+    "dropoff[latitude]": String(destino.lat),
+    "dropoff[longitude]": String(destino.lng),
     "dropoff[nickname]": "Cliente",
     "dropoff[formatted_address]": r.formatted_address || busca,
   });
 
   return json({
     url: `https://m.uber.com/ul/?${q}`,
-    precisao: PRECISOS.has(r.geometry.location_type) ? "exato" : "aproximado",
+    precisao: exato ? "exato" : "aproximado",
     endereco_google: r.formatted_address || "",
   });
 });
