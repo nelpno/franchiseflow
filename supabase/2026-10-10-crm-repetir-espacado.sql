@@ -1,6 +1,6 @@
 -- 2026-10-10: "Quem chamar hoje" repetia o mesmo cliente a cada 8 dias (Jennifer, Suzano).
 -- "repetir" ENVIADO pausa 14 dias para voltar como "repetir" (pulado e outros motivos seguem 7) e vai no maximo
--- 2 vezes sem compra no meio; quem bate o limite pode entrar como sumido. Comprou uma vez (janela 20-30 dias): 1 envio so.
+-- 2 vezes sem compra no meio; quem bate o limite pode entrar como sumido. Comprou uma vez: janela 20-30 virou 20-35, para caber o 2o envio depois da pausa de 14.
 -- Medido antes: 2a mensagem de repetir vendeu 10/88 em 7 dias (1a: 26/428), por isso limitar e nao cortar.
 -- v2 (mesmo dia, /code-review): limite saiu de elegiveis para candidatos; pausa de 14 so para candidato "repetir".
 -- Corpo anterior: md5(prosrc) = e2ff0e287c45e9c1431a92c6f3b49a92; backup em docs/db-backups/get_daily_customer_actions.2026-10-10-antes.sql
@@ -22,8 +22,8 @@ declare
   c_janela_conversa constant interval := interval '4 days';  -- quem a unidade atendeu nesses dias fica fora de tudo
   c_folga_de        constant int      := 2;           -- conversa: aparece a partir do 2o dia depois da ultima mensagem do cliente
   c_folga_ate       constant int      := 3;           -- ... e ate o 3o
-  c_repetir1_de     constant int      := 20;          -- comprou UMA vez: "hora de repetir" de 20 a 30 dias
-  c_repetir1_ate    constant int      := 30;
+  c_repetir1_de     constant int      := 20;          -- comprou UMA vez: "hora de repetir" de 20 a 35 dias (era 30; com a pausa de 14 o 2o envio nao cabia)
+  c_repetir1_ate    constant int      := 35;
   c_conversa_parada constant interval := interval '2 hours';
   c_min_msgs        constant int      := 6;           -- "quase comprou"
   c_ritmo_fator     constant numeric  := 1.2;         -- "hora de repetir" = intervalo medio x 1,2
@@ -149,7 +149,7 @@ begin
       and not exists (select 1 from compras cp where cp.contact_id = co.contact_id)
 
     union all
-    -- 2. hora de repetir: no ritmo dele, ou comprou uma vez ha 20-30 dias (a 2a compra vem, na mediana, 25 dias depois)
+    -- 2. hora de repetir: no ritmo dele, ou comprou uma vez ha 20-35 dias (a 2a compra vem, na mediana, 25 dias depois)
     select cp.contact_id, 2, 'repetir',
            (case when cp.n_dias >= c_fiel then 1000000000 else 0 end) + coalesce(cp.total, 0),
            null::timestamptz, null::int
