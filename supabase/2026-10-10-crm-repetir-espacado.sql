@@ -1,6 +1,8 @@
 -- 2026-10-10: "Quem chamar hoje" repetia o mesmo cliente a cada 8 dias (Jennifer, Suzano).
--- "repetir" agora pausa 14 dias (outros motivos seguem 7) e manda no maximo 2 vezes sem compra no meio.
+-- "repetir" ENVIADO pausa 14 dias para voltar como "repetir" (pulado e outros motivos seguem 7) e vai no maximo
+-- 2 vezes sem compra no meio; quem bate o limite pode entrar como sumido. Comprou uma vez (janela 20-30 dias): 1 envio so.
 -- Medido antes: 2a mensagem de repetir vendeu 10/88 em 7 dias (1a: 26/428), por isso limitar e nao cortar.
+-- v2 (mesmo dia, /code-review): limite saiu de elegiveis para candidatos; pausa de 14 so para candidato "repetir".
 -- Corpo anterior: md5(prosrc) = e2ff0e287c45e9c1431a92c6f3b49a92; backup em docs/db-backups/get_daily_customer_actions.2026-10-10-antes.sql
 -- ROLLBACK: node supabase/cs-cockpit/_aplica-lf.mjs docs/db-backups/get_daily_customer_actions.2026-10-10-antes.sql
 CREATE OR REPLACE FUNCTION public.get_daily_customer_actions(p_franchise_id text, p_limit integer DEFAULT 8)
@@ -13,9 +15,9 @@ declare
   -- limites (ajustar depois de medir a adesao)
   c_limite_max      constant int      := 20;
   c_sumido_max      constant int      := 2;           -- sumidos por dia
-  c_pausa_dias      constant int      := 7;           -- qualquer acao tira a pessoa da lista por 7 dias
-  c_pausa_repetir   constant int      := 14;          -- acao de "hora de repetir": 14 dias (com 7 voltava a cada 8 dias, Suzano 10/10/2026)
-  c_repetir_envios  constant int      := 2;           -- no maximo 2 mensagens de "repetir" sem compra no meio
+  c_pausa_dias      constant int      := 7;           -- qualquer acao tira a pessoa da lista por 7 dias (exceto o "repetir" abaixo)
+  c_pausa_repetir   constant int      := 14;          -- "repetir" ENVIADO: nao volta como "repetir" por 14 dias (com 7 voltava a cada 8, Suzano 10/10/2026)
+  c_repetir_envios  constant int      := 2;           -- no maximo 2 "repetir" enviados sem compra no meio; depois cai no motivo seguinte (sumido)
   c_pausa_sumido    constant int      := 30;          -- mensagem a um sumido: 30 dias
   c_janela_conversa constant interval := interval '4 days';  -- quem a unidade atendeu nesses dias fica fora de tudo
   c_folga_de        constant int      := 2;           -- conversa: aparece a partir do 2o dia depois da ultima mensagem do cliente
@@ -117,6 +119,19 @@ begin
           and vr.sale_date >= cv.dia_conversa
       )
   ),
+  -- "repetir" enviados depois da ultima compra (o limite fica em candidatos, antes do distinct on,
+  -- para o cliente que bateu o limite ainda poder entrar como sumido)
+  repetir_enviados as (
+    select a.contact_id, count(*)::int as n
+    from contact_actions a
+    join compras cp on cp.contact_id = a.contact_id
+    where a.franchise_id = p_franchise_id
+      and a.action_type = 'repetir'
+      and a.status = 'sent'
+      and a.action_date > cp.ultima
+      and a.action_date < v_hoje
+    group by a.contact_id
+  ),
   candidatos as (
     -- 1. cliente que voltou a falar e nao comprou
     select co.contact_id, 1 as prioridade, 'voltou_a_falar'::text as tipo,
@@ -139,12 +154,14 @@ begin
            (case when cp.n_dias >= c_fiel then 1000000000 else 0 end) + coalesce(cp.total, 0),
            null::timestamptz, null::int
     from compras cp
-    where (cp.n_dias >= 2
+    where ((cp.n_dias >= 2
            and (v_hoje - cp.ultima) between
                  greatest(round(((cp.ultima - cp.primeira)::numeric / (cp.n_dias - 1)) * c_ritmo_fator), c_ritmo_min)
                  and c_repetir_max)
        or (cp.n_dias = 1
            and (v_hoje - cp.ultima) between c_repetir1_de and c_repetir1_ate)
+          )
+      and coalesce((select re.n from repetir_enviados re where re.contact_id = cp.contact_id), 0) < c_repetir_envios
 
     union all
     -- 4. primeira compra ha poucos dias
@@ -177,7 +194,6 @@ begin
            row_number() over (partition by u.tipo order by u.peso desc) as rn_tipo
     from unico u
     join contatos ct on ct.id = u.contact_id
-    left join compras cpu on cpu.contact_id = u.contact_id
     where coalesce(ct.telefone, '') <> ''
       and ct.do_not_contact_at is null
       and not exists (select 1 from ocupados o where o.contact_phone = ct.telefone)
@@ -186,17 +202,10 @@ begin
         select 1 from contact_actions a
         where a.contact_id = u.contact_id
           and a.action_date < v_hoje
-          and a.action_date >= v_hoje - case when a.action_type = 'repetir' then c_pausa_repetir else c_pausa_dias end
+          and a.action_date >= v_hoje - case
+                when u.tipo = 'repetir' and a.action_type = 'repetir' and a.status = 'sent' then c_pausa_repetir
+                else c_pausa_dias end
       )
-      -- "repetir" ja mandado 2 vezes depois da ultima compra: so volta se comprar, falar com o robo ou sumir
-      and not (u.tipo = 'repetir' and (
-        select count(*) from contact_actions a
-        where a.contact_id = u.contact_id
-          and a.action_type = 'repetir'
-          and a.status = 'sent'
-          and a.action_date > cpu.ultima
-          and a.action_date < v_hoje
-      ) >= c_repetir_envios)
       -- quem recebeu mensagem como sumido descansa 30 dias; e ninguem entra como sumido tendo
       -- recebido QUALQUER mensagem nesses 30 dias (nao insistir)
       and not exists (
@@ -326,4 +335,5 @@ begin
   return v_result;
 end;
 $function$
+
 ;
