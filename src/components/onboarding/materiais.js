@@ -15,6 +15,10 @@ export const DRIVE_ROBO = "https://drive.google.com/drive/folders/18W51ZqadWPZ5F
 export const DRIVE_SACOLA = "https://drive.google.com/drive/folders/1GrhGrvR7x1tBYSwWQQEs5gQk4YqoR2h9"; // 3. Marketing › Sacola e embalagens
 export const DRIVE_META_BUSINESS = "https://drive.google.com/drive/folders/1dHR5Erx6ShhkL4eIFFZPUm-R4q2bjbXU"; // …Vídeos de configuração › 2. Meta Business Suite
 export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeukSj4Hdw98zSmPEqemwg7anWC"; // 3. Marketing › Postagens redes sociais
+// Guia do catálogo do WhatsApp para o robô ler o carrinho (13/10/2026): nome = painel com peso,
+// preço = painel, sem item informativo, carrinho ligado. Google Doc ao lado do vídeo "03. Catálogo"
+// em 1. Configurações › 1. WhatsApp Business. Substitui copiar o catálogo de Rio Claro (tinha item fora do painel e item a R$ 0,00).
+export const DRIVE_CATALOGO_ROBO = "https://docs.google.com/document/d/1eRLRezP77TR-_Z-xZtFDFRdBB5OBqCLbHIgaEitwLQw/edit?usp=sharing";
 
 // Link para a franqueada COPIAR o cardápio (Nelson, 17/09/2026). É um link de edição: a
 // trilha pede "Faça uma cópia do modelo" antes de trocar cidade e telefone. Se alguém

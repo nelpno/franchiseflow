@@ -21,6 +21,7 @@ import {
   DRIVE_META_BUSINESS,
   DRIVE_POSTAGENS,
   CANVA_CARDAPIO,
+  DRIVE_CATALOGO_ROBO,
 } from "./materiais.js";
 
 // Ícone por passo (usado por NextActionCard e JourneyStep). Fica separado dos
@@ -144,8 +145,26 @@ export const JOURNEY_STEPS = [
           "3. O modelo vai aparecer no seu Canva pessoal\n" +
           "4. Edite com os dados da sua unidade (cidade, telefone, preços se diferentes)\n" +
           '5. Quando terminar, exporte como JPG (Compartilhar → Baixar → JPG)\n\n' +
-          "Esse cardápio será usado no catálogo do WhatsApp e no robô de vendas (próximo passo).",
+          "Essa imagem é o cardápio que o robô manda ao cliente (você sobe no Meu Vendedor, próximo passo).",
         destinos: [{ tipo: "canva", href: CANVA_CARDAPIO, rotulo: "Abrir template no Canva" }],
+      },
+      {
+        id: "catalogo_whatsapp",
+        tipo: "dica",
+        titulo: "Montar o catálogo do WhatsApp igual ao painel",
+        resumo: "O robô lê o carrinho: nome com peso e preço iguais ao painel.",
+        texto:
+          "O cliente pode montar o pedido no carrinho do catálogo e enviar. O robô lê cada item e confere com o seu painel (Estoque). Por isso:\n\n" +
+          "1. Nome igual ao do painel, com o peso (ex.: Canelone 4 Queijos - 700g; Rondelli: Rolo 700g ou Fatiado 500g)\n" +
+          "2. Preço igual ao do painel. Mudou lá, muda no catálogo no mesmo dia\n" +
+          "3. Só produto que está no painel. Pão de queijo, molho, bebida: cadastre no painel primeiro\n" +
+          "4. Nada de item informativo (\"Cardápio\", \"Consulte a entrega\", nome de pessoa): aparece ao cliente como R$ 0,00\n" +
+          "5. Carrinho ligado nas configurações do catálogo\n\n" +
+          "O guia tem a lista oficial de nomes para copiar e um checklist. Não copie o catálogo de outra unidade.",
+        destinos: [
+          { tipo: "drive", href: DRIVE_CATALOGO_ROBO, rotulo: "Guia do catálogo (nomes e checklist)" },
+          { tipo: "drive", href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Vídeo do catálogo" },
+        ],
       },
       {
         id: "vendedor",
