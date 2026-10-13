@@ -63,6 +63,19 @@ export function resumirMes(d, { sales = [], saleItems = [], expenses = [], ateDi
   const ids = new Set(mSales.map((s) => s.id));
   const mItems = saleItems.filter((si) => ids.has(si.sale_id));
   const mExp = expenses.filter((e) => isInMonth(dataGasto(e), d));
+  return {
+    chave: format(d, "yyyy-MM"),
+    rotulo: rotuloMesCurto(d),
+    ...resumirLinhas({ mSales, mItems, mExp, ateDia }),
+  };
+}
+
+/**
+ * O resumo de `resumirMes` para linhas JÁ recortadas (um mês ou um período de data a data:
+ * Gestão › Resultado › "Desde o início"/"Personalizado", 13/10/2026). Mesma regra do dinheiro;
+ * só muda quem escolhe as linhas. `ateDia` corta pelo dia do mês (só faz sentido num mês).
+ */
+export function resumirLinhas({ mSales = [], mItems = [], mExp = [], ateDia = null } = {}) {
   const pnl = calculatePnL(mSales, mItems, mExp);
 
   const despesasPorCategoria = {};
@@ -127,8 +140,6 @@ export function resumirMes(d, { sales = [], saleItems = [], expenses = [], ateDi
   }
 
   return {
-    chave: format(d, "yyyy-MM"),
-    rotulo: rotuloMesCurto(d),
     vendas: mSales.length,
     faturamento: pnl.totalRecebido,
     valorMedio: mSales.length ? pnl.totalRecebido / mSales.length : 0,
@@ -275,6 +286,14 @@ export function avaliarComprasFabrica({ purchaseOrders, expenses = [], mesSeleci
   };
 }
 
+/** Linhas do bloco "De onde veio" a partir de um resumo (`resumirMes`/`resumirLinhas`). */
+export function linhasDeOndeVeio(r) {
+  const linhas = [{ chave: "vendas", rotulo: "Vendas", valor: r.vendasBrutas, n: r.vendas }];
+  if (r.frete > 0) linhas.push({ chave: "frete", rotulo: "Frete cobrado", valor: r.frete, n: r.entregas });
+  if (r.descontos > 0) linhas.push({ chave: "descontos", rotulo: "Descontos dados", valor: -r.descontos });
+  return linhas;
+}
+
 /**
  * Modelo da tela nova do Resultado (S17.1, chave ui_v2) + o relatório do PDF (S17.2).
  * Comparação ("O que mudou" e o delta do Sobrou): no mês em andamento, contra o MESMO trecho
@@ -323,11 +342,7 @@ export function montarResultadoMes({
         .slice(0, 3)
     : [];
 
-  const deOndeVeio = [
-    { chave: "vendas", rotulo: "Vendas", valor: mes.vendasBrutas, n: mes.vendas },
-  ];
-  if (mes.frete > 0) deOndeVeio.push({ chave: "frete", rotulo: "Frete cobrado", valor: mes.frete, n: mes.entregas });
-  if (mes.descontos > 0) deOndeVeio.push({ chave: "descontos", rotulo: "Descontos dados", valor: -mes.descontos });
+  const deOndeVeio = linhasDeOndeVeio(mes);
 
   // Quanto sobrou por mês (6 meses até o selecionado) e o acumulado do ano.
   const porMes = [];

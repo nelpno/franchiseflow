@@ -7,7 +7,9 @@ import { parseDateOnly } from "@/lib/dateOnly";
 
 const MAX_DAYS = 90;
 
-export default function CustomDateRangeSheet({ open, onOpenChange, currentRange, onApply, onClear }) {
+// maxDays: teto do intervalo (Início antigo = 90). null = sem teto (Gestão › Resultado, 13/10/2026:
+// "de tal a tal data" sem limite; a data final continua até hoje).
+export default function CustomDateRangeSheet({ open, onOpenChange, currentRange, onApply, onClear, maxDays = MAX_DAYS, descricao }) {
   const [startStr, setStartStr] = useState("");
   const [endStr, setEndStr] = useState("");
   const [error, setError] = useState(null);
@@ -41,14 +43,16 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
       setError("Data final não pode ser futura.");
       return;
     }
-    const oldestAllowed = subDays(today, MAX_DAYS - 1);
-    if (start < oldestAllowed) {
-      setError(`Período máximo: últimos ${MAX_DAYS} dias.`);
-      return;
-    }
-    if (differenceInDays(end, start) + 1 > MAX_DAYS) {
-      setError(`Intervalo máximo: ${MAX_DAYS} dias.`);
-      return;
+    if (maxDays) {
+      const oldestAllowed = subDays(today, maxDays - 1);
+      if (start < oldestAllowed) {
+        setError(`Período máximo: últimos ${maxDays} dias.`);
+        return;
+      }
+      if (differenceInDays(end, start) + 1 > maxDays) {
+        setError(`Intervalo máximo: ${maxDays} dias.`);
+        return;
+      }
     }
     setError(null);
     onApply({ start, end });
@@ -62,7 +66,7 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
 
   const hasRange = !!(currentRange?.start && currentRange?.end);
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const minStartStr = format(subDays(new Date(), MAX_DAYS - 1), "yyyy-MM-dd");
+  const minStartStr = maxDays ? format(subDays(new Date(), maxDays - 1), "yyyy-MM-dd") : undefined;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -76,7 +80,7 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
             Período personalizado
           </SheetTitle>
           <SheetDescription className="text-sm text-gray-600">
-            Escolha o intervalo (máximo {MAX_DAYS} dias).
+            {descricao || (maxDays ? `Escolha o intervalo (máximo ${maxDays} dias).` : "Escolha o intervalo.")}
           </SheetDescription>
         </SheetHeader>
 

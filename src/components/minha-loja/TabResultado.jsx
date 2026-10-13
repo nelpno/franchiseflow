@@ -46,7 +46,15 @@ import {
   getSaleNetValue,
 } from "@/lib/financialCalcs";
 import { formatBRL, formatBRLCompactResultado as formatBRLCompact } from "@/lib/formatters";
-import { janelaCobre, janelaParaBuscar } from "@/lib/resultadoWindow";
+import { janelaResultado } from "@/lib/resultadoWindow";
+import {
+  MODO_MES,
+  MODO_PERSONALIZADO,
+  intervaloDoPeriodo,
+  intervaloCobre,
+  uniaoIntervalos,
+  montarResultadoPeriodo,
+} from "@/lib/periodoResultado";
 import { getCategoryMeta } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, SALES_EXPORT_QUERY_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { EXPENSES_EXPORT_COLUMNS, buildExpensesExportRows, sortExpenses } from "@/lib/expensesExport";
@@ -60,6 +68,8 @@ import { gerarRelatorioMensalPdf } from "@/lib/monthlyReportPdf";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import ResultadoV2 from "@/components/minha-loja/resultado/ResultadoV2";
+import CustomDateRangeSheet from "@/components/dashboard/CustomDateRangeSheet";
+import { parseDateOnly } from "@/lib/dateOnly";
 
 // --------------------------------------------------------------- helpers
 // formatBRL vem de @/lib/formatters. formatBRLCompact AQUI é formatBRLCompactResultado (S8-P3,
@@ -799,6 +809,11 @@ function mesInicial(initialMonth) {
 export default function TabResultado({ franchiseId, currentUser, contacts = [], hideFranchiseeLinks = false, initialMonth = null }) {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(() => mesInicial(initialMonth));
+  // Período da tela nova (13/10/2026, pedido do Alex): { modo: "mes" } | { modo: "total" } |
+  // { modo: "personalizado", de, ate } ('yyyy-MM-dd'). Só a tela nova (ui_v2) troca o modo; a
+  // antiga fica sempre no mês. Regras em @/lib/periodoResultado.
+  const [periodo, setPeriodo] = useState({ modo: MODO_MES });
+  const [datasAbertas, setDatasAbertas] = useState(false);
   const [sales, setSales] = useState([]);
   const [saleItems, setSaleItems] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -837,11 +852,19 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   // com fixture: soma na janela == soma no histórico inteiro, pro mês exibido).
   const loadedRangeRef = useRef(null); // { start, end } em 'yyyy-MM-dd', última janela buscada
 
+  // Fora do modo Mês, a busca precisa cobrir o período inteiro ("Desde o início" = sem piso).
+  // Strings soltas nas dependências: o objeto mudaria de identidade a cada render.
+  const intervaloPeriodo = periodo.modo === MODO_MES ? null : intervaloDoPeriodo(periodo);
+  const periodoDe = intervaloPeriodo?.de ?? null;
+  const periodoAte = intervaloPeriodo?.ate ?? null;
+
   const loadData = useCallback(async (opts = {}) => {
     if (!franchiseId) return;
     const { targetMonth = selectedMonth, force = false } = opts;
-    if (!force && janelaCobre(loadedRangeRef.current, targetMonth)) return;
-    const { start: neededStart, end: neededEnd } = janelaParaBuscar(loadedRangeRef.current, targetMonth);
+    // Mês: 13 meses para trás (S8.2). Período: as datas dele. Nos dois, a janela só cresce.
+    const necessaria = periodoDe ? { start: periodoDe, end: periodoAte } : janelaResultado(targetMonth);
+    if (!force && intervaloCobre(loadedRangeRef.current, necessaria)) return;
+    const { start: neededStart, end: neededEnd } = uniaoIntervalos(loadedRangeRef.current, necessaria);
 
     setLoading(true);
     setErroDeCarga(null);
@@ -915,7 +938,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
     } finally {
       setLoading(false);
     }
-  }, [franchiseId, selectedMonth]);
+  }, [franchiseId, selectedMonth, periodoDe, periodoAte]);
 
   // Dispara ao trocar de franquia e sempre que a navegação de mês sair da janela carregada
   // (loadData decide sozinho se precisa buscar de novo, olhando loadedRangeRef; a identidade
@@ -971,6 +994,26 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const modeloV2 = useMemo(
     () => (uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null),
     [uiV2, sales, saleItems, expenses, purchaseOrders, selectedMonth]
+  );
+
+  // Desde o início / Personalizado (só na tela nova): mesmo formato do modeloV2, sem comparação.
+  const modeloPeriodo = useMemo(
+    () => (uiV2 && periodoDe
+      ? montarResultadoPeriodo({ sales, saleItems, expenses, periodo, de: periodoDe, ate: periodoAte })
+      : null),
+    [uiV2, sales, saleItems, expenses, periodo, periodoDe, periodoAte]
+  );
+  const periodoDespesasOrdenadas = useMemo(
+    () => (modeloPeriodo ? sortExpenses(modeloPeriodo.recorte.expenses) : []),
+    [modeloPeriodo]
+  );
+  const periodoExportDespesas = useMemo(
+    () => (modeloPeriodo ? buildExpensesExportRows(modeloPeriodo.recorte.expenses, { includeTotalsRow: true }) : []),
+    [modeloPeriodo]
+  );
+  const periodoExportVendas = useMemo(
+    () => (modeloPeriodo ? buildSalesExportRows(modeloPeriodo.recorte.sales, contactsMap, { includeTotalsRow: true }) : []),
+    [modeloPeriodo, contactsMap]
   );
 
   // Resumo de estoque (atual)
@@ -1117,6 +1160,23 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const handleNextMonth = () => {
     const next = addMonths(selectedMonth, 1);
     if (next <= new Date()) setSelectedMonth(next);
+  };
+  // Personalizado só vira o modo quando as datas são aplicadas (fechar a folha não muda nada).
+  const handleEscolherModo = (modo) => {
+    if (modo === MODO_PERSONALIZADO) {
+      setDatasAbertas(true);
+      return;
+    }
+    setPeriodo({ modo });
+  };
+  const faixaAtual = useMemo(
+    () => (periodo.modo === MODO_PERSONALIZADO
+      ? { start: parseDateOnly(periodo.de), end: parseDateOnly(periodo.ate) }
+      : null),
+    [periodo]
+  );
+  const handleAplicarDatas = ({ start, end }) => {
+    setPeriodo({ modo: MODO_PERSONALIZADO, de: format(start, "yyyy-MM-dd"), ate: format(end, "yyyy-MM-dd") });
   };
   const handleLancarDespesa = () => { setEditingExpense(null); setExpenseDialogOpen(true); };
   const handleEditExpense = (exp) => { setEditingExpense(exp); setExpenseDialogOpen(true); };
@@ -1281,7 +1341,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   }
 
   if (erroDeCarga) {
-    return (
+    const erro = (
       <ErrorState
         titulo="Não deu para carregar o resultado"
         texto={erroDeCarga}
@@ -1292,6 +1352,87 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
         // ignora a checagem de cobertura e busca de novo.
         onTentarNovamente={() => loadData({ force: true })}
       />
+    );
+    // Período longo que não carregou: saída para o mês, que busca de novo do zero (a carga que
+    // falhou zerou as vendas da tela, então a janela antiga não vale mais).
+    if (periodo.modo === MODO_MES) return erro;
+    return (
+      <div className="space-y-3">
+        {erro}
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            className="min-h-[44px] rounded-xl"
+            onClick={() => {
+              loadedRangeRef.current = null;
+              setErroDeCarga(null);
+              setPeriodo({ modo: MODO_MES });
+            }}
+          >
+            Voltar para o mês
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const folhaDatas = (
+    <CustomDateRangeSheet
+      open={datasAbertas}
+      onOpenChange={setDatasAbertas}
+      currentRange={faixaAtual}
+      onApply={handleAplicarDatas}
+      onClear={() => setPeriodo({ modo: MODO_MES })}
+      maxDays={null}
+      descricao="De tal a tal data. A data final vai até hoje."
+    />
+  );
+
+  if (uiV2 && modeloPeriodo) {
+    return (
+      <>
+        <ResultadoV2
+          modelo={modeloPeriodo}
+          hasData={modeloPeriodo.temDado}
+          monthLabel={modeloPeriodo.periodo.rotulo}
+          isCurrentMonth
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onBaixarRelatorio={null}
+          gerandoRelatorio={false}
+          estoque={estoqueResumo}
+          paradosCount={paradosCount}
+          onClickEstoque={handleClickEstoque}
+          despesas={periodoDespesasOrdenadas}
+          onEditarDespesa={handleEditExpense}
+          onExcluirDespesa={setDeleteConfirmId}
+          onRegistrarGasto={handleLancarDespesa}
+          onLancarCompra={handleLancarCompra}
+          exportDespesas={{
+            data: periodoExportDespesas,
+            columns: EXPENSES_EXPORT_COLUMNS,
+            filename: `despesas-${modeloPeriodo.periodo.de}-a-${modeloPeriodo.periodo.ate}`,
+            title: `Despesas — ${modeloPeriodo.periodo.rotulo}`,
+            evento: "planilha_despesas",
+          }}
+          exportVendas={{
+            count: modeloPeriodo.recorte.sales.length,
+            data: periodoExportVendas,
+            columns: exportColumns,
+            filename: `vendas-${modeloPeriodo.periodo.de}-a-${modeloPeriodo.periodo.ate}`,
+            title: `Vendas — ${modeloPeriodo.periodo.rotulo}`,
+            evento: "planilha_resultado",
+          }}
+          auditLogs={auditLogs}
+          carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
+          mostrarDicaClientes={!hideFranchiseeLinks}
+          pedidosNaoConferidos={false}
+          onEscolherModo={handleEscolherModo}
+          onAbrirPersonalizado={() => setDatasAbertas(true)}
+        />
+        {dialogos}
+        {folhaDatas}
+      </>
     );
   }
 
@@ -1334,8 +1475,10 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
           carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
           mostrarDicaClientes={!hideFranchiseeLinks}
           pedidosNaoConferidos={pedidosFalharam}
+          onEscolherModo={handleEscolherModo}
         />
         {dialogos}
+        {folhaDatas}
       </>
     );
   }

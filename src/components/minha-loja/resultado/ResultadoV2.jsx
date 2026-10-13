@@ -22,6 +22,9 @@ const VAL = "font-plus-jakarta font-bold tabular-nums text-ink";
 const LISTA = "divide-y divide-surface-line rounded-2xl border border-surface-line bg-white";
 const LINHA = "flex items-center gap-3 px-4 py-3";
 
+// "neste mês" × "neste período" (Desde o início / Personalizado).
+const noRecorte = (modelo) => (modelo.periodo ? "neste período" : "neste mês");
+
 function Barra({ pct, cor }) {
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-surface-line">
@@ -31,28 +34,73 @@ function Barra({ pct, cor }) {
 }
 
 
+// --------------------------------------------------------------- escolha do período
+// Pedido do Alex (13/10/2026): "período total ou de tal a tal data", como no dashboard antigo.
+const MODOS = [
+  { modo: "mes", rotulo: "Mês" },
+  { modo: "total", rotulo: "Desde o início" },
+  { modo: "personalizado", rotulo: "Personalizado" },
+];
+
+function EscolhaPeriodo({ modo, onEscolherModo }) {
+  return (
+    <div className="grid grid-cols-3 gap-1 rounded-xl bg-surface-2 p-1" role="group" aria-label="Período">
+      {MODOS.map((m) => {
+        const ativo = m.modo === modo;
+        return (
+          <button
+            key={m.modo}
+            type="button"
+            onClick={() => onEscolherModo(m.modo)}
+            aria-pressed={ativo}
+            className={`min-h-[44px] rounded-lg px-1.5 text-sm leading-tight ${ativo ? "bg-white font-semibold text-ink shadow-sm" : "font-medium text-ink-2 hover:text-ink"}`}
+          >
+            {m.rotulo}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // --------------------------------------------------------------- topo: Sobrou, Entrou × Saiu
-function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, onBaixarRelatorio, gerandoRelatorio }) {
-  const { sobrou, entrou, saiu, nomeMes, comparacao, diaCorte } = modelo;
+function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, onBaixarRelatorio, gerandoRelatorio, onEscolherModo, onAbrirPersonalizado }) {
+  const { sobrou, entrou, saiu, nomeMes, comparacao, diaCorte, periodo } = modelo;
   const maior = Math.max(entrou, saiu, 1);
   const positivo = sobrou >= 0;
+  const modo = periodo?.modo || "mes";
   return (
-    <section className={`${CARTAO} space-y-4`} aria-label="Sobrou no mês">
-      <div className="flex items-center justify-between gap-2">
-        <button type="button" onClick={onPrevMonth} aria-label="Mês anterior" title="Mês anterior"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-2 hover:bg-surface">
-          <MaterialIcon icon="chevron_left" size={22} aria-hidden="true" />
-        </button>
-        <h2 className="font-plus-jakarta text-base font-bold capitalize text-ink" aria-live="polite">{monthLabel}</h2>
-        <button type="button" onClick={onNextMonth} disabled={isCurrentMonth} aria-label="Próximo mês" title="Próximo mês"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-2 hover:bg-surface disabled:opacity-40">
-          <MaterialIcon icon="chevron_right" size={22} aria-hidden="true" />
-        </button>
-      </div>
+    <section className={`${CARTAO} space-y-4`} aria-label={periodo ? "Sobrou no período" : "Sobrou no mês"}>
+      {onEscolherModo && <EscolhaPeriodo modo={modo} onEscolherModo={onEscolherModo} />}
+
+      {!periodo ? (
+        <div className="flex items-center justify-between gap-2">
+          <button type="button" onClick={onPrevMonth} aria-label="Mês anterior" title="Mês anterior"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-2 hover:bg-surface">
+            <MaterialIcon icon="chevron_left" size={22} aria-hidden="true" />
+          </button>
+          <h2 className="font-plus-jakarta text-base font-bold capitalize text-ink" aria-live="polite">{monthLabel}</h2>
+          <button type="button" onClick={onNextMonth} disabled={isCurrentMonth} aria-label="Próximo mês" title="Próximo mês"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-ink-2 hover:bg-surface disabled:opacity-40">
+            <MaterialIcon icon="chevron_right" size={22} aria-hidden="true" />
+          </button>
+        </div>
+      ) : (
+        <div className="flex min-h-11 flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
+          <h2 className="font-plus-jakarta text-base font-bold text-ink" aria-live="polite">{periodo.rotulo}</h2>
+          {modo === "personalizado" && onAbrirPersonalizado && (
+            <button type="button" onClick={onAbrirPersonalizado}
+              className="inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-brand-dark hover:bg-surface">
+              <MaterialIcon icon="event" size={18} aria-hidden="true" />
+              Trocar datas
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-5 md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:items-center md:gap-10">
         <div className="flex flex-col gap-1">
-          <span className={LBL}>Sobrou em {nomeMes}</span>
+          <span className={LBL}>{periodo ? "Sobrou no período" : `Sobrou em ${nomeMes}`}</span>
           <span className={`font-plus-jakarta text-4xl font-extrabold tabular-nums leading-tight md:text-5xl ${positivo ? "text-ok-ink" : "text-err"}`}>
             {formatBRL(sobrou)}
           </span>
@@ -69,11 +117,12 @@ function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, on
             <Barra pct={(saiu / maior) * 100} cor="bg-brand" />
             <span className={`${VAL} text-sm`}>{formatBRL(saiu)}</span>
           </div>
-          <span className={CAP}>O que entrou menos o que saiu no mês. Venda ainda a receber já conta; o estoque não entra nessa conta.</span>
+          <span className={CAP}>O que entrou menos o que saiu {periodo ? "no período" : "no mês"}. Venda ainda a receber já conta; o estoque não entra nessa conta.</span>
         </div>
       </div>
 
-      {onBaixarRelatorio && (
+      {periodo && <p className={CAP}>O relatório em PDF sai por mês: escolha Mês para baixar.</p>}
+      {!periodo && onBaixarRelatorio && (
         <button type="button" onClick={onBaixarRelatorio} disabled={gerandoRelatorio} className={`${BTN_SECUNDARIO} min-h-[44px] w-full md:w-auto`}>
           <MaterialIcon icon="picture_as_pdf" size={18} aria-hidden="true" />
           {gerandoRelatorio ? "Gerando relatório..." : "Baixar relatório do mês (PDF)"}
@@ -174,7 +223,7 @@ function ParaOndeFoi({ modelo }) {
     <section className="flex flex-col gap-2.5" aria-label="Para onde foi">
       <h2 className={H2}>Para onde foi</h2>
       <div className={`${CARTAO} flex flex-col gap-3.5`}>
-        {linhas.length === 0 && <p className="text-sm text-ink-3">Nenhum gasto neste mês.</p>}
+        {linhas.length === 0 && <p className="text-sm text-ink-3">Nenhum gasto {noRecorte(modelo)}.</p>}
         {linhas.map((l) => (
           <div key={l.chave} className="flex flex-col gap-1.5">
             <div className="flex justify-between gap-2">
@@ -203,7 +252,7 @@ function MaisVendidos({ modelo, monthLabel, carregarProdutosDoPeriodo }) {
         <span className={CAP}>em unidades</span>
       </div>
       <div className={LISTA}>
-        {top.length === 0 && <p className="px-4 py-3 text-sm text-ink-3">Sem vendas neste mês.</p>}
+        {top.length === 0 && <p className="px-4 py-3 text-sm text-ink-3">Sem vendas {noRecorte(modelo)}.</p>}
         {top.map((p, i) => (
           <div key={p.name} className={LINHA}>
             <span className="w-5 font-plus-jakarta font-extrabold tabular-nums text-ink-3">{i + 1}</span>
@@ -223,6 +272,7 @@ function MaisVendidos({ modelo, monthLabel, carregarProdutosDoPeriodo }) {
         onOpenChange={setTodos}
         produtos={modelo.produtos}
         chave={modelo.chave}
+        limites={modelo.limites}
         monthLabel={monthLabel}
         carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
       />
@@ -234,8 +284,11 @@ function MaisVendidos({ modelo, monthLabel, carregarProdutosDoPeriodo }) {
 // Pedido de Bragança (28/09/2026): vendas por produto no período = o mês do Resultado.
 // 30/09/2026 (mesma unidade): período de data a data. Abre no mês; "Ver período" busca as
 // vendas daquele intervalo (carregarProdutosDoPeriodo, em TabResultado) e a planilha sai dele.
-function VendasPorProduto({ open, onOpenChange, produtos, chave, monthLabel, carregarProdutosDoPeriodo }) {
-  const mes = limitesDoMes(chave);
+// 13/10/2026: com o Resultado em "Desde o início"/"Personalizado", abre nas datas do período
+// (`limites`) em vez do mês.
+function VendasPorProduto({ open, onOpenChange, produtos, chave, limites, monthLabel, carregarProdutosDoPeriodo }) {
+  const mes = limites || limitesDoMes(chave);
+  const chaveAbertura = limites ? `${limites.de}|${limites.ate}` : chave;
   const [de, setDe] = useState(mes.de);
   const [ate, setAte] = useState(mes.ate);
   const [periodo, setPeriodo] = useState(null); // { de, ate, produtos } quando não é o mês
@@ -249,16 +302,18 @@ function VendasPorProduto({ open, onOpenChange, produtos, chave, monthLabel, car
     setAte(mes.ate);
     setPeriodo(null);
     setBuscando(false);
-  }, [chave, open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chaveAbertura, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const verPeriodo = async () => {
+    // As datas de abertura (o mês ou o período do Resultado, que pode passar de 1 ano) já
+    // estão na tela: volta para elas sem buscar nem validar o teto.
+    if (de === mes.de && ate === mes.ate) {
+      setPeriodo(null);
+      return;
+    }
     const erro = validarPeriodo(de, ate);
     if (erro) {
       toast.error(erro);
-      return;
-    }
-    if (de === mes.de && ate === mes.ate) {
-      setPeriodo(null);
       return;
     }
     const pedido = ++pedidoRef.current;
@@ -319,7 +374,7 @@ function VendasPorProduto({ open, onOpenChange, produtos, chave, monthLabel, car
           <ExportButtons
             data={buildProductsExportRows(ativos, { includeTotalsRow: true })}
             columns={productsExportColumns(ativos)}
-            filename={periodo ? `vendas-por-produto-${periodo.de}-a-${periodo.ate}` : `vendas-por-produto-${chave}`}
+            filename={periodo ? `vendas-por-produto-${periodo.de}-a-${periodo.ate}` : limites ? `vendas-por-produto-${limites.de}-a-${limites.ate}` : `vendas-por-produto-${chave}`}
             title={`Vendas por produto · ${rotulo}`}
             evento="planilha_produtos"
           />
@@ -413,23 +468,30 @@ function Estoque({ estoque, paradosCount, onClickEstoque }) {
 
 // --------------------------------------------------------------- Quanto sobrou por mês
 function SobrouPorMes({ modelo }) {
-  const { porMes, ano } = modelo;
+  const { porMes, ano, periodo } = modelo;
   const comDado = porMes.filter((m) => m.temDado);
   if (comDado.length < 2) return null;
   const maior = Math.max(...comDado.map((m) => Math.abs(m.sobrou)), 1);
+  // Mês: sempre 6 barras. Período: 2 a 12 (os últimos 12 meses dele); com mais de 6 o valor em
+  // cima da barra só aparece no computador (no celular não cabe).
+  const muitas = porMes.length > 6;
+  const cortado = periodo && periodo.mesesNoPeriodo > periodo.mesesNoGrafico;
   return (
     <section className="flex flex-col gap-2.5" aria-label="Quanto sobrou por mês">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className={H2}>Quanto sobrou por mês</h2>
-        <span className={CAP}>{ano.ano}</span>
+        <span className={CAP}>{periodo ? (cortado ? `últimos ${periodo.mesesNoGrafico} meses` : "no período") : ano.ano}</span>
       </div>
-      <div className={`${CARTAO} grid h-[210px] grid-cols-6 items-end gap-2.5 md:h-[250px] md:gap-4`}>
+      <div
+        className={`${CARTAO} grid h-[210px] items-end md:h-[250px] ${muitas ? "gap-1 md:gap-2" : "gap-2.5 md:gap-4"}`}
+        style={{ gridTemplateColumns: `repeat(${porMes.length}, minmax(0, 1fr))` }}
+      >
         {porMes.map((m) => {
           const altura = m.temDado ? Math.max(4, (Math.abs(m.sobrou) / maior) * 130) : 4;
           const cor = !m.temDado ? "bg-surface-line" : m.sobrou < 0 ? "bg-err/70" : m.atual ? "bg-ok" : "bg-brand-soft";
           return (
             <div key={m.chave} className="flex min-w-0 flex-col items-center gap-1.5">
-              <span className={`truncate text-[11px] tabular-nums ${m.atual ? "font-extrabold text-ok-ink" : "text-ink-3"} ${m.sobrou < 0 ? "!text-err" : ""}`}>
+              <span className={`truncate text-[11px] tabular-nums ${muitas ? "hidden md:block" : ""} ${m.atual ? "font-extrabold text-ok-ink" : "text-ink-3"} ${m.sobrou < 0 ? "!text-err" : ""}`}>
                 {m.temDado ? formatBRLCompactResultado(m.sobrou) : "—"}
               </span>
               <i className={`block w-full rounded-md ${cor}`} style={{ height: `${altura}px` }} aria-hidden="true" />
@@ -438,7 +500,15 @@ function SobrouPorMes({ modelo }) {
           );
         })}
       </div>
-      {ano.mesesComDado >= 2 && (
+      {periodo && ano.mesesComDado >= 2 && (
+        <span className={CAP}>
+          No período: {formatBRL(ano.total)} {ano.total >= 0 ? "sobraram" : "de diferença"}.
+          {ano.melhor ? ` Melhor mês: ${ano.melhor.rotulo} (${formatBRL(ano.melhor.valor)}).` : ""}
+          {` ${ano.mesesAzul} de ${ano.mesesComDado} meses no azul · média de ${formatBRL(ano.media)} por mês.`}
+          {periodo.modo === "personalizado" ? " Mês da ponta conta só os dias do período." : ""}
+        </span>
+      )}
+      {!periodo && ano.mesesComDado >= 2 && (
         <span className={CAP}>
           No ano: {formatBRL(ano.total)} {ano.total >= 0 ? "sobraram" : "de diferença"}.
           {ano.melhorMes ? ` ${modelo.nomeMes.charAt(0).toUpperCase() + modelo.nomeMes.slice(1)} é o seu melhor mês até agora.` : ""}
@@ -451,11 +521,12 @@ function SobrouPorMes({ modelo }) {
 }
 
 // --------------------------------------------------------------- Gastos do mês
-function GastosDoMes({ despesas, onEditar, onExcluir, onRegistrarGasto, exportDespesas }) {
+function GastosDoMes({ despesas, onEditar, onExcluir, onRegistrarGasto, exportDespesas, emPeriodo = false }) {
+  const titulo = emPeriodo ? "Gastos do período" : "Gastos do mês";
   return (
-    <section className="flex flex-col gap-2.5" aria-label="Gastos do mês">
+    <section className="flex flex-col gap-2.5" aria-label={titulo}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className={H2}>Gastos do mês</h2>
+        <h2 className={H2}>{titulo}</h2>
         <div className="flex items-center gap-2">
           {despesas.length > 0 && <ExportButtons {...exportDespesas} />}
           <button type="button" onClick={onRegistrarGasto} className={`${BTN_PRIMARIO} min-h-[44px]`}>
@@ -465,7 +536,7 @@ function GastosDoMes({ despesas, onEditar, onExcluir, onRegistrarGasto, exportDe
         </div>
       </div>
       <div className={LISTA}>
-        {despesas.length === 0 && <p className="px-4 py-4 text-sm text-ink-3">Nenhum gasto neste mês.</p>}
+        {despesas.length === 0 && <p className="px-4 py-4 text-sm text-ink-3">Nenhum gasto {emPeriodo ? "neste período" : "neste mês"}.</p>}
         {despesas.map((exp) => {
           const meta = getCategoryMeta(exp.category);
           const auto = exp.source && exp.source !== "manual";
@@ -474,7 +545,7 @@ function GastosDoMes({ despesas, onEditar, onExcluir, onRegistrarGasto, exportDe
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-ink">{exp.description || meta.label}</div>
                 <div className={CAP}>
-                  {exp.expense_date ? format(parseISO(exp.expense_date), "dd/MM") : "—"}<span className="hidden md:inline"> · {meta.label}</span> · {auto ? "entra sozinho" : "você lançou"}
+                  {exp.expense_date ? format(parseISO(exp.expense_date), emPeriodo ? "dd/MM/yy" : "dd/MM") : "—"}<span className="hidden md:inline"> · {meta.label}</span> · {auto ? "entra sozinho" : "você lançou"}
                 </div>
               </div>
               <span className={`${VAL} shrink-0 text-sm`}>{formatBRL(exp.amount)}</span>
@@ -580,8 +651,11 @@ export default function ResultadoV2({
   mostrarDicaClientes,
   pedidosNaoConferidos = false,
   carregarProdutosDoPeriodo,
+  onEscolherModo,
+  onAbrirPersonalizado,
 }) {
   const [escolhendo, setEscolhendo] = useState(false);
+  const emPeriodo = !!modelo.periodo;
   const abrirEscolha = () => setEscolhendo(true);
   const topo = (
     <Topo
@@ -592,6 +666,8 @@ export default function ResultadoV2({
       onNextMonth={onNextMonth}
       onBaixarRelatorio={onBaixarRelatorio}
       gerandoRelatorio={gerandoRelatorio}
+      onEscolherModo={onEscolherModo}
+      onAbrirPersonalizado={onAbrirPersonalizado}
     />
   );
   const escolha = (
@@ -625,8 +701,10 @@ export default function ResultadoV2({
       )}
       {tem("vazio") && (
         <div className={`${CARTAO} text-center`} data-bloco="vazio">
-          <p className="text-base font-semibold text-ink">Nada lançado neste mês</p>
-          <p className="mb-4 mt-1 text-sm text-ink-2">Lance a primeira venda do mês ou registre um gasto para ver quanto sobrou.</p>
+          <p className="text-base font-semibold text-ink">Nada lançado {emPeriodo ? "neste período" : "neste mês"}</p>
+          <p className="mb-4 mt-1 text-sm text-ink-2">
+            {emPeriodo ? "Escolha outras datas, lance uma venda ou registre um gasto." : "Lance a primeira venda do mês ou registre um gasto para ver quanto sobrou."}
+          </p>
           <button type="button" onClick={abrirEscolha} className={`${BTN_PRIMARIO} min-h-[44px]`}>
             <MaterialIcon icon="add" size={18} aria-hidden="true" />
             Registrar gasto
@@ -647,6 +725,7 @@ export default function ResultadoV2({
             onExcluir={onExcluirDespesa}
             onRegistrarGasto={abrirEscolha}
             exportDespesas={exportDespesas}
+            emPeriodo={emPeriodo}
           />
         )}
       </div>
@@ -655,7 +734,7 @@ export default function ResultadoV2({
         <section className={`${CARTAO} flex flex-wrap items-center justify-between gap-3`} aria-label="Planilha das vendas">
           <div>
             <h2 className="font-plus-jakarta text-base font-bold text-ink">Planilha das vendas</h2>
-            <p className={CAP}>{exportVendas.count} venda{exportVendas.count !== 1 ? "s" : ""} em {monthLabel}</p>
+            <p className={CAP}>{exportVendas.count} venda{exportVendas.count !== 1 ? "s" : ""} {emPeriodo ? "no período" : `em ${monthLabel}`}</p>
           </div>
           <ExportButtons
             data={exportVendas.data}
