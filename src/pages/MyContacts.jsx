@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Contact } from "@/entities/all";
+import { Contact, Sale } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
@@ -354,6 +354,37 @@ export default function MyContacts() {
         updateData.do_not_contact_at = editForm.do_not_contact_at || null;
       }
       await Contact.update(editingContact.id, updateData);
+      // A venda guarda uma CÓPIA do endereço (sales.customer_address). Corrigir o cadastro
+      // tem de levar a correção às entregas que ainda vão sair (data de hoje em diante),
+      // senão o comprovante e o botão da Uber seguem com o endereço errado (Suzano, 13/10/2026).
+      // Venda passada fica como foi entregue.
+      const mudouEndereco =
+        (updateData.endereco || "") !== (editingContact.endereco || "") ||
+        (updateData.bairro || "") !== (editingContact.bairro || "");
+      if (mudouEndereco && updateData.endereco) {
+        try {
+          const abertas = await Sale.filter(
+            { contact_id: editingContact.id, delivery_method: "delivery" },
+            null,
+            null,
+            { columns: "id", gte: { sale_date: format(new Date(), "yyyy-MM-dd") } }
+          );
+          await Promise.all(
+            abertas.map((s) =>
+              Sale.update(s.id, { customer_address: updateData.endereco, customer_neighborhood: updateData.bairro })
+            )
+          );
+          if (abertas.length) {
+            toast.success(
+              abertas.length === 1
+                ? "Endereço corrigido também na entrega em aberto."
+                : `Endereço corrigido também nas ${abertas.length} entregas em aberto.`
+            );
+          }
+        } catch (erroVendas) {
+          toast.error(safeErrorMessage(erroVendas, "Contato salvo, mas não consegui corrigir o endereço na venda. Abra a venda e corrija lá."));
+        }
+      }
       // Robô não responde: grava só se a lista carregou e algo mudou (marcação ou o próprio telefone)
       if (bloqueioEdit.carregado && editingContact.franchise_id) {
         const quer = !!editForm.robo_bloqueado;
