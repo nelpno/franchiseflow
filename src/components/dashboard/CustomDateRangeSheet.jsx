@@ -8,8 +8,9 @@ import { parseDateOnly } from "@/lib/dateOnly";
 const MAX_DAYS = 90;
 
 // maxDays: teto do intervalo (Início antigo = 90). null = sem teto (Gestão › Resultado, 13/10/2026:
-// "de tal a tal data" sem limite; a data final continua até hoje).
-export default function CustomDateRangeSheet({ open, onOpenChange, currentRange, onApply, onClear, maxDays = MAX_DAYS, descricao }) {
+// "de tal a tal data" sem limite; a data final continua até hoje). minDate ('yyyy-MM-dd'): piso do
+// início quando não há teto (um ano digitado errado, 0026, travava a tela montando ~24 mil meses).
+export default function CustomDateRangeSheet({ open, onOpenChange, currentRange, onApply, onClear, maxDays = MAX_DAYS, minDate, descricao }) {
   const [startStr, setStartStr] = useState("");
   const [endStr, setEndStr] = useState("");
   const [error, setError] = useState(null);
@@ -32,6 +33,11 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
     const end = parseDateOnly(endStr);
     if (!start || !end) {
       setError("Preencha as duas datas.");
+      return;
+    }
+    // Comparação em texto: new Date com ano < 100 vira 19xx e escaparia da conferência.
+    if (!maxDays && minDate && startStr < minDate) {
+      setError(`Data inicial não pode ser antes de ${format(parseDateOnly(minDate), "dd/MM/yyyy")}.`);
       return;
     }
     if (end < start) {
@@ -66,7 +72,7 @@ export default function CustomDateRangeSheet({ open, onOpenChange, currentRange,
 
   const hasRange = !!(currentRange?.start && currentRange?.end);
   const todayStr = format(new Date(), "yyyy-MM-dd");
-  const minStartStr = maxDays ? format(subDays(new Date(), maxDays - 1), "yyyy-MM-dd") : undefined;
+  const minStartStr = maxDays ? format(subDays(new Date(), maxDays - 1), "yyyy-MM-dd") : minDate;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -4,8 +4,9 @@
 // Pedido do Alex (13/10/2026): o dashboard antigo tinha "período total ou de tal a tal data" e
 // a versão nova só andava mês a mês. Três modos:
 //   - "mes": o de sempre (montarResultadoMes, com setas, comparação e PDF);
-//   - "total": desde o primeiro lançamento da unidade até o fim do mês atual (o mês atual conta
-//     inteiro, como no modo Mês: venda com data futura dentro do mês entra);
+//   - "total": desde o primeiro lançamento da unidade, SEM teto no fim (o robô grava a venda com a
+//     data da ENTREGA, que pode cair no mês seguinte; ela entra no total). O gráfico vai até o
+//     fim do mês atual ou até o mês da maior data, o que vier depois;
 //   - "personalizado": de tal a tal data, as duas inclusive, fim até hoje.
 // Fora do modo Mês não há comparação nem PDF (o PDF é por mês). A regra do dinheiro é a MESMA:
 // o resumo sai de resumirLinhas (monthlyReport.js), o mesmo corpo de resumirMes.
@@ -18,7 +19,11 @@ export const MODO_MES = "mes";
 export const MODO_TOTAL = "total";
 export const MODO_PERSONALIZADO = "personalizado";
 // "Desde o início" busca sem piso real: a data mais antiga que a busca aceita.
+// Também é a data mínima do Personalizado: um ano digitado errado (0026) faria o gráfico
+// percorrer ~24 mil meses e travar a tela.
 export const INICIO_SEM_LIMITE = "2000-01-01";
+// "Desde o início" busca e recorta sem teto no fim (venda do robô com data de entrega futura).
+export const FIM_SEM_LIMITE = "9999-12-31";
 // Barras do "Quanto sobrou por mês" num período longo: os últimos 12 meses dele.
 export const MESES_NO_GRAFICO_PERIODO = 12;
 
@@ -32,6 +37,7 @@ const br = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 /** Mensagem para a tela quando o período de tal a tal data não serve; null quando está certo. */
 export function validarIntervalo(de, ate, hoje = format(new Date(), DIA)) {
   if (!ISO.test(String(de ?? "")) || !ISO.test(String(ate ?? ""))) return "Escolha as duas datas.";
+  if (de < INICIO_SEM_LIMITE) return `A data inicial não pode ser antes de ${br(INICIO_SEM_LIMITE)}.`;
   if (ate < de) return "A data final vem antes da inicial.";
   if (ate > hoje) return "A data final não pode ser depois de hoje.";
   return null;
@@ -45,7 +51,7 @@ export function validarIntervalo(de, ate, hoje = format(new Date(), DIA)) {
 export function intervaloDoPeriodo(periodo, { mes = new Date(), hoje = new Date() } = {}) {
   const modo = periodo?.modo || MODO_MES;
   if (modo === MODO_MES) return { de: format(startOfMonth(mes), DIA), ate: format(endOfMonth(mes), DIA) };
-  if (modo === MODO_TOTAL) return { de: INICIO_SEM_LIMITE, ate: format(endOfMonth(hoje), DIA) };
+  if (modo === MODO_TOTAL) return { de: INICIO_SEM_LIMITE, ate: FIM_SEM_LIMITE };
   if (modo === MODO_PERSONALIZADO) {
     return validarIntervalo(periodo.de, periodo.ate, format(hoje, DIA)) ? null : { de: periodo.de, ate: periodo.ate };
   }
@@ -87,7 +93,7 @@ export function recortarPeriodo({ sales = [], saleItems = [], expenses = [] } = 
  * tela lê de montarResultadoMes. Sem comparação (comparacao null, oQueMudou vazio), sem aviso
  * do pedido à fábrica (é do mês em andamento) e sem relatorio (o PDF é por mês).
  */
-export function montarResultadoPeriodo({ sales = [], saleItems = [], expenses = [], periodo, de, ate }) {
+export function montarResultadoPeriodo({ sales = [], saleItems = [], expenses = [], periodo, de, ate, hoje = new Date() }) {
   const recorte = recortarPeriodo({ sales, saleItems, expenses }, de, ate);
   const r = resumirLinhas({ mSales: recorte.sales, mItems: recorte.saleItems, mExp: recorte.expenses });
 
@@ -96,24 +102,33 @@ export function montarResultadoPeriodo({ sales = [], saleItems = [], expenses = 
     .filter(Boolean)
     .sort();
   const primeiroDia = datas[0] || null;
+  const ultimoDia = datas[datas.length - 1] || null;
   const total = periodo?.modo === MODO_TOTAL;
   const inicio = total ? primeiroDia : de;
+  // "Desde o início" não tem teto: o fim mostrado vai até o fim do mês atual ou até o mês da
+  // maior data lançada (venda com entrega no mês seguinte), o que vier depois.
+  const fimMesAtual = format(endOfMonth(hoje), DIA);
+  const fim = total
+    ? (ultimoDia && ultimoDia > fimMesAtual ? format(endOfMonth(parseISO(ultimoDia)), DIA) : fimMesAtual)
+    : ate;
+  const chaveHoje = format(hoje, "yyyy-MM");
 
   // Mês a mês dentro do período (mês da ponta entra só com os dias do período).
   const meses = [];
   if (inicio) {
-    for (let d = startOfMonth(parseISO(inicio)); format(d, DIA) <= ate; d = addMonths(d, 1)) {
+    for (let d = startOfMonth(parseISO(inicio)); format(d, DIA) <= fim; d = addMonths(d, 1)) {
       const m = resumirMes(d, recorte);
       meses.push({ ...m, rotuloMes: format(d, "MMM", { locale: ptBR }).replace(".", "") });
     }
   }
   const noGrafico = meses.slice(-MESES_NO_GRAFICO_PERIODO);
-  const porMes = noGrafico.map((m, i) => ({
+  const porMes = noGrafico.map((m) => ({
     chave: m.chave,
     rotulo: m.rotuloMes,
     sobrou: m.lucroCaixa,
     temDado: m.temDado,
-    atual: i === noGrafico.length - 1,
+    // Destaque só no mês corrente de verdade (no Personalizado a última barra pode ser outro mês).
+    atual: m.chave === chaveHoje,
   }));
   const comDado = meses.filter((m) => m.temDado);
   const melhor = comDado.reduce((b, m) => (b === null || m.lucroCaixa > b.lucroCaixa ? m : b), null);
@@ -126,13 +141,13 @@ export function montarResultadoPeriodo({ sales = [], saleItems = [], expenses = 
     periodo: {
       modo: periodo?.modo,
       de: inicio || de,
-      ate,
+      ate: fim,
       rotulo,
       mesesNoGrafico: porMes.length,
       mesesNoPeriodo: meses.length,
     },
     // VendasPorProduto abre nestas datas (no lugar do mês).
-    limites: { de: inicio || ate, ate },
+    limites: { de: inicio || fim, ate: fim },
     chave: null,
     nomeMes: null,
     emAndamento: false,

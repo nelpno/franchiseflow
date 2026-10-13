@@ -48,6 +48,7 @@ import {
 import { formatBRL, formatBRLCompactResultado as formatBRLCompact } from "@/lib/formatters";
 import { janelaResultado } from "@/lib/resultadoWindow";
 import {
+  INICIO_SEM_LIMITE,
   MODO_MES,
   MODO_PERSONALIZADO,
   intervaloDoPeriodo,
@@ -851,20 +852,30 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   // fetchAll aplica sozinho (src/entities/all.js). Cálculo em @/lib/resultadoWindow (testado
   // com fixture: soma na janela == soma no histórico inteiro, pro mês exibido).
   const loadedRangeRef = useRef(null); // { start, end } em 'yyyy-MM-dd', última janela buscada
+  // Janela que está NA TELA (estado, para a renderização enxergar). Diferente do ref, também vale
+  // depois de falha parcial (gasto/estoque): os dados de venda chegaram e a tela pode mostrar.
+  // Enquanto ela não cobre o que o modo/mês pede, a tela fica no esqueleto em vez de montar o
+  // quadro com dados parciais (revisão 01e370d, item 3).
+  const [janelaNaTela, setJanelaNaTela] = useState(null);
 
   // Fora do modo Mês, a busca precisa cobrir o período inteiro ("Desde o início" = sem piso).
   // Strings soltas nas dependências: o objeto mudaria de identidade a cada render.
+  // Personalizado inválido (não deveria chegar aqui: a folha valida) cai no mês, nunca na tela antiga.
   const intervaloPeriodo = periodo.modo === MODO_MES ? null : intervaloDoPeriodo(periodo);
   const periodoDe = intervaloPeriodo?.de ?? null;
   const periodoAte = intervaloPeriodo?.ate ?? null;
+  const janelaDaTela = periodoDe ? { start: periodoDe, end: periodoAte } : janelaResultado(selectedMonth);
+  const janelaPendente = !!franchiseId && !intervaloCobre(janelaNaTela, janelaDaTela);
 
   const loadData = useCallback(async (opts = {}) => {
     if (!franchiseId) return;
     const { targetMonth = selectedMonth, force = false } = opts;
-    // Mês: 13 meses para trás (S8.2). Período: as datas dele. Nos dois, a janela só cresce.
+    // Mês: 13 meses para trás (S8.2). Período: as datas dele. Navegando, a janela só cresce.
+    // force (salvou/apagou gasto, tentar de novo): busca só o que o modo ATUAL pede, senão
+    // depois de abrir "Desde o início" todo salvamento no Mês rebuscava o histórico inteiro.
     const necessaria = periodoDe ? { start: periodoDe, end: periodoAte } : janelaResultado(targetMonth);
     if (!force && intervaloCobre(loadedRangeRef.current, necessaria)) return;
-    const { start: neededStart, end: neededEnd } = uniaoIntervalos(loadedRangeRef.current, necessaria);
+    const { start: neededStart, end: neededEnd } = force ? necessaria : uniaoIntervalos(loadedRangeRef.current, necessaria);
 
     setLoading(true);
     setErroDeCarga(null);
@@ -902,19 +913,20 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
       // SaleItem em segundo round (depende dos sale IDs).
       // Chunk de 500 ids/request pra não estourar o limite de URL do PostgREST — o
       // histórico inteiro da franquia num único .in() quebrava em franquia grande.
+      // Os pedaços vão em paralelo ("Desde o início" pode ter dezenas).
       const saleIds = salesData.map(s => s.id);
-      const saleItemsData = [];
       const SALE_ID_CHUNK = 500;
-      for (let i = 0; i < saleIds.length; i += SALE_ID_CHUNK) {
-        const chunk = saleIds.slice(i, i + SALE_ID_CHUNK);
-        try {
-          const items = await SaleItem.filter({ sale_id: chunk }, null, null,
-            { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name', fetchAll: true });
-          saleItemsData.push(...items);
-        } catch (err) {
-          console.warn('SaleItems chunk falhou:', err);
-        }
-      }
+      const chunks = [];
+      for (let i = 0; i < saleIds.length; i += SALE_ID_CHUNK) chunks.push(saleIds.slice(i, i + SALE_ID_CHUNK));
+      const partes = await Promise.all(chunks.map((chunk) =>
+        SaleItem.filter({ sale_id: chunk }, null, null,
+          { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name', fetchAll: true })
+          .catch((err) => {
+            console.warn('SaleItems chunk falhou:', err);
+            return [];
+          })
+      ));
+      const saleItemsData = partes.flat();
 
       setSales(salesData);
       setSaleItems(saleItemsData);
@@ -926,11 +938,19 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
       // Vendas é o que sustenta a tela inteira: sem ela, estado de erro — não um DRE zerado,
       // que o franqueado leria como "não vendi nada".
       if (results[0].status === "rejected") {
+        loadedRangeRef.current = null;
+        setJanelaNaTela(null);
         setErroDeCarga(safeErrorMessage(results[0].reason, "Não foi possível carregar as vendas do período."));
-      } else if (failed.length) {
-        toast.error(`Alguns dados não carregaram: ${failed.join(", ")}`);
       } else {
-        loadedRangeRef.current = { start: neededStart, end: neededEnd };
+        setJanelaNaTela({ start: neededStart, end: neededEnd });
+        if (failed.length) {
+          // A memória agora é só desta carga: um ref antigo e maior faria a próxima troca de
+          // modo achar que já tem tudo e o esqueleto nunca sairia.
+          loadedRangeRef.current = null;
+          toast.error(`Alguns dados não carregaram: ${failed.join(", ")}`);
+        } else {
+          loadedRangeRef.current = { start: neededStart, end: neededEnd };
+        }
       }
     } catch (e) {
       console.error("Erro ao carregar dados:", e);
@@ -990,10 +1010,11 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
   const expensesExportData = useMemo(() => buildExpensesExportRows(monthExpenses, { includeTotalsRow: true }), [monthExpenses]);
   const prevPnl = useMemo(() => calculatePnL(prevMonthSales, prevMonthSaleItems, prevMonthExpenses), [prevMonthSales, prevMonthSaleItems, prevMonthExpenses]);
 
-  // S17: modelo único da tela nova e do PDF novo (montarResultadoMes). Só calcula com a chave.
+  // S17: modelo único da tela nova e do PDF novo (montarResultadoMes). Só calcula com a chave
+  // e no modo Mês (fora dele a tela usa o modeloPeriodo; o PDF monta o seu na hora do clique).
   const modeloV2 = useMemo(
-    () => (uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null),
-    [uiV2, sales, saleItems, expenses, purchaseOrders, selectedMonth]
+    () => (uiV2 && !periodoDe ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null),
+    [uiV2, periodoDe, sales, saleItems, expenses, purchaseOrders, selectedMonth]
   );
 
   // Desde o início / Personalizado (só na tela nova): mesmo formato do modeloV2, sem comparação.
@@ -1325,20 +1346,20 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
     </>
   );
 
-  if (loading) {
-    // Esqueleto no lugar do spinner: a tela demora e o esqueleto ja mostra o formato
-    return (
-      <div className="space-y-5">
-        <Skeleton className="h-32 rounded-2xl" />
-        <Skeleton className="h-40 rounded-2xl" />
-        <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
-        </div>
-        <Skeleton className="h-56 rounded-2xl" />
+  // Esqueleto no lugar do spinner: a tela demora e o esqueleto ja mostra o formato
+  const esqueleto = (
+    <div className="space-y-5">
+      <Skeleton className="h-32 rounded-2xl" />
+      <Skeleton className="h-40 rounded-2xl" />
+      <div className="grid grid-cols-2 gap-3">
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-24 rounded-2xl" />
       </div>
-    );
-  }
+      <Skeleton className="h-56 rounded-2xl" />
+    </div>
+  );
+
+  if (loading) return esqueleto;
 
   if (erroDeCarga) {
     const erro = (
@@ -1365,6 +1386,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
             className="min-h-[44px] rounded-xl"
             onClick={() => {
               loadedRangeRef.current = null;
+              setJanelaNaTela(null);
               setErroDeCarga(null);
               setPeriodo({ modo: MODO_MES });
             }}
@@ -1376,6 +1398,10 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
     );
   }
 
+  // Trocou de modo ou de mês e a carga ainda não começou (o efeito roda depois deste render):
+  // os dados na memória não cobrem o período, então nada de quadro com número parcial.
+  if (janelaPendente) return esqueleto;
+
   const folhaDatas = (
     <CustomDateRangeSheet
       open={datasAbertas}
@@ -1384,6 +1410,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
       onApply={handleAplicarDatas}
       onClear={() => setPeriodo({ modo: MODO_MES })}
       maxDays={null}
+      minDate={INICIO_SEM_LIMITE}
       descricao="De tal a tal data. A data final vai até hoje."
     />
   );

@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  FIM_SEM_LIMITE,
   INICIO_SEM_LIMITE,
   MODO_MES,
   MODO_PERSONALIZADO,
@@ -53,10 +54,10 @@ test("modo Mês: montarResultadoPeriodo de um mês = montarResultadoMes do mesmo
   assert.deepEqual(p.produtos, m.produtos);
 });
 
-test("Desde o início: busca sem piso, até o fim do mês atual; soma = histórico inteiro", () => {
+test("Desde o início: busca sem piso nem teto; gráfico até o fim do mês atual; soma = histórico inteiro", () => {
   const iv = intervaloDoPeriodo({ modo: MODO_TOTAL }, { hoje: HOJE });
-  assert.deepEqual(iv, { de: INICIO_SEM_LIMITE, ate: "2026-10-31" });
-  const p = montarResultadoPeriodo({ ...dados, periodo: { modo: MODO_TOTAL }, ...iv });
+  assert.deepEqual(iv, { de: INICIO_SEM_LIMITE, ate: FIM_SEM_LIMITE });
+  const p = montarResultadoPeriodo({ ...dados, periodo: { modo: MODO_TOTAL }, ...iv, hoje: HOJE });
   const pnl = calculatePnL(sales, saleItems, expenses);
   assert.equal(p.sobrou, pnl.lucroCaixa);
   assert.equal(p.mes.vendas, 4);
@@ -64,7 +65,8 @@ test("Desde o início: busca sem piso, até o fim do mês atual; soma = históri
   // rótulo e gráfico partem do 1º lançamento real (10/08), não de 2000
   assert.equal(p.periodo.rotulo, "Desde 10/08/2026");
   assert.deepEqual(p.porMes.map((m) => m.chave), ["2026-08", "2026-09", "2026-10"]);
-  assert.equal(p.porMes.at(-1).atual, true);
+  assert.deepEqual(p.porMes.map((m) => m.atual), [false, false, true]);
+  assert.equal(p.periodo.ate, "2026-10-31"); // o teto técnico (9999) nunca aparece
   // soma das barras = total do período
   assert.equal(Math.round(p.porMes.reduce((s, m) => s + m.sobrou, 0) * 100), Math.round(p.sobrou * 100));
   assert.equal(p.comparacao, null);
@@ -73,7 +75,7 @@ test("Desde o início: busca sem piso, até o fim do mês atual; soma = históri
 });
 
 test("Desde o início sem nenhum lançamento: vazio, sem gráfico", () => {
-  const p = montarResultadoPeriodo({ periodo: { modo: MODO_TOTAL }, de: INICIO_SEM_LIMITE, ate: "2026-10-31" });
+  const p = montarResultadoPeriodo({ periodo: { modo: MODO_TOTAL }, de: INICIO_SEM_LIMITE, ate: FIM_SEM_LIMITE, hoje: HOJE });
   assert.equal(p.temDado, false);
   assert.equal(p.periodo.rotulo, "Desde o início");
   assert.deepEqual(p.porMes, []);
@@ -140,10 +142,45 @@ test("período longo: gráfico com os últimos 12 meses, totais do período inte
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-05`;
     muitas.push({ id: `m${i}`, sale_date: iso, value: 10, discount_amount: 0, delivery_fee: 0, card_fee_amount: 0 });
   }
-  const p = montarResultadoPeriodo({ sales: muitas, periodo: { modo: MODO_TOTAL }, de: INICIO_SEM_LIMITE, ate: "2026-10-31" });
+  const p = montarResultadoPeriodo({ sales: muitas, periodo: { modo: MODO_TOTAL }, de: INICIO_SEM_LIMITE, ate: FIM_SEM_LIMITE, hoje: HOJE });
   assert.equal(p.periodo.mesesNoPeriodo, 18);
   assert.equal(p.porMes.length, 12);
   assert.equal(p.porMes[0].chave, "2025-11");
   assert.equal(p.ano.mesesComDado, 18);
   assert.equal(p.sobrou, 180);
+});
+
+test("revisão 01e370d: início antes de 01/01/2000 (ano 0026 digitado errado) é recusado", () => {
+  assert.equal(validarIntervalo("0026-10-01", "2026-10-13", "2026-10-13"), "A data inicial não pode ser antes de 01/01/2000.");
+  assert.equal(intervaloDoPeriodo({ modo: MODO_PERSONALIZADO, de: "0026-10-01", ate: "2026-10-13" }, { hoje: HOJE }), null);
+  assert.equal(validarIntervalo("1999-12-31", "2026-10-13", "2026-10-13"), "A data inicial não pode ser antes de 01/01/2000.");
+  assert.equal(validarIntervalo(INICIO_SEM_LIMITE, "2026-10-13", "2026-10-13"), null);
+});
+
+test("revisão 01e370d: Desde o início conta a venda do robô com data de entrega no mês seguinte", () => {
+  const futura = { id: "s5", sale_date: "2026-11-04", value: 60, discount_amount: 0, delivery_fee: 0, card_fee_amount: 0, source: "bot", payment_method: "pix" };
+  const todas = [...sales, futura];
+  const iv = intervaloDoPeriodo({ modo: MODO_TOTAL }, { hoje: HOJE });
+  const p = montarResultadoPeriodo({ sales: todas, saleItems, expenses, periodo: { modo: MODO_TOTAL }, ...iv, hoje: HOJE });
+  assert.equal(p.sobrou, calculatePnL(todas, saleItems, expenses).lucroCaixa);
+  assert.equal(p.entrou, 110 + 45 + 80 + 70 + 60);
+  assert.ok(p.recorte.sales.some((s) => s.id === "s5"));
+  assert.equal(p.periodo.rotulo, "Desde 10/08/2026");
+  assert.equal(p.periodo.ate, "2026-11-30");
+  assert.deepEqual(p.limites, { de: "2026-08-10", ate: "2026-11-30" });
+  assert.deepEqual(p.porMes.map((m) => [m.chave, m.atual]), [["2026-08", false], ["2026-09", false], ["2026-10", true], ["2026-11", false]]);
+  assert.equal(Math.round(p.porMes.reduce((s, m) => s + m.sobrou, 0) * 100), Math.round(p.sobrou * 100));
+});
+
+test("revisão 01e370d: no Personalizado a barra 'atual' é só o mês corrente de verdade", () => {
+  const passado = montarResultadoPeriodo({ ...dados, periodo: { modo: MODO_PERSONALIZADO }, de: "2026-08-01", ate: "2026-09-30", hoje: HOJE });
+  assert.deepEqual(passado.porMes.map((m) => m.atual), [false, false]);
+  const ateHoje = montarResultadoPeriodo({ ...dados, periodo: { modo: MODO_PERSONALIZADO }, de: "2026-09-01", ate: "2026-10-13", hoje: HOJE });
+  assert.deepEqual(ateHoje.porMes.map((m) => [m.chave, m.atual]), [["2026-09", false], ["2026-10", true]]);
+});
+
+test("revisão 01e370d: a janela de 'Desde o início' cobre qualquer mês (voltar para Mês não busca de novo)", () => {
+  const total = { start: INICIO_SEM_LIMITE, end: FIM_SEM_LIMITE };
+  assert.equal(intervaloCobre(total, { start: "2025-09-01", end: "2026-11-30" }), true);
+  assert.equal(intervaloCobre({ start: "2025-09-01", end: "2026-10-31" }, total), false);
 });
