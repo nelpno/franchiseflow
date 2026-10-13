@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { listarFranquias } from "@/lib/franchisesCache";
+import { hojeBrasilia } from "@/lib/inicioMes";
 import { chaveTelefone, listarBloqueios, bloquearNumero, desbloquearNumero } from "@/lib/roboBloqueios";
 
 // Aba Todos: cartões renderizados de 50 em 50 (há unidade com 3 mil contatos)
@@ -52,6 +53,18 @@ function timeAgo(dateStr) {
   } catch {
     return "";
   }
+}
+
+// "Rua Fernando Fiamini, 597 - Cep..." e "Rua Fernando Fiamini, 597, Parque..." = mesma rua:
+// compara a última palavra antes do 1º número + o número (sem acento, caixa ou pontuação).
+function chaveRua(endereco) {
+  const t = (endereco || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const m = /([a-z]+)[^a-z0-9]*(\d+)/.exec(t);
+  return m ? `${m[1]}${m[2]}` : t.replace(/[^a-z0-9]/g, "");
+}
+function mesmaRua(a, b) {
+  const ka = chaveRua(a);
+  return !!ka && ka === chaveRua(b);
 }
 
 export default function MyContacts() {
@@ -355,31 +368,34 @@ export default function MyContacts() {
       }
       await Contact.update(editingContact.id, updateData);
       // A venda guarda uma CÓPIA do endereço (sales.customer_address). Corrigir o cadastro
-      // tem de levar a correção às entregas que ainda vão sair (data de hoje em diante),
-      // senão o comprovante e o botão da Uber seguem com o endereço errado (Suzano, 13/10/2026).
-      // Venda passada fica como foi entregue.
-      const mudouEndereco =
-        (updateData.endereco || "") !== (editingContact.endereco || "") ||
-        (updateData.bairro || "") !== (editingContact.bairro || "");
-      if (mudouEndereco && updateData.endereco) {
+      // leva a correção às entregas de hoje em diante (Suzano, 13/10/2026), senão o comprovante
+      // e o botão da Uber seguem com o endereço errado. Só reescreve a venda que ainda tem o
+      // endereço ANTIGO (ou nenhum): endereço digitado de propósito para um pedido (presente,
+      // trabalho) fica. Compara rua+número por mesmaRua porque o robô grava a venda e o contato
+      // em formatos diferentes ("Rua X, 597, Bairro" × "Rua X, 597 - Cep: ...").
+      const mexeuNoEndereco =
+        (editForm.endereco || "").trim() !== (editingContact.endereco || "").trim() ||
+        (editForm.bairro || "").trim() !== (editingContact.bairro || "").trim();
+      if (mexeuNoEndereco && updateData.endereco) {
         try {
-          const abertas = await Sale.filter(
+          const vendas = await Sale.filter(
             { contact_id: editingContact.id, delivery_method: "delivery" },
             null,
             null,
-            { columns: "id", gte: { sale_date: format(new Date(), "yyyy-MM-dd") } }
+            { columns: "id, customer_address", gte: { sale_date: hojeBrasilia().str } }
           );
-          await Promise.all(
-            abertas.map((s) =>
-              Sale.update(s.id, { customer_address: updateData.endereco, customer_neighborhood: updateData.bairro })
-            )
+          const abertas = vendas.filter(
+            (s) => !s.customer_address?.trim() || mesmaRua(s.customer_address, editingContact.endereco)
           );
-          if (abertas.length) {
-            toast.success(
-              abertas.length === 1
-                ? "Endereço corrigido também na entrega em aberto."
-                : `Endereço corrigido também nas ${abertas.length} entregas em aberto.`
-            );
+          const patch = { customer_address: updateData.endereco };
+          if (updateData.bairro) patch.customer_neighborhood = updateData.bairro;
+          const res = await Promise.allSettled(abertas.map((s) => Sale.update(s.id, patch)));
+          const ok = res.filter((r) => r.status === "fulfilled").length;
+          if (ok) {
+            toast.success(ok === 1 ? "Endereço corrigido também na entrega em aberto." : `Endereço corrigido também nas ${ok} entregas em aberto.`);
+          }
+          if (ok < res.length) {
+            toast.error(`Contato salvo, mas ${res.length - ok} venda(s) ficaram com o endereço antigo. Abra a venda e corrija lá.`);
           }
         } catch (erroVendas) {
           toast.error(safeErrorMessage(erroVendas, "Contato salvo, mas não consegui corrigir o endereço na venda. Abra a venda e corrija lá."));
