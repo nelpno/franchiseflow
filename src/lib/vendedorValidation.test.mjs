@@ -95,5 +95,10 @@ assert.ok(ok(validarEtapa(3, { ...base, payment_link: "mpago.la/abc123" }, ["pay
 // ── telefone ──
 assert.ok(ok(validarEtapa(1, { ...base, personal_phone_for_summary: "5513974088382" }, ["personal_phone_for_summary"])));
 assert.match(validarEtapa(1, { ...base, personal_phone_for_summary: "9740883" }, ["personal_phone_for_summary"]).erros[0], /DDD \+ número/);
+// 2º WhatsApp: opcional; preenchido precisa de DDD e ser diferente do primeiro
+assert.ok(ok(validarEtapa(1, { ...base, personal_phone_extra: "" }, ["personal_phone_extra"])));
+assert.ok(ok(validarEtapa(1, { ...base, personal_phone_extra: "(11) 98765-4321" }, ["personal_phone_extra"])));
+assert.match(validarEtapa(1, { ...base, personal_phone_extra: "98765" }, ["personal_phone_extra"]).erros[0], /2º WhatsApp precisa/);
+assert.match(validarEtapa(1, { ...base, personal_phone_extra: "5513974088382" }, ["personal_phone_extra"]).erros[0], /igual ao primeiro/);
 
 console.log("vendedorValidation: ok");

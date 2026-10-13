@@ -100,6 +100,16 @@ const REGRAS = [
       return (n.length < 10 || n.length > 11) && "Seu WhatsApp precisa de DDD + número (10 ou 11 dígitos): é para ele que vão os pedidos fechados.";
     },
   },
+  {
+    etapa: 1, campos: ["personal_phone_extra"],
+    checar: (f) => {
+      const n = digitos(f.personal_phone_extra).replace(/^55(?=\d{10,11}$)/, "");
+      if (!n) return false;
+      if (n.length < 10 || n.length > 11) return "O 2º WhatsApp precisa de DDD + número (10 ou 11 dígitos), ou fique vazio.";
+      const p = digitos(f.personal_phone_for_summary).replace(/^55(?=\d{10,11}$)/, "");
+      return n === p && "O 2º WhatsApp é igual ao primeiro: deixe vazio ou coloque o número de outra pessoa.";
+    },
+  },
 
   // Etapa 2 — Entrega e retirada
   { etapa: 2, campos: ["has_delivery", "has_pickup"], checar: (f) => !entrega(f) && !f.has_pickup && "Ligue a entrega ou a retirada: sem nenhuma, o robô não tem como vender." },

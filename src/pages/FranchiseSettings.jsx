@@ -48,6 +48,7 @@ const initialFormData = {
   address_reference: '',
   pix_key_data: '',
   personal_phone_for_summary: '',
+  personal_phone_extra: '',
   payment_link: '',
   social_media_links: { instagram: '' },
   max_delivery_radius_km: null,
@@ -156,6 +157,9 @@ function buildDbPayload(form) {
     address_reference: dbFields.address_reference || '',
     personal_phone_for_summary: dbFields.personal_phone_for_summary
       ? dbFields.personal_phone_for_summary.replace(/\D/g, '')
+      : '',
+    personal_phone_extra: dbFields.personal_phone_extra
+      ? dbFields.personal_phone_extra.replace(/\D/g, '')
       : ''
   };
 
@@ -1052,6 +1056,14 @@ function FranchiseSettingsContent() {
                   onChange={(e) => handleInputChange('personal_phone_for_summary', e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder="(11) 98765-4321" />
                 <FieldHint text="Não é o número que atende os clientes (esse fica no card do WhatsApp, no topo). É para onde o robô manda os pedidos fechados e pede ajuda. DDD + número." />
+              </div>
+              <div>
+                <label className={labelClass}>2º WhatsApp para os avisos (opcional)</label>
+                <input className={inputClass} type="tel" inputMode="numeric"
+                  value={formData.personal_phone_extra?.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3').replace(/^(\d{2})(\d{1,5})$/, '($1) $2').replace(/^(\d{1,2})$/, '($1') || ''}
+                  onChange={(e) => handleInputChange('personal_phone_extra', e.target.value.replace(/\D/g, '').slice(0, 11))}
+                  placeholder="(11) 98765-4321" />
+                <FieldHint text="Se outra pessoa da unidade também precisa receber os pedidos fechados e os avisos do robô, coloque o número dela aqui. Deixe vazio se for só você." />
               </div>
             </WizardStep>
           )}
