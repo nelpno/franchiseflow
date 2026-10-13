@@ -30,6 +30,10 @@ export default function ChamarUber({ saleId, endereco }) {
     );
   }
   if (!data?.url) return null;
+  // Testado com a Nathallie (08/10): no celular abre o app com tudo preenchido; no PC o site
+  // m.uber.com ignora o destino. Mouse sem toque = computador.
+  const noComputador =
+    typeof window !== "undefined" && window.matchMedia?.("(pointer: fine) and (hover: hover)").matches;
 
   return (
     <div className="flex flex-col gap-1">
@@ -45,6 +49,9 @@ export default function ChamarUber({ saleId, endereco }) {
       </a>
       {data.precisao === "aproximado" && (
         <span className="text-xs text-[#b45309]">Endereço aproximado: confira o pino no mapa do Uber.</span>
+      )}
+      {noComputador && (
+        <span className="text-xs text-ink-2">No computador o site da Uber não preenche a entrega: chame pelo celular.</span>
       )}
     </div>
   );
