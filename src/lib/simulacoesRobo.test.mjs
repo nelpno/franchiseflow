@@ -45,7 +45,7 @@ assert.equal(por("depois do horário").resposta,
   "Hoje os pedidos fecharam às 17h. Já anoto para você receber amanhã, terça, na programada, das 16h às 19h, por R$ 10, ou na imediata, das 10h às 19h, que chega em até 60 min, por R$ 15.");
 assert.equal(por("Fora da área").resposta, "Esse endereço fica fora da nossa área de entrega: atendemos até 15 km. Se quiser, você pode retirar aqui com a gente.");
 assert.equal(por("Pagamento").resposta,
-  "Na entrega aceitamos Pix, crédito, débito e dinheiro. Na retirada, Pix e dinheiro. Pode buscar sim, com horário combinado aqui pelo WhatsApp, na Rua Nove, 94, Vila Zilda.");
+  "Na entrega aceitamos Pix, crédito, débito e dinheiro. O cartão é na maquininha, na hora da entrega. Na retirada, Pix e dinheiro. Pode buscar sim, com horário combinado aqui pelo WhatsApp, na Rua Nove, 94, Vila Zilda.");
 
 const conf = montarConferencias(GUARUJA);
 assert.ok(conf.some((c) => c.texto === "De segunda a sexta: o prazo em minutos aparece só na imediata; a programada fala só da janela."));
@@ -65,7 +65,13 @@ assert.equal(s.find((x) => x.rotulo.includes("mesmo dia")).rotulo, "Segunda, 14/
 assert.equal(s.find((x) => x.rotulo.includes("mesmo dia")).tag, "cliente a 2,5 km");
 assert.equal(s.find((x) => x.rotulo.includes("mesmo dia")).resposta, "Hoje dá para receber das 10h às 19h, que chega em até 40 min, por R$ 6.");
 assert.equal(s.find((x) => x.rotulo.includes("depois do horário")), undefined, "sem limite de pedidos, sem esse cenário");
-assert.equal(s.find((x) => x.rotulo === "Pagamento e retirada").resposta, "Na entrega aceitamos Pix e crédito. Por enquanto a gente só faz entrega.");
+assert.equal(s.find((x) => x.rotulo === "Pagamento e retirada").resposta, "Na entrega aceitamos Pix e crédito. O cartão é na maquininha, na hora da entrega. Por enquanto a gente só faz entrega.");
+// "tem maquininha?" (14/10/2026, Itápolis): link sem cartão na porta = só pelo link; só Pix = nada sobre cartão; legado card_machine = maquininha
+const pagEntrega = (lista) => montarSimulacoes({ ...SIMPLES, payment_delivery: lista }, HOJE).find((x) => x.rotulo === "Pagamento e retirada").resposta;
+assert.equal(pagEntrega(["pix", "payment_link"]), "Na entrega aceitamos Pix e link de pagamento. Cartão só pelo link, pago antes da entrega. Por enquanto a gente só faz entrega.");
+assert.equal(pagEntrega(["pix"]), "Na entrega aceitamos Pix. Por enquanto a gente só faz entrega.");
+assert.ok(pagEntrega(["pix", "card_machine", "payment_link"]).includes("O cartão é na maquininha, na hora da entrega."));
+assert.ok(pagEntrega(["nfc"]).includes("O cartão é na maquininha, na hora da entrega."));
 const confS = montarConferencias(SIMPLES, { avisos: ["Raio de entrega entre 1 e 60 km."] });
 assert.deepEqual(confS[0], { tipo: "aviso", texto: "Raio de entrega entre 1 e 60 km." });
 assert.ok(confS.some((c) => c.texto === 'O robô promete a entrega "em até 40 min" depois de confirmado.'));

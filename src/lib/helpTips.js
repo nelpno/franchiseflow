@@ -31,7 +31,7 @@ export const HELP_TIPS = {
   formaPagamento: {
     titulo: "Formas de pagamento",
     texto:
-      "Marque o que você aceita em cada modalidade. Na entrega o robô só aceita o que está marcado em Entrega; na retirada, só o que está em Retirada. Pix e link são pagos antes: o robô pede o comprovante e só fecha o pedido depois de recebê-lo.",
-    exemplo: "Dinheiro marcado só em Retirada: o robô não aceita dinheiro na entrega.",
+      "Marque o que você aceita em cada modalidade. Na entrega o robô só aceita o que está marcado em Entrega; na retirada, só o que está em Retirada. Crédito, débito e aproximação são na maquininha, na hora: marque em Entrega só se o entregador leva a maquininha. Pix e link são pagos antes: o robô pede o comprovante e só fecha o pedido depois de recebê-lo.",
+    exemplo: "Crédito marcado só em Retirada e Link em Entrega: na entrega o robô oferece o cartão pelo link, pago antes.",
   },
 };

@@ -4,6 +4,15 @@ import HelpTip from "@/components/shared/HelpTip";
 // Uma linha por forma de pagamento, uma coluna por modalidade ligada (entrega/retirada).
 // Coluna com valor null não aparece. Valor que não está na lista (o legado "card_machine")
 // fica intacto no array: marcar e desmarcar mexe só no que a tela mostra.
+// Como cada forma é paga: o robô responde "tem maquininha?" por isto (14/10/2026, Itápolis).
+const COMO_PAGA = {
+  credit: "na maquininha, na hora",
+  debit: "na maquininha, na hora",
+  nfc: "na maquininha, na hora",
+  payment_link: "cartão à distância, pago antes",
+  pix: "pago antes",
+};
+
 export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntrega, onChangeRetirada }) {
   const colunas = [
     entrega !== null && { chave: "entrega", rotulo: "Entrega", valor: entrega, mudar: onChangeEntrega },
@@ -40,7 +49,10 @@ export default function PaymentMatrix({ methods, entrega, retirada, onChangeEntr
               <td className="px-3 sm:px-4 py-2.5">
                 <span className="flex items-center gap-2 text-ink-2 text-[13px] sm:text-sm">
                   <MaterialIcon icon={m.icon} size={16} className="text-ink-2/50" />
-                  {m.label}
+                  <span>
+                    {m.label}
+                    {COMO_PAGA[m.value] && <span className="block text-[11px] text-ink-2/50">{COMO_PAGA[m.value]}</span>}
+                  </span>
                 </span>
               </td>
               {colunas.map((c) => {

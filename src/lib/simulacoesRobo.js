@@ -99,6 +99,14 @@ function janelasTexto(grupo) {
   return juntar(partes);
 }
 
+// O que o robô diz quando perguntam "tem maquininha?" na entrega (14/10/2026).
+function cartaoNaEntrega(lista) {
+  const valores = new Set((lista || []).flatMap((v) => LEGACY_PAYMENT_MAP[v] || [v]));
+  if (["credit", "debit", "nfc"].some((v) => valores.has(v))) return "O cartão é na maquininha, na hora da entrega.";
+  if (valores.has("payment_link")) return "Cartão só pelo link, pago antes da entrega.";
+  return "";
+}
+
 function nomesPagamento(lista) {
   const valores = [...new Set((lista || []).flatMap((v) => LEGACY_PAYMENT_MAP[v] || [v]))];
   return juntar(valores.map((v) => PAGAMENTO[v] || v));
@@ -227,7 +235,11 @@ export function montarSimulacoes(form, hoje) {
   // pagamento e retirada
   const endereco = form?.pickup_address || [form?.street_address, form?.neighborhood].filter(preenchido).join(", ");
   const partes = [];
-  if (temEntrega && (form?.payment_delivery || []).length) partes.push(`Na entrega aceitamos ${nomesPagamento(form.payment_delivery)}.`);
+  if (temEntrega && (form?.payment_delivery || []).length) {
+    partes.push(`Na entrega aceitamos ${nomesPagamento(form.payment_delivery)}.`);
+    const cartao = cartaoNaEntrega(form.payment_delivery);
+    if (cartao) partes.push(cartao);
+  }
   if (temRetirada && (form?.payment_pickup || []).length) partes.push(`Na retirada, ${nomesPagamento(form.payment_pickup)}.`);
   if (temRetirada) {
     const onde = endereco ? (form?.pickup_is_store ? ` na nossa loja, ${endereco}` : `, na ${endereco}`) : "";
