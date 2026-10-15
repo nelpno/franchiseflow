@@ -47,6 +47,12 @@ export default function ChamarUber({ saleId, endereco }) {
         <MaterialIcon icon="delivery_dining" size={16} />
         Chamar Uber
       </a>
+      {data.endereco_google && (
+        <span className="text-xs text-ink-2">
+          Pino na porta de: {data.endereco_google.replace(/,\s*Brasil$/, "")}. O Uber pode mostrar outro número
+          vizinho; o motoboy vai até o pino.
+        </span>
+      )}
       {data.precisao === "aproximado" && (
         <span className="text-xs text-[#b45309]">Endereço aproximado: confira o pino no mapa do Uber.</span>
       )}

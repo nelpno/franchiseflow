@@ -108,6 +108,16 @@ Deno.serve(async (req) => {
   const exato = PRECISOS.has(r.geometry.location_type) && !r.partial_match &&
     distanciaKm(geo, destino) <= RAIO_KM && PRECISOS.has(geo.precisao || "ROOFTOP");
 
+  // O app da Uber ignora o formatted_address: escreve o número que ELE conhece no pino
+  // (Tatuapé 15/10: Google ROOFTOP no 415, Uber mostrou "423 - Água Rasa"), e antes de
+  // confirmar só aparece o nickname. Por isso o nickname leva rua e número do cliente.
+  const comp = (tipo: string) =>
+    (r.address_components || []).find((c: { types: string[] }) => c.types?.includes(tipo))?.short_name || "";
+  const ruaNumero = comp("route") && comp("street_number")
+    ? `${comp("route")}, ${comp("street_number")}`
+    : sale.customer_address.trim();
+  const apelido = `Cliente: ${ruaNumero}`.slice(0, 60);
+
   const q = new URLSearchParams({
     action: "setPickup",
     "pickup[latitude]": String(geo.lat),
@@ -116,7 +126,7 @@ Deno.serve(async (req) => {
     "pickup[formatted_address]": geo.endereco_google || cfg?.unit_address || "",
     "dropoff[latitude]": String(destino.lat),
     "dropoff[longitude]": String(destino.lng),
-    "dropoff[nickname]": "Cliente",
+    "dropoff[nickname]": apelido,
     "dropoff[formatted_address]": r.formatted_address || busca,
   });
 
