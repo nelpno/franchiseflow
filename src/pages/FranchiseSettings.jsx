@@ -62,6 +62,7 @@ const initialFormData = {
   pickup_is_store: false,
   pickup_address: '',
   accepts_reservation_without_payment: false,
+  pix_on_delivery: false,
   charges_card_fee_to_customer: false,
   payment_delivery: [],
   payment_pickup: [],
@@ -406,6 +407,7 @@ function FranchiseSettingsContent() {
       pickup_is_store: config.pickup_is_store ?? false,
       pickup_address: config.pickup_address || '',
       accepts_reservation_without_payment: config.accepts_reservation_without_payment ?? false,
+      pix_on_delivery: config.pix_on_delivery ?? false,
       charges_card_fee_to_customer: config.charges_card_fee_to_customer ?? false,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
@@ -1273,6 +1275,16 @@ function FranchiseSettingsContent() {
                     </div>
                   </div>
                   <FieldHint text="O robô manda a chave exatamente como está aqui, com o titular e o banco, para o cliente conferir para quem está pagando." />
+                  <ToggleCard
+                    icon="delivery_dining"
+                    label="Aceito Pix na entrega (o cliente paga quando recebe)"
+                    description="Ligado, o cliente que quiser pagar o Pix só quando receber fecha o pedido com o robô na hora: sem chave antes e sem comprovante. O pedido entra em Vendas como “a receber” e você cobra o Pix na entrega (ou na retirada). Quem quiser pagar antes continua recebendo a chave."
+                    checked={formData.pix_on_delivery ?? false}
+                    onChange={(val) => handleInputChange('pix_on_delivery', val)}
+                  />
+                  <p className="text-xs text-ink-3 -mt-2 ml-1">
+                    Desligado por padrão: o robô pede o Pix antes de sair a entrega.
+                  </p>
                 </div>
               )}
 

@@ -76,6 +76,7 @@ const NOME_CAMPO = {
   pix_holder_name: "titular do Pix",
   payment_delivery: "pagamento na entrega",
   payment_pickup: "pagamento na retirada",
+  pix_on_delivery: "Pix na entrega",
   max_delivery_radius_km: "raio de entrega",
   min_order_value: "pedido mínimo",
   avg_prep_time_minutes: "tempo de entrega",

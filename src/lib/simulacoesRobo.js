@@ -282,8 +282,11 @@ export function simulacaoOutroDia(form, hoje) {
   const quando = `${NOME[diaDaSemana(d)]}, ${d.slice(8)}/${d.slice(5, 7)}`;
   const lista = modalidade === "entrega" ? form?.payment_delivery : (form?.payment_pickup?.length ? form.payment_pickup : form?.payment_delivery);
   const valores = [...new Set((lista || []).flatMap((v) => LEGACY_PAYMENT_MAP[v] || [v]))];
-  const noDia = valores.filter((v) => PAGA_NO_DIA.has(v));
-  const temPix = valores.includes("pix");
+  const temPix0 = valores.includes("pix");
+  // "Aceito Pix na entrega" (pix_on_delivery, 16/10/2026): o Pix também é pago no dia, como dinheiro e cartão
+  const pixNaHora = temPix0 && form?.pix_on_delivery === true;
+  const noDia = valores.filter((v) => PAGA_NO_DIA.has(v) || (pixNaHora && v === "pix"));
+  const temPix = temPix0 && !pixNaHora;
   const na = modalidade === "entrega" ? "na entrega" : "na retirada";
   const ligada = !!form?.accepts_reservation_without_payment;
   let resposta;

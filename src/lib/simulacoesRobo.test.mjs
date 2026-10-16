@@ -103,6 +103,12 @@ assert.equal(desligada.tag, "Reserva desligada");
 // só Pix, desligada: paga hoje; ligada: Pix no dia
 assert.equal(simulacaoOutroDia({ ...OUTRO, payment_delivery: ["pix"] }, HOJE).resposta, "Para quarta, 16/09, o pagamento é feito hoje pelo Pix: te mando a chave e, com o comprovante, seu pedido fica confirmado para esse dia.");
 assert.match(simulacaoOutroDia({ ...OUTRO, payment_delivery: ["pix"], accepts_reservation_without_payment: true }, HOJE).resposta, /você paga no dia: Pix até a saída da entrega./);
+// "Aceito Pix na entrega" (16/10/2026): o Pix entra no pago no dia; desligado (false/ausente) = igual ao de antes
+assert.equal(simulacaoOutroDia({ ...OUTRO, pix_on_delivery: true }, HOJE).resposta, "Pode sim! Para quarta, 16/09, você paga em Pix, dinheiro, crédito ou débito na entrega.");
+assert.equal(simulacaoOutroDia({ ...OUTRO, payment_delivery: ["pix"], pix_on_delivery: true }, HOJE).resposta, "Pode sim! Para quarta, 16/09, você paga em Pix na entrega.");
+assert.equal(simulacaoOutroDia({ ...OUTRO, accepts_reservation_without_payment: true, pix_on_delivery: true }, HOJE).resposta, "Pode sim! Seu pedido fica registrado para quarta, 16/09 e você paga no dia: Pix, dinheiro, crédito ou débito na entrega. O resumo do pedido já chega aqui para você.");
+assert.equal(simulacaoOutroDia({ ...OUTRO, pix_on_delivery: false }, HOJE).resposta, desligada.resposta);
+assert.equal(simulacaoOutroDia({ ...OUTRO, payment_delivery: ["cash"], pix_on_delivery: true }, HOJE).resposta, simulacaoOutroDia({ ...OUTRO, payment_delivery: ["cash"] }, HOJE).resposta);
 // só retirada com horário próprio (sáb): usa os dias da retirada
 const ret = simulacaoOutroDia({ has_delivery: false, has_pickup: true, has_custom_pickup_hours: true, payment_pickup: ["cash"], accepts_reservation_without_payment: true,
   pickup_schedule: [{ days: ["sab"], open: "09:00", close: "12:00" }] }, HOJE);

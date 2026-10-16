@@ -160,6 +160,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
             ? [
                 { label: "Chave Pix", value: formData.pix_key_data ? `${formData.pix_key_data}${pixTypeLabel ? ` (${pixTypeLabel})` : ""}` : "", warning: !formData.pix_key_data },
                 { label: "Titular", value: [formData.pix_holder_name, formData.pix_bank].filter(Boolean).join(" - ") },
+                { label: "Pix na entrega", value: formData.pix_on_delivery ? "Aceita (o cliente paga quando recebe)" : "Não (Pix pago antes)" },
               ]
             : []),
           ...(usados.has("payment_link") ? [{ label: "Link", value: formData.payment_link || "A unidade envia na hora" }] : []),
