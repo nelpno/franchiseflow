@@ -948,7 +948,7 @@ export const PERGUNTAS_FREQUENTES = [
   },
   {
     pergunta: "O robô passa meu cliente para outra unidade?",
-    resposta: "Só quando o cliente pergunta por outra cidade ou mora em outra cidade fora da sua área de entrega: aí ele manda o contato da unidade Maxi mais perto. Quem é da sua cidade continua com você.",
+    resposta: "Só quando o cliente pergunta por outra cidade, ou mora em outra cidade fora da sua área e há unidade Maxi mais perto dele: aí ele manda o contato dela. Quem é da sua cidade continua com você.",
     guiaSlug: "robo-entrega",
   },
 ];
