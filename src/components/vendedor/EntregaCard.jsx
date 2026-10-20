@@ -367,7 +367,7 @@ function Resultado({ r, km, raio }) {
     );
   }
   const texto = {
-    fora_da_area: r.bairro ? `Não entrega no ${r.bairro}. O robô oferece a retirada, se houver.` : `Fora da área: ${String(km).replace(".", ",")} km, e o raio é ${raio} km. O robô recusa e oferece a retirada, se houver.`,
+    fora_da_area: r.bairro ? `Não entrega no ${r.bairro}. O robô oferece a retirada, se houver.` : `Fora da área: ${String(km).replace(".", ",")} km, e o raio é ${raio} km. O robô recusa e oferece a retirada, se houver. Se o endereço for de outra cidade, ele também passa o contato da unidade Maxi mais perto.`,
     sem_preco: "Não há valor para essa distância: o robô diz que a unidade confirma a taxa e avisa você.",
     regra_especial: "Regra especial: o robô diz que a unidade confirma a taxa e avisa você.",
     confirmar_bairro: "O robô confirma o bairro com o cliente antes de dizer o valor.",

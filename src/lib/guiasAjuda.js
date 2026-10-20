@@ -946,6 +946,11 @@ export const PERGUNTAS_FREQUENTES = [
     resposta: "Em Mais › Gestão (o Resultado), toque em Ver todos os produtos. A lista abre no mês escolhido; para outras datas, mude De e Até e toque em Ver período. Dá para baixar em Excel ou PDF.",
     guiaSlug: "vendas-por-produto",
   },
+  {
+    pergunta: "O robô passa meu cliente para outra unidade?",
+    resposta: "Só quando o cliente pergunta por outra cidade ou mora em outra cidade fora da sua área de entrega: aí ele manda o contato da unidade Maxi mais perto. Quem é da sua cidade continua com você.",
+    guiaSlug: "robo-entrega",
+  },
 ];
 
 const RESPOSTAS_AJUDA = new Set(["sim", "nao"]);
