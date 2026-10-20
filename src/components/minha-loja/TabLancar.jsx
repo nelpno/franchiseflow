@@ -717,10 +717,12 @@ export default function TabLancar({
 
   // Linha da venda, lista nova (S12.1/S12.5): nome, "#nº · hora · pagamento · entrega",
   // "Recebido em dd/mm" ou "A receber" + "Recebi", valor e WhatsApp do cliente.
-  const renderLinhaV2 = (sale) => {
+  // comDia: na caixa "A receber" não há título do dia acima da venda; sem o dia, sobrava só a hora (Guarulhos, 17/10/2026)
+  const renderLinhaV2 = (sale, comDia = false) => {
     const tel = telefoneDaVenda(sale, contactsMap);
     const detalhes = [
       sale.sale_number ? `#${sale.sale_number}` : null,
+      comDia ? (diaMes(sale.sale_date) || formatDateSafe(sale.created_at)) : null,
       horaEmBrasilia(sale.created_at),
       getPaymentLabel(sale.payment_method),
       sale.delivery_method === "delivery" ? "Entrega" : null,
@@ -789,7 +791,7 @@ export default function TabLancar({
     );
   };
 
-  const renderSaleCard = (sale) => {
+  const renderSaleCard = (sale, comDia = false) => {
       const isExpanded = expandedSaleId === sale.id;
       const saleItemsList = expandedItems[sale.id] || [];
 
@@ -804,7 +806,7 @@ export default function TabLancar({
         >
           <CardContent className="p-0">
             {/* Main row — lista nova (S12) numa função própria; desligada = a linha de sempre */}
-            {uiV2 ? renderLinhaV2(sale) : (
+            {uiV2 ? renderLinhaV2(sale, comDia) : (
               <div
                 className="flex items-center gap-3 p-4 cursor-pointer hover:bg-surface/50 transition-colors"
                 onClick={() => handleToggleExpand(sale.id)}
@@ -1329,7 +1331,7 @@ export default function TabLancar({
             {/* Tocar abre a venda aqui mesmo: a de data futura (robô, entrega amanhã) não
                 aparece na lista do mês/dia e só era alcançável por esta caixa (Bárbara, 30/09). */}
             {aReceber.slice(0, 5).map((s) => expandedSaleId === s.id ? (
-              <li key={s.id} className="p-2">{renderSaleCard(s)}</li>
+              <li key={s.id} className="p-2">{renderSaleCard(s, true)}</li>
             ) : (
               <li
                 key={s.id}
@@ -1438,7 +1440,7 @@ export default function TabLancar({
                   {g.rotulo} · <span className="font-mono-numbers">{g.quantidade}</span> venda{g.quantidade !== 1 ? "s" : ""} ·{" "}
                   <span className="font-mono-numbers">{formatCurrency(g.total)}</span>
                 </h3>
-                <div className="space-y-3">{g.vendas.map(renderSaleCard)}</div>
+                <div className="space-y-3">{g.vendas.map((s) => renderSaleCard(s))}</div>
               </section>
             ))}
             {filteredSales.length > vendasNaTela && (
@@ -1459,7 +1461,7 @@ export default function TabLancar({
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredSales.map(renderSaleCard)}
+            {filteredSales.map((s) => renderSaleCard(s))}
           </div>
         )
       )}
