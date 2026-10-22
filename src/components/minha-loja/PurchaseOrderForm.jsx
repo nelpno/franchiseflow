@@ -989,7 +989,7 @@ export default function PurchaseOrderForm({
             </button>
           </div>
           <p className="mt-1 text-xs text-ink-3">
-            O frete é estimado (10% do pedido, entre R$ 250 e R$ 350). A fábrica confirma o valor.
+            Frete de R$ 350 por pedido; outro valor só se combinado antes do pedido, em razão da distância. A fábrica confirma o valor.
           </p>
         </div>
       </div>
@@ -1372,7 +1372,7 @@ export default function PurchaseOrderForm({
                 </span>
               </div>
               <p className="text-xs text-ink-2 max-w-[320px]">
-                O frete é estimado (10% do pedido, entre R$ 250 e R$ 350). A fábrica confirma o valor;
+                Frete de R$ 350 por pedido; outro valor só se combinado antes do pedido, em razão da distância. A fábrica confirma o valor;
                 acréscimo a outro pedido ou retirada na fábrica pode sair sem frete.
               </p>
             </div>
