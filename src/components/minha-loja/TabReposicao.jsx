@@ -235,6 +235,7 @@ export default function TabReposicao({
           primeiroPedido={primeiroPedido}
           onMontar={() => abrirNovoPedidoV2("sugestao")}
           onNovo={() => abrirNovoPedidoV2(null)}
+          onMontarZero={() => abrirNovoPedidoV2("zero")}
           onRepetir={handleRepeatLastOrder}
           podeRepetir={!!lastOrder && !loadingLastOrder}
         />

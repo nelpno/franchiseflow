@@ -44,6 +44,7 @@ export default function ReposicaoV2({
   primeiroPedido,
   onMontar,
   onNovo,
+  onMontarZero,
   onRepetir,
   podeRepetir,
 }) {
@@ -102,6 +103,11 @@ export default function ReposicaoV2({
               <MaterialIcon icon="add_shopping_cart" size={18} aria-hidden="true" />
               Montar pedido com a sugestão
             </button>
+            {/* 25/10/2026: Tatuapé e Embu não achavam como pedir item por item, olhando o estoque */}
+            <button type="button" onClick={onMontarZero} className={`${BTN_SECUNDARIO} min-h-11`}>
+              <MaterialIcon icon="edit" size={18} aria-hidden="true" />
+              Montar do meu jeito
+            </button>
             {botaoRepetir}
           </>
         ) : status === "erro" ? (
@@ -129,6 +135,10 @@ export default function ReposicaoV2({
           </>
         )}
       </div>
+
+      <p className="text-sm text-ink-2">
+        Montar não envia nada: você vê cada produto com o estoque, muda o que quiser e só vai para a fábrica quando confirmar o envio.
+      </p>
 
       {status === "carregando" && !primeiroPedido && (
         <div className="space-y-2" aria-hidden="true">

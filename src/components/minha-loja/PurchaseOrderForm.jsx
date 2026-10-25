@@ -184,11 +184,12 @@ export default function PurchaseOrderForm({
       (item) =>
         item.created_by_franchisee !== true &&
         item.cost_price &&
-        parseFloat(item.cost_price) > 0 &&
-        // S25 P3: produto oculto (active=false) não entra no pedido nem no preenchimento automático
-        (!uiV2 || item.active !== false)
+        parseFloat(item.cost_price) > 0
+    // 25/10/2026: produto oculto (active=false) volta a poder ser pedido (Embu escondeu o nhoque de
+    // P&M e não achava para pedir), mas nunca entra no preenchimento automático (getSuggestion,
+    // modelo, Repetir) e fica numa seção própria no fim. Ao chegar, a entrega o reativa.
     ), precosTabela);
-  }, [inventoryItems, precosTabela, uiV2]);
+  }, [inventoryItems, precosTabela]);
 
   // Group products by type (first word of product_name)
   const productGroups = useMemo(() => {
@@ -223,6 +224,7 @@ export default function PurchaseOrderForm({
     sugestaoDeCompra(item, { ritmoPorDia: ritmo?.[item.id] || 0, aCaminho: aCaminhoDe(item), intervaloDias });
   const getSuggestion = (item) => {
     if (!uiV2) return suggestionFor(item, weeklyTurnover);
+    if (item.active === false) return null;
     if (sugestaoIndisponivel) return null;
     if (ritmo) {
       const s2 = sugestaoV2De(item);
@@ -237,7 +239,9 @@ export default function PurchaseOrderForm({
     const savedQtys = draft.current?.quantities;
     const init = {};
     standardProducts.forEach((item) => {
-      if (initialQuantities && initialQuantities[item.id]) {
+      if (uiV2 && item.active === false) {
+        init[item.id] = (savedQtys && savedQtys[item.id]) || 0; // oculto: só o que ela mesma digitou
+      } else if (initialQuantities && initialQuantities[item.id]) {
         init[item.id] = initialQuantities[item.id];
       } else if (uiV2 && initialQuantities) {
         init[item.id] = 0; // S25 P3: Repetir traz só as quantidades do pedido repetido
@@ -307,7 +311,7 @@ export default function PurchaseOrderForm({
       );
     }
     const next = {};
-    standardProducts.forEach((item) => { next[item.id] = quantidades[item.id] || 0; });
+    standardProducts.forEach((item) => { next[item.id] = item.active === false ? 0 : quantidades[item.id] || 0; });
     setQuantities(next);
     modeloAplicadoRef.current = true;
   }, [pedidoModeloItens, standardProducts]);
@@ -367,7 +371,8 @@ export default function PurchaseOrderForm({
     if (!uiV2 || !ritmo || prefillFeitoRef.current) return;
     if (!primeiroPedidoPronto || revisandoRef.current) return;
     const draftTemQuantidade = draft.current?.quantities && Object.values(draft.current.quantities).some((v) => v > 0);
-    if (initialQuantities || draftTemQuantidade || primeiroPedido || usuarioMexeuRef.current) {
+    // "Montar do meu jeito" (origem "zero", 25/10/2026): abre zerado, ela escolhe item por item.
+    if (origem === "zero" || initialQuantities || draftTemQuantidade || primeiroPedido || usuarioMexeuRef.current) {
       prefillFeitoRef.current = true;
       return;
     }
@@ -393,7 +398,7 @@ export default function PurchaseOrderForm({
       let mudou = false;
       const next = new Set(prev);
       standardProducts.forEach((item) => {
-        if (next.has(item.id)) return;
+        if (next.has(item.id) || item.active === false) return;
         const sug = getSuggestion(item);
         if (sobeParaSugeridos({ quantidade: quantities[item.id], sugestao: sug, digitadoAgora: digitadosRef.current.has(item.id) })) { next.add(item.id); mudou = true; }
       });
@@ -401,7 +406,8 @@ export default function PurchaseOrderForm({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [uiV2, standardProducts, quantities, ritmo, sugestaoIndisponivel, emAberto]);
-  const [verOutros, setVerOutros] = useState(false);
+  const [verOutros, setVerOutros] = useState(origem === "zero");
+  const [verOcultos, setVerOcultos] = useState(false);
   const corpoRef = useRef(null);
   // S25 P3 (2ª passada): antes de gravar, reconsulta os pedidos da unidade. Se entrou pedido
   // DEPOIS que este formulário abriu (outro aparelho/aba), não envia sem ela ver.
@@ -623,7 +629,10 @@ export default function PurchaseOrderForm({
       .filter((item) => emCima.has(item.id))
       .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"));
     const outros = standardProducts
-      .filter((item) => !emCima.has(item.id))
+      .filter((item) => !emCima.has(item.id) && item.active !== false)
+      .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"));
+    const ocultos = standardProducts
+      .filter((item) => !emCima.has(item.id) && item.active === false)
       .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"));
     const linhaProduto = (item) => {
       const qty = parseInt(quantities[item.id], 10) || 0;
@@ -876,6 +885,33 @@ export default function PurchaseOrderForm({
             </section>
           )}
 
+          {ocultos.length > 0 && (
+            <section aria-label="Produtos ocultos no seu estoque" className="rounded-2xl border border-surface-line">
+              <button
+                type="button"
+                onClick={() => setVerOcultos((v) => !v)}
+                aria-expanded={verOcultos}
+                className="flex min-h-11 w-full items-center justify-between px-4 text-left text-sm font-bold text-ink-2"
+              >
+                <span>
+                  Ocultos no seu estoque ({ocultos.length})
+                  {ocultos.some((i) => (parseInt(quantities[i.id], 10) || 0) > 0) && (
+                    <span className="ml-1 font-semibold text-brand-dark">
+                      · {ocultos.filter((i) => (parseInt(quantities[i.id], 10) || 0) > 0).length} no pedido
+                    </span>
+                  )}
+                </span>
+                <MaterialIcon icon={verOcultos ? "expand_less" : "expand_more"} size={20} aria-hidden="true" />
+              </button>
+              {verOcultos && (
+                <div className="px-4 pb-2">
+                  <p className="text-xs text-ink-3">Pode pedir. Quando o pedido chegar, o produto volta a aparecer no estoque e o robô volta a oferecer.</p>
+                  <ul>{ocultos.map(linhaProduto)}</ul>
+                </div>
+              )}
+            </section>
+          )}
+
           <div className="space-y-2">
             <label htmlFor="obs-pedido" className="text-sm font-semibold text-ink">Comentário para a fábrica</label>
             <textarea
@@ -961,7 +997,7 @@ export default function PurchaseOrderForm({
               </button>
             ) : (
               <button type="button" onClick={onCancel} disabled={isSubmitting} className={`${BTN_SECUNDARIO} min-h-11`}>
-                Cancelar
+                Fechar
               </button>
             )}
             <button
@@ -988,6 +1024,11 @@ export default function PurchaseOrderForm({
               )}
             </button>
           </div>
+          {!revisando && (
+            <p className="mt-1 text-xs font-semibold text-ink-2">
+              Fica salvo neste aparelho: pode fechar e voltar depois. Nada vai para a fábrica antes de você tocar em Confirmar e enviar.
+            </p>
+          )}
           <p className="mt-1 text-xs text-ink-3">
             Frete de R$ 350 por pedido; outro valor só se combinado antes do pedido, em razão da distância. A fábrica confirma o valor.
           </p>
