@@ -184,8 +184,7 @@ export function montarPedidoPix({ nome, pedidos = [] } = {}) {
   } else {
     linhas.push(`Total do Pix: ${formatBRL(produtos)}`);
   }
-  // 05/10: a rede manda o comprovante no WhatsApp desde sempre; os dois caminhos valem (o Nelson
-  // confirma em Pedidos › Entregues com ou sem anexo).
-  linhas.push("", `Faz o Pix para o CNPJ ${CNPJ_PIX_MAXI} e anexa o comprovante no app (Estoque › Reposição) ou me manda aqui. Obrigado!`);
+  // 26/10: comprovante só pelo WhatsApp (o anexo no app duplicava a conferência do Nelson).
+  linhas.push("", `Faz o Pix para o CNPJ ${CNPJ_PIX_MAXI} e me manda o comprovante aqui. Obrigado!`);
   return linhas.join("\n");
 }

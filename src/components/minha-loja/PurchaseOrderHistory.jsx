@@ -13,9 +13,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { resumoRecebido, aguardaConferencia } from "@/lib/conferenciaEntrega";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
-import { FEATURE_KEYS } from "@/lib/featureFlags";
-import PixDoPedido from "./PixDoPedido";
 
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
@@ -35,8 +32,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
   // S14.4 (chave ui_v2): imprimir o pedido para conferir a chegada.
   const [printMenuId, setPrintMenuId] = useState(null);
   const [printingId, setPrintingId] = useState(null);
-  // P12: Pix do pedido (chave pix_na_baixa da unidade exibida; desligada = como antes).
-  const pixLigado = useFeatureFlag(FEATURE_KEYS.PIX_NA_BAIXA, franchiseId);
 
   const mountedRef = useRef(true);
   const abortControllerRef = useRef(null);
@@ -267,8 +262,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                   className="text-ink-2 ml-2 flex-shrink-0"
                 />
               </button>
-
-              {pixLigado && <PixDoPedido order={order} franchiseId={franchiseId} onChanged={loadOrders} />}
 
               {/* Expanded items */}
               {isExpanded && (
