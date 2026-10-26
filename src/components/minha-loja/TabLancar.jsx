@@ -1014,10 +1014,17 @@ export default function TabLancar({
                       <div className="flex justify-between">
                         <span className="text-ink-2">
                           Taxa {sale.payment_method === "payment_link" ? "link" : "cartão"} ({sale.card_fee_percent}%)
+                          {sale.fee_passed_to_customer && " · paga pelo cliente"}
                         </span>
-                        <span className="text-err font-mono-numbers">
-                          - {formatCurrency(sale.card_fee_amount)}
-                        </span>
+                        {sale.fee_passed_to_customer ? (
+                          <span className="text-ink-2 font-mono-numbers">
+                            {formatCurrency(sale.card_fee_amount)}
+                          </span>
+                        ) : (
+                          <span className="text-err font-mono-numbers">
+                            - {formatCurrency(sale.card_fee_amount)}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
