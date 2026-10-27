@@ -211,26 +211,24 @@ export function agruparPorMotivo(cards) {
 }
 
 /**
- * Última conversa registrada pelo CS em cada unidade, a partir dos cartões de get_cs_mural
- * (para o Nelson ver na lista de quedas o que o Celso já anotou, feedback de 27/10/2026).
- * Só conta registro de pessoa (contato ou reunião); evento do sistema não é conversa.
+ * Última conversa registrada pelo CS em cada unidade (para o Nelson ver na lista de quedas o
+ * que o Celso já anotou, feedback de 27/10/2026). Recebe os eventos de getUltimasConversasCs;
+ * só conta registro de pessoa (contato ou reunião), evento do sistema não é conversa.
  * → Map(franchise_id → { data: 'DD/MM', texto, voltaEm: 'DD/MM' | '', resultado })
  */
-export function notaCsPorUnidade(cards) {
+export function notaCsPorUnidade(eventos) {
   const melhor = new Map();
-  (cards || []).forEach((c) => {
-    const e = c?.last_event;
-    if (!c?.franchise_id || !e || !["contact", "meeting"].includes(e.event_type)) return;
-    const atual = melhor.get(c.franchise_id);
-    if (!atual || String(e.created_at) > String(atual.created_at)) melhor.set(c.franchise_id, { ...e, lane: c.lane, parked_until: c.parked_until });
+  (eventos || []).forEach((e) => {
+    if (!e?.franchise_id || !["contact", "meeting"].includes(e.event_type)) return;
+    const atual = melhor.get(e.franchise_id);
+    if (!atual || String(e.created_at) > String(atual.created_at)) melhor.set(e.franchise_id, e);
   });
   const out = new Map();
   melhor.forEach((e, fid) => {
-    const volta = e.lane === "estacionado" ? e.parked_until : e.next_at;
     out.set(fid, {
       data: dataDDMM(e.created_at),
       texto: (e.commitment || e.note || RESULTADO_LABEL[e.outcome] || "").trim(),
-      voltaEm: e.lane === "resolvidos" ? "" : dataDDMM(volta),
+      voltaEm: e.outcome === "resolvido" ? "" : dataDDMM(e.next_at),
       resultado: e.outcome || null,
     });
   });

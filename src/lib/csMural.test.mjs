@@ -100,16 +100,16 @@ test("validarRegistro: causa conhecida exige a causa", () => {
   assert.equal(validarRegistro({ channel: "mensagem", outcome: "causa_conhecida", commitment: "Valéria em Portugal" }), null);
 });
 
-test("notaCsPorUnidade: último registro de pessoa por unidade, volta do estacionado e sem evento do sistema", () => {
+test("notaCsPorUnidade: último registro de pessoa por unidade, sem evento do sistema", () => {
   const m = notaCsPorUnidade([
-    { franchise_id: "a", lane: "estacionado", parked_until: "2026-11-10T03:00:00+00:00",
-      last_event: { event_type: "contact", outcome: "causa_conhecida", commitment: "Sogro, tudo parado", created_at: "2026-10-27T12:00:00Z", next_at: "2026-11-10" } },
-    { franchise_id: "a", lane: "resolvidos",
-      last_event: { event_type: "contact", outcome: "resolvido", note: "antigo", created_at: "2026-10-01T12:00:00Z" } },
-    { franchise_id: "b", lane: "falar_hoje", last_event: { event_type: "auto_open", note: "Reaberto", created_at: "2026-10-27T12:00:00Z" } },
-    { franchise_id: "c", lane: "esperando",
-      last_event: { event_type: "meeting", outcome: "nao_respondeu", created_at: "2026-10-23T12:00:00Z", next_at: "2026-10-26" } },
+    { franchise_id: "a", event_type: "contact", outcome: "resolvido", note: "antigo", created_at: "2026-10-01T12:00:00Z" },
+    { franchise_id: "a", event_type: "contact", outcome: "causa_conhecida", commitment: "Sogro, tudo parado", created_at: "2026-10-27T12:00:00Z", next_at: "2026-11-10" },
+    { franchise_id: "a", event_type: "auto_open", note: "Voltou antes", created_at: "2026-10-29T12:00:00Z" },
+    { franchise_id: "b", event_type: "auto_open", note: "Reaberto", created_at: "2026-10-27T12:00:00Z" },
+    { franchise_id: "c", event_type: "meeting", outcome: "nao_respondeu", created_at: "2026-10-23T12:00:00Z", next_at: "2026-10-26" },
+    { franchise_id: "d", event_type: "contact", outcome: "resolvido", note: "ok", created_at: "2026-10-23T12:00:00Z", next_at: null },
   ]);
+  assert.equal(m.get("d").voltaEm, "");
   assert.deepEqual(m.get("a"), { data: "27/10", texto: "Sogro, tudo parado", voltaEm: "10/11", resultado: "causa_conhecida" });
   assert.equal(m.has("b"), false);
   assert.equal(m.get("c").texto, "Enviei, sem resposta ainda");

@@ -60,6 +60,28 @@ export async function concluirCsCartao(taskId, desfecho, note) {
   return data ?? null;
 }
 
+/**
+ * Conversas registradas pelo CS (contato/reunião) nos últimos 60 dias, mais nova primeiro.
+ * Lido direto do log (e não do last_event do Mural) porque evento do sistema depois da
+ * conversa esconderia a anotação. RLS: is_cs_or_admin.
+ */
+export async function getUltimasConversasCs() {
+  const desde = new Date(Date.now() - 60 * 86400000).toISOString();
+  const { data, error } = await withTimeout(
+    supabase
+      .from("cs_worklist_events")
+      .select("franchise_id, event_type, outcome, commitment, note, next_at, created_at")
+      .in("event_type", ["contact", "meeting"])
+      .not("franchise_id", "is", null)
+      .gte("created_at", desde)
+      .order("created_at", { ascending: false })
+      .limit(1000),
+    20000
+  );
+  if (error) throw error;
+  return data || [];
+}
+
 /** `ate` = null desestaciona. */
 export async function estacionarCsCartao(taskId, ate, motivo) {
   const { data, error } = await withTimeout(

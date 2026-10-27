@@ -50,6 +50,8 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
   const [outcome, setOutcome] = useState(null);
   const [commitment, setCommitment] = useState("");
   const [nextAtChave, setNextAtChave] = useState(VOLTAR_EM_PADRAO);
+  // Escolheu "voltar em" à mão? Então trocar o resultado não apaga a escolha.
+  const [voltaTocada, setVoltaTocada] = useState(false);
   const [nextAtData, setNextAtData] = useState("");
   const [driveUrl, setDriveUrl] = useState("");
   const [note, setNote] = useState("");
@@ -61,6 +63,7 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
     setOutcome(null);
     setCommitment("");
     setNextAtChave(VOLTAR_EM_PADRAO);
+    setVoltaTocada(false);
     setNextAtData("");
     setDriveUrl("");
     setNote(notaInicial || "");
@@ -141,7 +144,7 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
             <div className="mb-1.5 text-sm font-semibold text-ink-2">Resultado</div>
             <div className="flex flex-wrap gap-2">
               {RESULTADOS.map((r) => (
-                <Chip key={r} ativo={outcome === r} onClick={() => { setOutcome(r); setNextAtChave(voltarEmPadrao(r)); }}>
+                <Chip key={r} ativo={outcome === r} onClick={() => { setOutcome(r); if (!voltaTocada) setNextAtChave(voltarEmPadrao(r)); }}>
                   {RESULTADO_LABEL[r]}
                 </Chip>
               ))}
@@ -173,7 +176,7 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
               <div className="mb-1.5 text-sm font-semibold text-ink-2">{causa ? "Rever em" : "Voltar em"}</div>
               <div className="flex flex-wrap gap-2">
                 {VOLTAR_EM_OPCOES.map((o) => (
-                  <Chip key={o.key} ativo={nextAtChave === o.key} onClick={() => setNextAtChave(o.key)}>
+                  <Chip key={o.key} ativo={nextAtChave === o.key} onClick={() => { setNextAtChave(o.key); setVoltaTocada(true); }}>
                     {o.label}
                   </Chip>
                 ))}

@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFinanceiroRede } from "@/entities/all";
-import { getCsMural } from "@/entities/csMural";
+import { getUltimasConversasCs } from "@/entities/csMural";
 import { notaCsPorUnidade } from "@/lib/csMural";
 import { formatBRLInteger, formatPct } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
@@ -118,8 +118,8 @@ export default function FechamentoRede({ mes, mesAtual, onVerMensalidades }) {
 
   useEffect(() => {
     let vivo = true;
-    getCsMural()
-      .then((m) => { if (vivo) setNotasCs(notaCsPorUnidade(m?.cards)); })
+    getUltimasConversasCs()
+      .then((ev) => { if (vivo) setNotasCs(notaCsPorUnidade(ev)); })
       .catch((e) => console.error("Erro ao carregar as anotações do CS:", e));
     return () => { vivo = false; };
   }, []);

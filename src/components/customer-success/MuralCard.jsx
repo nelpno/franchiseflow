@@ -186,8 +186,8 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
         franchiseId={card.franchise_id}
         taskId={card.id}
         nomeUnidade={nome}
-        onSalvo={(_, { outcome, nextAt } = {}) => {
-          toast.success(outcome === "causa_conhecida" && nextAt
+        onSalvo={(resultado, { nextAt } = {}) => {
+          toast.success(resultado?.lane === "estacionado" && nextAt
             ? `Conversa registrada. O cartão sai da lista até ${rotuloVoltaEm(nextAt).replace("volta em ", "")}.`
             : "Conversa registrada.");
           onMudou?.();
