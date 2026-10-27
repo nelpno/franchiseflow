@@ -3,6 +3,8 @@ import { Link, useLocation } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFinanceiroRede } from "@/entities/all";
+import { getCsMural } from "@/entities/csMural";
+import { notaCsPorUnidade } from "@/lib/csMural";
 import { formatBRLInteger, formatPct } from "@/lib/formatters";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { linkFicha, nomeCurto } from "@/lib/networkOverview";
@@ -37,6 +39,17 @@ function rpcAusente(e) {
   return code === "PGRST202" || code === "42883" || /could not find the function/i.test(msg);
 }
 
+// "CS 27/10: Sogro, tudo parado · volta 10/11" — ou o aviso de que ninguém conversou ainda.
+function LinhaNotaCs({ nota }) {
+  if (!nota) return <p className="mt-1 text-sm font-semibold text-warn-ink">Sem conversa do CS registrada</p>;
+  return (
+    <p className="mt-1 truncate text-sm text-ink-2" title={nota.texto}>
+      <span className="font-semibold">CS {nota.data}:</span> {nota.texto || "conversa registrada"}
+      {nota.voltaEm ? <span className="text-ink-3"> · volta {nota.voltaEm}</span> : null}
+    </p>
+  );
+}
+
 function Cartao({ titulo, children }) {
   return (
     <div className="min-w-0 rounded-2xl border border-surface-line bg-white p-4 sm:p-5">
@@ -63,6 +76,9 @@ export default function FechamentoRede({ mes, mesAtual, onVerMensalidades }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [lista, setLista] = useState("caiu");
+  // Última anotação do CS por unidade (feedback do Celso, 27/10/2026): sem ela a lista de
+  // quedas repetia para ele unidades que ele já tinha conversado. Falha aqui não derruba a tela.
+  const [notasCs, setNotasCs] = useState(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -99,6 +115,14 @@ export default function FechamentoRede({ mes, mesAtual, onVerMensalidades }) {
     carregar(ctrl.signal);
     return () => ctrl.abort();
   }, [carregar]);
+
+  useEffect(() => {
+    let vivo = true;
+    getCsMural()
+      .then((m) => { if (vivo) setNotasCs(notaCsPorUnidade(m?.cards)); })
+      .catch((e) => console.error("Erro ao carregar as anotações do CS:", e));
+    return () => { vivo = false; };
+  }, []);
 
   const resumo = useMemo(() => resumoFechamento(linhas), [linhas]);
   const periodo = useMemo(() => rotulosPeriodo(linhas[0]), [linhas]);
@@ -372,6 +396,7 @@ export default function FechamentoRede({ mes, mesAtual, onVerMensalidades }) {
                 const acao = linkDaLinha(r.franchise_id, location);
                 const corDelta = deltaPct(r) === null ? "text-ink-3" : deltaPct(r) < 0 ? "text-err" : "text-ok-ink";
                 const resultado = linkResultado(r.franchise_id, mes);
+                const notaCs = lista === "caiu" && notasCs ? <LinhaNotaCs nota={notasCs.get(r.franchise_id)} /> : null;
                 return (
                   <div key={r.franchise_id}>
                     {/* Celular (#39): linha 1 = nome (truncate) + delta; linha 2 = valores
@@ -389,6 +414,7 @@ export default function FechamentoRede({ mes, mesAtual, onVerMensalidades }) {
                         {formatBRLInteger(r.rev_month)} · {periodo?.colunaAnterior || "mês anterior"} {formatBRLInteger(r.rev_prev_same)}
                         {pend.length ? ` · ${pend.join(" · ")}` : ""}
                       </p>
+                      {notaCs}
                       <div className="mt-1.5 flex items-center gap-3">
                         <Link to={acao.to} state={acao.state} className="inline-flex min-h-10 items-center text-sm font-semibold text-brand-dark hover:underline">
                           Abrir ficha ›
@@ -433,6 +459,7 @@ export default function FechamentoRede({ mes, mesAtual, onVerMensalidades }) {
                         </Link>
                       </div>
                     </div>
+                    {notaCs && <div className="hidden px-5 pb-3.5 md:-mt-1.5 md:block">{notaCs}</div>}
                   </div>
                 );
               })}

@@ -32,3 +32,11 @@ Fila priorizada de saúde da rede pro papel `customer_success` (Celso): quem pre
 - Mensagens de erro das RPCs começam com `Mural:` (está em `PREFIXOS_SEGUROS`).
 - Placar (`get_cs_impacto`): episódio = 1º contato após 21+ dias sem contato; 28 dias antes × depois contra a mediana das não tocadas; reunião antiga lida pela data escrita na nota (`cs_try_date`). Reuniões só no Drive não entram.
 - Backups das funções de antes: `docs/db-backups/*.2026-09-27-antes.sql`.
+
+## Causa conhecida (27/10/2026, feedback do Celso; SQL `supabase/2026-10-27-cs-causa-conhecida.sql`)
+- Queixa: cartão "repetitivo" sobre unidade parada por motivo fora do alcance do CS (viagem, família, sócio). Causa medida: 40 de 57 registros em 30 dias ficaram na volta padrão de 7 dias, e não havia resultado para "não depende de nós".
+- Resultado `causa_conhecida` no Registrar: causa obrigatória (vai em `commitment`), volta padrão 30 dias (até 6 meses) e ESTACIONA o cartão (`parked_reason` = causa). Guarda `espera_valor` (motive_value na hora) e `espera_sem_venda`; `espera_sem_venda` não nulo = estacionado pela causa. Qualquer outro registro tira do estacionamento.
+- Reconcile passo 1b: acorda (volta para Falar hoje, evento `auto_open` "Voltou antes…") se a queda piorou 10 p.p., +7 dias sem venda ou passou a ficar sem venda. Passo 2 (fechou sozinho) limpa esse estacionamento.
+- Volta padrão por resultado (`voltarEmPadrao`): "Enviei, sem resposta ainda" (`nao_respondeu`, rótulo trocado a pedido dele) 3 dias, causa conhecida 1 mês, resto 1 semana.
+- Fechamento da rede › "Caíram 20% ou mais" mostra a última anotação do CS por unidade (`notaCsPorUnidade` sobre `get_cs_mural`) ou "Sem conversa do CS registrada".
+- Desfazer: backups `docs/db-backups/{registrar_cs_conversa,reconcile_cs_auto_tasks}.2026-10-27-antes.sql` (cabeçalho do SQL).

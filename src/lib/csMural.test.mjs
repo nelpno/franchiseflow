@@ -17,6 +17,8 @@ import {
   linhaAcordo,
   linhaUltimoCombinado,
   validarRegistro,
+  voltarEmPadrao,
+  notaCsPorUnidade,
   motivoChipClasse,
 } from "./csMural.js";
 import { formatBRLInteger } from "./formatters.js";
@@ -58,9 +60,10 @@ test("agruparPorRaia ignora lane desconhecida sem quebrar", () => {
   assert.equal(g.falar_hoje.length, 0);
 });
 
-test("calcularNextAt: 2 dias / 1 semana / 2 semanas somam a partir de 'agora'", () => {
+test("calcularNextAt: 3 dias / 1 semana / 2 semanas / 1 mês somam a partir de 'agora'", () => {
   const agora = new Date(2026, 8, 26); // 26/09/2026 (mês 0-based)
-  assert.equal(calcularNextAt("2d", null, agora), "2026-09-28");
+  assert.equal(calcularNextAt("3d", null, agora), "2026-09-29");
+  assert.equal(calcularNextAt("1m", null, agora), "2026-10-26");
   assert.equal(calcularNextAt("1s", null, agora), "2026-10-03");
   assert.equal(calcularNextAt("2s", null, agora), "2026-10-10");
 });
@@ -70,7 +73,7 @@ test("calcularNextAt usa o dia em America/Sao_Paulo, não o fuso do aparelho", (
   // (ou o fuso local da máquina, quando não for SP), "hoje" viraria 26/09 em vez de 25/09
   // e a soma de dias saía adiantada em 1 dia.
   const agoraUtcNoite = new Date("2026-09-26T01:00:00Z");
-  assert.equal(calcularNextAt("2d", null, agoraUtcNoite), "2026-09-27");
+  assert.equal(calcularNextAt("3d", null, agoraUtcNoite), "2026-09-28");
   assert.equal(calcularNextAt("1s", null, agoraUtcNoite), "2026-10-02");
 });
 
@@ -81,8 +84,36 @@ test("calcularNextAt: 'data' usa a data escolhida, sem chave inválida usa null"
   assert.equal(calcularNextAt("nao-existe", null, agora), null);
 });
 
-test("VOLTAR_EM_OPCOES tem as 4 opções na ordem do contrato", () => {
-  assert.deepEqual(VOLTAR_EM_OPCOES.map((o) => o.key), ["2d", "1s", "2s", "data"]);
+test("VOLTAR_EM_OPCOES tem as 5 opções na ordem", () => {
+  assert.deepEqual(VOLTAR_EM_OPCOES.map((o) => o.key), ["3d", "1s", "2s", "1m", "data"]);
+});
+
+test("voltarEmPadrao: não respondeu 3 dias, causa conhecida 1 mês, resto 1 semana", () => {
+  assert.equal(voltarEmPadrao("nao_respondeu"), "3d");
+  assert.equal(voltarEmPadrao("causa_conhecida"), "1m");
+  assert.equal(voltarEmPadrao("vai_fazer"), "1s");
+  assert.equal(voltarEmPadrao(null), "1s");
+});
+
+test("validarRegistro: causa conhecida exige a causa", () => {
+  assert.equal(validarRegistro({ channel: "mensagem", outcome: "causa_conhecida" }), "Escreva a causa. Ela aparece no cartão.");
+  assert.equal(validarRegistro({ channel: "mensagem", outcome: "causa_conhecida", commitment: "Valéria em Portugal" }), null);
+});
+
+test("notaCsPorUnidade: último registro de pessoa por unidade, volta do estacionado e sem evento do sistema", () => {
+  const m = notaCsPorUnidade([
+    { franchise_id: "a", lane: "estacionado", parked_until: "2026-11-10T03:00:00+00:00",
+      last_event: { event_type: "contact", outcome: "causa_conhecida", commitment: "Sogro, tudo parado", created_at: "2026-10-27T12:00:00Z", next_at: "2026-11-10" } },
+    { franchise_id: "a", lane: "resolvidos",
+      last_event: { event_type: "contact", outcome: "resolvido", note: "antigo", created_at: "2026-10-01T12:00:00Z" } },
+    { franchise_id: "b", lane: "falar_hoje", last_event: { event_type: "auto_open", note: "Reaberto", created_at: "2026-10-27T12:00:00Z" } },
+    { franchise_id: "c", lane: "esperando",
+      last_event: { event_type: "meeting", outcome: "nao_respondeu", created_at: "2026-10-23T12:00:00Z", next_at: "2026-10-26" } },
+  ]);
+  assert.deepEqual(m.get("a"), { data: "27/10", texto: "Sogro, tudo parado", voltaEm: "10/11", resultado: "causa_conhecida" });
+  assert.equal(m.has("b"), false);
+  assert.equal(m.get("c").texto, "Enviei, sem resposta ainda");
+  assert.equal(m.get("c").voltaEm, "26/10");
 });
 
 test("linhaVenda: com antes e depois", () => {

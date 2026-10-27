@@ -14,7 +14,9 @@ export const CANAL_LABEL = {
 export const RESULTADO_LABEL = {
   vai_fazer: "Respondeu e vai fazer",
   recusou: "Respondeu e recusou",
-  nao_respondeu: "Não respondeu",
+  // Celso (27/10/2026): ele marca isto logo que manda a mensagem, antes de dar tempo de resposta.
+  nao_respondeu: "Enviei, sem resposta ainda",
+  causa_conhecida: "Causa conhecida, sem ação agora",
   resolvido: "Resolvido",
 };
 
@@ -42,12 +44,20 @@ export const ORDEM_MOTIVOS = ["sem_venda", "caiu", "nao_lanca", "robo_parado", "
 
 // "Voltar em": chips do passo 3 da folha Registrar.
 export const VOLTAR_EM_OPCOES = [
-  { key: "2d", label: "2 dias", dias: 2 },
+  { key: "3d", label: "3 dias", dias: 3 },
   { key: "1s", label: "1 semana", dias: 7 },
   { key: "2s", label: "2 semanas", dias: 14 },
+  { key: "1m", label: "1 mês", dias: 30 },
   { key: "data", label: "Escolher data", dias: null },
 ];
 export const VOLTAR_EM_PADRAO = "1s";
+
+// Volta padrão conforme o resultado (feedback do Celso, 27/10/2026): quem não respondeu
+// volta logo; causa conhecida (viagem, família) só volta em 1 mês, ou antes se piorar.
+const VOLTAR_POR_RESULTADO = { nao_respondeu: "3d", causa_conhecida: "1m" };
+export function voltarEmPadrao(outcome) {
+  return VOLTAR_POR_RESULTADO[outcome] || VOLTAR_EM_PADRAO;
+}
 
 // ---------- Raias do Mural ----------
 
@@ -167,9 +177,12 @@ export function linhaUltimoCombinado(lastEvent) {
  * Valida o formulário de registro antes de chamar a RPC.
  * Devolve string de erro (para toast.error) ou null se ok.
  */
-export function validarRegistro({ channel, outcome, nextAtChave, nextAtData, note }) {
+export function validarRegistro({ channel, outcome, commitment, nextAtChave, nextAtData, note }) {
   if (!channel || !CANAL_LABEL[channel]) return "Escolha como você falou com a unidade.";
   if (!outcome || !RESULTADO_LABEL[outcome]) return "Escolha o resultado da conversa.";
+  if (outcome === "causa_conhecida" && (commitment || "").trim().length < 3) {
+    return "Escreva a causa. Ela aparece no cartão.";
+  }
   if (outcome !== "resolvido" && nextAtChave === "data" && !nextAtData) {
     return "Escolha a data de voltar.";
   }
@@ -195,6 +208,33 @@ export function agruparPorMotivo(cards) {
   return ordem
     .filter((k) => grupos.has(k))
     .map((k) => ({ motivo: k, label: MOTIVO_LABEL[k] || "Outros", cards: grupos.get(k) }));
+}
+
+/**
+ * Última conversa registrada pelo CS em cada unidade, a partir dos cartões de get_cs_mural
+ * (para o Nelson ver na lista de quedas o que o Celso já anotou, feedback de 27/10/2026).
+ * Só conta registro de pessoa (contato ou reunião); evento do sistema não é conversa.
+ * → Map(franchise_id → { data: 'DD/MM', texto, voltaEm: 'DD/MM' | '', resultado })
+ */
+export function notaCsPorUnidade(cards) {
+  const melhor = new Map();
+  (cards || []).forEach((c) => {
+    const e = c?.last_event;
+    if (!c?.franchise_id || !e || !["contact", "meeting"].includes(e.event_type)) return;
+    const atual = melhor.get(c.franchise_id);
+    if (!atual || String(e.created_at) > String(atual.created_at)) melhor.set(c.franchise_id, { ...e, lane: c.lane, parked_until: c.parked_until });
+  });
+  const out = new Map();
+  melhor.forEach((e, fid) => {
+    const volta = e.lane === "estacionado" ? e.parked_until : e.next_at;
+    out.set(fid, {
+      data: dataDDMM(e.created_at),
+      texto: (e.commitment || e.note || RESULTADO_LABEL[e.outcome] || "").trim(),
+      voltaEm: e.lane === "resolvidos" ? "" : dataDDMM(volta),
+      resultado: e.outcome || null,
+    });
+  });
+  return out;
 }
 
 /** A frase que aparece no cartão fechado: a prova do motivo; sem ela, a venda; sem ela, o título. */

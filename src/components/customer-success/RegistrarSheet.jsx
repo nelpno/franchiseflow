@@ -16,10 +16,11 @@ import {
   VOLTAR_EM_PADRAO,
   calcularNextAt,
   validarRegistro,
+  voltarEmPadrao,
 } from "@/lib/csMural";
 
 const CANAIS = ["mensagem", "ligacao", "reuniao"];
-const RESULTADOS = ["vai_fazer", "recusou", "nao_respondeu", "resolvido"];
+const RESULTADOS = ["vai_fazer", "recusou", "nao_respondeu", "causa_conhecida", "resolvido"];
 
 function Chip({ ativo, onClick, children, ariaLabel }) {
   return (
@@ -66,7 +67,7 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
   }, [open, notaInicial]);
 
   const salvar = async () => {
-    const erro = validarRegistro({ channel, outcome, nextAtChave, nextAtData, note });
+    const erro = validarRegistro({ channel, outcome, commitment, nextAtChave, nextAtData, note });
     if (erro) { toast.error(erro); return; }
     setSalvando(true);
     try {
@@ -90,6 +91,7 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
     }
   };
 
+  const causa = outcome === "causa_conhecida";
   const rotuloBotao = salvando
     ? "Salvando…"
     : outcome === "resolvido"
@@ -139,29 +141,36 @@ export default function RegistrarSheet({ open, onOpenChange, franchiseId, taskId
             <div className="mb-1.5 text-sm font-semibold text-ink-2">Resultado</div>
             <div className="flex flex-wrap gap-2">
               {RESULTADOS.map((r) => (
-                <Chip key={r} ativo={outcome === r} onClick={() => setOutcome(r)}>
+                <Chip key={r} ativo={outcome === r} onClick={() => { setOutcome(r); setNextAtChave(voltarEmPadrao(r)); }}>
                   {RESULTADO_LABEL[r]}
                 </Chip>
               ))}
             </div>
+            {causa && (
+              <p className="mt-2 text-xs text-ink-3">
+                Para viagem, família, problema pessoal. O cartão sai da sua lista até a data e volta antes sozinho se a venda piorar.
+              </p>
+            )}
           </div>
 
           <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-            Combinado com a unidade (opcional)
-            <span className="-mt-1 text-xs font-normal text-ink-3">O que vocês acertaram. Aparece no cartão.</span>
+            {causa ? "Qual é a causa" : "Combinado com a unidade (opcional)"}
+            <span className="-mt-1 text-xs font-normal text-ink-3">
+              {causa ? "Obrigatório. Aparece no cartão." : "O que vocês acertaram. Aparece no cartão."}
+            </span>
             <input
               type="text"
               value={commitment}
               onChange={(e) => setCommitment(e.target.value)}
               maxLength={300}
-              placeholder="Ex.: vai pagar a verba até sexta"
+              placeholder={causa ? "Ex.: Valéria em Portugal até 10/11" : "Ex.: vai pagar a verba até sexta"}
               className="h-11 rounded-xl border border-surface-line bg-white px-3 text-sm font-normal text-ink placeholder:text-ink-3 focus:border-brand focus:outline-none"
             />
           </label>
 
           {outcome !== "resolvido" && (
             <div role="radiogroup" aria-label="Voltar em">
-              <div className="mb-1.5 text-sm font-semibold text-ink-2">Voltar em</div>
+              <div className="mb-1.5 text-sm font-semibold text-ink-2">{causa ? "Rever em" : "Voltar em"}</div>
               <div className="flex flex-wrap gap-2">
                 {VOLTAR_EM_OPCOES.map((o) => (
                   <Chip key={o.key} ativo={nextAtChave === o.key} onClick={() => setNextAtChave(o.key)}>
