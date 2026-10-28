@@ -137,16 +137,15 @@ export const JOURNEY_STEPS = [
         id: "cardapio",
         tipo: "auto",
         titulo: "Fazer o cardápio no Canva",
-        resumo: "Faça uma cópia do modelo e troque cidade e telefone.",
+        resumo: "Faça uma cópia do modelo, troque endereço e telefone e baixe em JPG.",
         texto:
-          "Você tem um modelo pronto de cardápio no Canva! Siga os passos:\n\n" +
-          '1. Abra o link abaixo (precisa ter conta no Canva — é grátis)\n' +
-          '2. Toque em "Arquivo" → "Fazer uma cópia"\n' +
-          "3. O modelo vai aparecer no seu Canva pessoal\n" +
-          "4. Edite com os dados da sua unidade (cidade, telefone, preços se diferentes)\n" +
-          '5. Quando terminar, exporte como JPG (Compartilhar → Baixar → JPG)\n\n' +
-          "Essa imagem é o cardápio que o robô manda ao cliente (você sobe no Meu Vendedor, próximo passo).",
-        destinos: [{ tipo: "canva", href: CANVA_CARDAPIO, rotulo: "Abrir template no Canva" }],
+          "Você tem um modelo pronto de cardápio no Canva. Não precisa pedir acesso: você faz a sua cópia.\n\n" +
+          '1. Toque no botão abaixo e entre no Canva (a conta é grátis)\n' +
+          '2. Toque em "Arquivo" → "Fazer uma cópia". A cópia fica no seu Canva\n' +
+          "3. Na cópia, troque endereço e telefone da sua unidade (e o preço, se o seu for diferente)\n" +
+          '4. Baixe em JPG: "Compartilhar" → "Baixar"\n\n' +
+          "Essa imagem é o cardápio que o robô manda ao cliente. Você sobe no Meu Vendedor, no próximo passo.",
+        destinos: [{ tipo: "canva", href: CANVA_CARDAPIO, rotulo: "Abrir modelo no Canva" }],
       },
       {
         id: "catalogo_whatsapp",

@@ -177,19 +177,19 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
             <ol className="space-y-2 text-sm text-ink-2">
               <li className="flex gap-2">
                 <span className="font-bold text-brand-gold-ink">1.</span>
-                Abra o template no Canva (conta gratuita)
+                Abra o modelo no Canva (conta grátis). Não precisa pedir acesso
               </li>
               <li className="flex gap-2">
                 <span className="font-bold text-brand-gold-ink">2.</span>
-                Clique em "Arquivo" → "Fazer uma cópia"
+                Toque em "Arquivo" → "Fazer uma cópia"
               </li>
               <li className="flex gap-2">
                 <span className="font-bold text-brand-gold-ink">3.</span>
-                Edite com os dados da sua unidade (cidade, telefone, preços)
+                Na cópia, troque endereço e telefone (e o preço, se for diferente)
               </li>
               <li className="flex gap-2">
                 <span className="font-bold text-brand-gold-ink">4.</span>
-                Exporte como JPG (Compartilhar → Baixar → JPG)
+                Baixe em JPG ("Compartilhar" → "Baixar") e suba aqui embaixo
               </li>
             </ol>
             <a
@@ -199,7 +199,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
               className="inline-flex items-center gap-2 px-4 py-2 bg-brand-gold-ink text-white text-sm font-bold rounded-lg hover:bg-brand-gold-ink transition-colors"
             >
               <MaterialIcon icon="open_in_new" size={16} />
-              Abrir template no Canva
+              Abrir modelo no Canva
             </a>
           </div>
         )}

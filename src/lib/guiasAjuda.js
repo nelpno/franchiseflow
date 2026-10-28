@@ -658,7 +658,7 @@ export const GUIAS = [
     dica: "O robô manda o cardápio uma vez por conversa. Mude os preços no Estoque também, para bater com a imagem.",
     erroComum: "Imagem torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.",
     passos: [
-      { titulo: "Tenha a imagem pronta", texto: "Deixe a imagem nova no celular (JPG, PNG ou WebP, até 10 MB), feita no Canva a partir do modelo da Maxi. Na mesma etapa, toque em \"Criar cardápio no Canva\" e depois em \"Abrir template no Canva\"." },
+      { titulo: "Tenha a imagem pronta", texto: "Deixe a imagem nova no celular (JPG, PNG ou WebP, até 10 MB), feita no Canva a partir do modelo da Maxi. Na mesma etapa, toque em \"Criar cardápio no Canva\", em \"Abrir modelo no Canva\" e em Arquivo › Fazer uma cópia. Não precisa pedir acesso." },
       { titulo: "Abra a etapa Vendedor", texto: "Toque em Mais, em Meu robô e, no alto, na etapa Vendedor. Ache \"Catálogo / Cardápio\".", botao: "Vendedor", imagem: "/tutoriais/robo-cardapio-2.webp" },
       { titulo: "Troque a imagem", texto: "Toque em Trocar (ou na caixa \"clique para selecionar\", se ainda não tem) e escolha a imagem na galeria.", botao: "Trocar", imagem: "/tutoriais/robo-cardapio-3.webp" },
       { titulo: "Confira e siga", texto: "Espere aparecer \"Catálogo atualizado!\" e a imagem nova. Depois toque em Próximo.", botao: "Próximo", imagem: "/tutoriais/robo-cardapio-4.webp" },
