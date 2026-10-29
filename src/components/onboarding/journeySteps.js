@@ -159,9 +159,9 @@ export const JOURNEY_STEPS = [
           "3. Só produto que está no painel. Pão de queijo, molho, bebida: cadastre no painel primeiro\n" +
           "4. Nada de item informativo (\"Cardápio\", \"Consulte a entrega\", nome de pessoa): aparece ao cliente como R$ 0,00\n" +
           "5. Carrinho ligado nas configurações do catálogo\n\n" +
-          "O guia tem a lista oficial de nomes para copiar e um checklist. Não copie o catálogo de outra unidade.",
+          "Jeito mais rápido: copie o catálogo de Campinas Proost Souza (link no guia), trocando só o preço pelo do seu painel. O guia tem o passo a passo, a lista oficial de nomes e o checklist.",
         destinos: [
-          { tipo: "drive", href: DRIVE_CATALOGO_ROBO, rotulo: "Guia do catálogo (nomes e checklist)" },
+          { tipo: "drive", href: DRIVE_CATALOGO_ROBO, rotulo: "Guia do catálogo (passo a passo)" },
           { tipo: "drive", href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Vídeo do catálogo" },
         ],
       },
