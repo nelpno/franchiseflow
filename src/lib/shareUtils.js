@@ -51,9 +51,12 @@ export function isMobileDevice() {
  * por `canShare` — Chrome/Edge no Windows respondem `canShare({files}) === true` também.
  * @param {Blob} blob - The image blob to share
  * @param {string} filename - Filename for the image
+ * @param {{aoPerderToque?: (compartilhar: () => Promise<void>) => void}} [opcoes] - O navegador só
+ *   abre o menu de compartilhar logo depois do toque. Gerar o arquivo pode passar desse prazo: aí,
+ *   em vez de baixar calado, entrega a função para um novo toque chamar.
  */
-export async function shareImage(blob, filename = "comprovante.png") {
-  const file = new File([blob], filename, { type: "image/png" });
+export async function shareImage(blob, filename = "comprovante.png", { aoPerderToque } = {}) {
+  const file = new File([blob], filename, { type: blob.type || "image/png" });
 
   // Native share só em celular/tablet — mesmo quando o navegador desktop diz que "pode".
   if (isMobileDevice() && navigator.canShare?.({ files: [file] })) {
@@ -66,6 +69,10 @@ export async function shareImage(blob, filename = "comprovante.png") {
     } catch (err) {
       // User cancelled share — not an error
       if (err.name === "AbortError") return false;
+      if (err.name === "NotAllowedError" && aoPerderToque) {
+        aoPerderToque(() => navigator.share({ files: [file], title: "Comprovante de Venda" }));
+        return false;
+      }
     }
   }
 
@@ -77,7 +84,8 @@ export async function shareImage(blob, filename = "comprovante.png") {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Revogar no mesmo instante do clique pode cancelar o download em Firefox e Safari.
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
   return true;
 }
 
@@ -138,6 +146,8 @@ async function convertImagesToDataUri(container) {
   }
 }
 
+let iframeDeImpressao = null;
+
 /**
  * Prints a receipt by cloning the DOM element and printing native HTML/CSS.
  * Uses @page { size: 80mm auto } for thermal printer compatibility.
@@ -145,6 +155,9 @@ async function convertImagesToDataUri(container) {
  * @param {HTMLElement} element - The rendered receipt DOM element
  */
 export async function printReceipt(element) {
+  // Só sai na impressão seguinte ou depois de 10 min. Firefox e o celular não seguram o print(),
+  // e o Safari pode avisar "afterprint" na hora: tirar antes deixa a prévia em branco.
+  iframeDeImpressao?.remove();
   const clone = element.cloneNode(true);
   await convertImagesToDataUri(clone);
 
@@ -156,10 +169,12 @@ export async function printReceipt(element) {
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:450px;height:600px;";
   document.body.appendChild(iframe);
+  iframeDeImpressao = iframe;
 
   const doc = iframe.contentDocument || iframe.contentWindow.document;
   doc.open();
   doc.write(`<!DOCTYPE html><html><head>
+    <title>Comprovante de Venda</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <style>
       @page { size: auto; margin: 0; }
@@ -176,10 +191,51 @@ export async function printReceipt(element) {
 
   await Promise.race([doc.fonts.ready, new Promise((r) => setTimeout(r, 3000))]);
 
+  setTimeout(() => iframe.remove(), 10 * 60 * 1000);
+
   iframe.contentWindow.focus();
   iframe.contentWindow.print();
+}
 
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 1000);
+/** Carrega antes as bibliotecas do PDF, para o menu de compartilhar abrir dentro do prazo do toque. */
+export function preloadReceiptPdf() {
+  import("html2canvas").catch(() => {});
+  import("jspdf").catch(() => {});
+}
+
+const PDF_LARGURA_MM = 80;
+const PDF_LARGURA_PX = 302; // 80 mm a 96 dpi
+
+/**
+ * PDF do comprovante em pagina de 80 mm, na altura exata do conteudo. E o caminho de quem nao
+ * consegue usar a janela de impressao: app de impressora Bluetooth no celular, guardar ou mandar
+ * o arquivo. Usa as regras de impressao do SaleReceipt (classe receipt-pdf). Vira imagem de
+ * ~290 dpi, acima dos 203 dpi da termica.
+ * @param {HTMLElement} element - The rendered receipt DOM element
+ * @returns {Promise<Blob>} PDF blob
+ */
+export async function generateReceiptPdf(element) {
+  // Clona antes do primeiro await: o componente de origem pode mudar enquanto as bibliotecas carregam.
+  const clone = element.cloneNode(true);
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+
+  const host = document.createElement("div");
+  host.style.cssText = `position:fixed;left:-9999px;top:0;width:${PDF_LARGURA_PX}px;background:#fff;`;
+  clone.classList.add("receipt-pdf");
+  host.appendChild(clone);
+  document.body.appendChild(host);
+
+  try {
+    const canvas = await html2canvas(clone, { scale: 3, backgroundColor: "#ffffff", useCORS: true, logging: false });
+    const alturaMm = (canvas.height / canvas.width) * PDF_LARGURA_MM;
+    const pdf = new jsPDF({
+      unit: "mm",
+      format: [PDF_LARGURA_MM, alturaMm],
+      orientation: alturaMm >= PDF_LARGURA_MM ? "portrait" : "landscape",
+    });
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, PDF_LARGURA_MM, alturaMm, undefined, "FAST");
+    return pdf.output("blob");
+  } finally {
+    document.body.removeChild(host);
+  }
 }

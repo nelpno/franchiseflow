@@ -29,7 +29,7 @@ import SaleReceipt from "./SaleReceipt";
 import ChamarUber from "./ChamarUber";
 import ExportButtons from "@/components/shared/ExportButtons";
 import { PAYMENT_METHODS, getPaymentMethodLabel } from "@/lib/franchiseUtils";
-import { generateReceiptImage, shareImage, printReceipt } from "@/lib/shareUtils";
+import { generateReceiptImage, generateReceiptPdf, isMobileDevice, preloadReceiptPdf, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
@@ -490,6 +490,14 @@ export default function TabLancar({
 
   // Share sale receipt
   const [shareData, setShareData] = useState(null);
+  const [pdfSaleId, setPdfSaleId] = useState(null);
+  // Os três comprovantes dividem o mesmo elemento fora da tela: um por vez, senão o PDF de uma
+  // venda pode sair com os dados de outra.
+  const comprovanteOcupado = useRef(false);
+
+  useEffect(() => {
+    if (isMobileDevice()) preloadReceiptPdf();
+  }, []);
 
   // Assim que a venda recem-salva aparece na lista recarregada, oferece o comprovante.
   // Espera a lista chegar de proposito: handleShareSale precisa da venda inteira
@@ -512,6 +520,8 @@ export default function TabLancar({
   const handleShareSaleRef = useRef(null);
 
   const handleShareSale = useCallback(async (sale) => {
+    if (comprovanteOcupado.current) return;
+    comprovanteOcupado.current = true;
     const saleId = sale.id;
     setSharingSaleId(saleId);
     try {
@@ -545,12 +555,15 @@ export default function TabLancar({
       console.error("Erro ao compartilhar:", err);
       toast.error("Erro ao gerar comprovante.");
     } finally {
+      comprovanteOcupado.current = false;
       setSharingSaleId(null);
       setShareData(null);
     }
   }, [expandedItems, contactsMap]);
 
   const handlePrintSale = useCallback(async (sale) => {
+    if (comprovanteOcupado.current) return;
+    comprovanteOcupado.current = true;
     const saleId = sale.id;
     setPrintingSaleId(saleId);
     try {
@@ -575,7 +588,52 @@ export default function TabLancar({
       console.error("Erro ao imprimir:", err);
       toast.error("Erro ao imprimir comprovante.");
     } finally {
+      comprovanteOcupado.current = false;
       setPrintingSaleId(null);
+      setShareData(null);
+    }
+  }, [expandedItems, contactsMap]);
+
+  // PDF de 80 mm: para app de impressora Bluetooth no celular, ou para guardar o arquivo.
+  const handlePdfSale = useCallback(async (sale) => {
+    if (comprovanteOcupado.current) return;
+    comprovanteOcupado.current = true;
+    const saleId = sale.id;
+    setPdfSaleId(saleId);
+    try {
+      let items = expandedItems[saleId];
+      if (!items) {
+        items = await SaleItem.filter({ sale_id: saleId });
+        setExpandedItems((prev) => ({ ...prev, [saleId]: items }));
+      }
+
+      const contact = sale.contact_id ? contactsMap[sale.contact_id] : null;
+      setShareData({ sale, saleItems: items, contact });
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      if (!receiptRef.current) {
+        toast.error("Erro ao gerar comprovante.");
+        return;
+      }
+
+      const blob = await generateReceiptPdf(receiptRef.current);
+      const dateStr = format(new Date(), "ddMMyyyy");
+      const clientName = (contact?.nome || sale.customer_name)?.replace(/\s+/g, "-") || "venda";
+      await shareImage(blob, `comprovante-${clientName}-${dateStr}.pdf`, {
+        aoPerderToque: (compartilhar) => {
+          toast.success("PDF pronto!", {
+            action: { label: "Compartilhar", onClick: () => { compartilhar().catch(() => {}); } },
+            duration: 15000,
+          });
+        },
+      });
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      toast.error("Erro ao gerar comprovante.");
+    } finally {
+      comprovanteOcupado.current = false;
+      setPdfSaleId(null);
       setShareData(null);
     }
   }, [expandedItems, contactsMap]);
@@ -686,6 +744,20 @@ export default function TabLancar({
             className={printingSaleId === sale.id ? "animate-spin" : ""}
           />
           {printingSaleId === sale.id ? "Imprimindo..." : "Imprimir"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); handlePdfSale(sale); }}
+          disabled={pdfSaleId === sale.id}
+          className="gap-1.5 h-10 text-ink-2"
+        >
+          <MaterialIcon
+            icon={pdfSaleId === sale.id ? "progress_activity" : "download"}
+            size={16}
+            className={pdfSaleId === sale.id ? "animate-spin" : ""}
+          />
+          {pdfSaleId === sale.id ? "Gerando..." : "PDF"}
         </Button>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-shadow/5 pt-2">
@@ -1125,6 +1197,23 @@ export default function TabLancar({
                         <span className="sr-only sm:not-sr-only">Imprimir</span>
                       </>
                     )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePdfSale(sale);
+                    }}
+                    disabled={pdfSaleId === sale.id}
+                    className="gap-1.5 h-10 min-w-[44px] text-ink-2"
+                  >
+                    <MaterialIcon
+                      icon={pdfSaleId === sale.id ? "progress_activity" : "download"}
+                      size={14}
+                      className={pdfSaleId === sale.id ? "animate-spin" : ""}
+                    />
+                    <span className="sr-only sm:not-sr-only">{pdfSaleId === sale.id ? "Gerando..." : "PDF"}</span>
                   </Button>
                   <Button
                     variant="outline"

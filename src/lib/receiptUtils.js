@@ -98,8 +98,37 @@ export function formatCardFeePercent(percent) {
 export function formatReceiptDateTime(saleDate, createdAt) {
   const datePart = formatDatePart(saleDate);
   const timePart = formatTimePart(createdAt);
-  if (datePart && timePart) return `${datePart} às ${timePart}`;
+  // A hora vem do lancamento: so vale junto da data da venda se for o MESMO dia. Venda para
+  // outro dia (ex.: lancada 26/10 10:58 para 31/10) saia "31/10 as 10:58", hora que nao existiu.
+  if (datePart && timePart && isSameDayBRT(saleDate, createdAt)) return `${datePart} às ${timePart}`;
   return datePart || "—";
+}
+
+/** "26/10/2026 às 10:58" quando a venda foi lancada em outro dia que nao o da venda; senao null. */
+export function formatReceiptLaunch(saleDate, createdAt) {
+  if (!formatDatePart(saleDate) || !formatTimePart(createdAt) || isSameDayBRT(saleDate, createdAt)) return null;
+  const launchDay = createdAtDayBRT(createdAt);
+  return `${formatDatePart(launchDay)} às ${formatTimePart(createdAt)}`;
+}
+
+/**
+ * "Valor dos produtos" so aparece quando explica o Total (frete, desconto, taxa) ou quando nao
+ * bate com ele. Sem nada disso repetia o mesmo numero e gastava bobina.
+ */
+export function showProductsSubtotal({ subtotal, total, deliveryFee, discountAmount, cardFeeShown }) {
+  if ((Number(deliveryFee) || 0) > 0 || (Number(discountAmount) || 0) > 0 || cardFeeShown) return true;
+  return Math.abs((Number(subtotal) || 0) - (Number(total) || 0)) >= 0.005;
+}
+
+function createdAtDayBRT(createdAt) {
+  const d = new Date(createdAt);
+  if (Number.isNaN(d.getTime())) return null;
+  // en-CA formata como YYYY-MM-DD
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+}
+
+function isSameDayBRT(saleDate, createdAt) {
+  return String(saleDate).slice(0, 10) === createdAtDayBRT(createdAt);
 }
 
 function formatDatePart(saleDate) {

@@ -1346,7 +1346,7 @@ export default function SaleForm({
   // aparece sem abrir nada.
   const deliverySummary =
     deliveryMethod === "delivery"
-      ? `Delivery${effectiveDeliveryFee > 0 ? ` ${formatCurrency(effectiveDeliveryFee)}` : ""}${
+      ? `Entrega${effectiveDeliveryFee > 0 ? ` ${formatCurrency(effectiveDeliveryFee)}` : ""}${
           customerAddress.trim() ? "" : " · sem endereço"
         }`
       : "Retirada";
@@ -1764,7 +1764,7 @@ export default function SaleForm({
             }`}
           >
             <MaterialIcon icon="delivery_dining" size={18} />
-            Delivery
+            Entrega
           </button>
         </div>
 

@@ -7,6 +7,8 @@ import {
   formatReceiptAddressLine,
   formatCardFeePercent,
   formatReceiptDateTime,
+  formatReceiptLaunch,
+  showProductsSubtotal,
   ENDERECO_NAO_INFORMADO,
 } from "@/lib/receiptUtils";
 import logoMaxi from "@/assets/logo-maxi-massas-optimized.png";
@@ -14,6 +16,69 @@ import logoMaxi from "@/assets/logo-maxi-massas-optimized.png";
 const getPaymentLabel = getPaymentMethodLabel;
 
 const dashedBorder = "1px dashed #999";
+
+// Regras do papel: valem na impressão e no PDF (receipt-pdf). O tamanho da letra precisa de classe
+// e !important porque o estilo inline (px) venceria a herança do font-size da raiz.
+const regrasDoPapel = (r) => `
+  ${r} {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    padding: 2mm !important;
+    font-family: 'Courier New', 'Consolas', ui-monospace, monospace !important;
+    font-weight: 700 !important;
+    font-size: 10pt !important;
+    line-height: 1.3 !important;
+    color: #000 !important;
+    background: #fff !important;
+    -webkit-font-smoothing: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  ${r} * {
+    color: #000 !important;
+    background-color: transparent !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-weight: 700 !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  ${r} div, ${r} span { font-size: 10pt !important; }
+  ${r} .r-titulo { font-size: 12pt !important; }
+  ${r} .r-pedido, ${r} .r-endereco, ${r} .r-total-rotulo { font-size: 11pt !important; }
+  ${r} .r-total { font-size: 15pt !important; }
+  ${r} img {
+    width: 18mm !important;
+    max-width: 18mm !important;
+    height: auto !important;
+    margin-bottom: 4px !important;
+  }
+  ${r} > div { break-inside: avoid; page-break-inside: avoid; }
+  /* Preço e data não quebram no meio ("R$ 111,7" / "0"): quem cede é o rótulo ou a linha. */
+  ${r} .r-valor, ${r} .r-total {
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: normal;
+    flex-shrink: 0;
+  }
+`;
+
+// Folha comum (A4, carta, "Salvar como PDF"): a raiz se adapta à largura do papel, e sem este
+// limite o comprovante esticava na folha inteira. Na bobina (até 112 mm) a regra não entra.
+const estilosDoCupom = `
+  @media print {
+    ${regrasDoPapel(".receipt")}
+  }
+  @media print and (min-width: 120mm) {
+    .receipt {
+      max-width: 80mm !important;
+      margin: 8mm auto 0 !important;
+    }
+  }
+  ${regrasDoPapel(".receipt.receipt-pdf")}
+`;
 
 const SaleReceipt = React.forwardRef(function SaleReceipt(
   { sale, saleItems, contact, franchiseName, unitWhatsApp },
@@ -45,6 +110,16 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
   // Telefone do cliente no cupom — o entregador liga direto em vez de acionar a franqueada.
   // Mesma cascata do endereço: contato "vivo" primeiro, snapshot da venda como fallback.
   const receiptPhone = formatPhone(contact?.telefone || sale.contact_phone || "");
+  // Em entrega a observação (portaria, troco) sobe para junto do endereço: é o entregador quem lê.
+  const obsJuntoDoEndereco = deliveryLabel === "Entrega";
+  const launchLine = formatReceiptLaunch(sale.sale_date, sale.created_at);
+  const productsSubtotalVisible = showProductsSubtotal({
+    subtotal,
+    total: totalValue,
+    deliveryFee,
+    discountAmount,
+    cardFeeShown: showCardFeeRow,
+  });
 
   return (
     <div
@@ -59,42 +134,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         color: "#1b1c1d",
       }}
     >
-      <style>{`
-        @media print {
-          .receipt {
-            width: 100% !important;
-            max-width: 100% !important;
-            padding: 2mm !important;
-            font-family: 'Courier New', 'Consolas', ui-monospace, monospace !important;
-            font-weight: 700 !important;
-            font-size: 11pt !important;
-            line-height: 1.3 !important;
-            color: #000 !important;
-            background: #fff !important;
-            -webkit-font-smoothing: none;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          .receipt * {
-            color: #000 !important;
-            background-color: transparent !important;
-            border-color: #000 !important;
-            box-shadow: none !important;
-            text-shadow: none !important;
-            font-weight: 700 !important;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-          }
-          .receipt img {
-            max-width: 40mm !important;
-            height: auto !important;
-          }
-          .receipt table {
-            table-layout: fixed;
-            width: 100%;
-          }
-        }
-      `}</style>
+      <style>{estilosDoCupom}</style>
       {/* Header — logo + nome + subtítulo */}
       <div style={{ textAlign: "center", marginBottom: 12 }}>
         <img
@@ -109,6 +149,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           }}
         />
         <div
+          className="r-titulo"
           style={{
             fontSize: 16,
             fontWeight: 700,
@@ -129,6 +170,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         </div>
         {sale.sale_number ? (
           <div
+            className="r-pedido"
             style={{
               fontSize: 14,
               fontWeight: 700,
@@ -169,37 +211,52 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
       {/* Cliente, Endereço e Data */}
       <div style={{ fontSize: 12, lineHeight: 1.6 }}>
         {(contact?.nome || sale.customer_name) && (
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
             <span style={{ color: "#7a6d6d" }}>Cliente</span>
             <span style={{ fontWeight: 600 }}>{contact?.nome || sale.customer_name}</span>
           </div>
         )}
         {receiptPhone && (
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
             <span style={{ color: "#7a6d6d" }}>Telefone</span>
-            <span style={{ fontWeight: 600 }}>{receiptPhone}</span>
+            <span className="r-valor" style={{ fontWeight: 600 }}>{receiptPhone}</span>
           </div>
         )}
         {/* Só aparece em ENTREGA (retirada não precisa endereço do cliente); sem nenhum
             endereço, avisa em vez de calar (linha vem de receiptUtils.js). */}
         {receiptAddressLine && (
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <span style={{ color: "#7a6d6d", flexShrink: 0 }}>Endereço</span>
-            <span
+          <div style={{ margin: "4px 0" }}>
+            <div style={{ color: "#7a6d6d" }}>Endereço</div>
+            <div
+              className="r-endereco"
               style={{
-                textAlign: "right",
+                fontSize: 13,
                 fontWeight: 700,
+                lineHeight: 1.35,
+                overflowWrap: "anywhere",
                 color: receiptAddressLine === ENDERECO_NAO_INFORMADO ? "#dc2626" : "inherit",
               }}
             >
               {receiptAddressLine}
-            </span>
+            </div>
           </div>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+        {obsJuntoDoEndereco && sale.observacoes && (
+          <div style={{ margin: "4px 0" }}>
+            <div style={{ color: "#7a6d6d" }}>Obs.</div>
+            <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{sale.observacoes}</div>
+          </div>
+        )}
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
           <span style={{ color: "#7a6d6d" }}>Data</span>
-          <span>{formatReceiptDateTime(sale.sale_date, sale.created_at)}</span>
+          <span className="r-valor">{formatReceiptDateTime(sale.sale_date, sale.created_at)}</span>
         </div>
+        {launchLine && (
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ color: "#7a6d6d" }}>Lançado em</span>
+            <span className="r-valor">{launchLine}</span>
+          </div>
+        )}
       </div>
 
       <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
@@ -240,11 +297,11 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
                   {item.product_name}
                 </div>
                 {/* Qtd × Preço = Total na mesma linha */}
-                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, fontSize: 12, color: "#4a3d3d" }}>
-                  <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center", gap: 8, fontSize: 12, color: "#4a3d3d" }}>
+                  <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums" }}>
                     {item.quantity} × {formatCurrency(item.unit_price)}
                   </span>
-                  <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: "#1b1c1d", minWidth: 72, textAlign: "right" }}>
+                  <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: "#1b1c1d", minWidth: 72, textAlign: "right" }}>
                     {formatCurrency(lineTotal)}
                   </span>
                 </div>
@@ -258,17 +315,19 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
 
       {/* Subtotais */}
       <div style={{ fontSize: 13, lineHeight: 1.8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ color: "#4a3d3d" }}>Valor dos produtos</span>
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>
-            {formatCurrency(subtotal)}
-          </span>
-        </div>
+        {productsSubtotalVisible && (
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
+            <span style={{ color: "#4a3d3d" }}>Valor dos produtos</span>
+            <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums" }}>
+              {formatCurrency(subtotal)}
+            </span>
+          </div>
+        )}
 
         {deliveryFee > 0 && (
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
             <span style={{ color: "#4a3d3d" }}>Frete</span>
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums" }}>
               {formatCurrency(deliveryFee)}
             </span>
           </div>
@@ -278,6 +337,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
               justifyContent: "space-between",
               color: "#dc2626",
             }}
@@ -288,20 +348,20 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
                 ? ` (${sale.discount_input}%)`
                 : ""}
             </span>
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums" }}>
               −{formatCurrency(discountAmount)}
             </span>
           </div>
         )}
 
         {showCardFeeRow && (
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>
             <span style={{ color: "#4a3d3d" }}>
               {/* P3 (28/09/2026, item 8): taxa cobrada mas percentual zerado/ausente não pode
                   virar "(0%)" — omite o parêntese em vez de mostrar um número inventado. */}
               Taxa cartão{cardFeePercent > 0 ? ` (${formatCardFeePercent(cardFeePercent)})` : ""}
             </span>
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums" }}>
               {formatCurrency(cardFeeAmount)}
             </span>
           </div>
@@ -315,11 +375,13 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           marginTop: 6,
           paddingTop: 8,
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "space-between",
           alignItems: "center",
         }}
       >
         <span
+          className="r-total-rotulo"
           style={{
             fontSize: 14,
             fontWeight: 700,
@@ -329,6 +391,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           Total
         </span>
         <span
+          className="r-total"
           style={{
             fontSize: 20,
             fontWeight: 700,
@@ -346,6 +409,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "space-between",
           fontSize: 12,
           color: "#4a3d3d",
@@ -357,7 +421,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         </span>
       </div>
 
-      {sale.observacoes && (
+      {!obsJuntoDoEndereco && sale.observacoes && (
         <>
           <div style={{ borderTop: dashedBorder, margin: "8px 0" }} />
           <div style={{ fontSize: 12 }}>
@@ -375,18 +439,6 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
       <div style={{ textAlign: "center", paddingTop: 2 }}>
         <div style={{ fontSize: 12, color: "#4a3d3d" }}>
           Obrigado pela preferência!
-        </div>
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "#1b1c1d",
-            marginTop: 4,
-          }}
-        >
-          Maxi Massas
         </div>
         {unitWhatsApp && (
           <div style={{ fontSize: 11, color: "#4a3d3d", marginTop: 4 }}>

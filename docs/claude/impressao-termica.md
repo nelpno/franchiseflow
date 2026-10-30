@@ -16,3 +16,11 @@
 - Ao adicionar elementos ao SaleReceipt: NUNCA usar cor cinza, font-weight < 700, ou background colorido. O `!important` no `@media print` neutraliza inline styles — mas se vai imprimir, projetar pensando em "preto puro ou branco puro"
 - **Uso prático (Nelson 21/04)**: franqueado imprime com **escala 80%** no dialog do browser e fica ótimo. Se reclamação de "ficou grande", orientar reduzir escala no print dialog — não é bug
 - Se alguma franquia reclamar de impressão ainda apagada após este refactor, **não é CSS** — é densidade do driver (heating time) ou bobina velha. NÃO forçar config na franquia (Nelson: zero configuração)
+
+### Atualização 30/10/2026
+- **Letra:** o `font-size` da raiz nunca chegava aos filhos (o inline em px vence a herança). Agora `div, span` = 10pt com `!important`, e os destaques têm classe (`r-titulo`, `r-pedido`, `r-endereco`, `r-total-rotulo`, `r-total`). Valor e data usam `r-valor`: não quebram no meio.
+- **Folha comum (A4, carta, "Salvar como PDF"):** `@media print and (min-width: 120mm)` limita a 80 mm e centraliza. Na bobina, até 112 mm, a regra não entra.
+- **Botão PDF:** `generateReceiptPdf` gera página de 80 mm na altura exata, com as mesmas regras (`regrasDoPapel`, classe `receipt-pdf`). No celular abre o menu de compartilhar, para o app da impressora Bluetooth (perdeu o prazo do toque: aviso com botão Compartilhar); no computador baixa.
+- **Iframe de impressão:** sai na impressão seguinte ou em 10 min, nunca por `afterprint` (Firefox e celular não seguram o `print()`, e o Safari pode avisar na hora).
+- **Endereço só em Entrega** (desde S13): a venda marcada como Retirada não imprime endereço, mesmo com ele gravado (Guarujá, #1296).
+- **Testado em Chrome** por PDF nas larguras de 48, 58, 72, 80 e 112 mm, A4 e carta. Sem impressora física, Safari nem Android de verdade.

@@ -177,7 +177,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: produtos da venda. (existe: `vendas-3.webp`)
 4. Em **Pagamento**, toque em como o cliente pagou (PIX, Dinheiro, Crédito…). O cliente ainda vai pagar? Ligue **Ainda vou receber**, logo abaixo.
    - Imagem: botões de pagamento. (existe: `vendas-4.webp`)
-5. Em **Entrega**, toque em **Delivery** se foi entrega. Confira o endereço e o **Frete (R$)**. O frete entra no valor da venda.
+5. Em **Entrega**, toque no botão **Entrega** se foi entrega. Confira o endereço e o **Frete (R$)**. O frete entra no valor da venda.
    - Imagem: bloco Entrega. (existe: `vendas-5.webp`)
 6. Confira o total no rodapé e toque em **Registrar venda**. Aparece "Venda registrada!", com o botão **Comprovante**.
    - Imagem: rodapé com o total. Seta em **Registrar venda**. (existe: `vendas-6.webp`)
@@ -266,9 +266,10 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Para imprimir (é outro caminho)**
 4. Em **Vendas**, toque na venda e em **Imprimir**. Abre a janela de impressão.
    - Imagem: venda aberta. Seta em **Imprimir**.
-5. Escolha a sua impressora e imprima.
+5. Escolha a sua impressora e imprima. Para ter o arquivo, escolha **Salvar como PDF**. Na impressora comum, ele sai centralizado na folha.
    - Imagem: janela de impressão. Círculo no nome da impressora.
-6. Saiu fraco na impressora térmica? Na janela de impressão, mude a **Escala** para **80%** e imprima de novo.
+6. Usa impressora Bluetooth no celular? Se a janela de impressão não oferecer a sua impressora, toque em **PDF**, ao lado de **Imprimir**, e abra o arquivo no app da impressora.
+7. Saiu fraco na impressora térmica? Na janela de impressão, mude a **Escala** para **80%** e imprima de novo.
    - Imagem: janela de impressão com "Mais opções". Seta no campo **Escala**.
 
 **Deu certo quando:** o cliente recebeu a imagem no WhatsApp, ou o papel saiu legível, com o endereço e o telefone.

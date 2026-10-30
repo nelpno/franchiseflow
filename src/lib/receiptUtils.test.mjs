@@ -13,6 +13,8 @@ import {
   ENDERECO_NAO_INFORMADO,
   formatCardFeePercent,
   formatReceiptDateTime,
+  formatReceiptLaunch,
+  showProductsSubtotal,
   resolveUnitWhatsApp,
 } from "./receiptUtils.js";
 
@@ -160,6 +162,32 @@ check(
 );
 check("sem created_at -> so a data", formatReceiptDateTime("2026-08-30", null) === "30/08/2026");
 check("sem nada -> travessao", formatReceiptDateTime(null, null) === "—");
+// Venda para outro dia nao mistura a data da venda com a hora do lancamento (30/10/2026, #1274).
+check(
+  "venda futura mostra so a data, sem hora inventada",
+  formatReceiptDateTime("2026-10-31", "2026-10-26T13:58:00.000Z") === "31/10/2026"
+);
+check(
+  "venda futura mostra quando foi lancada",
+  formatReceiptLaunch("2026-10-31", "2026-10-26T13:58:00.000Z") === "26/10/2026 às 10:58"
+);
+check(
+  "venda lancada depois (data no passado) tambem mostra o lancamento",
+  formatReceiptLaunch("2026-10-29", "2026-10-30T20:50:00.000Z") === "30/10/2026 às 17:50"
+);
+check("mesmo dia -> sem linha de lancamento", formatReceiptLaunch("2026-10-30", "2026-10-30T20:50:00.000Z") === null);
+check(
+  "23:30 BRT (UTC ja no dia seguinte) continua mesmo dia",
+  formatReceiptLaunch("2026-09-30", "2026-10-01T02:30:00.000Z") === null
+);
+check("sem created_at -> sem lancamento", formatReceiptLaunch("2026-10-30", null) === null);
+
+// --- showProductsSubtotal ----------------------------------------------------
+check("sem ajuste e igual ao total -> esconde", showProductsSubtotal({ subtotal: 111.7, total: 111.7 }) === false);
+check("com frete -> mostra", showProductsSubtotal({ subtotal: 111.7, total: 126.7, deliveryFee: 15 }) === true);
+check("com desconto -> mostra", showProductsSubtotal({ subtotal: 100, total: 90, discountAmount: 10 }) === true);
+check("com taxa exibida -> mostra", showProductsSubtotal({ subtotal: 100, total: 103, cardFeeShown: true }) === true);
+check("sem ajuste mas diferente do total -> mostra", showProductsSubtotal({ subtotal: 100, total: 90 }) === true);
 
 // --- resolveUnitWhatsApp (S13.2: SÓ franchises.whatsapp_publico, NUNCA o celular pessoal) --
 check(
