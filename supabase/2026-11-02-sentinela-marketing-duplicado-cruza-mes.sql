@@ -36,4 +36,5 @@ AS $function$
   group by m.id, f.name, m.franchise_id, m.expense_date, m.amount, m.description;
 $function$;
 
-revoke execute on function public.sentinela_marketing_duplicado() from public, anon;
+-- so a sentinela_diaria (definer) chama; o front nao usa: franqueada logada nao le a rede
+revoke execute on function public.sentinela_marketing_duplicado() from public, anon, authenticated;
