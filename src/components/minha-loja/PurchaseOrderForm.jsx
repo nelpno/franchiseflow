@@ -26,6 +26,7 @@ import { supabase } from "@/api/supabaseClient";
 import { estimarFreteFabrica } from "@/lib/freteFabrica";
 import { comPrecoDaTabela, reposicaoDoItem, unidadeDeMedida, sobeParaSugeridos } from "@/lib/reposicao";
 import { pedidosNovosDesde } from "@/lib/reposicao";
+import { tamanhoDaCaixa, emCaixasInteiras } from "@/lib/caixaFechada";
 import {
   enviarPedidoFabrica,
   montarItensDoPedido,
@@ -222,7 +223,7 @@ export default function PurchaseOrderForm({
   const aCaminhoDe = (item) => (uiV2 ? parseFloat(emAberto?.[item.id]) || 0 : 0);
   const sugestaoV2De = (item) =>
     sugestaoDeCompra(item, { ritmoPorDia: ritmo?.[item.id] || 0, aCaminho: aCaminhoDe(item), intervaloDias });
-  const getSuggestion = (item) => {
+  const sugestaoAvulsa = (item) => {
     if (!uiV2) return suggestionFor(item, weeklyTurnover);
     if (item.active === false) return null;
     if (sugestaoIndisponivel) return null;
@@ -232,6 +233,11 @@ export default function PurchaseOrderForm({
     }
     const r = reposicaoDoItem(item, weeklyTurnover, emAberto);
     return r.semBase ? null : r.repor;
+  };
+  // Produto de caixa fechada: a sugestão sobe para caixas inteiras.
+  const getSuggestion = (item) => {
+    const sug = sugestaoAvulsa(item);
+    return sug === null ? null : emCaixasInteiras(item.product_name, sug);
   };
 
   // Quantities state: { itemId: qty } — restore from draft > initialQuantities > 0
@@ -250,6 +256,7 @@ export default function PurchaseOrderForm({
       } else {
         init[item.id] = 0;
       }
+      init[item.id] = emCaixasInteiras(item.product_name, init[item.id]); // Repetir/rascunho com caixa aberta
     });
     return init;
   });
@@ -311,7 +318,7 @@ export default function PurchaseOrderForm({
       );
     }
     const next = {};
-    standardProducts.forEach((item) => { next[item.id] = item.active === false ? 0 : quantidades[item.id] || 0; });
+    standardProducts.forEach((item) => { next[item.id] = item.active === false ? 0 : emCaixasInteiras(item.product_name, quantidades[item.id] || 0); });
     setQuantities(next);
     modeloAplicadoRef.current = true;
   }, [pedidoModeloItens, standardProducts]);
@@ -636,6 +643,7 @@ export default function PurchaseOrderForm({
       .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"));
     const linhaProduto = (item) => {
       const qty = parseInt(quantities[item.id], 10) || 0;
+      const caixa = tamanhoDaCaixa(item.product_name); // >1: o campo conta caixas, o pedido grava pacotes
       const sug = getSuggestion(item);
       const s2 = ritmo ? sugestaoV2De(item) : null;
       const tem = parseFloat(item.quantity) || 0;
@@ -651,15 +659,17 @@ export default function PurchaseOrderForm({
             <p className="font-semibold leading-snug text-ink">{item.product_name}</p>
             <p className="mt-0.5 text-sm text-ink-2 tabular-nums">{apoio}</p>
             <p className="text-xs text-ink-3 tabular-nums">
-              {formatBRL(item.cost_price)} cada
-              {sug !== null && sug > 0 && sug !== qty ? ` · sugestão ${sug}` : ""}
+              {caixa > 1
+                ? `caixa com ${caixa} · ${formatBRL((parseFloat(item.cost_price) || 0) * caixa)} a caixa${qty > 0 ? ` · ${qty} pacotes` : ""}`
+                : `${formatBRL(item.cost_price)} cada`}
+              {sug !== null && sug > 0 && sug !== qty ? ` · sugestão ${caixa > 1 ? `${sug / caixa} cx` : sug}` : ""}
             </p>
           </div>
           <div className="flex items-center justify-between gap-3 sm:justify-end">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => passo(item.id, -1)}
+                onClick={() => passo(item.id, -caixa)}
                 disabled={qty <= 0 || isSubmitting}
                 className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink hover:bg-surface disabled:opacity-40"
                 aria-label={`Diminuir ${item.product_name}`}
@@ -671,16 +681,16 @@ export default function PurchaseOrderForm({
                 inputMode="numeric"
                 min="0"
                 step="1"
-                value={quantities[item.id] === "" ? "" : qty}
-                onChange={(e) => setQty(item.id, e.target.value)}
+                value={quantities[item.id] === "" ? "" : qty / caixa}
+                onChange={(e) => setQty(item.id, caixa > 1 && e.target.value !== "" ? String((parseInt(e.target.value, 10) || 0) * caixa) : e.target.value)}
                 onFocus={(e) => e.target.select()}
                 disabled={isSubmitting}
-                aria-label={`Quantidade de ${item.product_name}`}
+                aria-label={caixa > 1 ? `Caixas de ${item.product_name}` : `Quantidade de ${item.product_name}`}
                 className="h-11 w-16 rounded-xl border border-surface-line bg-surface-2 text-center text-base font-bold tabular-nums text-ink focus:outline-none focus:ring-2 focus:ring-brand/20 [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
               <button
                 type="button"
-                onClick={() => passo(item.id, 1)}
+                onClick={() => passo(item.id, caixa)}
                 disabled={isSubmitting}
                 className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink hover:bg-surface disabled:opacity-40"
                 aria-label={`Aumentar ${item.product_name}`}
@@ -753,11 +763,12 @@ export default function PurchaseOrderForm({
                   .sort((a, b) => String(a.product_name).localeCompare(String(b.product_name), "pt-BR"))
                   .map((item) => {
                     const q = parseInt(quantities[item.id], 10) || 0;
+                    const caixa = tamanhoDaCaixa(item.product_name);
                     return (
                       <li key={item.id} className="flex items-start justify-between gap-3 border-t border-surface-line py-2.5 first:border-t-0">
                         <span className="min-w-0 text-sm text-ink">
-                          <b className="font-semibold">{q}×</b> {item.product_name}
-                          <span className="block text-xs text-ink-3 tabular-nums">{formatBRL(item.cost_price)} cada</span>
+                          <b className="font-semibold">{caixa > 1 ? `${q / caixa} cx` : `${q}×`}</b> {item.product_name}
+                          <span className="block text-xs text-ink-3 tabular-nums">{caixa > 1 ? `${q} pacotes · ` : ""}{formatBRL(item.cost_price)} cada</span>
                         </span>
                         <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{formatBRL(getLineTotal(item))}</span>
                       </li>
