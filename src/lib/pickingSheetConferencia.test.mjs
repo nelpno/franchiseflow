@@ -67,7 +67,7 @@ await t("só quantidades: nenhum R$ no PDF", async () => {
 await t("só quantidades: cabeçalho, produtos, quantidades e coluna RECEBIDO", async () => {
   for (const s of ["PEDIDO A FABRICA - CONFERENCIA", "PED-5A7C0F3E", "Maxi Massas Exemplo", "RECEBIDO", "PEDIDO",
     "Nhoque de Batata - 500g", "Rondelli 4 Queijos - 700g Rolo", "Molho de Tomate Mariolla - 250g",
-    "3 produtos", "20 un", "Conferido por:", "Sem valores", "25/09/2026 12:30"]) {
+    "3 produtos", "20 vol", "Conferido por:", "Sem valores", "25/09/2026 12:30"]) {
     assert.ok(soQtd.includes(s), `faltou "${s}"`);
   }
   assert.ok(!soQtd.includes("Canelone"), "item com quantidade 0 não pode sair");

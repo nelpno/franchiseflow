@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { resumoRecebido, aguardaConferencia } from "@/lib/conferenciaEntrega";
+import { emUnidadesDePedido, qtdTexto, precoDaUnidade } from "@/lib/caixaFechada";
 
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
@@ -223,7 +224,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                     )}
                     {items.length > 0 && (
                       <span className="text-xs text-ink-2">
-                        {items.length} {items.length === 1 ? "produto" : "produtos"} · {items.reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0)} un.
+                        {items.length} {items.length === 1 ? "produto" : "produtos"} · {items.reduce((sum, i) => sum + emUnidadesDePedido(i.product_name, parseInt(i.quantity) || 0), 0)} vol.
                       </span>
                     )}
 
@@ -282,13 +283,13 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                             <span className="text-ink">{item.product_name}</span>
                             {faltou && (
                               <span className="block text-xs font-semibold text-err">
-                                Chegou {item.received_quantity} de {item.quantity}
+                                Chegou {qtdTexto(item.product_name, item.received_quantity)} de {qtdTexto(item.product_name, item.quantity)}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-4 ml-2">
                             <span className="text-ink-2">
-                              {qtdValor} x {formatBRL(item.unit_price)}
+                              {qtdTexto(item.product_name, qtdValor)} x {formatBRL(precoDaUnidade(item.product_name, item.unit_price))}
                             </span>
                             <span className="font-medium text-ink min-w-[80px] text-right">
                               {formatBRL(qtdValor * (parseFloat(item.unit_price) || 0))}

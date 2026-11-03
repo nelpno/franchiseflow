@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseDateOnly } from "./dateOnly";
 import { getItemWeightKg, formatWeightKg } from "./productWeight";
+import { emUnidadesDePedido, qtdTexto, precoDaUnidade } from "./caixaFechada";
 
 const GROUP_ORDER = [
   "Canelone", "Conchiglione", "Massa", "Nhoque",
@@ -204,16 +205,16 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, ownerN
 
     group.items.forEach((item) => {
       totalItems++;
-      totalUnits += item.finalQty;
+      totalUnits += emUnidadesDePedido(item.product_name, item.finalQty);
       totalValue += item.finalQty * Number(item.unit_price || 0);
       const w = getItemWeightKg(item, weightMap);
       if (w != null) totalWeight += item.finalQty * w;
       tableBody.push([
         "",
         getDisplayName(item.product_name) || "---",
-        String(item.finalQty),
+        qtdTexto(item.product_name, item.finalQty),
         "",
-        fmtBRL(item.unit_price),
+        fmtBRL(precoDaUnidade(item.product_name, item.unit_price)),
       ]);
     });
   });
@@ -274,7 +275,7 @@ function renderPickingPage(doc, autoTable, { order, items, franchiseName, ownerN
   doc.setFontSize(8);
   doc.setTextColor(40, 40, 40);
   doc.setFont("helvetica", "normal");
-  let summary = `${totalItems} itens  |  ${totalUnits} un  |  ${fmtBRL(totalValue)}`;
+  let summary = `${totalItems} itens  |  ${totalUnits} vol  |  ${fmtBRL(totalValue)}`;
   if (totalWeight > 0) summary += `  |  Peso total: ${formatWeightKg(totalWeight)}`;
   if (order.freight_cost && Number(order.freight_cost) > 0) {
     summary += `  |  Frete: ${fmtBRL(order.freight_cost)}  |  Total: ${fmtBRL(totalValue + Number(order.freight_cost))}`;
@@ -383,15 +384,15 @@ function renderSummaryPage(doc, autoTable, ordersWithItems, weightMap) {
 
     group.items.forEach((item) => {
       grandTotalItems++;
-      grandTotalUnits += item.finalQty;
+      grandTotalUnits += emUnidadesDePedido(item.product_name, item.finalQty);
       const lineValue = item.finalQty * Number(item.unit_price || 0);
       grandTotalValue += lineValue;
       const w = getItemWeightKg(item, weightMap);
       if (w != null) grandTotalWeight += item.finalQty * w;
       tableBody.push([
         getDisplayName(item.product_name) || "---",
-        String(item.finalQty),
-        fmtBRL(item.unit_price),
+        qtdTexto(item.product_name, item.finalQty),
+        fmtBRL(precoDaUnidade(item.product_name, item.unit_price)),
         fmtBRL(lineValue),
       ]);
     });
@@ -439,7 +440,7 @@ function renderSummaryPage(doc, autoTable, ordersWithItems, weightMap) {
   doc.setFontSize(11);
   doc.setTextColor(30, 30, 30);
   doc.setFont("helvetica", "bold");
-  doc.text(`TOTAL:  ${grandTotalItems} produtos  |  ${grandTotalUnits} unidades  |  ${fmtBRL(grandTotalValue)}`, m, fy);
+  doc.text(`TOTAL:  ${grandTotalItems} produtos  |  ${grandTotalUnits} volumes  |  ${fmtBRL(grandTotalValue)}`, m, fy);
 
   if (grandTotalWeight > 0) {
     fy += 5;
@@ -567,13 +568,13 @@ function renderConferencePage(doc, autoTable, { order, items, franchiseName, com
     ]);
     group.items.forEach((item) => {
       totalItems++;
-      totalUnits += item.finalQty;
+      totalUnits += emUnidadesDePedido(item.product_name, item.finalQty);
       const unit = Number(item.unit_price || 0);
       totalValue += item.finalQty * unit;
       const w = getItemWeightKg(item, weightMap);
       if (w != null) totalWeight += item.finalQty * w;
-      const row = ["", getDisplayName(item.product_name) || "---", String(item.finalQty), ""];
-      if (comValores) row.push(fmtBRL(unit), fmtBRL(item.finalQty * unit));
+      const row = ["", getDisplayName(item.product_name) || "---", qtdTexto(item.product_name, item.finalQty), ""];
+      if (comValores) row.push(fmtBRL(precoDaUnidade(item.product_name, unit)), fmtBRL(item.finalQty * unit));
       body.push(row);
     });
   });
@@ -626,7 +627,7 @@ function renderConferencePage(doc, autoTable, { order, items, franchiseName, com
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10.5);
   doc.setTextColor(20, 20, 20);
-  let resumo = `${totalItems} ${totalItems === 1 ? "produto" : "produtos"}  |  ${totalUnits} un`;
+  let resumo = `${totalItems} ${totalItems === 1 ? "produto" : "produtos"}  |  ${totalUnits} vol`;
   if (totalWeight > 0) resumo += `  |  Peso total: ${formatWeightKg(totalWeight)}`;
   doc.text(resumo, m, fy);
 

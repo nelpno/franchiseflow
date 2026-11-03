@@ -11,6 +11,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/formatters";
 import { novoIdDoEnvio } from "@/lib/enviarPedidoFabrica";
+import { caixaDoCampo, emUnidadesDePedido, qtdTexto } from "@/lib/caixaFechada";
 import {
   STATUS_AGUARDA_CONFERENCIA,
   aguardaConferencia,
@@ -33,6 +34,7 @@ function LinhaProduto({ item, valor, onChange, disabled }) {
   const chegou = limitarRecebido(valor, pedido);
   const diferente = chegou !== pedido;
   const inputId = `chegou-${item.id}`;
+  const caixa = caixaDoCampo(item.product_name, pedido); // >1: conta caixas, grava pacotes
   return (
     <li className={`rounded-xl border p-3 ${diferente ? "border-err/30 bg-err-soft" : "border-surface-line bg-white"}`}>
       <label htmlFor={inputId} className="block text-sm font-medium text-ink break-words">
@@ -40,15 +42,15 @@ function LinhaProduto({ item, valor, onChange, disabled }) {
       </label>
       <div className="mt-2 flex items-center justify-between gap-3">
         <span className="text-xs text-ink-2">
-          Pedido: <strong className="text-ink">{pedido}</strong>
-          {diferente && <span className="ml-1 font-semibold text-err">· faltou {pedido - chegou}</span>}
+          Pedido: <strong className="text-ink">{qtdTexto(item.product_name, pedido)}</strong>
+          {diferente && <span className="ml-1 font-semibold text-err">· faltou {qtdTexto(item.product_name, pedido - chegou)}</span>}
         </span>
         <div className="flex items-center gap-1.5" role="group" aria-label={`Quanto chegou de ${item.product_name}`}>
           <button
             type="button"
-            onClick={() => onChange((atual) => Math.max(0, limitarRecebido(atual, pedido) - 1))}
+            onClick={() => onChange((atual) => Math.max(0, limitarRecebido(atual, pedido) - caixa))}
             disabled={disabled || chegou <= 0}
-            aria-label="Menos um"
+            aria-label={caixa > 1 ? "Menos uma caixa" : "Menos um"}
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink disabled:opacity-40"
           >
             <MaterialIcon icon="remove" size={20} />
@@ -58,18 +60,18 @@ function LinhaProduto({ item, valor, onChange, disabled }) {
             type="number"
             inputMode="numeric"
             min={0}
-            max={pedido}
-            value={valor === "" ? "" : chegou}
-            onChange={(e) => onChange(e.target.value === "" ? "" : limitarRecebido(e.target.value, pedido))}
+            max={pedido / caixa}
+            value={valor === "" ? "" : chegou / caixa}
+            onChange={(e) => onChange(e.target.value === "" ? "" : limitarRecebido((parseInt(e.target.value, 10) || 0) * caixa, pedido))}
             onBlur={() => { if (valor === "") onChange(0); }}
             disabled={disabled}
             className="h-11 w-16 rounded-xl border border-surface-line bg-surface text-center text-base font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand/30"
           />
           <button
             type="button"
-            onClick={() => onChange((atual) => Math.min(pedido, limitarRecebido(atual, pedido) + 1))}
+            onClick={() => onChange((atual) => Math.min(pedido, limitarRecebido(atual, pedido) + caixa))}
             disabled={disabled || chegou >= pedido}
-            aria-label="Mais um"
+            aria-label={caixa > 1 ? "Mais uma caixa" : "Mais um"}
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface-line bg-white text-ink disabled:opacity-40"
           >
             <MaterialIcon icon="add" size={20} />
@@ -92,7 +94,7 @@ function PedidoParaConferir({ order, items, onConcluido }) {
   const assinaturaRef = useRef(null);
 
   const resumo = useMemo(() => resumoRecebido(items, modo === "faltou" ? recebidos : {}), [items, recebidos, modo]);
-  const totalUnidades = items.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
+  const totalUnidades = items.reduce((s, i) => s + emUnidadesDePedido(i.product_name, i.quantity), 0);
   const prazo = prazoConferencia(order);
 
   const enviar = async (itens) => {
@@ -137,7 +139,7 @@ function PedidoParaConferir({ order, items, onConcluido }) {
         Pedido de {diaMes(order.ordered_at)} · {formatBRL(order.total_amount)}
       </p>
       <p className="mt-0.5 text-xs text-ink-2">
-        {items.length} {items.length === 1 ? "produto" : "produtos"} · {totalUnidades} un.
+        {items.length} {items.length === 1 ? "produto" : "produtos"} · {totalUnidades} vol.
         {order.shipped_at ? ` · entregue em ${diaMes(order.shipped_at)}` : ""}
       </p>
       {prazo && (
@@ -173,7 +175,7 @@ function PedidoParaConferir({ order, items, onConcluido }) {
       {modo === "tudo_certo" && (
         <div className="mt-3 rounded-xl bg-white p-3">
           <p className="text-sm text-ink">
-            Chegaram as <strong>{totalUnidades}</strong> unidades do pedido? O estoque vai somar tudo agora.
+            Chegaram os <strong>{totalUnidades}</strong> volumes do pedido (caixa fechada conta 1)? O estoque vai somar tudo agora.
           </p>
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button

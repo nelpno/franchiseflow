@@ -17,6 +17,7 @@ import {
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { formatBRL } from "@/lib/formatters";
+import { tamanhoDaCaixa, caixaDoCampo, qtdTexto, precoDaUnidade } from "@/lib/caixaFechada";
 import { linkFicha } from "@/lib/networkOverview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -430,13 +431,16 @@ export default function OrderDetailDialog({
                       const faltou = comDiferenca && item.received_quantity != null && Number(item.received_quantity) !== Number(item.quantity);
                       const qty = faltou ? Number(item.received_quantity) : qtyPedida;
                       const lineTotal = qty * (parseFloat(item.unit_price) || 0);
+                      const caixa = caixaDoCampo(item.product_name, qty); // >1: campo em caixas, grava pacotes
                       return (
                         <div key={item.id} className="flex items-center justify-between gap-3 py-2 border-b border-ink-4/15 last:border-0">
                           <div className="flex-1 min-w-0">
                             <span className="text-sm text-ink">{item.product_name}</span>
-                            <p className="text-xs text-ink-2">{formatBRL(item.unit_price)} / un</p>
+                            <p className="text-xs text-ink-2">
+                              {tamanhoDaCaixa(item.product_name) > 1 ? `${formatBRL(precoDaUnidade(item.product_name, item.unit_price))} / cx · ${qty} pacotes` : `${formatBRL(item.unit_price)} / un`}
+                            </p>
                             {faltou && (
-                              <p className="text-xs font-semibold text-err">Chegou {item.received_quantity} de {item.quantity}</p>
+                              <p className="text-xs font-semibold text-err">Chegou {qtdTexto(item.product_name, item.received_quantity)} de {qtdTexto(item.product_name, item.quantity)}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-3">
@@ -446,15 +450,16 @@ export default function OrderDetailDialog({
                                 inputMode="decimal"
                                 min="0"
                                 step="1"
-                                value={qty}
+                                value={qty / caixa}
                                 onChange={(e) => {
                                   const parsed = parseInt(e.target.value, 10);
-                                  setEditedQuantities((prev) => ({ ...prev, [item.id]: isNaN(parsed) || parsed < 0 ? 0 : parsed }));
+                                  setEditedQuantities((prev) => ({ ...prev, [item.id]: isNaN(parsed) || parsed < 0 ? 0 : parsed * caixa }));
                                 }}
+                                aria-label={caixa > 1 ? `Caixas de ${item.product_name}` : `Quantidade de ${item.product_name}`}
                                 className="w-16 text-center h-8 bg-surface-line border-none rounded-xl focus:ring-2 focus:ring-brand/20"
                               />
                             ) : (
-                              <span className="text-sm text-ink-2 w-16 text-center">{qty}</span>
+                              <span className="text-sm text-ink-2 w-16 text-center">{qtdTexto(item.product_name, qty)}</span>
                             )}
                             <span className="text-sm font-medium text-ink min-w-[80px] text-right">{formatBRL(lineTotal)}</span>
                           </div>
