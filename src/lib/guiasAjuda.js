@@ -337,15 +337,15 @@ export const GUIAS = [
     icone: "local_shipping",
     area: "Estoque e pedido à fábrica",
     sinonimos: ["reposição", "pedir produto", "repor estoque", "pedido à fábrica"],
-    dica: "O app usa suas vendas para sugerir quanto pedir: cobre até a entrega seguinte, mais uma semana, e já conta o estoque e o que está a caminho. O frete é uma previsão: 10% dos produtos, no mínimo R$ 250 e no máximo R$ 350.",
+    dica: "O app usa suas vendas para sugerir quanto pedir: cobre até a entrega seguinte, mais uma semana, e já conta o estoque e o que está a caminho. O frete é R$ 350 por pedido, de qualquer tamanho.",
     erroComum: "Apareceu \"Já tem um pedido enviado há pouco\"? O app achou um pedido recente da unidade: confira no Histórico antes de enviar outro. Enviou errado e ainda está Pendente? Abra o pedido no histórico, toque em \"Cancelar Pedido\" e confirme em \"Sim, cancelar\".",
     passos: [
       { titulo: "Abra a reposição", texto: "Toque em Estoque: no celular, na barra de baixo; no computador, no menu à esquerda. Depois, toque na aba Reposição, no alto.", botao: "Reposição", imagem: "/tutoriais/pedido-fabrica-1.webp" },
       { titulo: "Comece o pedido", texto: "No quadro Próximo pedido à fábrica, toque em Montar pedido com a sugestão: as quantidades vêm das suas vendas. No primeiro pedido, o botão é Novo pedido e abre a lista modelo da Maxi. Produto próprio fica fora do pedido.", botao: "Montar pedido com a sugestão", imagem: "/tutoriais/pedido-fabrica-2.webp" },
-      { titulo: "Ajuste as quantidades", texto: "Confira as quantidades. Ajuste com − e +, ou toque no número e digite. Para incluir um produto sem sugestão, procure em Outros produtos, embaixo.", imagem: "/tutoriais/pedido-fabrica-3.webp" },
+      { titulo: "Ajuste as quantidades", texto: "Confira as quantidades. Ajuste com − e +, ou toque no número e digite. Para incluir um produto sem sugestão, procure em Outros produtos, embaixo. O pão de queijo vem em caixa com 12 pacotes: o número conta caixas, e no estoque entram os pacotes.", imagem: "/tutoriais/pedido-fabrica-3.webp" },
       { titulo: "Revise", texto: "Toque em Enviar pedido para abrir a revisão. O pedido ainda não foi enviado. Em Confira antes de enviar, veja produtos, quantidades, valores, frete e total. Para corrigir, toque em Voltar e ajustar.", botao: "Enviar pedido", imagem: "/tutoriais/pedido-fabrica-4.webp" },
       { titulo: "Envie para a Maxi", texto: "Para enviar à Maxi, toque em Confirmar e enviar e espere a mensagem \"Pedido enviado com sucesso!\".", botao: "Confirmar e enviar", imagem: "/tutoriais/pedido-fabrica-5.webp" },
-      { titulo: "Acompanhe", texto: "Em Histórico de Pedidos, o pedido passa por Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira as caixas com o motorista: faltou algo, avise na hora. O estoque sobe sozinho quando a Maxi marca o pedido como Entregue.", imagem: "/tutoriais/pedido-fabrica-6.webp" },
+      { titulo: "Acompanhe", texto: "Em Histórico de Pedidos, o pedido passa por Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira as caixas com o motorista: faltou algo, avise na hora. O estoque sobe sozinho quando a Maxi marca o pedido como Entregue. Nessa hora chega no seu WhatsApp a mensagem da Maxi com os produtos, o frete e a chave Pix: faça o Pix e mande o comprovante nessa mesma conversa.", imagem: "/tutoriais/pedido-fabrica-6.webp" },
     ],
     whatsapp: "Precisa repor o Estoque? Este guia mostra como montar e enviar seu pedido à fábrica.",
   },
@@ -977,7 +977,7 @@ function slugParaEvento(slug) {
  * genérico, sem quebrar). S21.3 lê por guia: mais de 30% de "nao" no mês = reescrever.
  */
 export function registrarAjudaResolveu(slug, resposta) {
-  if (!RESPOSTAS_AJUDA.has(resposta)) return;
+  if (!RESPOSTAS_AJUDA.has(resposta)) return null;
   const slugEvento = slugParaEvento(slug);
   const nomeEvento = slugEvento ? `ajuda_resolveu_${slugEvento}_${resposta}` : `ajuda_resolveu_${resposta}`;
   try {
@@ -985,4 +985,5 @@ export function registrarAjudaResolveu(slug, resposta) {
   } catch {
     /* telemetria não pode derrubar a tela */
   }
+  return nomeEvento;
 }

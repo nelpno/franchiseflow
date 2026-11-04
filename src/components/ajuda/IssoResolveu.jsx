@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CARTAO } from "@/components/shared/adminUi";
 import { registrarAjudaResolveu } from "@/lib/guiasAjuda";
+import { registrarEvento } from "@/lib/telemetria";
 
 // "Isso resolveu?" (S10.2, 28/09/2026): só aparece no guia aberto pela tela Ajuda v2
 // (atrás de ui_v2). Um clique, sem confirmação — o registro é só telemetria (Clarity),
@@ -23,7 +24,8 @@ export default function IssoResolveu({ slug }) {
 
   const escolher = (valor) => {
     setResposta(valor);
-    registrarAjudaResolveu(slug, valor);
+    const nome = registrarAjudaResolveu(slug, valor); // Clarity
+    if (nome) registrarEvento(nome, { semClarity: true }); // nosso banco (src/lib/telemetria.js)
   };
 
   return (

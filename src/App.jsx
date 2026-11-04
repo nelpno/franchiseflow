@@ -7,6 +7,7 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { ligarTelemetria, registrarEvento, definirFranquiaTelemetria, telaDe } from '@/lib/telemetria';
 import Login from './pages/Login';
 import SetPassword from './pages/SetPassword';
 import OnboardingWelcome from './pages/OnboardingWelcome';
@@ -68,6 +69,12 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const location = useLocation();
+  const { selectedFranchise } = useAuth();
+  // Telemetria no nosso banco (src/lib/telemetria.js): tela aberta + clique sem resposta.
+  useEffect(() => { ligarTelemetria(); }, []);
+  useEffect(() => { definirFranquiaTelemetria(selectedFranchise?.id); }, [selectedFranchise?.id]);
+  const tela = telaDe(window.location.href);
+  useEffect(() => { registrarEvento('tela_aberta', { semClarity: true }); }, [tela]);
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>

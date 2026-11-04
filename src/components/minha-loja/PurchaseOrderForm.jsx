@@ -27,6 +27,7 @@ import { estimarFreteFabrica } from "@/lib/freteFabrica";
 import { comPrecoDaTabela, reposicaoDoItem, unidadeDeMedida, sobeParaSugeridos } from "@/lib/reposicao";
 import { pedidosNovosDesde } from "@/lib/reposicao";
 import { tamanhoDaCaixa, emCaixasInteiras } from "@/lib/caixaFechada";
+import { registrarEvento } from "@/lib/telemetria";
 import {
   enviarPedidoFabrica,
   montarItensDoPedido,
@@ -583,7 +584,7 @@ export default function PurchaseOrderForm({
       }
       clearDraft();
       if (modeloAplicadoRef.current) {
-        try { window.clarity?.('event', 'pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }
+        try { registrarEvento('pedido_modelo_usado'); } catch { /* telemetria não pode derrubar o envio */ }
       }
       if (resultado.jaExistia) {
         toast.success(

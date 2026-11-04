@@ -350,7 +350,6 @@ export default function Gestao() {
               franchiseId={franchiseId}
               inventoryItems={franchiseInventory}
               saleItems={saleItems}
-              onRefreshInventory={handleRefreshInventory}
             />
           </TabsContent>
         </Tabs>

@@ -12,9 +12,9 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatDateOnly } from "@/lib/dateOnly";
-import { resumoRecebido, aguardaConferencia } from "@/lib/conferenciaEntrega";
 import { emUnidadesDePedido, qtdTexto, precoDaUnidade } from "@/lib/caixaFechada";
 
+import { registrarEvento } from "@/lib/telemetria";
 const STATUS_CONFIG = {
   pendente: { color: "bg-[#d97706]/10 text-[#d97706]", icon: "schedule", label: "Pendente" },
   confirmado: { color: "bg-[#2563eb]/10 text-[#2563eb]", icon: "check_circle", label: "Confirmado" },
@@ -121,7 +121,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
       const weightMap = await getProductWeightMap().catch(() => ({}));
       const { generateConferenceSheet } = await import("@/lib/pickingSheetPdf");
       await generateConferenceSheet({ order, items, franchiseName, comValores, weightMap });
-      try { window.clarity?.("event", comValores ? "pedido_impresso_valores" : "pedido_impresso_quantidades"); } catch { /* telemetria */ }
+      try { registrarEvento(comValores ? "pedido_impresso_valores" : "pedido_impresso_quantidades"); } catch { /* telemetria */ }
       setPrintMenuId(null);
     } catch (error) {
       console.error("Erro ao gerar o pedido impresso:", error);
@@ -133,11 +133,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
 
   const getStatusBadge = (order) => {
     const status = order.status;
-    // S15: conferência em curso (em_rota COM awaiting_since) = a fábrica entregou e falta ela
-    // conferir (cartão no topo). Vale mesmo com a chave desligada depois de começar.
-    const config = aguardaConferencia(order)
-      ? { ...STATUS_CONFIG.em_rota, label: "Chegou · confira" }
-      : STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
     return (
       <Badge className={`${config.color} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
         <MaterialIcon icon={config.icon} size={12} />
@@ -183,10 +179,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
       {orders.map((order) => {
         const isExpanded = expandedOrderId === order.id;
         const items = orderItems[order.id] || [];
-        // S15: pedido conferido com diferença mostra o que chegou (só existe received_quantity
-        // em pedido que passou pela conferência; os antigos ficam como sempre).
-        const conferido = order.status === "entregue" ? resumoRecebido(items) : null;
-        const comDiferenca = !!conferido?.temDiferenca;
 
         return (
           <Card
@@ -216,12 +208,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                     <span className="text-lg font-bold text-ink font-plus-jakarta">
                       {formatBRL(order.total_amount)}
                     </span>
-                    {comDiferenca && (
-                      <span className="text-xs font-semibold text-err flex items-center gap-1">
-                        <MaterialIcon icon="error" size={12} />
-                        Chegou {formatBRL(conferido.totalRecebido)} de {formatBRL(conferido.totalPedido)}
-                      </span>
-                    )}
                     {items.length > 0 && (
                       <span className="text-xs text-ink-2">
                         {items.length} {items.length === 1 ? "produto" : "produtos"} · {items.reduce((sum, i) => sum + emUnidadesDePedido(i.product_name, parseInt(i.quantity) || 0), 0)} vol.
@@ -272,8 +258,7 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                   ) : (
                     <div className="space-y-2 pt-3">
                       {items.map((item) => {
-                        const faltou = comDiferenca && item.received_quantity != null && Number(item.received_quantity) !== Number(item.quantity);
-                        const qtdValor = faltou ? Number(item.received_quantity) : parseFloat(item.quantity) || 0;
+                        const qtdValor = parseFloat(item.quantity) || 0;
                         return (
                         <div
                           key={item.id}
@@ -281,11 +266,6 @@ export default function PurchaseOrderHistory({ franchiseId, refreshKey, onChange
                         >
                           <div className="flex-1 min-w-0">
                             <span className="text-ink">{item.product_name}</span>
-                            {faltou && (
-                              <span className="block text-xs font-semibold text-err">
-                                Chegou {qtdTexto(item.product_name, item.received_quantity)} de {qtdTexto(item.product_name, item.quantity)}
-                              </span>
-                            )}
                           </div>
                           <div className="flex items-center gap-4 ml-2">
                             <span className="text-ink-2">

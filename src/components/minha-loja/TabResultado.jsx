@@ -72,6 +72,7 @@ import ResultadoV2 from "@/components/minha-loja/resultado/ResultadoV2";
 import CustomDateRangeSheet from "@/components/dashboard/CustomDateRangeSheet";
 import { parseDateOnly } from "@/lib/dateOnly";
 
+import { registrarEvento } from "@/lib/telemetria";
 // --------------------------------------------------------------- helpers
 // formatBRL vem de @/lib/formatters. formatBRLCompact AQUI é formatBRLCompactResultado (S8-P3,
 // 28/09/2026) — a versão que preserva o número exato de sempre nesta tela (2 casas entre
@@ -1266,10 +1267,10 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
       });
       toast.success("Relatório baixado!");
       // S6.4: medir quantas unidades baixam o relatório (Clarity > Eventos inteligentes).
-      try { window.clarity?.("event", "relatorio_mes_baixado"); } catch { /* telemetria não pode derrubar o download */ }
+      try { registrarEvento("relatorio_mes_baixado"); } catch { /* telemetria não pode derrubar o download */ }
     } catch (e) {
       console.error("Erro ao gerar relatório:", e);
-      try { window.clarity?.("event", "relatorio_mes_erro"); } catch { /* idem */ }
+      try { registrarEvento("relatorio_mes_erro"); } catch { /* idem */ }
       toast.error(safeErrorMessage(e, "Não foi possível gerar o relatório."));
     } finally {
       setGerandoRelatorio(false);

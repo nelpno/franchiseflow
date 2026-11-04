@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRLInteger } from "@/lib/formatters";
-import { aguardaConferencia } from "@/lib/conferenciaEntrega";
 
 /**
  * "Meu pedido saiu?" e uma das perguntas que mais chegam no grupo da rede — e a home
@@ -15,8 +14,6 @@ import { aguardaConferencia } from "@/lib/conferenciaEntrega";
  * `estimated_delivery` e DATE puro: tem de passar por parseDateOnly, senao
  * new Date("2026-09-10") vira UTC meia-noite e mostra 09/09 em horario de Brasilia.
  */
-// S15: 'em_rota' = a fábrica entregou e a unidade ainda não conferiu (só existe para unidade
-// com a chave ui_v2). Vem primeiro: é a única faixa que pede uma ação dela.
 const ABERTOS = new Set(["pendente", "confirmado"]);
 
 const ESTILO = {
@@ -28,20 +25,14 @@ const ESTILO = {
     bg: "#eff6ff", border: "#bfdbfe", ink: "#1d4ed8",
     icon: "local_shipping", rotulo: "Pedido confirmado pela fábrica",
   },
-  em_rota: {
-    bg: "#f0fdf4", border: "#bbf7d0", ink: "#15803d",
-    icon: "fact_check", rotulo: "Seu pedido chegou: toque para conferir",
-  },
 };
 
 // Pedido que a faixa mostra (ou null). Exportado para o "Agora" da Início nova (S18) saber se
 // há faixa sem repetir a regra.
 export function pedidoEmDestaque(purchaseOrders = []) {
   return (purchaseOrders || [])
-    .filter((o) => ABERTOS.has(o.status) || aguardaConferencia(o))
-    .sort((a, b) =>
-      (b.status === "em_rota") - (a.status === "em_rota") ||
-      new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0))[0] || null;
+    .filter((o) => ABERTOS.has(o.status))
+    .sort((a, b) => new Date(b.ordered_at || 0) - new Date(a.ordered_at || 0))[0] || null;
 }
 
 export default function OpenOrderStrip({ purchaseOrders = [] }) {
@@ -55,12 +46,10 @@ export default function OpenOrderStrip({ purchaseOrders = [] }) {
   const entrega = aberto.estimated_delivery ? parseDateOnly(aberto.estimated_delivery) : null;
   const valor = Number(aberto.total_amount) || 0;
 
-  const detalhe = aberto.status === "em_rota"
-    ? [valor > 0 ? formatBRLInteger(valor) : null, "diga se chegou tudo ou se faltou algo"].filter(Boolean).join(" · ")
-    : [
-      valor > 0 ? formatBRLInteger(valor) : null,
-      entrega ? `chega ${format(entrega, "EEEE, dd/MM", { locale: ptBR })}` : "sem data de entrega ainda",
-    ].filter(Boolean).join(" · ");
+  const detalhe = [
+    valor > 0 ? formatBRLInteger(valor) : null,
+    entrega ? `chega ${format(entrega, "EEEE, dd/MM", { locale: ptBR })}` : "sem data de entrega ainda",
+  ].filter(Boolean).join(" · ");
 
   return (
     <button

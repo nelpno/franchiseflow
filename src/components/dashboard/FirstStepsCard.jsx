@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 
+import { registrarEvento } from "@/lib/telemetria";
 /**
  * Cartão "Primeiros passos" da Início do franqueado — resumo da trilha (montarJornada,
  * ver src/lib/onboardingJourney.js) com CTA pra tela cheia (/Onboarding).
@@ -18,7 +19,7 @@ export default function FirstStepsCard({ jornada }) {
 
   const handleContinuar = () => {
     try {
-      window.clarity?.("event", "primeiros_passos_continuar");
+      registrarEvento("primeiros_passos_continuar");
     } catch {
       // Analytics nunca pode travar a navegação
     }

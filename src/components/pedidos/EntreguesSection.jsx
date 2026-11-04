@@ -37,7 +37,6 @@ import {
   COLUNAS_CONFERENCIA,
   colunaAusente,
 } from "./pedidosHelpers";
-import { rotuloConferencia } from "@/lib/conferenciaEntrega";
 
 // "5,3 dias" / "5 dias" (sem decimal quando é número inteiro) / "1 dia".
 function diasLabel(n) {
@@ -361,16 +360,6 @@ const EntreguesSection = forwardRef(function EntreguesSection(
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-ink">
                           {getFranchiseName(order.franchise_id)}
-                          {(order.received_mode === "divergente" || order.received_mode === "automatico") && (
-                            <span
-                              className={`ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-[11px] font-bold ${
-                                order.received_mode === "divergente" ? "bg-err-soft text-err" : "bg-surface-2 text-ink-2"
-                              }`}
-                            >
-                              <MaterialIcon icon={order.received_mode === "divergente" ? "error" : "schedule"} size={12} aria-hidden="true" />
-                              {rotuloConferencia(order.received_mode)}
-                            </span>
-                          )}
                         </p>
                         <p className="text-sm text-ink-3">
                           {order.status === "entregue" && order.delivered_at

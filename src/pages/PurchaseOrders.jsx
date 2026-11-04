@@ -35,8 +35,6 @@ import NovoProdutoDialog from "@/components/pedidos/NovoProdutoDialog";
 import OrderDetailDialog from "@/components/pedidos/OrderDetailDialog";
 import SecaoLote from "@/components/pedidos/SecaoLote";
 import EntreguesSection from "@/components/pedidos/EntreguesSection";
-import AguardandoConferenciaSection from "@/components/pedidos/AguardandoConferenciaSection";
-import { aguardaConferencia } from "@/lib/conferenciaEntrega";
 import { freteGravado, pedidoMudou } from "@/components/pedidos/edicaoPedido";
 import {
   filtrarPorTermo,
@@ -521,16 +519,12 @@ export default function PurchaseOrders() {
         ...(rascunhos[o.id] !== undefined ? { freight_cost: parseFrete(rascunhos[o.id]) } : {}),
       }));
       if (!mountedRef.current) return;
-      // S15: unidade com o app novo confere antes (o banco já avisou a unidade).
-      const aConferir = ok.filter((o) => aguardaConferencia(salvos.get(o.id)));
-      const entregues = ok.filter((o) => !aguardaConferencia(salvos.get(o.id)));
-      entregues.forEach((o) => notifyFranchisee(o, "entregue"));
+      ok.forEach((o) => notifyFranchisee(o, "entregue"));
       limparRascunhos(ok.map((o) => o.id));
-      if (entregues.length > 0) toast.success(`${entregues.length === 1 ? "1 pedido entregue" : `${entregues.length} pedidos entregues`}. Estoque das unidades atualizado.`);
-      if (aConferir.length > 0) toast.success(`${aConferir.length === 1 ? "1 pedido espera" : `${aConferir.length} pedidos esperam`} a unidade conferir o que chegou (até 2 dias).`);
+      if (ok.length > 0) toast.success(`${ok.length === 1 ? "1 pedido entregue" : `${ok.length} pedidos entregues`}. Estoque das unidades atualizado.`);
       if (falhou.length > 0) toast.error(`Não marcou como entregue: ${nomesDe(falhou)}. Tente de novo.`);
       // P12: pedido de Pix (só unidade com a chave pix_na_baixa); o valor é o da linha salva.
-      const pix = await pedirPixDaBaixa(entregues.map((o) => salvos.get(o.id)), getContato);
+      const pix = await pedirPixDaBaixa(ok.map((o) => salvos.get(o.id)), getContato);
       if (pix.enviados > 0) toast.success(pix.enviados === 1 ? "Pedido de Pix na fila do WhatsApp." : `${pix.enviados} pedidos de Pix na fila do WhatsApp.`);
       if (pix.falhou > 0) toast.error("Não consegui mandar o pedido de Pix agora. Mande pelo WhatsApp.");
       loadData({ silent: true });
@@ -801,15 +795,6 @@ export default function PurchaseOrders() {
           { label: "Imprimir fichas", icon: "print", onClick: (sel) => imprimirLote(sel) },
           { label: "Avisar entrega", icon: "send", onClick: (sel) => { setDataAviso(dataBRT(1)); setAvisoEntrega(sel); } },
         ]}
-      />
-
-      <AguardandoConferenciaSection
-        getFranchiseName={getFranchiseName}
-        onVerItens={abrirDetalhe}
-        unidadeParam={unidadeParam}
-        searchTerm={searchTerm}
-        testFranchiseIds={testFranchiseIds}
-        versao={versao}
       />
 
       <EntreguesSection

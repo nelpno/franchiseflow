@@ -5,15 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/api/supabaseClient";
-import { PurchaseOrder, PurchaseOrderItem, confirmarRecebimentoPedido } from "@/entities/all";
-import { novoIdDoEnvio } from "@/lib/enviarPedidoFabrica";
-import {
-  aguardaConferencia as emConferencia,
-  prazoConferencia,
-  resumoRecebido,
-  rotuloConferencia,
-  mensagemErroConferencia,
-} from "@/lib/conferenciaEntrega";
+import { PurchaseOrder, PurchaseOrderItem } from "@/entities/all";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { formatDateOnly } from "@/lib/dateOnly";
 import { formatBRL } from "@/lib/formatters";
@@ -85,7 +77,6 @@ export default function OrderDetailDialog({
   const orderRef = useRef(order);
   orderRef.current = order;
   const freteTocadoRef = useRef(false);
-  const confirmarPelaUnidadeIdRef = useRef(null); // S15: id do envio de "Confirmar pela unidade"
   const orderId = order?.id;
   const freteDoBanco = order?.freight_cost != null ? String(order.freight_cost) : "";
 
@@ -129,14 +120,6 @@ export default function OrderDetailDialog({
     }, 0);
 
   const isEditable = order.status !== "entregue" && order.status !== "cancelado";
-  // S15: 'em_rota' = a fábrica entregou e a unidade confere. Quantidade pedida não muda mais
-  // (é a base da conferência); frete/previsão/cancelar continuam.
-  const aguardaConferencia = emConferencia(order);
-  const qtdEditavel = isEditable && !aguardaConferencia;
-  const prazo = aguardaConferencia ? prazoConferencia(order) : null;
-  // Conferido com diferença: o que chegou (received_quantity) manda nos valores da tela.
-  const conferencia = order.status === "entregue" ? resumoRecebido(items) : null;
-  const comDiferenca = !!conferencia?.temDiferenca;
   const frete = parseFloat(editedFreight) || 0;
   // Frete só vai no patch se mudou aqui: nunca regrava por cima do que a lista salvou.
   const patchFrete = () =>
@@ -227,14 +210,11 @@ export default function OrderDetailDialog({
       // salvar campos (P3 3ª passada): o pedido cancelado não precisa de frete/previsão novos.
       if (newStatus !== "cancelado") await salvarEdicoes();
       const salvo = await PurchaseOrder.update(order.id, updates);
-      // S15: unidade com o app novo -> o banco deixa 'em_rota' e ele mesmo avisa a unidade.
-      const foiParaConferencia = newStatus === "entregue" && emConferencia(salvo);
-      if (!foiParaConferencia) notifyFranchisee(newStatus);
+      notifyFranchisee(newStatus);
 
-      if (foiParaConferencia) toast.success("Marcado. A unidade confere o que chegou (até 2 dias); aí o estoque e a despesa entram.");
-      else if (newStatus === "entregue") toast.success("Pedido entregue! Estoque da franquia atualizado.");
+      if (newStatus === "entregue") toast.success("Pedido entregue! Estoque da franquia atualizado.");
       // P12: pedido de Pix (só com a chave pix_na_baixa da unidade). Não lança.
-      if (newStatus === "entregue" && !foiParaConferencia) {
+      if (newStatus === "entregue") {
         const pix = await pedirPixDaBaixa([salvo], () => franchiseContact);
         if (pix.enviados > 0) toast.success("Pedido de Pix na fila do WhatsApp.");
         if (pix.falhou > 0) toast.error("Não consegui mandar o pedido de Pix agora. Mande pelo WhatsApp.");
@@ -260,25 +240,6 @@ export default function OrderDetailDialog({
       return;
     }
     doStatusChange(newStatus);
-  };
-
-  // S15: admin confirma pela unidade (ela avisou por telefone que chegou tudo).
-  const handleConfirmarPelaUnidade = async () => {
-    if (saving) return;
-    setSaving(true);
-    // Mesmo id nas novas tentativas do MESMO pedido (resposta perdida não confirma duas vezes).
-    if (confirmarPelaUnidadeIdRef.current?.orderId !== order.id) confirmarPelaUnidadeIdRef.current = { orderId: order.id, id: novoIdDoEnvio() };
-    try {
-      const { resultado } = await confirmarRecebimentoPedido(order.id, [], confirmarPelaUnidadeIdRef.current.id);
-      toast.success(resultado === "ja_conferido" ? "A unidade já tinha conferido este pedido." : "Recebimento confirmado. Estoque e despesa da unidade atualizados.");
-      onChanged();
-      onClose();
-    } catch (error) {
-      console.error("Erro ao confirmar pela unidade:", error);
-      toast.error(mensagemErroConferencia(error));
-    } finally {
-      setSaving(false);
-    }
   };
 
   const handleDelete = async () => {
@@ -363,7 +324,7 @@ export default function OrderDetailDialog({
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Badge className={`${STATUS_COLOR[order.status] || STATUS_COLOR.pendente} rounded-full px-2 py-0.5 text-[10px] font-bold gap-1`}>
                     <MaterialIcon icon={STATUS_ICON[order.status] || "schedule"} size={12} />
-                    {aguardaConferencia ? "Unidade conferindo" : STATUS_LABEL[order.status] || order.status}
+                    {STATUS_LABEL[order.status] || order.status}
                   </Badge>
                   {isAtrasado(order) && (
                     <Badge className="bg-err/10 text-err rounded-full px-2 py-0.5 text-[10px] font-bold gap-1">
@@ -395,19 +356,6 @@ export default function OrderDetailDialog({
                       {formatDateOnly(order.estimated_delivery)}
                     </span>
                   )}
-                  {aguardaConferencia && (
-                    <span className="flex items-center gap-1.5 text-warn-ink">
-                      <MaterialIcon icon="local_shipping" size={14} />
-                      <span className="font-medium">Esperando a unidade conferir</span>
-                      {prazo ? `até ${format(prazo, "dd/MM 'às' HH:mm", { locale: ptBR })}` : ""}
-                    </span>
-                  )}
-                  {order.status === "entregue" && rotuloConferencia(order.received_mode) && (
-                    <span className={`flex items-center gap-1.5 ${comDiferenca ? "text-err" : "text-ink-2"}`}>
-                      <MaterialIcon icon={comDiferenca ? "error" : "fact_check"} size={14} />
-                      <span className="font-medium">{rotuloConferencia(order.received_mode)}</span>
-                    </span>
-                  )}
                   {order.delivered_at && (
                     <span className="flex items-center gap-1.5 text-ok-ink">
                       <MaterialIcon icon="check_circle" size={14} />
@@ -428,8 +376,7 @@ export default function OrderDetailDialog({
                   <div className="space-y-2">
                     {items.map((item) => {
                       const qtyPedida = editedQuantities[item.id] ?? item.quantity ?? 0;
-                      const faltou = comDiferenca && item.received_quantity != null && Number(item.received_quantity) !== Number(item.quantity);
-                      const qty = faltou ? Number(item.received_quantity) : qtyPedida;
+                      const qty = qtyPedida;
                       const lineTotal = qty * (parseFloat(item.unit_price) || 0);
                       const caixa = caixaDoCampo(item.product_name, qty); // >1: campo em caixas, grava pacotes
                       return (
@@ -439,12 +386,9 @@ export default function OrderDetailDialog({
                             <p className="text-xs text-ink-2">
                               {tamanhoDaCaixa(item.product_name) > 1 ? `${formatBRL(precoDaUnidade(item.product_name, item.unit_price))} / cx · ${qty} pacotes` : `${formatBRL(item.unit_price)} / un`}
                             </p>
-                            {faltou && (
-                              <p className="text-xs font-semibold text-err">Chegou {qtdTexto(item.product_name, item.received_quantity)} de {qtdTexto(item.product_name, item.quantity)}</p>
-                            )}
                           </div>
                           <div className="flex items-center gap-3">
-                            {qtdEditavel ? (
+                            {isEditable ? (
                               <Input
                                 type="number"
                                 inputMode="decimal"
@@ -470,13 +414,8 @@ export default function OrderDetailDialog({
 
                   <div className="flex items-center justify-between pt-3 border-t border-ink-4/30">
                     <span className="text-sm font-bold text-ink font-plus-jakarta">Total dos itens</span>
-                    <span className="text-lg font-bold text-ink font-plus-jakarta">{formatBRL(comDiferenca ? conferencia.totalRecebido : recalculateTotal())}</span>
+                    <span className="text-lg font-bold text-ink font-plus-jakarta">{formatBRL(recalculateTotal())}</span>
                   </div>
-                  {comDiferenca && (
-                    <p className="text-xs text-err text-right">
-                      Pedido era {formatBRL(conferencia.totalPedido)}; chegou {formatBRL(conferencia.totalRecebido)} (faltou {formatBRL(conferencia.diferenca)}).
-                    </p>
-                  )}
 
                   {/* Frete zero é legítimo (acréscimo já no total, ou retirada) — só mostra linha quando > 0 */}
                   {frete > 0 && (
@@ -487,7 +426,7 @@ export default function OrderDetailDialog({
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-ink-4/30">
                         <span className="text-sm font-bold text-ink font-plus-jakarta">Total do pedido</span>
-                        <span className="text-lg font-bold text-brand font-plus-jakarta">{formatBRL((comDiferenca ? conferencia.totalRecebido : recalculateTotal()) + frete)}</span>
+                        <span className="text-lg font-bold text-brand font-plus-jakarta">{formatBRL(recalculateTotal() + frete)}</span>
                       </div>
                     </>
                   )}
@@ -576,12 +515,6 @@ export default function OrderDetailDialog({
                   <Button size="sm" onClick={() => handleStatusChange("confirmado")} disabled={saving} className="min-h-10 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl gap-1">
                     <MaterialIcon icon="check_circle" size={16} />
                     Confirmar pedido
-                  </Button>
-                )}
-                {aguardaConferencia && (
-                  <Button size="sm" title="Use quando a unidade avisou que chegou tudo" onClick={handleConfirmarPelaUnidade} disabled={saving || loadingItems} className="min-h-10 bg-ok-ink hover:bg-ok-ink/90 text-white font-bold rounded-xl gap-1">
-                    <MaterialIcon icon={saving ? "progress_activity" : "fact_check"} size={16} className={saving ? "animate-spin" : ""} />
-                    Confirmar pela unidade
                   </Button>
                 )}
                 {order.status === "confirmado" && (

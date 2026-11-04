@@ -464,12 +464,12 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: a revisão do pedido. (existe: `pedido-fabrica-4.webp`)
 5. Para enviar à Maxi, toque em **Confirmar e enviar** e espere a mensagem "Pedido enviado com sucesso!".
    - Imagem: rodapé da revisão. Contorno em **Confirmar e enviar**. (existe: `pedido-fabrica-5.webp`)
-6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira as caixas com o motorista: faltou algo, avise na hora. O estoque sobe sozinho quando a Maxi marca o pedido como Entregue.
+6. Acompanhe em **Histórico de Pedidos**: Pendente, Confirmado, Em Rota e Entregue. Quando chegar, confira as caixas com o motorista: faltou algo, avise na hora. O estoque sobe sozinho quando a Maxi marca o pedido como Entregue. Nessa hora chega no seu WhatsApp a mensagem da Maxi com os produtos, o frete e a chave Pix: faça o Pix e mande o comprovante nessa mesma conversa.
    - Imagem: histórico com um pedido. (existe: `pedido-fabrica-6.webp`)
 
 **Deu certo quando:** o pedido aparece em **Histórico de Pedidos** como Pendente.
 
-**Dica:** o app usa suas vendas para sugerir quanto pedir. A conta cobre até a entrega seguinte (você costuma pedir a cada ~3 semanas e a entrega leva ~5 dias), mais uma semana, e já considera o estoque e os produtos a caminho. Produto sem venda em 3 meses não entra. Confira se as quantidades atendem ao que você precisa. O frete mostrado é uma previsão: 10% do valor dos produtos, no mínimo R$ 250 e no máximo R$ 350. A Maxi confirma o valor.
+**Dica:** o app usa suas vendas para sugerir quanto pedir. A conta cobre até a entrega seguinte (você costuma pedir a cada ~3 semanas e a entrega leva ~5 dias), mais uma semana, e já considera o estoque e os produtos a caminho. Produto sem venda em 3 meses não entra. Confira se as quantidades atendem ao que você precisa. O frete é R$ 350 por pedido, de qualquer tamanho; se você mesma buscar o pedido na Maxi, não tem frete. O pão de queijo vem em caixa com 12 pacotes: no pedido o número conta caixas, e no estoque entram os pacotes.
 
 **Erro comum:** apareceu "Já tem um pedido enviado há pouco"? Outro celular ou outra aba já enviou um pedido: confira no **Histórico de Pedidos** antes de enviar outro. Enviou errado e ainda está Pendente? Abra o pedido e toque em **Cancelar Pedido**.
 

@@ -4,6 +4,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import { buildExportWorksheet } from "@/lib/exportSheet";
 
+import { registrarEvento as gravarEvento } from "@/lib/telemetria";
 /**
  * ExportButtons — exports data to Excel (.xlsx) or PDF.
  *
@@ -16,7 +17,7 @@ import { buildExportWorksheet } from "@/lib/exportSheet";
  */
 function registrarEvento(evento, formato) {
   if (!evento) return;
-  try { window.clarity?.("event", `${evento}_${formato}`); } catch { /* telemetria não pode derrubar o download */ }
+  try { gravarEvento(`${evento}_${formato}`); } catch { /* telemetria não pode derrubar o download */ }
 }
 
 export default function ExportButtons({ data, columns, filename, title, evento }) {

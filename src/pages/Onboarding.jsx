@@ -28,6 +28,7 @@ import { listarFranquias, invalidarFranquias } from "@/lib/franchisesCache";
 import { tarefasFeitas, mensagemPronto, lerFeitas, gravarFeitas } from "@/lib/primeirosPassosAviso";
 import { createPageUrl } from "@/utils";
 
+import { registrarEvento } from "@/lib/telemetria";
 // "Primeiros passos" — trilha de 5 passos (substituiu os 9 blocos do onboarding
 // antigo, 16/09/2026). A lógica de estado vive em src/lib/onboardingJourney.js
 // (montarJornada); este arquivo só carrega os dados, grava as ações da franqueada/
@@ -518,7 +519,7 @@ export default function Onboarding() {
 
   const handleAgoraAction = (destino, passoId) => {
     try {
-      window.clarity?.("event", "primeiros_passos_continuar");
+      registrarEvento("primeiros_passos_continuar");
     } catch {
       // Analytics nunca pode travar a navegação
     }

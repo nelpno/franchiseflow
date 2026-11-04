@@ -12,6 +12,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { MENSAGEM_AJUDA, linkWhatsAppMaxi } from "@/lib/contatoMaxi";
+import { registrarEvento } from "@/lib/telemetria";
 import {
   acharGuia, buscarGuias, ehEquipe, guiasComecePorAqui, guiasParaPapel, guiasPorArea, PUBLICO,
 } from "@/lib/guiasAjuda";
@@ -80,7 +81,7 @@ export default function Tutoriais() {
         <a
           href="/manual-maxi.pdf"
           download="Manual-Maxi-Massas.pdf"
-          onClick={() => { try { window.clarity?.("event", "manual_pdf_baixado"); } catch { /* sem Clarity */ } }}
+          onClick={() => { try { registrarEvento("manual_pdf_baixado"); } catch { /* sem Clarity */ } }}
           className={`${CARTAO} flex items-center gap-3 min-h-[56px] hover:border-brand/40 transition-colors`}
         >
           <MaterialIcon icon="picture_as_pdf" size={24} className="text-brand shrink-0" aria-hidden="true" />
