@@ -624,6 +624,7 @@ export const GUIAS = [
       { titulo: "Retirada", texto: "Ligue a retirada e confira o Endereço de retirada e o horário.", botao: "Aceita RETIRADA?", imagem: "/tutoriais/robo-entrega-5.webp" },
       { titulo: "Teste e salve", texto: "Antes de tocar em Próximo, confira o frete no Teste rápido, no fim do bloco de entrega (antes da retirada): o Próximo passa para a etapa seguinte. Depois toque em Próximo. Aparece \"Configurações salvas com sucesso!\".", botao: "Próximo", imagem: "/tutoriais/robo-entrega-6.webp" },
     ],
+    nota: "Frete grátis ou valor diferente num bairro ou condomínio? Se a etapa mostra o quadro Bairros com taxa própria, cadastre ali o nome e o valor (R$ 0 é grátis) e confira no Teste rápido. Se não mostra, fale com o suporte para ligar o frete calculado. Não escreva frete em Promoções ativas: ali o robô não confere a taxa.",
     whatsapp: "Quer mudar o frete, o pedido mínimo ou a retirada? Este guia mostra onde ajustar no Meu robô.",
   },
   {
@@ -950,6 +951,11 @@ export const PERGUNTAS_FREQUENTES = [
   {
     pergunta: "O robô passa meu cliente para outra unidade?",
     resposta: "Só quando o cliente pergunta por outra cidade, ou mora em outra cidade fora da sua área e há unidade Maxi mais perto dele: aí ele manda o contato dela. Quem é da sua cidade continua com você.",
+    guiaSlug: "robo-entrega",
+  },
+  {
+    pergunta: "Como dou frete grátis para um condomínio ou bairro?",
+    resposta: "Em Meu robô › Entrega e retirada, no quadro Bairros com taxa própria: escreva o nome e ponha R$ 0. Não aparece esse quadro? Fale com o suporte para ligar o frete calculado. Em Promoções não funciona.",
     guiaSlug: "robo-entrega",
   },
 ];

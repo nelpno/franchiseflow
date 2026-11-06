@@ -240,7 +240,7 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
       )}
       {frase && (
         <div className="bg-surface rounded-xl p-3">
-          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50 mb-1">O vendedor vai dizer</p>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50 mb-1">O vendedor vai dizer <HelpTip tip="vendedorVaiDizer" /></p>
           <p className="text-xs text-ink-2 italic">"{frase}"</p>
         </div>
       )}
@@ -267,7 +267,7 @@ function NomesBairro({ nomes, onChange, invalido }) {
           </button>
         </span>
       ))}
-      <input aria-label="Nome do bairro" value={texto} placeholder={nomes.length ? "+ bairro" : "Nome do bairro e Enter"}
+      <input aria-label="Nome do bairro ou condomínio" value={texto} placeholder={nomes.length ? "+ bairro ou condomínio" : "Bairro ou condomínio e Enter"}
         className="flex-1 min-w-[7rem] bg-transparent outline-none text-sm px-1"
         onChange={(e) => {
           const partes = e.target.value.split(",");
@@ -296,8 +296,8 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
   return (
     <div className="space-y-3 border-b border-surface-line/20 pb-4">
       <div>
-        <p className="text-sm font-bold text-ink-2 flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria</p>
-        <p className={dica}>Cada bairro com o seu valor, em qualquer dia. Bairro que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
+        <p className="text-sm font-bold text-ink-2 flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria <HelpTip tip="bairrosTaxaPropria" /></p>
+        <p className={dica}>Cada bairro ou condomínio com o seu valor, em qualquer dia (R$ 0 é grátis). O que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
       </div>
       {zonas.map((z, i) => (
         <div key={i} className="rounded-xl bg-surface p-2.5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
@@ -417,7 +417,7 @@ function TesteRapido({ modelo, estruturado }) {
         {estruturado && (
           <label className="col-span-2 sm:col-span-1">
             <span className={rotulo}>Bairro do cliente</span>
-            <input className={`${campo} w-full`} value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Ex.: Centro" />
+            <input className={`${campo} w-full`} value={bairro} onChange={(e) => setBairro(e.target.value)} placeholder="Ex.: Centro ou o condomínio" />
           </label>
         )}
         <label>
@@ -516,7 +516,10 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
       {!estruturado && (
         <p className="text-[11px] text-ink-2/70 flex items-start gap-1.5">
           <MaterialIcon icon="lightbulb" size={14} className="mt-0.5 shrink-0 text-brand-gold-ink" />
-          Cobra valor diferente por bairro, ou tem mais de um tipo de entrega no mesmo dia (ex.: programada e imediata)? Fale com o suporte para ligar o frete calculado na sua unidade.
+          <span>
+            Quer frete grátis ou valor diferente num bairro ou condomínio, ou tem mais de um tipo de entrega no mesmo dia (ex.: programada e imediata)? Fale com o suporte para ligar o frete calculado na sua unidade.
+            <HelpTip tip="freteBairroSemCalculado" />
+          </span>
         </p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

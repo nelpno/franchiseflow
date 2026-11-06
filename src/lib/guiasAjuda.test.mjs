@@ -280,8 +280,16 @@ t("registrarAjudaResolveu: o slug vai no NOME do evento (não em 'set', que é t
   globalThis.window.clarity = clarityAntes;
 });
 
-t("HelpTip: 5 campos, com texto e exemplo", () => {
-  assert.deepEqual(Object.keys(HELP_TIPS).sort(), ["formaPagamento", "horarioCorte", "pedidoMinimo", "taxaEntrega", "verbaMarketing"]);
+t("HelpTip: 9 campos, com texto e exemplo", () => {
+  assert.deepEqual(Object.keys(HELP_TIPS).sort(), [
+    "bairrosTaxaPropria", "formaPagamento", "freteBairroSemCalculado", "horarioCorte", "pedidoMinimo", "promocoes",
+    "taxaEntrega", "vendedorVaiDizer", "verbaMarketing",
+  ]);
+  // 06/11/2026: frete por bairro/condomínio não vai em Promoções (o motor não aceita frete grátis com condição de lugar)
+  assert.match(HELP_TIPS.promocoes.texto, /bairro ou condomínio/);
+  assert.match(HELP_TIPS.bairrosTaxaPropria.texto, /R\$ 0 é grátis/);
+  assert.match(HELP_TIPS.bairrosTaxaPropria.texto, /Teste rápido/);
+  assert.match(HELP_TIPS.freteBairroSemCalculado.texto, /suporte/);
   for (const h of Object.values(HELP_TIPS)) assert.ok(h.titulo && h.texto && h.exemplo);
   assert.match(HELP_TIPS.verbaMarketing.texto, /R\$ 200/);
   assert.match(HELP_TIPS.verbaMarketing.texto, /14%/);

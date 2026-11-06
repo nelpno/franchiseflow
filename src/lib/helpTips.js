@@ -22,6 +22,35 @@ export const HELP_TIPS = {
       "Até que horas o pedido ainda sai no mesmo dia. Depois desse horário o robô continua atendendo: anota o pedido e combina a entrega para o próximo horário de entrega da unidade. Sem horário escolhido, vale até o fim da janela.",
     exemplo: "Entrega das 18h às 21h, pedidos até 17h: quem pede às 17h30 recebe no próximo dia de entrega.",
   },
+  // 06/11/2026: duas unidades tentaram dar frete grátis por condomínio escrevendo em Promoções ativas. Com o frete
+  // calculado o motor de pagamento não aceita frete grátis com condição de lugar vinda da promoção (cobra o frete
+  // cotado e avisa a unidade: `pagamentoFreteGratisPromocao` em bots/vendedor/scripts/assets/pagamento.js). O lugar
+  // certo é a lista de bairros (motor `cota-frete.js`: casa o nome no endereço que o cliente escreve, sem o prefixo
+  // "Condomínio/Residencial/Jardim", e vale em qualquer dia e além do raio).
+  bairrosTaxaPropria: {
+    titulo: "Bairro ou condomínio com taxa própria",
+    texto:
+      "Para dar frete grátis ou cobrar outro valor num lugar: toque em \"Adicionar bairros com outra taxa\", escreva o nome, toque em Enter e ponha o valor (R$ 0 é grátis). Vale em qualquer dia. O robô procura esse nome no endereço que o cliente escreve, então cadastre o condomínio do jeito que o cliente fala. Se o cliente costuma mandar só a rua e o bairro, cadastre o bairro também: aí a taxa vale para o bairro inteiro. Depois confira no Teste rápido, em Bairro do cliente.",
+    exemplo: "Villa Verona com R$ 0: quem escreve \"Condomínio Villa Verona\" no endereço recebe sem frete.",
+  },
+  freteBairroSemCalculado: {
+    titulo: "Frete grátis ou taxa diferente num bairro",
+    texto:
+      "Taxa por bairro ou condomínio, inclusive grátis, só funciona com o frete calculado ligado na unidade. Fale com o suporte para ligar: aí aparece nesta etapa o quadro Bairros com taxa própria, onde você cadastra o nome e o valor. Não escreva isso em Promoções ativas: ali o robô não confere o frete e pode cobrar errado.",
+    exemplo: "Entrega grátis num condomínio: peça ao suporte o frete calculado e cadastre o condomínio com R$ 0.",
+  },
+  vendedorVaiDizer: {
+    titulo: "O vendedor vai dizer",
+    texto:
+      "É uma prévia, não um campo para escrever. O app monta essa frase com os dias, a janela, o horário limite e a taxa que você preencheu. Para mudar a frase, mude esses campos: ela muda na hora.",
+    exemplo: "Trocou a taxa para Grátis: a prévia passa a dizer que a entrega é sem taxa.",
+  },
+  promocoes: {
+    titulo: "Promoções ativas",
+    texto:
+      "Só oferta: combo, brinde ou desconto, com o preço certo. O robô oferece uma vez por conversa. Frete grátis por valor do pedido pode ficar aqui. Não servem aqui: frete por bairro ou condomínio e horário (etapa Entrega e retirada), endereço e ponto de referência (etapa Sua unidade) e ingrediente (o robô já tem os das massas da Maxi). Acabou a promoção? Apague o texto.",
+    exemplo: "Combo: 1 Canelone 4 Queijos 700g + 1 Molho 500g por R$ 74,90. Ou: Frete grátis nas compras acima de R$ 100.",
+  },
   verbaMarketing: {
     titulo: "Verba de marketing",
     texto:

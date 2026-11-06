@@ -24,6 +24,7 @@ import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor
 import PaymentMatrix from "@/components/vendedor/PaymentMatrix";
 import ComoRoboResponde from "@/components/vendedor/ComoRoboResponde";
 import EntregaCard from "@/components/vendedor/EntregaCard";
+import HelpTip from "@/components/shared/HelpTip";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
 import NumerosBloqueados from "@/components/vendedor/NumerosBloqueados";
@@ -1373,14 +1374,27 @@ function FranchiseSettingsContent() {
                 <FieldHint text="Fornecedor, maquininha, banco, família: quem não é cliente. O robô ignora esse número na hora; você continua conversando normalmente. Pode digitar do jeito que quiser, com ou sem o 9." />
               </div>
               <div>
-                <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa)</label>
+                <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa) <HelpTip tip="promocoes" /></label>
                 <textarea className={`${inputClass} resize-y min-h-[120px]`} rows={5} maxLength={1500} value={formData.promotions_combo || ''}
                   onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
                   placeholder="Ex: COMBO 1 (serve 5): 1 nhoque muçarela + 1 canelone brócolis — R$ 74,90&#10;COMBO 2 (serve 8): ... — R$ 99,90&#10;Pagamento via PIX." />
-                <FieldHint text={`Use SÓ para promoções e combos ATIVOS. Avisos de horário, endereço, restrições, cumprimentos vão em outros campos. DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
+                <FieldHint text={`Use SÓ para ofertas ATIVAS: combo, brinde, desconto. Frete por bairro, horário, endereço e ingrediente têm lugar próprio (toque no ?). DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
                 {(() => {
                   const t = (formData.promotions_combo || '').toLowerCase();
                   const flag = ['não temos promo', 'nao temos promo', 'no momento não', 'no momento nao', 'sendo elaborado', 'não há', 'nao ha', 'em breve', 'aguardando'].some(p => t.includes(p));
+                  // 06/11/2026 (Éden): frete grátis por condomínio/bairro escrito aqui. Com o frete calculado o robô cobra
+                  // o frete do cadastro; sem ele, às vezes segue o texto. O lugar é a lista de bairros da etapa 2.
+                  const fretePorLugar = /\b(frete|entrega|taxa)\b/.test(t) && /(condom|bairro|regi[aã]o|residencial|\bresd?\b|\bcond\b)/.test(t);
+                  if (fretePorLugar) return (
+                    <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
+                      <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
+                      <span>
+                        {modoFrete === 'estruturado'
+                          ? 'Frete por bairro ou condomínio não vale aqui: o robô cobra o frete do cadastro. Cadastre na etapa Entrega e retirada, em Bairros com taxa própria (R$ 0 é grátis), e apague daqui.'
+                          : 'Frete por bairro ou condomínio não vale aqui: o robô pode cobrar errado. Fale com o suporte para ligar o frete calculado e cadastrar o lugar com a taxa certa.'}
+                      </span>
+                    </p>
+                  );
                   return flag ? (
                     <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
                       <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />

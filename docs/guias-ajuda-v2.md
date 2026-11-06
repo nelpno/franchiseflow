@@ -786,7 +786,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 **Dica:** o robô calcula a distância até o endereço do cliente antes de falar o frete. Por isso o endereço da unidade, na etapa **Sua unidade**, precisa estar certo.
 
-**Erro comum:** tocar em outro tipo de taxa só para olhar e salvar sem querer. Antes de tocar em **Próximo**, confira se o tipo escolhido é o que você quer.
+**Erro comum:** tocar em outro tipo de taxa só para olhar e salvar sem querer. Antes de tocar em **Próximo**, confira se o tipo escolhido é o que você quer. Outro: escrever frete grátis de condomínio ou bairro em **Promoções ativas**. O lugar é o quadro **Bairros com taxa própria**, no alto desta etapa (R$ 0 é grátis); sem esse quadro, fale com o suporte para ligar o frete calculado.
 
 **Se não resolver:** o robô fala um frete diferente do que está na tela? Falar com a Maxi (guia 30), com um print da conversa.
 
