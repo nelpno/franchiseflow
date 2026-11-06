@@ -81,7 +81,7 @@ const estilosDoCupom = `
 `;
 
 const SaleReceipt = React.forwardRef(function SaleReceipt(
-  { sale, saleItems, contact, franchiseName, unitWhatsApp },
+  { sale, saleItems, contact, franchiseName, unitWhatsApp, unitInstagram },
   ref
 ) {
   const subtotal = saleItems.reduce(
@@ -443,6 +443,12 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
         {unitWhatsApp && (
           <div style={{ fontSize: 11, color: "#4a3d3d", marginTop: 4 }}>
             WhatsApp: {unitWhatsApp}
+          </div>
+        )}
+        {/* "Instagram da loja" (Meu robô › Sua unidade), o mesmo que o robô põe na confirmação */}
+        {unitInstagram && (
+          <div style={{ fontSize: 11, color: "#4a3d3d", marginTop: 2 }}>
+            Instagram: @{unitInstagram}
           </div>
         )}
       </div>

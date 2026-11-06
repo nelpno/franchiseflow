@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Navigate, useLocation, useSearchParams } from "react-router-dom";
-import { Franchise, Sale, InventoryItem, Contact } from "@/entities/all";
+import { Franchise, Sale, InventoryItem, Contact, FranchiseConfiguration } from "@/entities/all";
+import { normalizarInstagram, instagramValido } from "@/lib/horarioEspecial";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { resolveUnitWhatsApp } from "@/lib/receiptUtils";
@@ -197,6 +198,24 @@ export default function Vendas() {
   // chamar a franqueada). Regra e números em resolveUnitWhatsApp (receiptUtils.js).
   const unitWhatsApp = useMemo(() => resolveUnitWhatsApp(primaryFranchise), [primaryFranchise]);
 
+  // Rodapé do cupom: "Instagram da loja" (franchise_configurations.social_media_links.instagram,
+  // o mesmo do robô). Sem campo ou inválido, a linha não aparece; falha na leitura não trava a tela.
+  const [unitInstagram, setUnitInstagram] = useState(null);
+  useEffect(() => {
+    setUnitInstagram(null);
+    if (!franchiseId) return;
+    let vivo = true;
+    FranchiseConfiguration.filter({ franchise_evolution_instance_id: franchiseId }, null, 1, {
+      columns: "social_media_links",
+    })
+      .then((rows) => {
+        const u = normalizarInstagram(rows?.[0]?.social_media_links?.instagram);
+        if (vivo) setUnitInstagram(u && instagramValido(u) ? u : null);
+      })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [franchiseId]);
+
   if (loading || (franchiseId && loadingUnidade)) {
     return (
       <div className="bg-surface">
@@ -274,6 +293,7 @@ export default function Vendas() {
           franchiseId={franchiseId}
           franchiseName={primaryFranchise.name}
           unitWhatsApp={unitWhatsApp}
+          unitInstagram={unitInstagram}
           currentUser={currentUser}
           sales={franchiseSales}
           contacts={franchiseContacts}

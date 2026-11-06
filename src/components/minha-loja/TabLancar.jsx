@@ -115,6 +115,7 @@ export default function TabLancar({
   franchiseId,
   franchiseName,
   unitWhatsApp = null,
+  unitInstagram = null,
   currentUser,
   sales,
   contacts,
@@ -1617,6 +1618,7 @@ export default function TabLancar({
             contact={shareData.contact}
             franchiseName={franchiseName}
             unitWhatsApp={unitWhatsApp}
+            unitInstagram={unitInstagram}
           />
         </div>
       )}
