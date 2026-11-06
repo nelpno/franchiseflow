@@ -280,11 +280,15 @@ t("registrarAjudaResolveu: o slug vai no NOME do evento (não em 'set', que é t
   globalThis.window.clarity = clarityAntes;
 });
 
-t("HelpTip: 9 campos, com texto e exemplo", () => {
+t("HelpTip: 11 campos, com texto e exemplo", () => {
   assert.deepEqual(Object.keys(HELP_TIPS).sort(), [
-    "bairrosTaxaPropria", "formaPagamento", "freteBairroSemCalculado", "horarioCorte", "pedidoMinimo", "promocoes",
-    "taxaEntrega", "vendedorVaiDizer", "verbaMarketing",
+    "bairrosTaxaPropria", "formaPagamento", "freteBairroSemCalculado", "horarioCorte", "horarioEspecial", "instagramLoja",
+    "pedidoMinimo", "promocoes", "taxaEntrega", "vendedorVaiDizer", "verbaMarketing",
   ]);
+  // 06/11/2026: horário especial e Instagram da loja
+  assert.match(HELP_TIPS.horarioEspecial.texto, /horário da semana não muda/);
+  assert.match(HELP_TIPS.horarioEspecial.texto, /Promoções ativas/);
+  assert.match(HELP_TIPS.instagramLoja.texto, /primeira compra/);
   // 06/11/2026: frete por bairro/condomínio não vai em Promoções (o motor não aceita frete grátis com condição de lugar)
   assert.match(HELP_TIPS.promocoes.texto, /bairro ou condomínio/);
   assert.match(HELP_TIPS.bairrosTaxaPropria.texto, /R\$ 0 é grátis/);

@@ -81,6 +81,8 @@ const NOME_CAMPO = {
   min_order_value: "pedido mínimo",
   avg_prep_time_minutes: "tempo de entrega",
   pickup_schedule: "horário de retirada",
+  horario_especial: "horário especial",
+  social_media_links: "Instagram",
   agent_name: "nome do vendedor",
   unit_address: "endereço",
   address_reference: "ponto de referência",

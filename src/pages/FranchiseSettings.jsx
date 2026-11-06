@@ -24,6 +24,8 @@ import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor
 import PaymentMatrix from "@/components/vendedor/PaymentMatrix";
 import ComoRoboResponde from "@/components/vendedor/ComoRoboResponde";
 import EntregaCard from "@/components/vendedor/EntregaCard";
+import HorarioEspecialCard from "@/components/vendedor/HorarioEspecialCard";
+import { hojeBRT, normalizarHorarioEspecial, normalizarInstagram } from "@/lib/horarioEspecial";
 import HelpTip from "@/components/shared/HelpTip";
 import OperatingHoursEditor from "@/components/vendedor/OperatingHoursEditor";
 import CatalogUpload from "@/components/vendedor/CatalogUpload";
@@ -52,6 +54,7 @@ const initialFormData = {
   personal_phone_extra: '',
   payment_link: '',
   social_media_links: { instagram: '' },
+  horario_especial: [],
   max_delivery_radius_km: null,
   min_order_value: null,
   avg_prep_time_minutes: null,
@@ -177,6 +180,10 @@ function buildDbPayload(form) {
     finalData.has_custom_pickup_hours = false;
     finalData.pickup_schedule = [];
   }
+  // Instagram: só o usuário (sem @ nem URL); o robô monta o link instagram.com/<usuário> na confirmação
+  finalData.social_media_links = { ...(dbFields.social_media_links || {}), instagram: normalizarInstagram(dbFields.social_media_links?.instagram) };
+  // Horário especial: vencido (até < hoje) sai ao salvar; "vale" vira ambos quando só há uma modalidade
+  finalData.horario_especial = normalizarHorarioEspecial(dbFields.horario_especial, hojeBRT(), { hasDelivery: finalData.has_delivery !== false, hasPickup: !!finalData.has_pickup });
   // Frete calculado: tira linha em branco e normaliza números (idempotente com o que veio do banco)
   if (finalData.delivery_pricing && typeof finalData.delivery_pricing === 'object') {
     finalData.delivery_pricing = limparPricing(finalData.delivery_pricing);
@@ -381,7 +388,9 @@ function FranchiseSettingsContent() {
         ? config.accepted_payment_methods.join(', ')
         : config.accepted_payment_methods || '',
       address_reference: config.address_reference || '',
-      social_media_links: { instagram: config.social_media_links?.instagram || '' },
+      // as outras chaves do jsonb ficam (salvar o Instagram não pode apagá-las)
+      social_media_links: { ...(config.social_media_links && typeof config.social_media_links === 'object' ? config.social_media_links : {}), instagram: config.social_media_links?.instagram || '' },
+      horario_especial: Array.isArray(config.horario_especial) ? config.horario_especial : [],
       franchise_name: config.franchise_name || '',
       working_days: config.working_days || '',
       max_delivery_radius_km: config.max_delivery_radius_km ?? null,
@@ -1053,6 +1062,16 @@ function FranchiseSettingsContent() {
                 <FieldHint text={`SÓ ponto de referência (Ex: "casa azul ao lado do mercado"). NÃO coloque horários, endereço completo nem promoções. (${(formData.address_reference || '').length}/400)`} />
               </div>
               <div>
+                <label className={`${labelClass} flex items-center gap-1`}>Instagram da loja <HelpTip tip="instagramLoja" /></label>
+                <div className="flex items-center gap-1 bg-surface-line rounded-xl px-4 focus-within:ring-2 focus-within:ring-brand/20">
+                  <span className="text-sm text-ink-2/60 shrink-0">instagram.com/</span>
+                  <input className="w-full min-w-0 bg-transparent border-none py-3 text-base md:text-sm outline-none" type="text" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                    maxLength={80} value={formData.social_media_links?.instagram || ''}
+                    onChange={(e) => handleInputChange('social_media_links', { ...(formData.social_media_links || {}), instagram: e.target.value })}
+                    placeholder="maximassas.suacidade" />
+                </div>
+              </div>
+              <div>
                 <label className={labelClass}>Seu WhatsApp (recebe cada pedido fechado e os avisos do robô)<RequiredDot /></label>
                 <input className={inputClass} type="tel" inputMode="numeric"
                   value={formData.personal_phone_for_summary?.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3').replace(/^(\d{2})(\d{1,5})$/, '($1) $2').replace(/^(\d{1,2})$/, '($1') || ''}
@@ -1220,6 +1239,14 @@ function FranchiseSettingsContent() {
                     </div>
                   )}
                 </div>
+              )}
+              {(hasDelivery || hasPickup) && (
+                <HorarioEspecialCard
+                  value={formData.horario_especial}
+                  onChange={(val) => handleInputChange('horario_especial', val)}
+                  hasDelivery={hasDelivery}
+                  hasPickup={hasPickup}
+                />
               )}
             </WizardStep>
           )}

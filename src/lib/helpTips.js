@@ -51,6 +51,23 @@ export const HELP_TIPS = {
       "Só oferta: combo, brinde ou desconto, com o preço certo. O robô oferece uma vez por conversa. Frete grátis por valor do pedido pode ficar aqui. Não servem aqui: frete por bairro ou condomínio e horário (etapa Entrega e retirada), endereço e ponto de referência (etapa Sua unidade) e ingrediente (o robô já tem os das massas da Maxi). Acabou a promoção? Apague o texto.",
     exemplo: "Combo: 1 Canelone 4 Queijos 700g + 1 Molho 500g por R$ 74,90. Ou: Frete grátis nas compras acima de R$ 100.",
   },
+  // 06/11/2026 (pedido da Bárbara, Jd. Santa Maria): o robô lê horario_especial no Customer Context (status, próximo
+  // horário aberto e PRÓXIMOS DIAS por DATA), no frete calculado (Cota Frete) e na trava da data do pedido (Prepare Sale
+  // Data). Fechado não dispensa o cliente: a regra do prompt anota o pedido para o próximo dia aberto.
+  horarioEspecial: {
+    titulo: "Horário especial",
+    texto:
+      "Para um dia ou período fora do normal: feriado, viagem, evento. Vale só nessas datas: o horário da semana não muda e, depois da data, o especial some sozinho. Fechado: o robô não oferece esse dia, e quem pede para ele recebe outro dia aberto. Horário diferente: naquele dia o robô usa só o horário novo. Vale para entrega, retirada ou as duas. Não escreva horário em Promoções ativas.",
+    exemplo: "Sexta 06/11 com horário diferente das 9h às 15h: nessa sexta o robô diz que fecha às 15h; na sexta seguinte volta ao normal.",
+  },
+  // 06/11/2026: a linha vai no texto fixo da confirmação do pedido (EnviaPedidoFechado › Prepare Sale Data), só quando
+  // o cliente não tinha compra na unidade (customerIntel.compras = 0). O modelo não vê; o prompt não mudou.
+  instagramLoja: {
+    titulo: "Instagram da loja",
+    texto:
+      "Só o nome do perfil, sem @. O robô põe o link do seu Instagram no fim da confirmação do pedido, só na primeira compra de cada cliente com a unidade. Vazio, a linha não sai.",
+    exemplo: "Com maximassas.jdsantamaria, a confirmação termina com: Siga a gente no Instagram: instagram.com/maximassas.jdsantamaria",
+  },
   verbaMarketing: {
     titulo: "Verba de marketing",
     texto:

@@ -12,6 +12,7 @@
  */
 import { validateDeliverySchedule, rotuloDias } from "./configSave.js";
 import { modoDoFrete, legadoParaModelo, problemasDoModelo } from "./freteModelo.js";
+import { hojeBRT, problemasHorarioEspecial, normalizarInstagram, instagramValido } from "./horarioEspecial.js";
 
 const digitos = (v) => String(v ?? "").replace(/\D/g, "");
 const vazio = (v) => v === null || v === undefined || String(v).trim() === "";
@@ -87,6 +88,10 @@ function formatoPixEstranho(f) {
 
 const REGRAS = [
   // Etapa 1 — Sua unidade
+  {
+    etapa: 1, campos: ["social_media_links"],
+    checar: (f) => { const v = normalizarInstagram(f.social_media_links?.instagram); return v !== "" && !instagramValido(v) && "Instagram da loja: só o nome do perfil, com letras, números, ponto ou _ (sem espaço)."; },
+  },
   { etapa: 1, campos: ["franchise_name"], checar: (f) => vazio(f.franchise_name) && "Preencha o nome da unidade." },
   {
     etapa: 1, campos: ["street_address", "neighborhood", "city"],
@@ -160,6 +165,7 @@ const REGRAS = [
     },
   },
   { etapa: 2, campos: ["pickup_schedule", "has_custom_pickup_hours", "has_pickup"], checar: (f) => !!f.has_pickup && retiradaInvertida(f.pickup_schedule) },
+  { etapa: 2, campos: ["horario_especial"], checar: (f) => problemasHorarioEspecial(f.horario_especial, hojeBRT())[0] || null },
 
   // Etapa 3 — Pagamento
   { etapa: 3, campos: ["has_delivery", "payment_delivery"], checar: (f) => entrega(f) && !(f.payment_delivery || []).length && "Marque ao menos uma forma de pagamento na entrega." },

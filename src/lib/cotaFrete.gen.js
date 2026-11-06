@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: a1d6a8c6b403019abf1e684e76394b00f64ae55eec229f1cc768211bd8dd6bb4
+// sha256 da fonte: 0f5080d0afe77ef27daae4a54a28f6f16dd3b1de3e7763aa6f91c42b93b559d2
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -175,11 +175,42 @@ function cotaOpcao(tipo, taxa) {
   };
 }
 
-function cotaTiposAbertos(grupo, horaMin) {
-  return grupo.tipos.filter(function (t) {
+function cotaTiposAbertos(grupo, horaMin, esp) {
+  return cotaTiposDoDia(grupo, esp).filter(function (t) {
     var limite = cotaMin(t.corte) != null ? cotaMin(t.corte) : cotaMin(t.fim);
     return horaMin < limite && horaMin < cotaMin(t.fim);
   }).map(function (t) { return t.nome; });
+}
+
+// Horário especial com data (06/11/2026): pricing.horario_especial (o GetDistance CB do V5 manda junto do pricing,
+// só quando a unidade tem exceção) = [{de, ate, tipo:'fechado'|'horario', abre, fecha, vale:'ambos'|'entrega'|'retirada'}].
+// Vale só a de entrega. "fechado" = sem entrega na data; "horario" = cada tipo recortado para dentro de abre–fecha
+// (tipo que não cabe sai). Data sem tabela de preço (dia que normalmente não abre) continua sem opções.
+function cotaEspecial(lista, data) {
+  for (var i = 0; i < (lista || []).length; i++) {
+    var x = lista[i];
+    if (!x || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.de || ''))) continue;
+    if (x.vale && x.vale !== 'ambos' && x.vale !== 'entrega') continue;
+    if (x.tipo !== 'fechado' && !(x.tipo === 'horario' && cotaMin(x.abre) != null && cotaMin(x.fecha) != null && cotaMin(x.abre) < cotaMin(x.fecha))) continue;
+    if (data >= x.de && data <= (x.ate || x.de)) return x;
+  }
+  return null;
+}
+function cotaHoraMin(m) { return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2); }
+// tipos do grupo para a data: com "horario", janela e corte recortados; sem exceção, os tipos como estão
+function cotaTiposDoDia(grupo, esp) {
+  if (!esp) return grupo.tipos;
+  if (esp.tipo === 'fechado') return [];
+  var a = cotaMin(esp.abre), f = cotaMin(esp.fecha);
+  return grupo.tipos.map(function (t) {
+    var ini = Math.max(cotaMin(t.inicio), a), fim = Math.min(cotaMin(t.fim), f);
+    if (!(ini < fim)) return null;
+    var corte = cotaMin(t.corte) != null ? Math.min(cotaMin(t.corte), fim) : null;
+    return Object.assign({}, t, { inicio: cotaHoraMin(ini), fim: cotaHoraMin(fim), corte: corte != null ? cotaHoraMin(corte) : t.corte });
+  }).filter(Boolean);
+}
+function cotaRotuloEspecial(x) {
+  return x.tipo === 'fechado' ? 'fechado (sem entrega)' : 'entrega só das ' + cotaHora(x.abre) + ' às ' + cotaHora(x.fecha);
 }
 
 function cotarFrete(pricing, destino, agora, extra) {
@@ -232,7 +263,7 @@ function cotarFrete(pricing, destino, agora, extra) {
       if (tx.aproximado) aproximado = true;
       opcoes.push(cotaOpcao(t, tx.valor));
     });
-    return { dias: cotaRotuloDias(g.dias), _dias: g.dias, opcoes: opcoes, _foraDoDia: foraDoDia };
+    return { dias: cotaRotuloDias(g.dias), _dias: g.dias, opcoes: opcoes, _foraDoDia: foraDoDia, _g: g };
   });
   if (!grupos.some(function (g) { return g.opcoes.length; })) {
     var b = bloqueio || { estado: 'sem_preco' };
@@ -245,36 +276,61 @@ function cotarFrete(pricing, destino, agora, extra) {
   }
 
   // 3. hoje (corte) e próximo dia com entrega
+  var he = Array.isArray(pricing.horario_especial) ? pricing.horario_especial : [];
+  var espHoje = cotaEspecial(he, agora.data);
   var hojeDia = cotaDiaDaSemana(agora.data);
   var gHoje = pricing.grupos.find(function (g) { return g.dias.indexOf(hojeDia) !== -1; });
   var hojeForaDoDia = grupos.some(function (g) { return g._foraDoDia && g._dias.indexOf(hojeDia) !== -1; });
-  var abertosHoje = gHoje && !hojeForaDoDia ? cotaTiposAbertos(gHoje, cotaMin(agora.hora)) : [];
+  var abertosHoje = gHoje && !hojeForaDoDia ? cotaTiposAbertos(gHoje, cotaMin(agora.hora), espHoje) : [];
   var proximo = null;
-  for (var i = 1; i <= 7 && !proximo; i++) {
-    var d = cotaSomaDias(agora.data, i);
-    if (grupos.some(function (g) { return g.opcoes.length && g._dias.indexOf(cotaDiaDaSemana(d)) !== -1; })) proximo = cotaDataCurta(d);
+  for (var i = 1; i <= 14 && !proximo; i++) {
+    var d = cotaSomaDias(agora.data, i), espD = cotaEspecial(he, d);
+    if (grupos.some(function (g) { return g.opcoes.length && g._dias.indexOf(cotaDiaDaSemana(d)) !== -1 && cotaTiposDoDia(g._g, espD).length; })) proximo = cotaDataCurta(d);
   }
 
+  var obsHoje = !gHoje ? 'hoje não tem entrega' : hojeForaDoDia ? 'hoje não tem entrega para esse endereço' : (abertosHoje.length ? '' : 'os pedidos de hoje já fecharam');
+  if (espHoje) obsHoje = espHoje.tipo === 'fechado' ? 'hoje não tem entrega (horário especial: fechado hoje)' : !gHoje ? 'horário especial hoje (' + cotaRotuloEspecial(espHoje) + '), fora da tabela de frete: diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.' : (obsHoje ? obsHoje + '; ' : '') + 'horário especial hoje: ' + cotaRotuloEspecial(espHoje);
   var saida = {
     estado: 'ok',
     bairro_com_taxa: zona ? zona.nome : null,
     hoje: {
       dia: cotaDataCurta(agora.data),
       ainda_da_para: abertosHoje,
-      observacao: !gHoje ? 'hoje não tem entrega' : hojeForaDoDia ? 'hoje não tem entrega para esse endereço' : (abertosHoje.length ? '' : 'os pedidos de hoje já fecharam')
+      observacao: obsHoje
     },
     proximo_dia_com_entrega: proximo,
     grupos: grupos.filter(function (g) { return g.opcoes.length; }).map(function (g) { return { dias: g.dias, opcoes: g.opcoes }; }),
     instrucao: 'Use a taxa e o prazo da opção do DIA DA ENTREGA combinado (cada grupo de dias tem a sua tabela). Para hoje, só os tipos em hoje.ainda_da_para. Não calcule nem misture linhas.'
   };
+  // exceções de hoje até +14 dias (só aparece quando há): valem no lugar da tabela da semana nessas datas
+  var lim = cotaSomaDias(agora.data, 14), espLista = [];
+  he.forEach(function (x) {
+    if (cotaEspecial([x], x.de) !== x) return;
+    var de = x.de < agora.data ? agora.data : x.de, ate = (x.ate || x.de) > lim ? lim : (x.ate || x.de);
+    if (de > ate) return;
+    espLista.push(cotaDataCurta(de) + (ate !== de ? ' a ' + cotaDataCurta(ate) : '') + ': ' + cotaRotuloEspecial(x));
+  });
+  if (espLista.length) {
+    saida.horario_especial = espLista;
+    saida.instrucao += ' Nas datas de horario_especial vale ele, não a tabela da semana: fechado = sem entrega nesse dia; horário diferente = entrega só dentro dele.';
+  }
 
   // 4. data pedida pelo cliente (opcional)
   if (extra.dataEntrega) {
-    var dia = cotaDiaDaSemana(extra.dataEntrega);
+    var dia = cotaDiaDaSemana(extra.dataEntrega), espP = cotaEspecial(he, extra.dataEntrega);
     var g = grupos.find(function (x) { return x._dias.indexOf(dia) !== -1; });
     var opc = g ? g.opcoes : [];
+    if (g && espP) {
+      var tiposP = cotaTiposDoDia(g._g, espP);
+      opc = opc.map(function (o) {
+        var t = tiposP.find(function (x) { return x.nome === o.tipo; });
+        return t ? Object.assign({}, o, { janela: cotaHora(t.inicio) + ' às ' + cotaHora(t.fim), pedidos_ate: cotaHora(t.corte || t.fim) }) : null;
+      }).filter(Boolean);
+    }
     if (g && extra.dataEntrega === agora.data) opc = opc.filter(function (o) { return abertosHoje.indexOf(o.tipo) !== -1; });
-    saida.data_pedida = { dia: cotaDataCurta(extra.dataEntrega), opcoes: opc, observacao: !g ? 'sem entrega nesse dia' : g._foraDoDia ? 'sem entrega nesse dia para esse endereço' : (opc.length ? '' : 'os pedidos para esse dia já fecharam') };
+    var obsP = !g ? 'sem entrega nesse dia' : g._foraDoDia ? 'sem entrega nesse dia para esse endereço' : (opc.length ? '' : 'os pedidos para esse dia já fecharam');
+    if (espP) obsP = espP.tipo === 'fechado' ? 'sem entrega nesse dia (horário especial: fechado)' : !g ? 'horário especial nesse dia (' + cotaRotuloEspecial(espP) + '), fora da tabela de frete: diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.' : (obsP ? obsP + '; ' : '') + 'horário especial nesse dia: ' + cotaRotuloEspecial(espP);
+    saida.data_pedida = { dia: cotaDataCurta(extra.dataEntrega), opcoes: opc, observacao: obsP };
   }
   if (aproximado) saida.aviso = 'Distância estimada perto do limite de uma faixa: diga que a unidade confirma o valor.';
   return saida;
