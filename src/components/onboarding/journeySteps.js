@@ -22,6 +22,7 @@ import {
   DRIVE_POSTAGENS,
   CANVA_CARDAPIO,
   DRIVE_CATALOGO_ROBO,
+  DRIVE_FOTOS_EMBALAGEM,
 } from "./materiais.js";
 
 // Ícone por passo (usado por NextActionCard e JourneyStep). Fica separado dos
@@ -158,11 +159,13 @@ export const JOURNEY_STEPS = [
           "2. Preço igual ao do painel. Mudou lá, muda no catálogo no mesmo dia\n" +
           "3. Só produto que está no painel. Pão de queijo, molho, bebida: cadastre no painel primeiro\n" +
           "4. Nada de item informativo (\"Cardápio\", \"Consulte a entrega\", nome de pessoa): aparece ao cliente como R$ 0,00\n" +
-          "5. Carrinho ligado nas configurações do catálogo\n\n" +
+          "5. Carrinho ligado nas configurações do catálogo\n" +
+          "6. Foto de cada item: a do pacote em fundo branco, uma por sabor (pasta \"Fotos dos pacotes\", link abaixo)\n\n" +
           "Jeito mais rápido: copie o catálogo de Campinas Proost Souza (link no guia), trocando só o preço pelo do seu painel. O guia tem o passo a passo, a lista oficial de nomes e o checklist.",
         destinos: [
           { tipo: "drive", href: DRIVE_CATALOGO_ROBO, rotulo: "Guia do catálogo (passo a passo)" },
           { tipo: "drive", href: DRIVE_VIDEOS_TREINAMENTO, rotulo: "Vídeo do catálogo" },
+          { tipo: "drive", href: DRIVE_FOTOS_EMBALAGEM, rotulo: "Fotos dos pacotes" },
         ],
       },
       {

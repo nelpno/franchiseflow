@@ -19,6 +19,10 @@ export const DRIVE_POSTAGENS = "https://drive.google.com/drive/folders/1r-0rojeu
 // preço = painel, sem item informativo, carrinho ligado. Google Doc ao lado do vídeo "03. Catálogo"
 // em 1. Configurações › 1. WhatsApp Business. Substitui copiar o catálogo de Rio Claro (tinha item fora do painel e item a R$ 0,00).
 // 29/10/2026: guia v2 em passo a passo (Doc novo; o de 13/10 ficou como "(antigo)"). Modelo para copiar = Campinas Proost Souza.
+// Fotos do pacote em fundo branco, uma por sabor, da embalagem nova com etiqueta (07/11/2026), para a foto
+// de cada item do catálogo do WhatsApp. Pasta "3_Fotos Profissionais › Embalagens › Embalagem nova 2026-11"
+// (dona: fabrica@). Faltam lasanha, pastel, rondelli rolo BM/QQ, conchiglione BM e sofioli BM (sem foto ainda).
+export const DRIVE_FOTOS_EMBALAGEM = "https://drive.google.com/drive/folders/1Z_HCMzCxZdgQ8BTQgupXb5hPoGIjPotN";
 export const DRIVE_CATALOGO_ROBO = "https://docs.google.com/document/d/1biJnHno8lr8_QvGITMPB0aSlw0fpE9il4kpoolfMUnI/edit?usp=sharing";
 
 // Link para a franqueada COPIAR o cardápio (Nelson, 17/09/2026). É um link de edição: a
