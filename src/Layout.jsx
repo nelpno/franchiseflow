@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, Navigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -68,6 +69,12 @@ const navigationItems = [
     materialIcon: "query_stats",
     roles: ["admin", "manager", "customer_success"],
     adminNav: "main",
+    // Ao passar o mouse/tocar: baixa a tela e os números de 7 dias antes do clique (import dinâmico: nada disso
+    // entra no pacote que o franqueado baixa).
+    prefetch: (queryClient) => {
+      import("./pages/CanaisVenda").catch(() => {});
+      import("@/entities/canaisVenda").then((m) => m.prefetchCanaisVenda(queryClient, "7d")).catch(() => {});
+    },
   },
   {
     title: "Customer Success",
@@ -333,6 +340,7 @@ function isNavItemActive(item, { pathname, search, currentPageName, uiV2 }) {
 }
 
 export default function Layout({ children, currentPageName }) {
+  const queryClient = useQueryClient();
   const location = useLocation();
   const { logout, user: currentUser, selectedFranchise, setSelectedFranchise, welcomeSeen } = useAuth();
   const [onboardingApproved, setOnboardingApproved] = useState(false);
@@ -568,6 +576,9 @@ export default function Layout({ children, currentPageName }) {
             className="flex items-center gap-3"
             aria-current={isActive ? "page" : undefined}
             onClick={uiV2 && isMobile ? fecharMaisAoClicar : undefined}
+            onMouseEnter={item.prefetch ? () => item.prefetch(queryClient) : undefined}
+            onFocus={item.prefetch ? () => item.prefetch(queryClient) : undefined}
+            onTouchStart={item.prefetch ? () => item.prefetch(queryClient) : undefined}
           >
             <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} aria-hidden="true" />
             <span className="text-sm flex-1">{item.title}</span>

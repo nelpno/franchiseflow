@@ -10,7 +10,7 @@ import { CARTAO, LINK_ACAO } from "@/components/shared/adminUi";
 import { formatPct } from "@/lib/formatters";
 import { useCanaisVenda } from "@/entities/canaisVenda";
 import { conversaoRobo, participacao, resumoAdesao, sinaisUnidade, textoFatia } from "@/lib/canaisVenda";
-import { brl, n, trecho, contraTexto, Comparacao } from "./canaisUi";
+import { brl, n, trecho, Comparacao } from "./canaisUi";
 
 const CANAIS = [
   { id: "robo", rotulo: "Robô", rs: "rs_robo", vendas: "vendas_robo" },
@@ -19,11 +19,10 @@ const CANAIS = [
 ];
 
 export default function CanaisResumoCard() {
-  const q = useCanaisVenda(7);
+  const q = useCanaisVenda("7d");
   const d = q.data;
   const a = d?.rede?.atual;
   const p = d?.rede?.anterior;
-  const contra = contraTexto(d);
   const fatia = useMemo(() => participacao(a), [a]);
   const ades = resumoAdesao(d?.adesao);
   const comSinal = useMemo(
@@ -35,12 +34,12 @@ export default function CanaisResumoCard() {
     <SectionTitle
       id="canais-hoje"
       titulo="Canais de venda"
-      ajuda={d ? `Últimos 7 dias, ${trecho(d.inicio, d.fim)} até agora` : "Últimos 7 dias"}
+      ajuda={d ? `Últimos 7 dias, ${trecho(d.inicio, d.fim)}` : "Últimos 7 dias"}
       acao={<Link to="/CanaisVenda" state={{ from: "hoje" }} className={LINK_ACAO}>Ver por unidade →</Link>}
     />
   );
 
-  if (q.isLoading) {
+  if (q.isLoading && !d) {
     return (
       <section className="space-y-3" aria-labelledby="canais-hoje">
         {titulo}
@@ -75,7 +74,7 @@ export default function CanaisResumoCard() {
               {n(a[c.vendas])} {Number(a[c.vendas]) === 1 ? "venda" : "vendas"}
               {fatia ? ` · ${textoFatia(fatia[c.id])} do total` : ""}
             </p>
-            <Comparacao atual={a[c.rs]} anterior={p?.[c.rs]} contra={contra} />
+            <Comparacao atual={a[c.rs]} anterior={p?.[c.rs]} dados={d} />
           </div>
         ))}
       </div>

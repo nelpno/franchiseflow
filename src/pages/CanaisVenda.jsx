@@ -1,7 +1,7 @@
 // Canais de venda (admin/gerente/CS, 10/11/2026): robô × cardápio digital × lançada à mão, na rede e por
-// unidade, em 7 ou 30 dias contra o mesmo tanto antes. Dados: get_admin_canais_venda (useCanaisVenda);
+// unidade, em 7 dias / este mês / mês anterior (como as outras telas: mês contra o mesmo trecho do anterior). Dados: get_admin_canais_venda (useCanaisVenda);
 // regras de atribuição, sinais e ordenação em src/lib/canaisVenda.js. Filtro, ordem e período na URL (F8).
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import PageHeader from "@/components/shared/PageHeader";
@@ -13,24 +13,25 @@ import {
 } from "@/components/shared/adminUi";
 import { formatPct } from "@/lib/formatters";
 import { nomeCurto } from "@/lib/networkOverview";
-import { useCanaisVenda } from "@/entities/canaisVenda";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCanaisVenda, prefetchCanaisVenda } from "@/entities/canaisVenda";
 import { useAuth } from "@/lib/AuthContext";
 import {
   PERIODOS, periodoValido, filtroValido, ordemValida, FILTROS_LISTA, ORDENS, ESTADOS_CARDAPIO,
   totalRs, totalVendas, conversaoRobo, participacao, resumoAdesao, sinaisUnidade, ordenarUnidades, textoFatia,
   MIN_VISITAS_SEM_PEDIDO, MIN_PEDIDOS, MIN_CONTATOS_ROBO, QUEDA_CONVERSAO_PP, QUEDA_CONVERSAO_REL, DIAS_LIGADO_SEM_VISITA,
 } from "@/lib/canaisVenda";
-import { brl, n, qtd, trecho, contraTexto, Comparacao, ChipSinal } from "@/components/canais/canaisUi";
+import { brl, n, qtd, detalhePeriodo, Comparacao, ChipSinal } from "@/components/canais/canaisUi";
 
 const GRADE = "md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,2fr)_7rem] md:items-center md:gap-4";
 
-function Indicador({ rotulo, valor, apoio, atual, anterior, contra }) {
+function Indicador({ rotulo, valor, apoio, atual, anterior, dados }) {
   return (
     <div className={`${CARTAO} min-w-0`}>
       <p className={`${ROTULO} whitespace-nowrap`}>{rotulo}</p>
       <p className="mt-2 font-plus-jakarta text-xl font-extrabold tabular-nums text-ink min-[400px]:text-2xl sm:text-3xl">{valor}</p>
       {apoio && <p className="mt-1 text-sm tabular-nums text-ink-2">{apoio}</p>}
-      <Comparacao atual={atual} anterior={anterior} contra={contra} />
+      <Comparacao atual={atual} anterior={anterior} dados={dados} />
     </div>
   );
 }
@@ -101,26 +102,48 @@ function LinhaUnidade({ u, voltarPara }) {
   );
 }
 
+const horaGerado = (d) => {
+  const t = Date.parse(d?.gerado_em || "");
+  return Number.isFinite(t)
+    ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(t))
+    : "antes";
+};
+
 export default function CanaisVenda() {
   const location = useLocation();
   const { user } = useAuth();
   // A página do cardápio (lista de adesão) abre só para admin/gerente; o CS vê a contagem aqui.
   const veCardapio = user?.role === "admin" || user?.role === "manager";
   const [params, setParams] = useSearchParams();
-  const dias = periodoValido(params.get("dias"));
+  // ?periodo=7d|mes|mes_anterior; o ?dias=30 antigo vira "mes"
+  const periodo = periodoValido(params.get("periodo") || params.get("dias"));
+  const queryClient = useQueryClient();
   const filtro = filtroValido(params.get("filtro"));
   const ordem = ordemValida(params.get("ordem"));
-  const q = useCanaisVenda(dias);
+  const q = useCanaisVenda(periodo);
   const d = q.data;
   const a = d?.rede?.atual;
   const p = d?.rede?.anterior;
-  const contra = contraTexto(d);
 
   const mudar = (chave, valor, padrao) => {
     const np = new URLSearchParams(params);
     if (valor === padrao) np.delete(chave); else np.set(chave, String(valor));
     setParams(np, { replace: true, state: location.state });
   };
+  const mudarPeriodo = (id) => {
+    const np = new URLSearchParams(params);
+    np.delete("dias");
+    if (id === "7d") np.delete("periodo"); else np.set("periodo", id);
+    setParams(np, { replace: true, state: location.state });
+  };
+  // Mostrando o período anterior enquanto o novo chega (placeholder) ou a cópia local antiga sendo renovada.
+  const atualizando = q.isFetching && (q.isPlaceholderData || d?.periodo !== periodo);
+  // Com a tela pronta, já busca os outros períodos: trocar fica instantâneo.
+  const pronto = !!d && !q.isPlaceholderData;
+  useEffect(() => {
+    if (!pronto) return;
+    PERIODOS.filter((x) => x.id !== periodo).forEach((x) => prefetchCanaisVenda(queryClient, x.id));
+  }, [pronto, periodo, queryClient]);
 
   const unidades = d?.unidades || [];
   const agora = useMemo(() => new Date(), [d]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -139,12 +162,13 @@ export default function CanaisVenda() {
   const convP = conversaoRobo(p);
   const voltar = location.state?.from === "hoje" ? { to: "/Dashboard", label: "Hoje" } : undefined;
 
-  const periodo = (
+  const seletorPeriodo = (
     <div className="flex gap-2" role="group" aria-label="Período">
       {PERIODOS.map((x) => (
-        <button key={x} type="button" aria-pressed={dias === x} onClick={() => mudar("dias", x, 7)}
-          className={`${CHIP} ${dias === x ? CHIP_ATIVO : CHIP_INATIVO}`}>
-          {x} dias
+        <button key={x.id} type="button" aria-pressed={periodo === x.id} onClick={() => mudarPeriodo(x.id)}
+          onMouseEnter={() => prefetchCanaisVenda(queryClient, x.id)}
+          className={`${CHIP} ${periodo === x.id ? CHIP_ATIVO : CHIP_INATIVO}`}>
+          {x.rotulo}
         </button>
       ))}
     </div>
@@ -156,11 +180,11 @@ export default function CanaisVenda() {
         voltar={voltar}
         titulo="Canais de venda"
         subtitulo="Quanto a rede vende pelo robô, pelo cardápio digital e lançado à mão, e onde agir."
-        situacao={d ? `${trecho(d.inicio, d.fim)} até agora, contra ${contra}` : undefined}
-        acao={periodo}
+        situacao={d ? (atualizando ? "Atualizando…" : q.isError ? `Não deu para atualizar; números de ${horaGerado(d)}` : detalhePeriodo(d)) : undefined}
+        acao={seletorPeriodo}
       />
 
-      {q.isLoading ? (
+      {q.isLoading && !d ? (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className={`h-32 rounded-2xl motion-reduce:animate-none ${i === 0 ? "col-span-2 md:col-span-1" : ""}`} />)}
@@ -171,19 +195,19 @@ export default function CanaisVenda() {
           </div>
           {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-xl motion-reduce:animate-none" />)}
         </>
-      ) : q.isError || !a ? (
+      ) : !a ? (
         <ErrorState cartao texto="Os números dos canais de venda não vieram agora." onTentarNovamente={() => q.refetch()} />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-canais-indicadores>
             <Indicador rotulo="Total" valor={brl(totalRs(a))} apoio={qtd(totalVendas(a), "venda", "vendas")}
-              atual={totalRs(a)} anterior={totalRs(p)} contra={contra} />
+              atual={totalRs(a)} anterior={totalRs(p)} dados={d} />
             <Indicador rotulo="Robô" valor={brl(a.rs_robo)} apoio={fatia ? `${textoFatia(fatia.robo)} · ${qtd(a.vendas_robo, "venda", "vendas")}` : qtd(a.vendas_robo, "venda", "vendas")}
-              atual={a.rs_robo} anterior={p?.rs_robo} contra={contra} />
+              atual={a.rs_robo} anterior={p?.rs_robo} dados={d} />
             <Indicador rotulo="Cardápio" valor={brl(a.rs_cardapio)} apoio={fatia ? `${textoFatia(fatia.cardapio)} · ${qtd(a.vendas_cardapio, "venda", "vendas")}` : qtd(a.vendas_cardapio, "venda", "vendas")}
-              atual={a.rs_cardapio} anterior={p?.rs_cardapio} contra={contra} />
+              atual={a.rs_cardapio} anterior={p?.rs_cardapio} dados={d} />
             <Indicador rotulo="À mão" valor={brl(a.rs_manual)} apoio={fatia ? `${textoFatia(fatia.manual)} · ${qtd(a.vendas_manual, "venda", "vendas")}` : qtd(a.vendas_manual, "venda", "vendas")}
-              atual={a.rs_manual} anterior={p?.rs_manual} contra={contra} />
+              atual={a.rs_manual} anterior={p?.rs_manual} dados={d} />
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -268,7 +292,7 @@ export default function CanaisVenda() {
               <li><b>Pessoas que escreveram</b>: telefones diferentes que mandaram mensagem à unidade no período (disparo da franqueada não entra), sem quem mandou pedido do cardápio. <b>Compraram</b>: venda do mesmo telefone, de qualquer origem, lançada depois da 1ª mensagem e dentro do período.</li>
               <li><b>Visitas</b>: aberturas do link do cardápio (sem os testes). <b>Pedidos montados</b>: pedidos enviados pelo cardápio; <b>chegaram</b>: o código #PED- apareceu numa mensagem recebida pela unidade. Se o cliente apagar o código, o pedido não é contado.</li>
               <li><b>Sinais</b>: cardápio ligado há {DIAS_LIGADO_SEM_VISITA}+ dias sem visita; {MIN_VISITAS_SEM_PEDIDO}+ visitas e nenhum pedido; {MIN_PEDIDOS}+ pedidos montados sem chegar no WhatsApp; {MIN_PEDIDOS}+ pedidos que chegaram sem venda; conversão do robô {QUEDA_CONVERSAO_PP}+ pontos e {Math.round(QUEDA_CONVERSAO_REL * 100)}%+ abaixo do período anterior (com {MIN_CONTATOS_ROBO}+ pessoas nos dois).</li>
-              <li>Comparação: os {dias} dias até agora contra os {dias} dias antes, cortados na mesma hora (hoje ainda está em andamento). Venda com data futura (o robô grava a data da entrega) só entra quando a data chega.</li>
+              <li>Comparação, como nas outras telas: <b>7 dias</b> contra os 7 antes e <b>este mês</b> contra o mesmo trecho do mês anterior, os dois cortados na mesma hora de agora (hoje ainda está em andamento); <b>mês anterior</b> contra o mês antes dele, inteiros. &quot;Novo&quot; = não havia nada para comparar. As datas exatas ficam na linha de cima, ao lado do período. Venda com data futura (o robô grava a data da entrega) só entra quando a data chega.</li>
               <li>&quot;Compraram&quot; inclui cliente antigo que escreveu e comprou de novo: mede a conversa que vira venda, não só cliente novo.</li>
             </ul>
           </details>

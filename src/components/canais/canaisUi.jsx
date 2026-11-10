@@ -1,6 +1,6 @@
 // Peças pequenas da tela Canais de venda (cartão do Hoje e página CanaisVenda).
-import { formatBRLInteger, formatPct } from "@/lib/formatters";
-import { variacaoPct } from "@/lib/canaisVenda";
+import { formatBRLInteger } from "@/lib/formatters";
+import { baseComparacao, comparacaoCurta } from "@/lib/canaisVenda";
 
 export const n = (v) => (Number(v) || 0).toLocaleString("pt-BR");
 export const brl = (v) => formatBRLInteger(v);
@@ -23,11 +23,12 @@ const horaBR = (iso) => {
   if (!Number.isFinite(t)) return "";
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }).format(new Date(t)).replace(":", "h");
 };
-/** "28/10 a 03/11 até 18h33": o período anterior é cortado na mesma hora de agora (RPC: corte_anterior). */
-export const contraTexto = (d) => {
+/** Letra miúda / dica: "01 a 10/11 até agora · base 01 a 10/10 até 20h39" (as datas só aqui, não na comparação). */
+export const detalhePeriodo = (d) => {
   if (!d) return "";
   const h = horaBR(d.corte_anterior);
-  return `${trecho(d.inicio_anterior, d.fim_anterior)}${h ? ` até ${h}` : ""}`;
+  const agora = d.fim === d.hoje ? " até agora" : "";
+  return `${trecho(d.inicio, d.fim)}${agora} · base ${trecho(d.inicio_anterior, d.fim_anterior)}${h ? ` até ${h}` : ""}`;
 };
 
 export const TOM_SINAL = {
@@ -35,14 +36,20 @@ export const TOM_SINAL = {
   warn: "bg-warn-soft text-warn-ink",
 };
 
-/** K7: só o número ganha cor. `semBase` quando o anterior é 0. */
-export function Comparacao({ atual, anterior, contra, className = "mt-1 text-sm text-ink-2" }) {
-  const v = variacaoPct(atual, anterior);
-  if (v === null) return <p className={className}>Sem vendas {contra ? `em ${contra}` : "no período anterior"}</p>;
-  const cor = v > 0.05 ? "text-ok-ink" : v < -0.05 ? "text-err" : "text-ink";
+const COR_COMPARACAO = { ok: "text-ok-ink", err: "text-err", neutro: "text-ink" };
+
+/**
+ * K7: só o número ganha cor. Curta: "+16% vs. semana anterior"; sem base: "novo" (agora tem) ou "—".
+ * As datas exatas vão no `title` (dica ao passar o mouse) e na letra miúda do cabeçalho.
+ */
+export function Comparacao({ atual, anterior, dados, className = "mt-1 text-sm text-ink-2" }) {
+  const c = comparacaoCurta(atual, anterior);
+  const base = baseComparacao(dados);
+  const semBase = c.texto === "novo" || c.texto === "—";
   return (
-    <p className={className}>
-      <span className={`font-semibold ${cor}`}>{formatPct(v, { sinal: true })}</span> contra {contra}
+    <p className={className} title={detalhePeriodo(dados)}>
+      <span className={`font-semibold ${COR_COMPARACAO[c.tom]}`}>{c.texto}</span>
+      {!semBase && base ? ` vs. ${base}` : ""}
     </p>
   );
 }

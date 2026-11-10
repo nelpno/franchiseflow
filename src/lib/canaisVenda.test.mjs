@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {
   totalRs, totalVendas, conversaoRobo, variacaoPct, participacao, resumoAdesao, sinaisUnidade,
-  ordenarUnidades, periodoValido, filtroValido, ordemValida, FILTROS_LISTA, textoFatia,
+  ordenarUnidades, periodoValido, filtroValido, ordemValida, FILTROS_LISTA, textoFatia, comparacaoCurta, baseComparacao,
 } from "./canaisVenda.js";
 
 let passed = 0;
@@ -98,9 +98,23 @@ test("ordenação: R$, conversão (sem base no fim), queda, nome", () => {
   assert.deepEqual(lista.map((u) => u.nome), ["C", "A", "B"]); // não muda o original
 });
 
+test("comparação curta e com o que compara", () => {
+  assert.deepEqual(comparacaoCurta(116, 100), { texto: "+16%", tom: "ok" });
+  assert.deepEqual(comparacaoCurta(92, 100), { texto: "−8%", tom: "err" });
+  assert.deepEqual(comparacaoCurta(491, 0), { texto: "novo", tom: "neutro" });
+  assert.deepEqual(comparacaoCurta(0, 0), { texto: "—", tom: "neutro" });
+  assert.deepEqual(comparacaoCurta(100.2, 100), { texto: "0%", tom: "neutro" });
+  assert.equal(baseComparacao({ periodo: "7d" }), "semana anterior");
+  assert.equal(baseComparacao({ periodo: "mes", inicio_anterior: "2026-10-01", corte_anterior: "2026-10-10T23:39:00Z" }), "mesmo trecho de outubro");
+  assert.equal(baseComparacao({ periodo: "mes", inicio_anterior: "2026-02-01", corte_anterior: null }), "fevereiro");
+  assert.equal(baseComparacao({ periodo: "mes_anterior", inicio_anterior: "2026-09-01" }), "setembro");
+});
+
 test("parâmetros da URL inválidos caem no padrão", () => {
-  assert.equal(periodoValido("30"), 30);
-  assert.equal(periodoValido("90"), 7);
+  assert.equal(periodoValido("mes"), "mes");
+  assert.equal(periodoValido("30"), "mes");
+  assert.equal(periodoValido("7"), "7d");
+  assert.equal(periodoValido("90"), "7d");
   assert.equal(filtroValido("x"), "todas");
   assert.equal(ordemValida("x"), "rs");
 });

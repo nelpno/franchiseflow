@@ -2,11 +2,16 @@
 -- Função NOVA (não existia: sem backup de corpo). Tela: src/components/canais/* (Hoje + página CanaisVenda).
 --
 -- ROLLBACK:
---   drop function if exists public.get_admin_canais_venda(integer);
+--   drop function if exists public.get_admin_canais_venda(text, integer);
+--   (versão 10c, períodos: voltar à de 7/30 dias = o drop acima + reaplicar docs/db-backups/get_admin_canais_venda.2026-11-10c-antes.sql)
 --   (versão 10b, adesão leve: voltar à anterior = reaplicar docs/db-backups/get_admin_canais_venda.2026-11-10b-antes.sql)
 --
--- Período em datas de Brasília: últimos p_dias dias contando hoje (7 ou 30) e o mesmo tanto antes, este cortado na
--- mesma hora de agora (corte_anterior = now() − N dias). Venda com sale_date futura (o robô grava a data da entrega)
+-- Período (10c, igual às outras telas do admin), em datas de Brasília:
+--   '7d'           = últimos 7 dias contando hoje × os 7 antes, cortados na mesma hora de agora (corte_anterior);
+--   'mes'          = 1º do mês até agora × o mesmo trecho do mês anterior, até a mesma hora (dia que o mês anterior
+--                    não tem = mês anterior inteiro);
+--   'mes_anterior' = mês passado inteiro × o mês antes dele inteiro (sem corte).
+--   p_dias é legado (front antigo durante o deploy): 30 = 'mes', o resto = '7d'. Venda com sale_date futura (o robô grava a data da entrega)
 -- só entra quando a data chega.
 -- Regras (as mesmas do funil do cardápio, site/pedido/supabase/funil.sql, e da cardapio_resultado):
 --   * telefone casado por normalize_phone_key (DDD + 8 últimos dígitos: pega o 9º dígito faltando);
@@ -28,7 +33,9 @@
 --   = 'sem_config' (a cardapio_adesao a deixa de fora; aqui ela conta no total).
 -- Sem PII: nenhum telefone, nome de cliente ou dono na resposta (só unidade).
 
-create or replace function public.get_admin_canais_venda(p_dias integer default 7)
+drop function if exists public.get_admin_canais_venda(integer);
+
+create or replace function public.get_admin_canais_venda(p_periodo text default null, p_dias integer default null)
 returns jsonb
 language plpgsql
 stable
@@ -36,10 +43,14 @@ security definer
 set search_path = public
 as $$
 declare
-  v_n int := case when p_dias = 30 then 30 else 7 end;
-  v_hoje date := (now() at time zone 'America/Sao_Paulo')::date;
+  v_per text := case when p_periodo in ('7d', 'mes', 'mes_anterior') then p_periodo when p_dias = 30 then 'mes' else '7d' end;
+  v_agora timestamp := now() at time zone 'America/Sao_Paulo';
+  v_hoje date := v_agora::date;
   v_ini date;
+  v_fim date;
   v_pini date;
+  v_pfim date;
+  v_corta boolean;
   t_pini timestamptz;
   t_ini timestamptz;
   t_fim timestamptz;
@@ -53,13 +64,24 @@ begin
     raise exception 'sem permissão' using errcode = '42501';
   end if;
 
-  v_ini  := v_hoje - (v_n - 1);
-  v_pini := v_ini - v_n;
+  if v_per = '7d' then
+    v_ini := v_hoje - 6; v_fim := v_hoje; v_pini := v_hoje - 13; v_pfim := v_hoje - 7; v_corta := true;
+  elsif v_per = 'mes' then
+    v_ini := date_trunc('month', v_hoje)::date; v_fim := v_hoje;
+    v_pini := (v_ini - interval '1 month')::date;
+    v_pfim := least(v_pini + (v_hoje - v_ini), v_ini - 1);   -- 31/03 contra fevereiro = fevereiro inteiro
+    v_corta := (v_pini + (v_hoje - v_ini)) <= v_ini - 1;
+  else
+    v_ini := (date_trunc('month', v_hoje) - interval '1 month')::date; v_fim := date_trunc('month', v_hoje)::date - 1;
+    v_pini := (v_ini - interval '1 month')::date; v_pfim := v_ini - 1; v_corta := false;
+  end if;
   t_pini := v_pini::timestamp at time zone 'America/Sao_Paulo';
   t_ini  := v_ini::timestamp at time zone 'America/Sao_Paulo';
-  t_fim  := (v_hoje + 1)::timestamp at time zone 'America/Sao_Paulo';
-  -- período anterior cortado na MESMA hora de agora (hoje está pela metade: 7 dias inteiros contra 6,5 puxava tudo para baixo)
-  t_pfim := now() - make_interval(days => v_n);
+  t_fim  := (v_fim + 1)::timestamp at time zone 'America/Sao_Paulo';
+  -- período anterior que termina "hoje" cortado na MESMA hora de agora (hoje está pela metade: dia inteiro contra meio dia
+  -- puxava tudo para baixo); sem corte, vai até o fim do último dia
+  t_pfim := case when v_corta then (v_pfim + v_agora::time)::timestamp at time zone 'America/Sao_Paulo'
+                 else (v_pfim + 1)::timestamp at time zone 'America/Sao_Paulo' end;
 
   with u as (
     select f.id fid, f.evolution_instance_id evo, f.name nome, fc.cardapio_digital_slug slug,
@@ -115,7 +137,7 @@ begin
      cross join lateral (select ltrim(regexp_replace(coalesce(s.contact_phone, ''), '\D', '', 'g'), '0') x) n1
      cross join lateral (select case when length(n1.x) in (12, 13) and n1.x like '55%' then substr(n1.x, 3) else n1.x end y) n2
      where s.franchise_id in (select evo from u)
-       and (s.sale_date between v_pini and v_hoje
+       and (s.sale_date between v_pini and v_fim
             or (s.created_at >= t_pini - interval '3 days' and s.created_at < t_fim + interval '3 days'))
   ),
   casada as (
@@ -133,8 +155,8 @@ begin
     select v.*, case when v.sale_date >= v_ini then 'cur' else 'prev' end per,
            case when vc.id is not null then 'cardapio' when v.source = 'bot' then 'robo' else 'manual' end canal
       from vendas v left join venda_card vc on vc.id = v.id
-     where v.sale_date between v_pini and v_hoje
-       and not (v.sale_date = v_ini - 1 and v.created_at >= t_pfim)
+     where (v.sale_date between v_ini and v_fim or v.sale_date between v_pini and v_pfim)
+       and not (v_corta and v.sale_date = v_pfim and v.created_at >= t_pfim)
   ),
   -- contatos que escreveram, por período
   -- (índice idx_conv_msg_in_cover: só lê o índice; normaliza o telefone DEPOIS de agrupar, é a parte cara)
@@ -238,9 +260,9 @@ begin
      group by 1
   )
   select jsonb_build_object(
-    'dias', v_n,
-    'inicio', v_ini, 'fim', v_hoje, 'inicio_anterior', v_pini, 'fim_anterior', v_ini - 1,
-    'corte_anterior', t_pfim,
+    'periodo', v_per, 'hoje', v_hoje,
+    'inicio', v_ini, 'fim', v_fim, 'inicio_anterior', v_pini, 'fim_anterior', v_pfim,
+    'corte_anterior', case when v_corta then t_pfim end,
     'gerado_em', now(),
     'rede', jsonb_build_object('atual', (select m from rede where per = 'cur'), 'anterior', (select m from rede where per = 'prev')),
     -- todas as unidades da lista (u), inclusive sem configuração: o total bate com a lista por unidade
@@ -254,5 +276,5 @@ begin
 end;
 $$;
 
-revoke execute on function public.get_admin_canais_venda(integer) from public, anon;
-grant execute on function public.get_admin_canais_venda(integer) to authenticated, service_role;
+revoke execute on function public.get_admin_canais_venda(text, integer) from public, anon;
+grant execute on function public.get_admin_canais_venda(text, integer) to authenticated, service_role;

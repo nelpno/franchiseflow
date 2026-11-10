@@ -6,8 +6,43 @@
 //   cardápio = venda casada a um pedido #PED- que chegou no WhatsApp (mesmo telefone, até 72 h), fechada
 //              pelo robô ou lançada à mão; robô = source 'bot' que não é do cardápio; à mão = o resto.
 
-export const PERIODOS = [7, 30];
-export const periodoValido = (v) => (Number(v) === 30 ? 30 : 7);
+import { MESES } from "./adminFormat.js";
+
+// Períodos iguais às outras telas do admin (10/11/2026): mês até agora contra o mesmo trecho do mês anterior.
+export const PERIODOS = [
+  { id: "7d", rotulo: "7 dias" },
+  { id: "mes", rotulo: "Este mês" },
+  { id: "mes_anterior", rotulo: "Mês anterior" },
+];
+/** Aceita o id; legado da URL/API: 30 → "mes", 7 → "7d". */
+export function periodoValido(v) {
+  if (PERIODOS.some((p) => p.id === v)) return v;
+  return String(v) === "30" ? "mes" : "7d";
+}
+
+const nomeDoMes = (iso) => MESES[Number(String(iso || "").slice(5, 7)) - 1] || "";
+
+/** Com o que o período é comparado, em poucas palavras: "semana anterior", "mesmo trecho de outubro", "setembro". */
+export function baseComparacao(d) {
+  if (!d) return "";
+  if (d.periodo === "7d") return "semana anterior";
+  const mes = nomeDoMes(d.inicio_anterior);
+  if (d.periodo === "mes") return d.corte_anterior ? `mesmo trecho de ${mes}` : mes;
+  return mes;
+}
+
+/**
+ * Comparação curta de um número: { texto: "+16%" | "−8%" | "novo" | "—", tom: "ok" | "err" | "neutro" }.
+ * Sem base (anterior 0): "novo" se agora tem, "—" se nem agora.
+ */
+export function comparacaoCurta(atual, anterior) {
+  const a = num(atual), p = num(anterior);
+  if (p <= 0) return a > 0 ? { texto: "novo", tom: "neutro" } : { texto: "—", tom: "neutro" };
+  const v = ((a - p) / p) * 100;
+  const r = Math.round(Math.abs(v));
+  if (r === 0) return { texto: "0%", tom: "neutro" };
+  return v > 0 ? { texto: `+${r}%`, tom: "ok" } : { texto: `−${r}%`, tom: "err" };
+}
 
 // Limiares dos sinais (mudou aqui, mude o texto do rodapé da página).
 export const MIN_VISITAS_SEM_PEDIDO = 15;
