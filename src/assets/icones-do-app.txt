@@ -166,6 +166,7 @@ repeat
 replay
 request_quote
 restaurant
+restaurant_menu
 rocket_launch
 rule
 save
@@ -199,6 +200,7 @@ support_agent
 sync
 sync_problem
 tab
+tablet
 task
 task_alt
 timer

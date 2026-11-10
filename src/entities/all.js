@@ -635,3 +635,37 @@ export async function getFeatureFlags(franchiseId, { signal } = {}) {
   if (error) throw error;
   return data || {};
 }
+
+// ---- Cardápio digital (área da franqueada, 10/11/2026; site/pedido/supabase/2026-11-10-cardapio-painel.sql) ----
+// Guard no banco: admin/gerente ou a própria unidade. Erro de regra (promoção, WhatsApp, link) volta com a frase
+// pronta para a tela (errcode 22023/42501); o resto vira mensagem genérica em quem chama (safeErrorMessage).
+export async function getCardapioPainel(franchiseId, { signal } = {}) {
+  let query = supabase.rpc('cardapio_painel', { p_evo: franchiseId });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data;
+}
+
+export async function getCardapioResultado(franchiseId, dias, { signal } = {}) {
+  let query = supabase.rpc('cardapio_resultado', { p_evo: franchiseId, p_dias: dias });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data;
+}
+
+// campos: { ativo?: boolean, link_bio?: boolean, promocao_regras?: array }. Devolve o cardapio_painel novo.
+export async function cardapioConfigurar(franchiseId, campos) {
+  const { data, error } = await withTimeout(
+    supabase.rpc('cardapio_configurar', { p_evo: franchiseId, p_campos: campos }), QUERY_TIMEOUT_MS);
+  if (error) throw error;
+  return data;
+}
+
+export async function cardapioProdutosVisiveis(franchiseId, ids, visivel) {
+  const { data, error } = await withTimeout(
+    supabase.rpc('cardapio_produtos_visiveis', { p_evo: franchiseId, p_ids: ids, p_visivel: visivel }), QUERY_TIMEOUT_MS);
+  if (error) throw error;
+  return data;
+}

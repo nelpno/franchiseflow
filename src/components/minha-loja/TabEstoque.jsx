@@ -297,7 +297,10 @@ export default function TabEstoque({
       valorVenda: somar("sale_price"),
     };
   }, [uiV2, items, infoV2, ritmoV2, sugestaoPronta, pedidosUnidade.emAberto, pedidosUnidade.intervalo.dias]);
-  const [filtroV2, setFiltroV2] = useState("todos");
+  // ?nivel=zerado (link do Cardápio digital, 10/11/2026) abre já no filtro "Acabando".
+  const [filtroV2, setFiltroV2] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get("nivel") === "zerado" ? "acabando" : "todos"; } catch { return "todos"; }
+  });
   const [itemAbertoId, setItemAbertoId] = useState(null);
   const itemAberto = itemAbertoId ? items.find((i) => i.id === itemAbertoId) || null : null;
 

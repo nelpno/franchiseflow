@@ -130,6 +130,17 @@ const navigationItems = [
     franchiseeOnly: true,
   },
   {
+    // Cardápio digital (10/11/2026, piloto Imirim): só para a unidade com a chave
+    // cardapio_digital ligada; admin/gerente veem sempre (em "Mais", escolhem a unidade).
+    title: "Cardápio digital",
+    url: createPageUrl("CardapioDigital"),
+    materialIcon: "restaurant_menu",
+    franchiseeOnly: true,
+    showToAdminToo: true,
+    adminNav: "mais",
+    onlyWhenFlag: FEATURE_KEYS.CARDAPIO_DIGITAL,
+  },
+  {
     // Menu novo (S9.1): item direto pro Estoque (a aba já existe dentro de
     // Gestão — só ganha atalho próprio no menu, "Loja" nunca aparece). Some do
     // menu com a chave desligada (Gestão continua cobrindo o mesmo caminho).
@@ -454,6 +465,8 @@ export default function Layout({ children, currentPageName }) {
   // aba. A query key inclui a unidade (`useFeatureFlagState`), então trocar de
   // franquia sempre entra em loading de novo — nunca reaproveita o valor da anterior.
   const { value: uiV2Value, isLoading: uiV2Loading } = useFeatureFlagState(FEATURE_KEYS.UI_V2);
+  // Mesma query/cache da ui_v2 (get_feature_flags devolve todas as chaves da unidade): não custa outra chamada.
+  const { value: cardapioDigitalOn } = useFeatureFlagState(FEATURE_KEYS.CARDAPIO_DIGITAL);
   const uiV2 = uiV2Value && !isAdmin && !isCS;
   const uiV2Pending = uiV2Loading && !isAdmin && !isCS;
   // "?" de ajuda no topo (S10.2, 28/09/2026): mapa PURO rota → guia (ajudaRotaGuia.js,
@@ -481,6 +494,8 @@ export default function Layout({ children, currentPageName }) {
       // libera o item pro franqueado mesmo com a chave desligada (bug real, pego
       // no print do S9: "Estoque" aparecia na sidebar com ui_v2 OFF).
       if (item.onlyWhenV2 && !uiV2) return false;
+      // Item atrás de uma chave por unidade (Cardápio digital): o franqueado só vê com ela ligada.
+      if (item.onlyWhenFlag === FEATURE_KEYS.CARDAPIO_DIGITAL && !isAdmin && !cardapioDigitalOn) return false;
       // franchiseeOnly some pro admin — exceto os marcados showToAdminToo (Vendas,
       // Gestão, Meus Clientes: o admin usa essas telas de franqueado e ficam em "Mais")
       if (item.franchiseeOnly) return !isAdmin || item.showToAdminToo === true;

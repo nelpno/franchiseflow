@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { FranchiseConfiguration, User, salvarFreteEstruturado } from "@/entities/all";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -205,6 +205,8 @@ function FranchiseSettingsContent() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editingConfig, setEditingConfig] = useState(null);
+  // Promoção estruturada do Cardápio digital ativa: o texto de promoções vira só leitura (o banco gera).
+  const promocaoDoCardapio = Array.isArray(editingConfig?.promocao_regras) && editingConfig.promocao_regras.length > 0;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [isDirty, setIsDirty] = useState(false);
@@ -1402,8 +1404,18 @@ function FranchiseSettingsContent() {
               </div>
               <div>
                 <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa) <HelpTip tip="promocoes" /></label>
-                <textarea className={`${inputClass} resize-y min-h-[120px]`} rows={5} maxLength={1500} value={formData.promotions_combo || ''}
-                  onChange={(e) => handleInputChange('promotions_combo', e.target.value)}
+                {/* Cardápio digital (10/11/2026): com promoção estruturada, o texto é GERADO pelo banco (trigger
+                    franchise_configurations_promocao_texto) e qualquer edição aqui seria sobrescrita. */}
+                {promocaoDoCardapio && (
+                  <p className="text-xs text-ink-2 mb-1 flex items-start gap-1">
+                    <MaterialIcon icon="info" size={14} className="mt-0.5 shrink-0" />
+                    <span>Gerado pela Promoção do cardápio. Para escrever à mão, encerre a promoção lá. <Link to="/CardapioDigital" className="font-semibold text-brand-dark hover:underline">Abrir o Cardápio digital →</Link></span>
+                  </p>
+                )}
+                <textarea className={`${inputClass} resize-y min-h-[120px] ${promocaoDoCardapio ? 'bg-surface-2 text-ink-2' : ''}`} rows={5} maxLength={1500}
+                  value={promocaoDoCardapio ? (editingConfig?.promotions_combo || '') : (formData.promotions_combo || '')}
+                  readOnly={promocaoDoCardapio}
+                  onChange={(e) => { if (!promocaoDoCardapio) handleInputChange('promotions_combo', e.target.value); }}
                   placeholder="Ex: COMBO 1 (serve 5): 1 nhoque muçarela + 1 canelone brócolis — R$ 74,90&#10;COMBO 2 (serve 8): ... — R$ 99,90&#10;Pagamento via PIX." />
                 <FieldHint text={`Use SÓ para ofertas ATIVAS: combo, brinde, desconto. Frete por bairro, horário, endereço e ingrediente têm lugar próprio (toque no ?). DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
                 {(() => {
