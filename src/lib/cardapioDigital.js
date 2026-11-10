@@ -211,6 +211,7 @@ const FRASES_DO_BANCO = [
   "O nome da promoção", "Escolha ", "No máximo", "O mesmo produto", "Quantidade de cada", "O produto \"", "Data de validade",
   "A data de validade", "O kit precisa", "Digite o preço", "O preço do kit", "O desconto passou", "Quantas:", "Desconto:",
   "Uma promoção por vez", "Promoção em formato", "Falta o WhatsApp", "O link do seu cardápio", "O cardápio digital ainda",
+  "Esse horário já passou", "O prazo da entrega",
 ];
 export function mensagemErroCardapio(erro, padrao = "Não deu para salvar. Tente de novo.") {
   const msg = String(erro?.message || "");
@@ -218,4 +219,27 @@ export function mensagemErroCardapio(erro, padrao = "Não deu para salvar. Tente
   if (/Failed to fetch|NetworkError|Tempo limite/i.test(msg)) return "Sem conexão. Confira a internet e tente de novo.";
   if (erro?.code === "42501") return "Sem permissão para mudar o cardápio desta unidade.";
   return padrao;
+}
+
+// Entrega de hoje (v8, 10/11/2026): pausa da entrega e prazo do "o quanto antes" no cardápio.
+// pausaAte = 'AAAA-MM-DDTHH:MI' (Brasília) do cardapio_painel, null = entrega funcionando (o banco já some com a vencida).
+export const PRAZO_PADRAO = 60;
+export function situacaoPausa(pausaAte, hojeISO) {
+  const m = String(pausaAte || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/);
+  if (!m) return { pausada: false, texto: "" };
+  if (m[1] > hojeISO) return { pausada: true, texto: "Entrega pausada hoje. Volta sozinha amanhã." };
+  const hora = `${Number(m[2])}h${m[3] === "00" ? "" : m[3]}`;
+  return { pausada: true, texto: `Entrega pausada até as ${hora}. Volta sozinha.` };
+}
+// valida o campo "pausar até" (HH:MM, depois de agora, hoje); devolve a mensagem de erro ou ""
+export function erroPausaAte(hhmm, agoraMin) {
+  const m = String(hhmm || "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!m) return "Escolha o horário em que a entrega volta.";
+  if (Number(m[1]) * 60 + Number(m[2]) <= agoraMin) return "Esse horário já passou. Escolha um horário mais tarde.";
+  return "";
+}
+export function erroPrazo(v) {
+  const n = Number(v);
+  if (v === "" || v == null || !Number.isInteger(n) || n < 15 || n > 180) return "O prazo da entrega vai de 15 a 180 minutos.";
+  return "";
 }

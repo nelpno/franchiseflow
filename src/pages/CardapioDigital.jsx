@@ -14,6 +14,7 @@ import FranchisePicker from "@/components/shared/FranchisePicker";
 import { LINK_ACAO, PAGINA } from "@/components/shared/adminUi";
 import LinkCard, { PrimeiroUsoCard } from "@/components/cardapio/LinkCard";
 import PendenciasCard from "@/components/cardapio/PendenciasCard";
+import EntregaHojeCard from "@/components/cardapio/EntregaHojeCard";
 import ResultadoCards, { PERIODOS } from "@/components/cardapio/ResultadoCards";
 import PromocaoForm from "@/components/cardapio/PromocaoForm";
 import ProdutosLista from "@/components/cardapio/ProdutosLista";
@@ -51,7 +52,7 @@ export default function CardapioDigital() {
   const queryClient = useQueryClient();
   const promoRef = useRef(null);
   const [franquias, setFranquias] = useState(null);
-  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao"
+  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "pausa" | "prazo"
   const [salvandoIds, setSalvandoIds] = useState(() => new Set());
   // "Mostrar" em voo ({id: visivel}): todo dado que chega do servidor (refetch de foco, resposta de outra gravação) passa
   // por comPendentes, então nunca desfaz um toque que ainda não voltou (code review 10/11/2026)
@@ -145,6 +146,15 @@ export default function CardapioDigital() {
     toast.success("Promoção encerrada.");
     registrarEvento("cardapio_promocao_encerrada");
   });
+  // v8: entrega de hoje (pausa volta sozinha; prazo = tempo de entrega do Meu robô)
+  const pausarEntrega = (quando) => configurar("pausa", { entrega_pausa: quando }, () => {
+    toast.success(quando === null ? "Entrega de volta no cardápio." : quando === "hoje" ? "Entrega pausada hoje. Volta sozinha amanhã." : `Entrega pausada até as ${quando}.`);
+    registrarEvento(quando === null ? "cardapio_entrega_voltou" : "cardapio_entrega_pausada");
+  });
+  const salvarPrazo = (min) => configurar("prazo", { entrega_prazo_min: min }, () => {
+    toast.success(`Prazo salvo: em cerca de ${min} min.`);
+    registrarEvento("cardapio_prazo_salvo");
+  });
   const mostrar = async (ids, visivel) => {
     // só os itens DESTE toque voltam se falhar (os outros toques em voo ficam como estão)
     const antes = new Map((painel?.produtos || []).filter((p) => ids.includes(p.id)).map((p) => [p.id, p.visivel !== false]));
@@ -186,6 +196,8 @@ export default function CardapioDigital() {
       ) : (
         <>
           <LinkCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} />
+          <EntregaHojeCard painel={painel} hojeISO={hoje} salvando={salvando === "pausa" || salvando === "prazo" ? salvando : null}
+            onPausar={pausarEntrega} onPrazo={salvarPrazo} />
           <PendenciasCard itens={itensPendentes} nomeUnidade={painel.nome} onBio={marcarBio} marcandoBio={salvando === "bio"}
             onIrPromocao={() => promoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
           <ResultadoCards dias={dias} onDias={mudarDias} resultado={resultadoQ.data} carregando={resultadoQ.isLoading}

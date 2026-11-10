@@ -107,3 +107,16 @@ import { FILTROS_PRODUTOS, comPendentes } from "./cardapioDigital.js";
   assert.equal(comPendentes(painel, new Map()), painel);
   console.log("cardapioDigital: filtros na mesma base e pendentes ok");
 }
+import { situacaoPausa, erroPausaAte, erroPrazo } from "./cardapioDigital.js";
+{
+  assert.deepEqual(situacaoPausa(null, "2026-11-10"), { pausada: false, texto: "" });
+  assert.equal(situacaoPausa("2026-11-11T00:00", "2026-11-10").texto, "Entrega pausada hoje. Volta sozinha amanhã.");
+  assert.equal(situacaoPausa("2026-11-10T15:30", "2026-11-10").texto, "Entrega pausada até as 15h30. Volta sozinha.");
+  assert.equal(situacaoPausa("2026-11-10T09:00", "2026-11-10").texto, "Entrega pausada até as 9h. Volta sozinha.");
+  assert.equal(erroPausaAte("15:30", 16 * 60), "Esse horário já passou. Escolha um horário mais tarde.");
+  assert.equal(erroPausaAte("17:00", 16 * 60), "");
+  assert.equal(erroPausaAte("", 16 * 60), "Escolha o horário em que a entrega volta.");
+  assert.equal(erroPrazo(50), ""); assert.equal(erroPrazo("50"), ""); assert.notEqual(erroPrazo(10), ""); assert.notEqual(erroPrazo(""), ""); assert.notEqual(erroPrazo(50.5), "");
+  assert.equal(mensagemErroCardapio({ code: "22023", message: "Esse horário já passou. Escolha um horário mais tarde." }), "Esse horário já passou. Escolha um horário mais tarde.");
+  console.log("cardapioDigital: pausa e prazo da entrega ok");
+}
