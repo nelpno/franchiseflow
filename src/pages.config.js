@@ -55,6 +55,7 @@ import Vendas from './pages/Vendas';
 import __Layout from './Layout.jsx';
 
 // Lazy imports — all other pages loaded on demand
+const CanaisVenda = lazy(() => import('./pages/CanaisVenda'));
 const CardapioDigital = lazy(() => import('./pages/CardapioDigital'));
 const CustomerSuccess = lazy(() => import('./pages/CustomerSuccess'));
 const Financeiro = lazy(() => import('./pages/Financeiro'));
@@ -74,6 +75,7 @@ const Unidades = lazy(() => import('./pages/Unidades'));
 
 
 export const PAGES = {
+    "CanaisVenda": CanaisVenda,
     "CardapioDigital": CardapioDigital,
     "CustomerSuccess": CustomerSuccess,
     "Dashboard": Dashboard,

@@ -16,6 +16,7 @@ import ResumoRedeCards from "./hoje/ResumoRedeCards";
 import QuemPrecisaDeVoce from "./hoje/QuemPrecisaDeVoce";
 import PendenciasGrid from "./hoje/PendenciasGrid";
 import MuralResumoCard from "./hoje/MuralResumoCard";
+import CanaisResumoCard from "@/components/canais/CanaisResumoCard";
 import ErrorState from "@/components/shared/ErrorState";
 import { H1, PAGINA } from "@/components/shared/adminUi";
 
@@ -133,6 +134,9 @@ export default function AdminHoje() {
       <ResumoRedeCards resumo={resumo} funil={funil} mes={mesesVerba(overview)?.mes} fatDia={fatDia} />
 
       <QuemPrecisaDeVoce overview={overview} />
+
+      {/* Canais de venda (10/11/2026): robô × cardápio × à mão, 7 dias; carga própria, não trava o Hoje. */}
+      <CanaisResumoCard />
 
       {isAdmin && <PendenciasGrid pending={pending} semVerbaCount={semVerbaCount} overview={overview} />}
 

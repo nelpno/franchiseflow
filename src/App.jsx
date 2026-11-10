@@ -25,7 +25,7 @@ const ADMIN_ONLY_PAGES = new Set([
 ]);
 
 // Páginas liberadas para o papel customer_success (+ admin/manager)
-const CS_PAGES = new Set(['CustomerSuccess', 'Unidades', 'Unidade']);
+const CS_PAGES = new Set(['CustomerSuccess', 'Unidades', 'Unidade', 'CanaisVenda']);
 const CS_ROLES = ['customer_success', 'admin', 'manager'];
 
 // Só o dono (admin): Progresso do CS avalia o trabalho do CS (as RPCs também exigem is_admin).
