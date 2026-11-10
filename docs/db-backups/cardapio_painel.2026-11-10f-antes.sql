@@ -1,21 +1,20 @@
-CREATE OR REPLACE FUNCTION public.cardapio_painel(p_evo text)
- RETURNS jsonb
- LANGUAGE plpgsql
- STABLE SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
-AS $function$
+-- Corpo de cardapio_painel ANTES do 2026-11-10f-cardapio-rede-aberta.sql (= o da 2026-11-10e, md5 16f5c0834ec2d91a557400e8d8afb2a1).
+-- Restaurado em 10/11 noite: um backup de outra sessão (10i) tinha sobrescrito este arquivo com o corpo já com o 10f.
+create or replace function public.cardapio_painel(p_evo text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
 declare
   v jsonb;
   v_controla boolean;
-  v_ck jsonb;
-  v_slug text;
 begin
   if not public.cardapio_pode(p_evo, false) then
     raise exception 'sem permissão' using errcode = '42501';
   end if;
   v_controla := exists (select 1 from inventory_items j where j.franchise_id = p_evo and coalesce(j.active, true) is not false and j.quantity > 0);
-  v_ck := coalesce(public.cardapio_checklist(p_evo), '[]'::jsonb);
-  v_slug := public.cardapio_slug_novo(p_evo);
   select jsonb_build_object(
            'evo', fc.franchise_evolution_instance_id,
            'nome', f.name,
@@ -24,18 +23,10 @@ begin
            'chave_ligada', public.feature_flag_enabled('cardapio_digital', p_evo),
            'slug', fc.cardapio_digital_slug,
            'url', case when fc.cardapio_digital_slug is not null then 'https://pedido.maximassas.com.br/' || fc.cardapio_digital_slug || '/' end,
-           -- 10f: link que nasce ao ligar (o próprio, se já existe)
-           'slug_sugerido', v_slug,
-           'url_sugerida', case when v_slug is not null then 'https://pedido.maximassas.com.br/' || v_slug || '/' end,
-           'primeira_vez_em', fc.cardapio_primeira_vez_em,
-           'ativo_mudou_em', fc.cardapio_ativo_mudou_em,
-           'checklist', v_ck,
-           'pode_ligar', not exists (select 1 from jsonb_array_elements(v_ck) c where c->>'nivel' = 'trava' and not (c->>'ok')::boolean),
            'link_bio_em', fc.cardapio_link_bio_em,
            -- "primeiro uso" = nunca ligou nem recebeu visita (eventos guardam 180 dias)
-           'ja_usou', fc.cardapio_primeira_vez_em is not null
-                      or (fc.cardapio_digital_slug is not null
-                          and exists (select 1 from cardapio_eventos e where e.unidade = fc.cardapio_digital_slug)),
+           'ja_usou', fc.cardapio_digital_slug is not null
+                      and exists (select 1 from cardapio_eventos e where e.unidade = fc.cardapio_digital_slug),
            'tem_whatsapp', nullif(regexp_replace(coalesce(f.whatsapp_publico, ''), '\D', '', 'g'), '') is not null,
            'tem_horarios', (coalesce(fc.has_delivery, false) and jsonb_typeof(fc.delivery_schedule) = 'array' and jsonb_array_length(fc.delivery_schedule) > 0)
                            or (coalesce(fc.has_pickup, false) and ((jsonb_typeof(fc.pickup_schedule) = 'array' and jsonb_array_length(fc.pickup_schedule) > 0)
@@ -69,5 +60,6 @@ begin
    where fc.franchise_evolution_instance_id = p_evo;
   return v;
 end;
-$function$
-;
+$$;
+revoke all on function public.cardapio_painel(text) from public, anon;
+grant execute on function public.cardapio_painel(text) to authenticated;
