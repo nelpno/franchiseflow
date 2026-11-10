@@ -8,7 +8,14 @@ import Interruptor from "./Interruptor";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ChecklistCard from "./ChecklistCard";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, TOM_CHEGADA } from "@/components/shared/adminUi";
-import { itensDoChecklist, linkSemProtocolo, linksDoCardapio, podeLigarCardapio } from "@/lib/cardapioDigital";
+import { frasePedidoDestino, itensDoChecklist, linkSemProtocolo, linksDoCardapio, podeLigarCardapio } from "@/lib/cardapioDigital";
+
+// 10l: para onde vai o pedido (robô, WhatsApp da unidade ou celular pessoal)
+function PedidoDestino({ painel }) {
+  const f = frasePedidoDestino(painel);
+  if (!f) return null;
+  return <p className={`text-sm ${f.tom === "warn" ? "rounded-xl bg-warn-soft px-3 py-2 text-warn-ink" : "text-ink-2"}`} data-pedido-destino>{f.texto}</p>;
+}
 import { registrarEvento } from "@/lib/telemetria";
 
 async function copiar(texto) {
@@ -58,6 +65,7 @@ export function PrimeiroUsoCard({ painel, ligando, onLigar, onRecusado, onUsarRo
       <div className="rounded-xl bg-white p-3 sm:p-4">
         <ChecklistCard itens={itens} nomeUnidade={painel?.nome} refItem={refTrava} onUsarRobo={onUsarRobo} salvandoRobo={salvandoRobo} />
       </div>
+      <PedidoDestino painel={painel} />
       {link && (
         <p className="text-sm text-ink-2">
           {painel?.url ? "Seu link: " : "Seu link vai ser: "}
@@ -169,6 +177,7 @@ export default function LinkCard({ painel, ligando, onLigar, onRecusado, onUsarR
               Ver como o cliente vê
             </a>
           </div>
+          <PedidoDestino painel={painel} />
           {ativo && <p className="text-sm text-ink-3">O robô já manda este link junto com o catálogo.</p>}
         </>
       ) : (

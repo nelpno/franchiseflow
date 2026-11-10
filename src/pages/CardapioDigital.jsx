@@ -19,6 +19,7 @@ import PendenciasCard from "@/components/cardapio/PendenciasCard";
 import EntregaHojeCard from "@/components/cardapio/EntregaHojeCard";
 import ResultadoCards, { PERIODOS } from "@/components/cardapio/ResultadoCards";
 import PromocaoForm from "@/components/cardapio/PromocaoForm";
+import PromocaoClienteCard from "@/components/cardapio/PromocaoClienteCard";
 import ProdutosLista from "@/components/cardapio/ProdutosLista";
 import AdesaoRede from "@/components/cardapio/AdesaoRede";
 import { useAuth } from "@/lib/AuthContext";
@@ -163,6 +164,11 @@ export default function CardapioDigital() {
     toast.success("Pronto. Os pedidos do cardápio vão chegar no WhatsApp do robô.");
     registrarEvento("cardapio_whatsapp_do_robo", { semClarity: true });
   });
+  // 10l: texto da promoção que o cliente vê (o robô continua com o texto do Meu robô)
+  const salvarPromoCliente = (texto) => configurar("promo_cliente", { promocao_cliente: texto }, () => {
+    toast.success(texto ? "Texto da promoção salvo. O cardápio já mostra." : "O cardápio não mostra mais promoção.");
+    registrarEvento(texto ? "cardapio_promo_cliente_salva" : "cardapio_promo_cliente_tirada", { semClarity: true });
+  });
   // tocou em ligar com item vermelho (não foi ao servidor): conta o que faltava
   const recusado = (ids) => registrarEvento("cardapio_ligar_recusado", { detalhe: ids.join(",") || "?", semClarity: true });
   const ligar = (v) => configurar("ativo", { ativo: v }, () => {
@@ -241,6 +247,9 @@ export default function CardapioDigital() {
             erro={resultadoQ.isError} onTentar={() => resultadoQ.refetch()} />
           <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
             onEncerrar={encerrarPromocao} secaoRef={promoRef} />
+          {!(Array.isArray(painel.promocao_regras) && painel.promocao_regras.length > 0) && (
+            <PromocaoClienteCard painel={painel} salvando={salvando === "promo_cliente"} onSalvar={salvarPromoCliente} />
+          )}
           <ProdutosLista produtos={painel.produtos} salvandoIds={salvandoIds} onMostrar={mostrar} />
         </>
       )}

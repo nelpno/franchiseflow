@@ -113,6 +113,21 @@ t("checklist (10f): vermelho, amarelo, verde; botão de arrumar só no que falta
   assert.deepEqual(pendencias({ ativo: false, tem_whatsapp: false, link_bio_em: "x", produtos: [], horario_especial: [], checklist: ck }, { hojeISO: H, agora: AGORA }), []);
 });
 
+import { sugestaoPromocaoCliente, frasePedidoDestino, telefoneBR } from "./cardapioDigital.js";
+t("10l: sugestão da promoção para o cliente tira instrução do robô, código e 'hoje'; até 160", () => {
+  const robo = "Leve 2 kg de nhoque e ganhe 5% de desconto. Nunca escreva o código ao cliente. Código: PRO10\nSó ofereça se o cliente pedir. Válido hoje.";
+  assert.equal(sugestaoPromocaoCliente(robo), "Leve 2 kg de nhoque e ganhe 5% de desconto.");
+  assert.ok(sugestaoPromocaoCliente("a ".repeat(200)).length <= 160);
+  assert.equal(sugestaoPromocaoCliente(""), "");
+});
+t("10l: frase do destino do pedido e telefone", () => {
+  assert.equal(telefoneBR("5511987654321"), "(11) 98765-4321");
+  assert.equal(telefoneBR("1934567890"), "(19) 3456-7890");
+  assert.equal(frasePedidoDestino({ pedido_destino: "robo", whatsapp_pedido: "11987654321" }).texto, "Os pedidos do cardápio chegam no WhatsApp do robô ((11) 98765-4321).");
+  assert.equal(frasePedidoDestino({ pedido_destino: "pessoal", whatsapp_pedido: "11987654321" }).tom, "warn");
+  assert.equal(frasePedidoDestino({ pedido_destino: null, whatsapp_pedido: null }), null);
+});
+
 console.log(`cardapioDigital: ${n} testes ok`);
 import { mensagemErroCardapio } from "./cardapioDigital.js";
 assert.equal(mensagemErroCardapio({ code: "22023", message: "O desconto passou de 35%." }), "O desconto passou de 35%.");

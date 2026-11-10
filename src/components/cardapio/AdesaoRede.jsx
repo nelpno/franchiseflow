@@ -44,6 +44,15 @@ export function detalheAdesao(u) {
   }
 }
 
+// 10l: pedido vai para (robô / celular pessoal / WhatsApp da unidade), número público fixo e promoção visível ao cliente
+const DESTINO = { robo: "robô", pessoal: "celular pessoal", publico: "WhatsApp da unidade" };
+export function extrasAdesao(u) {
+  const partes = [`Pedido vai para: ${DESTINO[u.pedido_destino] || "sem número"}`];
+  if (u.whatsapp_fixo) partes.push("WhatsApp público é fixo (10 dígitos)");
+  partes.push(`Promoção visível ao cliente: ${u.promocao_visivel ? "sim" : "não"}`);
+  return partes.join(" · ");
+}
+
 export default function AdesaoRede({ franquias, onAbrir }) {
   const [filtro, setFiltro] = useState(null);
   const q = useQuery({ queryKey: ["cardapio-adesao"], queryFn: ({ signal }) => getCardapioAdesao({ signal }), staleTime: 60 * 1000 });
@@ -89,6 +98,7 @@ export default function AdesaoRede({ franquias, onAbrir }) {
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${est.cor}`}>{est.rotulo}</span>
                     </p>
                     {det && <p className="mt-0.5 text-sm text-ink-2">{det}</p>}
+                    <p className="mt-0.5 text-xs text-ink-3" data-adesao-extra>{extrasAdesao(u)}</p>
                   </div>
                   {f && (
                     <button type="button" className={`${LINK_ACAO} -my-2 min-h-11 shrink-0`} onClick={() => onAbrir?.(f)}>

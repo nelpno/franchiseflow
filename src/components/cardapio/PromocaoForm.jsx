@@ -164,7 +164,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEn
                 )}
               </div>
               <p className="text-sm text-ink">{painel.promocao_texto}</p>
-              <p className="text-xs text-ink-3">Texto escrito no Meu robô. No cardápio aparece no topo, como está.</p>
+              <p className="text-xs text-ink-3">Texto escrito no Meu robô, para o robô. O cliente do cardápio vê o texto de “Promoção no cardápio”, logo abaixo.</p>
             </>
           ) : (
             <p className="text-sm text-ink-2">Sem promoção agora.</p>

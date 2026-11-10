@@ -200,6 +200,10 @@ export const ACAO_CHECKLIST = {
   produtos: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque" },
   em_falta: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque&nivel=zerado" },
   robo: { tipo: "rota", rotulo: "Ver o robô →", to: MEU_ROBO },
+  // 10l
+  raio_faixas: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  feriado: { tipo: "rota", rotulo: "Marcar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  pedido_celular: { tipo: "rota", rotulo: "Ver o robô →", to: MEU_ROBO },
 };
 const ORDEM_ESTADO = { trava: 0, aviso: 1, ok: 2 };
 
@@ -223,6 +227,41 @@ export function podeLigarCardapio(painel) {
   if (!painel) return false;
   if (typeof painel.pode_ligar === "boolean") return painel.pode_ligar;
   return Array.isArray(painel.checklist) && !painel.checklist.some((c) => c && c.nivel === "trava" && !c.ok);
+}
+
+/** Telefone só com dígitos (sem o 55) -> "(11) 98765-4321". */
+export function telefoneBR(n) {
+  const d = String(n || "").replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return d;
+}
+
+/** Para onde vai o pedido do cardápio (10l, cardapio_painel.pedido_destino): a frase da tela. */
+export function frasePedidoDestino(painel) {
+  const tel = telefoneBR(painel?.whatsapp_pedido);
+  if (!tel) return null;
+  if (painel?.pedido_destino === "robo") return { tom: "ok", texto: `Os pedidos do cardápio chegam no WhatsApp do robô (${tel}).` };
+  if (painel?.pedido_destino === "pessoal") return { tom: "warn", texto: `Os pedidos do cardápio chegam no seu celular (${tel}): o robô não vê. Reconecte o robô para ele atender.` };
+  return { tom: "ok", texto: `Os pedidos do cardápio chegam no WhatsApp da unidade (${tel}).` };
+}
+
+// Texto da promoção para o cliente (10l): até 160 letras. A sugestão sai do texto do Meu robô, sem as frases de instrução
+// para o robô (código, "nunca…", "só se o cliente…") nem "hoje" (que fica velho no cardápio).
+export const PROMO_CLIENTE_MAX = 160;
+const INSTRUCAO = /\b(nunca|sempre|c[oó]digo|rob[oô]|instru|regra|s[oó] se|apenas se|caso o cliente|se o cliente|quando o cliente|ofere[cç]a|mencione|informe|responda|n[aã]o (diga|fale|escreva|mande|ofere)|hoje)\b/i;
+export function sugestaoPromocaoCliente(texto) {
+  const frases = String(texto || "")
+    .split(/\n+|(?<=[.!?])\s+/)
+    .map((f) => f.replace(/^[\s*•\-–—]+/, "").replace(/\s+/g, " ").trim())
+    .filter((f) => f && !INSTRUCAO.test(f));
+  let out = "";
+  for (const f of frases) {
+    const junto = out ? `${out} ${f}` : f;
+    if (junto.length > PROMO_CLIENTE_MAX) break;
+    out = junto;
+  }
+  return out || (frases[0] || "").slice(0, PROMO_CLIENTE_MAX).trim();
 }
 
 /** Link do cardápio sem o https:// (o que já existe ou o que vai nascer ao ligar). */

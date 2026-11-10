@@ -1033,7 +1033,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: quadro Resultado (números cobertos). Círculo em **30 dias**.
 7. Em **Produtos no cardápio**, desligue o interruptor **Mostrar** para esconder um produto e ligue para ele voltar. Filtros: **Em falta**, **Todos**, **Escondidos**.
    - Imagem: lista de produtos. Seta no interruptor **Mostrar**.
-8. Em **Promoção do cardápio**, toque em **Criar promoção com produtos**, escolha **Leve N e ganhe %** (ou **Kit com preço fechado**, que por enquanto aparece só como texto no topo), preencha e toque em **Salvar promoção**. **Encerrar promoção** para.
+8. Em **Promoção do cardápio**, toque em **Criar promoção com produtos**, escolha **Leve N e ganhe %** (ou **Kit com preço fechado**, que por enquanto aparece só como texto no topo), preencha e toque em **Salvar promoção**. **Encerrar promoção** para. Sem promoção com produtos, o cliente vê só a frase de **Promoção no cardápio** (o texto do Meu robô é para o robô).
    - Imagem: formulário da promoção. Seta em **Salvar promoção**.
 
 **Deu certo quando:** o cardápio está "no ar", o link está na bio e no Google, e o quadro Antes de divulgar diz "Tudo em dia para vender".
