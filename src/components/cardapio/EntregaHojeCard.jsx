@@ -4,10 +4,14 @@
 // RPC cardapio_configurar {entrega_pausa: null|"hoje"|"HH:MM"} e {entrega_prazo_min} (site/pedido/supabase/2026-11-10d-*).
 // O robô NÃO sabe da pausa: só o cardápio muda.
 import { useEffect, useState } from "react";
-import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, TOM_ATENCAO } from "@/components/shared/adminUi";
+import { Link } from "react-router-dom";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, LINK_ACAO, TOM_ATENCAO } from "@/components/shared/adminUi";
 import { erroPausaAte, erroPrazo, situacaoPausa } from "@/lib/cardapioDigital";
 
 const CAMPO = "h-11 rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30";
+
+// "18:30" -> "18h30", "18:00" -> "18h"
+const hora = (t) => { const m = String(t || "").match(/^(\d{1,2}):(\d{2})/); return m ? `${Number(m[1])}h${m[2] === "00" ? "" : m[2]}` : ""; };
 
 function agoraMinBRT() {
   const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
@@ -71,6 +75,16 @@ export default function EntregaHojeCard({ painel, hojeISO, salvando, onPausar, o
         </div>
       )}
       {erroAte && !pausa.pausada && <p id="entrega-pausa-erro" className="text-sm text-err" role="alert">{erroAte}</p>}
+
+      {/* "pedidos até" do dia: o MESMO campo do Meu robô que o robô lê (delivery_schedule[].order_cutoff); edita só lá */}
+      {painel.entrega_fim_hoje && (
+        <p className="text-sm text-ink-2">
+          {painel.entrega_corte_hoje
+            ? <>Aceita pedido para entrega hoje até as <strong className="font-semibold text-ink">{hora(painel.entrega_corte_hoje)}</strong>. Até lá o cardápio mostra o “o quanto antes”.</>
+            : <>Sem horário-limite de pedido hoje: o “o quanto antes” sai do cardápio quando faltam menos de {prazoAtual || "N"} min para as {hora(painel.entrega_fim_hoje)}.</>}{" "}
+          <Link to="/FranchiseSettings" className={LINK_ACAO}>Mudar no Meu robô →</Link>
+        </p>
+      )}
 
       <div className="border-t border-surface-line pt-4">
         <label className="block text-sm font-semibold text-ink" htmlFor="entrega-prazo">Prazo da entrega (o quanto antes)</label>
