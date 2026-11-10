@@ -680,6 +680,23 @@ export async function getCardapioAdesao({ signal } = {}) {
   return data || [];
 }
 
+// Cotações de frete do cardápio (RPCs da sessão do frete, 2026-11-10k-cardapio-frete-reserva.sql): unidade e rede (admin)
+export async function getCardapioFreteUso(franchiseId, { signal } = {}) {
+  let query = supabase.rpc('cardapio_frete_uso', { p_evo: franchiseId });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data;
+}
+
+export async function getCardapioFreteUsoRede({ signal } = {}) {
+  let query = supabase.rpc('cardapio_frete_uso_rede');
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function cardapioProdutosVisiveis(franchiseId, ids, visivel) {
   const { data, error } = await withTimeout(
     supabase.rpc('cardapio_produtos_visiveis', { p_evo: franchiseId, p_ids: ids, p_visivel: visivel }), QUERY_TIMEOUT_MS);

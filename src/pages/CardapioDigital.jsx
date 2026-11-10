@@ -22,6 +22,7 @@ import PromocaoForm from "@/components/cardapio/PromocaoForm";
 import PromocaoClienteCard from "@/components/cardapio/PromocaoClienteCard";
 import ProdutosLista from "@/components/cardapio/ProdutosLista";
 import AdesaoRede from "@/components/cardapio/AdesaoRede";
+import FreteConsumoCard from "@/components/cardapio/FreteConsumoCard";
 import { useAuth } from "@/lib/AuthContext";
 import { useFeatureFlagState } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
@@ -128,6 +129,7 @@ export default function CardapioDigital() {
       <div className={PAGINA}>
         {cabecalho}
         <AdesaoRede franquias={franquias} onAbrir={abrirUnidade} />
+        <FreteConsumoCard modo="rede" franchiseId={(franquias || [])[0]?.evolution_instance_id} />
       </div>
     );
   }
@@ -245,6 +247,7 @@ export default function CardapioDigital() {
             onIrPromocao={() => promoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
           <ResultadoCards dias={dias} onDias={mudarDias} resultado={resultadoQ.data} carregando={resultadoQ.isLoading}
             erro={resultadoQ.isError} onTentar={() => resultadoQ.refetch()} />
+          <FreteConsumoCard franchiseId={evo} />
           <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
             onEncerrar={encerrarPromocao} secaoRef={promoRef} />
           {!(Array.isArray(painel.promocao_regras) && painel.promocao_regras.length > 0) && (
