@@ -1,6 +1,19 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/api/supabaseClient';
 
+// Cópias locais de números da rede (Canais de venda, prefixo ff:canais-venda:, entities/canaisVenda.js) saem
+// no logout: o PC pode ser compartilhado. O prefixo fica aqui para não puxar a tela do admin para o login.
+function limparCopiasLocais() {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('ff:canais-venda:')) localStorage.removeItem(k);
+    }
+  } catch {
+    /* bloqueado: nada a limpar */
+  }
+}
+
 const AuthContext = createContext();
 
 // Primeiros passos: "viu as boas-vindas" vem do user_metadata (vale em qualquer
@@ -313,6 +326,7 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(false);
           setProfileLoadFailed(false);
           setIsLoading(false);
+          limparCopiasLocais();
         }
       }
     );
@@ -333,6 +347,7 @@ export const AuthProvider = ({ children }) => {
     setSelectedFranchiseState(null);
     lastAuthUserRef.current = null;
     localStorage.removeItem('selected_franchise_id');
+    limparCopiasLocais();
     sessionStorage.removeItem('needs_password_setup');
     sessionStorage.removeItem('password_setup_type');
     try {

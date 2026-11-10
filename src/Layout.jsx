@@ -71,9 +71,9 @@ const navigationItems = [
     adminNav: "main",
     // Ao passar o mouse/tocar: baixa a tela e os números de 7 dias antes do clique (import dinâmico: nada disso
     // entra no pacote que o franqueado baixa).
-    prefetch: (queryClient) => {
+    prefetch: (queryClient, uid) => {
       import("./pages/CanaisVenda").catch(() => {});
-      import("@/entities/canaisVenda").then((m) => m.prefetchCanaisVenda(queryClient, "7d")).catch(() => {});
+      import("@/entities/canaisVenda").then((m) => m.prefetchCanaisVenda(queryClient, "7d", uid)).catch(() => {});
     },
   },
   {
@@ -576,9 +576,9 @@ export default function Layout({ children, currentPageName }) {
             className="flex items-center gap-3"
             aria-current={isActive ? "page" : undefined}
             onClick={uiV2 && isMobile ? fecharMaisAoClicar : undefined}
-            onMouseEnter={item.prefetch ? () => item.prefetch(queryClient) : undefined}
-            onFocus={item.prefetch ? () => item.prefetch(queryClient) : undefined}
-            onTouchStart={item.prefetch ? () => item.prefetch(queryClient) : undefined}
+            onMouseEnter={item.prefetch ? () => item.prefetch(queryClient, currentUser?.id) : undefined}
+            onFocus={item.prefetch ? () => item.prefetch(queryClient, currentUser?.id) : undefined}
+            onTouchStart={item.prefetch ? () => item.prefetch(queryClient, currentUser?.id) : undefined}
           >
             <MaterialIcon icon={item.materialIcon} size={20} filled={isActive} className={isActive ? "text-brand" : ""} aria-hidden="true" />
             <span className="text-sm flex-1">{item.title}</span>

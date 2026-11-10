@@ -14,7 +14,7 @@ import {
 import { formatPct } from "@/lib/formatters";
 import { nomeCurto } from "@/lib/networkOverview";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCanaisVenda, prefetchCanaisVenda } from "@/entities/canaisVenda";
+import { useCanaisVenda, prefetchCanaisVenda, dadoVelho } from "@/entities/canaisVenda";
 import { useAuth } from "@/lib/AuthContext";
 import {
   PERIODOS, periodoValido, filtroValido, ordemValida, FILTROS_LISTA, ORDENS, ESTADOS_CARDAPIO,
@@ -136,14 +136,16 @@ export default function CanaisVenda() {
     if (id === "7d") np.delete("periodo"); else np.set("periodo", id);
     setParams(np, { replace: true, state: location.state });
   };
-  // Mostrando o período anterior enquanto o novo chega (placeholder) ou a cópia local antiga sendo renovada.
-  const atualizando = q.isFetching && (q.isPlaceholderData || d?.periodo !== periodo);
-  // Com a tela pronta, já busca os outros períodos: trocar fica instantâneo.
-  const pronto = !!d && !q.isPlaceholderData;
+  // Atualizando = mostrando outro período enquanto o novo chega (placeholder) ou a cópia local com mais de 5 min
+  // sendo renovada.
+  const atualizando = q.isFetching && (q.isPlaceholderData || d?.periodo !== periodo || dadoVelho(q.dataUpdatedAt));
+  // Só depois que o período da tela chegou do banco (não sobre a cópia local) busca os outros: trocar fica
+  // instantâneo sem disputar com a busca principal.
+  const pronto = !!d && !q.isPlaceholderData && !q.isFetching && !dadoVelho(q.dataUpdatedAt);
   useEffect(() => {
     if (!pronto) return;
-    PERIODOS.filter((x) => x.id !== periodo).forEach((x) => prefetchCanaisVenda(queryClient, x.id));
-  }, [pronto, periodo, queryClient]);
+    PERIODOS.filter((x) => x.id !== periodo).forEach((x) => prefetchCanaisVenda(queryClient, x.id, user?.id));
+  }, [pronto, periodo, queryClient, user?.id]);
 
   const unidades = d?.unidades || [];
   const agora = useMemo(() => new Date(), [d]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -166,7 +168,7 @@ export default function CanaisVenda() {
     <div className="flex gap-2" role="group" aria-label="Período">
       {PERIODOS.map((x) => (
         <button key={x.id} type="button" aria-pressed={periodo === x.id} onClick={() => mudarPeriodo(x.id)}
-          onMouseEnter={() => prefetchCanaisVenda(queryClient, x.id)}
+          onMouseEnter={() => prefetchCanaisVenda(queryClient, x.id, user?.id)}
           className={`${CHIP} ${periodo === x.id ? CHIP_ATIVO : CHIP_INATIVO}`}>
           {x.rotulo}
         </button>
