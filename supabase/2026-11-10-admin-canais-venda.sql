@@ -3,6 +3,7 @@
 --
 -- ROLLBACK:
 --   drop function if exists public.get_admin_canais_venda(integer);
+--   (versão 10b, adesão leve: voltar à anterior = reaplicar docs/db-backups/get_admin_canais_venda.2026-11-10b-antes.sql)
 --
 -- Período em datas de Brasília: últimos p_dias dias contando hoje (7 ou 30) e o mesmo tanto antes, este cortado na
 -- mesma hora de agora (corte_anterior = now() − N dias). Venda com sale_date futura (o robô grava a data da entrega)
@@ -19,7 +20,12 @@
 -- Robô (conversas): telefones distintos que ESCREVERAM (direction = 'in', disparo da franqueada não entra) no
 --   período, SEM quem mandou #PED- no período (esse conta no cardápio). Converteu = venda da unidade do mesmo
 --   telefone (qualquer origem: a franqueada fecha metade) criada depois da 1ª mensagem e antes do fim do período.
--- Adesão ao cardápio: reusa public.cardapio_adesao() (estado ligado/pronto/falta/...); nada duplicado aqui.
+-- Adesão ao cardápio (10b): o MESMO estado da public.cardapio_adesao() (a ordem do CASE é a dela), mas leve: as travas
+--   vêm da própria cardapio_checklist, chamada só para quem não está ligado/pausado, e não calcula o que a lista de
+--   adesão mostra e esta tela não usa (avisos, pedidos_7d, robô = responsável). Medido 10/11 (70 unidades, 3 rodadas):
+--   7 dias 570-720 ms -> ~310 ms; 30 dias ~1.100 ms -> ~840 ms; estado/desde iguais aos da cardapio_adesao nas 70.
+--   Mudou o CASE da cardapio_adesao? Mude aqui. Unidade sem franchise_configurations
+--   = 'sem_config' (a cardapio_adesao a deixa de fora; aqui ela conta no total).
 -- Sem PII: nenhum telefone, nome de cliente ou dono na resposta (só unidade).
 
 create or replace function public.get_admin_canais_venda(p_dias integer default 7)
@@ -38,7 +44,6 @@ declare
   t_ini timestamptz;
   t_fim timestamptz;
   t_pfim timestamptz;
-  v_adesao jsonb;
   v jsonb;
 begin
   -- SQL direto (MCP, sem claims) também lê; pelo app só admin/gerente/CS.
@@ -56,16 +61,27 @@ begin
   -- período anterior cortado na MESMA hora de agora (hoje está pela metade: 7 dias inteiros contra 6,5 puxava tudo para baixo)
   t_pfim := now() - make_interval(days => v_n);
 
-  v_adesao := coalesce(public.cardapio_adesao(), '[]'::jsonb);
-
   with u as (
-    select f.evolution_instance_id evo, f.name nome, fc.cardapio_digital_slug slug
+    select f.id fid, f.evolution_instance_id evo, f.name nome, fc.cardapio_digital_slug slug,
+           (fc.franchise_evolution_instance_id is not null) tem_config, coalesce(fc.cardapio_digital_ativo, false) ativo,
+           fc.cardapio_primeira_vez_em, fc.cardapio_ativo_mudou_em
       from franchises f
       left join franchise_configurations fc on fc.franchise_evolution_instance_id = f.evolution_instance_id
      where f.status = 'active' and not coalesce(f.is_test, false) and f.evolution_instance_id is not null
   ),
-  ad as (
-    select a->>'evo' evo, a->>'estado' estado, a->>'desde' desde from jsonb_array_elements(v_adesao) a
+  ad as materialized (
+    select u.evo,
+           case when not u.tem_config then 'sem_config'
+                when not public.feature_flag_enabled('cardapio_digital', u.evo) then 'pausado_maxi'
+                when u.ativo then 'ligado'
+                when u.cardapio_primeira_vez_em is not null then 'pausado'
+                when not exists (select 1 from jsonb_array_elements(coalesce(public.cardapio_checklist(u.evo), '[]'::jsonb)) c
+                                  where c->>'nivel' = 'trava' and not (c->>'ok')::boolean) then 'pronto'
+                when exists (select 1 from app_eventos a where a.franquia_id = u.fid and a.evento = 'cardapio_tela_aberta'
+                                                          and a.papel = 'franchisee') then 'falta'
+                else 'nao_abriu' end estado,
+           case when u.ativo or u.cardapio_primeira_vez_em is not null then u.cardapio_ativo_mudou_em end desde
+      from u
   ),
   -- mensagens de entrada com #PED- (índice idx_conv_msg_in_ped); até 3 dias antes, para casar venda do começo do período
   msg as (
@@ -191,7 +207,7 @@ begin
   ),
   pers as (select unnest(array['cur', 'prev']) per),
   linha as (
-    select u.evo, u.nome, (u.slug is not null) tem_slug, coalesce(ad.estado, 'sem_config') estado, ad.desde, p.per,
+    select u.evo, u.nome, (u.slug is not null) tem_slug, ad.estado, ad.desde, p.per,
            jsonb_build_object(
              'robo_contatos', coalesce(r.contatos, 0), 'robo_compraram', coalesce(r.compraram, 0),
              'visitas', coalesce(vi.n, 0), 'pedidos_enviados', coalesce(en.n, 0),
@@ -227,9 +243,9 @@ begin
     'corte_anterior', t_pfim,
     'gerado_em', now(),
     'rede', jsonb_build_object('atual', (select m from rede where per = 'cur'), 'anterior', (select m from rede where per = 'prev')),
-    -- a mesma contagem da lista de adesão (cardapio_adesao), sem recontar por conta própria
+    -- todas as unidades da lista (u), inclusive sem configuração: o total bate com a lista por unidade
     'adesao', (select coalesce(jsonb_object_agg(estado, n), '{}'::jsonb)
-                 from (select estado, count(*) n from ad group by 1) q),
+                 from (select coalesce(ad.estado, 'sem_config') estado, count(*) n from u left join ad on ad.evo = u.evo group by 1) q),
     'unidades', coalesce((select jsonb_agg(jsonb_build_object('evo', evo, 'nome', nome, 'tem_slug', tem_slug, 'estado', estado, 'cardapio_desde', desde,
                                                               'atual', atual, 'anterior', anterior) order by nome)
                             from por_unidade), '[]'::jsonb)

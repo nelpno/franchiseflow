@@ -11,7 +11,7 @@ function parseOrderBy(orderByStr) {
 // Timeout para queries de leitura — evita hang infinito quando Supabase trava
 const QUERY_TIMEOUT_MS = 15000;
 
-function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
+export function withTimeout(promise, ms = QUERY_TIMEOUT_MS, signal) {
   if (signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'));
   let timeoutId;
   const timeout = new Promise((_, reject) => {

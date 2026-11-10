@@ -65,7 +65,7 @@ export const ESTADOS_CARDAPIO = {
   nao_abriu: "Não abriu a página",
   pausado: "Desligou",
   pausado_maxi: "Sem cardápio",
-  sem_config: "Sem cardápio",
+  sem_config: "Sem configuração",
 };
 
 /** Contagem da adesão (o objeto `adesao` da RPC, que vem de cardapio_adesao). */
