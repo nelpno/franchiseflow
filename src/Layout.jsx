@@ -130,8 +130,8 @@ const navigationItems = [
     franchiseeOnly: true,
   },
   {
-    // Cardápio digital (10/11/2026, piloto Imirim): só para a unidade com a chave
-    // cardapio_digital ligada; admin/gerente veem sempre (em "Mais", escolhem a unidade).
+    // Cardápio digital (10/11/2026): chave cardapio_digital ligada para a rede; desligada por
+    // unidade (freio de emergência) o item some. Admin/gerente veem sempre (em "Mais", escolhem a unidade).
     title: "Cardápio digital",
     url: createPageUrl("CardapioDigital"),
     materialIcon: "restaurant_menu",

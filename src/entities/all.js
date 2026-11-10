@@ -663,6 +663,23 @@ export async function cardapioConfigurar(franchiseId, campos) {
   return data;
 }
 
+// 10f (rede aberta): estado leve para o aviso da Início e a lista de adesão do admin (site/pedido/supabase/2026-11-10f-*.sql)
+export async function getCardapioEstado(franchiseId, { signal } = {}) {
+  let query = supabase.rpc('cardapio_estado', { p_evo: franchiseId });
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data;
+}
+
+export async function getCardapioAdesao({ signal } = {}) {
+  let query = supabase.rpc('cardapio_adesao');
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await withTimeout(query, QUERY_TIMEOUT_MS, signal);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function cardapioProdutosVisiveis(franchiseId, ids, visivel) {
   const { data, error } = await withTimeout(
     supabase.rpc('cardapio_produtos_visiveis', { p_evo: franchiseId, p_ids: ids, p_visivel: visivel }), QUERY_TIMEOUT_MS);

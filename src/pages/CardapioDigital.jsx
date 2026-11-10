@@ -1,6 +1,8 @@
 // "Cardápio digital" (10/11/2026, ESPEC do cardápio § 4; piloto Imirim). Área da franqueada, fora do Meu robô.
 // Ordem dos blocos = o trabalho dela: 1) ligar e divulgar · 2) o que trava a venda · 3) resultado · 4) promoção ·
-// 5) produtos · rodapé. Menu: só com a chave cardapio_digital da unidade (admin vê sempre e escolhe a unidade).
+// 5) produtos · rodapé. Menu: chave cardapio_digital (desde 10/11/2026 ligada para a REDE; desligada por unidade = freio de
+// emergência, o menu some e a página volta para a Início). Admin vê sempre, escolhe a unidade e vê a adesão da rede.
+// Ligar = checklist do banco em dia (cardapio_checklist, SQL 2026-11-10f); o link nasce do nome da unidade.
 // Dados: RPCs cardapio_painel / cardapio_resultado / cardapio_configurar / cardapio_produtos_visiveis
 // (site/pedido/supabase/2026-11-10-cardapio-painel.sql). Nada aqui cita o pacote mensal.
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -18,13 +20,14 @@ import EntregaHojeCard from "@/components/cardapio/EntregaHojeCard";
 import ResultadoCards, { PERIODOS } from "@/components/cardapio/ResultadoCards";
 import PromocaoForm from "@/components/cardapio/PromocaoForm";
 import ProdutosLista from "@/components/cardapio/ProdutosLista";
+import AdesaoRede from "@/components/cardapio/AdesaoRede";
 import { useAuth } from "@/lib/AuthContext";
 import { useFeatureFlagState } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { listarFranquias } from "@/lib/franchisesCache";
 import { getCardapioPainel, getCardapioResultado, cardapioConfigurar, cardapioProdutosVisiveis } from "@/entities/all";
-import { comPendentes, mensagemErroCardapio, pendencias } from "@/lib/cardapioDigital";
+import { comPendentes, itensDoChecklist, mensagemErroCardapio, pendencias } from "@/lib/cardapioDigital";
 import { hojeBRT } from "@/lib/horarioEspecial";
 import { registrarEvento } from "@/lib/telemetria";
 
@@ -44,7 +47,7 @@ function Esqueleto() {
 }
 
 export default function CardapioDigital() {
-  const { user, selectedFranchise } = useAuth();
+  const { user, selectedFranchise, setSelectedFranchise } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "manager";
   const isFranqueado = user?.role === "franchisee";
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,7 +55,7 @@ export default function CardapioDigital() {
   const queryClient = useQueryClient();
   const promoRef = useRef(null);
   const [franquias, setFranquias] = useState(null);
-  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "pausa" | "prazo"
+  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "pausa" | "prazo" | "whatsapp"
   const [salvandoIds, setSalvandoIds] = useState(() => new Set());
   // "Mostrar" em voo ({id: visivel}): todo dado que chega do servidor (refetch de foco, resposta de outra gravação) passa
   // por comPendentes, então nunca desfaz um toque que ainda não voltou (code review 10/11/2026)
@@ -91,6 +94,14 @@ export default function CardapioDigital() {
   useEffect(() => {
     if (painel?.evo) registrarEvento("cardapio_tela_aberta");
   }, [painel?.evo]);
+  // telemetria da adesão: viu o checklist (desligado), com o que faltava; uma vez por unidade aberta
+  const checklistVisto = useRef(null);
+  useEffect(() => {
+    if (!painel?.evo || painel.ativo || checklistVisto.current === painel.evo) return;
+    checklistVisto.current = painel.evo;
+    const falta = itensDoChecklist(painel).filter((i) => i.estado === "trava").map((i) => i.id);
+    registrarEvento("cardapio_checklist_visto", { detalhe: falta.length ? falta.join(",") : "pronto", semClarity: true });
+  }, [painel]);
 
   // ---------- quem pode ver ----------
   if (user && !isAdmin && !isFranqueado) return <Navigate to="/Dashboard" replace />;
@@ -98,11 +109,26 @@ export default function CardapioDigital() {
 
   const cabecalho = (
     <PageHeader titulo={TITULO} subtitulo={SUBTITULO}
-      situacao={isAdmin && unidade ? `Unidade: ${String(unidade.name || unidade.city || "").replace(/^Maxi Massas\s+/i, "")}` : undefined} />
+      situacao={isAdmin && unidade && searchParams.get("visao") !== "rede" ? `Unidade: ${String(unidade.name || unidade.city || "").replace(/^Maxi Massas\s+/i, "")}` : undefined} />
   );
 
   if (!franquias || (evo && !chaveResolvida && !isAdmin)) {
     return <div className={PAGINA}>{cabecalho}<Esqueleto /></div>;
+  }
+  const verRede = isAdmin && (searchParams.get("visao") === "rede" || !unidade);
+  const abrirUnidade = (f) => {
+    setSelectedFranchise?.(f);
+    const q = new URLSearchParams(searchParams);
+    q.delete("visao");
+    setSearchParams(q, { replace: true });
+  };
+  if (verRede) {
+    return (
+      <div className={PAGINA}>
+        {cabecalho}
+        <AdesaoRede franquias={franquias} onAbrir={abrirUnidade} />
+      </div>
+    );
   }
   if (!unidade) {
     return (
@@ -124,12 +150,21 @@ export default function CardapioDigital() {
       ok?.(novo);
       return true;
     } catch (e) {
-      toast.error(mensagemErroCardapio(e, "Não deu para salvar. Tente de novo."));
+      const msg = mensagemErroCardapio(e, "Não deu para salvar. Tente de novo.");
+      toast.error(msg);
+      if (qual === "ativo" && campos.ativo === true) registrarEvento("cardapio_ligar_recusado", { detalhe: `servidor: ${msg}`, semClarity: true });
       return false;
     } finally {
       setSalvando(null);
     }
   };
+  // 10i: sem WhatsApp público, com o robô conectado: usa o número do robô (a franqueada confirmou no checklist)
+  const usarRobo = () => configurar("whatsapp", { whatsapp_do_robo: true }, () => {
+    toast.success("Pronto. Os pedidos do cardápio vão chegar no WhatsApp do robô.");
+    registrarEvento("cardapio_whatsapp_do_robo", { semClarity: true });
+  });
+  // tocou em ligar com item vermelho (não foi ao servidor): conta o que faltava
+  const recusado = (ids) => registrarEvento("cardapio_ligar_recusado", { detalhe: ids.join(",") || "?", semClarity: true });
   const ligar = (v) => configurar("ativo", { ativo: v }, () => {
     toast.success(v ? "Cardápio ligado." : "Cardápio em pausa. O robô para de mandar o link.");
     registrarEvento(v ? "cardapio_ligado" : "cardapio_desligado");
@@ -192,10 +227,12 @@ export default function CardapioDigital() {
       ) : painelQ.isError || !painel ? (
         <ErrorState cartao texto="Confira a internet e tente de novo." onTentarNovamente={() => painelQ.refetch()} />
       ) : primeiroUso ? (
-        <PrimeiroUsoCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} />
+        <PrimeiroUsoCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} onRecusado={recusado}
+          onUsarRobo={usarRobo} salvandoRobo={salvando === "whatsapp"} />
       ) : (
         <>
-          <LinkCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} />
+          <LinkCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} onRecusado={recusado}
+            onUsarRobo={usarRobo} salvandoRobo={salvando === "whatsapp"} />
           <EntregaHojeCard painel={painel} hojeISO={hoje} salvando={salvando === "pausa" || salvando === "prazo" ? salvando : null}
             onPausar={pausarEntrega} onPrazo={salvarPrazo} />
           <PendenciasCard itens={itensPendentes} nomeUnidade={painel.nome} onBio={marcarBio} marcandoBio={salvando === "bio"}
@@ -208,6 +245,11 @@ export default function CardapioDigital() {
         </>
       )}
 
+      {isAdmin && (
+        <p className="text-sm">
+          <Link to="/CardapioDigital?visao=rede" className={LINK_ACAO}>Ver a adesão da rede →</Link>
+        </p>
+      )}
       <p className="border-t border-surface-line pt-4 text-sm text-ink-3">
         Horários, folga, entrega, retirada e pagamento ficam no Meu robô e valem para o robô e para o cardápio.{" "}
         <Link to="/FranchiseSettings" className={LINK_ACAO}>Abrir o Meu robô →</Link>

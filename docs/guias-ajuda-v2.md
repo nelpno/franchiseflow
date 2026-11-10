@@ -1,7 +1,7 @@
 # Guia de Ajuda do franqueado (v2) — texto final
 
 > Fechado em 29/09/2026 (S24.1, Onda 7b) contra as telas FINAIS, com a chave `ui_v2` ligada (ligada na rede desde 28/09). Todos os rótulos foram conferidos no código (`src/`); nenhuma marca `[tela nova]`, `[conferir]` ou `[decisão Nelson]` sobrou.
-> Os 33 guias (31 da S24.1 + `inicio` e `vendas-por-produto`, Onda 7c) estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
+> Os 34 guias (31 da S24.1 + `inicio` e `vendas-por-produto`, Onda 7c, + `cardapio-digital`, 10/11/2026) estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
 > Público: franqueada leiga, 55+, no celular. Cada passo = uma ação. **Negrito** = nome exato do botão ou do título na tela.
 > Fotos: `public/tutoriais/<slug>-<n>.webp`, onde `<n>` é o número do passo NESTE documento. Exceções antigas: `primeiros-passos-*` e `quem-chamar-hoje-*` (numeração própria, já ligadas no app).
 >
@@ -63,6 +63,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 22. Baixar as artes e a legenda do mês — `artes`
 23. Agendar postagens no Meta Business Suite — `agendar-postagens`
 33. Entender como funciona o anúncio no Meta — `como-funciona-anuncio`
+34. Usar o Cardápio digital — `cardapio-digital`
 
 **Meu robô**
 24. Ajustar os dias e horários de entrega — `robo-horarios`
@@ -1011,6 +1012,40 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ---
 
+## 34. Usar o Cardápio digital
+`slug: cardapio-digital` · **Onde começa:** Mais › Cardápio digital · **Tempo:** 10 minutos
+> Fotos: `cardapio-digital-1.webp`..`cardapio-digital-8.webp`, uma por passo (harness `.tmp/harness-cardapio/prints-guia-ajuda.mjs`, nome da unidade e números cobertos).
+
+**Quando usar:** você quer que o cliente monte o pedido sozinho pelo link e que ele chegue pronto no seu WhatsApp.
+
+**Passos**
+1. O Cardápio digital é uma página com as massas artesanais embaladas e congeladas da sua unidade. O cliente escolhe os produtos, informa o CEP para o frete, escolhe o dia e o horário, e o pedido chega pronto no seu WhatsApp. Preço e estoque vêm do seu Estoque. Não é a imagem do catálogo, que se troca no Meu robô.
+   - Imagem: página do cardápio no celular, com o título e o quadro do link.
+2. Toque em **Mais** e em **Cardápio digital**. Na primeira vez aparece uma lista: verde está certo, vermelho falta arrumar (o cardápio só liga sem vermelho), amarelo é só aviso. Toque no botão do item (**Arrumar no Meu robô** ou **Atualizar estoque**), acerte e volte. Com tudo certo, toque em **Ligar o cardápio**: o link nasce na hora.
+   - Imagem: lista com um item vermelho. Seta em **Ligar o cardápio**.
+3. Toque em **Copiar link** e cole na bio do Instagram e no perfil da unidade no Google. **Ver como o cliente vê** abre a página do cliente; **Baixar QR** gera o QR para imprimir. O interruptor do alto liga e desliga.
+   - Imagem: quadro "Cardápio no ar". Seta em **Copiar link**.
+4. No quadro **Antes de divulgar**, veja o que atrapalha a venda, principalmente produto em falta. Toque em **Atualizar estoque**, acerte as quantidades e volte. Colocou o link na bio? Toque em **Já coloquei**. "Tudo em dia para vender" = pode divulgar.
+   - Imagem: quadro Antes de divulgar. Seta em **Atualizar estoque**.
+5. Não dá para entregar hoje? No quadro **Entrega de hoje**, toque em **Pausar a entrega hoje**, ou escolha um horário em "ou pausar até" e toque em **Pausar**. A entrega volta sozinha; **Voltar a entregar agora** desfaz antes.
+   - Imagem: quadro Entrega de hoje. Seta em **Pausar a entrega hoje**.
+6. No quadro **Resultado**, escolha **7 dias** ou **30 dias**: **Viraram venda**, **Chegaram no seu WhatsApp** e **Visitas**, com os produtos mais escolhidos.
+   - Imagem: quadro Resultado (números cobertos). Círculo em **30 dias**.
+7. Em **Produtos no cardápio**, desligue o interruptor **Mostrar** para esconder um produto e ligue para ele voltar. Filtros: **Em falta**, **Todos**, **Escondidos**.
+   - Imagem: lista de produtos. Seta no interruptor **Mostrar**.
+8. Em **Promoção do cardápio**, toque em **Criar promoção com produtos**, escolha **Leve N e ganhe %** (ou **Kit com preço fechado**, que por enquanto aparece só como texto no topo), preencha e toque em **Salvar promoção**. **Encerrar promoção** para.
+   - Imagem: formulário da promoção. Seta em **Salvar promoção**.
+
+**Deu certo quando:** o cardápio está "no ar", o link está na bio e no Google, e o quadro Antes de divulgar diz "Tudo em dia para vender".
+
+**Dica:** divulgue o link onde o cliente já procura você: bio do Instagram, perfil do Google e status do WhatsApp. O robô já manda o link para quem conversa com ele.
+
+**Erro comum:** mandar o link de uma vez para toda a sua lista de clientes ou colar em grupo de bairro. Isso pode fazer o WhatsApp bloquear o seu número. Use a bio, o perfil do Google, o status e deixe o robô enviar a quem pedir.
+
+**Se não resolver:** a lista diz que falta o WhatsApp da unidade, ou a página não aparece no menu? Falar com a Maxi (guia 30).
+
+---
+
 # (1) Fotos: o que existe e o que falta
 
 Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste documento, 390 px, contorno vermelho da marca no elemento, unidade e clientes fictícios.
@@ -1024,6 +1059,7 @@ Padrão: `public/tutoriais/<slug>-<n>.webp`, `<n>` = número do passo neste docu
 | resultado | `resultado-1..5` | — |
 | inicio | `inicio-1..8` (Onda 7c) | — |
 | vendas-por-produto | `vendas-por-produto-1..5` (Onda 7c) | — |
+| cardapio-digital | `cardapio-digital-1..8` (10/11/2026, harness sem login) | — |
 | pagamentos | `pagamentos-2,3,4,7` | 1, 5, 6 |
 | demais 24 guias | — | todos os passos com recorte do app (passos marcados "sem recorte do app" não levam foto) |
 

@@ -341,6 +341,9 @@ function FranchiseSettingsContent() {
         if (chosen) {
           setSelectedConfigId(chosen.id);
           loadConfigIntoForm(chosen);
+          // ?etapa=N (Cardápio digital › "Arrumar no Meu robô →"): abre direto na etapa que falta, por cima do rascunho
+          const etapa = Number(searchParams.get('etapa'));
+          if (Number.isInteger(etapa) && etapa >= 1 && etapa <= 5) setCurrentStep(etapa);
         } else if (paramSemMatch && !avisouSemConfigRef.current) {
           avisouSemConfigRef.current = true;
           toast.error("Esta unidade ainda não tem robô configurado.");

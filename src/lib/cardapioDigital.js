@@ -145,7 +145,13 @@ export function vencimentoPromocao(regra, texto, hojeISO) {
 export function pendencias(painel, { hojeISO, agora = new Date() } = {}) {
   if (!painel) return [];
   const out = [];
-  if (!painel.tem_whatsapp) {
+  // 10f: com o checklist do servidor, o que trava (ligado mas quebrado, ex.: tirou o pagamento) vem dele; sem ele, o aviso antigo
+  const travas = Array.isArray(painel.checklist) ? itensDoChecklist(painel).filter((i) => i.estado === "trava") : null;
+  if (travas) {
+    // desligado, as travas já aparecem no quadro de ligar (LinkCard/PrimeiroUso): aqui só com o cardápio no ar
+    if (!painel.ativo) travas.length = 0;
+    for (const t of travas) out.push({ id: t.id, tom: "err", destaque: `${t.titulo}:`, texto: t.motivo, acao: t.acao });
+  } else if (!painel.tem_whatsapp) {
     out.push({ id: "whatsapp", tom: "err", destaque: "Sem WhatsApp público cadastrado:", texto: "o cardápio não tem para onde mandar o pedido.",
       acao: { tipo: "whatsapp", rotulo: "Pedir cadastro à Maxi →" } });
   }
@@ -175,15 +181,53 @@ export function pendencias(painel, { hojeISO, agora = new Date() } = {}) {
   return out;
 }
 
-/** Checklist do primeiro uso (antes de ligar). */
-export function checklistPrimeiroUso(painel, agora = new Date()) {
-  if (!painel) return [];
-  const z = resumoZerados(painel.produtos, agora);
-  return [
-    { id: "whatsapp", ok: !!painel.tem_whatsapp, texto: "WhatsApp público da unidade" },
-    { id: "horarios", ok: !!painel.tem_horarios && !!painel.tem_pagamento, texto: "Horários e pagamento (do Meu robô)" },
-    { id: "estoque", ok: z.acabou === 0, texto: z.acabou === 0 ? "Estoque atualizado" : `Estoque atualizado (${z.acabou} ${z.acabou === 1 ? "produto em falta" : "produtos em falta"})` },
-  ];
+// ---------- Checklist de ligar (10f, rede aberta): a regra é do banco (cardapio_checklist); aqui só o botão de cada item ----------
+// Cada item do servidor: {id, nivel: "trava"|"aviso", ok, titulo, motivo}. Trava aberta = vermelho e o servidor recusa ligar;
+// aviso = amarelo, não trava. A tela só decide para onde o "Arrumar →" leva.
+const MEU_ROBO = "/FranchiseSettings";
+export const ACAO_CHECKLIST = {
+  whatsapp: { tipo: "whatsapp", rotulo: "Pedir à Maxi →", mensagem: "falta o WhatsApp da unidade no cadastro" },
+  chave: { tipo: "whatsapp", rotulo: "Falar com a Maxi →", mensagem: "o cardápio está pausado pela Maxi" },
+  unidade: { tipo: "whatsapp", rotulo: "Falar com a Maxi →", mensagem: "a unidade não aparece como ativa" },
+  modalidade: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  horario_entrega: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  horario_retirada: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  frete: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  raio: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
+  pagamento_entrega: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=3` },
+  pagamento_retirada: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=3` },
+  endereco: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=1` },
+  produtos: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque" },
+  em_falta: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque&nivel=zerado" },
+  robo: { tipo: "rota", rotulo: "Ver o robô →", to: MEU_ROBO },
+};
+const ORDEM_ESTADO = { trava: 0, aviso: 1, ok: 2 };
+
+/** Itens do checklist com estado ("trava" | "aviso" | "ok") e o botão de arrumar. Ordem: vermelho, amarelo, verde. */
+export function itensDoChecklist(painel) {
+  const lista = Array.isArray(painel?.checklist) ? painel.checklist : [];
+  return lista
+    .filter((c) => c && c.id && c.titulo)
+    .map((c, i) => {
+      const estado = c.ok ? "ok" : c.nivel === "trava" ? "trava" : "aviso";
+      // 10i: sem WhatsApp, com o robô conectado: o banco sugere o número do robô; a tela pede confirmação e grava
+      const sugestao = estado !== "ok" && c.sugestao ? String(c.sugestao) : null;
+      const acao = estado === "ok" ? null : sugestao ? { tipo: "robo", rotulo: "Usar o número do robô" } : ACAO_CHECKLIST[c.id] || null;
+      return { id: c.id, estado, titulo: c.titulo, motivo: c.motivo || "", sugestao, acao, i };
+    })
+    .sort((a, b) => ORDEM_ESTADO[a.estado] - ORDEM_ESTADO[b.estado] || a.i - b.i);
+}
+
+/** Pode ligar? A mesma conta do servidor (pode_ligar); sem o campo, pela lista. */
+export function podeLigarCardapio(painel) {
+  if (!painel) return false;
+  if (typeof painel.pode_ligar === "boolean") return painel.pode_ligar;
+  return Array.isArray(painel.checklist) && !painel.checklist.some((c) => c && c.nivel === "trava" && !c.ok);
+}
+
+/** Link do cardápio sem o https:// (o que já existe ou o que vai nascer ao ligar). */
+export function linkSemProtocolo(url) {
+  return url ? String(url).replace(/^https?:\/\//, "") : "";
 }
 
 /** "Nhoque de Batata - 1kg" -> "Nhoque de Batata 1kg" (linhas de resumo). */
@@ -211,7 +255,7 @@ const FRASES_DO_BANCO = [
   "O nome da promoção", "Escolha ", "No máximo", "O mesmo produto", "Quantidade de cada", "O produto \"", "Data de validade",
   "A data de validade", "O kit precisa", "Digite o preço", "O preço do kit", "O desconto passou", "Quantas:", "Desconto:",
   "Uma promoção por vez", "Promoção em formato", "Falta o WhatsApp", "O link do seu cardápio", "O cardápio digital ainda",
-  "Esse horário já passou", "O prazo da entrega",
+  "Esse horário já passou", "O prazo da entrega", "Cardápio:",
 ];
 export function mensagemErroCardapio(erro, padrao = "Não deu para salvar. Tente de novo.") {
   const msg = String(erro?.message || "");

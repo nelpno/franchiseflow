@@ -1,6 +1,6 @@
 // node src/lib/cardapioDigital.test.mjs
 import assert from "node:assert/strict";
-import { situacaoProduto, resumoZerados, pendencias, especiaisDaSemana, vencimentoPromocao, linksDoCardapio, checklistPrimeiroUso, familiaDe, diasDesde } from "./cardapioDigital.js";
+import { situacaoProduto, resumoZerados, pendencias, especiaisDaSemana, vencimentoPromocao, linksDoCardapio, itensDoChecklist, podeLigarCardapio, familiaDe, diasDesde } from "./cardapioDigital.js";
 
 let n = 0; const t = (nome, f) => { f(); n++; };
 const AGORA = new Date("2026-11-10T15:00:00Z");
@@ -85,10 +85,32 @@ t("links: divulgar com utm de bio, QR com utm de impresso, teste com mx_teste", 
   assert.equal(linksDoCardapio(null), null);
 });
 
-t("primeiro uso: checklist com a contagem dos zerados", () => {
-  const c = checklistPrimeiroUso({ tem_whatsapp: true, tem_horarios: true, tem_pagamento: false, produtos: PRODUTOS }, AGORA);
-  assert.deepEqual(c.map((x) => x.ok), [true, false, false]);
-  assert.equal(c[2].texto, "Estoque atualizado (3 produtos em falta)");
+t("checklist (10f): vermelho, amarelo, verde; botão de arrumar só no que falta; pode ligar = sem trava aberta", () => {
+  const ck = [
+    { id: "whatsapp", nivel: "trava", ok: true, titulo: "WhatsApp da unidade", motivo: "ok" },
+    { id: "robo", nivel: "aviso", ok: false, titulo: "Robô respondendo", motivo: "mudo" },
+    { id: "pagamento_entrega", nivel: "trava", ok: false, titulo: "Formas de pagamento na entrega", motivo: "falta" },
+    { id: "id_novo_do_banco", nivel: "trava", ok: false, titulo: "Coisa nova", motivo: "sem botão ainda" },
+  ];
+  const itens = itensDoChecklist({ checklist: ck });
+  assert.deepEqual(itens.map((i) => [i.id, i.estado]), [["pagamento_entrega", "trava"], ["id_novo_do_banco", "trava"], ["robo", "aviso"], ["whatsapp", "ok"]]);
+  assert.equal(itens[0].acao.to, "/FranchiseSettings?etapa=3");
+  assert.equal(itens[1].acao, null); // item que o banco inventou depois: aparece, sem botão (não quebra)
+  assert.equal(itens[3].acao, null);
+  assert.equal(podeLigarCardapio({ checklist: ck }), false);
+  assert.equal(podeLigarCardapio({ checklist: ck.filter((c) => c.nivel !== "trava" || c.ok) }), true); // aviso não trava
+  assert.equal(podeLigarCardapio({ pode_ligar: true, checklist: ck }), true); // o servidor manda
+  assert.equal(podeLigarCardapio(null), false);
+  // 10i: WhatsApp faltando com o número do robô sugerido = botão "Usar o número do robô"; sem sugestão = pedir à Maxi
+  const comRobo = itensDoChecklist({ checklist: [{ id: "whatsapp", nivel: "trava", ok: false, titulo: "WhatsApp da unidade", sugestao: "(17) 99999-0000" }] })[0];
+  assert.deepEqual([comRobo.acao.tipo, comRobo.sugestao], ["robo", "(17) 99999-0000"]);
+  const semRobo = itensDoChecklist({ checklist: [{ id: "whatsapp", nivel: "trava", ok: false, titulo: "WhatsApp da unidade", sugestao: null }] })[0];
+  assert.equal(semRobo.acao.tipo, "whatsapp");
+  // ligado com trava aberta: vira pendência vermelha no "Antes de divulgar" (no lugar do aviso antigo do WhatsApp)
+  const p = pendencias({ ativo: true, tem_whatsapp: false, link_bio_em: "x", produtos: [], horario_especial: [], checklist: ck }, { hojeISO: H, agora: AGORA });
+  assert.deepEqual(p.map((x) => x.id), ["pagamento_entrega", "id_novo_do_banco"]);
+  // desligado: as travas ficam só no quadro de ligar (sem repetir no "Antes de divulgar")
+  assert.deepEqual(pendencias({ ativo: false, tem_whatsapp: false, link_bio_em: "x", produtos: [], horario_especial: [], checklist: ck }, { hojeISO: H, agora: AGORA }), []);
 });
 
 console.log(`cardapioDigital: ${n} testes ok`);
@@ -96,6 +118,7 @@ import { mensagemErroCardapio } from "./cardapioDigital.js";
 assert.equal(mensagemErroCardapio({ code: "22023", message: "O desconto passou de 35%." }), "O desconto passou de 35%.");
 assert.equal(mensagemErroCardapio({ code: "42703", message: 'column "x" does not exist' }), "Não deu para salvar. Tente de novo.");
 assert.equal(mensagemErroCardapio({ code: "42501", message: "sem permissão" }), "Sem permissão para mudar o cardápio desta unidade.");
+assert.equal(mensagemErroCardapio({ code: "22023", message: "Cardápio: para ligar, falta o endereço da unidade." }), "Cardápio: para ligar, falta o endereço da unidade.");
 console.log("cardapioDigital: mensagens de erro ok");
 import { FILTROS_PRODUTOS, comPendentes } from "./cardapioDigital.js";
 {

@@ -3,6 +3,7 @@
 // Ordem (decisão do Nelson na Mesa: topo = "você contra você"):
 //   1 o mês · (espaço da meta do bimestre, S22) · 2 ranking · 3 meta do dia + dias seguidos ·
 //   4 evolução 6 meses · 5 Agora · 6 Quem chamar hoje (+ convite) · 7 atalhos.
+// Acima de tudo, só para quem ainda não ligou: a linha "Novo: Cardápio digital" (InicioNovidadeCardapio, 10/11/2026).
 // Os dados chegam do FranchiseeDashboard (mesma carga da Início de sempre + o histórico de
 // vendas antigas, só com a chave); as contas estão em src/lib/inicioMes.js.
 // P3 S18: só desenha dado DESTA unidade (`cargaOk`), com os cortes do dia de Brasília (`janelas`),
@@ -28,6 +29,7 @@ import InicioAgora from "./InicioAgora";
 import InicioQuemChamar from "./InicioQuemChamar";
 import InicioAtalhos from "./InicioAtalhos";
 import InicioErro from "./InicioErro";
+import InicioNovidadeCardapio from "./InicioNovidadeCardapio";
 
 // Sem o histórico (carregando ou falhou) a evolução mostra só o que a janela principal cobre:
 // o mês atual e os 3 anteriores inteiros.
@@ -142,6 +144,7 @@ export default function InicioV2({
 
   return (
     <>
+      <InicioNovidadeCardapio evoId={evoId} />
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start">
         {vendasOk ? (
           <InicioMesCard mes={dados.mes} funnel={funnel} onAbrirConversao={() => setConversaoAberta(true)} />

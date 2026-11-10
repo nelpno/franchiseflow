@@ -8,9 +8,11 @@ import { linkWhatsAppMaxi } from "@/lib/contatoMaxi";
 const COR = { err: "text-err", warn: "text-ink", info: "text-ink" };
 
 function Acao({ acao, nomeUnidade, onBio, marcandoBio, onIrPromocao }) {
+  if (!acao) return null; // item novo do checklist do banco sem botão mapeado: mostra o texto, sem ação
   if (acao.tipo === "rota") return <Link to={acao.to} className={LINK_ACAO}>{acao.rotulo}</Link>;
   if (acao.tipo === "whatsapp") {
-    const href = linkWhatsAppMaxi(`Olá! Quero ligar o cardápio digital da ${nomeUnidade || "minha unidade"} e falta o WhatsApp público no cadastro.`);
+    const motivo = acao.mensagem || "falta o WhatsApp público no cadastro";
+    const href = linkWhatsAppMaxi(`Olá! Quero ligar o cardápio digital da ${nomeUnidade || "minha unidade"} e ${motivo}.`);
     return href ? <a href={href} target="_blank" rel="noopener noreferrer" className={LINK_ACAO}>{acao.rotulo}</a> : null;
   }
   if (acao.tipo === "bio") {

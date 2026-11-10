@@ -1,7 +1,7 @@
 // Guias escritos da tela Ajuda/Tutoriais (Fase 4 do redesenho, 26/09/2026; campos v2 da S3, 28/09/2026).
 // Cada texto foi conferido contra o comportamento REAL (código + prompt LIVE do robô):
 // provas em `.tmp/onda2/conferencia-textos.md`. Mudou o comportamento? Mude o guia junto.
-// Os 33 guias de `docs/guias-ajuda-v2.md` estão aqui (31 da S24.1, 29/09/2026 + inicio e vendas-por-produto da Onda 7c), com os MESMOS slugs
+// Os 34 guias de `docs/guias-ajuda-v2.md` estão aqui (31 da S24.1, 29/09/2026 + inicio e vendas-por-produto da Onda 7c), com os MESMOS slugs
 // e a MESMA quantidade de passos do documento (a foto <slug>-<n>.webp é o passo n): o teste
 // confere. Exceções de numeração: primeiros-passos e clientes (fotos anteriores ao documento).
 // Travas de linguagem: `node src/lib/guiasAjuda.test.mjs` (palavras proibidas, links).
@@ -582,6 +582,30 @@ export const GUIAS = [
     ],
     nota: "Para pagar a verba, veja o guia Registrar a verba do anúncio.",
     whatsapp: "Este guia explica, de forma simples, como funciona o anúncio da sua unidade no Facebook e no Instagram.",
+  },
+  {
+    slug: "cardapio-digital",
+    publico: PUBLICO.franqueado,
+    titulo: "Usar o Cardápio digital",
+    resumo: "Conferir a lista, ligar o cardápio, pôr o link na bio e no Google, pausar a entrega do dia, ver o resultado e cuidar dos produtos e da promoção.",
+    tempo: "10 minutos",
+    icone: "restaurant_menu",
+    area: "Marketing",
+    sinonimos: ["cardápio digital", "link do cardápio", "pedido pelo link", "cardápio online", "link na bio", "qr code", "ligar o cardápio", "pausar entrega", "produto em falta", "esconder produto"],
+    dica: "Divulgue o link onde o cliente já procura você: bio do Instagram, perfil do Google e status do WhatsApp. O robô já manda o link para quem conversa com ele.",
+    erroComum: "Mandar o link de uma vez para toda a sua lista de clientes ou colar em grupo de bairro. Isso pode fazer o WhatsApp bloquear o seu número. Use a bio, o perfil do Google, o status e deixe o robô enviar a quem pedir.",
+    passos: [
+      { titulo: "Entenda para que serve", texto: "O Cardápio digital é uma página com as massas artesanais embaladas e congeladas da sua unidade. O cliente escolhe os produtos, informa o CEP para o frete, escolhe o dia e o horário, e o pedido chega pronto no seu WhatsApp, para você confirmar. Preço e estoque vêm do seu Estoque. Não é o mesmo que a imagem do catálogo, que você troca no Meu robô.", imagem: "/tutoriais/cardapio-digital-1.webp" },
+      { titulo: "Confira a lista e ligue", texto: "Toque em Mais e em Cardápio digital. Na primeira vez, a página mostra uma lista. Verde está certo. Vermelho falta arrumar, e o cardápio só liga sem nenhum vermelho. Amarelo é só um aviso. Toque no botão ao lado do item (Arrumar no Meu robô ou Atualizar estoque), acerte e volte: a lista se atualiza sozinha. Com tudo certo, toque em Ligar o cardápio. O link da sua unidade é criado na hora.", botao: "Ligar o cardápio", imagem: "/tutoriais/cardapio-digital-2.webp" },
+      { titulo: "Copie o link e ponha na bio e no Google", texto: "Com o cardápio no ar, toque em Copiar link. Cole o link na bio do Instagram e no perfil da unidade no Google. Para ver como o cliente enxerga, toque em Ver como o cliente vê. Se preferir imprimir, toque em Baixar QR. O interruptor no alto liga e desliga o cardápio quando você quiser.", botao: "Copiar link", imagem: "/tutoriais/cardapio-digital-3.webp" },
+      { titulo: "Confira o quadro Antes de divulgar", texto: "Esse quadro mostra o que pode atrapalhar a venda agora. O principal é produto em falta: o cardápio mostra \"Em falta\" e o cliente não consegue pedir. Toque em Atualizar estoque, acerte as quantidades e volte. Quando colocar o link na bio, toque em Já coloquei. Se aparecer \"Tudo em dia para vender\", pode divulgar.", botao: "Atualizar estoque", imagem: "/tutoriais/cardapio-digital-4.webp" },
+      { titulo: "Pause a entrega do dia", texto: "Precisa sair e não dá para entregar? No quadro Entrega de hoje, toque em Pausar a entrega hoje, ou escolha um horário em \"ou pausar até\" e toque em Pausar. A entrega volta sozinha; o cliente ainda pode retirar ou escolher outro dia. Para voltar antes, toque em Voltar a entregar agora. O prazo do \"o quanto antes\" é o tempo de entrega do Meu robô.", botao: "Pausar a entrega hoje", imagem: "/tutoriais/cardapio-digital-5.webp" },
+      { titulo: "Veja o resultado", texto: "No quadro Resultado, escolha 7 dias ou 30 dias. Viraram venda mostra os pedidos que viraram venda em até 3 dias. Chegaram no seu WhatsApp mostra quantos pedidos chegaram até você. Visitas mostra quantas pessoas abriram o cardápio e quantas vieram do Instagram. Abaixo, veja os produtos mais escolhidos.", botao: "30 dias", imagem: "/tutoriais/cardapio-digital-6.webp" },
+      { titulo: "Esconda um produto", texto: "Em Produtos no cardápio, cada linha tem o interruptor Mostrar. Desligue para tirar um produto do cardápio (por exemplo, uma massa que você não vai ter por um tempo). Ligue para ele voltar. Os filtros Em falta, Todos e Escondidos ajudam a achar o produto.", botao: "Mostrar", imagem: "/tutoriais/cardapio-digital-7.webp" },
+      { titulo: "Crie uma promoção", texto: "Em Promoção do cardápio, toque em Criar promoção com produtos e escolha o tipo: Leve N e ganhe % (desconto na quantidade) ou Kit com preço fechado. Por enquanto, o kit aparece como texto no topo do cardápio, e o robô oferece uma vez por conversa. Preencha o nome, os produtos e, se quiser, a data em Vale até, e toque em Salvar promoção. Para parar, toque em Encerrar promoção.", botao: "Salvar promoção", imagem: "/tutoriais/cardapio-digital-8.webp" },
+    ],
+    nota: "Dias, horários, folga, entrega, retirada e formas de pagamento ficam no Meu robô e valem para o robô e para o cardápio. Para desligar o cardápio inteiro, use o interruptor no alto da página: o robô também para de mandar o link.",
+    whatsapp: "O Cardápio digital da sua unidade: o cliente monta o pedido pelo link e ele chega pronto no seu WhatsApp. Veja como ligar, divulgar e acompanhar.",
   },
   // ------------------------------------------------------------------ Meu robô
   {
