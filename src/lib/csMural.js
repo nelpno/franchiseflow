@@ -122,12 +122,23 @@ export function calcularNextAt(chave, dataEscolhida, agora = new Date()) {
 
 // ---------- Texto do cartão ----------
 
-/** "vendia R$ 900/mês · agora R$ 300/mês" (ou "sem vendas") a partir dos campos da RPC. */
+/**
+ * "vendia R$ 900/mês · nos últimos 28 dias R$ 300/mês" a partir dos campos da RPC.
+ * Desde 10/11/2026 a RPC manda `base_mes` (a base do cartão; no manual, a da régua de hoje) e
+ * `ritmo_mes` (28 dias levados a 30): é a MESMA conta do "em risco", então os números batem
+ * na tela. Sem eles (resposta antiga) cai no mês até hoje, como antes.
+ */
 export function linhaVenda(card) {
-  const antes = Number(card?.rev_month_before);
-  const mtd = card?.rev_mtd;
+  const antes = Number(card?.base_mes ?? card?.rev_month_before);
   const antesTxt = Number.isFinite(antes) && antes > 0 ? `vendia ${formatBRLInteger(antes)}/mês` : null;
   if (!antesTxt) return null;
+  if (card?.ritmo_mes !== undefined && card?.ritmo_mes !== null) {
+    const ritmo = Number(card.ritmo_mes);
+    if (Number.isFinite(ritmo)) {
+      return `${antesTxt} · ${ritmo > 0 ? `nos últimos 28 dias ${formatBRLInteger(ritmo)}/mês` : "sem venda em 28 dias"}`;
+    }
+  }
+  const mtd = card?.rev_mtd;
   const agora = Number(mtd);
   const agoraTxt = Number.isFinite(agora) ? (agora > 0 ? `agora ${formatBRLInteger(agora)}` : "agora sem vendas") : null;
   return agoraTxt ? `${antesTxt} · ${agoraTxt}` : antesTxt;
@@ -235,9 +246,75 @@ export function notaCsPorUnidade(eventos) {
   return out;
 }
 
-/** A frase que aparece no cartão fechado: a prova do motivo; sem ela, a venda; sem ela, o título. */
+/**
+ * A frase que aparece no cartão fechado: a prova do motivo; sem ela, a venda; sem ela, o título.
+ * Cartão MANUAL de unidade com alarme na régua (10/11/2026, D5: Limeira "sem venda há 10 dias"
+ * num cartão "Cobrar Marketing") mostra primeiro o alarme mais grave de hoje.
+ */
 export function linhaCurta(card) {
+  if (ehCartaoManual(card) && card?.top_motivo_texto) return card.top_motivo_texto;
   return card?.motive_evidence || linhaVenda(card) || card?.title || card?.description || null;
+}
+
+// ---------- Mural por R$ em risco (10/11/2026, revisão de 10/11 seção 2.5) ----------
+
+/** Quantos cartões de "Falar hoje" aparecem antes do "Ver mais". O banco não corta nada. */
+export const FALAR_HOJE_VISIVEIS = 8;
+
+/** 3 "Enviei, sem resposta" seguidos no cartão = trocar de canal (o 4º vai sozinho ao Nelson). */
+export const SEM_RESPOSTA_LIGAR = 3;
+
+export function ehCartaoManual(card) {
+  return card?.motive_key === "manual" || card?.source === "manual";
+}
+
+/** Motivo que manda no chip: no manual com alarme, o alarme mais grave de hoje (D5). */
+export function motivoDoCartao(card) {
+  if (ehCartaoManual(card) && card?.top_motivo_key && MOTIVO_LABEL[card.top_motivo_key]) return card.top_motivo_key;
+  return card?.motive_key || null;
+}
+
+export function precisaLigar(card) {
+  return Number(card?.sem_resposta_seguidas) >= SEM_RESPOSTA_LIGAR;
+}
+
+/** "R$ 2.849/mês em risco" (base do cartão − ritmo dos últimos 28 dias); null se não há perda. */
+export function linhaRisco(card) {
+  const r = Number(card?.risco_mes);
+  return Number.isFinite(r) && r > 0 ? `${formatBRLInteger(r)}/mês em risco` : null;
+}
+
+function pctTexto(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return `${n > 0 ? "+" : ""}${n.toFixed(1).replace(".", ",")}%`;
+}
+
+/**
+ * Leitura DE HOJE ao lado da prova de abertura (D2): o cartão automático guarda a prova do dia
+ * em que abriu ("-55% até 19/10") e a unidade pode já estar +46%. Devolve null quando a leitura
+ * de hoje é a mesma da abertura (cartão aberto hoje) ou o cartão é manual/sem unidade.
+ * `out_of_rule_since` + 3 dias = quando o sistema fecha sozinho.
+ */
+export function linhaHoje(card) {
+  if (!card?.franchise_id || ehCartaoManual(card) || !card?.motive_evidence) return null;
+  if (card.lane === "resolvidos" || card.column_status === "feito") return null; // fechado: a prova basta
+  let txt;
+  if (card.hoje_motivo) {
+    if (String(card.motive_evidence).startsWith(card.hoje_motivo)) return null;
+    txt = card.hoje_motivo;
+  } else if (card.motive_key === "caiu" && pctTexto(card.hoje_queda_pct)) {
+    const janela = card.hoje_queda_metodo === "56d" ? "8 semanas" : "28 dias";
+    txt = `${pctTexto(card.hoje_queda_pct)} em ${janela}, fora da regra`;
+  } else if (card.top_motivo_texto) {
+    txt = card.top_motivo_texto;
+  } else {
+    txt = "o motivo não aparece mais";
+  }
+  const fecha = card.out_of_rule_since && card.lane !== "com_nelson"
+    ? ` · sai sozinho em ${dataDDMM(somaDias(String(card.out_of_rule_since).slice(0, 10), 3))}`
+    : "";
+  return `Hoje: ${txt}${fecha}`;
 }
 
 /** Cor/tom do chip de motivo (classes do padrão visual — tokens, sem cor crua). */

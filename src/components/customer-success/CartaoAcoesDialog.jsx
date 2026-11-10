@@ -69,7 +69,7 @@ export default function CartaoAcoesDialog({ modo, open, onOpenChange, task, onFe
         toast.success("Cartão estacionado.");
       }
       onOpenChange(false);
-      onFeito?.();
+      onFeito?.(modo, modo === "concluir" ? desfecho : undefined);
     } catch (e) {
       toast.error(safeErrorMessage(e, "Não foi possível salvar."));
     } finally {

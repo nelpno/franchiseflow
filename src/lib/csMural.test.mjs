@@ -20,6 +20,12 @@ import {
   voltarEmPadrao,
   notaCsPorUnidade,
   motivoChipClasse,
+  linhaHoje,
+  linhaRisco,
+  precisaLigar,
+  motivoDoCartao,
+  SEM_RESPOSTA_LIGAR,
+  FALAR_HOJE_VISIVEIS,
 } from "./csMural.js";
 import { formatBRLInteger } from "./formatters.js";
 
@@ -222,6 +228,81 @@ test("linhaCurta: prova do motivo > venda > título", () => {
   assert.match(linhaCurta({ rev_month_before: 900, rev_mtd: 0 }), /^vendia R\$\s?900\/mês · agora sem vendas$/);
   assert.equal(linhaCurta({ title: "Ligar para a Ana" }), "Ligar para a Ana");
   assert.equal(linhaCurta({}), null);
+});
+
+// ---- 10/11/2026: leitura de hoje, R$ em risco, "Ligar", manual com alarme (casos reais do Mural) ----
+
+test("linhaVenda: com ritmo de 28 dias (RPC nova) usa base_mes e ritmo_mes, não o mês até hoje", () => {
+  assert.equal(
+    linhaVenda({ rev_month_before: 3722, base_mes: 3722, ritmo_mes: 8278, rev_mtd: 100 }),
+    `vendia ${formatBRLInteger(3722)}/mês · nos últimos 28 dias ${formatBRLInteger(8278)}/mês`
+  );
+  // manual: sem rev_month_before no cartão, a base vem da régua de hoje
+  assert.match(linhaVenda({ rev_month_before: null, base_mes: 12918, ritmo_mes: 0 }), /sem venda em 28 dias$/);
+});
+
+test("linhaHoje: Bragança abriu com -55% e hoje está +46,7% (fora da regra, fecha em 3 dias)", () => {
+  const card = {
+    franchise_id: "x", source: "auto", motive_key: "caiu", lane: "falar_hoje",
+    motive_evidence: "Venda -55,2% no mês até 19/10 (rede 1,7%) · vendia R$ 3.722/mês",
+    hoje_motivo: null, hoje_queda_pct: 46.7, hoje_queda_metodo: "28d", out_of_rule_since: "2026-11-10",
+  };
+  assert.equal(linhaHoje(card), "Hoje: +46,7% em 28 dias, fora da regra · sai sozinho em 13/11");
+});
+
+test("linhaHoje: unidade pequena lê em 8 semanas; motivo vivo diferente da abertura aparece", () => {
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -44,2% no mês até 26/09",
+      hoje_queda_pct: -9.5, hoje_queda_metodo: "56d" }),
+    "Hoje: -9,5% em 8 semanas, fora da regra"
+  );
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -26,9% nos últimos 28 dias até 13/10",
+      hoje_motivo: "Venda -48,3% nos últimos 28 dias até 10/11 (rede 2,2%)" }),
+    "Hoje: Venda -48,3% nos últimos 28 dias até 10/11 (rede 2,2%)"
+  );
+});
+
+test("linhaHoje: null no cartão aberto hoje (mesma leitura), no manual e sem unidade", () => {
+  const t = "Venda -24,1% no mês até 10/11 (rede -3,5%)";
+  assert.equal(linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: t + " · vendia R$ 1/mês", hoje_motivo: t }), null);
+  assert.equal(linhaHoje({ franchise_id: "x", source: "manual", motive_key: "manual", title: "Cobrar" }), null);
+  assert.equal(linhaHoje({ franchise_id: null, motive_key: "caiu", motive_evidence: "x" }), null);
+  // fechado pelo sistema guarda out_of_rule_since: não pode dizer "sai sozinho em" uma data passada
+  assert.equal(linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "x", lane: "resolvidos", column_status: "feito", out_of_rule_since: "2026-11-01" }), null);
+  // com o Nelson não fecha sozinho: sem a data de saída
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "sem_comprar", motive_evidence: "Sem comprar desde 01/10", lane: "com_nelson", out_of_rule_since: "2026-11-10" }),
+    "Hoje: o motivo não aparece mais"
+  );
+});
+
+test("linhaRisco: só perda positiva", () => {
+  assert.equal(linhaRisco({ risco_mes: 2849 }), `${formatBRLInteger(2849)}/mês em risco`);
+  assert.equal(linhaRisco({ risco_mes: 0 }), null);
+  assert.equal(linhaRisco({}), null);
+});
+
+test("precisaLigar: a partir do 3º 'Enviei, sem resposta' seguido (Piratininga e Sorocaba Éden em 10/11)", () => {
+  assert.equal(SEM_RESPOSTA_LIGAR, 3);
+  assert.equal(precisaLigar({ sem_resposta_seguidas: 2 }), false);
+  assert.equal(precisaLigar({ sem_resposta_seguidas: 3 }), true);
+  assert.equal(precisaLigar({}), false);
+});
+
+test("manual com alarme (Limeira): chip e frase curta = alarme mais grave de hoje", () => {
+  const card = { source: "manual", motive_key: "manual", title: "Cobrar Marketing Novembro", top_motivo_key: "sem_venda", top_motivo_texto: "Sem venda desde 31/10 (10 dias)" };
+  assert.equal(motivoDoCartao(card), "sem_venda");
+  assert.equal(linhaCurta(card), "Sem venda desde 31/10 (10 dias)");
+  const semAlarme = { source: "manual", motive_key: "manual", title: "Cobrar marketing" };
+  assert.equal(motivoDoCartao(semAlarme), "manual");
+  assert.equal(linhaCurta(semAlarme), "Cobrar marketing");
+  // automático segue o motivo congelado
+  assert.equal(motivoDoCartao({ source: "auto", motive_key: "caiu", top_motivo_key: "sem_venda" }), "caiu");
+});
+
+test("Falar hoje mostra 8 antes do 'Ver mais'", () => {
+  assert.equal(FALAR_HOJE_VISIVEIS, 8);
 });
 
 console.log(`csMural.test.mjs: ${n} testes OK`);

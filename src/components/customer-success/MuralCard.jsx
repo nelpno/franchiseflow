@@ -14,6 +14,7 @@ import { estacionarCsCartao } from "@/entities/csMural";
 import { getWhatsAppLink } from "@/lib/whatsappUtils";
 import { montarMensagemFranqueado } from "@/lib/mensagemFranqueado";
 import { linkFicha, nomeCurto } from "@/lib/networkOverview";
+import { registrarEvento } from "@/lib/telemetria";
 import {
   MOTIVO_LABEL,
   DESFECHO_LABEL,
@@ -22,6 +23,11 @@ import {
   linhaAcordo,
   linhaUltimoCombinado,
   linhaCurta,
+  linhaHoje,
+  linhaRisco,
+  precisaLigar,
+  motivoDoCartao,
+  ehCartaoManual,
   rotuloVoltaEm,
 } from "@/lib/csMural";
 import RegistrarSheet from "./RegistrarSheet";
@@ -49,7 +55,15 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
   const linha = linhaVenda(card);
   const acordo = linhaAcordo(card.agreement);
   const combinado = linhaUltimoCombinado(card.last_event);
-  const chipMotivo = MOTIVO_LABEL[card.motive_key] || null;
+  const motivo = motivoDoCartao(card);
+  const chipMotivo = MOTIVO_LABEL[motivo] || null;
+  const hoje = linhaHoje(card);
+  const risco = linhaRisco(card);
+  const ligar = !["resolvidos", "com_nelson"].includes(lane) && precisaLigar(card);
+  // Com o Nelson por acordo "*" (não por escalada): o Celso vê por quê, sem abrir o cartão.
+  const acordoNelson = lane === "com_nelson" && !card.escalated_at && card.agreement?.signal_key === "*" ? acordo : null;
+  // Telemetria do Mural (10/11/2026): nunca nome nem telefone; só raia e motivo.
+  const evento = (nomeEvento, extra) => registrarEvento(nomeEvento, { detalhe: [lane, motivo, extra].filter(Boolean).join("|") });
 
   const mensagem = montarMensagemFranqueado({
     motivo: MOTIVO_PARA_MENSAGEM[card.motive_key] || "default",
@@ -69,10 +83,11 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
   // Cartão manual (criado pelo QuickAddCard) ou sem motive_evidence (não veio do
   // diagnóstico automático): sem isto, um cartão manual COM unidade mostrava só o nome
   // da unidade + chip — o título/descrição que o CS digitou sumia.
-  const ehManual = card.motive_key === "manual" || !card.motive_evidence;
+  const ehManual = ehCartaoManual(card) || !card.motive_evidence;
 
   const retomar = async () => {
     try {
+      evento("mural_retomar");
       await estacionarCsCartao(card.id, null, null);
       toast.success("Cartão retomado.");
       onMudou?.();
@@ -81,10 +96,13 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
     }
   };
 
+  // "Vai para o Nelson" saiu do "Mais ações" (10/11/2026, D4): 0 usos em 6 semanas e o menu só
+  // aparece com o cartão aberto, mas o Celso trabalha no modo compacto.
+  const podeIrAoNelson = !somenteLeitura && lane !== "com_nelson";
+  const abrirAcao = (modo) => { evento(`mural_${modo}_aberto`); setModoAcao(modo); };
   const acoes = [
-    !somenteLeitura && { label: "Concluir", icon: "check_circle", onClick: () => setModoAcao("concluir") },
-    !somenteLeitura && lane !== "com_nelson" && { label: "Vai para o Nelson", icon: "arrow_forward", onClick: () => setModoAcao("nelson") },
-    !somenteLeitura && lane !== "estacionado" && { label: "Estacionar (pausar até uma data)", icon: "schedule", onClick: () => setModoAcao("estacionar") },
+    !somenteLeitura && { label: "Concluir", icon: "check_circle", onClick: () => abrirAcao("concluir") },
+    !somenteLeitura && lane !== "estacionado" && { label: "Estacionar (pausar até uma data)", icon: "schedule", onClick: () => abrirAcao("estacionar") },
     lane === "estacionado" && { label: "Retomar agora", icon: "play_circle", onClick: retomar },
   ].filter(Boolean);
 
@@ -92,21 +110,30 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
     <div className={aberto ? CARTAO : "rounded-2xl border border-surface-line bg-white px-4 py-3"}>
       <div className="flex items-start justify-between gap-2">
         {temUnidade ? (
-          <Link to={toFicha} state={stateFicha} className="font-plus-jakarta text-base font-bold text-ink hover:underline">
+          <Link to={toFicha} state={stateFicha} onClick={() => evento("mural_ficha_aberta", "nome")} className="font-plus-jakarta text-base font-bold text-ink hover:underline">
             {nome}
           </Link>
         ) : (
           <h3 className="font-plus-jakarta text-base font-bold text-ink">{card.title || "Tarefa geral"}</h3>
         )}
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+          {ligar && (
+            <span
+              title={`${card.sem_resposta_seguidas} "Enviei, sem resposta" seguidos: troque a mensagem por ligação. No 4º o cartão vai sozinho para o Nelson.`}
+              className="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full border border-warn/40 bg-warn-soft px-2 py-0.5 text-xs font-bold text-warn-ink"
+            >
+              <MaterialIcon icon="call" size={14} aria-hidden="true" />
+              Ligar · {card.sem_resposta_seguidas} sem resposta
+            </span>
+          )}
           {chipMotivo && (
-            <span className={`min-h-6 shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${motivoChipClasse(card.motive_key)}`}>
+            <span className={`min-h-6 shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${motivoChipClasse(motivo)}`}>
               {chipMotivo}
             </span>
           )}
           <button
             type="button"
-            onClick={() => setAbertoAqui(!aberto)}
+            onClick={() => { if (!aberto) evento("mural_cartao_aberto"); setAbertoAqui(!aberto); }}
             aria-expanded={aberto}
             aria-label={aberto ? "Fechar detalhes" : "Ver detalhes"}
             className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-xl text-ink-3 hover:bg-surface"
@@ -116,20 +143,31 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
         </div>
       </div>
 
-      {!aberto && linhaCurta(card) && <p className="mt-0.5 line-clamp-1 text-sm text-ink-2">{linhaCurta(card)}</p>}
+      {!aberto && linhaCurta(card) && (
+        <p className="mt-0.5 line-clamp-1 text-sm text-ink-2">{hoje && card.motive_evidence ? "Abriu: " : ""}{linhaCurta(card)}</p>
+      )}
+      {!aberto && temUnidade && ehManual && card.top_motivo_texto && card.title && (
+        <p className="mt-0.5 line-clamp-1 text-sm text-ink-3">Cartão: {card.title}</p>
+      )}
+      {hoje && <p className={`${aberto ? "mt-1" : "mt-0.5"} line-clamp-2 text-sm font-semibold text-ink`}>{hoje}</p>}
+      {risco && !somenteLeitura && <p className="mt-0.5 text-sm font-semibold text-err">{risco}</p>}
+      {!aberto && acordoNelson && <p className="mt-0.5 line-clamp-2 text-sm text-ink-3">{acordoNelson}</p>}
       {!aberto && lane === "esperando" && card.next_at && <p className="mt-0.5 text-sm font-semibold text-ink-2">{rotuloVoltaEm(card.next_at)}</p>}
 
       {aberto && (<>
 
+      {temUnidade && ehManual && card.top_motivo_texto && (
+        <p className="mt-1 text-sm font-semibold text-err">{card.top_motivo_texto}</p>
+      )}
       {temUnidade && ehManual && (card.title || card.description) && (
         <div className="mt-1">
-          {card.title && <p className="text-sm font-semibold text-ink">{card.title}</p>}
+          {card.title && <p className="text-sm font-semibold text-ink">{card.top_motivo_texto ? `Cartão: ${card.title}` : card.title}</p>}
           {card.description && <p className="text-sm text-ink-3 line-clamp-3">{card.description}</p>}
         </div>
       )}
 
       {linha && <p className="mt-1 text-sm text-ink-2">{linha}</p>}
-      {card.motive_evidence && <p className="mt-1 text-sm text-ink-2">{card.motive_evidence}</p>}
+      {card.motive_evidence && <p className="mt-1 text-sm text-ink-2">{hoje ? "Abriu: " : ""}{card.motive_evidence}</p>}
       {acordo && <p className="mt-1 text-sm text-ink-3">{acordo}</p>}
       {combinado && <p className="mt-1 text-sm text-ink-3">{combinado}</p>}
       {lane === "esperando" && card.next_at && <p className="mt-1 text-sm font-semibold text-ink-2">{rotuloVoltaEm(card.next_at)}</p>}
@@ -149,6 +187,7 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
               href={safeHref(linkWhats)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => evento("mural_whatsapp")}
               className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-ok-ink px-3 text-sm font-semibold text-white hover:bg-ok-ink/90 sm:px-4"
             >
               <MaterialIcon icon="chat" size={18} aria-hidden="true" />
@@ -162,19 +201,29 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
           ) : null}
           <button
             type="button"
-            onClick={() => setRegistrarAberto(true)}
+            onClick={() => { evento("mural_registrar_aberto"); setRegistrarAberto(true); }}
             className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-surface-line bg-white px-3 text-sm font-semibold text-ink-2 hover:bg-surface sm:px-4"
           >
             <MaterialIcon icon="edit" size={18} aria-hidden="true" />
             Registrar
           </button>
+          {podeIrAoNelson && (
+            <button
+              type="button"
+              onClick={() => abrirAcao("nelson")}
+              className="col-span-2 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-surface-line bg-white px-3 text-sm font-semibold text-ink-2 hover:bg-surface sm:col-span-1 sm:px-4"
+            >
+              <MaterialIcon icon="arrow_forward" size={18} aria-hidden="true" />
+              Vai para o Nelson
+            </button>
+          )}
           {aberto && acoes.length > 0 && <MaisAcoesMenu actions={acoes} />}
         </div>
       )}
 
       {aberto && temUnidade && (
         <div className="mt-2">
-          <Link to={toFicha} state={stateFicha} className={LINK_ACAO}>
+          <Link to={toFicha} state={stateFicha} onClick={() => evento("mural_ficha_aberta", "link")} className={LINK_ACAO}>
             Abrir ficha →
           </Link>
         </div>
@@ -186,10 +235,18 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
         franchiseId={card.franchise_id}
         taskId={card.id}
         nomeUnidade={nome}
-        onSalvo={(resultado, { nextAt } = {}) => {
-          toast.success(resultado?.lane === "estacionado" && nextAt
-            ? `Conversa registrada. O cartão sai da lista até ${rotuloVoltaEm(nextAt).replace("volta em ", "")}.`
-            : "Conversa registrada.");
+        onSalvo={(resultado, { nextAt, outcome } = {}) => {
+          const seguidas = Number(resultado?.sem_resposta_seguidas) || 0;
+          evento("mural_registrado", outcome);
+          if (resultado?.lane === "com_nelson" && seguidas >= 4) {
+            toast.success(`Conversa registrada. ${seguidas}º "sem resposta" seguido: o cartão foi para o Nelson.`);
+          } else if (seguidas >= 3) {
+            toast.success(`Conversa registrada. ${seguidas}º "sem resposta" seguido: da próxima vez, ligue.`);
+          } else {
+            toast.success(resultado?.lane === "estacionado" && nextAt
+              ? `Conversa registrada. O cartão sai da lista até ${rotuloVoltaEm(nextAt).replace("volta em ", "")}.`
+              : "Conversa registrada.");
+          }
           onMudou?.();
         }}
       />
@@ -198,7 +255,7 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
         open={!!modoAcao}
         onOpenChange={(v) => { if (!v) setModoAcao(null); }}
         task={card}
-        onFeito={() => onMudou?.()}
+        onFeito={(modo, desfecho) => { evento(`mural_${modo || "acao"}_feito`, desfecho); onMudou?.(); }}
       />
     </div>
   );

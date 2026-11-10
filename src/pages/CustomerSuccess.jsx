@@ -15,7 +15,8 @@ import ErrorState from "@/components/shared/ErrorState";
 import { PAGINA_LARGA, CHIP, CHIP_ATIVO, CHIP_INATIVO, H3_CARTAO } from "@/components/shared/adminUi";
 import { getCsMural } from "@/entities/csMural";
 import { getFranchiseHealthCache } from "@/entities/all";
-import { agruparPorRaia, agruparPorMotivo, RAIAS } from "@/lib/csMural";
+import { agruparPorRaia, agruparPorMotivo, RAIAS, FALAR_HOJE_VISIVEIS } from "@/lib/csMural";
+import { registrarEvento } from "@/lib/telemetria";
 import { contarFiltros } from "@/lib/networkOverview";
 import { useAdminNetworkOverview } from "@/hooks/useAdminNetworkOverview";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -44,7 +45,10 @@ function BotaoAbrirTodos({ compacto, onChange }) {
   );
 }
 
-function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo = false, recolhida = false, onRecolher, onCompacto }) {
+// `limite` (10/11/2026): "Falar hoje" vem do banco ordenado por R$ em risco e a tela mostra os
+// 8 primeiros; o resto fica atrás do "Ver mais" (o banco não corta nada).
+function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo = false, limite = null, recolhida = false, onRecolher, onCompacto }) {
+  const [todos, setTodos] = useState(false);
   if (recolhida) {
     return (
       <button
@@ -58,7 +62,9 @@ function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo 
       </button>
     );
   }
-  const blocos = porMotivo ? agruparPorMotivo(cards) : [{ motivo: null, label: null, cards }];
+  const cortar = limite && !todos && cards.length > limite;
+  const visiveis = cortar ? cards.slice(0, limite) : cards;
+  const blocos = porMotivo ? agruparPorMotivo(visiveis) : [{ motivo: null, label: null, cards: visiveis }];
   return (
     <div className="min-w-0 flex-1">
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
@@ -90,6 +96,16 @@ function Coluna({ titulo, cards, vazioTexto, onMudou, lane, compacto, porMotivo 
               ))}
             </div>
           ))}
+          {cortar && (
+            <button
+              type="button"
+              onClick={() => { registrarEvento("mural_ver_mais", { detalhe: lane }); setTodos(true); }}
+              className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl border border-surface-line bg-white px-3 text-sm font-semibold text-ink-2 hover:bg-surface"
+            >
+              Ver mais {cards.length - limite}
+              <MaterialIcon icon="expand_more" size={18} aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -247,20 +263,21 @@ export default function CustomerSuccess() {
           </div>
           <div className="lg:hidden">
             <Coluna
+              key={raia}
               titulo={RAIAS.find((r) => r.key === raia)?.label || ""}
               cards={grupos[raia] || []}
               vazioTexto={VAZIO_TEXTO[raia]}
               onMudou={reload}
               lane={raia}
               compacto={compacto}
-              porMotivo={raia === "falar_hoje"}
+              limite={raia === "falar_hoje" ? FALAR_HOJE_VISIVEIS : null}
               onCompacto={mudarCompacto}
             />
           </div>
 
           {/* Desktop: 3 colunas lado a lado */}
           <div className="hidden gap-4 lg:flex">
-            <Coluna titulo="Falar hoje" cards={grupos.falar_hoje} vazioTexto={VAZIO_TEXTO.falar_hoje} onMudou={reload} lane="falar_hoje" compacto={compacto} porMotivo onCompacto={mudarCompacto} />
+            <Coluna titulo="Falar hoje" cards={grupos.falar_hoje} vazioTexto={VAZIO_TEXTO.falar_hoje} onMudou={reload} lane="falar_hoje" compacto={compacto} limite={FALAR_HOJE_VISIVEIS} onCompacto={mudarCompacto} />
             <Coluna titulo="Esperando resposta" cards={grupos.esperando} vazioTexto={VAZIO_TEXTO.esperando} onMudou={reload} lane="esperando" compacto={compacto} />
             <Coluna titulo="Resolvidos" cards={grupos.resolvidos} vazioTexto={VAZIO_TEXTO.resolvidos} onMudou={reload} lane="resolvidos" compacto={compacto} recolhida={resolvidosRecolhidos} onRecolher={recolherResolvidos} />
           </div>
