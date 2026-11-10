@@ -304,8 +304,10 @@ export function linhaHoje(card) {
     if (String(card.motive_evidence).startsWith(card.hoje_motivo)) return null;
     txt = card.hoje_motivo;
   } else if (card.motive_key === "caiu" && pctTexto(card.hoje_queda_pct)) {
+    // "fora da regra" só com out_of_rule_since: é a mesma verdade do reconcile (cartão que ele
+    // ainda segura, nos dias 1 a 9 ou com a medida de base caindo, não está fora).
     const janela = card.hoje_queda_metodo === "56d" ? "8 semanas" : "28 dias";
-    txt = `${pctTexto(card.hoje_queda_pct)} em ${janela}, fora da regra`;
+    txt = `${pctTexto(card.hoje_queda_pct)} em ${janela}${card.out_of_rule_since ? ", fora da regra" : ""}`;
   } else if (card.top_motivo_texto) {
     txt = card.top_motivo_texto;
   } else {

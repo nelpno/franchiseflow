@@ -66,7 +66,8 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
   const evento = (nomeEvento, extra) => registrarEvento(nomeEvento, { detalhe: [lane, motivo, extra].filter(Boolean).join("|") });
 
   const mensagem = montarMensagemFranqueado({
-    motivo: MOTIVO_PARA_MENSAGEM[card.motive_key] || "default",
+    // o mesmo motivo do chip (revisão de 10/11): manual da Limeira abre a mensagem de "sem venda"
+    motivo: MOTIVO_PARA_MENSAGEM[motivo] || "default",
     nome: card.owner_name,
     franchiseName: card.franchise_name,
     dias: card.days_since_last_sale,

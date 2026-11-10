@@ -253,8 +253,14 @@ test("linhaHoje: Bragança abriu com -55% e hoje está +46,7% (fora da regra, fe
 test("linhaHoje: unidade pequena lê em 8 semanas; motivo vivo diferente da abertura aparece", () => {
   assert.equal(
     linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -44,2% no mês até 26/09",
-      hoje_queda_pct: -9.5, hoje_queda_metodo: "56d" }),
-    "Hoje: -9,5% em 8 semanas, fora da regra"
+      hoje_queda_pct: -9.5, hoje_queda_metodo: "56d", out_of_rule_since: "2026-11-10" }),
+    "Hoje: -9,5% em 8 semanas, fora da regra · sai sozinho em 13/11"
+  );
+  // revisão de código: cartão que o reconcile ainda segura (out_of_rule_since nulo) NÃO é "fora da regra"
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -25% no mês até 30/10",
+      hoje_queda_pct: -30.2, hoje_queda_metodo: "28d", out_of_rule_since: null }),
+    "Hoje: -30,2% em 28 dias"
   );
   assert.equal(
     linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -26,9% nos últimos 28 dias até 13/10",
