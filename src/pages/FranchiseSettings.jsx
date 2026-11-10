@@ -67,6 +67,7 @@ const initialFormData = {
   pickup_address: '',
   accepts_reservation_without_payment: false,
   pix_on_delivery: false,
+  pickup_pay_on_pickup: false,
   charges_card_fee_to_customer: false,
   payment_delivery: [],
   payment_pickup: [],
@@ -85,6 +86,12 @@ const initialFormData = {
 
 const inputClass = "w-full bg-surface-line border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-brand/20 text-base md:text-sm outline-none";
 const labelClass = "block text-xs font-semibold text-ink-2 mb-2";
+
+// Na retirada, quando o cliente paga (pickup_pay_on_pickup, 10/11/2026, decisão do Nelson pelo caso do Imirim)
+const PICKUP_PAY_WHEN = [
+  { value: 'antes', label: 'Antes, para reservar', description: 'No Pix, o cliente paga e manda o comprovante antes; dinheiro e cartão, na hora. É o padrão.' },
+  { value: 'na_hora', label: 'Na hora da retirada', description: 'O robô fecha o pedido para o dia escolhido sem pedir comprovante: o cliente paga quando vier buscar, inclusive no Pix.' },
+];
 
 const PICKUP_TYPES = [
   { value: 'simple', label: '🏠 Retirada simples', description: 'Cliente combina e busca com você (sem ponto comercial).' },
@@ -423,6 +430,7 @@ function FranchiseSettingsContent() {
       pickup_address: config.pickup_address || '',
       accepts_reservation_without_payment: config.accepts_reservation_without_payment ?? false,
       pix_on_delivery: config.pix_on_delivery ?? false,
+      pickup_pay_on_pickup: config.pickup_pay_on_pickup ?? false,
       charges_card_fee_to_customer: config.charges_card_fee_to_customer ?? false,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
@@ -1183,6 +1191,15 @@ function FranchiseSettingsContent() {
                     checked={formData.pickup_requires_scheduling ?? true}
                     onChange={(val) => handleInputChange('pickup_requires_scheduling', val)}
                   />
+                  <div className="space-y-2">
+                    <label className={labelClass}>Na retirada, o cliente pode pagar:</label>
+                    <RadioCards
+                      options={PICKUP_PAY_WHEN}
+                      value={formData.pickup_pay_on_pickup ? 'na_hora' : 'antes'}
+                      onChange={(val) => handleInputChange('pickup_pay_on_pickup', val === 'na_hora')}
+                    />
+                    <FieldHint text="Na hora da retirada: o pedido entra em Vendas como “a receber” e você cobra quando o cliente buscar. Se o cliente sumir, exclua a venda. A entrega não muda." />
+                  </div>
                   <div className="space-y-2">
                     <label className={labelClass}>Endereço de retirada</label>
                     <RadioCards

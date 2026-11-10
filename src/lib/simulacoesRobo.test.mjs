@@ -114,6 +114,11 @@ const ret = simulacaoOutroDia({ has_delivery: false, has_pickup: true, has_custo
   pickup_schedule: [{ days: ["sab"], open: "09:00", close: "12:00" }] }, HOJE);
 assert.equal(ret.pergunta, "Quero para sábado, 26/09. Posso pagar só no dia?");
 assert.match(ret.resposta, /dinheiro na retirada/);
+// pickup_pay_on_pickup (10/11/2026): Pix pago na retirada, só na retirada; desligado = igual a antes
+const RET = { has_delivery: false, has_pickup: true, has_custom_pickup_hours: true, payment_pickup: ["pix", "credit"], pickup_schedule: [{ days: ["sab"], open: "09:00", close: "12:00" }] };
+assert.equal(simulacaoOutroDia({ ...RET, pickup_pay_on_pickup: true }, HOJE).resposta, "Pode sim! Para sábado, 26/09, você paga em Pix ou crédito na retirada.");
+assert.equal(simulacaoOutroDia({ ...RET, pickup_pay_on_pickup: false }, HOJE).resposta, simulacaoOutroDia(RET, HOJE).resposta);
+assert.equal(simulacaoOutroDia({ ...OUTRO, pickup_pay_on_pickup: true }, HOJE).resposta, desligada.resposta); // entrega não muda
 // sem dias abertos: sem cenário
 assert.equal(simulacaoOutroDia({ has_delivery: true, delivery_schedule: [] }, HOJE), null);
 // texto sem palavras proibidas na tela

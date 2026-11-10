@@ -284,7 +284,8 @@ export function simulacaoOutroDia(form, hoje) {
   const valores = [...new Set((lista || []).flatMap((v) => LEGACY_PAYMENT_MAP[v] || [v]))];
   const temPix0 = valores.includes("pix");
   // "Aceito Pix na entrega" (pix_on_delivery, 16/10/2026): o Pix também é pago no dia, como dinheiro e cartão
-  const pixNaHora = temPix0 && form?.pix_on_delivery === true;
+  // "Na retirada, o cliente pode pagar: na hora da retirada" (pickup_pay_on_pickup, 10/11/2026): idem, só na retirada
+  const pixNaHora = temPix0 && (form?.pix_on_delivery === true || (modalidade === "retirada" && form?.pickup_pay_on_pickup === true));
   const noDia = valores.filter((v) => PAGA_NO_DIA.has(v) || (pixNaHora && v === "pix"));
   const temPix = temPix0 && !pixNaHora;
   const na = modalidade === "entrega" ? "na entrega" : "na retirada";

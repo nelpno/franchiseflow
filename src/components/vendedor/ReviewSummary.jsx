@@ -141,6 +141,7 @@ export default function ReviewSummary({ formData, onGoToStep }) {
             ? [
                 { label: "Tipo", value: formData.pickup_is_store ? "Loja / ponto físico" : "Retirada simples" },
                 { label: "Hora combinada", value: formData.pickup_requires_scheduling !== false ? "Sim" : "Não" },
+                { label: "Paga", value: formData.pickup_pay_on_pickup ? "Na hora da retirada" : "Antes, para reservar (Pix)" },
                 { label: "Endereço", value: formData.pickup_address || "O da unidade" },
                 ...pickupHoursFields(),
               ]
