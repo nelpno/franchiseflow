@@ -61,6 +61,15 @@ const navigationItems = [
     adminNav: "main",
   },
   {
+    // Canais de venda (10/11/2026): robô × cardápio × à mão, rede e por unidade. No celular
+    // fica no "Mais" (menu de baixo do admin segue Hoje / Unidades / Mural / Mais).
+    title: "Canais de venda",
+    url: createPageUrl("CanaisVenda"),
+    materialIcon: "query_stats",
+    roles: ["admin", "manager", "customer_success"],
+    adminNav: "main",
+  },
+  {
     title: "Customer Success",
     adminLabel: "Mural do CS",
     url: createPageUrl("CustomerSuccess"),
