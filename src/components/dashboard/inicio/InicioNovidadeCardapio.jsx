@@ -1,11 +1,12 @@
 // Aviso discreto "Novo: Cardápio digital" na Início da franqueada (10/11/2026, rede aberta). Só para quem ainda não ligou
 // nenhuma vez (cardapio_estado.ja_ligou) e com a chave da unidade ligada. Some ao ligar ou ao dispensar (o "x" fica guardado
-// neste aparelho). Nada de pop-up: é uma linha no alto, com o link para a página.
+// neste aparelho). Só para quem tem papel franchisee. Nada de pop-up: é uma linha no alto, com o link para a página.
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { LINK_ACAO } from "@/components/shared/adminUi";
+import { useAuth } from "@/lib/AuthContext";
 import { useFeatureFlagState } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { getCardapioEstado } from "@/entities/all";
@@ -17,17 +18,20 @@ function lerDispensa(evo) {
 }
 
 export default function InicioNovidadeCardapio({ evoId }) {
+  // só a franqueada: admin/gerente/CS vendo a Início de uma unidade não contam na telemetria nem gravam o "x" (code review 10/11)
+  const { user } = useAuth();
+  const franqueada = user?.role === "franchisee";
   const { value: chave } = useFeatureFlagState(FEATURE_KEYS.CARDAPIO_DIGITAL, evoId || undefined);
   const [dispensado, setDispensado] = useState(() => lerDispensa(evoId));
   useEffect(() => { setDispensado(lerDispensa(evoId)); }, [evoId]);
   const q = useQuery({
     queryKey: ["cardapio-estado", evoId],
     queryFn: ({ signal }) => getCardapioEstado(evoId, { signal }),
-    enabled: !!evoId && chave && !dispensado,
+    enabled: franqueada && !!evoId && chave && !dispensado,
     staleTime: 10 * 60 * 1000,
     retry: false,
   });
-  const mostra = !!evoId && chave && !dispensado && !!q.data && !q.data.ja_ligou && !q.data.ativo && q.data.chave_ligada !== false;
+  const mostra = franqueada && !!evoId && chave && !dispensado && !!q.data && !q.data.ja_ligou && !q.data.ativo && q.data.chave_ligada !== false;
   const visto = useRef(null);
   useEffect(() => {
     if (mostra && visto.current !== evoId) {
