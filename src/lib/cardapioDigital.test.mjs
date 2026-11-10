@@ -109,14 +109,17 @@ import { FILTROS_PRODUTOS, comPendentes } from "./cardapioDigital.js";
 }
 import { situacaoPausa, erroPausaAte, erroPrazo } from "./cardapioDigital.js";
 {
-  assert.deepEqual(situacaoPausa(null, "2026-11-10"), { pausada: false, texto: "" });
-  assert.equal(situacaoPausa("2026-11-11T00:00", "2026-11-10").texto, "Entrega pausada hoje. Volta sozinha amanhã.");
-  assert.equal(situacaoPausa("2026-11-10T15:30", "2026-11-10").texto, "Entrega pausada até as 15h30. Volta sozinha.");
-  assert.equal(situacaoPausa("2026-11-10T09:00", "2026-11-10").texto, "Entrega pausada até as 9h. Volta sozinha.");
+  assert.deepEqual(situacaoPausa(null, "2026-11-10", 600), { pausada: false, texto: "" });
+  assert.equal(situacaoPausa("2026-11-10T15:30", "2026-11-10", 16 * 60).pausada, false); // venceu com a tela aberta
+  assert.equal(situacaoPausa("2026-11-09T23:00", "2026-11-10", 0).pausada, false);
+  assert.equal(situacaoPausa("2026-11-11T00:00", "2026-11-10", 23 * 60 + 59).texto, "Entrega pausada hoje. Volta sozinha amanhã.");
+  assert.equal(situacaoPausa("2026-11-10T15:30", "2026-11-10", 600).texto, "Entrega pausada até as 15h30. Volta sozinha.");
+  assert.equal(situacaoPausa("2026-11-10T09:00", "2026-11-10", 480).texto, "Entrega pausada até as 9h. Volta sozinha.");
   assert.equal(erroPausaAte("15:30", 16 * 60), "Esse horário já passou. Escolha um horário mais tarde.");
   assert.equal(erroPausaAte("17:00", 16 * 60), "");
   assert.equal(erroPausaAte("", 16 * 60), "Escolha o horário em que a entrega volta.");
-  assert.equal(erroPrazo(50), ""); assert.equal(erroPrazo("50"), ""); assert.notEqual(erroPrazo(10), ""); assert.notEqual(erroPrazo(""), ""); assert.notEqual(erroPrazo(50.5), "");
+  assert.equal(erroPrazo(50), ""); assert.equal(erroPrazo("50"), ""); assert.equal(erroPrazo(10), ""); assert.notEqual(erroPrazo(""), ""); assert.notEqual(erroPrazo(50.5), "");
+  assert.equal(mensagemErroCardapio({ code: "22023", message: "O prazo da entrega vai de 15 a 180 minutos." }), "O prazo da entrega vai de 15 a 180 minutos.");
   assert.equal(mensagemErroCardapio({ code: "22023", message: "Esse horário já passou. Escolha um horário mais tarde." }), "Esse horário já passou. Escolha um horário mais tarde.");
   console.log("cardapioDigital: pausa e prazo da entrega ok");
 }

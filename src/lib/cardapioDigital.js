@@ -223,10 +223,11 @@ export function mensagemErroCardapio(erro, padrao = "Não deu para salvar. Tente
 
 // Entrega de hoje (v8, 10/11/2026): pausa da entrega e prazo do "o quanto antes" no cardápio.
 // pausaAte = 'AAAA-MM-DDTHH:MI' (Brasília) do cardapio_painel, null = entrega funcionando (o banco já some com a vencida).
-export const PRAZO_PADRAO = 60;
-export function situacaoPausa(pausaAte, hojeISO) {
+// O prazo vem pronto do banco (cardapio_prazo_entrega): a tela só exibe, nenhuma regra de prazo aqui.
+// agoraMin = minuto de agora em Brasília: a pausa que já venceu com a tela aberta não aparece mais (code review 10/11).
+export function situacaoPausa(pausaAte, hojeISO, agoraMin) {
   const m = String(pausaAte || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/);
-  if (!m) return { pausada: false, texto: "" };
+  if (!m || m[1] < hojeISO || (m[1] === hojeISO && Number(m[2]) * 60 + Number(m[3]) <= agoraMin)) return { pausada: false, texto: "" };
   if (m[1] > hojeISO) return { pausada: true, texto: "Entrega pausada hoje. Volta sozinha amanhã." };
   const hora = `${Number(m[2])}h${m[3] === "00" ? "" : m[3]}`;
   return { pausada: true, texto: `Entrega pausada até as ${hora}. Volta sozinha.` };
@@ -238,8 +239,9 @@ export function erroPausaAte(hhmm, agoraMin) {
   if (Number(m[1]) * 60 + Number(m[2]) <= agoraMin) return "Esse horário já passou. Escolha um horário mais tarde.";
   return "";
 }
+// só "é um número inteiro?": a faixa permitida (15 a 180) é do banco (cardapio_configurar), que devolve a mensagem
 export function erroPrazo(v) {
   const n = Number(v);
-  if (v === "" || v == null || !Number.isInteger(n) || n < 15 || n > 180) return "O prazo da entrega vai de 15 a 180 minutos.";
+  if (v === "" || v == null || !Number.isInteger(n)) return "Digite o prazo em minutos.";
   return "";
 }

@@ -5,7 +5,7 @@
 // O robô NÃO sabe da pausa: só o cardápio muda.
 import { useEffect, useState } from "react";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, H3_CARTAO, TOM_ATENCAO } from "@/components/shared/adminUi";
-import { PRAZO_PADRAO, erroPausaAte, erroPrazo, situacaoPausa } from "@/lib/cardapioDigital";
+import { erroPausaAte, erroPrazo, situacaoPausa } from "@/lib/cardapioDigital";
 
 const CAMPO = "h-11 rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30";
 
@@ -23,8 +23,8 @@ export default function EntregaHojeCard({ painel, hojeISO, salvando, onPausar, o
   useEffect(() => { setPrazo(painel?.entrega_prazo_min ?? ""); }, [painel?.entrega_prazo_min]);
   if (!painel?.tem_entrega) return null;
 
-  const pausa = situacaoPausa(painel.entrega_pausa_ate, hojeISO);
-  const prazoAtual = painel.entrega_prazo_min || PRAZO_PADRAO;
+  const pausa = situacaoPausa(painel.entrega_pausa_ate, hojeISO, agoraMinBRT());
+  const prazoAtual = painel.entrega_prazo_min; // já com a regra do banco (cardapio_prazo_entrega)
   const pausarAte = () => {
     const e = erroPausaAte(ate, agoraMinBRT());
     setErroAte(e);
@@ -45,7 +45,7 @@ export default function EntregaHojeCard({ painel, hojeISO, salvando, onPausar, o
           <p className="text-sm font-semibold text-ink" role="status">{pausa.texto}</p>
         ) : (
           <p className="text-sm text-ink-2">
-            Entrega funcionando. No cardápio, a primeira opção de hoje é <strong className="font-semibold text-ink">Em cerca de {prazoAtual} min</strong>.
+            Entrega funcionando.{prazoAtual ? <> No cardápio, a primeira opção de hoje é <strong className="font-semibold text-ink">Em cerca de {prazoAtual} min</strong>.</> : null}
           </p>
         )}
         {pausa.pausada && <p className="text-sm text-ink-2">No cardápio, o cliente vê o aviso e ainda pode retirar ou agendar a entrega para depois.</p>}
@@ -76,8 +76,8 @@ export default function EntregaHojeCard({ painel, hojeISO, salvando, onPausar, o
         <label className="block text-sm font-semibold text-ink" htmlFor="entrega-prazo">Prazo da entrega (o quanto antes)</label>
         <p className="mb-2 text-sm text-ink-2">É o mesmo tempo de entrega do Meu robô: o robô também fala esse prazo.</p>
         <div className="flex items-center gap-2">
-          <input id="entrega-prazo" type="number" inputMode="numeric" min="15" max="180" step="5" className={`${CAMPO} w-24`}
-            placeholder={String(PRAZO_PADRAO)} value={prazo} onChange={(e) => { setPrazo(e.target.value); setErroP(""); }}
+          <input id="entrega-prazo" type="number" inputMode="numeric" step="5" className={`${CAMPO} w-24`}
+            value={prazo} onChange={(e) => { setPrazo(e.target.value); setErroP(""); }}
             aria-invalid={!!erroP} aria-describedby={erroP ? "entrega-prazo-erro" : undefined} />
           <span className="text-sm text-ink-2">min</span>
           <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} disabled={ocupado || String(prazo) === String(painel.entrega_prazo_min ?? "")} onClick={salvarPrazo}>
