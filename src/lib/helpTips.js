@@ -5,9 +5,9 @@
 
 export const HELP_TIPS = {
   pedidoMinimo: {
-    titulo: "Pedido mínimo para entrega",
+    titulo: "Pedido mínimo (entrega e retirada)",
     texto:
-      "Valor mínimo do pedido para entrega. O robô recebe esse número junto com as regras de entrega e o leva em conta na conversa. Deixe em branco se não houver mínimo.",
+      "Valor mínimo de qualquer pedido, entrega ou retirada. O robô e o cardápio não fecham pedido abaixo dele. Deixe em branco se não houver mínimo.",
     exemplo: "Preencha 50 para um pedido mínimo de R$ 50.",
   },
   taxaEntrega: {

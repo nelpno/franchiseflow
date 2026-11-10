@@ -33,7 +33,7 @@ import NumerosBloqueados from "@/components/vendedor/NumerosBloqueados";
 import { ToggleCard, RadioCards } from "@/components/vendedor/WizardFields";
 import useWhatsAppConnection from "@/hooks/useWhatsAppConnection";
 import { listarFranquias } from "@/lib/franchisesCache";
-import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { useFeatureFlag, useFeatureFlagState } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 
 const initialFormData = {
@@ -42,7 +42,7 @@ const initialFormData = {
   accepted_payment_methods: '',
   opening_hours: '',
   working_days: '',
-  operating_hours: [],
+  // operating_hours saiu do formulário (junção 10/11/2026): campo morto, ninguém lê (docs/2026-11-10-juncao-meu-robo-cardapio.md P8)
   price_table_url: '',
   agent_name: '',
   promotions_combo: '',
@@ -207,6 +207,15 @@ function FranchiseSettingsContent() {
   // da lista, ignorando qual unidade o admin queria ver.
   const [searchParams] = useSearchParams();
   const franchiseParam = searchParams.get('franchise');
+  // Junção com o Cardápio digital (10/11/2026): ?etapa=N&bloco=<cartão>&de=cardapio abre a etapa, rola até o cartão
+  // (id "mr-<bloco>") e mostra o caminho de volta ao cardápio.
+  const deCardapio = searchParams.get('de') === 'cardapio';
+  const blocoParam = searchParams.get('bloco');
+  const blocoFeitoRef = useRef(false);
+  // A promoção mora no Cardápio digital; com a chave do cardápio desligada na unidade (emergência), o texto volta a ser editável aqui.
+  // Enquanto a chave carrega, vale "ligada" (só leitura): nunca abre um editor que vai sumir.
+  const chaveCardapio = useFeatureFlagState(FEATURE_KEYS.CARDAPIO_DIGITAL);
+  const promocaoNoCardapio = !chaveCardapio.resolved || chaveCardapio.value;
   const [configurations, setConfigurations] = useState([]);
   const [franchises, setFranchises] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -368,6 +377,20 @@ function FranchiseSettingsContent() {
     }
   }, [selectedConfigId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ?bloco=<cartão> (atalho do Cardápio digital): depois que a etapa abriu, rola até o cartão e o destaca. Uma vez só.
+  useEffect(() => {
+    if (!blocoParam || blocoFeitoRef.current || isLoading || !editingConfig) return undefined;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`mr-${blocoParam}`);
+      if (!el) return;
+      blocoFeitoRef.current = true;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('ring-2', 'ring-brand/40', 'rounded-2xl');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-brand/40'), 2500);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [blocoParam, currentStep, isLoading, editingConfig]);
+
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (isDirty) { e.preventDefault(); e.returnValue = ''; }
@@ -416,7 +439,6 @@ function FranchiseSettingsContent() {
       delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
       delivery_schedule: config.delivery_schedule || [],
       pix_key_type: config.pix_key_type || '',
-      operating_hours: config.operating_hours || [],
       pix_holder_name: config.pix_holder_name || '',
       pix_bank: config.pix_bank || '',
       city: seededCity,
@@ -454,6 +476,8 @@ function FranchiseSettingsContent() {
           const configUpdatedAt = config.updated_at ? new Date(config.updated_at).getTime() : Date.now();
 
           // v2 = só o que a pessoa mudou. O formato antigo (tela inteira) traria valores velhos de volta.
+          // A promoção mora no Cardápio digital desde 10/11/2026: rascunho velho com o texto dela não volta (gravaria por cima)
+          if (draft?.data) delete draft.data.promotions_combo;
           if (draft.v === 2 && draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
             setFormData({ ...baseData, ...draft.data });
             setCurrentStep(draft.step || 1);
@@ -690,8 +714,8 @@ function FranchiseSettingsContent() {
   // e delivery_fee_rules (venda manual, 1º grupo). "Cobra frete" = algum grupo cobra: antes vinha só do
   // 1º grupo, e um grupo grátis anunciava frete grátis para a semana toda.
   // delivery_start_time, order_cutoff_time e delivery_method saíram do formData (S8.4, 28/09/2026):
-  // não tinham leitor nenhum e a tela parou de gravar neles em 12/09. operating_hours continua no
-  // formData — ainda é lido como fallback de pickup_schedule mais abaixo (unidade com dado antigo).
+  // não tinham leitor nenhum e a tela parou de gravar neles em 12/09. operating_hours saiu em 10/11/2026 (junção
+  // com o Cardápio): era só reserva do horário de retirada de unidade sem entrega, e as 70 ativas têm entrega.
   const handleScheduleChange = (val) => {
     handleInputChange('delivery_schedule', val);
     if (val.length > 0) {
@@ -921,6 +945,13 @@ function FranchiseSettingsContent() {
       <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="max-w-3xl space-y-6">
 
+        {/* Junção 10/11/2026: veio de um atalho do Cardápio digital (?de=cardapio): caminho de volta */}
+        {deCardapio && (
+          <Link to="/CardapioDigital" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold text-brand-dark hover:underline">
+            <MaterialIcon icon="arrow_back" size={16} /> Voltar ao Cardápio digital
+          </Link>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -1115,7 +1146,7 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_delivery', val)}
               />
               {hasDelivery && modeloFrete && (
-                <div className="sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
+                <div id="mr-entrega" className="scroll-mt-24 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
                   <EntregaCard
                     modelo={modeloFrete}
                     onChange={handleFreteChange}
@@ -1129,7 +1160,7 @@ function FranchiseSettingsContent() {
                 </div>
               )}
               {hasDelivery && !modeloFrete && (
-                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
+                <div id="mr-entrega" className="scroll-mt-24 space-y-4 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-warn-soft border border-warn/30">
                     <MaterialIcon icon="info" size={16} className="text-warn-ink mt-0.5 shrink-0" />
                     <p className="text-xs text-warn-ink">
@@ -1145,7 +1176,7 @@ function FranchiseSettingsContent() {
                         placeholder="7" />
                     </div>
                     <div>
-                      <label className={labelClass}>Pedido mínimo (R$)</label>
+                      <label className={labelClass}>Pedido mínimo (entrega e retirada)</label>
                       <input className={`${inputClass} font-mono`} type="number" inputMode="decimal" min="0"
                         value={formData.min_order_value ?? ''}
                         onChange={(e) => handleInputChange('min_order_value', e.target.value ? Number(e.target.value) : null)}
@@ -1175,7 +1206,7 @@ function FranchiseSettingsContent() {
                 onChange={(val) => handleInputChange('has_pickup', val)}
               />
               {hasPickup && (
-                <div className="space-y-4 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
+                <div id="mr-retirada" className="scroll-mt-24 space-y-4 sm:rounded-2xl sm:border sm:border-surface-line/20 sm:p-4">
                   <div className="space-y-2">
                     <label className={labelClass}>Como funciona a retirada?</label>
                     <RadioCards
@@ -1191,15 +1222,6 @@ function FranchiseSettingsContent() {
                     checked={formData.pickup_requires_scheduling ?? true}
                     onChange={(val) => handleInputChange('pickup_requires_scheduling', val)}
                   />
-                  <div className="space-y-2">
-                    <label className={labelClass}>Na retirada, o cliente pode pagar:</label>
-                    <RadioCards
-                      options={PICKUP_PAY_WHEN}
-                      value={formData.pickup_pay_on_pickup ? 'na_hora' : 'antes'}
-                      onChange={(val) => handleInputChange('pickup_pay_on_pickup', val === 'na_hora')}
-                    />
-                    <FieldHint text="Na hora da retirada: o pedido entra em Vendas como “a receber” e você cobra quando o cliente buscar. Se o cliente sumir, exclua a venda. A entrega não muda." />
-                  </div>
                   <div className="space-y-2">
                     <label className={labelClass}>Endereço de retirada</label>
                     <RadioCards
@@ -1248,7 +1270,7 @@ function FranchiseSettingsContent() {
                       <FieldHint text="Quando o cliente pode buscar. Sem entrega, esses horários também são o horário de funcionamento da unidade." />
                       <div className="mt-3">
                         <OperatingHoursEditor
-                          value={formData.pickup_schedule?.length > 0 ? formData.pickup_schedule : (formData.operating_hours || [])}
+                          value={formData.pickup_schedule || []}
                           onChange={(val) => {
                             handleInputChange('pickup_schedule', val);
                             handleInputChange('has_custom_pickup_hours', true);
@@ -1263,12 +1285,14 @@ function FranchiseSettingsContent() {
                 </div>
               )}
               {(hasDelivery || hasPickup) && (
-                <HorarioEspecialCard
-                  value={formData.horario_especial}
-                  onChange={(val) => handleInputChange('horario_especial', val)}
-                  hasDelivery={hasDelivery}
-                  hasPickup={hasPickup}
-                />
+                <div id="mr-horario-especial" className="scroll-mt-24">
+                  <HorarioEspecialCard
+                    value={formData.horario_especial}
+                    onChange={(val) => handleInputChange('horario_especial', val)}
+                    hasDelivery={hasDelivery}
+                    hasPickup={hasPickup}
+                  />
+                </div>
               )}
             </WizardStep>
           )}
@@ -1284,6 +1308,50 @@ function FranchiseSettingsContent() {
                 onChangeEntrega={(val) => handleInputChange('payment_delivery', val)}
                 onChangeRetirada={(val) => handleInputChange('payment_pickup', val)}
               />
+
+              {/* Junção 10/11/2026: "quando o cliente paga" num bloco só (antes: Pix na entrega aqui, reserva na etapa 4 e
+                  pagar na retirada na etapa 2). Mesmas colunas, mesmo texto que o robô lê. */}
+              <div id="mr-quando-paga" className="scroll-mt-24 border-t border-surface-line/10 pt-4 space-y-4">
+                <h4 className="text-xs font-bold text-ink-2 flex items-center gap-1.5">
+                  <MaterialIcon icon="schedule" size={14} />
+                  Quando o cliente paga
+                </h4>
+                {(usaPix || formData.pix_on_delivery) && (
+                  <div>
+                    <ToggleCard
+                      icon="delivery_dining"
+                      label="Pix na entrega: o cliente pode pagar quando receber"
+                      description="Ligado, o cliente que quiser pagar o Pix só quando receber fecha o pedido com o robô na hora: sem chave antes e sem comprovante. O pedido entra em Vendas como “a receber” e você cobra o Pix na entrega. Quem quiser pagar antes continua recebendo a chave. Ligado, vale também na retirada."
+                      checked={formData.pix_on_delivery ?? false}
+                      onChange={(val) => handleInputChange('pix_on_delivery', val)}
+                    />
+                    <p className="text-xs text-ink-3 mt-1 ml-1">Desligado por padrão: o robô pede o Pix antes de sair a entrega.</p>
+                  </div>
+                )}
+                {hasPickup && (
+                  <div className="space-y-2">
+                    <label className={labelClass}>Na retirada, o cliente pode pagar:</label>
+                    <RadioCards
+                      options={PICKUP_PAY_WHEN}
+                      value={formData.pickup_pay_on_pickup ? 'na_hora' : 'antes'}
+                      onChange={(val) => handleInputChange('pickup_pay_on_pickup', val === 'na_hora')}
+                    />
+                    <FieldHint text="Na hora da retirada: o pedido entra em Vendas como “a receber” e você cobra quando o cliente buscar. Se o cliente sumir, exclua a venda. A entrega não muda." />
+                  </div>
+                )}
+                <div>
+                  <ToggleCard
+                    icon="event_available"
+                    label="Pedido para outro dia sem pagar antes (reserva)"
+                    description="Vale para entrega e retirada. Ligado, quando o cliente pede para outro dia (até 14 dias à frente, só em dia que você atende), o robô fecha o pedido sem cobrar na hora: ele entra em Vendas como “a receber”, na data da entrega, e você recebe o resumo no WhatsApp. O cliente paga na entrega ou na retirada (no Pix, paga no dia). Pedido para hoje continua como sempre."
+                    checked={formData.accepts_reservation_without_payment ?? false}
+                    onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
+                  />
+                  <p className="text-xs text-ink-3 mt-1 ml-1">
+                    Desligado por padrão. Desligado, para outro dia o robô só fecha sem cobrar na hora se o cliente pagar em dinheiro ou cartão na entrega/retirada; no Pix, o cliente paga hoje. Se o cliente sumir, exclua a venda em Vendas.
+                  </p>
+                </div>
+              </div>
 
               {(usaPix || formData.pix_key_data) && (
                 <div className="border-t border-surface-line/10 pt-4 space-y-4">
@@ -1325,16 +1393,6 @@ function FranchiseSettingsContent() {
                     </div>
                   </div>
                   <FieldHint text="O robô manda a chave exatamente como está aqui, com o titular e o banco, para o cliente conferir para quem está pagando." />
-                  <ToggleCard
-                    icon="delivery_dining"
-                    label="Aceito Pix na entrega (o cliente paga quando recebe)"
-                    description="Ligado, o cliente que quiser pagar o Pix só quando receber fecha o pedido com o robô na hora: sem chave antes e sem comprovante. O pedido entra em Vendas como “a receber” e você cobra o Pix na entrega (ou na retirada). Quem quiser pagar antes continua recebendo a chave."
-                    checked={formData.pix_on_delivery ?? false}
-                    onChange={(val) => handleInputChange('pix_on_delivery', val)}
-                  />
-                  <p className="text-xs text-ink-3 -mt-2 ml-1">
-                    Desligado por padrão: o robô pede o Pix antes de sair a entrega.
-                  </p>
                 </div>
               )}
 
@@ -1400,7 +1458,7 @@ function FranchiseSettingsContent() {
 
           {/* Etapa 4: Seu vendedor */}
           {currentStep === 4 && (
-            <WizardStep icon="smart_toy" title="Seu vendedor" subtitle="Nome, catálogo, promoções e reservas: o que o robô usa para vender.">
+            <WizardStep icon="smart_toy" title="Seu vendedor" subtitle="Nome, catálogo e promoção: o que o robô usa para vender.">
               <AvisosDaEtapa avisos={validacaoEtapa.avisos} />
               <div>
                 <label className={labelClass}>Nome da atendente (ex.: Ana)<RequiredDot /></label>
@@ -1410,7 +1468,7 @@ function FranchiseSettingsContent() {
                 <FieldHint text='É o nome com que o robô se apresenta no WhatsApp. Use nome de pessoa, sem "bot", "IA" ou "assistente".' />
               </div>
               <div>
-                <label className={labelClass}>Catálogo / Cardápio (imagem que o robô envia ao cliente)</label>
+                <label className={labelClass}>Imagem do catálogo (o robô manda como foto)</label>
                 <CatalogUpload
                   value={formData.catalog_image_url}
                   onChange={(url) => handleInputChange('catalog_image_url', url)}
@@ -1422,58 +1480,56 @@ function FranchiseSettingsContent() {
                 <NumerosBloqueados franchiseId={editingConfig?.franchise_evolution_instance_id} />
                 <FieldHint text="Fornecedor, maquininha, banco, família: quem não é cliente. O robô ignora esse número na hora; você continua conversando normalmente. Pode digitar do jeito que quiser, com ou sem o 9." />
               </div>
-              <div>
-                <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa) <HelpTip tip="promocoes" /></label>
-                {/* Cardápio digital (10/11/2026): com promoção estruturada, o texto é GERADO pelo banco (trigger
-                    franchise_configurations_promocao_texto) e qualquer edição aqui seria sobrescrita. */}
-                {promocaoDoCardapio && (
-                  <p className="text-xs text-ink-2 mb-1 flex items-start gap-1">
-                    <MaterialIcon icon="info" size={14} className="mt-0.5 shrink-0" />
-                    <span>Gerado pela Promoção do cardápio. Para escrever à mão, encerre a promoção lá. <Link to="/CardapioDigital" className="font-semibold text-brand-dark hover:underline">Abrir o Cardápio digital →</Link></span>
-                  </p>
-                )}
-                <textarea className={`${inputClass} resize-y min-h-[120px] ${promocaoDoCardapio ? 'bg-surface-2 text-ink-2' : ''}`} rows={5} maxLength={1500}
-                  value={promocaoDoCardapio ? (editingConfig?.promotions_combo || '') : (formData.promotions_combo || '')}
-                  readOnly={promocaoDoCardapio}
-                  onChange={(e) => { if (!promocaoDoCardapio) handleInputChange('promotions_combo', e.target.value); }}
-                  placeholder="Ex: COMBO 1 (serve 5): 1 nhoque muçarela + 1 canelone brócolis — R$ 74,90&#10;COMBO 2 (serve 8): ... — R$ 99,90&#10;Pagamento via PIX." />
-                <FieldHint text={`Use SÓ para ofertas ATIVAS: combo, brinde, desconto. Frete por bairro, horário, endereço e ingrediente têm lugar próprio (toque no ?). DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
-                {(() => {
-                  const t = (formData.promotions_combo || '').toLowerCase();
-                  const flag = ['não temos promo', 'nao temos promo', 'no momento não', 'no momento nao', 'sendo elaborado', 'não há', 'nao ha', 'em breve', 'aguardando'].some(p => t.includes(p));
-                  // 06/11/2026 (Éden): frete grátis por condomínio/bairro escrito aqui. Com o frete calculado o robô cobra
-                  // o frete do cadastro; sem ele, às vezes segue o texto. O lugar é a lista de bairros da etapa 2.
-                  const fretePorLugar = /\b(frete|entrega|taxa)\b/.test(t) && /(condom|bairro|regi[aã]o|residencial|\bresd?\b|\bcond\b)/.test(t);
-                  if (fretePorLugar) return (
-                    <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
-                      <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
-                      <span>
-                        {modoFrete === 'estruturado'
-                          ? 'Frete por bairro ou condomínio não vale aqui: o robô cobra o frete do cadastro. Cadastre na etapa Entrega e retirada, em Bairros com taxa própria (R$ 0 é grátis), e apague daqui.'
-                          : 'Frete por bairro ou condomínio não vale aqui: o robô pode cobrar errado. Fale com o suporte para ligar o frete calculado e cadastrar o lugar com a taxa certa.'}
-                      </span>
+              {/* Junção 10/11/2026: a promoção inteira mora no Cardápio digital (vale para o robô e o cardápio). Aqui só
+                  mostra o que o robô oferece. Chave do cardápio desligada na unidade (emergência): o texto volta a ser editável. */}
+              {promocaoNoCardapio ? (
+                <div id="mr-promocao" className="scroll-mt-24 rounded-xl bg-surface-2 p-3 text-sm text-ink space-y-1" data-promo-mr>
+                  <p className="text-xs font-semibold text-ink-2">Promoção que o robô oferece:</p>
+                  <p className="whitespace-pre-line">{editingConfig?.promotions_combo ? `“${editingConfig.promotions_combo}”` : "Nenhuma promoção agora."}</p>
+                  <Link to="/CardapioDigital?bloco=promocao" className="inline-flex min-h-10 items-center font-semibold text-brand-dark hover:underline">Mudar em Cardápio digital › Promoção →</Link>
+                </div>
+              ) : (
+                <div>
+                  <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa) <HelpTip tip="promocoes" /></label>
+                  {/* Cardápio digital (10/11/2026): com promoção estruturada, o texto é GERADO pelo banco (trigger
+                      franchise_configurations_promocao_texto) e qualquer edição aqui seria sobrescrita. */}
+                  {promocaoDoCardapio && (
+                    <p className="text-xs text-ink-2 mb-1 flex items-start gap-1">
+                      <MaterialIcon icon="info" size={14} className="mt-0.5 shrink-0" />
+                      <span>Gerado pela Promoção do cardápio. Para escrever à mão, encerre a promoção lá. <Link to="/CardapioDigital" className="font-semibold text-brand-dark hover:underline">Abrir o Cardápio digital →</Link></span>
                     </p>
-                  );
-                  return flag ? (
-                    <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
-                      <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
-                      <span>Esse texto não é uma promoção — apague o campo (deixe vazio). Texto "não temos promoção" polui o robô e gasta tokens à toa.</span>
-                    </p>
-                  ) : null;
-                })()}
-              </div>
-              <div>
-                <ToggleCard
-                  icon="event_available"
-                  label="Aceitar reserva para outro dia sem pagamento antecipado?"
-                  description="Vale para entrega e retirada. Ligado, quando o cliente pede para outro dia (até 14 dias à frente, só em dia que você atende), o robô fecha o pedido sem cobrar na hora: ele entra em Vendas como “a receber”, na data da entrega, e você recebe o resumo no WhatsApp. O cliente paga na entrega ou na retirada (no Pix, paga no dia). Pedido para hoje continua como sempre."
-                  checked={formData.accepts_reservation_without_payment ?? false}
-                  onChange={(val) => handleInputChange('accepts_reservation_without_payment', val)}
-                />
-                <p className="text-xs text-ink-3 mt-1 ml-1">
-                  Desligado por padrão. Desligado, para outro dia o robô só fecha sem cobrar na hora se o cliente pagar em dinheiro ou cartão na entrega/retirada; no Pix, o cliente paga hoje. Se o cliente sumir, exclua a venda em Vendas.
-                </p>
-              </div>
+                  )}
+                  <textarea className={`${inputClass} resize-y min-h-[120px] ${promocaoDoCardapio ? 'bg-surface-2 text-ink-2' : ''}`} rows={5} maxLength={1500}
+                    value={promocaoDoCardapio ? (editingConfig?.promotions_combo || '') : (formData.promotions_combo || '')}
+                    readOnly={promocaoDoCardapio}
+                    onChange={(e) => { if (!promocaoDoCardapio) handleInputChange('promotions_combo', e.target.value); }}
+                    placeholder="Ex: COMBO 1 (serve 5): 1 nhoque muçarela + 1 canelone brócolis — R$ 74,90&#10;COMBO 2 (serve 8): ... — R$ 99,90&#10;Pagamento via PIX." />
+                  <FieldHint text={`Use SÓ para ofertas ATIVAS: combo, brinde, desconto. Frete por bairro, horário, endereço e ingrediente têm lugar próprio (toque no ?). DEIXE VAZIO se não houver promoção. (${(formData.promotions_combo || '').length}/1500)`} />
+                  {(() => {
+                    const t = (formData.promotions_combo || '').toLowerCase();
+                    const flag = ['não temos promo', 'nao temos promo', 'no momento não', 'no momento nao', 'sendo elaborado', 'não há', 'nao ha', 'em breve', 'aguardando'].some(p => t.includes(p));
+                    // 06/11/2026 (Éden): frete grátis por condomínio/bairro escrito aqui. Com o frete calculado o robô cobra
+                    // o frete do cadastro; sem ele, às vezes segue o texto. O lugar é a lista de bairros da etapa 2.
+                    const fretePorLugar = /\b(frete|entrega|taxa)\b/.test(t) && /(condom|bairro|regi[aã]o|residencial|\bresd?\b|\bcond\b)/.test(t);
+                    if (fretePorLugar) return (
+                      <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
+                        <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
+                        <span>
+                          {modoFrete === 'estruturado'
+                            ? 'Frete por bairro ou condomínio não vale aqui: o robô cobra o frete do cadastro. Cadastre na etapa Entrega e retirada, em Bairros com taxa própria (R$ 0 é grátis), e apague daqui.'
+                            : 'Frete por bairro ou condomínio não vale aqui: o robô pode cobrar errado. Fale com o suporte para ligar o frete calculado e cadastrar o lugar com a taxa certa.'}
+                        </span>
+                      </p>
+                    );
+                    return flag ? (
+                      <p className="text-xs text-warn-ink mt-1 flex items-start gap-1">
+                        <MaterialIcon icon="warning" size={14} className="mt-0.5 shrink-0" />
+                        <span>Esse texto não é uma promoção — apague o campo (deixe vazio). Texto "não temos promoção" polui o robô e gasta tokens à toa.</span>
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
+              )}
               {(currentUser?.role === 'admin' || currentUser?.role === 'manager') && (
               <div>
                 <label className={labelClass}>ID da Página do Facebook (Meta Ads)</label>
@@ -1508,6 +1564,14 @@ function FranchiseSettingsContent() {
         />
       )}
 
+      {/* Junção 10/11/2026: aberto por um atalho do Cardápio digital e já salvo: barra de volta logo acima do rodapé */}
+      {deCardapio && lastSavedAt && !isDirty && (
+        <div className="fixed bottom-[calc(8rem+env(safe-area-inset-bottom))] md:bottom-[4.75rem] right-0 left-0 md:left-[260px] z-40 px-4 md:px-8" data-volta-cardapio>
+          <Link to="/CardapioDigital" className="max-w-3xl mx-auto flex min-h-11 items-center justify-center gap-2 rounded-xl bg-ok-soft border border-ok/30 px-4 text-sm font-semibold text-ok-ink shadow-lg">
+            <MaterialIcon icon="check_circle" size={18} /> Salvo. Voltar ao Cardápio digital →
+          </Link>
+        </div>
+      )}
       {/* Fixed Bottom Navigation */}
       {/* No celular o rodape fica ACIMA do menu de baixo (que ja tem sua propria area
           segura); no desktop/PWA ele encosta no fim real da tela — pb soma a area segura

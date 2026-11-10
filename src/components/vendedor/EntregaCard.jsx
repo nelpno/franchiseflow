@@ -530,10 +530,10 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
           <p className={dica}>{estruturado ? "O robô recusa endereço além do raio. Os bairros da lista valem mesmo além dele." : "O robô recusa endereço além do raio."}</p>
         </div>
         <div>
-          <label className={rotulo}>Pedido mínimo para entrega (R$) <HelpTip tip="pedidoMinimo" /></label>
+          <label className={rotulo}>Pedido mínimo (R$), vale para entrega e retirada <HelpTip tip="pedidoMinimo" /></label>
           <input className={`${campo} w-full font-mono`} type="number" min="0" inputMode="decimal"
             value={minOrder ?? ""} onChange={(e) => onMinOrderChange(e.target.value ? Number(e.target.value) : null)} placeholder="Sem mínimo" />
-          <p className={dica}>O robô recebe esse valor e o usa na conversa sobre entrega.</p>
+          <p className={dica}>Valor mínimo de qualquer pedido, entrega ou retirada. O robô e o cardápio não fecham pedido abaixo dele. Em branco = sem mínimo.</p>
         </div>
       </div>
       <TesteRapido modelo={modelo} estruturado={estruturado} />

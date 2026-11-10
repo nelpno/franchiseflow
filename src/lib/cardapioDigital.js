@@ -165,7 +165,7 @@ export function pendencias(painel, { hojeISO, agora = new Date() } = {}) {
       acao: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque&nivel=zerado" } });
   }
   for (const t of especiaisDaSemana(painel.horario_especial, hojeISO)) {
-    out.push({ id: `especial-${t}`, tom: "info", texto: t, acao: { tipo: "rota", rotulo: "Ver no Meu robô →", to: "/FranchiseSettings" } });
+    out.push({ id: `especial-${t}`, tom: "info", texto: t, acao: { tipo: "rota", rotulo: "Ver no Meu robô →", to: linkMeuRobo(2, "horario-especial") } });
   }
   if (painel.ativo && !painel.link_bio_em) {
     out.push({ id: "bio", tom: "warn", destaque: "Link na bio?", texto: "Coloque o link na bio do Instagram e no perfil do Google.",
@@ -185,25 +185,36 @@ export function pendencias(painel, { hojeISO, agora = new Date() } = {}) {
 // Cada item do servidor: {id, nivel: "trava"|"aviso", ok, titulo, motivo}. Trava aberta = vermelho e o servidor recusa ligar;
 // aviso = amarelo, não trava. A tela só decide para onde o "Arrumar →" leva.
 const MEU_ROBO = "/FranchiseSettings";
+// Junção Meu robô × Cardápio (10/11/2026): o atalho abre a etapa E rola até o cartão (bloco = id "mr-<bloco>" no Meu robô);
+// de=cardapio mostra "Voltar ao Cardápio digital" lá. Sem etapa = o topo (conexão do robô).
+export function linkMeuRobo(etapa, bloco) {
+  const q = new URLSearchParams();
+  if (etapa) q.set("etapa", String(etapa));
+  if (bloco) q.set("bloco", bloco);
+  q.set("de", "cardapio");
+  return `${MEU_ROBO}?${q.toString()}`;
+}
+const ARRUMAR = "Arrumar no Meu robô →";
 export const ACAO_CHECKLIST = {
-  whatsapp: { tipo: "whatsapp", rotulo: "Pedir à Maxi →", mensagem: "falta o WhatsApp da unidade no cadastro" },
+  // 10n: a trava é "nenhum número recebe o pedido" (robô desconectado e sem WhatsApp público): conectar o robô resolve
+  whatsapp: { tipo: "rota", rotulo: "Conectar o robô →", to: linkMeuRobo() },
   chave: { tipo: "whatsapp", rotulo: "Falar com a Maxi →", mensagem: "o cardápio está pausado pela Maxi" },
   unidade: { tipo: "whatsapp", rotulo: "Falar com a Maxi →", mensagem: "a unidade não aparece como ativa" },
-  modalidade: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  horario_entrega: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  horario_retirada: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  frete: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  raio: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  pagamento_entrega: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=3` },
-  pagamento_retirada: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=3` },
-  endereco: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=1` },
+  modalidade: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(2) },
+  horario_entrega: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(2, "entrega") },
+  horario_retirada: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(2, "retirada") },
+  frete: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(2, "entrega") },
+  raio: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(2, "entrega") },
+  pagamento_entrega: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(3) },
+  pagamento_retirada: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(3) },
+  endereco: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(1) },
   produtos: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque" },
   em_falta: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque&nivel=zerado" },
-  robo: { tipo: "rota", rotulo: "Ver o robô →", to: MEU_ROBO },
+  robo: { tipo: "rota", rotulo: "Ver o robô →", to: linkMeuRobo() },
   // 10l
-  raio_faixas: { tipo: "rota", rotulo: "Arrumar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  feriado: { tipo: "rota", rotulo: "Marcar no Meu robô →", to: `${MEU_ROBO}?etapa=2` },
-  pedido_celular: { tipo: "rota", rotulo: "Ver o robô →", to: MEU_ROBO },
+  raio_faixas: { tipo: "rota", rotulo: ARRUMAR, to: linkMeuRobo(2, "entrega") },
+  feriado: { tipo: "rota", rotulo: "Marcar no Meu robô →", to: linkMeuRobo(2, "horario-especial") },
+  pedido_celular: { tipo: "rota", rotulo: "Ver o robô →", to: linkMeuRobo() },
 };
 const ORDEM_ESTADO = { trava: 0, aviso: 1, ok: 2 };
 
@@ -264,6 +275,36 @@ export function sugestaoPromocaoCliente(texto) {
   return out || (frases[0] || "").slice(0, PROMO_CLIENTE_MAX).trim();
 }
 
+// Promoção "do meu jeito" (junção 10/11/2026): o robô lê promotions_combo = a frase do cliente + os detalhes para ele.
+// Os detalhes já contendo a frase (texto antigo do Meu robô) vão sozinhos, sem repetir.
+const normPromo = (t) => String(t || "").replace(/\s+/g, " ").trim().toLowerCase();
+export function textoPromocaoRobo(cliente, detalhes) {
+  const c = String(cliente || "").replace(/\s+/g, " ").trim();
+  const d = String(detalhes || "").trim();
+  if (!d) return c || null;
+  if (!c || normPromo(d).includes(normPromo(c))) return d;
+  return `${c}\n${d}`;
+}
+/** O inverso, para editar: tira do texto do robô a frase do cliente que está no começo dele. */
+export function detalhesDoRobo(textoRobo, cliente) {
+  const t = String(textoRobo || "").trim();
+  const c = String(cliente || "").replace(/\s+/g, " ").trim();
+  if (!c || !t) return t;
+  const linhas = t.split("\n");
+  return linhas[0].replace(/\s+/g, " ").trim() === c ? linhas.slice(1).join("\n").trim() : t;
+}
+/** Aviso do texto para o robô (veio do Meu robô, 06/11/2026): frete por lugar ou "não temos promoção" não são promoção. */
+export function avisoTextoPromocao(texto) {
+  const t = String(texto || "").toLowerCase();
+  if (/\b(frete|entrega|taxa)\b/.test(t) && /(condom|bairro|regi[aã]o|residencial|\bresd?\b|\bcond\b)/.test(t)) {
+    return "Frete por bairro ou condomínio não vale aqui: o robô cobra o frete do Meu robô. Cadastre o bairro em Meu robô › Entrega e retirada (ou fale com o suporte) e apague daqui.";
+  }
+  if (["não temos promo", "nao temos promo", "no momento não", "no momento nao", "sendo elaborado", "não há", "nao ha", "em breve", "aguardando"].some((x) => t.includes(x))) {
+    return "Esse texto não é uma promoção: deixe vazio. \"Não temos promoção\" atrapalha o robô.";
+  }
+  return "";
+}
+
 /** Link do cardápio sem o https:// (o que já existe ou o que vai nascer ao ligar). */
 export function linkSemProtocolo(url) {
   return url ? String(url).replace(/^https?:\/\//, "") : "";
@@ -304,7 +345,7 @@ export function mensagemErroCardapio(erro, padrao = "Não deu para salvar. Tente
   return padrao;
 }
 
-// Entrega de hoje (v8, 10/11/2026): pausa da entrega e prazo do "o quanto antes" no cardápio.
+// Entrega de hoje (v8, 10/11/2026): pausa da entrega. O prazo do "o quanto antes" é só do Meu robô (junção 10/11).
 // pausaAte = 'AAAA-MM-DDTHH:MI' (Brasília) do cardapio_painel, null = entrega funcionando (o banco já some com a vencida).
 // O prazo vem pronto do banco (cardapio_prazo_entrega): a tela só exibe, nenhuma regra de prazo aqui.
 // agoraMin = minuto de agora em Brasília: a pausa que já venceu com a tela aberta não aparece mais (code review 10/11).
@@ -320,11 +361,5 @@ export function erroPausaAte(hhmm, agoraMin) {
   const m = String(hhmm || "").match(/^([01]\d|2[0-3]):([0-5]\d)$/);
   if (!m) return "Escolha o horário em que a entrega volta.";
   if (Number(m[1]) * 60 + Number(m[2]) <= agoraMin) return "Esse horário já passou. Escolha um horário mais tarde.";
-  return "";
-}
-// só "é um número inteiro?": a faixa permitida (15 a 180) é do banco (cardapio_configurar), que devolve a mensagem
-export function erroPrazo(v) {
-  const n = Number(v);
-  if (v === "" || v == null || !Number.isInteger(n)) return "Digite o prazo em minutos.";
   return "";
 }

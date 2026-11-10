@@ -1,6 +1,8 @@
 // "Cardápio digital" (10/11/2026, ESPEC do cardápio § 4; piloto Imirim). Área da franqueada, fora do Meu robô.
 // Ordem dos blocos = o trabalho dela: 1) ligar e divulgar · 2) o que trava a venda · 3) resultado · 4) promoção ·
-// 5) produtos · rodapé. Menu: chave cardapio_digital (desde 10/11/2026 ligada para a REDE; desligada por unidade = freio de
+// 5) produtos · rodapé. Junção com o Meu robô (10/11/2026, docs/2026-11-10-juncao-meu-robo-cardapio.md): aqui é "vender pelo
+// link hoje" (ligar, divulgar, pausar a entrega hoje, promoção inteira, produtos, resultado); como a unidade funciona
+// (horários, prazo, frete, pagamento) só no Meu robô, com atalho para o cartão exato. Pausa e promoção aparecem antes de ligar. Menu: chave cardapio_digital (desde 10/11/2026 ligada para a REDE; desligada por unidade = freio de
 // emergência, o menu some e a página volta para a Início). Admin vê sempre, escolhe a unidade e vê a adesão da rede.
 // Ligar = checklist do banco em dia (cardapio_checklist, SQL 2026-11-10f); o link nasce do nome da unidade.
 // Dados: RPCs cardapio_painel / cardapio_resultado / cardapio_configurar / cardapio_produtos_visiveis
@@ -19,7 +21,6 @@ import PendenciasCard from "@/components/cardapio/PendenciasCard";
 import EntregaHojeCard from "@/components/cardapio/EntregaHojeCard";
 import ResultadoCards, { PERIODOS } from "@/components/cardapio/ResultadoCards";
 import PromocaoForm from "@/components/cardapio/PromocaoForm";
-import PromocaoClienteCard from "@/components/cardapio/PromocaoClienteCard";
 import ProdutosLista from "@/components/cardapio/ProdutosLista";
 import AdesaoRede from "@/components/cardapio/AdesaoRede";
 import FreteConsumoCard from "@/components/cardapio/FreteConsumoCard";
@@ -29,7 +30,7 @@ import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { listarFranquias } from "@/lib/franchisesCache";
 import { getCardapioPainel, getCardapioResultado, cardapioConfigurar, cardapioProdutosVisiveis } from "@/entities/all";
-import { comPendentes, itensDoChecklist, mensagemErroCardapio, pendencias } from "@/lib/cardapioDigital";
+import { comPendentes, itensDoChecklist, linkMeuRobo, mensagemErroCardapio, pendencias } from "@/lib/cardapioDigital";
 import { hojeBRT } from "@/lib/horarioEspecial";
 import { registrarEvento } from "@/lib/telemetria";
 
@@ -57,7 +58,7 @@ export default function CardapioDigital() {
   const queryClient = useQueryClient();
   const promoRef = useRef(null);
   const [franquias, setFranquias] = useState(null);
-  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "pausa" | "prazo" | "whatsapp"
+  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "pausa" | "whatsapp"
   const [salvandoIds, setSalvandoIds] = useState(() => new Set());
   // "Mostrar" em voo ({id: visivel}): todo dado que chega do servidor (refetch de foco, resposta de outra gravação) passa
   // por comPendentes, então nunca desfaz um toque que ainda não voltou (code review 10/11/2026)
@@ -96,6 +97,20 @@ export default function CardapioDigital() {
   useEffect(() => {
     if (painel?.evo) registrarEvento("cardapio_tela_aberta");
   }, [painel?.evo]);
+  // ?bloco=promocao (atalho "Mudar em Cardápio digital › Promoção" do Meu robô): rola até o bloco quando ele existir
+  // (uma vez só: o painel muda a cada gravação e refetch, e a página não pode pular de volta para a promoção)
+  const blocoPedido = searchParams.get("bloco");
+  const rolouRef = useRef(false);
+  const temPainel = !!painel;
+  useEffect(() => {
+    if (blocoPedido !== "promocao" || !temPainel || rolouRef.current) return undefined;
+    const t = setTimeout(() => {
+      if (!promoRef.current) return;
+      rolouRef.current = true;
+      promoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [blocoPedido, temPainel]);
   // telemetria da adesão: viu o checklist (desligado), com o que faltava; uma vez por unidade aberta
   const checklistVisto = useRef(null);
   useEffect(() => {
@@ -166,10 +181,11 @@ export default function CardapioDigital() {
     toast.success("Pronto. Os pedidos do cardápio vão chegar no WhatsApp do robô.");
     registrarEvento("cardapio_whatsapp_do_robo", { semClarity: true });
   });
-  // 10l: texto da promoção que o cliente vê (o robô continua com o texto do Meu robô)
-  const salvarPromoCliente = (texto) => configurar("promo_cliente", { promocao_cliente: texto }, () => {
-    toast.success(texto ? "Texto da promoção salvo. O cardápio já mostra." : "O cardápio não mostra mais promoção.");
-    registrarEvento(texto ? "cardapio_promo_cliente_salva" : "cardapio_promo_cliente_tirada", { semClarity: true });
+  // junção 10/11: promoção "do meu jeito" = frase do cliente (promocao_cliente) + texto do robô (promotions_combo, SQL 10n);
+  // encerra a estruturada no mesmo toque (o banco grava a regra antes do texto)
+  const salvarPromoLivre = ({ cliente, robo }) => configurar("promocao", { promocao_regras: [], promocao_cliente: cliente, promocao_robo: robo }, () => {
+    toast.success("Promoção salva. O cardápio e o robô já mostram.");
+    registrarEvento("cardapio_promo_livre_salva", { semClarity: true });
   });
   // tocou em ligar com item vermelho (não foi ao servidor): conta o que faltava
   const recusado = (ids) => registrarEvento("cardapio_ligar_recusado", { detalhe: ids.join(",") || "?", semClarity: true });
@@ -181,22 +197,19 @@ export default function CardapioDigital() {
     toast.success("Anotado. Obrigado!");
     registrarEvento("cardapio_bio_marcada");
   });
-  const salvarPromocao = (regra) => configurar("promocao", { promocao_regras: [regra] }, () => {
+  // kit / leve N: a frase escrita à mão sai (senão ela ficaria no cardápio no lugar do texto da regra)
+  const salvarPromocao = (regra) => configurar("promocao", { promocao_regras: [regra], promocao_cliente: null }, () => {
     toast.success("Promoção salva. O robô já oferece.");
     registrarEvento("cardapio_promocao_salva");
   });
-  const encerrarPromocao = () => configurar("promocao", { promocao_regras: [] }, () => {
+  const encerrarPromocao = () => configurar("promocao", { promocao_regras: [], promocao_cliente: null, promocao_robo: null }, () => {
     toast.success("Promoção encerrada.");
     registrarEvento("cardapio_promocao_encerrada");
   });
-  // v8: entrega de hoje (pausa volta sozinha; prazo = tempo de entrega do Meu robô)
+  // v8: entrega de hoje (pausa volta sozinha; vale para o cardápio e o robô)
   const pausarEntrega = (quando) => configurar("pausa", { entrega_pausa: quando }, () => {
     toast.success(quando === null ? "Entrega de volta no cardápio." : quando === "hoje" ? "Entrega pausada hoje. Volta sozinha amanhã." : `Entrega pausada até as ${quando}.`);
     registrarEvento(quando === null ? "cardapio_entrega_voltou" : "cardapio_entrega_pausada");
-  });
-  const salvarPrazo = (min) => configurar("prazo", { entrega_prazo_min: min }, () => {
-    toast.success(`Prazo salvo: em cerca de ${min} min.`);
-    registrarEvento("cardapio_prazo_salvo");
   });
   const mostrar = async (ids, visivel) => {
     // só os itens DESTE toque voltam se falhar (os outros toques em voo ficam como estão)
@@ -235,24 +248,26 @@ export default function CardapioDigital() {
       ) : painelQ.isError || !painel ? (
         <ErrorState cartao texto="Confira a internet e tente de novo." onTentarNovamente={() => painelQ.refetch()} />
       ) : primeiroUso ? (
-        <PrimeiroUsoCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} onRecusado={recusado}
-          onUsarRobo={usarRobo} salvandoRobo={salvando === "whatsapp"} />
+        <>
+          <PrimeiroUsoCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} onRecusado={recusado}
+            onUsarRobo={usarRobo} salvandoRobo={salvando === "whatsapp"} />
+          {/* junção 10/11: pausa e promoção valem também para o robô, então aparecem antes de ligar */}
+          <EntregaHojeCard painel={painel} hojeISO={hoje} salvando={salvando === "pausa"} onPausar={pausarEntrega} />
+          <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
+            onSalvarLivre={salvarPromoLivre} onEncerrar={encerrarPromocao} secaoRef={promoRef} />
+        </>
       ) : (
         <>
           <LinkCard painel={painel} ligando={salvando === "ativo"} onLigar={ligar} onRecusado={recusado}
             onUsarRobo={usarRobo} salvandoRobo={salvando === "whatsapp"} />
-          <EntregaHojeCard painel={painel} hojeISO={hoje} salvando={salvando === "pausa" || salvando === "prazo" ? salvando : null}
-            onPausar={pausarEntrega} onPrazo={salvarPrazo} />
+          <EntregaHojeCard painel={painel} hojeISO={hoje} salvando={salvando === "pausa"} onPausar={pausarEntrega} />
           <PendenciasCard itens={itensPendentes} nomeUnidade={painel.nome} onBio={marcarBio} marcandoBio={salvando === "bio"}
             onIrPromocao={() => promoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
           <ResultadoCards dias={dias} onDias={mudarDias} resultado={resultadoQ.data} carregando={resultadoQ.isLoading}
             erro={resultadoQ.isError} onTentar={() => resultadoQ.refetch()} />
           <FreteConsumoCard franchiseId={evo} />
           <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
-            onEncerrar={encerrarPromocao} secaoRef={promoRef} />
-          {!(Array.isArray(painel.promocao_regras) && painel.promocao_regras.length > 0) && (
-            <PromocaoClienteCard painel={painel} salvando={salvando === "promo_cliente"} onSalvar={salvarPromoCliente} />
-          )}
+            onSalvarLivre={salvarPromoLivre} onEncerrar={encerrarPromocao} secaoRef={promoRef} />
           <ProdutosLista produtos={painel.produtos} salvandoIds={salvandoIds} onMostrar={mostrar} />
         </>
       )}
@@ -263,8 +278,8 @@ export default function CardapioDigital() {
         </p>
       )}
       <p className="border-t border-surface-line pt-4 text-sm text-ink-3">
-        Horários, folga, entrega, retirada e pagamento ficam no Meu robô e valem para o robô e para o cardápio.{" "}
-        <Link to="/FranchiseSettings" className={LINK_ACAO}>Abrir o Meu robô →</Link>
+        Horários, entrega, prazo, frete e pagamento ficam no Meu robô e valem para o robô e para o cardápio.{" "}
+        <Link to={linkMeuRobo()} className={LINK_ACAO}>Abrir o Meu robô →</Link>
       </p>
     </div>
   );

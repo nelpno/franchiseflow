@@ -94,7 +94,7 @@ t("checklist (10f): vermelho, amarelo, verde; botão de arrumar só no que falta
   ];
   const itens = itensDoChecklist({ checklist: ck });
   assert.deepEqual(itens.map((i) => [i.id, i.estado]), [["pagamento_entrega", "trava"], ["id_novo_do_banco", "trava"], ["robo", "aviso"], ["whatsapp", "ok"]]);
-  assert.equal(itens[0].acao.to, "/FranchiseSettings?etapa=3");
+  assert.equal(itens[0].acao.to, "/FranchiseSettings?etapa=3&de=cardapio");
   assert.equal(itens[1].acao, null); // item que o banco inventou depois: aparece, sem botão (não quebra)
   assert.equal(itens[3].acao, null);
   assert.equal(podeLigarCardapio({ checklist: ck }), false);
@@ -105,7 +105,7 @@ t("checklist (10f): vermelho, amarelo, verde; botão de arrumar só no que falta
   const comRobo = itensDoChecklist({ checklist: [{ id: "whatsapp", nivel: "trava", ok: false, titulo: "WhatsApp da unidade", sugestao: "(17) 99999-0000" }] })[0];
   assert.deepEqual([comRobo.acao.tipo, comRobo.sugestao], ["robo", "(17) 99999-0000"]);
   const semRobo = itensDoChecklist({ checklist: [{ id: "whatsapp", nivel: "trava", ok: false, titulo: "WhatsApp da unidade", sugestao: null }] })[0];
-  assert.equal(semRobo.acao.tipo, "whatsapp");
+  assert.deepEqual([semRobo.acao.tipo, semRobo.acao.to], ["rota", "/FranchiseSettings?de=cardapio"]); // 10n: conectar o robô resolve
   // ligado com trava aberta: vira pendência vermelha no "Antes de divulgar" (no lugar do aviso antigo do WhatsApp)
   const p = pendencias({ ativo: true, tem_whatsapp: false, link_bio_em: "x", produtos: [], horario_especial: [], checklist: ck }, { hojeISO: H, agora: AGORA });
   assert.deepEqual(p.map((x) => x.id), ["pagamento_entrega", "id_novo_do_banco"]);
@@ -145,7 +145,7 @@ import { FILTROS_PRODUTOS, comPendentes } from "./cardapioDigital.js";
   assert.equal(comPendentes(painel, new Map()), painel);
   console.log("cardapioDigital: filtros na mesma base e pendentes ok");
 }
-import { situacaoPausa, erroPausaAte, erroPrazo } from "./cardapioDigital.js";
+import { situacaoPausa, erroPausaAte, textoPromocaoRobo, detalhesDoRobo, avisoTextoPromocao, linkMeuRobo } from "./cardapioDigital.js";
 {
   assert.deepEqual(situacaoPausa(null, "2026-11-10", 600), { pausada: false, texto: "" });
   assert.equal(situacaoPausa("2026-11-10T15:30", "2026-11-10", 16 * 60).pausada, false); // venceu com a tela aberta
@@ -156,8 +156,24 @@ import { situacaoPausa, erroPausaAte, erroPrazo } from "./cardapioDigital.js";
   assert.equal(erroPausaAte("15:30", 16 * 60), "Esse horário já passou. Escolha um horário mais tarde.");
   assert.equal(erroPausaAte("17:00", 16 * 60), "");
   assert.equal(erroPausaAte("", 16 * 60), "Escolha o horário em que a entrega volta.");
-  assert.equal(erroPrazo(50), ""); assert.equal(erroPrazo("50"), ""); assert.equal(erroPrazo(10), ""); assert.notEqual(erroPrazo(""), ""); assert.notEqual(erroPrazo(50.5), "");
   assert.equal(mensagemErroCardapio({ code: "22023", message: "O prazo da entrega vai de 15 a 180 minutos." }), "O prazo da entrega vai de 15 a 180 minutos.");
   assert.equal(mensagemErroCardapio({ code: "22023", message: "Esse horário já passou. Escolha um horário mais tarde." }), "Esse horário já passou. Escolha um horário mais tarde.");
   console.log("cardapioDigital: pausa e prazo da entrega ok");
+}
+{
+  // junção 10/11/2026: atalhos com etapa + cartão + volta; promoção "do meu jeito" (frase do cliente + detalhes para o robô)
+  assert.equal(linkMeuRobo(2, "horario-especial"), "/FranchiseSettings?etapa=2&bloco=horario-especial&de=cardapio");
+  assert.equal(linkMeuRobo(), "/FranchiseSettings?de=cardapio");
+  assert.equal(textoPromocaoRobo("Leve 2 nhoques e ganhe 5%.", ""), "Leve 2 nhoques e ganhe 5%.");
+  assert.equal(textoPromocaoRobo("Leve 2 nhoques e ganhe 5%.", "Vale até sábado."), "Leve 2 nhoques e ganhe 5%.\nVale até sábado.");
+  assert.equal(textoPromocaoRobo("Kit R$ 59,90", "KIT R$ 59,90 com molho. Só retirada."), "KIT R$ 59,90 com molho. Só retirada."); // já contém: não repete
+  assert.equal(textoPromocaoRobo("", ""), null);
+  assert.equal(detalhesDoRobo("Leve 2 nhoques e ganhe 5%.\nVale até sábado.","Leve 2 nhoques e ganhe 5%."), "Vale até sábado.");
+  assert.equal(detalhesDoRobo("Texto antigo do robô", "Outra frase"), "Texto antigo do robô");
+  assert.notEqual(avisoTextoPromocao("Frete grátis no condomínio Alpha"), "");
+  assert.notEqual(avisoTextoPromocao("No momento não temos promoção"), "");
+  assert.equal(avisoTextoPromocao("Leve 3 e ganhe 10%"), "");
+  const pend = pendencias({ ativo: true, tem_whatsapp: true, link_bio_em: "x", produtos: [], horario_especial: [{ de: H, tipo: "fechado" }] }, { hojeISO: H, agora: AGORA });
+  assert.equal(pend.find((x) => x.id.startsWith("especial-")).acao.to, "/FranchiseSettings?etapa=2&bloco=horario-especial&de=cardapio");
+  console.log("cardapioDigital: atalhos do Meu robô e promoção do meu jeito ok");
 }
