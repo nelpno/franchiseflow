@@ -70,6 +70,8 @@ t("validação: mesmas mensagens e ordem do promocao_regras_erro", () => {
   assert.equal(erroDaRegra({ ...KIT, itens: [] }, IMIRIM, H), "Escolha pelo menos um produto.");
   assert.equal(erroDaRegra({ ...KIT, itens: [{ product_name: "Inativo", qtd: 2 }] }, IMIRIM, H), 'O produto "Inativo" não está no seu estoque.');
   assert.equal(erroDaRegra({ ...KIT, itens: [KIT.itens[0], KIT.itens[0]] }, IMIRIM, H), "O mesmo produto aparece duas vezes.");
+  const escondido = IMIRIM.map((p) => (p.produto === "Molho Caseiro - 500g" ? { ...p, visivel: false } : p));
+  assert.equal(erroDaRegra(KIT, escondido, H), 'O produto "Molho Caseiro - 500g" está escondido do cardápio.', "igual ao SQL da revisão");
   assert.equal(erroDaRegra({ ...KIT, itens: [{ product_name: "Nhoque de Batata - 1kg", qtd: 21 }] }, IMIRIM, H), "Quantidade de cada produto: de 1 a 20.");
   assert.equal(erroDaRegra({ ...KIT, vale_ate: "2026-11-09" }, IMIRIM, H), "A data de validade já passou.");
   assert.equal(erroDaRegra({ ...KIT, vale_ate: "2026-11-10" }, IMIRIM, H), null, "vence hoje ainda vale");

@@ -47,7 +47,7 @@ export function situacaoProduto(p, agora = new Date()) {
 
 export const ROTULO_SITUACAO = {
   no_cardapio: "No cardápio",
-  acabou: "Acabou",
+  acabou: "Em falta",
   escondido: "Escondido",
   fora: "Fora do cardápio",
 };
@@ -152,10 +152,10 @@ export function pendencias(painel, { hojeISO, agora = new Date() } = {}) {
   const z = resumoZerados(painel.produtos, agora);
   if (z.acabou > 0) {
     const fam = z.familiasZeradas.length
-      ? ` ${z.familiasZeradas.length === 1 ? `${z.familiasZeradas[0]} inteiro está fora.` : `${z.familiasZeradas.slice(0, -1).join(", ")} e ${z.familiasZeradas.at(-1)} estão inteiros fora.`}`
+      ? ` ${z.familiasZeradas.length === 1 ? `${z.familiasZeradas[0]} inteiro está em falta.` : `${z.familiasZeradas.slice(0, -1).join(", ")} e ${z.familiasZeradas.at(-1)} estão inteiros em falta.`}`
       : "";
     out.push({ id: "zerados", tom: z.pct >= 0.4 ? "err" : "warn",
-      destaque: `${z.acabou} de ${z.aparecem} ${z.aparecem === 1 ? "produto aparece" : "produtos aparecem"} como Acabou.`, texto: fam.trim(),
+      destaque: `${z.acabou} de ${z.aparecem} ${z.aparecem === 1 ? "produto do cardápio está" : "produtos do cardápio estão"} em falta.`, texto: fam.trim(),
       acao: { tipo: "rota", rotulo: "Atualizar estoque →", to: "/Gestao?tab=estoque&nivel=zerado" } });
   }
   for (const t of especiaisDaSemana(painel.horario_especial, hojeISO)) {
@@ -182,7 +182,7 @@ export function checklistPrimeiroUso(painel, agora = new Date()) {
   return [
     { id: "whatsapp", ok: !!painel.tem_whatsapp, texto: "WhatsApp público da unidade" },
     { id: "horarios", ok: !!painel.tem_horarios && !!painel.tem_pagamento, texto: "Horários e pagamento (do Meu robô)" },
-    { id: "estoque", ok: z.acabou === 0, texto: z.acabou === 0 ? "Estoque atualizado" : `Estoque atualizado (${z.acabou} ${z.acabou === 1 ? "produto zerado" : "produtos zerados"})` },
+    { id: "estoque", ok: z.acabou === 0, texto: z.acabou === 0 ? "Estoque atualizado" : `Estoque atualizado (${z.acabou} ${z.acabou === 1 ? "produto em falta" : "produtos em falta"})` },
   ];
 }
 
@@ -191,12 +191,19 @@ export function nomeCurtoProduto(nome) {
   return String(nome || "").replace(/\s+-\s+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-/** Filtro da lista de produtos (bloco 5), pela URL (?produtos=acabou|escondidos). */
+/** Filtro da lista de produtos (bloco 5), pela URL (?produtos=em-falta|todos|escondidos). A MESMA base do aviso do bloco 2
+ * e do cliente: "Todos" = o que aparece no cardápio; zerado há +30 dias (já some para o cliente) conta em "Escondidos". */
 export const FILTROS_PRODUTOS = [
-  { id: "todos", rotulo: "Todos", teste: () => true },
-  { id: "acabou", rotulo: "Acabou", teste: (s) => s === "acabou" || s === "fora" },
-  { id: "escondidos", rotulo: "Escondidos", teste: (s) => s === "escondido" },
+  { id: "em-falta", rotulo: "Em falta", teste: (s) => s === "acabou" },
+  { id: "todos", rotulo: "Todos", teste: (s) => s === "no_cardapio" || s === "acabou" },
+  { id: "escondidos", rotulo: "Escondidos", teste: (s) => s === "escondido" || s === "fora" },
 ];
+
+/** Aplica por cima do painel as gravações de "Mostrar" ainda em voo ({id: visivel}): um refetch não desfaz o toque. */
+export function comPendentes(painel, pendentes) {
+  if (!painel || !pendentes || !pendentes.size) return painel;
+  return { ...painel, produtos: (painel.produtos || []).map((p) => (pendentes.has(p.id) ? { ...p, visivel: pendentes.get(p.id) } : p)) };
+}
 
 // Frases que as RPCs do cardápio escrevem PARA a franqueada (errcode 22023/42501): vão inteiras à tela.
 // Qualquer outro erro vira a frase genérica (nunca SQL, tabela ou coluna).

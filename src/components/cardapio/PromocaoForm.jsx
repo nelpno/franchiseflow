@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, CHIP, CHIP_ATIVO, CHIP_INATIVO, H2, H3_CARTAO, LINK_ACAO } from "@/components/shared/adminUi";
 import { TIPOS, erroDaRegra, limparRegra, precoNormal, regraAtiva, regraVazia, reais, textoDaRegra, MAX_ITENS, NOME_MAX } from "@/lib/promocaoRegras";
-import { nomeCurtoProduto } from "@/lib/cardapioDigital";
+import { nomeCurtoProduto, vencimentoPromocao } from "@/lib/cardapioDigital";
 
 const CAMPO = "h-11 w-full rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30";
 const ROTULO_CAMPO = "mb-1 block text-sm font-semibold text-ink";
@@ -43,7 +43,7 @@ function EscolherProduto({ aberto, onFechar, produtos, jaEscolhidos, onEscolher 
             <li key={p.id}>
               <button type="button" className="flex min-h-11 w-full items-center gap-3 px-1 py-2 text-left text-sm hover:bg-surface" onClick={() => { onEscolher(p.produto); onFechar(); }}>
                 <span className="min-w-0 flex-1 text-ink">{p.produto}</span>
-                {p.zerado && <span className="shrink-0 text-xs font-semibold text-warn-ink">Acabou</span>}
+                {p.zerado && <span className="shrink-0 text-xs font-semibold text-warn-ink">Em falta</span>}
                 <span className="shrink-0 tabular-nums text-ink-2">{brl(p.preco)}</span>
               </button>
             </li>
@@ -86,7 +86,10 @@ function PreviaCliente({ regra, produtos, texto, kitNoCardapio }) {
 export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEncerrar, secaoRef }) {
   const ativa = regraAtiva(painel?.promocao_regras);
   const produtos = useMemo(() => (painel?.produtos || []).map((p) => ({ ...p, ativo: true })), [painel?.produtos]);
-  const [editando, setEditando] = useState(!ativa);
+  const paraEscolher = useMemo(() => produtos.filter((p) => p.visivel !== false), [produtos]); // escondido não entra
+  const venceLivre = !ativa ? vencimentoPromocao(null, painel?.promocao_texto, hojeISO) : null;
+  // o formulário fica fechado atrás do botão (a chave cardapio_kit está desligada até o Nelson decidir)
+  const [editando, setEditando] = useState(false);
   const [regra, setRegra] = useState(() => (ativa ? { ...regraVazia(ativa.tipo), ...ativa } : regraVazia("kit")));
   const [escolhendo, setEscolhendo] = useState(false);
   const [tentou, setTentou] = useState(false);
@@ -95,7 +98,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEn
   // a regra salva mudou no banco (salvou, encerrou, venceu): a tela volta para ela
   const chaveAtiva = JSON.stringify(ativa || null);
   useEffect(() => {
-    setEditando(!ativa);
+    setEditando(false);
     setRegra(ativa ? { ...regraVazia(ativa.tipo), ...ativa } : regraVazia("kit"));
     setTentou(false);
   }, [chaveAtiva]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -133,6 +136,11 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEn
             <p className="text-xs font-bold uppercase tracking-wide text-ink-3">O robô diz</p>
             <p className="mt-1 text-sm text-ink">{painel?.promocao_texto}</p>
           </div>
+          {!painel?.promocao_texto && (
+            <p className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink">
+              Um produto desta promoção saiu do Estoque ou foi escondido do cardápio: o robô parou de oferecer. Mostre o produto de novo, edite ou encerre a promoção.
+            </p>
+          )}
           {!painel?.kit_no_cardapio && ativa.tipo === "kit" && (
             <p className="text-sm text-ink-3">No cardápio, por enquanto, ela aparece como texto no topo.</p>
           )}
@@ -144,6 +152,26 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEn
               Encerrar promoção
             </button>
           </div>
+        </div>
+      ) : !ativa && !editando ? (
+        <div className={`${CARTAO} space-y-3`}>
+          {painel?.promocao_texto ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className={H3_CARTAO}>Promoção de agora</h3>
+                {venceLivre && venceLivre.dias >= 0 && (
+                  <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-semibold text-warn-ink">vence {venceLivre.ddmm}</span>
+                )}
+              </div>
+              <p className="text-sm text-ink">{painel.promocao_texto}</p>
+              <p className="text-xs text-ink-3">Texto escrito no Meu robô. No cardápio aparece no topo, como está.</p>
+            </>
+          ) : (
+            <p className="text-sm text-ink-2">Sem promoção agora.</p>
+          )}
+          <button type="button" className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`} onClick={() => setEditando(true)}>
+            <MaterialIcon icon="add" size={18} aria-hidden="true" /> Criar promoção com produtos
+          </button>
         </div>
       ) : (
         <div className={`${CARTAO} space-y-4`}>
@@ -261,7 +289,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEn
             </div>
           </div>
 
-          <p className="text-sm text-ink-3">Acabou o estoque de um item do kit? O kit some do cardápio e volta quando repor.</p>
+          <p className="text-sm text-ink-3">Um item do kit ficou em falta? O kit some do cardápio e volta quando repor.</p>
 
           {tentou && erro && <p className="text-sm font-semibold text-err" role="alert">{erro}</p>}
 
@@ -269,16 +297,14 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onEn
             <button type="button" className={`${BTN_PRIMARIO} min-h-11`} onClick={salvar} disabled={salvando}>
               {salvando ? "Salvando…" : "Salvar promoção"}
             </button>
-            {ativa && (
-              <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => setEditando(false)} disabled={salvando}>Cancelar</button>
-            )}
+            <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => setEditando(false)} disabled={salvando}>Cancelar</button>
           </div>
         </div>
       )}
 
       <Link to="/FranchiseSettings" className={LINK_ACAO}>Prefere escrever a promoção? Abrir no Meu robô →</Link>
 
-      <EscolherProduto aberto={escolhendo} onFechar={() => setEscolhendo(false)} produtos={produtos}
+      <EscolherProduto aberto={escolhendo} onFechar={() => setEscolhendo(false)} produtos={paraEscolher}
         jaEscolhidos={regra.itens.map((i) => i.product_name)}
         onEscolher={(nome) => setRegra((r) => ({ ...r, itens: [...r.itens, { product_name: nome, qtd: 1 }] }))} />
 

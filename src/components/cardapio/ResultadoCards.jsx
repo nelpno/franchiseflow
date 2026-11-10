@@ -40,8 +40,8 @@ export default function ResultadoCards({ dias, onDias, resultado, carregando, er
       </div>
 
       {carregando ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className={`h-32 rounded-2xl motion-reduce:animate-none ${i === 0 || i === 3 ? "col-span-2 md:col-span-1" : ""}`} />)}
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-32 rounded-2xl motion-reduce:animate-none" />)}
         </div>
       ) : erro ? (
         <ErrorState cartao texto="Confira a internet e tente de novo." onTentarNovamente={onTentar} />
@@ -51,20 +51,21 @@ export default function ResultadoCards({ dias, onDias, resultado, carregando, er
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Indicador className="col-span-2 md:col-span-1" rotulo="Viraram venda"
+          {/* Viraram venda em cima; "Chegaram no seu WhatsApp" é o número principal do caminho; quem abriu o WhatsApp e não
+              mandou vira uma linha (dois números de pedido lado a lado confundiam, revisão de 10/11/2026) */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Indicador rotulo="Viraram venda"
               valor={r.vendas ? `${r.vendas} · ${formatBRLInteger(r.valor)}` : "0"}
               linha={r.vendas ? "em até 3 dias do pedido" : "Nenhuma venda ainda"}
               acao={r.vendas ? <Link to="/Vendas" className={LINK_ACAO}>Ver vendas →</Link> : null} />
+            <Indicador rotulo="Chegaram no seu WhatsApp" valor={r.chegaram}
+              linha={r.enviados ? `${r.enviados} ${r.enviados === 1 ? "abriu" : "abriram"} o WhatsApp com o pedido; ${r.chegaram} ${r.chegaram === 1 ? "mandou" : "mandaram"}` : null} />
             <Indicador rotulo="Visitas" valor={r.visitas}
               linha={r.instagram ? `${r.instagram} ${r.instagram === 1 ? "veio" : "vieram"} do Instagram` : "nenhuma do Instagram"} />
-            <Indicador rotulo="Pedidos" valor={r.enviados} linha="montados e enviados" />
-            <Indicador className="col-span-2 md:col-span-1" rotulo="Chegaram no seu WhatsApp" valor={r.chegaram}
-              linha={r.enviados ? `de ${r.enviados} ${r.enviados === 1 ? "pedido enviado" : "pedidos enviados"}` : null} />
           </div>
           <div className={`${CARTAO} space-y-2 text-sm text-ink-2`}>
             {r.mais_adicionados?.length > 0 && (
-              <p><span className="font-semibold text-ink">Mais postos no pedido:</span>{" "}
+              <p><span className="font-semibold text-ink">Mais escolhidos no cardápio:</span>{" "}
                 {r.mais_adicionados.map((x) => `${nomeCurtoProduto(x.produto)} (${x.n})`).join(", ")}</p>
             )}
             {r.sugeriu > 0 && (

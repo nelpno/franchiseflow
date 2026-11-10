@@ -66,6 +66,9 @@ export function erroDaRegra(regra, produtos, hojeISO) {
     if (!inteiro(it.qtd) || Number(it.qtd) < 1 || Number(it.qtd) > 20) return "Quantidade de cada produto: de 1 a 20.";
     const p = precoDe(produtos, it.product_name);
     if (p == null) return `O produto "${String(it.product_name || "").slice(0, 60)}" não está no seu estoque.`;
+    // escondido do cardápio não entra (o kit sumiria de tudo, robô incluído); nome repetido: vale o visível, como no SQL
+    const visivel = (produtos || []).some((x) => x.produto === it.product_name && x.ativo !== false && Number(x.preco) > 0 && x.visivel !== false);
+    if (!visivel) return `O produto "${String(it.product_name || "").slice(0, 60)}" está escondido do cardápio.`;
     normal += p * Number(it.qtd);
     total += Number(it.qtd);
   }

@@ -23,7 +23,7 @@ import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
 import { listarFranquias } from "@/lib/franchisesCache";
 import { getCardapioPainel, getCardapioResultado, cardapioConfigurar, cardapioProdutosVisiveis } from "@/entities/all";
-import { mensagemErroCardapio, pendencias } from "@/lib/cardapioDigital";
+import { comPendentes, mensagemErroCardapio, pendencias } from "@/lib/cardapioDigital";
 import { hojeBRT } from "@/lib/horarioEspecial";
 import { registrarEvento } from "@/lib/telemetria";
 
@@ -53,6 +53,9 @@ export default function CardapioDigital() {
   const [franquias, setFranquias] = useState(null);
   const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao"
   const [salvandoIds, setSalvandoIds] = useState(() => new Set());
+  // "Mostrar" em voo ({id: visivel}): todo dado que chega do servidor (refetch de foco, resposta de outra gravação) passa
+  // por comPendentes, então nunca desfaz um toque que ainda não voltou (code review 10/11/2026)
+  const pendentesRef = useRef(new Map());
 
   useEffect(() => {
     let vivo = true;
@@ -67,7 +70,7 @@ export default function CardapioDigital() {
 
   const painelQ = useQuery({
     queryKey: ["cardapio-painel", evo],
-    queryFn: ({ signal }) => getCardapioPainel(evo, { signal }),
+    queryFn: ({ signal }) => getCardapioPainel(evo, { signal }).then((p) => comPendentes(p, pendentesRef.current)),
     enabled: pode,
     staleTime: 60 * 1000,
     refetchOnWindowFocus: "always",
@@ -110,7 +113,8 @@ export default function CardapioDigital() {
   }
 
   // ---------- ações ----------
-  const gravarPainel = (novo) => queryClient.setQueryData(["cardapio-painel", evo], novo);
+  const chavePainel = ["cardapio-painel", evo];
+  const gravarPainel = (novo) => queryClient.setQueryData(chavePainel, comPendentes(novo, pendentesRef.current));
   const configurar = async (qual, campos, ok) => {
     setSalvando(qual);
     try {
@@ -142,15 +146,22 @@ export default function CardapioDigital() {
     registrarEvento("cardapio_promocao_encerrada");
   });
   const mostrar = async (ids, visivel) => {
-    const antes = painel;
+    // só os itens DESTE toque voltam se falhar (os outros toques em voo ficam como estão)
+    const antes = new Map((painel?.produtos || []).filter((p) => ids.includes(p.id)).map((p) => [p.id, p.visivel !== false]));
+    await queryClient.cancelQueries({ queryKey: chavePainel }); // refetch em voo não sobrescreve o toque
+    ids.forEach((i) => pendentesRef.current.set(i, visivel));
     setSalvandoIds((s) => new Set([...s, ...ids]));
-    gravarPainel({ ...painel, produtos: painel.produtos.map((p) => (ids.includes(p.id) ? { ...p, visivel } : p)) });
+    queryClient.setQueryData(chavePainel, (p) => comPendentes(p, pendentesRef.current));
     try {
       await cardapioProdutosVisiveis(evo, ids, visivel);
+      ids.forEach((i) => { if (pendentesRef.current.get(i) === visivel) pendentesRef.current.delete(i); });
       toast.success(visivel ? "Volta a aparecer no cardápio." : ids.length > 1 ? `${ids.length} produtos escondidos do cardápio.` : "Escondido do cardápio.");
       registrarEvento(visivel ? "cardapio_produto_mostrar" : "cardapio_produto_esconder");
     } catch (e) {
-      gravarPainel(antes);
+      ids.forEach((i) => { if (pendentesRef.current.get(i) === visivel) pendentesRef.current.delete(i); });
+      queryClient.setQueryData(chavePainel, (p) => p && comPendentes(
+        { ...p, produtos: p.produtos.map((x) => (antes.has(x.id) && !pendentesRef.current.has(x.id) ? { ...x, visivel: antes.get(x.id) } : x)) },
+        pendentesRef.current));
       toast.error(mensagemErroCardapio(e, "Não deu para salvar. Tente de novo."));
     } finally {
       setSalvandoIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; });

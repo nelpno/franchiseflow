@@ -31,18 +31,26 @@ function Situacao({ p, s }) {
 
 export default function ProdutosLista({ produtos, salvandoIds, onMostrar }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const filtroId = FILTROS_PRODUTOS.some((f) => f.id === searchParams.get("produtos")) ? searchParams.get("produtos") : "todos";
   const [confirmarLimpeza, setConfirmarLimpeza] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [abrirTodos, setAbrirTodos] = useState(false);
   const lista = useMemo(() => (produtos || []).map((p) => ({ p, s: situacaoProduto(p) })), [produtos]);
   const contagem = useMemo(() => Object.fromEntries(FILTROS_PRODUTOS.map((f) => [f.id, lista.filter((x) => f.teste(x.s)).length])), [lista]);
+  // abre no trabalho dela: "Em falta" quando houver; senão "Todos" (a URL manda, se tiver ?produtos=)
+  const daUrl = searchParams.get("produtos");
+  const filtroId = FILTROS_PRODUTOS.some((f) => f.id === daUrl) ? daUrl : contagem["em-falta"] > 0 ? "em-falta" : "todos";
   const filtro = FILTROS_PRODUTOS.find((f) => f.id === filtroId);
-  const visiveis = lista.filter((x) => filtro.teste(x.s));
+  const q = busca.trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  const doFiltro = lista.filter((x) => filtro.teste(x.s) && (!q || x.p.produto.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").includes(q)));
+  // "Todos" (40+ linhas no celular) fica recolhido: busca ou "Ver a lista inteira"
+  const recolhido = filtroId === "todos" && !q && !abrirTodos;
+  const visiveis = recolhido ? [] : doFiltro;
   const fora = resumoZerados(produtos).foraHaMais30;
 
   const escolherFiltro = (id) => {
-    const q = new URLSearchParams(searchParams);
-    if (id === "todos") q.delete("produtos"); else q.set("produtos", id);
-    setSearchParams(q, { replace: true });
+    const u = new URLSearchParams(searchParams);
+    u.set("produtos", id);
+    setSearchParams(u, { replace: true });
   };
 
   return (
@@ -68,6 +76,19 @@ export default function ProdutosLista({ produtos, salvandoIds, onMostrar }) {
         )}
       </div>
 
+      {filtroId === "todos" && (
+        <div>
+          <label className="sr-only" htmlFor="busca-produto-cardapio">Buscar produto</label>
+          <input id="busca-produto-cardapio" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto"
+            className="h-11 w-full rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30 sm:w-72" />
+        </div>
+      )}
+
+      {recolhido ? (
+        <button type="button" className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`} onClick={() => setAbrirTodos(true)}>
+          Ver a lista inteira ({contagem.todos})
+        </button>
+      ) : (
       <div className={LISTA}>
         <div className={`hidden ${GRADE} ${CABECALHO_LISTA}`} aria-hidden="true">
           <span>Produto</span><span className="text-right">Preço</span><span>Situação</span><span className="text-right">Mostrar</span>
@@ -87,9 +108,10 @@ export default function ProdutosLista({ produtos, salvandoIds, onMostrar }) {
               </div>
             </li>
           ))}
-          {!visiveis.length && <li className="px-5 py-6 text-sm text-ink-3">Nenhum produto neste filtro.</li>}
+          {!visiveis.length && <li className="px-5 py-6 text-sm text-ink-3">{q ? "Nenhum produto com esse nome." : "Nenhum produto neste filtro."}</li>}
         </ul>
       </div>
+      )}
 
       <p className="text-sm text-ink-3">
         Fotos de massas e molhos vêm da rede; os outros produtos aparecem sem foto.{" "}

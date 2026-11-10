@@ -44,8 +44,8 @@ t("resumo dos zerados: só o que o cliente vê; família inteira zerada", () => 
 t("pendências: zerados com família, ≥ 40% em vermelho, link do estoque já filtrado", () => {
   const p = pendencias({ ativo: true, tem_whatsapp: true, link_bio_em: "2026-11-01", produtos: PRODUTOS, horario_especial: [] }, { hojeISO: H, agora: AGORA });
   assert.equal(p.length, 1);
-  assert.equal(p[0].destaque, "3 de 5 produtos aparecem como Acabou.");
-  assert.equal(p[0].texto, "Conchiglione inteiro está fora.");
+  assert.equal(p[0].destaque, "3 de 5 produtos do cardápio estão em falta.");
+  assert.equal(p[0].texto, "Conchiglione inteiro está em falta.");
   assert.equal(p[0].tom, "err");
   assert.equal(p[0].acao.to, "/Gestao?tab=estoque&nivel=zerado");
 });
@@ -88,7 +88,7 @@ t("links: divulgar com utm de bio, QR com utm de impresso, teste com mx_teste", 
 t("primeiro uso: checklist com a contagem dos zerados", () => {
   const c = checklistPrimeiroUso({ tem_whatsapp: true, tem_horarios: true, tem_pagamento: false, produtos: PRODUTOS }, AGORA);
   assert.deepEqual(c.map((x) => x.ok), [true, false, false]);
-  assert.equal(c[2].texto, "Estoque atualizado (3 produtos zerados)");
+  assert.equal(c[2].texto, "Estoque atualizado (3 produtos em falta)");
 });
 
 console.log(`cardapioDigital: ${n} testes ok`);
@@ -97,3 +97,13 @@ assert.equal(mensagemErroCardapio({ code: "22023", message: "O desconto passou d
 assert.equal(mensagemErroCardapio({ code: "42703", message: 'column "x" does not exist' }), "Não deu para salvar. Tente de novo.");
 assert.equal(mensagemErroCardapio({ code: "42501", message: "sem permissão" }), "Sem permissão para mudar o cardápio desta unidade.");
 console.log("cardapioDigital: mensagens de erro ok");
+import { FILTROS_PRODUTOS, comPendentes } from "./cardapioDigital.js";
+{
+  // mesma base em todo lugar: o aviso diz "3 de 5"; os filtros dizem Em falta 3, Todos 5, Escondidos 2 (escondido + fora)
+  const conta = Object.fromEntries(FILTROS_PRODUTOS.map((f) => [f.id, PRODUTOS.filter((p) => f.teste(situacaoProduto(p, AGORA))).length]));
+  assert.deepEqual(conta, { "em-falta": 3, todos: 5, escondidos: 2 });
+  const painel = { produtos: [{ id: "a", visivel: true }, { id: "b", visivel: true }] };
+  assert.deepEqual(comPendentes(painel, new Map([["b", false]])).produtos.map((p) => p.visivel), [true, false]);
+  assert.equal(comPendentes(painel, new Map()), painel);
+  console.log("cardapioDigital: filtros na mesma base e pendentes ok");
+}

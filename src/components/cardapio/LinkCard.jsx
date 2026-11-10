@@ -104,6 +104,11 @@ export default function LinkCard({ painel, ligando, onLigar }) {
           ariaLabel={ativo ? "Cardápio ligado. Tocar desliga" : "Cardápio desligado. Tocar liga"} className="-my-1" />
       </div>
 
+      {painel?.chave_ligada === false && (
+        <p className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink">
+          A chave do cardápio está desligada para esta unidade: a página fica em pausa e o robô não manda o link, mesmo ligado aqui.
+        </p>
+      )}
       {!ativo && (
         <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">
           Clientes que abrirem o link veem: “Cardápio em pausa. Chame a unidade no WhatsApp.” O robô para de mandar o link.
