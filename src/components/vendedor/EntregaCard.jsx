@@ -3,7 +3,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import HelpTip from "@/components/shared/HelpTip";
 import { WEEKDAYS } from "@/lib/franchiseUtils";
 import { rotuloDias } from "@/lib/configSave";
-import { diasLivres, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro } from "@/lib/freteModelo";
+import { diasLivres, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro, PRAZO_MIN, PRAZO_MAX } from "@/lib/freteModelo";
 import { agoraSaoPaulo, somaDias, rotuloCurto } from "@/lib/simulacoesRobo";
 import { cotarFrete } from "@/lib/cotaFrete.gen";
 
@@ -128,7 +128,7 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
         <button type="button" className={pill(emMin)} onClick={() => !emMin && onChange({ promessa: "minutos", minutos: numero(minutos) || 60 })}>Em até X min</button>
         {emMin && (
           <span className="flex items-center gap-1.5">
-            <input type="number" min="1" inputMode="numeric" aria-label="Em até quantos minutos"
+            <input type="number" min={PRAZO_MIN} max={PRAZO_MAX} step="5" inputMode="numeric" aria-label={`Em até quantos minutos (de ${PRAZO_MIN} a ${PRAZO_MAX})`}
               className={`${campo} w-16 text-center font-mono${invalido ? erroRing : ""}`}
               value={minutos ?? ""} onChange={(e) => onChange({ promessa: "minutos", minutos: e.target.value })} />
             <span className="text-xs text-ink-2/60">min</span>
@@ -136,7 +136,7 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
         )}
       </div>
       <p className={dica}>
-        {emMin ? "O robô promete a entrega em até esse tempo, contado do pedido confirmado." : "Sem hora marcada: o robô diz que a entrega passa dentro da janela."}
+        {emMin ? `O robô promete a entrega em até esse tempo (de ${PRAZO_MIN} a ${PRAZO_MAX} min), contado do pedido confirmado; o cardápio oferece "o quanto antes" com o mesmo prazo.` : "Sem hora marcada: o robô diz que a entrega passa dentro da janela, e o cardápio não oferece \"o quanto antes\"."}
       </p>
     </div>
   );

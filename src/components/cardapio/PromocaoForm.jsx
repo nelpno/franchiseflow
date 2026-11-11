@@ -95,6 +95,10 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
   const clienteSalvo = painel?.promocao_cliente || "";
   const exibida = painel?.promocao_cliente_exibida || "";
   const temLivre = !ativa && !!(textoRobo || clienteSalvo);
+  // Base do "Escrever do meu jeito": o texto LIVRE de agora. Com kit/leve N ativo o texto do robô é GERADO pelo trigger e
+  // nunca vira texto livre (salvá-lo como livre deixava o robô oferecendo o kit sem a regra: code review 10/11): começa vazio.
+  const textoLivre = ativa ? "" : textoRobo;
+  const clienteLivre = ativa ? "" : clienteSalvo;
   const produtos = useMemo(() => (painel?.produtos || []).map((p) => ({ ...p, ativo: true })), [painel?.produtos]);
   const paraEscolher = useMemo(() => produtos.filter((p) => p.visivel !== false), [produtos]); // escondido não entra
   const venceLivre = temLivre ? vencimentoPromocao(null, textoRobo, hojeISO) : null;
@@ -102,9 +106,9 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
   const tipoInicial = ativa ? ativa.tipo : temLivre ? "livre" : "kit";
   const [tipo, setTipo] = useState(tipoInicial);
   const [regra, setRegra] = useState(() => (ativa ? { ...regraVazia(ativa.tipo), ...ativa } : regraVazia("kit")));
-  const clienteInicial = () => clienteSalvo || sugestaoPromocaoCliente(textoRobo);
+  const clienteInicial = () => clienteLivre || sugestaoPromocaoCliente(textoLivre);
   const [cliente, setCliente] = useState(clienteInicial);
-  const [detalhes, setDetalhes] = useState(() => detalhesDoRobo(textoRobo, clienteInicial()));
+  const [detalhes, setDetalhes] = useState(() => detalhesDoRobo(textoLivre, clienteInicial()));
   const [escolhendo, setEscolhendo] = useState(false);
   const [tentou, setTentou] = useState(false);
   const [confirmarFim, setConfirmarFim] = useState(false);
@@ -118,7 +122,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
     setRegra(ativa ? { ...regraVazia(ativa.tipo), ...ativa } : regraVazia("kit"));
     const c = clienteInicial();
     setCliente(c);
-    setDetalhes(detalhesDoRobo(textoRobo, c));
+    setDetalhes(detalhesDoRobo(textoLivre, c));
     setTentou(false);
   };
   useEffect(voltarAoSalvo, [chaveAtiva]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -127,7 +131,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
   const clienteLimpo = cliente.replace(/\s+/g, " ").trim();
   // texto do robô: o antigo intacto (já tem a oferta) quando ela não mexeu nos detalhes e a frase é a 1ª vez; senão frase + detalhes
   const textoRoboNovo = livre
-    ? (!clienteSalvo && textoRobo && detalhes.trim() === textoRobo.trim() ? textoRobo.trim() : textoPromocaoRobo(clienteLimpo, detalhes))
+    ? (!clienteLivre && textoLivre && detalhes.trim() === textoLivre.trim() ? textoLivre.trim() : textoPromocaoRobo(clienteLimpo, detalhes))
     : null;
   const erroLivre = !clienteLimpo ? "Escreva o que o cliente lê no cardápio."
     : (textoRoboNovo || "").length > ROBO_MAX ? `A frase e os detalhes para o robô passaram de ${ROBO_MAX} letras: encurte os detalhes.` : "";
@@ -229,7 +233,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                   placeholder="Ex.: Leve 2 kg de nhoque e ganhe 5% de desconto."
                   className="w-full resize-y rounded-xl border border-surface-line bg-white px-3 py-2 text-base text-ink focus:border-brand focus:outline-none" />
                 <p className="mt-1 text-xs text-ink-3">
-                  {clienteLimpo.length}/{PROMO_CLIENTE_MAX}{!clienteSalvo && clienteLimpo && clienteLimpo === sugestaoPromocaoCliente(textoRobo) ? " · sugestão tirada do texto do robô: confira antes de salvar" : ""}
+                  {clienteLimpo.length}/{PROMO_CLIENTE_MAX}{!clienteLivre && clienteLimpo && clienteLimpo === sugestaoPromocaoCliente(textoLivre) ? " · sugestão tirada do texto do robô: confira antes de salvar" : ""}
                 </p>
               </div>
               <div>

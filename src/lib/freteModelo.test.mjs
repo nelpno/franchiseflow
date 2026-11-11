@@ -134,6 +134,11 @@ assert.deepEqual(chaves(umTipo({ taxa: { modo: "fixa", valor: 0 } })), [], "grá
 assert.deepEqual(chaves(umTipo({ taxa: { modo: "faixas", faixas: [{ ate: 3, valor: 6 }, { ate: 5, valor: "" }] } })), ["g0.t0.faixa1"]);
 assert.deepEqual(chaves(umTipo({ taxa: { modo: "faixas", faixas: [{ ate: "", valor: "" }] } })), ["g0.t0.taxa"]);
 assert.deepEqual(chaves(umTipo({ promessa: "minutos", minutos: "" })), ["g0.t0.minutos"]);
+// junção 10/11/2026: mesma faixa do banco (cardapio_prazo_unidade): 15 a 180
+assert.deepEqual(chaves(umTipo({ promessa: "minutos", minutos: 5 })), ["g0.t0.minutos"]);
+assert.deepEqual(chaves(umTipo({ promessa: "minutos", minutos: 600 })), ["g0.t0.minutos"]);
+assert.deepEqual(chaves(umTipo({ promessa: "minutos", minutos: 15 })), []);
+assert.deepEqual(chaves(umTipo({ promessa: "minutos", minutos: 180 })), []);
 assert.match(problemasDoModelo(umTipo({ corte: "19:00" }))[0].msg, /^Seg: o limite de pedidos \(19:00\) passa do fim da entrega \(18:00\)\.$/);
 const doisTipos = { grupos: [{ dias: ["seg"], tipos: [umTipo({}).grupos[0].tipos[0], { ...umTipo({}).grupos[0].tipos[0], nome: "entrega" }] }], zonas: [] };
 assert.deepEqual(chaves(doisTipos, { estruturado: true }), ["g0.t1.nome"]);

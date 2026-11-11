@@ -42,7 +42,7 @@ const initialFormData = {
   accepted_payment_methods: '',
   opening_hours: '',
   working_days: '',
-  // operating_hours saiu do formulário (junção 10/11/2026): campo morto, ninguém lê (docs/2026-11-10-juncao-meu-robo-cardapio.md P8)
+  operating_hours: [],
   price_table_url: '',
   agent_name: '',
   promotions_combo: '',
@@ -439,6 +439,8 @@ function FranchiseSettingsContent() {
       delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
       delivery_schedule: config.delivery_schedule || [],
       pix_key_type: config.pix_key_type || '',
+      // operating_hours: só a reserva do editor de retirada de unidade SEM entrega (23 unidades têm, todas com entrega hoje)
+      operating_hours: config.operating_hours || [],
       pix_holder_name: config.pix_holder_name || '',
       pix_bank: config.pix_bank || '',
       city: seededCity,
@@ -477,7 +479,8 @@ function FranchiseSettingsContent() {
 
           // v2 = só o que a pessoa mudou. O formato antigo (tela inteira) traria valores velhos de volta.
           // A promoção mora no Cardápio digital desde 10/11/2026: rascunho velho com o texto dela não volta (gravaria por cima)
-          if (draft?.data) delete draft.data.promotions_combo;
+          // (com a chave do cardápio desligada na unidade a promoção volta a ser editada aqui: o rascunho dela fica)
+          if (draft?.data && promocaoNoCardapio) delete draft.data.promotions_combo;
           if (draft.v === 2 && draftAge < maxDraftAge && draft.savedAt > configUpdatedAt) {
             setFormData({ ...baseData, ...draft.data });
             setCurrentStep(draft.step || 1);
@@ -714,8 +717,8 @@ function FranchiseSettingsContent() {
   // e delivery_fee_rules (venda manual, 1º grupo). "Cobra frete" = algum grupo cobra: antes vinha só do
   // 1º grupo, e um grupo grátis anunciava frete grátis para a semana toda.
   // delivery_start_time, order_cutoff_time e delivery_method saíram do formData (S8.4, 28/09/2026):
-  // não tinham leitor nenhum e a tela parou de gravar neles em 12/09. operating_hours saiu em 10/11/2026 (junção
-  // com o Cardápio): era só reserva do horário de retirada de unidade sem entrega, e as 70 ativas têm entrega.
+  // não tinham leitor nenhum e a tela parou de gravar neles em 12/09. operating_hours continua no
+  // formData só como reserva do editor de retirada de unidade sem entrega (unidade com dado antigo; code review 10/11/2026).
   const handleScheduleChange = (val) => {
     handleInputChange('delivery_schedule', val);
     if (val.length > 0) {
@@ -1183,8 +1186,8 @@ function FranchiseSettingsContent() {
                         placeholder="Sem mínimo" />
                     </div>
                     <div>
-                      <label className={labelClass}>Prazo de entrega (min)</label>
-                      <input className={`${inputClass} font-mono`} type="number" inputMode="numeric" min="0"
+                      <label className={labelClass}>Prazo de entrega (15 a 180 min)</label>
+                      <input className={`${inputClass} font-mono`} type="number" inputMode="numeric" min="15" max="180"
                         value={formData.avg_prep_time_minutes ?? ''}
                         onChange={(e) => handleInputChange('avg_prep_time_minutes', e.target.value ? Number(e.target.value) : null)}
                         placeholder="Vazio" />
@@ -1270,7 +1273,7 @@ function FranchiseSettingsContent() {
                       <FieldHint text="Quando o cliente pode buscar. Sem entrega, esses horários também são o horário de funcionamento da unidade." />
                       <div className="mt-3">
                         <OperatingHoursEditor
-                          value={formData.pickup_schedule || []}
+                          value={formData.pickup_schedule?.length > 0 ? formData.pickup_schedule : (formData.operating_hours || [])}
                           onChange={(val) => {
                             handleInputChange('pickup_schedule', val);
                             handleInputChange('has_custom_pickup_hours', true);

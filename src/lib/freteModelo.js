@@ -27,6 +27,10 @@ export function numero(v) {
   const n = Number(String(v).replace(",", "."));
   return Number.isFinite(n) ? n : null;
 }
+// Prazo "em até X min": de 15 a 180 (a mesma faixa do cardapio_prazo_unidade no banco; fora dela o cardápio não promete hora).
+export const PRAZO_MIN = 15;
+export const PRAZO_MAX = 180;
+
 export function minutosDe(hhmm) {
   const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})/);
   return m ? Number(m[1]) * 60 + Number(m[2]) : null;
@@ -293,6 +297,9 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
       }
       if (t.promessa === "minutos" && !(numero(t.minutos) > 0)) {
         out.push({ chave: `${k}.minutos`, msg: `${rot}: diga em até quantos minutos a entrega chega.` });
+      } else if (t.promessa === "minutos" && !(numero(t.minutos) >= PRAZO_MIN && numero(t.minutos) <= PRAZO_MAX)) {
+        // mesma faixa do banco (cardapio_prazo_unidade, SQL 10n): fora dela o cardápio não oferece "o quanto antes"
+        out.push({ chave: `${k}.minutos`, msg: `${rot}: o prazo vai de ${PRAZO_MIN} a ${PRAZO_MAX} minutos.` });
       }
     });
   });
