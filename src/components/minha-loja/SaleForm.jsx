@@ -450,7 +450,7 @@ export default function SaleForm({
   // Discount
   const [discountType, setDiscountType] = useState("fixed"); // "fixed" | "percent"
   const [discountInput, setDiscountInput] = useState(0);
-  // Motivo do desconto (11/11/2026, cupom Fase 1): "" | promocao | cupom | outro; com cupom, o código. Venda à mão com cupom conta como uso (1 por telefone).
+  // Motivo do desconto (11/11/2026, cupom Fase 1): "" | promocao | cupom | manual; com cupom, o código. Venda à mão com cupom conta como uso (1 por telefone).
   const [descontoMotivo, setDescontoMotivo] = useState("");
   const [descontoCodigo, setDescontoCodigo] = useState("");
 

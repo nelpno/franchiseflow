@@ -51,13 +51,15 @@ export function fraseCupomCliente({ pct, codigo, vale_ate: ate }) {
   return `Cupom ${codigo || "…"}: ${pct}% de desconto nos produtos${ate ? `, até ${dm(ate)}` : ""}.`;
 }
 
-// Rótulo do desconto de uma venda: "Cupom MAXIMASSAS10", "Promoção", "Fidelidade" ou só "Desconto" (venda antiga / sem motivo).
+// Rótulo do desconto de uma venda (sales.desconto_origem = cupom | promocao | fidelidade | cashback | manual; sales.desconto_codigo):
+// "Cupom MAXIMASSAS10", "Promoção", "Fidelidade", "Cashback" ou só "Desconto" (venda antiga / sem motivo). Desenho genérico: tipo novo = uma linha aqui.
 export function rotuloDesconto(sale) {
   const o = sale?.desconto_origem;
   if (o === "cupom") return sale.desconto_codigo ? `Cupom ${sale.desconto_codigo}` : "Cupom";
   if (o === "promocao") return "Promoção";
   if (o === "fidelidade") return "Fidelidade";
-  if (o === "outro") return "Desconto combinado";
+  if (o === "cashback") return "Cashback";
+  if (o === "manual" || o === "outro") return "Desconto combinado";
   return "Desconto";
 }
 
@@ -65,5 +67,5 @@ export const MOTIVOS_DESCONTO = [
   { id: "", rotulo: "Sem motivo" },
   { id: "promocao", rotulo: "Promoção" },
   { id: "cupom", rotulo: "Cupom" },
-  { id: "outro", rotulo: "Outro (combinado com o cliente)" },
+  { id: "manual", rotulo: "Outro (combinado com o cliente)" },
 ];

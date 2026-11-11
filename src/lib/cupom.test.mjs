@@ -30,4 +30,6 @@ t(() => assert.equal(fraseCupomCliente({ pct: 5, codigo: "VOLTA5", vale_ate: nul
 t(() => assert.equal(rotuloDesconto({ desconto_origem: "cupom", desconto_codigo: "MAXIMASSAS10" }), "Cupom MAXIMASSAS10"));
 t(() => assert.equal(rotuloDesconto({ desconto_origem: "promocao" }), "Promoção"));
 t(() => assert.equal(rotuloDesconto({}), "Desconto"));
+t(() => assert.equal(rotuloDesconto({ desconto_origem: "manual" }), "Desconto combinado"));
+t(() => assert.equal(rotuloDesconto({ desconto_origem: "cashback" }), "Cashback"));
 console.log(`cupom.test.mjs: ${n} ok`);
