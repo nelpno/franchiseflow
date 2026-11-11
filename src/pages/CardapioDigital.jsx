@@ -21,6 +21,7 @@ import PendenciasCard from "@/components/cardapio/PendenciasCard";
 import EntregaHojeCard from "@/components/cardapio/EntregaHojeCard";
 import ResultadoCards, { PERIODOS } from "@/components/cardapio/ResultadoCards";
 import PromocaoForm from "@/components/cardapio/PromocaoForm";
+import CupomForm from "@/components/cardapio/CupomForm";
 import ProdutosLista from "@/components/cardapio/ProdutosLista";
 import AdesaoRede from "@/components/cardapio/AdesaoRede";
 import FreteConsumoCard from "@/components/cardapio/FreteConsumoCard";
@@ -58,7 +59,7 @@ export default function CardapioDigital() {
   const queryClient = useQueryClient();
   const promoRef = useRef(null);
   const [franquias, setFranquias] = useState(null);
-  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "pausa" | "whatsapp"
+  const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "cupom" | "pausa" | "whatsapp"
   const [salvandoIds, setSalvandoIds] = useState(() => new Set());
   // "Mostrar" em voo ({id: visivel}): todo dado que chega do servidor (refetch de foco, resposta de outra gravação) passa
   // por comPendentes, então nunca desfaz um toque que ainda não voltou (code review 10/11/2026)
@@ -211,6 +212,12 @@ export default function CardapioDigital() {
     toast.success(quando === null ? "Entrega de volta no cardápio." : quando === "hoje" ? "Entrega pausada hoje. Volta sozinha amanhã." : `Entrega pausada até as ${quando}.`);
     registrarEvento(quando === null ? "cardapio_entrega_voltou" : "cardapio_entrega_pausada");
   });
+  // 11/11: cupom de desconto (cartão abaixo da Promoção; vale para o cardápio e para o robô). Desligado por padrão em toda unidade.
+  const salvarCupom = (cupom, como) => configurar("cupom", { cupom }, () => {
+    toast.success(como === "ligado" ? "Cupom ligado. O cardápio e o robô já aceitam o código."
+      : como === "desligado" ? "Cupom desligado." : "Cupom salvo.");
+    registrarEvento(como === "ligado" ? "cardapio_cupom_ligado" : como === "desligado" ? "cardapio_cupom_desligado" : "cardapio_cupom_salvo", { semClarity: true });
+  });
   const mostrar = async (ids, visivel) => {
     // só os itens DESTE toque voltam se falhar (os outros toques em voo ficam como estão)
     const antes = new Map((painel?.produtos || []).filter((p) => ids.includes(p.id)).map((p) => [p.id, p.visivel !== false]));
@@ -255,6 +262,7 @@ export default function CardapioDigital() {
           <EntregaHojeCard painel={painel} hojeISO={hoje} salvando={salvando === "pausa"} onPausar={pausarEntrega} />
           <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
             onSalvarLivre={salvarPromoLivre} onEncerrar={encerrarPromocao} secaoRef={promoRef} />
+          <CupomForm painel={painel} hojeISO={hoje} salvando={salvando === "cupom"} onSalvar={salvarCupom} />
         </>
       ) : (
         <>
@@ -268,6 +276,7 @@ export default function CardapioDigital() {
           <FreteConsumoCard franchiseId={evo} />
           <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
             onSalvarLivre={salvarPromoLivre} onEncerrar={encerrarPromocao} secaoRef={promoRef} />
+          <CupomForm painel={painel} hojeISO={hoje} salvando={salvando === "cupom"} onSalvar={salvarCupom} />
           <ProdutosLista produtos={painel.produtos} salvandoIds={salvandoIds} onMostrar={mostrar} />
         </>
       )}

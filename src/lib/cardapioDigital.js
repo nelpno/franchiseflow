@@ -336,6 +336,7 @@ const FRASES_DO_BANCO = [
   "A data de validade", "O kit precisa", "Digite o preço", "O preço do kit", "O desconto passou", "Quantas:", "Desconto:",
   "Uma promoção por vez", "Promoção em formato", "Falta o WhatsApp", "O link do seu cardápio", "O cardápio digital ainda",
   "Esse horário já passou", "O prazo da entrega", "Cardápio:",
+  "Cupom", "O código do cupom", "O \"vale até\"", "A data do \"vale até\"",
 ];
 export function mensagemErroCardapio(erro, padrao = "Não deu para salvar. Tente de novo.") {
   const msg = String(erro?.message || "");

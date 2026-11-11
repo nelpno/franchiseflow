@@ -2,6 +2,7 @@ import React from "react";
 import { getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { formatPhone } from "@/lib/whatsappUtils";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
+import { rotuloDesconto } from "@/lib/cupom";
 import {
   resolveDeliveryLabel,
   formatReceiptAddressLine,
@@ -343,7 +344,7 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
             }}
           >
             <span>
-              Desconto
+              {rotuloDesconto(sale)}
               {sale.discount_type === "percent" && sale.discount_input
                 ? ` (${sale.discount_input}%)`
                 : ""}

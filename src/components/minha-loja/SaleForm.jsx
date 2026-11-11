@@ -30,6 +30,7 @@ import { nasceRecebida } from "@/lib/recebimento";
 import { fireCapiOnConfirm } from "@/lib/capiManual";
 import { acharVendaDoRobo, janelaDeBusca } from "@/lib/vendaRepetida";
 import { dataDoRascunho, assinaturaEdicao } from "@/lib/rascunhoVenda";
+import { MOTIVOS_DESCONTO, limparCodigo } from "@/lib/cupom";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -449,6 +450,9 @@ export default function SaleForm({
   // Discount
   const [discountType, setDiscountType] = useState("fixed"); // "fixed" | "percent"
   const [discountInput, setDiscountInput] = useState(0);
+  // Motivo do desconto (11/11/2026, cupom Fase 1): "" | promocao | cupom | outro; com cupom, o código. Venda à mão com cupom conta como uso (1 por telefone).
+  const [descontoMotivo, setDescontoMotivo] = useState("");
+  const [descontoCodigo, setDescontoCodigo] = useState("");
 
   // Sale date
   const [saleDate, setSaleDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -489,6 +493,8 @@ export default function SaleForm({
     setDeliveryFee(sale.delivery_fee ?? 0);
     setDiscountType(sale.discount_type || "fixed");
     setDiscountInput(sale.discount_input ?? 0);
+    setDescontoMotivo(sale.desconto_origem || "");
+    setDescontoCodigo(sale.desconto_codigo || "");
     if (sale.sale_date) setSaleDate(sale.sale_date);
     setObservacoes(sale.observacoes || "");
     setContactId(sale.contact_id || null);
@@ -598,6 +604,8 @@ export default function SaleForm({
           setCustomerNeighborhood("");
           setDiscountType("fixed");
           setDiscountInput(0);
+          setDescontoMotivo("");
+          setDescontoCodigo("");
           setObservacoes("");
           setAindaVouReceber(false);
           toast.success("Rascunho descartado");
@@ -740,9 +748,9 @@ export default function SaleForm({
   const assinaturaAtual = useMemo(
     () =>
       isEditing
-        ? assinaturaEdicao({ items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes })
+        ? assinaturaEdicao({ items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, saleDate, observacoes })
         : null,
-    [isEditing, items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes]
+    [isEditing, items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, saleDate, observacoes]
   );
   // A base só é tirada um render DEPOIS de venda, itens e configuração chegarem: a taxa (%)
   // é recalculada pela tabela da unidade no mesmo lote em que a configuração chega, e a
@@ -1165,6 +1173,8 @@ export default function SaleForm({
         discount_amount: discountAmount || 0,
         discount_type: discountInput > 0 ? discountType : null,
         discount_input: discountInput > 0 ? discountInput : null,
+        desconto_origem: discountAmount > 0 && descontoMotivo ? descontoMotivo : null,
+        desconto_codigo: discountAmount > 0 && descontoMotivo === "cupom" ? limparCodigo(descontoCodigo) || null : null,
         net_value: netValue,
         sale_date: saleDate,
         observacoes: observacoes || null,
@@ -1649,6 +1659,23 @@ export default function SaleForm({
           <p className="text-xs text-ink-3">
             −{formatCurrency(discountAmount)} no subtotal
           </p>
+        )}
+        {discountAmount > 0 && (
+          <div className="mt-2 space-y-2">
+            <label className="block text-sm font-semibold text-ink" htmlFor="venda-motivo-desconto">Motivo do desconto</label>
+            <select id="venda-motivo-desconto" value={descontoMotivo} onChange={(e) => setDescontoMotivo(e.target.value)}
+              className="h-11 w-full rounded-xl border border-surface-line bg-white px-3 text-sm text-ink">
+              {MOTIVOS_DESCONTO.map((m) => <option key={m.id} value={m.id}>{m.rotulo}</option>)}
+            </select>
+            {descontoMotivo === "cupom" && (
+              <div>
+                <label className="block text-sm font-semibold text-ink" htmlFor="venda-codigo-cupom">Código do cupom</label>
+                <Input id="venda-codigo-cupom" value={descontoCodigo} maxLength={20} autoCapitalize="characters" autoComplete="off"
+                  onChange={(e) => setDescontoCodigo(limparCodigo(e.target.value))} className="bg-white font-mono uppercase" placeholder="Ex.: MAXIMASSAS10" />
+                <p className="mt-1 text-xs text-ink-3">Conta como o uso do cupom por este cliente (cada cliente usa uma vez).</p>
+              </div>
+            )}
+          </div>
         )}
       </MobileSection>
 

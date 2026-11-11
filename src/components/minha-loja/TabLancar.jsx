@@ -32,6 +32,7 @@ import { PAYMENT_METHODS, getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { generateReceiptImage, generateReceiptPdf, isMobileDevice, preloadReceiptPdf, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
+import { rotuloDesconto } from "@/lib/cupom";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { fireCapiOnConfirm, fireCapiBatch } from "@/lib/capiManual";
@@ -937,6 +938,12 @@ export default function TabLancar({
                       {sale.delivery_fee > 0 && ` + ${formatCurrency(sale.delivery_fee)} frete`}
                     </p>
                   )}
+                  {sale.discount_amount > 0 && sale.desconto_origem && (
+                    <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${sale.desconto_origem === "cupom" ? "bg-ok-soft text-ok-ink" : "bg-surface-2 text-ink-2"}`}
+                      data-desconto-origem={sale.desconto_origem}>
+                      {rotuloDesconto(sale)} −{formatCurrency(sale.discount_amount)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Confirmation toggle chip */}
@@ -1068,7 +1075,7 @@ export default function TabLancar({
                     {sale.discount_amount > 0 && (
                       <div className="flex justify-between">
                         <span className="text-ink-2">
-                          Desconto{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
+                          {rotuloDesconto(sale)}{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
                         </span>
                         <span className="text-err font-mono-numbers">
                           − {formatCurrency(sale.discount_amount)}

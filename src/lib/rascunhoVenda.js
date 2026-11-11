@@ -42,6 +42,8 @@ export function assinaturaEdicao(f) {
     customerNeighborhood: (f.customerNeighborhood || "").trim(),
     discountType: f.discountType || null,
     discountInput: n(f.discountInput),
+    descontoMotivo: f.descontoMotivo || "",
+    descontoCodigo: (f.descontoCodigo || "").trim(),
     saleDate: f.saleDate || null,
     observacoes: (f.observacoes || "").trim(),
   });
