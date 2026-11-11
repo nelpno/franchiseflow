@@ -1,4 +1,4 @@
-// Bloco "Promoção" do Cardápio digital (ESPEC § 4.5–4.6; junção Meu robô × Cardápio 10/11/2026: a promoção inteira mora aqui).
+// Bloco "Promoções" do Cardápio digital (até 3 ativas, 12/11/2026) (ESPEC § 4.5–4.6; junção Meu robô × Cardápio 10/11/2026: a promoção inteira mora aqui).
 // "Kit com preço fechado" ou "Leve N e ganhe %": o banco valida e gera o texto que o robô lê (promotions_combo), com a
 // mesma regra e o mesmo texto em lib/promocaoRegras.js para a prévia. "Escrever do meu jeito": frase do cliente + detalhes.
 import { useEffect, useMemo, useState } from "react";
@@ -9,7 +9,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, CHIP, CHIP_ATIVO, CHIP_INATIVO, H2, H3_CARTAO } from "@/components/shared/adminUi";
-import { TIPOS, erroDaRegra, limparRegra, precoNormal, regraAtiva, regraVazia, reais, textoDaRegra, MAX_ITENS, NOME_MAX } from "@/lib/promocaoRegras";
+import { TIPOS, erroDaRegra, limparRegra, precoNormal, regraVazia, reais, textoDaRegra, trocaRegra, tiraRegra, regrasAtivas, produtosDivididos, MAX_ITENS, MAX_PROMOS, NOME_MAX } from "@/lib/promocaoRegras";
 import { PROMO_CLIENTE_MAX, avisoTextoPromocao, detalhesDoRobo, nomeCurtoProduto, sugestaoPromocaoCliente, textoPromocaoRobo, vencimentoPromocao } from "@/lib/cardapioDigital";
 
 const CAMPO = "h-11 w-full rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30";
@@ -85,41 +85,62 @@ function PreviaCliente({ regra, produtos, texto, kitNoCardapio }) {
 const TIPO_LIVRE = { id: "livre", rotulo: "Escrever do meu jeito" };
 const ROBO_MAX = 1500;
 
-// Junção Meu robô × Cardápio (10/11/2026): UM bloco para a promoção inteira (antes: texto no Meu robô + 2 cartões aqui).
-// Kit / leve N = regra estruturada (o banco gera o texto do robô). "Escrever do meu jeito" = a frase que o cliente lê
-// (promocao_cliente, ≤ 160) + detalhes para o robô (promotions_combo = frase + detalhes; chave promocao_robo, SQL 10n).
+function ddmm(iso) {
+  return iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "";
+}
+
+// Resumo de uma linha do que a promoção é (o cartão da lista)
+function resumoDaRegra(r, produtos) {
+  if (r.tipo === "kit") {
+    const normal = precoNormal(r, produtos);
+    return (
+      <>
+        {r.itens.map((i) => `${i.qtd} ${nomeCurtoProduto(i.product_name)}`).join(" + ")}
+        {" · "}
+        {normal != null && normal > Number(r.preco) && <s className="text-ink-3">{brl(normal)}</s>}{" "}
+        <b className="text-brand-dark">{brl(r.preco)}</b>
+      </>
+    );
+  }
+  const nomes = r.itens.map((i) => nomeCurtoProduto(i.product_name)).join(" e ");
+  return `Leve ${r.min_qtd} ou mais${nomes ? ` (${nomes})` : ""} e ganhe ${r.pct}% de desconto`;
+}
+
+// Junção Meu robô × Cardápio (10/11/2026) + várias promoções (12/11/2026): até 3 promoções ativas, cada uma no seu cartão.
+// Kit / leve N = regra estruturada (o banco valida, gera o texto do robô e soma as promoções no pedido). "Escrever do meu jeito" =
+// a frase que o cliente lê (promocao_cliente, ≤ 160) + detalhes para o robô: só existe SEM kit/leve N ativo (o banco recusa os dois juntos).
 // Nada é preenchido sozinho: a sugestão da frase aparece no campo, mas só vale depois de "Salvar promoção".
 export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSalvarLivre, onEncerrar, secaoRef }) {
-  const ativa = regraAtiva(painel?.promocao_regras);
+  const lista = useMemo(() => regrasAtivas(painel?.promocao_regras), [painel?.promocao_regras]);
   const textoRobo = painel?.promocao_texto || "";
   const clienteSalvo = painel?.promocao_cliente || "";
   const exibida = painel?.promocao_cliente_exibida || "";
-  const temLivre = !ativa && !!(textoRobo || clienteSalvo);
+  const temLivre = lista.length === 0 && !!(textoRobo || clienteSalvo);
   // Base do "Escrever do meu jeito": o texto LIVRE de agora. Com kit/leve N ativo o texto do robô é GERADO pelo trigger e
   // nunca vira texto livre (salvá-lo como livre deixava o robô oferecendo o kit sem a regra: code review 10/11): começa vazio.
-  const textoLivre = ativa ? "" : textoRobo;
-  const clienteLivre = ativa ? "" : clienteSalvo;
+  const textoLivre = lista.length ? "" : textoRobo;
+  const clienteLivre = lista.length ? "" : clienteSalvo;
   const produtos = useMemo(() => (painel?.produtos || []).map((p) => ({ ...p, ativo: true })), [painel?.produtos]);
   const paraEscolher = useMemo(() => produtos.filter((p) => p.visivel !== false), [produtos]); // escondido não entra
   const venceLivre = temLivre ? vencimentoPromocao(null, textoRobo, hojeISO) : null;
-  const [editando, setEditando] = useState(false);
-  const tipoInicial = ativa ? ativa.tipo : temLivre ? "livre" : "kit";
-  const [tipo, setTipo] = useState(tipoInicial);
-  const [regra, setRegra] = useState(() => (ativa ? { ...regraVazia(ativa.tipo), ...ativa } : regraVazia("kit")));
+  // editando: null = só a lista; -1 = promoção nova; 0..2 = a promoção da lista; "livre" = o texto escrito do meu jeito
+  const [editando, setEditando] = useState(null);
+  const [tipo, setTipo] = useState("kit");
+  const [regra, setRegra] = useState(() => regraVazia("kit"));
   const clienteInicial = () => clienteLivre || sugestaoPromocaoCliente(textoLivre);
   const [cliente, setCliente] = useState(clienteInicial);
   const [detalhes, setDetalhes] = useState(() => detalhesDoRobo(textoLivre, clienteInicial()));
   const [escolhendo, setEscolhendo] = useState(false);
   const [tentou, setTentou] = useState(false);
-  const [confirmarFim, setConfirmarFim] = useState(false);
+  const [confirmarFim, setConfirmarFim] = useState(null); // índice da promoção a encerrar
 
-  // a promoção salva mudou no banco (salvou, encerrou, venceu): a tela volta para ela
+  // a promoção salva mudou no banco (salvou, encerrou, venceu): a tela volta para a lista
   // (o mesmo ao tocar em Cancelar: nada do que foi mexido fica)
-  const chaveAtiva = JSON.stringify([ativa || null, textoRobo, clienteSalvo]);
+  const chaveAtiva = JSON.stringify([lista, textoRobo, clienteSalvo]);
   const voltarAoSalvo = () => {
-    setEditando(false);
-    setTipo(tipoInicial);
-    setRegra(ativa ? { ...regraVazia(ativa.tipo), ...ativa } : regraVazia("kit"));
+    setEditando(null);
+    setTipo("kit");
+    setRegra(regraVazia("kit"));
     const c = clienteInicial();
     setCliente(c);
     setDetalhes(detalhesDoRobo(textoLivre, c));
@@ -127,7 +148,33 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
   };
   useEffect(voltarAoSalvo, [chaveAtiva]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const abrirEdicao = (i) => {
+    const r = lista[i];
+    setRegra({ ...regraVazia(r.tipo), ...r });
+    setTipo(r.tipo);
+    setTentou(false);
+    setEditando(i);
+  };
+  const abrirNova = () => {
+    setRegra(regraVazia("kit"));
+    setTipo("kit");
+    setTentou(false);
+    setEditando(-1);
+  };
+  const abrirLivre = () => {
+    setTipo("livre");
+    const c = clienteInicial();
+    setCliente(c);
+    setDetalhes(detalhesDoRobo(textoLivre, c));
+    setTentou(false);
+    setEditando("livre");
+  };
+
+  const emEdicao = editando !== null;
   const livre = tipo === "livre";
+  const outras = typeof editando === "number" && editando >= 0 ? lista.filter((_, i) => i !== editando) : lista;
+  // "Escrever do meu jeito" só aparece quando não sobraria nenhuma promoção estruturada (o banco não deixa as duas convivendo)
+  const podeLivre = lista.length === 0 || (lista.length === 1 && editando === 0);
   const clienteLimpo = cliente.replace(/\s+/g, " ").trim();
   // texto do robô: o antigo intacto (já tem a oferta) quando ela não mexeu nos detalhes e a frase é a 1ª vez; senão frase + detalhes
   const textoRoboNovo = livre
@@ -135,15 +182,20 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
     : null;
   const erroLivre = !clienteLimpo ? "Escreva o que o cliente lê no cardápio."
     : (textoRoboNovo || "").length > ROBO_MAX ? `A frase e os detalhes para o robô passaram de ${ROBO_MAX} letras: encurte os detalhes.` : "";
-  const erro = livre ? erroLivre : erroDaRegra(regra, produtos, hojeISO);
+  const erro = livre ? erroLivre : erroDaRegra(regra, produtos, hojeISO, outras);
   const semPreco = regra.tipo === "kit" && !(Number(regra.preco) > 0);
   const texto = !livre && regra.itens.length && !semPreco ? textoDaRegra(limparRegra(regra), produtos) : null;
   const normal = precoNormal(regra, produtos);
   const desconto = regra.tipo === "kit" && normal && Number(regra.preco) > 0 ? Math.round((1 - Number(regra.preco) / normal) * 100) : null;
   const avisoRobo = livre ? avisoTextoPromocao(detalhes) : "";
+  // aviso (não bloqueia): esta promoção usa produto que outra também usa
+  const divide = !livre && regra.itens.length
+    ? [...new Set(outras.flatMap((o) => (o.itens || []).filter((x) => regra.itens.some((i) => i.product_name === x.product_name)).map(() => String(o.nome || "").trim())))]
+    : [];
   const mudarTipo = (t) => {
+    if (t === "livre") { abrirLivre(); return; }
     setTipo(t);
-    if (t !== "livre") setRegra((r) => ({ ...regraVazia(t), nome: r.nome, itens: r.itens.map((i) => ({ ...i, qtd: t === "percentual" ? 1 : i.qtd })), vale_ate: r.vale_ate }));
+    setRegra((r) => ({ ...regraVazia(t), nome: r.nome, itens: r.itens.map((i) => ({ ...i, qtd: t === "percentual" ? 1 : i.qtd })), vale_ate: r.vale_ate }));
   };
   const setQtd = (nome, d) => setRegra((r) => ({ ...r, itens: r.itens.map((i) => (i.product_name === nome ? { ...i, qtd: Math.min(20, Math.max(1, (Number(i.qtd) || 1) + d)) } : i)) }));
   const tirar = (nome) => setRegra((r) => ({ ...r, itens: r.itens.filter((i) => i.product_name !== nome) }));
@@ -151,27 +203,85 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
     setTentou(true);
     if (erro) return;
     if (livre) onSalvarLivre({ cliente: clienteLimpo, robo: textoRoboNovo });
-    else onSalvar(limparRegra(regra));
+    else onSalvar(trocaRegra(lista, typeof editando === "number" ? editando : -1, limparRegra(regra)));
   };
 
   return (
     <section ref={secaoRef} id="bloco-promocao" className="scroll-mt-20 space-y-3" aria-labelledby="cardapio-promocao">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 id="cardapio-promocao" className={H2}>Promoção</h2>
-        <p className="text-sm text-ink-3">Uma promoção por vez. Vale para o cardápio e para o robô.</p>
+        <h2 id="cardapio-promocao" className={H2}>Promoções</h2>
+        <p className="text-sm text-ink-3">Até {MAX_PROMOS} ao mesmo tempo. Valem para o cardápio e para o robô.</p>
       </div>
 
-      {!editando && (ativa || temLivre) ? (
+      {!emEdicao && lista.length > 0 && (
+        <div className="space-y-3" data-promo-lista>
+          {lista.map((r, i) => {
+            const divididos = produtosDivididos(lista, i);
+            const outrosNomes = [...new Set(divididos.flatMap((d) => d.com))];
+            const sumiu = (r.itens || []).some((it) => { const p = produtos.find((x) => x.produto === it.product_name); return !p || p.visivel === false; });
+            const v = r.vale_ate ? vencimentoPromocao(r, null, hojeISO) : null;
+            return (
+              <div key={`${i}-${r.nome}`} className={`${CARTAO} space-y-2`} data-promo-cartao>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className={H3_CARTAO}>{r.nome}</h3>
+                  <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-ink">
+                    {r.tipo === "kit" ? "Kit" : "Leve N"} · ativa{r.vale_ate ? ` até ${ddmm(r.vale_ate)}` : ""}
+                  </span>
+                  {v && v.dias >= 0 && v.dias <= 3 && (
+                    <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-semibold text-warn-ink">
+                      vence {v.dias === 0 ? "hoje" : v.dias === 1 ? "amanhã" : `em ${v.dias} dias`}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-ink">{resumoDaRegra(r, produtos)}</p>
+                {sumiu && (
+                  <p className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink">
+                    Um produto desta promoção saiu do Estoque ou foi escondido do cardápio: o robô parou de oferecer só esta. Mostre o produto de novo, edite ou encerre.
+                  </p>
+                )}
+                {!sumiu && outrosNomes.length > 0 && (
+                  <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2" data-promo-divide>
+                    Divide produtos com {outrosNomes.map((n) => `“${n}”`).join(" e ")}. Se o cliente pedir os dois, o sistema escolhe a combinação que dá mais desconto.
+                  </p>
+                )}
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => abrirEdicao(i)} disabled={salvando}>
+                    <MaterialIcon icon="edit" size={18} aria-hidden="true" /> Editar
+                  </button>
+                  <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => setConfirmarFim(i)} disabled={salvando}>
+                    Encerrar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {!painel?.kit_no_cardapio && lista.some((r) => r.tipo === "kit") && (
+            <p className="text-sm text-ink-3">No cardápio, por enquanto, elas aparecem como texto no topo.</p>
+          )}
+          {lista.length > 1 && (
+            <p className="text-sm text-ink-3" data-promo-regra>
+              O cliente pode levar mais de uma no mesmo pedido. Cada produto entra em uma promoção só; se dois kits servem para o mesmo pedido, vale a combinação de maior desconto. Se o cupom der mais desconto que as promoções somadas, vale o cupom (nunca os dois).
+            </p>
+          )}
+          {lista.length < MAX_PROMOS ? (
+            <button type="button" className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`} onClick={abrirNova} disabled={salvando} data-promo-adicionar>
+              <MaterialIcon icon="add" size={18} aria-hidden="true" /> Adicionar promoção ({lista.length} de {MAX_PROMOS})
+            </button>
+          ) : (
+            <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2" data-promo-cheio>
+              Você já tem {MAX_PROMOS} promoções ativas. Encerre uma para criar outra.
+            </p>
+          )}
+        </div>
+      )}
+
+      {!emEdicao && lista.length === 0 && temLivre && (
         <div className={`${CARTAO} space-y-3`}>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className={H3_CARTAO}>{ativa ? ativa.nome : "Promoção de agora"}</h3>
-            {ativa ? (
-              <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-ink">
-                Ativa{ativa.vale_ate ? ` até ${ativa.vale_ate.slice(8, 10)}/${ativa.vale_ate.slice(5, 7)}` : ""}
-              </span>
-            ) : venceLivre && venceLivre.dias >= 0 ? (
+            <h3 className={H3_CARTAO}>Promoção de agora</h3>
+            {venceLivre && venceLivre.dias >= 0 && (
               <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-semibold text-warn-ink">vence {venceLivre.ddmm}</span>
-            ) : null}
+            )}
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-ink-3">O cliente lê no cardápio</p>
@@ -183,36 +293,38 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
             <p className="text-xs font-bold uppercase tracking-wide text-ink-3">O robô oferece</p>
             <p className="mt-1 whitespace-pre-line text-sm text-ink">{textoRobo || "Nada: o robô não está oferecendo promoção."}</p>
           </div>
-          {ativa && !textoRobo && (
-            <p className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink">
-              Um produto desta promoção saiu do Estoque ou foi escondido do cardápio: o robô parou de oferecer. Mostre o produto de novo, edite ou encerre a promoção.
-            </p>
-          )}
-          {ativa && !painel?.kit_no_cardapio && ativa.tipo === "kit" && (
-            <p className="text-sm text-ink-3">No cardápio, por enquanto, ela aparece como texto no topo.</p>
-          )}
           <div className="flex flex-col gap-2 sm:flex-row">
-            <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => setEditando(true)}>
+            <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={abrirLivre}>
               <MaterialIcon icon="edit" size={18} aria-hidden="true" /> Editar promoção
             </button>
-            <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => setConfirmarFim(true)} disabled={salvando}>
+            <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={() => setConfirmarFim(-1)} disabled={salvando}>
               Encerrar promoção
+            </button>
+            <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={abrirNova} disabled={salvando}>
+              <MaterialIcon icon="add" size={18} aria-hidden="true" /> Criar kit ou leve N
             </button>
           </div>
         </div>
-      ) : !editando ? (
+      )}
+
+      {!emEdicao && lista.length === 0 && !temLivre && (
         <div className={`${CARTAO} space-y-3`}>
           <p className="text-sm text-ink-2">Sem promoção agora.</p>
-          <button type="button" className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`} onClick={() => setEditando(true)}>
+          <button type="button" className={`${BTN_SECUNDARIO} min-h-11 w-full sm:w-auto`} onClick={abrirNova}>
             <MaterialIcon icon="add" size={18} aria-hidden="true" /> Criar promoção
           </button>
         </div>
-      ) : (
+      )}
+
+      {emEdicao && (
         <div className={`${CARTAO} space-y-4`}>
+          <p className="text-sm font-semibold text-ink-2" data-promo-titulo-edicao>
+            {editando === -1 ? `Nova promoção (${lista.length + 1} de ${MAX_PROMOS})` : editando === "livre" ? "Promoção do meu jeito" : `Editando “${lista[editando]?.nome || ""}”`}
+          </p>
           <div>
             <p className={ROTULO_CAMPO}>Tipo</p>
             <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Tipo da promoção">
-              {[...TIPOS, TIPO_LIVRE].map((t) => (
+              {[...TIPOS, ...(podeLivre ? [TIPO_LIVRE] : [])].map((t) => (
                 <button key={t.id} type="button" role="radio" aria-checked={tipo === t.id} onClick={() => mudarTipo(t.id)}
                   className={`${CHIP} ${tipo === t.id ? CHIP_ATIVO : CHIP_INATIVO}`}>{t.rotulo}</button>
               ))}
@@ -220,8 +332,8 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
             {!livre && temLivre && (
               <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, esta promoção fica no lugar do texto de agora.</p>
             )}
-            {livre && ativa && (
-              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, “{ativa.nome}” é encerrada e o seu texto fica no lugar.</p>
+            {livre && lista.length === 1 && (
+              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, “{lista[0].nome}” é encerrada e o seu texto fica no lugar.</p>
             )}
           </div>
 
@@ -259,7 +371,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                 <input id="promo-nome" className={CAMPO} maxLength={NOME_MAX} value={regra.nome}
                   placeholder={regra.tipo === "kit" ? "Ex.: Kit Nhoque com molho" : "Ex.: Leve 2 kg de nhoque"}
                   onChange={(e) => setRegra((r) => ({ ...r, nome: e.target.value }))} />
-                <p className="mt-1 text-xs text-ink-3">É o que o cliente e o robô leem ({regra.nome.length}/{NOME_MAX}).</p>
+                <p className="mt-1 text-xs text-ink-3">É o que o cliente e o robô leem ({regra.nome.length}/{NOME_MAX}). Cada promoção tem um nome diferente.</p>
               </div>
 
               <div>
@@ -295,6 +407,11 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                     </li>
                   )}
                 </ul>
+                {divide.length > 0 && (
+                  <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2" data-promo-divide-form>
+                    Esta promoção divide produtos com {divide.map((n) => `“${n}”`).join(" e ")}. Pode: se o cliente pedir as duas, o sistema escolhe a combinação que dá mais desconto.
+                  </p>
+                )}
               </div>
 
               {regra.tipo === "kit" && regra.itens.some((i) => produtos.find((p) => p.produto === i.product_name)?.zerado) && (
@@ -371,17 +488,18 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
         jaEscolhidos={regra.itens.map((i) => i.product_name)}
         onEscolher={(nome) => setRegra((r) => ({ ...r, itens: [...r.itens, { product_name: nome, qtd: 1 }] }))} />
 
-      <AlertDialog open={confirmarFim} onOpenChange={setConfirmarFim}>
+      <AlertDialog open={confirmarFim !== null} onOpenChange={(v) => { if (!v) setConfirmarFim(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Encerrar a promoção?</AlertDialogTitle>
             <AlertDialogDescription>
-              {ativa ? `“${ativa.nome}”` : "A promoção"} sai do cardápio e o robô para de oferecer agora.
+              {confirmarFim !== null && confirmarFim >= 0 && lista[confirmarFim] ? `“${lista[confirmarFim].nome}”` : "A promoção"} sai do cardápio e o robô para de oferecer agora.
+              {confirmarFim !== null && confirmarFim >= 0 && lista.length > 1 ? " As outras continuam." : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="min-h-11">Voltar</AlertDialogCancel>
-            <AlertDialogAction className="min-h-11" onClick={() => onEncerrar()}>Encerrar promoção</AlertDialogAction>
+            <AlertDialogAction className="min-h-11" onClick={() => { const i = confirmarFim; setConfirmarFim(null); onEncerrar(i !== null && i >= 0 ? tiraRegra(lista, i) : []); }}>Encerrar promoção</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

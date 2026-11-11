@@ -9,6 +9,7 @@
 
 export const TETO_DESCONTO = 0.35; // o mesmo teto do robô
 export const MAX_ITENS = 6;
+export const MAX_PROMOS = 3; // 12/11/2026: até 3 promoções ao mesmo tempo (o banco recusa a 4ª)
 export const NOME_MAX = 40;
 
 export const TIPOS = [
@@ -48,11 +49,44 @@ export function regraAtiva(regras) {
   return Array.isArray(regras) && regras.length > 0 && regras[0] && typeof regras[0] === "object" ? regras[0] : null;
 }
 
+/** A lista de promoções ativas (até 3), na ordem em que o banco guarda e o cardápio mostra. */
+export function regrasAtivas(regras) {
+  return Array.isArray(regras) ? regras.filter((r) => r && typeof r === "object") : [];
+}
+
+/** Lista nova com a promoção `indice` trocada por `nova`; indice < 0 = acrescenta no fim. As outras seguem como estão. */
+export function trocaRegra(regras, indice, nova) {
+  const lista = regrasAtivas(regras);
+  if (indice < 0 || indice >= lista.length) return [...lista, nova];
+  return lista.map((r, i) => (i === indice ? nova : r));
+}
+
+/** Lista sem a promoção `indice`. */
+export function tiraRegra(regras, indice) {
+  return regrasAtivas(regras).filter((_, i) => i !== indice);
+}
+
+/** Produtos que a promoção `indice` divide com outra: [{produto, com: [nomes das outras promoções]}]. Aviso na tela, não bloqueia. */
+export function produtosDivididos(regras, indice) {
+  const lista = regrasAtivas(regras);
+  const eu = lista[indice];
+  if (!eu) return [];
+  return (eu.itens || []).map((it) => ({
+    produto: it.product_name,
+    com: lista.filter((o, j) => j !== indice && (o.itens || []).some((x) => x.product_name === it.product_name)).map((o) => String(o.nome || "").trim()),
+  })).filter((x) => x.com.length);
+}
+
+const chaveNome = (n) => String(n ?? "").trim().toLowerCase();
+
 const inteiro = (v) => /^\d{1,2}$/.test(String(v ?? ""));
 
-/** Mesmo texto e mesma ordem de checagem de public.promocao_regras_erro. null = pode salvar. */
-export function erroDaRegra(regra, produtos, hojeISO) {
+/** Mesmo texto e mesma ordem de checagem de public.promocao_regras_erro / promocao_regra_erro. null = pode salvar.
+ *  `outras` = as outras promoções da lista (para o limite de 3 e o nome que não repete). */
+export function erroDaRegra(regra, produtos, hojeISO, outras = []) {
   if (!regra || typeof regra !== "object") return "Promoção em formato inválido.";
+  if (outras.length >= MAX_PROMOS) return "No máximo 3 promoções ao mesmo tempo. Encerre uma para criar outra.";
+  if (outras.some((o) => chaveNome(o?.nome) === chaveNome(regra.nome))) return "Duas promoções com o mesmo nome. Dê um nome diferente a cada uma.";
   if (!["kit", "percentual"].includes(regra.tipo)) return "Escolha o tipo da promoção.";
   const nome = String(regra.nome || "").trim();
   if (nome.length < 3 || nome.length > NOME_MAX) return "O nome da promoção precisa ter de 3 a 40 letras.";
@@ -97,7 +131,7 @@ function ddmmaaaa(iso) {
   return `${d}/${m}/${a}`;
 }
 
-/** Mesmo texto de public.promocao_texto (o que o robô lê em PROMOÇÃO). */
+/** Mesmo texto de public.promocao_texto_um (o que o robô lê em PROMOÇÃO, uma linha por promoção; o banco junta com quebra de linha). */
 export function textoDaRegra(regra, produtos) {
   if (!regra || typeof regra !== "object") return null;
   const itens = Array.isArray(regra.itens) ? regra.itens : [];
@@ -132,4 +166,9 @@ export function limparRegra(regra) {
   };
   if (regra.tipo === "kit") return { ...base, preco: arred(Number(regra.preco)) };
   return { ...base, min_qtd: Number(regra.min_qtd), pct: Number(regra.pct) };
+}
+
+/** O que o robô lê em PROMOÇÃO com a lista toda: uma linha por promoção (igual a public.promocao_texto). */
+export function textoDasRegras(regras, produtos) {
+  return regrasAtivas(regras).map((r) => textoDaRegra(r, produtos)).filter(Boolean).join("\n") || null;
 }

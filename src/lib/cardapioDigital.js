@@ -171,12 +171,18 @@ export function pendencias(painel, { hojeISO, agora = new Date() } = {}) {
     out.push({ id: "bio", tom: "warn", destaque: "Link na bio?", texto: "Coloque o link na bio do Instagram e no perfil do Google.",
       acao: { tipo: "bio", rotulo: "Já coloquei" } });
   }
-  const regra = Array.isArray(painel.promocao_regras) && painel.promocao_regras[0] ? painel.promocao_regras[0] : null;
-  const v = vencimentoPromocao(regra, regra ? null : painel.promocao_texto, hojeISO);
-  if (v && v.dias >= 0 && v.dias <= 3) {
-    const quando = v.dias === 0 ? "hoje" : v.dias === 1 ? "amanhã" : `em ${v.dias} dias`;
-    out.push({ id: "promo-vence", tom: "warn", texto: `Promoção vence ${quando} (${v.ddmm}).`,
-      acao: { tipo: "promocao", rotulo: "Editar promoção →" } });
+  // 12/11: até 3 promoções; com uma só o aviso é o de sempre, com várias cada uma que vence em até 3 dias ganha o seu (com o nome)
+  const regras = Array.isArray(painel.promocao_regras) ? painel.promocao_regras.filter((r) => r && typeof r === "object") : [];
+  const venc = regras.length
+    ? regras.map((r, i) => ({ r, i, v: vencimentoPromocao(r, null, hojeISO) }))
+    : [{ r: null, i: 0, v: vencimentoPromocao(null, painel.promocao_texto, hojeISO) }];
+  for (const { r, i, v } of venc) {
+    if (v && v.dias >= 0 && v.dias <= 3) {
+      const quando = v.dias === 0 ? "hoje" : v.dias === 1 ? "amanhã" : `em ${v.dias} dias`;
+      out.push({ id: regras.length > 1 ? `promo-vence-${i}` : "promo-vence", tom: "warn",
+        texto: regras.length > 1 ? `Promoção “${String(r.nome || "").trim()}” vence ${quando} (${v.ddmm}).` : `Promoção vence ${quando} (${v.ddmm}).`,
+        acao: { tipo: "promocao", rotulo: "Editar promoção →" } });
+    }
   }
   return out;
 }
@@ -334,7 +340,7 @@ export function comPendentes(painel, pendentes) {
 const FRASES_DO_BANCO = [
   "O nome da promoção", "Escolha ", "No máximo", "O mesmo produto", "Quantidade de cada", "O produto \"", "Data de validade",
   "A data de validade", "O kit precisa", "Digite o preço", "O preço do kit", "O desconto passou", "Quantas:", "Desconto:",
-  "Uma promoção por vez", "Promoção em formato", "Falta o WhatsApp", "O link do seu cardápio", "O cardápio digital ainda",
+  "Uma promoção por vez", "Promoção em formato", "Promoção \"", "Duas promoções", "Falta o WhatsApp", "O link do seu cardápio", "O cardápio digital ainda",
   "Esse horário já passou", "O prazo da entrega", "Cardápio:",
   "Cupom", "O código do cupom", "O \"vale até\"", "A data do \"vale até\"",
 ];

@@ -199,13 +199,16 @@ export default function CardapioDigital() {
     registrarEvento("cardapio_bio_marcada");
   });
   // kit / leve N: a frase escrita à mão sai (senão ela ficaria no cardápio no lugar do texto da regra)
-  const salvarPromocao = (regra) => configurar("promocao", { promocao_regras: [regra], promocao_cliente: null }, () => {
+  // 12/11: até 3 promoções ativas; o cartão manda a LISTA inteira já com a promoção nova/editada no lugar (o banco valida só a que mudou)
+  const salvarPromocao = (regras) => configurar("promocao", { promocao_regras: regras, promocao_cliente: null }, () => {
     toast.success("Promoção salva. O robô já oferece.");
-    registrarEvento("cardapio_promocao_salva");
+    registrarEvento("cardapio_promocao_salva", { detalhe: `${regras.length} ativa(s)`, semClarity: true });
   });
-  const encerrarPromocao = () => configurar("promocao", { promocao_regras: [], promocao_cliente: null, promocao_robo: null }, () => {
+  // encerrar UMA: manda as que sobram; só zera o texto livre do robô quando não sobra nenhuma (o banco recusa texto livre com kit ativo)
+  const encerrarPromocao = (restantes) => configurar("promocao",
+    restantes.length ? { promocao_regras: restantes, promocao_cliente: null } : { promocao_regras: [], promocao_cliente: null, promocao_robo: null }, () => {
     toast.success("Promoção encerrada.");
-    registrarEvento("cardapio_promocao_encerrada");
+    registrarEvento("cardapio_promocao_encerrada", { detalhe: `${restantes.length} sobrou(aram)`, semClarity: true });
   });
   // v8: entrega de hoje (pausa volta sozinha; vale para o cardápio e o robô)
   const pausarEntrega = (quando) => configurar("pausa", { entrega_pausa: quando }, () => {

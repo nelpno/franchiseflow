@@ -3,7 +3,7 @@
 // (apps/dashboard/.tmp/cardapio-2026-11-10/fixture-promos.mjs --sql, evo sem estoque = sem "(de R$ ...)").
 // Fixture: os 26 textos de promoção da rede em 10/11/2026 convertidos à mão; 7 cabem nos 2 tipos da v1.
 import assert from "node:assert/strict";
-import { erroDaRegra, textoDaRegra, precoNormal, limparRegra, regraAtiva, regraVazia } from "./promocaoRegras.js";
+import { erroDaRegra, textoDaRegra, precoNormal, limparRegra, regraAtiva, regraVazia, regrasAtivas, trocaRegra, tiraRegra, produtosDivididos, textoDasRegras, MAX_PROMOS } from "./promocaoRegras.js";
 
 let n = 0; const t = (nome, f) => { f(); n++; };
 const R = (tipo, nome, itens, extra) => ({ tipo, nome, itens: itens.map(([product_name, qtd]) => ({ product_name, qtd })), vale_ate: null, ...extra });
@@ -95,6 +95,49 @@ t("regraAtiva / regraVazia", () => {
   assert.equal(regraAtiva([KIT]), KIT);
   assert.equal(regraVazia("percentual").min_qtd, 2);
   assert.equal(regraVazia().tipo, "kit");
+});
+
+// ---------- 12/11/2026: até 3 promoções (site/pedido/supabase/2026-11-12a-promocoes-varias.sql) ----------
+const NB = "Nhoque de Batata - 1kg", NR = "Nhoque Recheado com Mussarela - 700g", MC = "Molho Caseiro 250g", RO = "Rondelli 4 Queijos - 700g Rolo";
+const ESTOQUE12 = [{ produto: NB, preco: 30 }, { produto: NR, preco: 42 }, { produto: MC, preco: 11 }, { produto: RO, preco: 42 }];
+const K1 = R("kit", "Kit Natal 1", [[NB, 1], [NR, 1], [MC, 1]], { preco: 70 });
+const K2 = R("kit", "Kit Natal 2", [[NB, 1], [NR, 2], [MC, 1]], { preco: 100 });
+const K3 = R("kit", "Kit Rondelli", [[RO, 2]], { preco: 70 });
+
+t("3 promoções: o texto do robô é uma linha por promoção, igual ao gerado pelo banco (public.promocao_texto no teste 12a)", () => {
+  assert.equal(textoDasRegras([K1, K2, K3], ESTOQUE12),
+    "Kit Natal 1: 1 Nhoque de Batata - 1kg + 1 Nhoque Recheado com Mussarela - 700g + 1 Molho Caseiro 250g por R$ 70,00 (de R$ 83,00).\n"
+    + "Kit Natal 2: 1 Nhoque de Batata - 1kg + 2 Nhoque Recheado com Mussarela - 700g + 1 Molho Caseiro 250g por R$ 100,00 (de R$ 125,00).\n"
+    + "Kit Rondelli: 2 Rondelli 4 Queijos - 700g Rolo por R$ 70,00 (de R$ 84,00).");
+  assert.equal(textoDasRegras([K1], ESTOQUE12), textoDaRegra(K1, ESTOQUE12), "com 1 promoção é o texto de sempre");
+  assert.equal(textoDasRegras([], ESTOQUE12), null);
+});
+
+t("limite de 3 e nome que não repete (mesmas mensagens do banco)", () => {
+  const H = "2026-11-12";
+  assert.equal(MAX_PROMOS, 3);
+  assert.equal(erroDaRegra(K3, ESTOQUE12, H, [K1, K2]), null, "a 3ª cabe");
+  assert.equal(erroDaRegra(K3, ESTOQUE12, H, [K1, K2, K2]), "No máximo 3 promoções ao mesmo tempo. Encerre uma para criar outra.");
+  assert.equal(erroDaRegra({ ...K3, nome: "  kit natal 1 " }, ESTOQUE12, H, [K1]), "Duas promoções com o mesmo nome. Dê um nome diferente a cada uma.");
+  assert.equal(erroDaRegra(K3, ESTOQUE12, H), null, "sem 'outras' vale como antes");
+});
+
+t("lista: trocar, acrescentar, tirar (as outras não mudam, a ordem fica)", () => {
+  const novo = { ...K2, preco: 95 };
+  assert.deepEqual(trocaRegra([K1, K2, K3], 1, novo), [K1, novo, K3]);
+  assert.deepEqual(trocaRegra([K1], -1, K2), [K1, K2]);
+  assert.deepEqual(tiraRegra([K1, K2, K3], 0), [K2, K3]);
+  assert.deepEqual(tiraRegra([K1], 0), []);
+  assert.deepEqual(regrasAtivas(null), []);
+  assert.deepEqual(regrasAtivas([K1, null]), [K1]);
+});
+
+t("produtos divididos entre promoções (aviso na tela)", () => {
+  const d = produtosDivididos([K1, K2, K3], 0);
+  assert.deepEqual(d.map((x) => x.produto), [NB, NR, MC]);
+  assert.deepEqual(d[0].com, ["Kit Natal 2"]);
+  assert.deepEqual(produtosDivididos([K1, K2, K3], 2), [], "o Kit Rondelli não divide nada");
+  assert.deepEqual(produtosDivididos([K1], 0), []);
 });
 
 console.log(`promocaoRegras: ${n} testes ok`);

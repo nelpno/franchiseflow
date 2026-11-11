@@ -177,3 +177,23 @@ import { situacaoPausa, erroPausaAte, textoPromocaoRobo, detalhesDoRobo, avisoTe
   assert.equal(pend.find((x) => x.id.startsWith("especial-")).acao.to, "/FranchiseSettings?etapa=2&bloco=horario-especial&de=cardapio");
   console.log("cardapioDigital: atalhos do Meu robô e promoção do meu jeito ok");
 }
+{
+  // 12/11/2026: até 3 promoções; com 1 o aviso de vencimento é o de sempre, com várias cada uma ganha o seu (com o nome)
+  const regra = (nome, vale_ate) => ({ tipo: "kit", nome, itens: [], preco: 10, vale_ate });
+  const base = { ativo: true, link_bio_em: "2026-11-01", tem_whatsapp: true, produtos: [], horario_especial: [] };
+  const H = "2026-11-12";
+  const so = (regras) => pendencias({ ...base, promocao_regras: regras }, { hojeISO: H, agora: new Date("2026-11-12T13:00:00Z") }).filter((x) => x.id.startsWith("promo-vence"));
+  assert.deepEqual(so([regra("Kit Natal 1", "2026-11-13")]).map((x) => [x.id, x.texto]), [["promo-vence", "Promoção vence amanhã (13/11)."]], "1 promoção: o aviso de sempre");
+  assert.deepEqual(so([regra("Kit Natal 1", "2026-11-13"), regra("Kit Natal 2", null), regra("Kit Rondelli", "2026-11-12")]).map((x) => [x.id, x.texto]),
+    [["promo-vence-0", "Promoção “Kit Natal 1” vence amanhã (13/11)."], ["promo-vence-2", "Promoção “Kit Rondelli” vence hoje (12/11)."]], "várias: só as que vencem em até 3 dias, com o nome");
+  assert.deepEqual(so([regra("A", "2026-12-30"), regra("B", null)]), [], "nenhuma perto de vencer");
+  assert.deepEqual(so([]).map((x) => x.id), [], "sem promoção: nada");
+  console.log("cardapioDigital: avisos de vencimento com várias promoções ok");
+}
+{
+  assert.equal(mensagemErroCardapio({ message: 'Promoção "Kit Natal 2": O desconto passou de 35%.' }), 'Promoção "Kit Natal 2": O desconto passou de 35%.');
+  assert.equal(mensagemErroCardapio({ message: "Duas promoções com o mesmo nome. Dê um nome diferente a cada uma." }), "Duas promoções com o mesmo nome. Dê um nome diferente a cada uma.");
+  assert.equal(mensagemErroCardapio({ message: "No máximo 3 promoções ao mesmo tempo. Encerre uma para criar outra." }), "No máximo 3 promoções ao mesmo tempo. Encerre uma para criar outra.");
+  console.log("cardapioDigital: erros do banco das várias promoções vão inteiros à franqueada ok");
+}
+
