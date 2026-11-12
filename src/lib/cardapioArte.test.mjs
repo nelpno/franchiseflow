@@ -71,12 +71,15 @@ t("Uberaba: 5 recheadas na ordem, com as linhas do cardápio feito à mão", () 
 
 t("Uberaba: fatiado, nhoque de batata, pastel, lasanha, molho e pão de queijo embaixo", () => {
   const c = montarCardapio(UBERABA, { agora: AGORA });
-  assert.deepEqual(c.grupos.map((g) => g.titulo), ["Rondelli fatiado 500 g", "Nhoque de batata", "Massa de pastel", "Massa de lasanha", "Molhos", "Pão de queijo"]);
+  assert.deepEqual(c.grupos.map((g) => g.titulo), ["Rondelli fatiado 500 g", "Nhoque de batata", "Massa de pastel", "Massa de lasanha"]);
   assert.deepEqual(c.grupos[0].linhas, [{ rotulo: "Presunto e muçarela", preco: "31,80" }, { rotulo: "4 queijos", preco: "35,00" }]);
   assert.deepEqual(c.grupos[1].linhas, [{ rotulo: "1 kg", preco: "27,00" }, { rotulo: "500 g", preco: "13,80" }]);
-  assert.deepEqual(c.grupos[4].linhas, [{ rotulo: "Tomate sugo 250 g", preco: "12,40" }]);
-  assert.equal(c.grupos[5].tipo, "pao");
-  assert.deepEqual(c.grupos[5].linhas, [{ rotulo: "Tradicional 1 kg", preco: "27,90" }]);
+  // destaques da fábrica: pão de queijo (Dugab) e o sugo, que é o Mariolla
+  assert.deepEqual(c.destaques.map((d) => d.chave), ["pao", "mariolla"]);
+  assert.deepEqual(c.destaques[0].linhas, [{ rotulo: "Tradicional 1 kg", preco: "27,90" }]);
+  assert.equal(c.destaques[0].texto, "Com queijo de verdade e pronto para assar.");
+  assert.deepEqual(c.destaques[1].linhas, [{ rotulo: "250 g", preco: "12,40" }]);
+  assert.match(c.destaques[1].texto, /sem conservantes e sem corantes/);
 });
 
 t("fora do cardápio: escondido, sem preço, zerado há mais de 30 dias; zerado recente fica", () => {
@@ -87,7 +90,9 @@ t("fora do cardápio: escondido, sem preço, zerado há mais de 30 dias; zerado 
     P("Pão de queijo chocolate", 43, { zerado: true, zerado_desde: "2026-11-07T13:06:26Z" }),
   ], { agora: AGORA });
   assert.equal(c.principais.length, 0);
-  assert.deepEqual(c.grupos.map((g) => g.linhas.map((l) => l.rotulo)), [["Chocolate"]]);
+  assert.deepEqual(c.grupos, []);
+  assert.deepEqual(c.destaques.map((d) => d.linhas.map((l) => l.rotulo)), [["Chocolate"]]);
+  assert.equal(c.destaques[0].texto, "", "sem o tradicional da Dugab, sem a frase da embalagem");
 });
 
 t("produto próprio da unidade: fora por padrão, conta em 'outros', entra com incluirOutros", () => {
@@ -105,15 +110,22 @@ t("recheada fora dos 700 g vira grupo próprio; queijo ralado e pão de queijo d
     P("Pão de queijo palito/ tradicional", 30), P("Pão de queijo chocolate", 43), P("Pão de Queijo Recheado com Requeijão - 1Kg", 43),
   ], { agora: AGORA });
   assert.equal(c.principais.length, 0);
-  assert.deepEqual(c.grupos.map((g) => g.titulo), ["Sofioli 500 g", "Queijo ralado", "Pão de queijo"]);
+  assert.deepEqual(c.grupos.map((g) => g.titulo), ["Sofioli 500 g", "Queijo ralado"]);
   assert.deepEqual(c.grupos[0].linhas, [{ rotulo: "Costela", preco: "32,00" }]);
   assert.equal(c.grupos[1].linhas[0].rotulo, "Parmesão Ralado President 50 g");
-  assert.deepEqual(c.grupos[2].linhas.map((l) => l.rotulo), ["Palito/ tradicional", "Chocolate", "Requeijão 1 kg"]);
+  assert.deepEqual(c.destaques[0].linhas.map((l) => l.rotulo), ["Palito/ tradicional", "Chocolate", "Requeijão 1 kg"]);
+  assert.ok(c.destaques[0].texto, "tem o tradicional: leva a frase da embalagem");
 });
 
 t("recheada sem sabor no nome vira 'Tradicional'; zerado sem data de quando zerou fica fora", () => {
   const c = montarCardapio([P("Sofioli 700g", 39.9), P("Rondelli 4 Queijos - 700g Rolo", 45, { zerado: true, zerado_desde: null })], { agora: AGORA });
   assert.deepEqual(c.principais.map((p) => [p.nome, p.linhas]), [["Sofioli", [{ rotulo: "Tradicional", preco: "39,90" }]]]);
+});
+
+t("Mariolla: pelo nome ou pelo sugo da fábrica; molho de outra marca fica em Molhos", () => {
+  const c = montarCardapio([P("Molho de Tomate Mariolla - 250g", 9.8), P("Molho ao sugo 500g c/ Manjericão", 15), P("Molho Bolonhesa 500g (Angeli)", 18)], { agora: AGORA });
+  assert.deepEqual(c.destaques.map((d) => [d.chave, d.linhas.map((l) => l.rotulo)]), [["mariolla", ["250 g", "500 g"]]]);
+  assert.deepEqual(c.grupos.map((g) => [g.titulo, g.linhas.map((l) => l.rotulo)]), [["Molhos", ["Bolonhesa (angeli) 500 g"]]]);
 });
 
 t("nome da unidade e linha de atendimento (endereço só de loja)", () => {

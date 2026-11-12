@@ -13,6 +13,22 @@ export const RECHEADAS = [
   { chave: "nhoque_recheado", nome: "Nhoque recheado", re: /^nhoque recheado\b/i, foto: "prato-nhoque-recheado-720.webp" },
 ];
 
+// Destaques (Nelson, 12/11/2026: "é nossa venda também"): os dois produtos que a fábrica revende às unidades ganham
+// cartão com foto e frase. A frase só usa o que está na embalagem (Dugab: "contém queijo de verdade", "pronto para
+// assar"; Mariolla: "artesanal", "sem conservantes", "sem corantes") e a composição que o fabricante confirmou
+// (memória reference_contatos_parceiros: tomate, cenoura, cebola, alho, sal e óleo vegetal).
+export const DESTAQUES = {
+  pao: { titulo: "Pão de queijo", foto: "pacote-pao-de-queijo-480.webp", texto: "Com queijo de verdade e pronto para assar." },
+  mariolla: {
+    titulo: "Molho de tomate Mariolla", foto: "pacote-molho-480.webp",
+    texto: "Artesanal, sem conservantes e sem corantes: tomate, cenoura, cebola, alho, sal e óleo vegetal.",
+  },
+};
+// o sugo da fábrica é o Mariolla (mesma regra do cardápio digital, site/pedido cardapio.js)
+const ehMariolla = (nome) => /mariolla/i.test(nome) || /^molho (de tomate )?(ao )?sugo\b/i.test(nome);
+// pão de queijo tradicional da Dugab (o recheado e outros sabores podem ser de outro fornecedor)
+const ehPaoDugab = (nome) => /tradicional|trad\b/i.test(nome) && !/rechead/i.test(nome);
+
 // O resto da linha da Maxi, em colunas embaixo. "nomeLinha" = o rótulo da linha quando o produto não tem sabor.
 const DEMAIS = [
   { chave: "nhoque_batata", titulo: "Nhoque de batata", re: /^nhoque de batata\b/i },
@@ -116,7 +132,8 @@ export function entraNoCardapio(p, agora = new Date()) {
 
 /**
  * Monta o cardápio a partir de cardapio_painel.produtos.
- * @returns {{ principais: Array<{chave,nome,foto,linhas}>, grupos: Array<{chave,titulo,tipo,linhas}>, outros: number, total: number }}
+ * @returns {{ principais: Array<{chave,nome,foto,linhas}>, destaques: Array<{chave,titulo,texto,foto,linhas}>,
+ *   grupos: Array<{chave,titulo,tipo,linhas}>, outros: number, total: number }}
  */
 export function montarCardapio(produtos, { incluirOutros = false, agora = new Date() } = {}) {
   const lista = (produtos || []).filter((p) => entraNoCardapio(p, agora));
@@ -124,6 +141,7 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
   const gruposRecheada = [];
   const porDemais = new Map();
   const outros = [];
+  const mariolla = [];
 
   const usados = new Set();
   for (const fam of RECHEADAS) {
@@ -152,6 +170,7 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
   for (const p of lista) {
     if (usados.has(p)) continue;
     const nome = String(p.produto || "").trim();
+    if (ehMariolla(nome)) { mariolla.push({ rotulo: pesoDe(nome)?.texto || "Molho", preco: Number(p.preco) }); continue; }
     const fam = DEMAIS.find((f) => f.re.test(nome) && (!f.so || f.so.test(nome)));
     if (!fam) { outros.push(p); continue; }
     if (!porDemais.has(fam.chave)) porDemais.set(fam.chave, []);
@@ -162,16 +181,32 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
     porDemais.get(fam.chave).push({ rotulo, preco: Number(p.preco) });
   }
 
+  const semRepetir = (itens, ordem) => {
+    const vistos = new Set();
+    return itens
+      .filter((i) => { const k = i.rotulo.toLowerCase(); if (vistos.has(k)) return false; vistos.add(k); return true; })
+      .sort(ordem)
+      .map((i) => ({ rotulo: i.rotulo, preco: precoBR(i.preco) }));
+  };
+  const destaques = [];
+  const paes = porDemais.get("pao");
+  if (paes?.length) {
+    const dugab = lista.some((p) => DEMAIS.find((f) => f.chave === "pao").re.test(String(p.produto || "").trim()) && ehPaoDugab(p.produto));
+    destaques.push({
+      chave: "pao", ...DESTAQUES.pao, texto: dugab ? DESTAQUES.pao.texto : "",
+      linhas: semRepetir(paes, (a, b) => a.preco - b.preco || a.rotulo.localeCompare(b.rotulo, "pt-BR")),
+    });
+  }
+  if (mariolla.length) {
+    destaques.push({ chave: "mariolla", ...DESTAQUES.mariolla, linhas: semRepetir(mariolla, (a, b) => a.preco - b.preco) });
+  }
+
   const grupos = [...gruposRecheada];
   for (const fam of DEMAIS) {
+    if (fam.chave === "pao") continue;
     const itens = porDemais.get(fam.chave);
     if (!itens?.length) continue;
-    const vistos = new Set();
-    const linhas = itens
-      .filter((i) => { const k = i.rotulo.toLowerCase(); if (vistos.has(k)) return false; vistos.add(k); return true; })
-      .sort((a, b) => (fam.chave === "pao" ? a.preco - b.preco || a.rotulo.localeCompare(b.rotulo, "pt-BR") : b.preco - a.preco))
-      .map((i) => ({ rotulo: i.rotulo, preco: precoBR(i.preco) }));
-    grupos.push({ chave: fam.chave, titulo: fam.titulo, tipo: fam.chave === "pao" ? "pao" : "lista", linhas });
+    grupos.push({ chave: fam.chave, titulo: fam.titulo, tipo: "lista", linhas: semRepetir(itens, (a, b) => b.preco - a.preco) });
   }
   if (incluirOutros && outros.length) {
     grupos.push({
@@ -182,7 +217,7 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
         .map((i) => ({ rotulo: i.rotulo, preco: precoBR(i.preco) })),
     });
   }
-  return { principais, grupos, outros: outros.length, total: lista.length };
+  return { principais, destaques, grupos, outros: outros.length, total: lista.length };
 }
 
 /** "Maxi Massas Cordeiro e Iracemápolis" -> "Cordeiro e Iracemápolis". */

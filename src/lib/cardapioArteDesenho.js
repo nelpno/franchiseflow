@@ -2,7 +2,7 @@
 // Gabarito: cs-celso/unidades/uberaba/2026-11-12-cardapio (o feito à mão para Uberaba). Coordenadas em mm; o canvas
 // escala para a saída (150 dpi = imagem do robô/WhatsApp, 300 dpi = PDF para gráfica). Recursos em public/cardapio-arte/
 // (mesma origem: imagem de outro domínio "suja" o canvas e o toBlob falha).
-import { RECHEADAS } from "./cardapioArte.js";
+import { RECHEADAS, DESTAQUES } from "./cardapioArte.js";
 
 const W = 210, H = 297, X0 = 14, X1 = 196;
 const FONTE = "RobotoCardapio";
@@ -37,12 +37,15 @@ async function carregar() {
     fontes.forEach((ff) => document.fonts.add(ff));
     fontesProntas = true;
   }
-  const [logo, pacote, ...fotos] = await Promise.all([
+  const pacotes = Object.values(DESTAQUES).map((d) => d.foto);
+  const [logo, ...resto] = await Promise.all([
     carregarImagem(`${base}logo.png`),
-    carregarImagem(`${base}pacote-pao-de-queijo-480.webp`),
+    ...pacotes.map((f) => carregarImagem(`${base}${f}`)),
     ...RECHEADAS.map((f) => carregarImagem(`${base}${f.foto}`)),
   ]);
-  return { logo, pacote, fotos: Object.fromEntries(RECHEADAS.map((f, i) => [f.foto, fotos[i]])) };
+  const fotos = {};
+  [...pacotes, ...RECHEADAS.map((f) => f.foto)].forEach((f, i) => { fotos[f] = resto[i]; });
+  return { logo, fotos };
 }
 
 const fonte = (ctx, tam, peso = 400) => { ctx.font = `${peso} ${tam}px ${FONTE}`; };
@@ -121,13 +124,45 @@ function linhaPreco(ctx, { x, y, w, rotulo, preco, tam, lh, desenhar = true, cor
 
 function alturaGrupo(ctx, g, colW, k) {
   const tam = 3.0 * k, lh = 4.0 * k;
-  let h = 0;
-  if (g.tipo === "pao") h += 2.4 + 12.5 + 1.6;
-  else h += 4.6 * k;
-  const w = g.tipo === "pao" ? colW - 4.8 : colW;
-  for (const l of g.linhas) h += linhaPreco(ctx, { x: 0, y: 0, w, rotulo: l.rotulo, preco: l.preco, tam, lh, desenhar: false });
-  if (g.tipo === "pao") h += 2.4;
+  let h = 4.6 * k;
+  for (const l of g.linhas) h += linhaPreco(ctx, { x: 0, y: 0, w: colW, rotulo: l.rotulo, preco: l.preco, tam, lh, desenhar: false });
   return h + 3.2 * k;
+}
+
+// Cartão de destaque (pão de queijo, molho Mariolla): foto do pacote à esquerda, título, frase e preços à direita.
+const FOTO_DESTAQUE = 22, PAD = 2.6;
+function cartaoDestaque(ctx, d, { x, y, w, k, desenhar, rec, alturaFixa }) {
+  const tx = x + PAD + FOTO_DESTAQUE + 3, tw = x + w - PAD - tx;
+  let ty = y + PAD;
+  fonte(ctx, 4.2 * k, 900);
+  const titulo = quebrar(ctx, d.titulo.toUpperCase(), tw);
+  fonte(ctx, 2.8 * k, 400);
+  const frase = d.texto ? quebrar(ctx, d.texto, tw) : [];
+  const altTexto = titulo.length * 4.6 * k + (frase.length ? 1 + frase.length * 3.6 * k : 0) + 1.6;
+  const altLinhas = d.linhas.reduce((s, l) => s + linhaPreco(ctx, { x: 0, y: 0, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k, desenhar: false }), 0);
+  const h = alturaFixa || PAD * 2 + Math.max(FOTO_DESTAQUE, altTexto + altLinhas);
+  if (!desenhar) return h;
+  ctx.save();
+  ctx.shadowColor = "rgba(43,26,23,.18)"; ctx.shadowBlur = 1.4; ctx.shadowOffsetY = 0.3;
+  ctx.fillStyle = COR.branco; retanguloArredondado(ctx, x, y, w, h, 2.4); ctx.fill();
+  ctx.restore();
+  const img = rec.fotos[d.foto];
+  if (img) {
+    const esc = Math.min(FOTO_DESTAQUE / img.width, FOTO_DESTAQUE / img.height);
+    const iw = img.width * esc, ih = img.height * esc;
+    ctx.drawImage(img, x + PAD + (FOTO_DESTAQUE - iw) / 2, y + (h - ih) / 2, iw, ih);
+  }
+  ctx.textBaseline = "top";
+  fonte(ctx, 4.2 * k, 900); ctx.fillStyle = COR.vinho;
+  titulo.forEach((l) => { ctx.fillText(l, tx, ty); ty += 4.6 * k; });
+  if (frase.length) {
+    ty += 1;
+    fonte(ctx, 2.8 * k, 400); ctx.fillStyle = COR.texto;
+    frase.forEach((l) => { ctx.fillText(l, tx, ty); ty += 3.6 * k; });
+  }
+  ty += 1.6;
+  for (const l of d.linhas) ty += linhaPreco(ctx, { x: tx, y: ty, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
+  return h;
 }
 
 const fotoDe = (base) => { const h = Math.max(18, base - 4); return { h, w: Math.min(46, h * 1.77) }; };
@@ -145,7 +180,13 @@ function planejar(ctx, cardapio, base, k) {
   });
   const colGap = 6, ncol = 3;
   const colW = (X1 - X0 - colGap * (ncol - 1)) / ncol;
-  const secY = cardapio.grupos.length ? (linhas.length ? y + 3 : 69) : y;
+  // destaques: até 2 cartões lado a lado, mesma altura
+  const destaques = cardapio.destaques || [];
+  const cardW = (X1 - X0 - colGap) / 2;
+  const destY = linhas.length ? y + 3 : 69;
+  const destH = destaques.length ? Math.max(...destaques.map((d) => cartaoDestaque(ctx, d, { x: 0, y: 0, w: cardW, k, desenhar: false }))) : 0;
+  if (destaques.length) y = destY + 6 + destH;
+  const secY = cardapio.grupos.length ? (linhas.length || destaques.length ? y + 3 : 69) : y;
   const cols = Array.from({ length: ncol }, () => ({ h: 0, grupos: [] }));
   for (const g of cardapio.grupos) {
     const h = alturaGrupo(ctx, g, colW, k);
@@ -154,7 +195,7 @@ function planejar(ctx, cardapio, base, k) {
     alvo.h += h;
   }
   const secH = cardapio.grupos.length ? 6 + Math.max(...cols.map((c) => c.h)) : 0;
-  return { linhas, linhasX, secY, cols, colW, colGap, k, base, fim: secY + secH };
+  return { linhas, linhasX, destaques, destY, destH, cardW, secY, cols, colW, colGap, k, base, fim: Math.max(y, secY + secH) };
 }
 
 export function desenharCardapio(canvas, dados, rec, pxPorMm) {
@@ -202,9 +243,18 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
     });
   }
 
+  // para acompanhar (destaques da fábrica)
+  if (plano.destaques.length) {
+    if (plano.linhas.length) { ctx.fillStyle = COR.linha; ctx.fillRect(0, plano.destY - 1.6, W, 0.4); }
+    olho(ctx, "Para acompanhar", X0, plano.destY + 1, 3.0, COR.vinho);
+    plano.destaques.forEach((d, i) => cartaoDestaque(ctx, d, {
+      x: X0 + i * (plano.cardW + plano.colGap), y: plano.destY + 6, w: plano.cardW, k: plano.k, desenhar: true, rec, alturaFixa: plano.destH,
+    }));
+  }
+
   // também temos (colunas)
   if (dados.cardapio.grupos.length) {
-    if (plano.linhas.length) { ctx.fillStyle = COR.linha; ctx.fillRect(0, plano.secY - 1.6, W, 0.4); }
+    if (plano.linhas.length || plano.destaques.length) { ctx.fillStyle = COR.linha; ctx.fillRect(0, plano.secY - 1.6, W, 0.4); }
     olho(ctx, "Também temos", X0, plano.secY + 1, 3.0, COR.vinho);
     const k = plano.k;
     plano.cortados = 0;
@@ -213,28 +263,12 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
       for (const g of c.grupos) {
         let y = plano.secY + 6 + g.y;
         if (y > RODAPE_Y - 3) { plano.cortados += g.linhas.length; continue; }
-        if (g.tipo === "pao") {
-          ctx.save();
-          ctx.shadowColor = "rgba(43,26,23,.18)"; ctx.shadowBlur = 1.4; ctx.shadowOffsetY = 0.3;
-          ctx.fillStyle = COR.branco; retanguloArredondado(ctx, cx, y, plano.colW, g.h - 3.2 * k, 2.2); ctx.fill();
-          ctx.restore();
-          const iw = 12.5, ih = iw * (rec.pacote.height / rec.pacote.width);
-          ctx.drawImage(rec.pacote, cx + 2.4, y + 2.4 + (12.5 - ih) / 2, iw, ih);
-          fonte(ctx, 4.2 * k, 900); ctx.fillStyle = COR.vinho; ctx.textBaseline = "top";
-          ctx.fillText("PÃO DE QUEIJO", cx + 17, y + 6.6 - 2.1 * k);
-          y += 2.4 + 12.5 + 1.6;
-          for (const l of g.linhas) {
-            if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
-            y += linhaPreco(ctx, { x: cx + 2.4, y, w: plano.colW - 4.8, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
-          }
-        } else {
-          fonte(ctx, 3.15 * k, 700); ctx.fillStyle = COR.noite; ctx.textBaseline = "top";
-          ctx.fillText(g.titulo, cx, y);
-          y += 4.6 * k;
-          for (const l of g.linhas) {
-            if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
-            y += linhaPreco(ctx, { x: cx, y, w: plano.colW, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
-          }
+        fonte(ctx, 3.15 * k, 700); ctx.fillStyle = COR.noite; ctx.textBaseline = "top";
+        ctx.fillText(g.titulo, cx, y);
+        y += 4.6 * k;
+        for (const l of g.linhas) {
+          if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
+          y += linhaPreco(ctx, { x: cx, y, w: plano.colW, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
         }
       }
     });
