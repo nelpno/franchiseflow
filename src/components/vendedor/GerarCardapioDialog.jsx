@@ -20,6 +20,7 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
   const [incluirOutros, setIncluirOutros] = useState(false);
   const [previa, setPrevia] = useState("");
   const [ocupado, setOcupado] = useState("");
+  const [cortados, setCortados] = useState(0);
   const dadosRef = useRef(null);
   const blobRef = useRef(null);
 
@@ -51,13 +52,18 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
       try {
         const dados = dadosDoCardapio(base.painel, base.config, { incluirOutros });
         const { cardapio } = dados;
-        if (!cardapio.principais.length && !cardapio.grupos.length) { setEstado("vazio"); return; }
-        const canvas = await gerarCardapioCanvas(dados);
+        if (!cardapio.principais.length && !cardapio.grupos.length) {
+          dadosRef.current = null; blobRef.current = null;
+          setPrevia(""); setEstado("vazio");
+          return;
+        }
+        const { canvas, cortados: n } = await gerarCardapioCanvas(dados);
         const blob = await canvasParaJpeg(canvas);
         if (!vivo) return;
         dadosRef.current = dados;
         blobRef.current = blob;
-        setPrevia((antiga) => { if (antiga) URL.revokeObjectURL(antiga); return URL.createObjectURL(blob); });
+        setCortados(n);
+        setPrevia(URL.createObjectURL(blob));
         setEstado("pronto");
         registrarEvento("cardapio_arte_gerado", { detalhe: `${cardapio.total} produtos${incluirOutros ? " +outros" : ""}` });
       } catch (e) {
@@ -72,15 +78,18 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
   useEffect(() => () => { if (previa) URL.revokeObjectURL(previa); }, [previa]);
 
   const nomeArquivo = (ext) => `cardapio-maxi-massas-${(dadosRef.current?.unidade || "unidade")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.${ext}`;
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.${ext}`;
 
   const usarNoRobo = useCallback(async () => {
     if (!blobRef.current) return;
     setOcupado("robo");
     try {
-      await onUsar(new File([blobRef.current], "catalogo.jpg", { type: "image/jpeg" }));
-      registrarEvento("cardapio_arte_usado_robo");
-      onOpenChange(false);
+      // o upload mostra o próprio erro (toast); a janela só fecha se a imagem foi mesmo trocada
+      const ok = await onUsar(new File([blobRef.current], "catalogo.jpg", { type: "image/jpeg" }));
+      if (ok) {
+        registrarEvento("cardapio_arte_usado_robo");
+        onOpenChange(false);
+      }
     } finally {
       setOcupado("");
     }
@@ -132,8 +141,17 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
 
         {estado === "vazio" && (
           <p className="text-sm text-ink-2 bg-surface rounded-lg p-3">
-            Nenhum produto com preço no seu Estoque ainda. Cadastre os preços em Estoque e gere de novo.
+            {outros > 0
+              ? "Nenhuma massa da Maxi com preço no seu Estoque. Marque abaixo para montar com os outros produtos que você vende."
+              : "Nenhum produto com preço no seu Estoque ainda. Cadastre os preços em Estoque e gere de novo."}
           </p>
+        )}
+
+        {(estado === "pronto" || estado === "vazio") && outros > 0 && (
+          <label className="flex items-center gap-2 text-sm text-ink-2">
+            <input type="checkbox" checked={incluirOutros} onChange={(e) => setIncluirOutros(e.target.checked)} />
+            Incluir outros produtos que você vende ({outros})
+          </label>
         )}
 
         {estado === "pronto" && previa && (
@@ -142,16 +160,16 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
             <p className="text-xs text-ink-2 text-center">
               {total} produtos. Os que estão escondidos ou em falta há mais de 30 dias ficam de fora.
             </p>
+            {cortados > 0 && (
+              <p className="text-xs text-brand bg-brand/5 rounded-lg p-2">
+                {cortados} {cortados === 1 ? "item não coube" : "itens não couberam"} na folha.
+                {incluirOutros ? " Desmarque os outros produtos para caber tudo da Maxi." : ""}
+              </p>
+            )}
             {!dadosRef.current?.whatsapp && (
               <p className="text-xs text-brand-gold-ink bg-brand-gold/10 rounded-lg p-2">
                 Sem número para receber pedido: conecte o robô no Meu robô para o número sair no cardápio.
               </p>
-            )}
-            {outros > 0 && (
-              <label className="flex items-center gap-2 text-sm text-ink-2">
-                <input type="checkbox" checked={incluirOutros} onChange={(e) => setIncluirOutros(e.target.checked)} />
-                Incluir outros produtos que você vende ({outros})
-              </label>
             )}
             <div className="flex flex-col sm:flex-row gap-2">
               <button type="button" onClick={usarNoRobo} disabled={Boolean(ocupado)}

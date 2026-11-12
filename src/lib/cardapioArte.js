@@ -88,7 +88,7 @@ const ordemSabor = (a, b) => {
 export const precoBR = (v) => Number(v || 0).toFixed(2).replace(".", ",");
 
 /** Junta os sabores de mesmo preço numa linha: [{ rotulo: "Brócolis e muçarela, frango e requeijão", preco: "39,80" }]. */
-export function linhasPorPreco(itens) {
+export function linhasPorPreco(itens, semSabor = "") {
   const porPreco = new Map();
   for (const it of itens) {
     const k = Number(it.preco).toFixed(2);
@@ -100,7 +100,7 @@ export function linhasPorPreco(itens) {
     .sort((a, b) => Number(a[0]) - Number(b[0]))
     .map(([preco, sabores]) => {
       const s = sabores.sort(ordemSabor);
-      const rotulo = s.map((x, i) => (i === 0 ? x : x[0].toLowerCase() + x.slice(1))).join(", ");
+      const rotulo = s.map((x, i) => (i === 0 ? x : x[0].toLowerCase() + x.slice(1))).join(", ") || semSabor;
       return { rotulo, preco: precoBR(preco) };
     });
 }
@@ -108,6 +108,8 @@ export function linhasPorPreco(itens) {
 /** Produto que entra no cardápio: visível, com preço, e não zerado há mais de 30 dias (a mesma regra do cardápio digital). */
 export function entraNoCardapio(p, agora = new Date()) {
   if (!p || !(Number(p.preco) > 0)) return false;
+  // zerado sem data de quando zerou: não dá para saber se volta; no material impresso fica de fora
+  if (p.zerado && !Number.isFinite(new Date(p.zerado_desde).getTime())) return false;
   const s = situacaoProduto(p, agora);
   return s === "no_cardapio" || s === "acabou";
 }
@@ -140,10 +142,10 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
         resto.get(k).itens.push(item);
       }
     }
-    if (principal.length) principais.push({ chave: fam.chave, nome: fam.nome, foto: fam.foto, linhas: linhasPorPreco(principal) });
+    if (principal.length) principais.push({ chave: fam.chave, nome: fam.nome, foto: fam.foto, linhas: linhasPorPreco(principal, "Tradicional") });
     for (const r of resto.values()) {
       const titulo = [fam.nome, r.variante, r.peso?.texto].filter(Boolean).join(" ");
-      gruposRecheada.push({ chave: `${fam.chave}-${r.variante || ""}-${r.peso?.gramas || ""}`, titulo, tipo: "lista", linhas: linhasPorPreco(r.itens) });
+      gruposRecheada.push({ chave: `${fam.chave}-${r.variante || ""}-${r.peso?.gramas || ""}`, titulo, tipo: "lista", linhas: linhasPorPreco(r.itens, "Tradicional") });
     }
   }
 

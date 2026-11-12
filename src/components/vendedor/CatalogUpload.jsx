@@ -66,16 +66,16 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
   const inputRef = useRef(null);
 
   const handleFile = async (file) => {
-    if (!file) return;
+    if (!file) return false;
 
     // Validate — aceita JPG, PNG, WebP (converte para JPG antes do upload)
     if (!ACCEPTED_TYPES.includes(file.type)) {
       toast.error("Use imagens JPG, PNG ou WebP.");
-      return;
+      return false;
     }
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Imagem muito grande. Máximo 10MB.");
-      return;
+      return false;
     }
 
     setIsUploading(true);
@@ -121,6 +121,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
       onChange(publicUrl);
       toast.success("Catálogo atualizado!");
+      return true;
     } catch (error) {
       console.error("Erro no upload:", error);
       if (error.message === "timeout") {
@@ -132,6 +133,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       } else {
         toast.error(safeErrorMessage(error, "Erro ao enviar imagem. Tente novamente."));
       }
+      return false;
     } finally {
       setIsUploading(false);
       setUploadStep("");

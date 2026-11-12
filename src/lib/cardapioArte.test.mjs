@@ -111,6 +111,11 @@ t("recheada fora dos 700 g vira grupo próprio; queijo ralado e pão de queijo d
   assert.deepEqual(c.grupos[2].linhas.map((l) => l.rotulo), ["Palito/ tradicional", "Chocolate", "Requeijão 1 kg"]);
 });
 
+t("recheada sem sabor no nome vira 'Tradicional'; zerado sem data de quando zerou fica fora", () => {
+  const c = montarCardapio([P("Sofioli 700g", 39.9), P("Rondelli 4 Queijos - 700g Rolo", 45, { zerado: true, zerado_desde: null })], { agora: AGORA });
+  assert.deepEqual(c.principais.map((p) => [p.nome, p.linhas]), [["Sofioli", [{ rotulo: "Tradicional", preco: "39,90" }]]]);
+});
+
 t("nome da unidade e linha de atendimento (endereço só de loja)", () => {
   assert.equal(nomeDaUnidade("Maxi Massas Cordeiro e Iracemápolis"), "Cordeiro e Iracemápolis");
   assert.equal(nomeDaUnidade("Maxi Massas", "Uberaba"), "Uberaba");

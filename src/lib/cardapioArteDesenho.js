@@ -12,7 +12,8 @@ const COR = {
 };
 const RODAPE_Y = 276;
 
-let recursosCache = null;
+let recursosPromessa = null;
+let fontesProntas = false;
 
 function carregarImagem(src) {
   return new Promise((resolve, reject) => {
@@ -23,21 +24,25 @@ function carregarImagem(src) {
   });
 }
 
-export async function carregarRecursos() {
-  if (recursosCache) return recursosCache;
+export function carregarRecursos() {
+  if (!recursosPromessa) recursosPromessa = carregar().catch((e) => { recursosPromessa = null; throw e; });
+  return recursosPromessa;
+}
+
+async function carregar() {
   const base = `${import.meta.env?.BASE_URL || "/"}cardapio-arte/`;
-  await Promise.all([["400", "Roboto-400.ttf"], ["700", "Roboto-700.ttf"], ["900", "Roboto-900.ttf"]].map(async ([peso, arq]) => {
-    const ff = new FontFace(FONTE, `url(${base}${arq})`, { weight: peso });
-    await ff.load();
-    document.fonts.add(ff);
-  }));
+  if (!fontesProntas) {
+    const fontes = await Promise.all([["400", "Roboto-400.ttf"], ["700", "Roboto-700.ttf"], ["900", "Roboto-900.ttf"]]
+      .map(([peso, arq]) => new FontFace(FONTE, `url(${base}${arq})`, { weight: peso }).load()));
+    fontes.forEach((ff) => document.fonts.add(ff));
+    fontesProntas = true;
+  }
   const [logo, pacote, ...fotos] = await Promise.all([
     carregarImagem(`${base}logo.png`),
     carregarImagem(`${base}pacote-pao-de-queijo-480.webp`),
     ...RECHEADAS.map((f) => carregarImagem(`${base}${f.foto}`)),
   ]);
-  recursosCache = { logo, pacote, fotos: Object.fromEntries(RECHEADAS.map((f, i) => [f.foto, fotos[i]])) };
-  return recursosCache;
+  return { logo, pacote, fotos: Object.fromEntries(RECHEADAS.map((f, i) => [f.foto, fotos[i]])) };
 }
 
 const fonte = (ctx, tam, peso = 400) => { ctx.font = `${peso} ${tam}px ${FONTE}`; };
@@ -202,11 +207,12 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
     if (plano.linhas.length) { ctx.fillStyle = COR.linha; ctx.fillRect(0, plano.secY - 1.6, W, 0.4); }
     olho(ctx, "Também temos", X0, plano.secY + 1, 3.0, COR.vinho);
     const k = plano.k;
+    plano.cortados = 0;
     plano.cols.forEach((c, ci) => {
       const cx = X0 + ci * (plano.colW + plano.colGap);
       for (const g of c.grupos) {
         let y = plano.secY + 6 + g.y;
-        if (y > RODAPE_Y - 3) continue;
+        if (y > RODAPE_Y - 3) { plano.cortados += g.linhas.length; continue; }
         if (g.tipo === "pao") {
           ctx.save();
           ctx.shadowColor = "rgba(43,26,23,.18)"; ctx.shadowBlur = 1.4; ctx.shadowOffsetY = 0.3;
@@ -217,13 +223,16 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
           fonte(ctx, 4.2 * k, 900); ctx.fillStyle = COR.vinho; ctx.textBaseline = "top";
           ctx.fillText("PÃO DE QUEIJO", cx + 17, y + 6.6 - 2.1 * k);
           y += 2.4 + 12.5 + 1.6;
-          for (const l of g.linhas) y += linhaPreco(ctx, { x: cx + 2.4, y, w: plano.colW - 4.8, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
+          for (const l of g.linhas) {
+            if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
+            y += linhaPreco(ctx, { x: cx + 2.4, y, w: plano.colW - 4.8, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
+          }
         } else {
           fonte(ctx, 3.15 * k, 700); ctx.fillStyle = COR.noite; ctx.textBaseline = "top";
           ctx.fillText(g.titulo, cx, y);
           y += 4.6 * k;
           for (const l of g.linhas) {
-            if (y > RODAPE_Y - 4) break;
+            if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
             y += linhaPreco(ctx, { x: cx, y, w: plano.colW, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
           }
         }
@@ -270,20 +279,20 @@ async function qrCanvas(url) {
   return c;
 }
 
-/** Canvas pronto. pxPorMm: 1240/210 ≈ 5,9 (imagem 1240 x 1754) · 300/25,4 (PDF de gráfica). */
+/** Canvas pronto + quantas linhas não couberam na folha. pxPorMm: 1240/210 ≈ 5,9 (imagem 1240 x 1754) · 300/25,4 (PDF). */
 export async function gerarCardapioCanvas(dados, { pxPorMm = 1240 / 210 } = {}) {
   const rec = await carregarRecursos();
   const qr = dados.qrUrl ? await qrCanvas(dados.qrUrl) : null;
   const canvas = document.createElement("canvas");
-  desenharCardapio(canvas, dados, { ...rec, qr }, pxPorMm);
-  return canvas;
+  const plano = desenharCardapio(canvas, dados, { ...rec, qr }, pxPorMm);
+  return { canvas, cortados: plano.cortados || 0 };
 }
 
 export const canvasParaJpeg = (canvas, qualidade = 0.9) =>
   new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Falha ao gerar a imagem"))), "image/jpeg", qualidade));
 
 export async function baixarCardapioPdf(dados, nomeArquivo) {
-  const canvas = await gerarCardapioCanvas(dados, { pxPorMm: 300 / 25.4 });
+  const { canvas } = await gerarCardapioCanvas(dados, { pxPorMm: 300 / 25.4 });
   const mod = await import("jspdf");
   const JsPDF = mod.jsPDF || mod.default;
   const doc = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
