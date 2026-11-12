@@ -137,16 +137,18 @@ export const JOURNEY_STEPS = [
       {
         id: "cardapio",
         tipo: "auto",
-        titulo: "Fazer o cardápio no Canva",
-        resumo: "Faça uma cópia do modelo, troque endereço e telefone e baixe em JPG.",
+        titulo: "Gerar o cardápio do robô",
+        resumo: "O app monta o cardápio com os seus produtos e preços. Um toque e o robô já usa.",
         texto:
-          "Você tem um modelo pronto de cardápio no Canva. Não precisa pedir acesso: você faz a sua cópia.\n\n" +
-          '1. Toque no botão abaixo e entre no Canva (a conta é grátis)\n' +
-          '2. Toque em "Arquivo" → "Fazer uma cópia". A cópia fica no seu Canva\n' +
-          "3. Na cópia, troque endereço e telefone da sua unidade (e o preço, se o seu for diferente)\n" +
-          '4. Baixe em JPG: "Compartilhar" → "Baixar"\n\n' +
-          "Essa imagem é o cardápio que o robô manda ao cliente. Você sobe no Meu Vendedor, no próximo passo.",
-        destinos: [{ tipo: "canva", href: CANVA_CARDAPIO, rotulo: "Abrir modelo no Canva" }],
+          "O cardápio é a imagem que o robô manda ao cliente. O app monta para você, com os produtos e os preços do seu Estoque, o seu WhatsApp e o link do cardápio digital.\n\n" +
+          '1. Toque no botão abaixo: abre o Meu Vendedor na etapa Vendedor\n' +
+          '2. Em "Imagem do catálogo", toque em "Gerar cardápio"\n' +
+          '3. Confira a prévia e toque em "Usar no robô"\n\n' +
+          "Dá também para baixar a imagem (para mandar no WhatsApp) ou o PDF (para imprimir). Mudou preço no Estoque? Gere de novo. Prefere montar do seu jeito? Tem o modelo no Canva.",
+        destinos: [
+          { tipo: "app", href: "/FranchiseSettings?etapa=4&de=primeiros-passos", rotulo: "Gerar cardápio" },
+          { tipo: "canva", href: CANVA_CARDAPIO, rotulo: "Modelo no Canva" },
+        ],
       },
       {
         id: "catalogo_whatsapp",
