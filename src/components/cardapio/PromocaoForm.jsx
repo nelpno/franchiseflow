@@ -210,7 +210,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
     <section ref={secaoRef} id="bloco-promocao" className="scroll-mt-20 space-y-3" aria-labelledby="cardapio-promocao">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 id="cardapio-promocao" className={H2}>Promoções</h2>
-        <p className="text-sm text-ink-3">Até {MAX_PROMOS} ao mesmo tempo. Valem para o cardápio e para o robô.</p>
+        <p className="text-sm text-ink-3">Até {MAX_PROMOS} kits ou leve N ao mesmo tempo, ou um texto do seu jeito com quantas promoções quiser. Valem para o cardápio e para o robô.</p>
       </div>
 
       {!emEdicao && lista.length > 0 && (
@@ -330,7 +330,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
               ))}
             </div>
             {!livre && temLivre && (
-              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, esta promoção fica no lugar do texto de agora.</p>
+              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, o seu texto de agora sai. Para ter mais de uma promoção escrita do seu jeito (ex.: kit em que o cliente escolhe as massas), volte em Escrever do meu jeito e escreva todas no mesmo texto.</p>
             )}
             {livre && lista.length === 1 && (
               <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, “{lista[0].nome}” é encerrada e o seu texto fica no lugar.</p>
@@ -339,6 +339,9 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
 
           {livre ? (
             <>
+              <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">
+                É um texto só: tem mais de uma promoção? Escreva todas aqui, uma embaixo da outra (ex.: Kit Natal 1 e Kit Natal 2). Kit em que o cliente escolhe as massas fica aqui; kit com produtos fixos pode ir em Kit com preço fechado.
+              </p>
               <div>
                 <label htmlFor="promo-cliente" className={ROTULO_CAMPO}>O que o cliente lê no cardápio (até {PROMO_CLIENTE_MAX} letras)</label>
                 <textarea id="promo-cliente" rows={2} maxLength={PROMO_CLIENTE_MAX} value={cliente} onChange={(e) => setCliente(e.target.value)}
