@@ -176,6 +176,15 @@ const REGRAS = [
   },
   { etapa: 3, soAviso: true, campos: ["pix_key_data", "pix_key_type"], checar: formatoPixEstranho },
   {
+    // Pix no cardápio (retirada): o código sai da chave, do tipo e do titular; faltando, o botão não aparece certo (só aviso)
+    etapa: 3, soAviso: true, campos: ["pix_no_cardapio", "has_pickup", "payment_pickup", "pickup_pay_on_pickup", "pix_on_delivery", "pix_key_data", "pix_key_type", "pix_holder_name"],
+    checar: (f) => {
+      if (!f.pix_no_cardapio || !f.has_pickup || f.pickup_pay_on_pickup || f.pix_on_delivery || !(f.payment_pickup || []).includes("pix")) return null;
+      const falta = [vazio(f.pix_key_data) && "a chave Pix", vazio(f.pix_key_type) && "o tipo da chave", vazio(f.pix_holder_name) && "o nome do titular"].filter(Boolean);
+      return falta.length > 0 && `Pix no cardápio está ligado: preencha ${falta.join(", ")} (o código Pix e o nome de quem recebe saem daí).`;
+    },
+  },
+  {
     etapa: 3, campos: ["charges_card_fee_to_customer", "payment_fees", "payment_delivery", "payment_pickup"],
     checar: (f) => {
       if (!f.charges_card_fee_to_customer) return null;

@@ -88,6 +88,17 @@ assert.equal(pixEstranho.erros.length, 0);
 assert.match(pixEstranho.avisos[0], /não parece CPF/);
 assert.ok(ok(validarEtapa(3, { ...base, pix_key_type: "random", pix_key_data: "123e4567-e89b-12d3-a456-426614174000" }, ["pix_key_data"])));
 assert.ok(ok(validarEtapa(3, { ...base, pix_key_type: "phone", pix_key_data: "+55 (13) 97408-8382" }, ["pix_key_data"])));
+// Pix no cardápio (retirada): faltando titular/tipo = só aviso; desligado, sem Pix na retirada ou "na hora da retirada" = nada
+const pixCard = { ...base, has_pickup: true, payment_pickup: ["pix"], pix_no_cardapio: true, pix_holder_name: "Maria Silva" };
+assert.ok(ok(validarEtapa(3, pixCard, ["pix_no_cardapio"])));
+const semTitular = validarEtapa(3, { ...pixCard, pix_holder_name: "" }, ["pix_holder_name"]);
+assert.equal(semTitular.erros.length, 0);
+assert.match(semTitular.avisos[0], /Pix no cardápio.*titular/);
+assert.match(validarEtapa(3, { ...pixCard, pix_key_type: "" }, ["pix_key_type"]).avisos.join(" "), /tipo da chave/);
+assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", pix_no_cardapio: false }, ["pix_holder_name"])));
+assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", pickup_pay_on_pickup: true }, ["pix_holder_name"])));
+assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", pix_on_delivery: true }, ["pix_holder_name"]))); // Pix na entrega vale na retirada: paga ao buscar, sem código
+assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", payment_pickup: ["cash"] }, ["pix_holder_name"])));
 assert.equal(validarEtapa(3, { ...base, payment_link: "meu link" }, ["payment_link"]).erros.length, 0);
 assert.equal(validarEtapa(3, { ...base, payment_link: "meu link" }, ["payment_link"]).avisos.length, 1);
 assert.ok(ok(validarEtapa(3, { ...base, payment_link: "mpago.la/abc123" }, ["payment_link"])));

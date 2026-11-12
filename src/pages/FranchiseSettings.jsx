@@ -68,6 +68,7 @@ const initialFormData = {
   accepts_reservation_without_payment: false,
   pix_on_delivery: false,
   pickup_pay_on_pickup: false,
+  pix_no_cardapio: false,
   charges_card_fee_to_customer: false,
   payment_delivery: [],
   payment_pickup: [],
@@ -455,6 +456,7 @@ function FranchiseSettingsContent() {
       accepts_reservation_without_payment: config.accepts_reservation_without_payment ?? false,
       pix_on_delivery: config.pix_on_delivery ?? false,
       pickup_pay_on_pickup: config.pickup_pay_on_pickup ?? false,
+      pix_no_cardapio: config.pix_no_cardapio ?? false,
       charges_card_fee_to_customer: config.charges_card_fee_to_customer ?? false,
       catalog_image_url: config.catalog_image_url || '',
       facebook_page_id: config.facebook_page_id || '',
@@ -846,6 +848,10 @@ function FranchiseSettingsContent() {
     (hasDelivery && (formData.payment_delivery || []).includes(pm.value)) ||
     (hasPickup && (formData.payment_pickup || []).includes(pm.value)));
   const usaPix = metodosMarcados.some((pm) => pm.value === 'pix');
+  // Pix marcado na retirada (a tela exige lista própria da retirada: não herda a da entrega)
+  const pixNaRetirada = hasPickup && (formData.payment_pickup || []).includes('pix');
+  // paga ao buscar: "Na hora da retirada" ou "Pix na entrega" (que vale também na retirada): o cardápio não mostra código (o banco ignora a opção)
+  const pagaNaHora = !!(formData.pickup_pay_on_pickup || formData.pix_on_delivery);
   const usaLink = metodosMarcados.some((pm) => pm.value === 'payment_link');
   const metodosComTaxa = metodosMarcados.filter((pm) => pm.value !== 'cash');
 
@@ -1340,6 +1346,24 @@ function FranchiseSettingsContent() {
                       onChange={(val) => handleInputChange('pickup_pay_on_pickup', val === 'na_hora')}
                     />
                     <FieldHint text="Na hora da retirada: o pedido entra em Vendas como “a receber” e você cobra quando o cliente buscar. Se o cliente sumir, exclua a venda. A entrega não muda." />
+                  </div>
+                )}
+                {hasPickup && pixNaRetirada && pagaNaHora && (
+                  <p className="text-xs text-ink-3 flex items-start gap-1.5">
+                    <MaterialIcon icon="info" size={14} className="mt-0.5 shrink-0" />
+                    <span>{formData.pickup_pay_on_pickup ? 'Com “Na hora da retirada”' : 'Com “Pix na entrega” ligado'} não há código Pix no cardápio: o cliente paga ao buscar.</span>
+                  </p>
+                )}
+                {hasPickup && pixNaRetirada && !pagaNaHora && (
+                  <div>
+                    <ToggleCard
+                      icon="qr_code_2"
+                      label="Pix no cardápio: mostrar o código Pix na retirada"
+                      description="Ligado, quem escolhe retirada e Pix no cardápio digital vê o botão Copiar código Pix, com o valor do pedido já preenchido e o nome de quem recebe. O cliente paga e manda o comprovante no WhatsApp; o robô só pede o comprovante e confere o valor. A sua chave Pix fica dentro do código (quem colar no banco a vê, como já vê ao receber a chave pelo robô). Entrega não muda."
+                      checked={formData.pix_no_cardapio ?? false}
+                      onChange={(val) => handleInputChange('pix_no_cardapio', val)}
+                    />
+                    <p className="text-xs text-ink-3 mt-1 ml-1">Desligado por padrão.</p>
                   </div>
                 )}
                 <div>
