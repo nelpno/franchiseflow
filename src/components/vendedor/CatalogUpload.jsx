@@ -4,6 +4,7 @@ import { supabase } from "@/api/supabaseClient";
 import { toast } from "sonner";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { CANVA_CARDAPIO } from "@/components/onboarding/materiais";
+import GerarCardapioDialog from "@/components/vendedor/GerarCardapioDialog";
 
 /**
  * Upload de imagem do catálogo para Supabase Storage.
@@ -61,6 +62,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
   const [uploadStep, setUploadStep] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [canvaExpanded, setCanvaExpanded] = useState(false);
+  const [gerarAberto, setGerarAberto] = useState(false);
   const inputRef = useRef(null);
 
   const handleFile = async (file) => {
@@ -152,28 +154,34 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
 
   return (
     <div className="space-y-3">
-      {/* Bloco expansível Canva */}
-      <div className="rounded-xl border border-brand-gold/30 bg-brand-gold/5">
+      {/* Gerar cardápio (12/11/2026): monta a imagem com os produtos e preços do Estoque; o Canva vira alternativa */}
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-gold/5 p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <MaterialIcon icon="auto_awesome" size={18} className="text-brand-gold-ink mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-brand-gold-ink">Gerar o cardápio com os seus produtos</p>
+            <p className="text-xs text-ink-2">O app monta a arte com os preços do seu Estoque, o seu WhatsApp e o link do cardápio digital. Serve para o robô, para mandar no WhatsApp e para imprimir.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setGerarAberto(true)}
+          disabled={isUploading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-gold-ink text-white text-sm font-bold rounded-lg disabled:opacity-60"
+        >
+          <MaterialIcon icon="auto_awesome" size={16} />
+          Gerar cardápio
+        </button>
         <button
           type="button"
           onClick={() => setCanvaExpanded(!canvaExpanded)}
-          className="w-full flex items-center justify-between px-4 py-3"
+          className="flex items-center gap-1 text-xs font-semibold text-brand-gold-ink"
         >
-          <div className="flex items-center gap-2">
-            <MaterialIcon icon="palette" size={18} className="text-brand-gold-ink" />
-            <span className="text-sm font-semibold text-brand-gold-ink">
-              Criar cardápio no Canva
-            </span>
-          </div>
-          <MaterialIcon
-            icon={canvaExpanded ? "expand_less" : "expand_more"}
-            size={18}
-            className="text-brand-gold-ink"
-          />
+          Prefere montar no Canva?
+          <MaterialIcon icon={canvaExpanded ? "expand_less" : "expand_more"} size={16} />
         </button>
-
         {canvaExpanded && (
-          <div className="px-4 pb-4 space-y-3">
+          <div className="space-y-3">
             <ol className="space-y-2 text-sm text-ink-2">
               <li className="flex gap-2">
                 <span className="font-bold text-brand-gold-ink">1.</span>
@@ -196,7 +204,7 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
               href={CANVA_CARDAPIO}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-brand-gold-ink text-white text-sm font-bold rounded-lg hover:bg-brand-gold-ink transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-brand-gold-ink text-brand-gold-ink text-sm font-bold rounded-lg"
             >
               <MaterialIcon icon="open_in_new" size={16} />
               Abrir modelo no Canva
@@ -204,6 +212,12 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
           </div>
         )}
       </div>
+      <GerarCardapioDialog
+        open={gerarAberto}
+        onOpenChange={setGerarAberto}
+        franchiseId={franchiseId}
+        onUsar={handleFile}
+      />
 
       {value ? (
         /* Preview */

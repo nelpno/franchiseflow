@@ -681,10 +681,10 @@ export const GUIAS = [
     icone: "menu_book",
     area: "Meu robô",
     sinonimos: ["cardápio", "catálogo", "imagem do cardápio", "trocar cardápio", "canva"],
-    dica: "O robô manda o cardápio uma vez por conversa. Mude os preços no Estoque também, para bater com a imagem.",
+    dica: "O robô manda o cardápio uma vez por conversa. O cardápio gerado pelo app já sai com os preços do Estoque: mudou preço, gere de novo.",
     erroComum: "Imagem torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.",
     passos: [
-      { titulo: "Tenha a imagem pronta", texto: "Deixe a imagem nova no celular (JPG, PNG ou WebP, até 10 MB), feita no Canva a partir do modelo da Maxi. Na mesma etapa, toque em \"Criar cardápio no Canva\", em \"Abrir modelo no Canva\" e em Arquivo › Fazer uma cópia. Não precisa pedir acesso." },
+      { titulo: "Gere ou escolha a imagem", texto: "O jeito mais fácil: na etapa Vendedor, em \"Imagem do catálogo\", toque em \"Gerar cardápio\". O app monta a arte com os seus produtos, os preços do Estoque e o seu WhatsApp. Toque em \"Usar no robô\" e siga para o passo 4. Também dá para baixar a imagem ou o PDF para imprimir. Prefere o Canva? Toque em \"Prefere montar no Canva?\"." },
       { titulo: "Abra a etapa Vendedor", texto: "Toque em Mais, em Meu robô e, no alto, na etapa Vendedor. Ache \"Imagem do catálogo\".", botao: "Vendedor", imagem: "/tutoriais/robo-cardapio-2.webp" },
       { titulo: "Troque a imagem", texto: "Toque em Trocar (ou na caixa \"clique para selecionar\", se ainda não tem) e escolha a imagem na galeria.", botao: "Trocar", imagem: "/tutoriais/robo-cardapio-3.webp" },
       { titulo: "Confira e siga", texto: "Espere aparecer \"Catálogo atualizado!\" e a imagem nova. Depois toque em Próximo.", botao: "Próximo", imagem: "/tutoriais/robo-cardapio-4.webp" },
