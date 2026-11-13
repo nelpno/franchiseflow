@@ -29,7 +29,7 @@ function Situacao({ p, s }) {
   );
 }
 
-export default function ProdutosLista({ produtos, salvandoIds, onMostrar }) {
+export default function ProdutosLista({ produtos, salvandoIds, onMostrar, secaoRef }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [confirmarLimpeza, setConfirmarLimpeza] = useState(false);
   const [busca, setBusca] = useState("");
@@ -54,7 +54,7 @@ export default function ProdutosLista({ produtos, salvandoIds, onMostrar }) {
   };
 
   return (
-    <section className="space-y-3" aria-labelledby="cardapio-produtos">
+    <section ref={secaoRef} className="scroll-mt-20 space-y-3" aria-labelledby="cardapio-produtos">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 id="cardapio-produtos" className={H2}>Produtos no cardápio</h2>
         <p className="text-sm text-ink-3">Preço e estoque vêm do Estoque. Esconder tira só do cardápio: o robô continua vendendo o que tiver estoque.</p>

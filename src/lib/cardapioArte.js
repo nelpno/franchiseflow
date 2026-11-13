@@ -39,6 +39,10 @@ const DEMAIS = [
   { chave: "pao", titulo: "Pão de queijo", re: /^p[ãa]o\s+(de\s+)?(queijo|qjo\.?)\s*/i },
 ];
 
+// produto da linha da Maxi (o que entra na arte sem marcar "Incluir outros produtos")
+const ehDaLinha = (nome) =>
+  RECHEADAS.some((f) => f.re.test(nome)) || ehMariolla(nome) || DEMAIS.some((f) => f.re.test(nome) && (!f.so || f.so.test(nome)));
+
 const UNIDADES_PESO = [
   { re: /^(kg|kl|quilos?)$/i, un: "kg", fator: 1000 },
   { re: /^(g|gr|grs|gs|gramas?)$/i, un: "g", fator: 1 },
@@ -128,6 +132,18 @@ export function entraNoCardapio(p, agora = new Date()) {
   if (p.zerado && !Number.isFinite(new Date(p.zerado_desde).getTime())) return false;
   const s = situacaoProduto(p, agora);
   return s === "no_cardapio" || s === "acabou";
+}
+
+/**
+ * Escondidos que entrariam na arte se estivessem visíveis (nomes, em ordem). O "Gerar cardápio" lista esses nomes
+ * com o atalho para mostrar: em 13/11/2026 a Jaraguá escondeu o Sofioli 4 queijos e não achou por que ele sumia.
+ */
+export function escondidosDaArte(produtos, { incluirOutros = false, agora = new Date() } = {}) {
+  return (produtos || [])
+    .filter((p) => p?.visivel === false && entraNoCardapio({ ...p, visivel: true }, agora))
+    .map((p) => String(p.produto || "").trim())
+    .filter((nome) => nome && (incluirOutros || ehDaLinha(nome)))
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
 /**

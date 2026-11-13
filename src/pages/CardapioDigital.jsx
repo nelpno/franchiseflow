@@ -58,6 +58,7 @@ export default function CardapioDigital() {
   const dias = PERIODOS.some((p) => String(p.dias) === searchParams.get("periodo")) ? Number(searchParams.get("periodo")) : 7;
   const queryClient = useQueryClient();
   const promoRef = useRef(null);
+  const produtosRef = useRef(null);
   const [franquias, setFranquias] = useState(null);
   const [salvando, setSalvando] = useState(null); // "ativo" | "bio" | "promocao" | "cupom" | "pausa" | "whatsapp"
   const [salvandoIds, setSalvandoIds] = useState(() => new Set());
@@ -98,17 +99,19 @@ export default function CardapioDigital() {
   useEffect(() => {
     if (painel?.evo) registrarEvento("cardapio_tela_aberta");
   }, [painel?.evo]);
-  // ?bloco=promocao (atalho "Mudar em Cardápio digital › Promoção" do Meu robô): rola até o bloco quando ele existir
+  // ?bloco=promocao (atalho "Mudar em Cardápio digital › Promoção" do Meu robô) ou ?bloco=produtos ("Mostrar no
+  // cardápio" do Gerar cardápio, 13/11/2026): rola até o bloco quando ele existir
   // (uma vez só: o painel muda a cada gravação e refetch, e a página não pode pular de volta para a promoção)
   const blocoPedido = searchParams.get("bloco");
   const rolouRef = useRef(false);
   const temPainel = !!painel;
   useEffect(() => {
-    if (blocoPedido !== "promocao" || !temPainel || rolouRef.current) return undefined;
+    const alvo = { promocao: promoRef, produtos: produtosRef }[blocoPedido];
+    if (!alvo || !temPainel || rolouRef.current) return undefined;
     const t = setTimeout(() => {
-      if (!promoRef.current) return;
+      if (!alvo.current) return;
       rolouRef.current = true;
-      promoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      alvo.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 300);
     return () => clearTimeout(t);
   }, [blocoPedido, temPainel]);
@@ -280,7 +283,7 @@ export default function CardapioDigital() {
           <PromocaoForm painel={painel} hojeISO={hoje} salvando={salvando === "promocao"} onSalvar={salvarPromocao}
             onSalvarLivre={salvarPromoLivre} onEncerrar={encerrarPromocao} secaoRef={promoRef} />
           <CupomForm painel={painel} hojeISO={hoje} salvando={salvando === "cupom"} onSalvar={salvarCupom} />
-          <ProdutosLista produtos={painel.produtos} salvandoIds={salvandoIds} onMostrar={mostrar} />
+          <ProdutosLista produtos={painel.produtos} salvandoIds={salvandoIds} onMostrar={mostrar} secaoRef={produtosRef} />
         </>
       )}
 

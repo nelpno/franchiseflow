@@ -152,4 +152,23 @@ t("dados: telefone, link e QR do cardápio digital ligado; sem cardápio o QR ab
   assert.equal(c.qrUrl, ""); assert.equal(c.whatsapp, "");
 });
 
+t("escondidos que ficaram fora da arte: só os que entrariam visíveis, da linha da Maxi (Jaraguá 13/11)", () => {
+  const ontem = "2026-11-11T13:00:00Z", velho = "2026-09-01T13:00:00Z";
+  const prods = [
+    P("Sofioli 4 Queijos - 700g", 46, { visivel: false, zerado: true, zerado_desde: ontem }),
+    P("Canelone 4 Queijos - 700g", 46),
+    P("Rondelli Brócolis - 700g", 41, { visivel: false }),
+    P("Conchiglione Frango - 700g", 41, { visivel: false, zerado: true, zerado_desde: velho }), // fora há +30 dias
+    P("Nhoque de batata - 1kg", 0, { visivel: false }), // sem preço
+    P("Bolo de pote", 15, { visivel: false }), // produto próprio
+  ];
+  assert.deepEqual(A.escondidosDaArte(prods, { agora: AGORA }), ["Rondelli Brócolis - 700g", "Sofioli 4 Queijos - 700g"]);
+  assert.deepEqual(A.escondidosDaArte(prods, { agora: AGORA, incluirOutros: true }),
+    ["Bolo de pote", "Rondelli Brócolis - 700g", "Sofioli 4 Queijos - 700g"]);
+  assert.deepEqual(A.escondidosDaArte(null), []);
+  // controle: visível de novo, o Sofioli 4 queijos entra na arte
+  const vis = montarCardapio(prods.map((p) => ({ ...p, visivel: true })), { agora: AGORA });
+  assert.match(JSON.stringify(vis.principais.find((x) => x.chave === "sofioli")), /4 queijos/);
+});
+
 console.log(`cardapioArte: ${n} testes ok`);

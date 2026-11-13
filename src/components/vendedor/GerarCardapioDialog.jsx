@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { getCardapioPainel, FranchiseConfiguration } from "@/entities/all";
-import { montarCardapio, dadosDoCardapio } from "@/lib/cardapioArte";
+import { montarCardapio, dadosDoCardapio, escondidosDaArte } from "@/lib/cardapioArte";
 import { gerarCardapioCanvas, canvasParaJpeg, baixarCardapioPdf } from "@/lib/cardapioArteDesenho";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { registrarEvento } from "@/lib/telemetria";
@@ -120,6 +121,20 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
 
   const outros = base ? montarCardapio(base.painel.produtos).outros : 0;
   const total = dadosRef.current?.cardapio?.total;
+  // escondido no Cardápio digital some da arte também: dizer QUAL e levar direto ao "Mostrar" (Jaraguá, 13/11/2026)
+  const escondidos = base ? escondidosDaArte(base.painel.produtos, { incluirOutros }) : [];
+  const avisoEscondidos = escondidos.length > 0 && (
+    <div className="text-xs text-brand-gold-ink bg-brand-gold/10 rounded-lg p-2 space-y-1">
+      <p>
+        {escondidos.length === 1 ? "Ficou de fora porque está escondido" : `${escondidos.length} produtos ficaram de fora porque estão escondidos`} no
+        Cardápio digital: {escondidos.slice(0, 5).join(", ")}{escondidos.length > 5 ? ` e mais ${escondidos.length - 5}` : ""}.
+      </p>
+      <Link to="/CardapioDigital?produtos=escondidos&bloco=produtos" className="inline-flex min-h-10 items-center font-semibold text-brand-dark hover:underline"
+        onClick={() => registrarEvento("cardapio_arte_ver_escondidos", { detalhe: String(escondidos.length) })}>
+        Mostrar no cardápio →
+      </Link>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -146,6 +161,7 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
               : "Nenhum produto com preço no seu Estoque ainda. Cadastre os preços em Estoque e gere de novo."}
           </p>
         )}
+        {estado === "vazio" && avisoEscondidos}
 
         {(estado === "pronto" || estado === "vazio") && outros > 0 && (
           <label className="flex items-center gap-2 text-sm text-ink-2">
@@ -160,6 +176,7 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
             <p className="text-xs text-ink-2 text-center">
               {total} produtos. Os que estão escondidos ou em falta há mais de 30 dias ficam de fora.
             </p>
+            {avisoEscondidos}
             {cortados > 0 && (
               <p className="text-xs text-brand bg-brand/5 rounded-lg p-2">
                 {cortados} {cortados === 1 ? "item não coube" : "itens não couberam"} na folha.
