@@ -223,7 +223,7 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
   // escolhe o tamanho que cabe (linhas com foto encolhem primeiro, depois a letra de baixo)
   const tentativas = [];
   for (const base of [30, 28, 26, 24, 22]) tentativas.push([base, 1]);
-  for (const k of [0.95, 0.9, 0.85]) tentativas.push([22, k]);
+  for (const k of [0.95, 0.9, 0.85, 0.78, 0.72]) tentativas.push([22, k]);
   let plano = null;
   for (const [base, k] of tentativas) { plano = planejar(ctx, dados.cardapio, base, k); if (plano.fim <= RODAPE_Y - 2) break; }
 
