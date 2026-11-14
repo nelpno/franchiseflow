@@ -69,7 +69,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 24. Ajustar os dias e horários de entrega — `robo-horarios`
 25. Ajustar entrega, frete e retirada — `robo-entrega`
 26. Escolher as formas de pagamento — `robo-pagamento`
-27. Trocar o cardápio do robô — `robo-cardapio`
+27. Gerar o cardápio (robô e impresso) — `robo-cardapio`
 28. Reconectar o WhatsApp do robô — `reconectar-whatsapp`
 29. Conferir o que o robô vai responder — `testar-robo`
 
@@ -406,7 +406,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: produto aberto. Contorno em **Preço de venda** e **Custo**. (existe: `mudar-preco-2.webp`)
 3. Toque em **Editar produto**. Apague o **Preço de venda (R$)**, digite o novo e toque em **Salvar**.
    - Imagem: formulário "Editar Produto". Contorno no campo **Preço de venda (R$)**. (existe: `mudar-preco-3.webp`)
-4. Espere aparecer "Produto atualizado.". O robô passa a usar esse preço. Atualize também a imagem do cardápio que o robô envia (guia 27).
+4. Espere aparecer "Produto atualizado.". O robô passa a usar esse preço. Gere o cardápio de novo para a imagem sair com o preço novo (guia 27).
    - Imagem: aviso "Produto atualizado." no alto. (existe: `mudar-preco-4.webp`)
 
 **Deu certo quando:** ao abrir o produto de novo, o **Preço de venda** é o novo. O robô passa a usar esse preço com os clientes.
@@ -820,26 +820,24 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ---
 
-## 27. Trocar o cardápio do robô
-`slug: robo-cardapio` · **Onde começa:** Mais › Meu robô › etapa **Vendedor** · **Tempo:** 3 minutos (com a imagem pronta)
+## 27. Gerar o cardápio (robô e impresso)
+`slug: robo-cardapio` · **Onde começa:** Mais › Meu robô › etapa **Vendedor** · **Tempo:** 2 minutos
 
-**Quando usar:** mudou preço ou produto e o cardápio que o robô manda precisa ser o novo.
+**Quando usar:** começou agora, mudou preço ou produto, ou quer o cardápio para mandar no WhatsApp ou imprimir.
 
 **Passos**
-1. Deixe a imagem nova do cardápio no celular (JPG ou PNG, feita no Canva a partir do modelo da Maxi).
-   - Imagem: sem recorte do app (passo fora do app).
-2. Toque em **Mais**, **Meu robô** e, no alto, na etapa **Vendedor**. Ache **Catálogo / Cardápio**.
-   - Imagem: etapa Vendedor. Seta em **Catálogo / Cardápio**.
-3. Toque em **Trocar** (ou na caixa **clique para selecionar**, se ainda não tem) e escolha a imagem na galeria.
-   - Imagem: cardápio atual. Seta em **Trocar**.
-4. Espere aparecer "Catálogo atualizado!" e a imagem nova. Depois toque em **Próximo**.
-   - Imagem: imagem nova na tela. Círculo na imagem.
+1. Toque em **Mais**, **Meu robô** e, no alto, na etapa **Vendedor**. Ache **Imagem do catálogo**.
+2. Toque em **Gerar cardápio**. O app monta a arte com os seus produtos, os preços do Estoque, o seu WhatsApp e o QR. Confira na prévia.
+3. Toque em **Usar no robô**. O robô passa a mandar esse cardápio aos clientes.
+4. Na mesma tela: **Baixar imagem** é para mandar no WhatsApp e postar; **PDF para imprimir** sai em A4, com o QR nítido.
+5. Espere aparecer "Catálogo atualizado!" e a imagem nova. Depois toque em **Próximo**.
+6. Prefere a sua própria arte? Toque em **Prefere montar no Canva?**, exporte a imagem e use **Trocar** para escolher a imagem exportada.
 
 **Deu certo quando:** a tela mostra o cardápio novo. Nas próximas conversas, o robô manda essa imagem.
 
-**Dica:** o robô manda o cardápio uma vez por conversa. Mude os preços no Estoque também (guia 12), para bater com a imagem. Para fazer a imagem, abra **Criar cardápio no Canva**, na mesma etapa.
+**Dica:** o QR do cardápio abre o seu Cardápio digital (guia 34), se estiver ligado; senão, abre o seu WhatsApp. Mudou preço ou produto? Gere de novo.
 
-**Erro comum:** imagem torta, cortada ou escura. Use o arquivo exportado do Canva, não um print da tela.
+**Erro comum:** imprimir um print da tela ou a imagem que veio pelo WhatsApp: perde qualidade e o QR pode não ler. Para imprimir, use **PDF para imprimir**.
 
 **Se não resolver:** o robô ainda manda o cardápio antigo depois de algumas horas? Falar com a Maxi (guia 30).
 
