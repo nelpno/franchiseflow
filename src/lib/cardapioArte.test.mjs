@@ -143,11 +143,11 @@ t("dados: telefone, link e QR do cardápio digital ligado; sem cardápio o QR ab
   assert.equal(a.unidade, "Uberaba");
   assert.equal(a.whatsapp, "(34) 99238-7278");
   assert.equal(a.link, "pedido.maximassas.com.br/uberaba");
-  assert.equal(a.qrUrl, "https://pedido.maximassas.com.br/uberaba/?utm_source=cardapio&utm_medium=impresso");
+  assert.equal(a.qrUrl, "https://pedido.maximassas.com.br/uberaba/?utm_source=folheto");
   assert.equal(a.atendimento, "Entrega · Retirada na R. José Bonifácio, 364, Leblon");
   const b = dadosDoCardapio({ nome: "Maxi Massas X", ativo: false, url: "https://pedido.maximassas.com.br/x/", whatsapp_pedido: "19999142001", produtos: [] }, {}, { agora: AGORA });
   assert.equal(b.link, "");
-  assert.match(b.qrUrl, /^https:\/\/wa\.me\/5519999142001\?text=/);
+  assert.equal(b.qrUrl, "https://wa.me/5519999142001");
   const c = dadosDoCardapio({ produtos: [] }, {}, { agora: AGORA });
   assert.equal(c.qrUrl, ""); assert.equal(c.whatsapp, "");
 });

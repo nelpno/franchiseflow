@@ -277,7 +277,7 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
   // rodapé vinho
   ctx.fillStyle = COR.vinho; ctx.fillRect(0, RODAPE_Y, W, H - RODAPE_Y);
   const temQr = Boolean(rec.qr);
-  const meioX = 86, meioW = (temQr ? 174 : X1) - meioX;
+  const meioX = 86, meioW = (temQr ? 172 : X1) - meioX;
   if (dados.whatsapp) {
     olho(ctx, "Peça pelo WhatsApp", X0, 279.6, 2.8, COR.ouro);
     fonte(ctx, 7.4, 900); ctx.fillStyle = COR.branco; ctx.textBaseline = "top";
@@ -298,25 +298,36 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
     ctx.fillText(txt, meioX, 280.2 + i * 4.3 + (meio.length < 3 ? 2.1 : 0));
   });
   if (temQr) {
-    ctx.fillStyle = COR.branco; retanguloArredondado(ctx, 177, 278.2, 17.6, 17.6, 1.4); ctx.fill();
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(rec.qr, 178.1, 279.3, 15.4, 15.4);
-    ctx.imageSmoothingEnabled = true;
+    // QR desenhado módulo a módulo, com as bordas no pixel inteiro (14/11/2026: o antigo era um canvas de 400 px
+    // reduzido a ~90 px, módulos de 2 e 3 px e borda branca de ~2 módulos: impresso em jato de tinta não lia).
+    const caixa = 19, bx = X1 - caixa + 0.4, by = 277;
+    ctx.fillStyle = COR.branco; retanguloArredondado(ctx, bx, by, caixa, caixa, 1.2); ctx.fill();
+    const { n, escuro } = rec.qr, margem = 2;
+    const passo = (caixa * pxPorMm) / (n + 2 * margem);
+    const x0 = bx * pxPorMm + margem * passo, y0 = by * pxPorMm + margem * passo;
+    const borda = (o, i) => Math.round(o + i * passo);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      if (!escuro(r, c)) continue;
+      const x = borda(x0, c), y = borda(y0, r);
+      ctx.fillRect(x, y, borda(x0, c + 1) - x, borda(y0, r + 1) - y);
+    }
+    ctx.restore();
   }
   return plano;
 }
 
-async function qrCanvas(url) {
+/** Matriz do QR. Correção "L": menos módulos = módulo maior na folha, que é o que conta em impressão borrada. */
+async function qrMatriz(url) {
   const QRCode = (await import("qrcode")).default;
-  const c = document.createElement("canvas");
-  await QRCode.toCanvas(c, url, { margin: 0, width: 400, errorCorrectionLevel: "M" });
-  return c;
+  const { modules } = QRCode.create(url, { errorCorrectionLevel: "L" });
+  return { n: modules.size, escuro: (r, c) => Boolean(modules.get(r, c)) };
 }
 
 /** Canvas pronto + quantas linhas não couberam na folha. pxPorMm: 1240/210 ≈ 5,9 (imagem 1240 x 1754) · 300/25,4 (PDF). */
 export async function gerarCardapioCanvas(dados, { pxPorMm = 1240 / 210 } = {}) {
   const rec = await carregarRecursos();
-  const qr = dados.qrUrl ? await qrCanvas(dados.qrUrl) : null;
+  const qr = dados.qrUrl ? await qrMatriz(dados.qrUrl) : null;
   const canvas = document.createElement("canvas");
   const plano = desenharCardapio(canvas, dados, { ...rec, qr }, pxPorMm);
   return { canvas, cortados: plano.cortados || 0 };

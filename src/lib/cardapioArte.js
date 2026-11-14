@@ -259,9 +259,9 @@ export function dadosDoCardapio(painel, config, { incluirOutros = false, agora =
   const url = pn.ativo && pn.url ? String(pn.url) : "";
   const link = url ? linkSemProtocolo(url).replace(/\/$/, "") : "";
   const qrUrl = url
-    ? `${url}${url.includes("?") ? "&" : "?"}utm_source=cardapio&utm_medium=impresso`
+    ? `${url}${url.includes("?") ? "&" : "?"}utm_source=folheto` // link curto = QR com menos módulos (14/11/2026)
     : num
-      ? `https://wa.me/${num.startsWith("55") ? num : `55${num}`}?text=${encodeURIComponent("Oi! Vi o cardápio da Maxi Massas.")}`
+      ? `https://wa.me/${num.startsWith("55") ? num : `55${num}`}` // sem ?text: QR menor e mais legível impresso (14/11/2026)
       : "";
   return {
     unidade: nomeDaUnidade(pn.nome || cf.franchise_name, cf.city),
