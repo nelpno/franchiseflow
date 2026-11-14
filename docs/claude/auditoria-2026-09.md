@@ -73,7 +73,7 @@ bot ficaram em HTTP 500 por 24 h sem ninguém ver. O `AdminDashboard` tem um hel
 
 ### Sentinela diária (`pg_cron` 08:10 BRT, jobid 5)
 Cron que falhou · `daily_summaries` sem o dia anterior · franquia que vende todo dia e parou 2+ dias ·
-marketing duplicado · unidade ativa sem cobrança · pedido da semana sem frete → `notify_admins()`.
+marketing duplicado · unidade ativa sem cobrança → `notify_admins()`.
 Desligar: `select cron.unschedule('sentinela-diaria')`. Ver sem gravar: rodar dentro de um `DO` que
 termina em `raise exception`.
 ⚠️ **Regra de alarme nasce errada com facilidade**: "2+ despesas de marketing no mês" parecia certo e
