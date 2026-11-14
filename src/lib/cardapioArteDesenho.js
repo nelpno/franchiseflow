@@ -123,8 +123,8 @@ function linhaPreco(ctx, { x, y, w, rotulo, preco, tam, lh, desenhar = true, cor
 // ---------- layout ----------
 
 function alturaGrupo(ctx, g, colW, k) {
-  const tam = 3.0 * k, lh = 4.0 * k;
-  let h = 4.6 * k;
+  const tam = 3.6 * k, lh = 4.8 * k;
+  let h = 5.4 * k;
   for (const l of g.linhas) h += linhaPreco(ctx, { x: 0, y: 0, w: colW, rotulo: l.rotulo, preco: l.preco, tam, lh, desenhar: false });
   return h + 3.2 * k;
 }
@@ -136,10 +136,10 @@ function cartaoDestaque(ctx, d, { x, y, w, k, desenhar, rec, alturaFixa }) {
   let ty = y + PAD;
   fonte(ctx, 4.2 * k, 900);
   const titulo = quebrar(ctx, d.titulo.toUpperCase(), tw);
-  fonte(ctx, 2.8 * k, 400);
+  fonte(ctx, 3.3 * k, 400);
   const frase = d.texto ? quebrar(ctx, d.texto, tw) : [];
   const altTexto = titulo.length * 4.6 * k + (frase.length ? 1 + frase.length * 3.6 * k : 0) + 1.6;
-  const altLinhas = d.linhas.reduce((s, l) => s + linhaPreco(ctx, { x: 0, y: 0, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k, desenhar: false }), 0);
+  const altLinhas = d.linhas.reduce((s, l) => s + linhaPreco(ctx, { x: 0, y: 0, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.6 * k, lh: 4.8 * k, desenhar: false }), 0);
   const h = alturaFixa || PAD * 2 + Math.max(FOTO_DESTAQUE, altTexto + altLinhas);
   if (!desenhar) return h;
   ctx.save();
@@ -157,11 +157,11 @@ function cartaoDestaque(ctx, d, { x, y, w, k, desenhar, rec, alturaFixa }) {
   titulo.forEach((l) => { ctx.fillText(l, tx, ty); ty += 4.6 * k; });
   if (frase.length) {
     ty += 1;
-    fonte(ctx, 2.8 * k, 400); ctx.fillStyle = COR.texto;
+    fonte(ctx, 3.3 * k, 400); ctx.fillStyle = COR.texto;
     frase.forEach((l) => { ctx.fillText(l, tx, ty); ty += 3.6 * k; });
   }
   ty += 1.6;
-  for (const l of d.linhas) ty += linhaPreco(ctx, { x: tx, y: ty, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
+  for (const l of d.linhas) ty += linhaPreco(ctx, { x: tx, y: ty, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.6 * k, lh: 4.8 * k });
   return h;
 }
 
@@ -169,8 +169,8 @@ const fotoDe = (base) => { const h = Math.max(18, base - 4); return { h, w: Math
 
 function planejar(ctx, cardapio, base, k) {
   const linhasX = X0 + fotoDe(base).w + 6, linhasW = X1 - linhasX;
-  const tam = 3.35, lh = 4.4;
-  let y = cardapio.principais.length ? 75.5 : 69;
+  const tam = 4.0, lh = 5.2;
+  let y = cardapio.principais.length ? 59.5 : 53;
   const linhas = cardapio.principais.map((p) => {
     const alt = p.linhas.reduce((s, l) => s + linhaPreco(ctx, { x: 0, y: 0, w: linhasW, rotulo: l.rotulo, preco: l.preco, tam, lh, desenhar: false }), 0);
     const altura = Math.max(base, 10.6 + alt + 3);
@@ -183,10 +183,10 @@ function planejar(ctx, cardapio, base, k) {
   // destaques: até 2 cartões lado a lado, mesma altura
   const destaques = cardapio.destaques || [];
   const cardW = (X1 - X0 - colGap) / 2;
-  const destY = linhas.length ? y + 3 : 69;
+  const destY = linhas.length ? y + 3 : 53;
   const destH = destaques.length ? Math.max(...destaques.map((d) => cartaoDestaque(ctx, d, { x: 0, y: 0, w: cardW, k, desenhar: false }))) : 0;
   if (destaques.length) y = destY + 6 + destH;
-  const secY = cardapio.grupos.length ? (linhas.length || destaques.length ? y + 3 : 69) : y;
+  const secY = cardapio.grupos.length ? (linhas.length || destaques.length ? y + 3 : 53) : y;
   const cols = Array.from({ length: ncol }, () => ({ h: 0, grupos: [] }));
   for (const g of cardapio.grupos) {
     const h = alturaGrupo(ctx, g, colW, k);
@@ -207,29 +207,29 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
 
   // fundo + topo vinho
   ctx.fillStyle = COR.papel; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = COR.vinho; ctx.fillRect(0, 0, W, 62);
-  const lw = 44, lh = lw * (rec.logo.height / rec.logo.width);
-  ctx.drawImage(rec.logo, X0, 12 + (36 - lh) / 2, lw, lh);
-  olho(ctx, `Cardápio · ${dados.unidade}`, 70, 13.6, 3.3, COR.ouro, 126);
-  fonte(ctx, 12.2, 900);
+  ctx.fillStyle = COR.vinho; ctx.fillRect(0, 0, W, 46);
+  const lw = 40, lh = lw * (rec.logo.height / rec.logo.width);
+  ctx.drawImage(rec.logo, X0, 6 + (34 - lh) / 2, lw, lh);
+  olho(ctx, `Cardápio · ${dados.unidade}`, 70, 8.5, 3.3, COR.ouro, 126);
+  fonte(ctx, 9.4, 900);
   ctx.fillStyle = COR.branco; ctx.textBaseline = "top";
-  ctx.fillText("MASSA ARTESANAL", 70, 20.4);
-  ctx.fillText("CONGELADA", 70, 32.4);
+  ctx.fillText("MASSA ARTESANAL", 70, 14);
+  ctx.fillText("CONGELADA", 70, 23.4);
   fonte(ctx, 3.6, 400);
   ctx.fillStyle = COR.creme;
   quebrar(ctx, "Feita na nossa fábrica em Araraquara desde 1994. Embalada e congelada para você servir quando quiser.", 126)
-    .forEach((l, i) => ctx.fillText(l, 70, 47 + i * 5));
+    .forEach((l, i) => ctx.fillText(l, 70, 34.6 + i * 4.6));
 
   // escolhe o tamanho que cabe (linhas com foto encolhem primeiro, depois a letra de baixo)
   const tentativas = [];
   for (const base of [30, 28, 26, 24, 22]) tentativas.push([base, 1]);
-  for (const k of [0.92, 0.85, 0.78, 0.72]) tentativas.push([22, k]);
+  for (const k of [0.95, 0.9, 0.85]) tentativas.push([22, k]);
   let plano = null;
   for (const [base, k] of tentativas) { plano = planejar(ctx, dados.cardapio, base, k); if (plano.fim <= RODAPE_Y - 2) break; }
 
   // massas recheadas
   if (plano.linhas.length) {
-    olho(ctx, "Massas recheadas · 700 g · servem de 2 a 3 pessoas", X0, 69, 3.3, COR.vinho, X1 - X0);
+    olho(ctx, "Massas recheadas · 700 g · servem de 2 a 3 pessoas", X0, 53, 3.3, COR.vinho, X1 - X0);
     plano.linhas.forEach((p, i) => {
       const { h: fh, w: fw } = fotoDe(plano.base);
       const tx = plano.linhasX;
@@ -238,7 +238,7 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
       fonte(ctx, 6.2, 900); ctx.fillStyle = COR.vinho; ctx.textBaseline = "top";
       ctx.fillText(p.nome.toUpperCase(), tx, p.y + 1.2);
       let ly = p.y + 9.4;
-      for (const l of p.linhas) ly += linhaPreco(ctx, { x: tx, y: ly, w: X1 - tx, rotulo: l.rotulo, preco: l.preco, tam: 3.35, lh: 4.4 });
+      for (const l of p.linhas) ly += linhaPreco(ctx, { x: tx, y: ly, w: X1 - tx, rotulo: l.rotulo, preco: l.preco, tam: 4.0, lh: 5.2 });
       if (i < plano.linhas.length - 1) { ctx.fillStyle = COR.linha; ctx.fillRect(tx, p.y + p.altura - 1.8, X1 - tx, 0.3); }
     });
   }
@@ -263,12 +263,12 @@ export function desenharCardapio(canvas, dados, rec, pxPorMm) {
       for (const g of c.grupos) {
         let y = plano.secY + 6 + g.y;
         if (y > RODAPE_Y - 3) { plano.cortados += g.linhas.length; continue; }
-        fonte(ctx, 3.15 * k, 700); ctx.fillStyle = COR.noite; ctx.textBaseline = "top";
+        fonte(ctx, 3.7 * k, 700); ctx.fillStyle = COR.noite; ctx.textBaseline = "top";
         ctx.fillText(g.titulo, cx, y);
         y += 4.6 * k;
         for (const l of g.linhas) {
           if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
-          y += linhaPreco(ctx, { x: cx, y, w: plano.colW, rotulo: l.rotulo, preco: l.preco, tam: 3.0 * k, lh: 4.0 * k });
+          y += linhaPreco(ctx, { x: cx, y, w: plano.colW, rotulo: l.rotulo, preco: l.preco, tam: 3.6 * k, lh: 4.8 * k });
         }
       }
     });
