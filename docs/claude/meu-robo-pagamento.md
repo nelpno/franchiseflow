@@ -1,8 +1,0 @@
-# Meu robô › Pagamento: formas, Pix na entrega, Pix no cardápio
-
-> movido do CLAUDE.md em 14/11/2026, texto na íntegra.
-> ⚠️ O "PRONTO, NÃO PUBLICADO" do Pix no cardápio ficou velho: está NO AR desde 12/11/2026 (app `c3fd126`, V5 `5459179f`, Mogi ligada); ordem, peças e rollback em `bots/vendedor/CHANGELOG.md` 12/11.
-
-- **Pagamento (14/10/2026):** a matriz da etapa 3 mostra como cada forma é paga (`COMO_PAGA` em `PaymentMatrix.jsx`: Crédito/Débito/Aproximação "na maquininha, na hora", Link "cartão à distância, pago antes") e a simulação responde "tem maquininha?" (`cartaoNaEntrega` em `simulacoesRobo.js`), com os MESMOS termos que o robô lê (`__pagamentoFatos` do vendedor). `card_machine` legado migrado para crédito+débito no cadastro (0 restante; backup `_bkp_pagamento_2026_10_14`); o `LEGACY_PAYMENT_MAP` segue no código para vendas antigas.
-- **Pix na entrega (16/10/2026):** `franchise_configurations.pix_on_delivery` (padrão false, na `vw_dadosunidade`) = toggle "Aceito Pix na entrega" no bloco Pix da etapa Pagamento; o robô lê pelo `__pagamentoFatos` do vendedor e fecha o Pix pago na hora como venda a receber. Vale para entrega e retirada. Ligado só em Uberaba. Migration `supabase/2026-10-16-pix-na-entrega.sql`.
-- **Pix no cardápio (12/11/2026, PRONTO, NÃO PUBLICADO):** toggle em Meu robô › Pagamento › "Quando o cliente paga" (`pix_no_cardapio`, desligado por padrão; some se "Na hora da retirada" ou "Pix na entrega" estiverem ligados). Precisa da coluna no banco ANTES do deploy do app (o salvar manda a coluna). Prints: `docs/prints-pix-cardapio-2026-11-12/`; ordem e rollback: `bots/vendedor/CHANGELOG.md` 12/11.
