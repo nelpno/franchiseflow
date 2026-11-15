@@ -103,6 +103,8 @@ test("comparação curta e com o que compara", () => {
   assert.deepEqual(comparacaoCurta(92, 100), { texto: "−8%", tom: "err" });
   assert.deepEqual(comparacaoCurta(491, 0), { texto: "novo", tom: "neutro" });
   assert.deepEqual(comparacaoCurta(0, 0), { texto: "—", tom: "neutro" });
+  assert.deepEqual(comparacaoCurta(2999, 296), { texto: "novo", tom: "neutro" }); // +912% contra o piloto
+  assert.deepEqual(comparacaoCurta(400, 100), { texto: "+300%", tom: "ok" });
   assert.deepEqual(comparacaoCurta(100.2, 100), { texto: "0%", tom: "neutro" });
   assert.equal(baseComparacao({ periodo: "7d" }), "semana anterior");
   assert.equal(baseComparacao({ periodo: "mes", inicio_anterior: "2026-10-01", corte_anterior: "2026-10-10T23:39:00Z" }), "mesmo trecho de outubro");

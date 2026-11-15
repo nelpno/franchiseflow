@@ -33,11 +33,13 @@ export function baseComparacao(d) {
 
 /**
  * Comparação curta de um número: { texto: "+16%" | "−8%" | "novo" | "—", tom: "ok" | "err" | "neutro" }.
- * Sem base (anterior 0): "novo" se agora tem, "—" se nem agora.
+ * Sem base (anterior 0): "novo" se agora tem, "—" se nem agora. Base de menos de 1/4 de agora também é "novo"
+ * (15/11/2026: o cardápio mostrava "+912%" contra a semana do piloto, só o Imirim; % desse tamanho não diz nada).
  */
 export function comparacaoCurta(atual, anterior) {
   const a = num(atual), p = num(anterior);
   if (p <= 0) return a > 0 ? { texto: "novo", tom: "neutro" } : { texto: "—", tom: "neutro" };
+  if (a > p * 4) return { texto: "novo", tom: "neutro" };
   const v = ((a - p) / p) * 100;
   const r = Math.round(Math.abs(v));
   if (r === 0) return { texto: "0%", tom: "neutro" };
