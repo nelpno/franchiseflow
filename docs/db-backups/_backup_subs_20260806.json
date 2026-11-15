@@ -1,0 +1,38 @@
+[
+ {
+  "id": "1ab8d7c0-d7b2-410d-8b6e-e52395aa0f7a",
+  "franchise_id": "franquiasorocabasp",
+  "asaas_customer_id": "cus_000171212327",
+  "asaas_subscription_id": "sub_xujcubachu98jg8f",
+  "subscription_status": "ACTIVE",
+  "current_payment_id": "pay_hj8h6ndflfm5wxda",
+  "current_payment_status": "PAID",
+  "current_payment_due_date": "2026-06-05",
+  "current_payment_value": 150,
+  "current_payment_url": "https://www.asaas.com/i/hj8h6ndflfm5wxda",
+  "pix_payload": "00020101021226800014br.gov.bcb.pix2558pix.asaas.com/qr/cobv/58733ccb-ade2-49ee-94cc-51835e855e185204000053039865802BR5925MAXI MASSAS MANIPULADORA 6010Araraquara61081481137562070503***6304F8DE",
+  "pix_qr_code_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADBElEQVR4Xu2TQQ7bQAwDc8v/f9Rn+ZaGQ8pOCxQueqkCUHG8EsVRDto8Xv8YPx6/K38bJe+i5F2UvIuSd1HyLv4beTyIpwTl7+Tgyzv1O3+/LmfJvaQZG21+vE345E9XYvKSu8lLzeZfAo26+yHZWXI9qZY84+V9pUf+2yW/hHxJmtb79B+cv/eLkSW/hHxZ9d5t9p3AP8TlLLmalFXm+0+cJf/4WUBeobvABXiciVMpvgYTJdeS7tO0cWoVL/27R8+FKLmbfI7GIbtEN6CNn2zJ9eRsPY7kANft8Gm05F4SSDaTpoN7qh0zpeRq0t63pl6GyHIgOMlUzJwl15L0rcIIUBrQNeERVCU3kzjwGFZumJF6h9E0SSXXkgoqdyCZEcbulEwsuZp0B+2EQU8E4hxdcjV5xGa7PcGH4UJQyKO05GpSj0HpeoNazpxk3IeSe0mqQVOBeqin0TVdcjuJGoczWYwZdeKfKbmcVJnj0KJVMS1MJvq+ZEDJzaSMWr4MvgQJZmB3x56Sm0mv+DxBozjhenwoJVeTqtm2N//K1tn+DOZyzI0ouZq0z3yGqPArqwePIrDkZlJ+xdNrpm1pmBj8C0JLbib1ksWoaY8yS//CSu4m5ZZFNyB7t9uuzJE8l6XkbtKQPWQjMXHs8zMlN5Pqsvu4eI9vJuPQpDRLriWtxsUQV0MIoJtvyf0kPns8afwaKndqHSW3k3okyzWMUqtU5vkBqSX3kq70vPsMOZlMxEupHLHkZvJXbvrxzpiPZsnFpBFqzHoUGYA/tV8ld5O0DCq9vGOOek0quZg8UXeAeAMMdM5BK7mZxAQkk3GzlJIHsVByMWnw0K6xXgf2NEegLrmYnJidfxwin+hBdJbcTXrFkrgEqrkA4Ih4XTC25GrSjbi5BQ9BnjmTRlFacjeJ1VuOaQIZKhqukl9BessekWvBqIR9spT8DnJWnee0kZ0VUXIxSfciB8QPEOx8Sm4mIR6QT5fAUlRbU1tIjpJryX+KkndR8i5K3kXJuyh5F19G/gQm3GjEhZv36AAAAABJRU5ErkJggg==",
+  "last_synced_at": "2026-08-06T12:52:48.463+00:00",
+  "created_at": "2026-04-14T23:09:34.457416+00:00",
+  "updated_at": "2026-08-06T12:52:48.474059+00:00",
+  "last_paid_payment_id": "pay_hj8h6ndflfm5wxda"
+ },
+ {
+  "id": "248a08a1-51bd-4824-91cc-741f00ea12b1",
+  "franchise_id": "franquiairacemapolissp",
+  "asaas_customer_id": "cus_000173839116",
+  "asaas_subscription_id": "sub_fi1o2ffjr0n6pq60",
+  "subscription_status": "ACTIVE",
+  "current_payment_id": "pay_9agcznwglpzegzcj",
+  "current_payment_status": "PAID",
+  "current_payment_due_date": "2026-07-05",
+  "current_payment_value": 150,
+  "current_payment_url": "https://www.asaas.com/i/9agcznwglpzegzcj",
+  "pix_payload": "00020101021226800014br.gov.bcb.pix2558pix.asaas.com/qr/cobv/26d7a6e9-10b1-42e2-825c-1b1135ed71c35204000053039865802BR5925MAXI MASSAS MANIPULADORA 6010Araraquara61081481137562070503***6304EC2D",
+  "pix_qr_code_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADDElEQVR4Xu2UQY7bQBADffP/f5Rn6eYsi2zJGyBQsJe0Abbl0TSbxcuM/Xj9sH49/lT+tUreVcm7KnlXJe+q5F39N/J4UE+Ug83x/Pp4d/ZaLmfJvSQMZhnk9h7TOX1I9b7kbnLUcU+QGk/PvOFLrifjSC/r13ptj/y2S34IicGHf21Z1cpe8jPIl1V0M0+s9g9xOUuuJmWV+f4TZ8m/fhaQZ3mUf2edN85vf9BnlVxLep5VfhtNvfTrnsBciJLLSezqL5wOXA34yZZcTeJ/Sh0IkzVvHOm3PSXXkjD+wjxBKY9gzjgPS64lvxtkcfPQmZP5TLi9vEsuJgdHBxAe0L0tRNCVXEtitIGXnry1JDSMTJJKriXNRbM598BMZLc2ltxMurcnMLcgjXQ5iJiMkntJawIwaTB554p4XP/bJdeS6lUc/EO8jfaZ1Ds7PSVXkzld7TxLjkdWnSK65G4S5pLlBjT2vomz5Gry0NFz/JyyR/BhfD9sm4CSa0kV92BugohUMvw5LSVXkxy/Xr4HHgcyiOVUSq4m3RnhFnivVR4gLgdK1JJ7yXSz6iFOi2ONRxFYci8J41swY3ZREN0hEFxyMZmrIEomnzXeJxqt4MFKribxy+eMaU7XFaPFwSX3kvJeRo/i0sx5SZldyb2kxxy+JnjHF7NkJ2VYci95+FcNScw4TKjFnm/J3SRgDhpUjWPYEhRer5LbSatfLlnGE1riqDzOL7mWHJsSMM94XhEFE6625HIyl4Aj1yxpKMGRk15yLTluD+SB0kvut5gsJVeTTHEYurxjJvJ4Syq5m5RTKntbUCJJOXPQSm4m1fPyTbDGVhTsIBZKLiZt5ipko7FysFsjyNEld5NT4w84aU8uQBBiS64mfcRIqNwMLFmEBCJFbcm9pAdZZTDpTG21oBqXseRiUjOP+KpPcfiJu4SSH0HqpAE1ktlH/0rZJ0vJzyCB1DLPyylvHVVyMclUfH66vgSmASZrnpKbSYiHSLvcBsCoEWNvS24mf1Ql76rkXZW8q5J3VfKuPoz8DcHCiKRSmZdpAAAAAElFTkSuQmCC",
+  "last_synced_at": "2026-08-06T12:53:11.66+00:00",
+  "created_at": "2026-04-30T21:40:52.611285+00:00",
+  "updated_at": "2026-08-06T12:53:11.670629+00:00",
+  "last_paid_payment_id": "pay_9agcznwglpzegzcj"
+ }
+]

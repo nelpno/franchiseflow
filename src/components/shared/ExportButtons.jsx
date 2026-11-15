@@ -1,0 +1,138 @@
+import React, { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
+import { buildExportWorksheet } from "@/lib/exportSheet";
+
+import { registrarEvento as gravarEvento } from "@/lib/telemetria";
+/**
+ * ExportButtons — exports data to Excel (.xlsx) or PDF.
+ *
+ * Props:
+ *   data      – array of objects
+ *   columns   – [{ key, header, format? }]
+ *   filename  – base filename (no extension)
+ *   title     – PDF header title
+ *   evento    – (opcional) prefixo do evento no Clarity: "<evento>_excel" / "<evento>_pdf"
+ */
+function registrarEvento(evento, formato) {
+  if (!evento) return;
+  try { gravarEvento(`${evento}_${formato}`); } catch { /* telemetria não pode derrubar o download */ }
+}
+
+export default function ExportButtons({ data, columns, filename, title, evento }) {
+  // Trava contra clique repetido (S17 P3): um arquivo por vez; a ref segura o 2º toque antes
+  // de o estado re-renderizar, o botão fica desligado e o finally sempre solta. Vale para
+  // todas as telas que usam este componente.
+  const ocupadoRef = useRef(false);
+  const [ocupado, setOcupado] = useState(false);
+  const umPorVez = (fn) => async () => {
+    if (ocupadoRef.current) return;
+    ocupadoRef.current = true;
+    setOcupado(true);
+    try {
+      await fn();
+    } finally {
+      ocupadoRef.current = false;
+      setOcupado(false);
+    }
+  };
+
+  const handleExcel = umPorVez(async () => {
+    try {
+      const XLSX = await import("xlsx");
+      const { saveAs } = await import("file-saver");
+
+      // Número e data vão como número e data (coluna com `type`), não como texto.
+      const ws = buildExportWorksheet(XLSX, data, columns);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Dados");
+
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      saveAs(new Blob([buf], { type: "application/octet-stream" }), `${filename}.xlsx`);
+      toast.success("Excel exportado com sucesso!");
+      registrarEvento(evento, "excel");
+    } catch (err) {
+      console.error("Erro ao exportar Excel:", err);
+      toast.error("Erro ao exportar Excel.");
+    }
+  });
+
+  const handlePdf = umPorVez(async () => {
+    try {
+      const jspdfModule = await import("jspdf");
+      const jsPDF = jspdfModule.default || jspdfModule.jsPDF;
+      const autoTableModule = await import("jspdf-autotable");
+      const autoTable = autoTableModule.default || autoTableModule.autoTable;
+
+      const doc = new jsPDF({ orientation: "landscape" });
+
+      // Header
+      doc.setFontSize(18);
+      doc.setTextColor(185, 28, 28); // #b91c1c
+      doc.text("Maxi Massas", 14, 18);
+
+      doc.setFontSize(12);
+      doc.setTextColor(83, 67, 67); // #4a3d3d
+      doc.text(title || filename, 14, 26);
+
+      doc.setFontSize(9);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Gerado em ${new Date().toLocaleDateString("pt-BR")}`, 14, 32);
+
+      // Table
+      const head = [columns.map((c) => c.header)];
+      const body = data.map((row) =>
+        columns.map((col) => (col.format ? col.format(row[col.key]) : row[col.key] ?? ""))
+      );
+
+      autoTable(doc, {
+        startY: 38,
+        head,
+        body,
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: {
+          fillColor: [185, 28, 28],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: { fillColor: [251, 249, 250] },
+        margin: { left: 14, right: 14 },
+      });
+
+      doc.save(`${filename}.pdf`);
+      toast.success("PDF exportado com sucesso!");
+      registrarEvento(evento, "pdf");
+    } catch (err) {
+      console.error("Erro ao exportar PDF:", err);
+      toast.error("Erro ao exportar PDF.");
+    }
+  });
+
+  if (!data || data.length === 0) return null;
+
+  return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleExcel}
+        disabled={ocupado}
+        className="gap-1.5 text-ink-2 hover:text-ok-ink hover:border-ok/30 rounded-xl text-xs"
+      >
+        <MaterialIcon icon="download" size={16} />
+        Excel
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handlePdf}
+        disabled={ocupado}
+        className="gap-1.5 text-ink-2 hover:text-brand hover:border-brand/30 rounded-xl text-xs"
+      >
+        <MaterialIcon icon="picture_as_pdf" size={16} />
+        PDF
+      </Button>
+    </div>
+  );
+}

@@ -1,0 +1,314 @@
+// node src/lib/csMural.test.mjs
+import assert from "node:assert/strict";
+import {
+  CANAL_LABEL,
+  RESULTADO_LABEL,
+  DESFECHO_LABEL,
+  MOTIVO_LABEL,
+  VOLTAR_EM_OPCOES,
+  agruparPorRaia,
+  agruparPorMotivo,
+  linhaCurta,
+  calcularNextAt,
+  linhaVenda,
+  rotuloVoltaEm,
+  dataDDMM,
+  fraseReabertura,
+  linhaAcordo,
+  linhaUltimoCombinado,
+  validarRegistro,
+  voltarEmPadrao,
+  notaCsPorUnidade,
+  motivoChipClasse,
+  linhaHoje,
+  linhaRisco,
+  precisaLigar,
+  motivoDoCartao,
+  SEM_RESPOSTA_LIGAR,
+  FALAR_HOJE_VISIVEIS,
+} from "./csMural.js";
+import { formatBRLInteger } from "./formatters.js";
+
+let n = 0;
+const test = (name, fn) => { fn(); n++; };
+
+test("rótulos têm as chaves do contrato", () => {
+  assert.equal(CANAL_LABEL.mensagem, "Mensagem");
+  assert.equal(CANAL_LABEL.reuniao, "Reunião feita");
+  assert.equal(RESULTADO_LABEL.vai_fazer, "Respondeu e vai fazer");
+  assert.equal(DESFECHO_LABEL.vai_para_nelson, "Vai para o Nelson");
+  assert.equal(MOTIVO_LABEL.sem_venda, "Sem venda");
+  assert.equal(Object.keys(MOTIVO_LABEL).length, 6);
+});
+
+test("agruparPorRaia separa resolveu_sozinho de resolvidos", () => {
+  const cards = [
+    { id: "1", lane: "falar_hoje" },
+    { id: "2", lane: "esperando" },
+    { id: "3", lane: "resolvidos", closed_reason: "resolvido" },
+    { id: "4", lane: "resolvidos", closed_reason: "resolveu_sozinho" },
+    { id: "5", lane: "com_nelson" },
+    { id: "6", lane: "estacionado" },
+  ];
+  const g = agruparPorRaia(cards);
+  assert.equal(g.falar_hoje.length, 1);
+  assert.equal(g.esperando.length, 1);
+  assert.equal(g.resolvidos.length, 1);
+  assert.equal(g.resolvidos[0].id, "3");
+  assert.equal(g.resolveu_sozinho.length, 1);
+  assert.equal(g.resolveu_sozinho[0].id, "4");
+  assert.equal(g.com_nelson.length, 1);
+  assert.equal(g.estacionado.length, 1);
+});
+
+test("agruparPorRaia ignora lane desconhecida sem quebrar", () => {
+  const g = agruparPorRaia([{ id: "x", lane: "desconhecida" }]);
+  assert.equal(g.falar_hoje.length, 0);
+});
+
+test("calcularNextAt: 3 dias / 1 semana / 2 semanas / 1 mês somam a partir de 'agora'", () => {
+  const agora = new Date(2026, 8, 26); // 26/09/2026 (mês 0-based)
+  assert.equal(calcularNextAt("3d", null, agora), "2026-09-29");
+  assert.equal(calcularNextAt("1m", null, agora), "2026-10-26");
+  assert.equal(calcularNextAt("1s", null, agora), "2026-10-03");
+  assert.equal(calcularNextAt("2s", null, agora), "2026-10-10");
+});
+
+test("calcularNextAt usa o dia em America/Sao_Paulo, não o fuso do aparelho", () => {
+  // 01:00 UTC de 26/09 é 22:00 de 25/09 em SP (UTC-3) — se a conta usasse o dia UTC
+  // (ou o fuso local da máquina, quando não for SP), "hoje" viraria 26/09 em vez de 25/09
+  // e a soma de dias saía adiantada em 1 dia.
+  const agoraUtcNoite = new Date("2026-09-26T01:00:00Z");
+  assert.equal(calcularNextAt("3d", null, agoraUtcNoite), "2026-09-28");
+  assert.equal(calcularNextAt("1s", null, agoraUtcNoite), "2026-10-02");
+});
+
+test("calcularNextAt: 'data' usa a data escolhida, sem chave inválida usa null", () => {
+  const agora = new Date(2026, 8, 26);
+  assert.equal(calcularNextAt("data", "2026-10-15", agora), "2026-10-15");
+  assert.equal(calcularNextAt("data", null, agora), null);
+  assert.equal(calcularNextAt("nao-existe", null, agora), null);
+});
+
+test("VOLTAR_EM_OPCOES tem as 5 opções na ordem", () => {
+  assert.deepEqual(VOLTAR_EM_OPCOES.map((o) => o.key), ["3d", "1s", "2s", "1m", "data"]);
+});
+
+test("voltarEmPadrao: não respondeu 3 dias, causa conhecida 1 mês, resto 1 semana", () => {
+  assert.equal(voltarEmPadrao("nao_respondeu"), "3d");
+  assert.equal(voltarEmPadrao("causa_conhecida"), "1m");
+  assert.equal(voltarEmPadrao("vai_fazer"), "1s");
+  assert.equal(voltarEmPadrao(null), "1s");
+});
+
+test("validarRegistro: causa conhecida exige a causa", () => {
+  assert.equal(validarRegistro({ channel: "mensagem", outcome: "causa_conhecida" }), "Escreva a causa. Ela aparece no cartão.");
+  assert.equal(validarRegistro({ channel: "mensagem", outcome: "causa_conhecida", commitment: "Valéria em Portugal" }), null);
+});
+
+test("notaCsPorUnidade: último registro de pessoa por unidade, sem evento do sistema", () => {
+  const m = notaCsPorUnidade([
+    { franchise_id: "a", event_type: "contact", outcome: "resolvido", note: "antigo", created_at: "2026-10-01T12:00:00Z" },
+    { franchise_id: "a", event_type: "contact", outcome: "causa_conhecida", commitment: "Sogro, tudo parado", created_at: "2026-10-27T12:00:00Z", next_at: "2026-11-10" },
+    { franchise_id: "a", event_type: "auto_open", note: "Voltou antes", created_at: "2026-10-29T12:00:00Z" },
+    { franchise_id: "b", event_type: "auto_open", note: "Reaberto", created_at: "2026-10-27T12:00:00Z" },
+    { franchise_id: "c", event_type: "meeting", outcome: "nao_respondeu", created_at: "2026-10-23T12:00:00Z", next_at: "2026-10-26" },
+    { franchise_id: "d", event_type: "contact", outcome: "resolvido", note: "ok", created_at: "2026-10-23T12:00:00Z", next_at: null },
+  ]);
+  assert.equal(m.get("d").voltaEm, "");
+  assert.deepEqual(m.get("a"), { data: "27/10", texto: "Sogro, tudo parado", voltaEm: "10/11", resultado: "causa_conhecida" });
+  assert.equal(m.has("b"), false);
+  assert.equal(m.get("c").texto, "Enviei, sem resposta ainda");
+  assert.equal(m.get("c").voltaEm, "26/10");
+});
+
+test("linhaVenda: com antes e depois", () => {
+  assert.equal(
+    linhaVenda({ rev_month_before: 900, rev_mtd: 300 }),
+    `vendia ${formatBRLInteger(900)}/mês · agora ${formatBRLInteger(300)}`
+  );
+});
+
+test("linhaVenda: sem venda no mês (0) diz 'agora sem vendas'", () => {
+  assert.equal(
+    linhaVenda({ rev_month_before: 900, rev_mtd: 0 }),
+    `vendia ${formatBRLInteger(900)}/mês · agora sem vendas`
+  );
+});
+
+test("linhaVenda: sem baseline (rev_month_before ausente/zero) devolve null", () => {
+  assert.equal(linhaVenda({ rev_month_before: 0, rev_mtd: 300 }), null);
+  assert.equal(linhaVenda({}), null);
+});
+
+test("rotuloVoltaEm formata 'volta em DD/MM'", () => {
+  assert.equal(rotuloVoltaEm("2026-10-03"), "volta em 03/10");
+  assert.equal(rotuloVoltaEm(null), "");
+  assert.equal(rotuloVoltaEm("data-invalida"), "");
+});
+
+test("dataDDMM", () => {
+  assert.equal(dataDDMM("2026-09-15T10:00:00Z"), "15/09");
+  assert.equal(dataDDMM(null), "");
+});
+
+test("fraseReabertura monta a frase com desfecho traduzido", () => {
+  const f = fraseReabertura({ last_closed_at: "2026-09-11", last_closed_reason: "combinado_feito" });
+  assert.equal(f, 'Fechado em 11/09 como "Combinado feito"; o motivo continua.');
+});
+
+test("fraseReabertura devolve null sem histórico de fechamento", () => {
+  assert.equal(fraseReabertura({}), null);
+  assert.equal(fraseReabertura(null), null);
+});
+
+test("linhaAcordo e linhaUltimoCombinado", () => {
+  assert.equal(
+    linhaAcordo({ reason: "Nelson conduz desde 11/09", review_at: "2026-10-01" }),
+    "Acordo: Nelson conduz desde 11/09 · revisar em 01/10"
+  );
+  assert.equal(linhaAcordo(null), null);
+  assert.equal(
+    linhaUltimoCombinado({ commitment: "Carla volta com a rotina até 29/09", created_at: "2026-09-15" }),
+    "Combinado em 15/09: Carla volta com a rotina até 29/09"
+  );
+  assert.equal(linhaUltimoCombinado({}), null);
+});
+
+test("validarRegistro exige canal e resultado", () => {
+  assert.equal(validarRegistro({}), "Escolha como você falou com a unidade.");
+  assert.equal(validarRegistro({ channel: "mensagem" }), "Escolha o resultado da conversa.");
+  assert.equal(validarRegistro({ channel: "mensagem", outcome: "vai_fazer" }), null);
+});
+
+test("validarRegistro exige data quando 'voltar em' = escolher data (fora de resolvido)", () => {
+  assert.equal(
+    validarRegistro({ channel: "mensagem", outcome: "vai_fazer", nextAtChave: "data", nextAtData: null }),
+    "Escolha a data de voltar."
+  );
+  assert.equal(
+    validarRegistro({ channel: "mensagem", outcome: "vai_fazer", nextAtChave: "data", nextAtData: "2026-10-01" }),
+    null
+  );
+  // "resolvido" não precisa de data de voltar
+  assert.equal(
+    validarRegistro({ channel: "mensagem", outcome: "resolvido", nextAtChave: "data", nextAtData: null }),
+    null
+  );
+});
+
+test("validarRegistro limita a nota a 1000 caracteres", () => {
+  const nota = "a".repeat(1001);
+  assert.equal(
+    validarRegistro({ channel: "mensagem", outcome: "vai_fazer", note: nota }),
+    "A nota pode ter no máximo 1000 caracteres."
+  );
+});
+
+test("motivoChipClasse usa tokens, nunca cor crua", () => {
+  for (const m of ["sem_venda", "caiu", "robo_parado", "nao_lanca", "sem_comprar", "manual"]) {
+    const c = motivoChipClasse(m);
+    assert.ok(!/#[0-9a-fA-F]{3,6}/.test(c), `sem hex em ${m}`);
+    assert.ok(!/text-gray-|bg-red-|text-red-|text-green-/.test(c), `sem cor crua em ${m}`);
+  }
+});
+
+test("agruparPorMotivo: blocos na ordem de gravidade, desconhecido no fim, vazio fora", () => {
+  const g = agruparPorMotivo([
+    { id: 1, motive_key: "caiu" }, { id: 2, motive_key: "sem_venda" }, { id: 3, motive_key: "xyz" }, { id: 4, motive_key: "sem_venda" },
+  ]);
+  assert.deepEqual(g.map((b) => b.motivo), ["sem_venda", "caiu", "outros"]);
+  assert.deepEqual(g[0].cards.map((c) => c.id), [2, 4]); // mantém a ordem da RPC dentro do bloco
+  assert.equal(g[2].label, "Outros");
+  assert.deepEqual(agruparPorMotivo(null), []);
+});
+
+test("linhaCurta: prova do motivo > venda > título", () => {
+  assert.equal(linhaCurta({ motive_evidence: "9 dias sem venda", title: "x" }), "9 dias sem venda");
+  assert.match(linhaCurta({ rev_month_before: 900, rev_mtd: 0 }), /^vendia R\$\s?900\/mês · agora sem vendas$/);
+  assert.equal(linhaCurta({ title: "Ligar para a Ana" }), "Ligar para a Ana");
+  assert.equal(linhaCurta({}), null);
+});
+
+// ---- 10/11/2026: leitura de hoje, R$ em risco, "Ligar", manual com alarme (casos reais do Mural) ----
+
+test("linhaVenda: com ritmo de 28 dias (RPC nova) usa base_mes e ritmo_mes, não o mês até hoje", () => {
+  assert.equal(
+    linhaVenda({ rev_month_before: 3722, base_mes: 3722, ritmo_mes: 8278, rev_mtd: 100 }),
+    `vendia ${formatBRLInteger(3722)}/mês · nos últimos 28 dias ${formatBRLInteger(8278)}/mês`
+  );
+  // manual: sem rev_month_before no cartão, a base vem da régua de hoje
+  assert.match(linhaVenda({ rev_month_before: null, base_mes: 12918, ritmo_mes: 0 }), /sem venda em 28 dias$/);
+});
+
+test("linhaHoje: Bragança abriu com -55% e hoje está +46,7% (fora da regra, fecha em 3 dias)", () => {
+  const card = {
+    franchise_id: "x", source: "auto", motive_key: "caiu", lane: "falar_hoje",
+    motive_evidence: "Venda -55,2% no mês até 19/10 (rede 1,7%) · vendia R$ 3.722/mês",
+    hoje_motivo: null, hoje_queda_pct: 46.7, hoje_queda_metodo: "28d", out_of_rule_since: "2026-11-10",
+  };
+  assert.equal(linhaHoje(card), "Hoje: +46,7% em 28 dias, fora da regra · sai sozinho em 13/11");
+});
+
+test("linhaHoje: unidade pequena lê em 8 semanas; motivo vivo diferente da abertura aparece", () => {
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -44,2% no mês até 26/09",
+      hoje_queda_pct: -9.5, hoje_queda_metodo: "56d", out_of_rule_since: "2026-11-10" }),
+    "Hoje: -9,5% em 8 semanas, fora da regra · sai sozinho em 13/11"
+  );
+  // revisão de código: cartão que o reconcile ainda segura (out_of_rule_since nulo) NÃO é "fora da regra"
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -25% no mês até 30/10",
+      hoje_queda_pct: -30.2, hoje_queda_metodo: "28d", out_of_rule_since: null }),
+    "Hoje: -30,2% em 28 dias"
+  );
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "Venda -26,9% nos últimos 28 dias até 13/10",
+      hoje_motivo: "Venda -48,3% nos últimos 28 dias até 10/11 (rede 2,2%)" }),
+    "Hoje: Venda -48,3% nos últimos 28 dias até 10/11 (rede 2,2%)"
+  );
+});
+
+test("linhaHoje: null no cartão aberto hoje (mesma leitura), no manual e sem unidade", () => {
+  const t = "Venda -24,1% no mês até 10/11 (rede -3,5%)";
+  assert.equal(linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: t + " · vendia R$ 1/mês", hoje_motivo: t }), null);
+  assert.equal(linhaHoje({ franchise_id: "x", source: "manual", motive_key: "manual", title: "Cobrar" }), null);
+  assert.equal(linhaHoje({ franchise_id: null, motive_key: "caiu", motive_evidence: "x" }), null);
+  // fechado pelo sistema guarda out_of_rule_since: não pode dizer "sai sozinho em" uma data passada
+  assert.equal(linhaHoje({ franchise_id: "x", source: "auto", motive_key: "caiu", motive_evidence: "x", lane: "resolvidos", column_status: "feito", out_of_rule_since: "2026-11-01" }), null);
+  // com o Nelson não fecha sozinho: sem a data de saída
+  assert.equal(
+    linhaHoje({ franchise_id: "x", source: "auto", motive_key: "sem_comprar", motive_evidence: "Sem comprar desde 01/10", lane: "com_nelson", out_of_rule_since: "2026-11-10" }),
+    "Hoje: o motivo não aparece mais"
+  );
+});
+
+test("linhaRisco: só perda positiva", () => {
+  assert.equal(linhaRisco({ risco_mes: 2849 }), `${formatBRLInteger(2849)}/mês em risco`);
+  assert.equal(linhaRisco({ risco_mes: 0 }), null);
+  assert.equal(linhaRisco({}), null);
+});
+
+test("precisaLigar: a partir do 3º 'Enviei, sem resposta' seguido (Piratininga e Sorocaba Éden em 10/11)", () => {
+  assert.equal(SEM_RESPOSTA_LIGAR, 3);
+  assert.equal(precisaLigar({ sem_resposta_seguidas: 2 }), false);
+  assert.equal(precisaLigar({ sem_resposta_seguidas: 3 }), true);
+  assert.equal(precisaLigar({}), false);
+});
+
+test("manual com alarme (Limeira): chip e frase curta = alarme mais grave de hoje", () => {
+  const card = { source: "manual", motive_key: "manual", title: "Cobrar Marketing Novembro", top_motivo_key: "sem_venda", top_motivo_texto: "Sem venda desde 31/10 (10 dias)" };
+  assert.equal(motivoDoCartao(card), "sem_venda");
+  assert.equal(linhaCurta(card), "Sem venda desde 31/10 (10 dias)");
+  const semAlarme = { source: "manual", motive_key: "manual", title: "Cobrar marketing" };
+  assert.equal(motivoDoCartao(semAlarme), "manual");
+  assert.equal(linhaCurta(semAlarme), "Cobrar marketing");
+  // automático segue o motivo congelado
+  assert.equal(motivoDoCartao({ source: "auto", motive_key: "caiu", top_motivo_key: "sem_venda" }), "caiu");
+});
+
+test("Falar hoje mostra 8 antes do 'Ver mais'", () => {
+  assert.equal(FALAR_HOJE_VISIVEIS, 8);
+});
+
+console.log(`csMural.test.mjs: ${n} testes OK`);

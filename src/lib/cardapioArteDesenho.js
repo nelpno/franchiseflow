@@ -1,0 +1,346 @@
+// Desenho do cardápio A4 (12/11/2026) no padrão do site novo: Roboto, vinho #9A1915 chapado, papel #FFF7EC, foto de prato.
+// Gabarito: cs-celso/unidades/uberaba/2026-11-12-cardapio (o feito à mão para Uberaba). Coordenadas em mm; o canvas
+// escala para a saída (150 dpi = imagem do robô/WhatsApp, 300 dpi = PDF para gráfica). Recursos em public/cardapio-arte/
+// (mesma origem: imagem de outro domínio "suja" o canvas e o toBlob falha).
+import { RECHEADAS, DESTAQUES } from "./cardapioArte.js";
+
+const W = 210, H = 297, X0 = 14, X1 = 196;
+const FONTE = "RobotoCardapio";
+const COR = {
+  vinho: "#9A1915", ouro: "#FBB900", papel: "#FFF7EC", noite: "#2B1A17", texto: "#4A3A35",
+  creme: "#FEE9CA", linha: "#EAD9C8", ponto: "#CDB8A4", branco: "#FFFFFF",
+};
+const RODAPE_Y = 276;
+
+let recursosPromessa = null;
+let fontesProntas = false;
+
+function carregarImagem(src) {
+  return new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error(`Não carregou ${src}`));
+    i.src = src;
+  });
+}
+
+export function carregarRecursos() {
+  if (!recursosPromessa) recursosPromessa = carregar().catch((e) => { recursosPromessa = null; throw e; });
+  return recursosPromessa;
+}
+
+async function carregar() {
+  const base = `${import.meta.env?.BASE_URL || "/"}cardapio-arte/`;
+  if (!fontesProntas) {
+    const fontes = await Promise.all([["400", "Roboto-400.ttf"], ["700", "Roboto-700.ttf"], ["900", "Roboto-900.ttf"]]
+      .map(([peso, arq]) => new FontFace(FONTE, `url(${base}${arq})`, { weight: peso }).load()));
+    fontes.forEach((ff) => document.fonts.add(ff));
+    fontesProntas = true;
+  }
+  const pacotes = Object.values(DESTAQUES).map((d) => d.foto);
+  const [logo, ...resto] = await Promise.all([
+    carregarImagem(`${base}logo.png`),
+    ...pacotes.map((f) => carregarImagem(`${base}${f}`)),
+    ...RECHEADAS.map((f) => carregarImagem(`${base}${f.foto}`)),
+  ]);
+  const fotos = {};
+  [...pacotes, ...RECHEADAS.map((f) => f.foto)].forEach((f, i) => { fotos[f] = resto[i]; });
+  return { logo, fotos };
+}
+
+const fonte = (ctx, tam, peso = 400) => { ctx.font = `${peso} ${tam}px ${FONTE}`; };
+
+// Texto espaçado em caixa alta (o "olho" do site). Devolve a largura.
+function olho(ctx, txt, x, y, tam, cor, maxW) {
+  const t = String(txt).toUpperCase();
+  let esp = tam * 0.16;
+  fonte(ctx, tam, 700);
+  const larg = () => [...t].reduce((s, ch) => s + ctx.measureText(ch).width + esp, -esp);
+  if (maxW && larg() > maxW) { esp = Math.max(0, esp * 0.4); if (larg() > maxW) { tam *= maxW / larg(); fonte(ctx, tam, 700); } }
+  ctx.fillStyle = cor;
+  ctx.textBaseline = "top";
+  let cx = x;
+  for (const ch of t) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + esp; }
+  return cx - x;
+}
+
+function quebrar(ctx, txt, maxW) {
+  const palavras = String(txt || "").split(/ +/).filter(Boolean); // só espaço comum: "500 g" com espaço fixo não quebra
+  const linhas = [];
+  let atual = "";
+  for (const p of palavras) {
+    const teste = atual ? `${atual} ${p}` : p;
+    if (ctx.measureText(teste).width <= maxW || !atual) atual = teste;
+    else { linhas.push(atual); atual = p; }
+  }
+  if (atual) linhas.push(atual);
+  return linhas.length ? linhas : [""];
+}
+
+function retanguloArredondado(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function fotoCobrindo(ctx, img, x, y, w, h, r) {
+  ctx.save();
+  retanguloArredondado(ctx, x, y, w, h, r);
+  ctx.clip();
+  const escala = Math.max(w / img.width, h / img.height);
+  const iw = img.width * escala, ih = img.height * escala;
+  ctx.drawImage(img, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+  ctx.restore();
+}
+
+// Linha "sabores ........ R$ 39,80". Mede (desenhar=false) ou desenha. Devolve a altura usada.
+function linhaPreco(ctx, { x, y, w, rotulo, preco, tam, lh, desenhar = true, corRotulo = COR.texto }) {
+  const precoTxt = `R$ ${preco}`;
+  fonte(ctx, tam * 1.1, 900);
+  const pw = ctx.measureText(precoTxt).width;
+  fonte(ctx, tam, 400);
+  const linhas = quebrar(ctx, rotulo, w - pw - 6);
+  if (desenhar) {
+    ctx.textBaseline = "alphabetic";
+    linhas.forEach((l, i) => { ctx.fillStyle = corRotulo; ctx.fillText(l, x, y + tam * 0.95 + i * lh); });
+    const ultima = linhas[linhas.length - 1];
+    const by = y + tam * 0.95 + (linhas.length - 1) * lh;
+    const ini = x + ctx.measureText(ultima).width + 1.6;
+    const fim = x + w - pw - 1.6;
+    ctx.fillStyle = COR.ponto;
+    for (let px = ini; px < fim; px += 0.9) ctx.fillRect(px, by - 0.5, 0.3, 0.3);
+    fonte(ctx, tam * 1.1, 900);
+    ctx.fillStyle = COR.noite;
+    ctx.fillText(precoTxt, x + w - pw, by);
+  }
+  return linhas.length * lh;
+}
+
+// ---------- layout ----------
+
+function alturaGrupo(ctx, g, colW, k) {
+  const tam = 3.6 * k, lh = 4.8 * k;
+  let h = 5.4 * k;
+  for (const l of g.linhas) h += linhaPreco(ctx, { x: 0, y: 0, w: colW, rotulo: l.rotulo, preco: l.preco, tam, lh, desenhar: false });
+  return h + 3.2 * k;
+}
+
+// Cartão de destaque (pão de queijo, molho Mariolla): foto do pacote à esquerda, título, frase e preços à direita.
+const FOTO_DESTAQUE = 22, PAD = 2.6;
+function cartaoDestaque(ctx, d, { x, y, w, k, desenhar, rec, alturaFixa }) {
+  const tx = x + PAD + FOTO_DESTAQUE + 3, tw = x + w - PAD - tx;
+  let ty = y + PAD;
+  fonte(ctx, 4.2 * k, 900);
+  const titulo = quebrar(ctx, d.titulo.toUpperCase(), tw);
+  fonte(ctx, 3.3 * k, 400);
+  const frase = d.texto ? quebrar(ctx, d.texto, tw) : [];
+  const altTexto = titulo.length * 4.6 * k + (frase.length ? 1 + frase.length * 3.6 * k : 0) + 1.6;
+  const altLinhas = d.linhas.reduce((s, l) => s + linhaPreco(ctx, { x: 0, y: 0, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.6 * k, lh: 4.8 * k, desenhar: false }), 0);
+  const h = alturaFixa || PAD * 2 + Math.max(FOTO_DESTAQUE, altTexto + altLinhas);
+  if (!desenhar) return h;
+  ctx.save();
+  ctx.shadowColor = "rgba(43,26,23,.18)"; ctx.shadowBlur = 1.4; ctx.shadowOffsetY = 0.3;
+  ctx.fillStyle = COR.branco; retanguloArredondado(ctx, x, y, w, h, 2.4); ctx.fill();
+  ctx.restore();
+  const img = rec.fotos[d.foto];
+  if (img) {
+    const esc = Math.min(FOTO_DESTAQUE / img.width, FOTO_DESTAQUE / img.height);
+    const iw = img.width * esc, ih = img.height * esc;
+    ctx.drawImage(img, x + PAD + (FOTO_DESTAQUE - iw) / 2, y + (h - ih) / 2, iw, ih);
+  }
+  ctx.textBaseline = "top";
+  fonte(ctx, 4.2 * k, 900); ctx.fillStyle = COR.vinho;
+  titulo.forEach((l) => { ctx.fillText(l, tx, ty); ty += 4.6 * k; });
+  if (frase.length) {
+    ty += 1;
+    fonte(ctx, 3.3 * k, 400); ctx.fillStyle = COR.texto;
+    frase.forEach((l) => { ctx.fillText(l, tx, ty); ty += 3.6 * k; });
+  }
+  ty += 1.6;
+  for (const l of d.linhas) ty += linhaPreco(ctx, { x: tx, y: ty, w: tw, rotulo: l.rotulo, preco: l.preco, tam: 3.6 * k, lh: 4.8 * k });
+  return h;
+}
+
+const fotoDe = (base) => { const h = Math.max(18, base - 4); return { h, w: Math.min(46, h * 1.77) }; };
+
+function planejar(ctx, cardapio, base, k) {
+  const linhasX = X0 + fotoDe(base).w + 6, linhasW = X1 - linhasX;
+  const tam = 4.0, lh = 5.2;
+  let y = cardapio.principais.length ? 59.5 : 53;
+  const linhas = cardapio.principais.map((p) => {
+    const alt = p.linhas.reduce((s, l) => s + linhaPreco(ctx, { x: 0, y: 0, w: linhasW, rotulo: l.rotulo, preco: l.preco, tam, lh, desenhar: false }), 0);
+    const altura = Math.max(base, 10.6 + alt + 3);
+    const item = { ...p, y, altura };
+    y += altura;
+    return item;
+  });
+  const colGap = 6, ncol = 3;
+  const colW = (X1 - X0 - colGap * (ncol - 1)) / ncol;
+  // destaques: até 2 cartões lado a lado, mesma altura
+  const destaques = cardapio.destaques || [];
+  const cardW = (X1 - X0 - colGap) / 2;
+  const destY = linhas.length ? y + 3 : 53;
+  const destH = destaques.length ? Math.max(...destaques.map((d) => cartaoDestaque(ctx, d, { x: 0, y: 0, w: cardW, k, desenhar: false }))) : 0;
+  if (destaques.length) y = destY + 6 + destH;
+  const secY = cardapio.grupos.length ? (linhas.length || destaques.length ? y + 3 : 53) : y;
+  const cols = Array.from({ length: ncol }, () => ({ h: 0, grupos: [] }));
+  for (const g of cardapio.grupos) {
+    const h = alturaGrupo(ctx, g, colW, k);
+    const alvo = cols.reduce((m, c) => (c.h < m.h ? c : m), cols[0]);
+    alvo.grupos.push({ ...g, y: alvo.h, h });
+    alvo.h += h;
+  }
+  const secH = cardapio.grupos.length ? 6 + Math.max(...cols.map((c) => c.h)) : 0;
+  return { linhas, linhasX, destaques, destY, destH, cardW, secY, cols, colW, colGap, k, base, fim: Math.max(y, secY + secH) };
+}
+
+export function desenharCardapio(canvas, dados, rec, pxPorMm) {
+  canvas.width = Math.round(W * pxPorMm);
+  canvas.height = Math.round(H * pxPorMm);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(pxPorMm, 0, 0, pxPorMm, 0, 0);
+  ctx.imageSmoothingQuality = "high";
+
+  // fundo + topo vinho
+  ctx.fillStyle = COR.papel; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = COR.vinho; ctx.fillRect(0, 0, W, 46);
+  const lw = 40, lh = lw * (rec.logo.height / rec.logo.width);
+  ctx.drawImage(rec.logo, X0, 6 + (34 - lh) / 2, lw, lh);
+  olho(ctx, `Cardápio · ${dados.unidade}`, 70, 8.5, 3.3, COR.ouro, 126);
+  fonte(ctx, 9.4, 900);
+  ctx.fillStyle = COR.branco; ctx.textBaseline = "top";
+  ctx.fillText("MASSA ARTESANAL", 70, 14);
+  ctx.fillText("CONGELADA", 70, 23.4);
+  fonte(ctx, 3.6, 400);
+  ctx.fillStyle = COR.creme;
+  quebrar(ctx, "Feita na nossa fábrica em Araraquara desde 1994. Embalada e congelada para você servir quando quiser.", 126)
+    .forEach((l, i) => ctx.fillText(l, 70, 34.6 + i * 4.6));
+
+  // escolhe o tamanho que cabe (linhas com foto encolhem primeiro, depois a letra de baixo)
+  const tentativas = [];
+  for (const base of [30, 28, 26, 24, 22]) tentativas.push([base, 1]);
+  for (const k of [0.95, 0.9, 0.85, 0.78, 0.72]) tentativas.push([22, k]);
+  let plano = null;
+  for (const [base, k] of tentativas) { plano = planejar(ctx, dados.cardapio, base, k); if (plano.fim <= RODAPE_Y - 2) break; }
+
+  // massas recheadas
+  if (plano.linhas.length) {
+    olho(ctx, "Massas recheadas · 700 g · servem de 2 a 3 pessoas", X0, 53, 3.3, COR.vinho, X1 - X0);
+    plano.linhas.forEach((p, i) => {
+      const { h: fh, w: fw } = fotoDe(plano.base);
+      const tx = plano.linhasX;
+      const foto = rec.fotos[p.foto];
+      if (foto) fotoCobrindo(ctx, foto, X0, p.y, fw, fh, 2.4);
+      fonte(ctx, 6.2, 900); ctx.fillStyle = COR.vinho; ctx.textBaseline = "top";
+      ctx.fillText(p.nome.toUpperCase(), tx, p.y + 1.2);
+      let ly = p.y + 9.4;
+      for (const l of p.linhas) ly += linhaPreco(ctx, { x: tx, y: ly, w: X1 - tx, rotulo: l.rotulo, preco: l.preco, tam: 4.0, lh: 5.2 });
+      if (i < plano.linhas.length - 1) { ctx.fillStyle = COR.linha; ctx.fillRect(tx, p.y + p.altura - 1.8, X1 - tx, 0.3); }
+    });
+  }
+
+  // para acompanhar (destaques da fábrica)
+  if (plano.destaques.length) {
+    if (plano.linhas.length) { ctx.fillStyle = COR.linha; ctx.fillRect(0, plano.destY - 1.6, W, 0.4); }
+    olho(ctx, "Para acompanhar", X0, plano.destY + 1, 3.0, COR.vinho);
+    plano.destaques.forEach((d, i) => cartaoDestaque(ctx, d, {
+      x: X0 + i * (plano.cardW + plano.colGap), y: plano.destY + 6, w: plano.cardW, k: plano.k, desenhar: true, rec, alturaFixa: plano.destH,
+    }));
+  }
+
+  // também temos (colunas)
+  if (dados.cardapio.grupos.length) {
+    if (plano.linhas.length || plano.destaques.length) { ctx.fillStyle = COR.linha; ctx.fillRect(0, plano.secY - 1.6, W, 0.4); }
+    olho(ctx, "Também temos", X0, plano.secY + 1, 3.0, COR.vinho);
+    const k = plano.k;
+    plano.cortados = 0;
+    plano.cols.forEach((c, ci) => {
+      const cx = X0 + ci * (plano.colW + plano.colGap);
+      for (const g of c.grupos) {
+        let y = plano.secY + 6 + g.y;
+        if (y > RODAPE_Y - 3) { plano.cortados += g.linhas.length; continue; }
+        fonte(ctx, 3.7 * k, 700); ctx.fillStyle = COR.noite; ctx.textBaseline = "top";
+        ctx.fillText(g.titulo, cx, y);
+        y += 4.6 * k;
+        for (const l of g.linhas) {
+          if (y > RODAPE_Y - 4) { plano.cortados += 1; continue; }
+          y += linhaPreco(ctx, { x: cx, y, w: plano.colW, rotulo: l.rotulo, preco: l.preco, tam: 3.6 * k, lh: 4.8 * k });
+        }
+      }
+    });
+  }
+
+  // rodapé vinho
+  ctx.fillStyle = COR.vinho; ctx.fillRect(0, RODAPE_Y, W, H - RODAPE_Y);
+  const temQr = Boolean(rec.qr);
+  const meioX = 86, meioW = (temQr ? 172 : X1) - meioX;
+  if (dados.whatsapp) {
+    olho(ctx, "Peça pelo WhatsApp", X0, 279.6, 2.8, COR.ouro);
+    fonte(ctx, 7.4, 900); ctx.fillStyle = COR.branco; ctx.textBaseline = "top";
+    ctx.fillText(dados.whatsapp, X0, 283.6);
+  } else if (dados.link) {
+    olho(ctx, "Peça pelo cardápio online", X0, 279.6, 2.8, COR.ouro, meioX - X0 - 4);
+  }
+  const meio = [];
+  if (dados.link) meio.push([dados.whatsapp ? "Ou monte o pedido no cardápio online" : "Monte o pedido em", 400], [dados.link, 700]);
+  if (dados.atendimento) meio.push([dados.atendimento, 400]);
+  ctx.textBaseline = "top";
+  meio.forEach(([txt, peso], i) => {
+    let tam = 3.0;
+    fonte(ctx, tam, peso);
+    const larg = ctx.measureText(txt).width;
+    if (larg > meioW) { tam *= meioW / larg; fonte(ctx, tam, peso); }
+    ctx.fillStyle = peso === 700 ? COR.branco : COR.creme;
+    ctx.fillText(txt, meioX, 280.2 + i * 4.3 + (meio.length < 3 ? 2.1 : 0));
+  });
+  if (temQr) {
+    // QR desenhado módulo a módulo, com as bordas no pixel inteiro (14/11/2026: o antigo era um canvas de 400 px
+    // reduzido a ~90 px, módulos de 2 e 3 px e borda branca de ~2 módulos: impresso em jato de tinta não lia).
+    const caixa = 19, bx = X1 - caixa + 0.4, by = 277;
+    ctx.fillStyle = COR.branco; retanguloArredondado(ctx, bx, by, caixa, caixa, 1.2); ctx.fill();
+    const { n, escuro } = rec.qr, margem = 2;
+    const passo = (caixa * pxPorMm) / (n + 2 * margem);
+    const x0 = bx * pxPorMm + margem * passo, y0 = by * pxPorMm + margem * passo;
+    const borda = (o, i) => Math.round(o + i * passo);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      if (!escuro(r, c)) continue;
+      const x = borda(x0, c), y = borda(y0, r);
+      ctx.fillRect(x, y, borda(x0, c + 1) - x, borda(y0, r + 1) - y);
+    }
+    ctx.restore();
+  }
+  return plano;
+}
+
+/** Matriz do QR. Correção "L": menos módulos = módulo maior na folha, que é o que conta em impressão borrada. */
+async function qrMatriz(url) {
+  const QRCode = (await import("qrcode")).default;
+  const { modules } = QRCode.create(url, { errorCorrectionLevel: "L" });
+  return { n: modules.size, escuro: (r, c) => Boolean(modules.get(r, c)) };
+}
+
+/** Canvas pronto + quantas linhas não couberam na folha. pxPorMm: 1240/210 ≈ 5,9 (imagem 1240 x 1754) · 300/25,4 (PDF). */
+export async function gerarCardapioCanvas(dados, { pxPorMm = 1240 / 210 } = {}) {
+  const rec = await carregarRecursos();
+  const qr = dados.qrUrl ? await qrMatriz(dados.qrUrl) : null;
+  const canvas = document.createElement("canvas");
+  const plano = desenharCardapio(canvas, dados, { ...rec, qr }, pxPorMm);
+  return { canvas, cortados: plano.cortados || 0 };
+}
+
+export const canvasParaJpeg = (canvas, qualidade = 0.9) =>
+  new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Falha ao gerar a imagem"))), "image/jpeg", qualidade));
+
+export async function baixarCardapioPdf(dados, nomeArquivo) {
+  const { canvas } = await gerarCardapioCanvas(dados, { pxPorMm: 300 / 25.4 });
+  const mod = await import("jspdf");
+  const JsPDF = mod.jsPDF || mod.default;
+  const doc = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  doc.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, W, H);
+  doc.save(nomeArquivo);
+}

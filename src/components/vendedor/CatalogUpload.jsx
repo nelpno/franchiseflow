@@ -1,0 +1,312 @@
+import React, { useState, useRef } from "react";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { supabase } from "@/api/supabaseClient";
+import { toast } from "sonner";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { CANVA_CARDAPIO } from "@/components/onboarding/materiais";
+import GerarCardapioDialog from "@/components/vendedor/GerarCardapioDialog";
+
+/**
+ * Upload de imagem do catálogo para Supabase Storage.
+ * Salva no bucket "catalog-images" (público).
+ * Aceita JPG, PNG, WebP — converte para JPG antes do upload (compatibilidade n8n).
+ * Max 10MB antes da conversão.
+ */
+
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const MAX_DIMENSION = 1600; // WhatsApp não precisa mais que isso
+
+function convertToJpeg(file, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+
+      // Redimensionar se maior que MAX_DIMENSION
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      // Fundo branco (PNG com transparência ficaria preto)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Falha na conversão da imagem"));
+          resolve(new File([blob], "catalogo.jpg", { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Não foi possível carregar a imagem"));
+    };
+    img.src = objectUrl;
+  });
+}
+
+export default function CatalogUpload({ value, onChange, franchiseId }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStep, setUploadStep] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const [canvaExpanded, setCanvaExpanded] = useState(false);
+  const [gerarAberto, setGerarAberto] = useState(false);
+  const inputRef = useRef(null);
+
+  const handleFile = async (file) => {
+    if (!file) return false;
+
+    // Validate — aceita JPG, PNG, WebP (converte para JPG antes do upload)
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error("Use imagens JPG, PNG ou WebP.");
+      return false;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Imagem muito grande. Máximo 10MB.");
+      return false;
+    }
+
+    setIsUploading(true);
+    try {
+      // Só converter se não for JPG ou se for muito grande (> 1MB precisa resize)
+      let uploadFile = file;
+      const needsConversion = file.type !== "image/jpeg" || file.size > 1024 * 1024;
+      if (needsConversion) {
+        setUploadStep("Otimizando imagem...");
+        uploadFile = await convertToJpeg(file);
+      }
+
+      const fileName = `${franchiseId || "default"}/catalogo.jpg`;
+
+      const doUpload = () => {
+        const uploadPromise = supabase.storage
+          .from("catalog-images")
+          .upload(fileName, uploadFile, { upsert: true, contentType: "image/jpeg" });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 45000)
+        );
+        return Promise.race([uploadPromise, timeoutPromise]);
+      };
+
+      // Primeira tentativa
+      setUploadStep("Enviando...");
+      let result = await doUpload();
+
+      // Retry automático em caso de timeout ou erro de rede
+      if (result?.error || result instanceof Error) {
+        setUploadStep("Reenviando...");
+        result = await doUpload();
+      }
+
+      if (result?.error) throw result.error;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from("catalog-images")
+        .getPublicUrl(fileName);
+
+      // Add cache buster to force refresh
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+      onChange(publicUrl);
+      toast.success("Catálogo atualizado!");
+      return true;
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      if (error.message === "timeout") {
+        toast.error("Upload demorou demais. Verifique sua conexão e tente novamente.");
+      } else if (error.statusCode === 404 || error.message?.includes("not found")) {
+        toast.error("Bucket de imagens não encontrado. Contate o suporte.");
+      } else if (error.statusCode === 403 || error.message?.includes("policy")) {
+        toast.error("Sem permissão para enviar imagem. Contate o suporte.");
+      } else {
+        toast.error(safeErrorMessage(error, "Erro ao enviar imagem. Tente novamente."));
+      }
+      return false;
+    } finally {
+      setIsUploading(false);
+      setUploadStep("");
+      // Reset input so same file can be re-selected
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+  };
+
+  const handleRemove = async () => {
+    onChange("");
+    toast.success("Catálogo removido.");
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Gerar cardápio (12/11/2026): monta a imagem com os produtos e preços do Estoque; o Canva vira alternativa */}
+      <div className="rounded-xl border border-brand-gold/30 bg-brand-gold/5 p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <MaterialIcon icon="auto_awesome" size={18} className="text-brand-gold-ink mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-brand-gold-ink">Gerar o cardápio com os seus produtos</p>
+            <p className="text-xs text-ink-2">O app monta a arte com os preços do seu Estoque, o seu WhatsApp e o link do cardápio digital. Serve para o robô, para mandar no WhatsApp e para imprimir.</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setGerarAberto(true)}
+          disabled={isUploading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-gold-ink text-white text-sm font-bold rounded-lg disabled:opacity-60"
+        >
+          <MaterialIcon icon="auto_awesome" size={16} />
+          Gerar cardápio
+        </button>
+        <button
+          type="button"
+          onClick={() => setCanvaExpanded(!canvaExpanded)}
+          className="flex items-center gap-1 text-xs font-semibold text-brand-gold-ink"
+        >
+          Prefere montar no Canva?
+          <MaterialIcon icon={canvaExpanded ? "expand_less" : "expand_more"} size={16} />
+        </button>
+        {canvaExpanded && (
+          <div className="space-y-3">
+            <ol className="space-y-2 text-sm text-ink-2">
+              <li className="flex gap-2">
+                <span className="font-bold text-brand-gold-ink">1.</span>
+                Abra o modelo no Canva (conta grátis). Não precisa pedir acesso
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-brand-gold-ink">2.</span>
+                Toque em "Arquivo" → "Fazer uma cópia"
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-brand-gold-ink">3.</span>
+                Na cópia, troque endereço e telefone (e o preço, se for diferente)
+              </li>
+              <li className="flex gap-2">
+                <span className="font-bold text-brand-gold-ink">4.</span>
+                Baixe em JPG ("Compartilhar" → "Baixar") e suba aqui embaixo
+              </li>
+            </ol>
+            <a
+              href={CANVA_CARDAPIO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-brand-gold-ink text-brand-gold-ink text-sm font-bold rounded-lg"
+            >
+              <MaterialIcon icon="open_in_new" size={16} />
+              Abrir modelo no Canva
+            </a>
+          </div>
+        )}
+      </div>
+      <GerarCardapioDialog
+        open={gerarAberto}
+        onOpenChange={setGerarAberto}
+        franchiseId={franchiseId}
+        onUsar={handleFile}
+      />
+
+      {value ? (
+        /* Preview */
+        <div className="relative rounded-xl overflow-hidden border border-surface-line/10 bg-white">
+          <img
+            src={value}
+            alt="Catálogo"
+            className="w-full max-h-80 object-contain bg-surface"
+          />
+          <div className="absolute top-3 right-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs font-bold text-brand shadow-sm hover:bg-white transition-colors flex items-center gap-1"
+            >
+              <MaterialIcon icon="upload" size={14} />
+              Trocar
+            </button>
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs font-bold text-ink-2 shadow-sm hover:bg-white transition-colors flex items-center gap-1"
+            >
+              <MaterialIcon icon="delete" size={14} />
+            </button>
+          </div>
+          <div className="p-3 bg-surface flex items-center justify-between">
+            <span className="text-[10px] text-ink-2/70 truncate flex-1">{value.split("?")[0]}</span>
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold text-brand hover:underline flex items-center gap-1 ml-2"
+            >
+              <MaterialIcon icon="open_in_new" size={14} />
+              Abrir
+            </a>
+          </div>
+        </div>
+      ) : (
+        /* Drop zone */
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+            dragOver
+              ? "border-brand bg-brand/5"
+              : "border-surface-line/30 hover:border-brand/30 hover:bg-surface"
+          }`}
+        >
+          {isUploading ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-ink-2">{uploadStep || "Enviando..."}</span>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <MaterialIcon icon="add_photo_alternate" size={32} className="text-ink-2/30" />
+              <p className="text-sm font-medium text-ink-2">
+                Arraste a imagem do catálogo ou <span className="text-brand font-bold">clique para selecionar</span>
+              </p>
+              <p className="text-xs text-ink-2/70">JPG, PNG ou WebP • Máximo 10MB</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files[0])}
+      />
+
+      {value && (
+        <div className="bg-surface rounded-xl p-3">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/70 mb-1">
+            O vendedor vai enviar:
+          </p>
+          <p className="text-xs text-ink-2 italic">
+            "Aqui está nosso cardápio atualizado!" + imagem do catálogo
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,53 @@
+# Env (NUNCA commitar!)
+.env
+.env.local
+.env.production
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Claude Code (credenciais e worktrees)
+.claude/
+
+# Scratch de sessao — contem segredo em texto claro (ex: .tmp/deploy.mjs tem a API key
+# do Portainer). Sem esta linha, um `git add -A` distraido publica a chave no GitHub.
+# Artefato que DEVE ser versionado vai em docs/ ou supabase/, nunca em .tmp/.
+.tmp/
+
+# Temp/misc
+temp/
+*.ogg
+*.tmp.txt
+plan_content.tmp.txt
+
+# Claude Code gerados
+.playwright-mcp/
+.superpowers/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+# Supabase scratch/backup (runtime artifacts, contem dados de clientes)
+supabase/.temp/
+supabase/scripts/backups/

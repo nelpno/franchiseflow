@@ -1,0 +1,138 @@
+expense_id,franchise_id,date,description,amount,suggested_category
+6ec906de-0b64-4bb0-8cf3-77d8dd0dc768,franquiasaopaulosp10,2026-09-25,FREEZER 6/6,682.33,outros
+53ad9a77-912c-42dc-a26b-6e41a82c0083,franquiasaopaulosp10,2026-08-25,FREEZER 5/6,682.33,outros
+756c1850-921b-4161-a191-f395519cf0d7,franquiasaopaulosp10,2026-07-25,FREEZER 4/6,682.33,outros
+17751bdf-1607-41bd-b715-7bd83d32fa3f,franquiasaopaulosp10,2026-06-25,FREEZER 3/6,682.33,outros
+25f70a96-fc43-49f2-949f-c82471a58285,franquiacotiasp,2026-06-15,Freezer Parcela 4,500.00,outros
+89fbb780-5367-4c30-bbc3-492d57e0a72d,franquiacotiasp,2026-06-15,Freezer Parcela 6,500.00,outros
+755ef05a-1be5-4011-a841-2e737c7bc6ec,franquiasaopaulosp10,2026-05-25,FREEZER 2/6,682.33,outros
+ecb4e4b8-8078-4df2-bf53-64e85ae08860,franquiaosascosp,2026-05-22,Açaí Eco Fresh,524.70,outros
+bf8fd095-c0c1-43b8-af4c-764c50c14340,franquiasaopaulosp10,2026-05-12,ENERGIA ELÉTRICA,100.00,energia
+006a6982-78c3-44bd-ab1c-19254ea27702,franquiacotiasp,2026-05-11,Freezer Parcela 3,500.00,outros
+16638fac-3c92-47f1-aaab-0649e470cf12,franquiacotiasp,2026-05-11,Freezer Parcela 2,500.00,outros
+a56d3afd-b95b-4d91-aff5-da3d705f3801,franquialimeirasp,2026-04-28,Sacolinha,125.00,outros
+909c542b-96c2-4333-85e3-1ed717b5497b,franquiasantossp,2026-04-28,frete,11.00,transporte
+968292df-0391-4a03-a361-64097d6d2f44,franquianovaodessasp,2026-04-27,Sacolas térmicas,299.90,outros
+9f8061af-1bf5-4154-b07a-532143c3f11c,franquiasantossp,2026-04-27,Frete,12.00,transporte
+a0ac1c11-34df-4510-9e26-6a84641552e8,franquiasaojosedoriopretosp,2026-04-27,Energias,100.00,outros
+113ac4d5-5059-4544-89af-1ccc08bedeaa,franquiasaojosedoriopretosp,2026-04-27,Frete,250.00,transporte
+25409124-b949-4f42-8cd3-23f7f39e9c3a,franquiacotiasp,2026-04-26,Conta Energia Elétrica,40.00,energia
+0b886899-06f6-4916-8fc1-d45ed460f7bf,franquiasantossp,2026-04-26,FRETE,63.00,transporte
+7fc24f9f-f85a-4305-921b-207f4b18f68c,franquiabaurusp,2026-04-25,Motoqueiro Marcos,45.00,transporte
+884e2419-b1c9-4869-a5af-263286a90fab,franquiasantossp,2026-04-25,FRETE,53.00,transporte
+246f0e0f-e0e2-4abb-adc2-312ad8e01d94,franquiasaopaulosp10,2026-04-25,Entrega,207.00,outros
+143ba240-a549-41ea-a585-40eb7634a794,franquiasaopaulosp10,2026-04-25,FREEZER - 1/6,682.33,outros
+3a5ebf4e-693c-4afb-8ce0-db2e24d73a13,franquiasaopaulosp8,2026-04-25,Uber,8.86,transporte
+7d03b025-81df-43f8-b93c-fbe7f6163930,franquiahortolandiasp,2026-04-24,Água,207.13,compra_insumo
+a62c0815-aa07-412e-a47c-acf9b29f1610,franquianovaodessasp,2026-04-24,Comunik Gráfica,80.00,outros
+357258ff-ac38-48d3-b254-ee37ce798899,franquiaosascosp,2026-04-24,Wind Banner,173.00,marketing
+c9f91a4a-dfa2-45cc-8642-ee607b061352,franquiaosascosp,2026-04-24,Adesivos Lacre de sacola,29.60,compra_embalagem
+f6b8b2a2-b5fe-46e6-9fe2-5300743820e8,franquiaosascosp,2026-04-24,Adesivo seu pedido chegou,56.32,compra_embalagem
+ea9d990e-7100-4988-8a6c-0463ce410a65,franquiaosascosp,2026-04-24,Frete motoboy,45.10,transporte
+e2b49548-9733-493c-9678-4a918463e36f,franquiaosascosp,2026-04-24,Panfletos+cartão visita,387.65,outros
+fee833c4-7d96-4811-9fe3-0d95dd6b775e,franquiaosascosp,2026-04-24,Meta mkt,296.95,outros
+186b96d9-662a-4b41-820a-02b5e0d14015,franquiaosascosp,2026-04-24,Açaí Eco Fresh,577.26,outros
+684e9e2b-a8d2-43cd-a9b1-e62003ca2e3c,franquiaosascosp,2026-04-24,Camisa polo 5 uni,163.37,pessoal
+e6ffcc0c-455e-40f2-a37c-570321d4013b,franquiaosascosp,2026-04-24,Sacolas,91.91,outros
+11055e6b-e58c-4430-99a2-e8ca68d25bbe,franquiasantossp,2026-04-24,Frete,49.00,transporte
+a1e236d5-71db-4d5b-8deb-89d18b264d05,franquiasorocabasp1,2026-04-24,Embalagem,31.00,outros
+464e3c28-19d8-4c00-8db2-47860407f244,franquiasantossp,2026-04-23,Frete,22.50,transporte
+658a4eb5-868a-4bdd-bd35-5992a3dfb013,franquiasaopaulosp8,2026-04-23,Uber,5.39,transporte
+b8ac3d5c-ac96-45c9-9964-57cf23da3c92,franquiahortolandiasp,2026-04-22,Luz,341.00,energia
+ad45dbd9-f5f4-41ae-97a4-32f474e79683,franquiasaopaulosp2,2026-04-22,Sacolas Rafa,327.00,outros
+1fb1babe-443f-4d96-8f67-9d1f85590554,franquiasaopaulosp2,2026-04-22,Pão de Queijo,1135.60,compra_produto
+e7d77486-8471-48a0-bec1-371bee6d17d9,franquiasaopaulosp8,2026-04-21,DAS,82.32,impostos
+40d2149d-9a2c-4e70-bcad-7e70cc8b1f91,franquiasaopaulosp8,2026-04-21,Uber,23.48,transporte
+9d550fba-104d-4043-8373-b2af22230f37,franquiasantossp,2026-04-20,Frete,30.00,transporte
+f49d81f8-f715-4506-843d-3cf82129d8e4,franquiasaopaulosp7,2026-04-20,DAS,259.56,impostos
+2944f16c-5889-4b4e-a993-1b74cb91f764,franquiasorocabasp1,2026-04-20,Energia,200.00,energia
+26922216-a499-4b70-b752-769942c7ced8,franquiasantossp,2026-04-19,Frete,18.75,transporte
+76baf435-f5ed-4968-9c2a-b91af35f7884,franquiabaurusp,2026-04-18,Etiquetas 500 Sacolas Maxi,175.00,outros
+46e59016-8213-419b-b300-b1e6de4cc60c,franquiabaurusp,2026-04-18,Motoqueiro Marcos,135.00,transporte
+45635cd9-e995-4ebe-9291-040d7d45075b,franquiaitatibasp,2026-04-18,Embalagem e etiqueta,230.00,outros
+58660cf2-cf6d-4780-a224-95a792fb9f53,franquiasantossp,2026-04-18,Frete,49.50,transporte
+8054db2a-a8d2-4344-99f6-1f33e208058d,franquianovaodessasp,2026-04-17,99food,61.33,transporte
+2db82762-02a4-4e3a-8b62-73da27f840f2,franquianovaodessasp,2026-04-17,Marilda Gráfica Imagem,95.00,outros
+a1e6f88f-7682-4ed4-bf48-02a5b5299d01,franquianovaodessasp,2026-04-17,Sacolas IFER,121.10,outros
+d113a92c-1907-4d0c-af92-206f7bcc3d4c,franquiasantossp,2026-04-17,Frete,34.50,transporte
+0d6195e6-a0e6-41db-a82a-31c1825aa854,franquiabaurusp,2026-04-16,Motoqueiro Beto,35.00,transporte
+a5de31ca-9bed-4d1f-9ad4-a5b2066bc631,franquianovaodessasp,2026-04-16,Combustível,19.62,transporte
+4aab1d68-3ac7-4639-af27-049d95a40d88,franquiasantossp,2026-04-16,Frete,12.00,transporte
+c68f8f04-af26-4e45-89dd-6dbe78a3ed96,franquiasaopaulosp7,2026-04-16,Energia Elétrica,240.84,energia
+3bbb9d10-c3a3-4ad6-ac69-1da008a8496b,franquiasaopaulosp8,2026-04-16,UBER,7.21,transporte
+ad13701c-d18c-4531-9b4b-ff498457854c,franquiasaopaulosp8,2026-04-16,UBER,9.15,transporte
+c857c23f-ff46-48d2-b0ed-065df867ab90,franquiasaopaulosp8,2026-04-16,UBER,6.15,transporte
+c9c6533d-94f3-4ebd-9357-17974479dd94,franquiasaopaulosp8,2026-04-16,MOLHO,180.00,compra_produto
+c99e38e1-6d1a-476d-ab56-99f565e6f1b4,franquiasantossp,2026-04-15,Frete,7.80,transporte
+13d6b639-0198-49a6-b16d-9ffa7d6335a8,franquiasaopaulosp5,2026-04-15,MEI,82.05,outros
+c9f05c5f-53e9-404c-b86d-a82f7053bbd1,franquiasaopaulosp5,2026-04-15,Material escritório,40.00,outros
+e7a40cb1-3f1e-447c-b617-b1f9e0efe736,franquiasaopaulosp8,2026-04-15,UBER,11.88,transporte
+45b329e5-898f-4948-aac8-d62e5174d05a,franquiaosascosp,2026-04-14,Bag trasporte cx termica,35.00,compra_embalagem
+dd4d4623-a7ef-4eb5-b5a1-e137baa466b8,franquiasantossp,2026-04-14,Frete,17.70,transporte
+a9889340-b22e-4d14-a89f-83fe041f2234,franquiasaopaulosp7,2026-04-14,Brinde Queijo,200.00,outros
+363512cd-9e06-4845-ba3b-33399c7732d9,franquiasaopaulosp7,2026-04-14,Papelaria (Etiqueta),60.00,outros
+a1cb5e3e-064c-4442-8d82-931f047eed2c,franquiasaopaulosp8,2026-04-14,Molho,100.00,compra_produto
+f8d41fee-7f47-4064-a607-355a54f7a337,franquiasaopaulosp8,2026-04-14,Queijo ralado,210.00,compra_produto
+eee1b10d-6f88-457f-ab40-39b59cd50e29,franquiasaopaulosp8,2026-04-14,UBER QUEIJO,23.12,transporte
+687a2750-b6c6-472f-961f-a9703f78a426,franquiacotiasp,2026-04-13,Freezer Parcela 1,500.00,outros
+6ffa04d0-861f-4943-be14-a6f39a512559,franquiasantossp,2026-04-13,Frete,22.00,transporte
+5eea0782-5a75-4d22-b211-cd7e3abde294,franquiasantossp,2026-04-12,FRETE,49.20,transporte
+800d9d73-85a5-41a5-aab0-2dbe323261e2,franquiasantossp,2026-04-11,Frete,68.00,transporte
+b3c49f62-5b86-475d-98a6-87a7df6d4735,franquiasaopaulosp8,2026-04-11,Uber,6.76,transporte
+80056cf9-5225-4f3a-b32b-9c7f595acec1,franquiaosascosp,2026-04-10,Frete matriz,350.00,transporte
+a2642ce3-a4c3-401d-9580-9a963338754a,franquiasantossp,2026-04-10,Frete,32.50,transporte
+6723ec62-bed1-43a4-a4d0-a511fe7e8673,franquiasaopaulosp10,2026-04-10,frete entrega produtos,350.00,transporte
+e311ba67-586f-4af7-a8a5-ed8263523131,franquiasaopaulosp10,2026-04-10,Investimento em Marketing,300.00,marketing
+bb062880-9690-4b6e-94f5-1c3f9c120227,franquiasaopaulosp8,2026-04-10,Uber,13.55,transporte
+eba5e160-7f7f-4587-ab70-3faa24e24c16,franquianovaodessasp,2026-04-09,99food,32.97,transporte
+24caeeb9-9031-4d41-99e0-fd15583aedd7,franquianovaodessasp,2026-04-09,Combustível,16.10,transporte
+de3a6ff0-ef28-4ee7-94ec-31b409510115,franquiasantossp,2026-04-09,FRETE,20.75,transporte
+32482990-9d06-4070-87fa-a1975808505d,franquiasaopaulosp7,2026-04-09,Contador,210.00,outros
+bb3f2dba-9e2b-4e3e-8348-7cd2d216e8b4,franquiasaopaulosp8,2026-04-09,Panfletos,87.50,outros
+105b549d-ba04-4947-abd3-dabcf0be65da,franquiasaopaulosp8,2026-04-09,Uber,11.66,transporte
+eb2037a5-0677-43fa-8bfa-3a17b4a28566,franquiaararaquarasp,2026-04-08,Frete,15.00,transporte
+0ab7f0ac-ba99-4029-bd00-317b1a05e2a3,franquiasantossp,2026-04-08,FRETE,24.85,transporte
+aa36f95b-e850-48e5-b87c-ba4addf592e5,franquiabaurusp,2026-04-07,Tráfego pago,500.00,marketing
+4e95d880-2d04-4a80-8ee7-e3d456ab0a5d,franquiasantossp,2026-04-07,FRETE,14.00,transporte
+86458fa4-9767-4b51-ad92-6cfe7471d6ab,franquiacotiasp,2026-04-06,Panfletos,58.00,outros
+51d87948-8ca2-4a93-a3dc-4bcb535da9e5,franquiacotiasp,2026-04-06,Marketing,200.00,marketing
+ae882c9e-165d-479a-bc20-ba62ca7ef848,franquiaosascosp,2026-04-06,Bot Whatsapp,100.00,pacote_sistema
+fde91159-574e-415d-905d-34688b81cfcb,franquiasantossp,2026-04-06,Frete,10.50,transporte
+1440d60c-7e57-4bbe-8471-4e506ea85168,franquiasaopaulosp5,2026-04-06,Sacolas,39.00,outros
+206d9a16-a427-43a9-95f4-f901685b1c6c,franquiasaopaulosp8,2026-04-06,panfletos,87.50,outros
+94d26684-01d1-4dfb-95df-40f4d74fe2d4,franquiasaopaulosp7,2026-04-05,Telefone,37.00,outros
+da9da6de-d280-48a2-8852-3e5bfd4278b9,franquiasorocabasp1,2026-04-05,Publicidade,500.00,outros
+fc2acece-bbe5-4dae-9cb6-9a4d0a4ef5aa,franquiasorocabasp1,2026-04-05,robo,100.00,pacote_sistema
+3a8b8bcc-c4c1-421a-af15-cccd20921144,franquiabaurusp,2026-04-04,Sacolas Maxi,240.00,outros
+f1557a6e-7c96-4318-a2f0-6259b04608e6,franquiabaurusp,2026-04-04,Motoqueiro semana 1,75.00,transporte
+baa432e0-a879-4df7-a020-2ec33da82de2,franquiaitatibasp,2026-04-04,cartão fatura abril,310.00,outros
+95c1ceb2-43fc-4470-ba27-0610db7cf719,franquiasaopaulosp8,2026-04-04,UBER,7.41,transporte
+42d0c1ac-9597-4763-9e05-009ce34bb3de,franquiasaopaulosp8,2026-04-04,UBER,8.25,transporte
+56fc2751-b498-4502-bc4c-1d3320442787,franquiasaopaulosp8,2026-04-04,UBER,16.52,transporte
+010e1ba9-b541-4e70-98cf-2dcc8721309e,franquiaembudasartessp,2026-04-03,Robô,100.00,pacote_sistema
+93acf32f-9435-4c47-a774-72e76a2698ea,franquiaitatibasp,2026-04-03,Robô e marketing,300.00,pacote_sistema
+0195091a-d268-43e6-8b1d-c3f74e70cd86,franquiaitatibasp,2026-04-03,Plano de celular,100.00,outros
+8bc6adba-d634-4950-a19a-f788c731d8fb,franquiaitatibasp,2026-04-03,Energia cpfl,100.00,energia
+1cb4e093-057a-4fcb-be39-b2f67755c918,franquiabarretossp,2026-04-02,Leads,500.00,marketing
+8fa7ed6c-f952-4e5e-b9af-3aef2af13e4d,franquiabaurusp,2026-04-02,Motoqueiro Júnior,30.00,transporte
+3ed4f517-54a8-4161-8cd7-0524e348cf09,franquiabaurusp,2026-04-02,Frete pedido,210.00,transporte
+a4d2d4d1-b6b0-4f61-9504-db6c0eff2a2a,franquianovaodessasp,2026-04-02,Sacolas,28.98,outros
+50982a36-a2c0-491c-8724-c2d202366d0b,franquianovaodessasp,2026-04-02,Combustível biz,19.60,transporte
+2859dc1d-2d89-4b6b-a3ad-2a37ebb16578,franquiasaojosedoriopretosp,2026-04-02,Sacolas,41.00,outros
+bfa32096-2877-444d-bd33-177e299b53d5,franquiasaopaulosp8,2026-04-02,uber ivone,7.26,transporte
+7f7824ad-0e72-4883-a416-58e9849d409f,franquiasaopaulosp8,2026-04-02,uber raphaela,7.94,transporte
+ce6bdda9-272a-4067-bd31-55a17a2868d6,franquiasuzanosp,2026-04-02,Bot + Dash,100.00,pacote_sistema
+4be25df2-0c8c-407e-a966-8a19101b109b,franquiasuzanosp,2026-04-02,Marketing,300.00,marketing
+67c884f1-11ed-458f-9be8-5d35b826a7c7,franquiacotiasp,2026-04-01,Blocos Pedidos,10.40,outros
+58c9e121-d2d5-4e68-87a2-6f5fc5490923,franquiaosascosp,2026-04-01,Frete matriz x Osasco,350.00,transporte
+6ca301b8-0db9-42f7-a0a0-de60a2b3ae1f,franquiasaopaulosp5,2026-04-01,designer,100.00,outros
+c4431438-e213-4072-ad21-db8467436042,franquiasaopaulosp5,2026-04-01,Marketing e Robô,600.00,pacote_sistema
+9728d9ac-defa-4d4e-9ade-eaed5f7bcbe0,franquiasaopaulosp7,2026-04-01,BOT/IA,100.00,pacote_sistema
+67d310a2-219e-4cd2-987c-b5030d96e209,franquiasaopaulosp7,2026-04-01,Tráfego Pago,900.00,marketing
+c4d39d88-4f51-41f6-8f53-5796f77f4a79,franquiacotiasp,2026-03-31,Sacolas Personalizadas - 500 unidades,282.94,outros
+c1dc4e9c-639a-498a-809a-6da604e05b02,franquiacajamarsp,2026-03-27,Motouber,6.00,transporte
+c2f535e1-b517-4a9e-9cf9-e64a8142fff3,franquiacotiasp,2026-03-26,Sacolas Brancas Lisas - 1Kg,34.86,outros
+8564748f-9d35-4b67-a7ba-c201bf6772e3,franquiacotiasp,2026-03-26,Etiquetas Personalizadas,26.90,outros
+53a92cc2-6392-4547-bd8b-6e4e1cfda044,franquiacotiasp,2026-03-26,Cardápio Impresso Plastificado,69.00,marketing
+0903b511-a018-44ca-8450-eaf6419b0101,franquiahortolandiasp,2026-03-26,Conta de Luz,358.00,energia
+d6867d0a-b65c-4332-96d3-e28092142f58,franquiaararaquarasp,2026-03-25,MotoUber,8.00,transporte

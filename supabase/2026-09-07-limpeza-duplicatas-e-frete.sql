@@ -1,0 +1,30 @@
+-- 2026-09-07 — Acoes decididas pelo Nelson sobre o que a sentinela apontou.
+--
+-- 1) DESPESA DE MARKETING DUPLICADA — R$ 1.200 no total
+-- Tres franqueadas tinham a verba automatica (trigger tr_mkt_generate_expense,
+-- source 'marketing_payment') MAIS um lancamento manual do mesmo valor no mesmo mes.
+-- Isso inflava o custo e reduzia o lucro que elas veem na propria tela.
+-- Decisao: "se e duplicada tira, ja e lancado automatico" — some o MANUAL, fica o
+-- automatico (que tem source_id e reconcilia com marketing_payments).
+--   Cajamar 01/07 R$ 600 "Marketing"     · Cotia 06/04 R$ 200 "Marketing"
+--   Santana de Parnaiba 04/08 R$ 400 "Trafego pago"
+-- Backup em public._backup_expenses_dup_marketing_2026_09_07 (3 linhas).
+-- `expenses` nao tem trigger de DELETE, entao nada cascateia.
+--
+-- NAO foi tocada a Americana 04/2026: os dois lancamentos dela sao verbas de meses de
+-- REFERENCIA diferentes pagas no mesmo mes — normal, e documentado no CLAUDE.md
+-- (getMarketingTargetMonth mira o mes seguinte nos ultimos 5 dias).
+--
+-- 2) PEDIDO SEM FRETE — o primeiro caso apontado era legitimo
+-- Rio Claro, 01/09, R$ 1.496,30 sem frete: a entrega saiu junto com a de Limeira, na
+-- mesma viagem. Sem uma saida, a sentinela repetiria o aviso por 7 dias — e alarme
+-- falso diario e o que faz a pessoa parar de ler a sentinela.
+-- Convencao: frete zero COM observacao escrita = decisao consciente, nao alarma;
+-- sem observacao = esqueceram de lancar, alarma.
+--
+-- Rollback do (1):
+--   insert into public.expenses select * from public._backup_expenses_dup_marketing_2026_09_07;
+
+-- (as duas migrations ja foram aplicadas em 07/09; este arquivo e o registro versionado)
+-- remove_despesas_marketing_duplicadas_2026_09_07
+-- sentinela_frete_com_saida_2026_09_07

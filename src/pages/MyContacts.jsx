@@ -1,0 +1,1087 @@
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Contact, Sale } from "@/entities/all";
+import { supabase } from "@/api/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import FranchisePicker from "@/components/shared/FranchisePicker";
+import EmptyState from "@/components/shared/EmptyState";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { Skeleton } from "@/components/ui/skeleton";
+import DailyActionsList from "@/components/clientes/DailyActionsList";
+import ContactFilterChips from "@/components/clientes/ContactFilterChips";
+import { CustomerMark, Recency } from "@/components/clientes/CustomerBadges";
+import { cidadeDaUnidade, diasEntre, filtrarClientes, marcaDoCliente } from "@/lib/customerActions";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+
+import FilterBar from "@/components/shared/FilterBar";
+import { formatPhone, normalizePhone, getWhatsAppLink, isInternationalPhone } from "@/lib/whatsappUtils";
+import { formatBRL as formatCurrency } from "@/lib/formatters";
+import { sanitizeCSVCell } from "@/lib/csvSanitize";
+import { toast } from "sonner";
+import { formatDistanceToNow, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { listarFranquias } from "@/lib/franchisesCache";
+import { hojeBrasilia } from "@/lib/inicioMes";
+import { chaveTelefone, listarBloqueios, bloquearNumero, desbloquearNumero } from "@/lib/roboBloqueios";
+
+// Aba Todos: cartões renderizados de 50 em 50 (há unidade com 3 mil contatos)
+const PAGE_SIZE = 50;
+
+const SOURCE_CONFIG = {
+  manual: { label: "Manual", bg: "bg-surface-line", text: "text-ink-2" },
+  bot: { label: "Bot", bg: "bg-ok/10", text: "text-ok-ink" },
+};
+
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  try {
+    return formatDistanceToNow(new Date(dateStr), {
+      addSuffix: false,
+      locale: ptBR,
+    });
+  } catch {
+    return "";
+  }
+}
+
+// "Rua Fernando Fiamini, 597 - Cep..." e "Rua Fernando Fiamini, 597, Parque..." = mesma rua:
+// compara a última palavra antes do 1º número + o número (sem acento, caixa ou pontuação).
+function chaveRua(endereco) {
+  const t = (endereco || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const m = /([a-z]+)[^a-z0-9]*(\d+)/.exec(t);
+  return m ? `${m[1]}${m[2]}` : t.replace(/[^a-z0-9]/g, "");
+}
+function mesmaRua(a, b) {
+  const ka = chaveRua(a);
+  return !!ka && ka === chaveRua(b);
+}
+
+export default function MyContacts() {
+  const { user: currentUser, selectedFranchise } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [contacts, setContacts] = useState([]);
+  const [franchises, setFranchises] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState("todos");
+  const [editingContact, setEditingContact] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  // Robô não responde este número (bot_blocked_numbers). carregado=false: a lista não veio, não mexe no bloqueio ao salvar
+  const [bloqueioEdit, setBloqueioEdit] = useState({ carregado: false, id: null, chave: null });
+  const [isCreating, setIsCreating] = useState(false);
+  const [newContactForm, setNewContactForm] = useState({ nome: "", telefone: "", endereco: "", bairro: "", notas: "" });
+  const [isSaving, setIsSaving] = useState(false);
+  const [sortBy, setSortBy] = useState("recent");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+
+  const capitalize = (str) => {
+    if (!str) return str;
+    const lower = ["da", "de", "do", "das", "dos", "e", "a", "o", "em", "na", "no", "nas", "nos"];
+    return str.trim().replace(/\s+/g, " ").split(" ").map((word, i) => {
+      const w = word.toLowerCase();
+      if (i > 0 && lower.includes(w)) return w;
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(" ");
+  };
+
+  const checkSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return false;
+    }
+    return true;
+  };
+
+  const getErrorMessage = (error) => {
+    const msg = error?.message || "";
+    if (msg.includes("JWT") || msg.includes("token") || msg.includes("expired") || error?.status === 401) {
+      return "Sessão expirada. Faça login novamente.";
+    }
+    if (msg.includes("duplicate") || msg.includes("unique") || error?.code === "23505") {
+      return "Contato com este telefone já existe.";
+    }
+    if (msg.includes("Tempo limite")) {
+      return "Servidor demorou para responder. Tente novamente.";
+    }
+    return safeErrorMessage(error, "Não deu para salvar o contato. Tente novamente.");
+  };
+
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "manager";
+
+  const availableFranchises = useMemo(
+    () => getAvailableFranchises(franchises, currentUser),
+    [franchises, currentUser]
+  );
+
+  // Unidade ativa = a do seletor do topo. Sem ela, a lista sairia com os clientes
+  // das DUAS unidades (a RLS libera as duas) — foi o que misturou Araras × Limeira.
+  const activeFranchise = useMemo(
+    () => resolveActiveFranchise(franchises, currentUser, selectedFranchise),
+    [franchises, currentUser, selectedFranchise]
+  );
+  const activeEvoId = activeFranchise?.evolution_instance_id;
+  // "Hoje" (quem chamar) é a aba padrão do franqueado. Admin sem unidade escolhida só tem "Todos".
+  const abaParam = searchParams.get("aba");
+  const activeTab =
+    activeEvoId && (abaParam === "hoje" || (!isAdmin && abaParam !== "todos")) ? "hoje" : "todos";
+  const changeTab = (tab) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("aba", tab);
+        return next;
+      },
+      { replace: true }
+    );
+  const cidade = cidadeDaUnidade(activeFranchise);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeFilter, searchTerm, dateFilter, sourceFilter, sortBy, activeEvoId]);
+
+  const CONTACT_COLUMNS =
+    'id, franchise_id, nome, telefone, status, source, last_contact_at, last_purchase_at, purchase_count, total_spent, created_at, updated_at, endereco, bairro, notas, do_not_contact_at';
+
+  const loadContacts = useCallback(async (retryCount = 0) => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      setLoading(true);
+      setLoadError(null);
+      // Franqueado: sempre escopado à unidade ativa. Admin: rede inteira (comportamento antigo).
+      const data = isAdmin
+        ? await Contact.list("-created_at", null, {
+            fetchAll: true,
+            columns: CONTACT_COLUMNS,
+            signal: controller.signal,
+          })
+        : await Contact.filter({ franchise_id: activeEvoId }, "-created_at", null, {
+            fetchAll: true,
+            columns: CONTACT_COLUMNS,
+            signal: controller.signal,
+          });
+      if (!mountedRef.current || controller.signal.aborted) return;
+      setContacts(data);
+    } catch (error) {
+      if (error?.name === 'AbortError' || controller.signal.aborted) return;
+      if (!mountedRef.current) return;
+      if (retryCount < 1) {
+        await new Promise(r => setTimeout(r, 1000));
+        if (mountedRef.current && !controller.signal.aborted) return loadContacts(retryCount + 1);
+        return;
+      }
+      console.error("Erro ao carregar contatos:", error);
+      setLoadError(safeErrorMessage(error, "Erro ao carregar contatos. Tente novamente."));
+      toast.error("Erro ao carregar contatos");
+    } finally {
+      if (mountedRef.current && !controller.signal.aborted) setLoading(false);
+    }
+  }, [isAdmin, activeEvoId]);  
+
+  useEffect(() => {
+    mountedRef.current = true;
+    listarFranquias()
+      .then((data) => { if (mountedRef.current) setFranchises(data); })
+      .catch((error) => {
+        console.error("Erro ao carregar franquias:", error);
+        if (!mountedRef.current) return;
+        setLoadError(safeErrorMessage(error, "Erro ao carregar suas unidades. Tente novamente."));
+        setLoading(false);
+      });
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Recarrega ao trocar de unidade no seletor do topo. Enquanto a unidade não
+  // resolve (franqueado com 2+ e nada escolhido), NÃO carrega — melhor lista
+  // vazia por um instante que lista com o cliente da outra unidade.
+  useEffect(() => {
+    if (!isAdmin && !activeEvoId) {
+      setContacts([]);
+      if (franchises.length > 0) setLoading(false);
+      return;
+    }
+    loadContacts();
+  }, [isAdmin, activeEvoId, franchises.length, loadContacts]);
+
+  // Busca, origem e data valem ANTES dos chips: assim os números dos chips seguem os filtros
+  // (01/10/2026, Vila Formosa: "selecionando os últimos 30 dias, permanece os mesmos números").
+  const baseContacts = useMemo(() => {
+    let result = contacts;
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(
+        (c) =>
+          c.nome?.toLowerCase().includes(term) ||
+          c.telefone?.includes(term)
+      );
+    }
+
+    // Filter by source
+    if (sourceFilter !== "all") {
+      result = result.filter((c) => (c.source || "manual") === sourceFilter);
+    }
+
+    // Filter by last contact date
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const daysMap = { "7d": 7, "30d": 30, "90d": 90 };
+      const days = daysMap[dateFilter];
+      if (days) {
+        const cutoff = new Date(now.getTime() - days * 86400000).toISOString();
+        result = result.filter(
+          (c) => c.last_contact_at && c.last_contact_at >= cutoff
+        );
+      }
+    }
+    return result;
+  }, [contacts, searchTerm, dateFilter, sourceFilter]);
+
+  const filteredContacts = useMemo(() => {
+    // Chips: Todos / Fiéis / Nunca compraram / Sumidos / Sem telefone / Não chamar
+    let result = filtrarClientes(baseContacts, activeFilter);
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return (a.nome || a.customer_name || "").localeCompare(
+            b.nome || b.customer_name || ""
+          );
+        case "purchases":
+          return (b.purchase_count || 0) - (a.purchase_count || 0);
+        case "spent":
+          return (b.total_spent || 0) - (a.total_spent || 0);
+        case "recent":
+        default:
+          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+    });
+
+    return result;
+  }, [baseContacts, activeFilter, sortBy]);
+
+  const openEdit = (contact) => {
+    const telefone = contact.telefone || contact.contact_phone || "";
+    setEditingContact(contact);
+    setEditForm({
+      nome: contact.nome || contact.customer_name || "",
+      // Estrangeiro abre com "+" para a franquia reconhecer o DDI (salvar tira o "+" de novo)
+      telefone: isInternationalPhone(telefone) ? "+" + telefone : telefone,
+      endereco: contact.endereco || "",
+      bairro: contact.bairro || "",
+      notas: contact.notas || "",
+      do_not_contact_at: contact.do_not_contact_at || null,
+      robo_bloqueado: false,
+    });
+    setBloqueioEdit({ carregado: false, id: null, chave: null });
+    const unidade = contact.franchise_id;
+    const chave = chaveTelefone(telefone);
+    if (unidade && chave) {
+      listarBloqueios(unidade)
+        .then((linhas) => {
+          const achado = linhas.find((l) => chaveTelefone(l.phone_raw) === chave);
+          setBloqueioEdit({ carregado: true, id: achado?.id || null, chave });
+          setEditForm((atual) => ({ ...atual, robo_bloqueado: !!achado }));
+        })
+        .catch(() => setBloqueioEdit({ carregado: false, id: null, chave: null }));
+    } else if (unidade) {
+      setBloqueioEdit({ carregado: true, id: null, chave: null });
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newContactForm.nome?.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+    try {
+      setIsSaving(true);
+      if (!(await checkSession())) return;
+      // Grava na unidade ATIVA (a do seletor do topo). Antes usava
+      // managed_franchise_ids[0], que jogava todo contato novo na mesma unidade
+      // independentemente da que estava selecionada.
+      if (!activeEvoId) {
+        toast.error("Selecione a unidade no topo antes de cadastrar o cliente.");
+        return;
+      }
+      await Contact.create({
+        franchise_id: activeEvoId,
+        nome: capitalize(newContactForm.nome),
+        telefone: normalizePhone(newContactForm.telefone),
+        endereco: capitalize(newContactForm.endereco) || null,
+        bairro: capitalize(newContactForm.bairro) || null,
+        notas: newContactForm.notas?.trim() || null,
+        source: "manual",
+      });
+      toast.success("Contato criado");
+      setIsCreating(false);
+      setNewContactForm({ nome: "", telefone: "", endereco: "", bairro: "", notas: "" });
+      loadContacts();
+    } catch (error) {
+      console.error("Erro ao criar contato:", error);
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!editingContact) return;
+    try {
+      setIsSaving(true);
+      if (!(await checkSession())) return;
+      const updateData = {
+        nome: capitalize(editForm.nome),
+        telefone: normalizePhone(editForm.telefone),
+        endereco: capitalize(editForm.endereco) || null,
+        bairro: capitalize(editForm.bairro) || null,
+        notas: editForm.notas?.trim() || null,
+      };
+      // Só grava "não chamar" se a pessoa mexeu na caixa (a lista pode estar velha)
+      if ((editForm.do_not_contact_at || null) !== (editingContact.do_not_contact_at || null)) {
+        updateData.do_not_contact_at = editForm.do_not_contact_at || null;
+      }
+      await Contact.update(editingContact.id, updateData);
+      // A venda guarda uma CÓPIA do endereço (sales.customer_address). Corrigir o cadastro
+      // leva a correção às entregas de hoje em diante (Suzano, 13/10/2026), senão o comprovante
+      // e o botão da Uber seguem com o endereço errado. Só reescreve a venda que ainda tem o
+      // endereço ANTIGO (ou nenhum): endereço digitado de propósito para um pedido (presente,
+      // trabalho) fica. Compara rua+número por mesmaRua porque o robô grava a venda e o contato
+      // em formatos diferentes ("Rua X, 597, Bairro" × "Rua X, 597 - Cep: ...").
+      const mexeuNoEndereco =
+        (editForm.endereco || "").trim() !== (editingContact.endereco || "").trim() ||
+        (editForm.bairro || "").trim() !== (editingContact.bairro || "").trim();
+      if (mexeuNoEndereco && updateData.endereco) {
+        try {
+          const vendas = await Sale.filter(
+            { contact_id: editingContact.id, delivery_method: "delivery" },
+            null,
+            null,
+            { columns: "id, customer_address", gte: { sale_date: hojeBrasilia().str } }
+          );
+          const abertas = vendas.filter(
+            (s) => !s.customer_address?.trim() || mesmaRua(s.customer_address, editingContact.endereco)
+          );
+          const patch = { customer_address: updateData.endereco };
+          if (updateData.bairro) patch.customer_neighborhood = updateData.bairro;
+          const res = await Promise.allSettled(abertas.map((s) => Sale.update(s.id, patch)));
+          const ok = res.filter((r) => r.status === "fulfilled").length;
+          if (ok) {
+            toast.success(ok === 1 ? "Endereço corrigido também na entrega em aberto." : `Endereço corrigido também nas ${ok} entregas em aberto.`);
+          }
+          if (ok < res.length) {
+            toast.error(`Contato salvo, mas ${res.length - ok} venda(s) ficaram com o endereço antigo. Abra a venda e corrija lá.`);
+          }
+        } catch (erroVendas) {
+          toast.error(safeErrorMessage(erroVendas, "Contato salvo, mas não consegui corrigir o endereço na venda. Abra a venda e corrija lá."));
+        }
+      }
+      // Robô não responde: grava só se a lista carregou e algo mudou (marcação ou o próprio telefone)
+      if (bloqueioEdit.carregado && editingContact.franchise_id) {
+        const quer = !!editForm.robo_bloqueado;
+        const chaveNova = chaveTelefone(updateData.telefone);
+        const mudouNumero = !!bloqueioEdit.id && chaveNova !== bloqueioEdit.chave;
+        try {
+          if (bloqueioEdit.id && (!quer || mudouNumero)) await desbloquearNumero(bloqueioEdit.id);
+          if (quer && chaveNova && (!bloqueioEdit.id || mudouNumero)) {
+            await bloquearNumero(editingContact.franchise_id, updateData.telefone, updateData.nome || "cliente");
+          }
+          if (quer && !chaveNova) toast.error("Para o robô não responder, o contato precisa de telefone com DDD.");
+        } catch (erroBloqueio) {
+          toast.error(safeErrorMessage(erroBloqueio, "Contato salvo, mas não consegui mudar o bloqueio do robô."));
+        }
+      }
+      toast.success("Contato atualizado");
+      setEditingContact(null);
+      loadContacts();
+    } catch (error) {
+      console.error("Erro ao atualizar contato:", error);
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const [deletingContactId, setDeletingContactId] = useState(null);
+
+  const handleDelete = async (contact) => {
+    if (deletingContactId) return;
+    try {
+      setDeletingContactId(contact.id);
+      if (!(await checkSession())) return;
+      await Contact.delete(contact.id);
+      toast.success("Contato excluído");
+      setEditingContact(null);
+      loadContacts();
+    } catch (error) {
+      console.error("Erro ao excluir contato:", error);
+      toast.error(getErrorMessage(error));
+    } finally {
+      setDeletingContactId(null);
+    }
+  };
+
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const getContactName = (contact) =>
+    contact.nome || contact.customer_name || "Sem nome";
+
+  const getContactPhone = (contact) =>
+    contact.telefone || contact.contact_phone || "";
+
+  const navigateToSales = (contact) => {
+    const params = new URLSearchParams({ action: "nova-venda" });
+    if (contact.id) params.set("contact_id", contact.id);
+    const phone = getContactPhone(contact);
+    // Telefone vai no state, nunca na URL: a URL e gravada pelo Clarity (LGPD, 27/09/2026).
+    navigate(`/Vendas?${params.toString()}`, { state: phone ? { phone } : undefined });
+  };
+
+  // Loading skeleton
+  if (loading && activeTab !== "hoje") {
+    return (
+      <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-48 rounded-xl motion-reduce:animate-none" />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-11 w-28 rounded-xl shrink-0 motion-reduce:animate-none" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-40 rounded-2xl motion-reduce:animate-none" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError && activeTab !== "hoje") {
+    return (
+      <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
+          <Button variant="outline" onClick={() => loadContacts()} className="mt-2">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg" />
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // 2+ unidades e nenhuma escolhida: perguntar em vez de listar as duas juntas
+  if (!isAdmin && !activeEvoId && availableFranchises.length > 1) {
+    return <FranchisePicker franchises={availableFranchises} title="Clientes de qual unidade?" />;
+  }
+
+  return (
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center">
+            <MaterialIcon icon="group" size={22} className="text-brand" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold font-plus-jakarta text-ink">
+              Meus Clientes
+            </h1>
+            <p className="text-sm text-ink-2">
+              {contacts.length} {contacts.length === 1 ? "contato" : "contatos"}
+              {/* Com 2+ unidades, dizer QUAL está na tela evita a confusão de achar
+                  que o cliente da outra unidade "vazou" para cá. */}
+              {availableFranchises.length > 1 && activeFranchise
+                ? ` · ${activeFranchise.city || activeFranchise.name}`
+                : ""}
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={() => setIsCreating(true)}
+          className="bg-brand hover:bg-brand-dark text-white rounded-xl gap-2"
+        >
+          <MaterialIcon icon="person_add" size={18} />
+          <span className="hidden sm:inline">Novo Cliente</span>
+        </Button>
+      </div>
+
+      {/* Hoje = quem chamar hoje · Todos = a lista completa */}
+      <div className="flex gap-2" role="tablist" aria-label="Listas de clientes">
+        {[
+          activeEvoId && { key: "hoje", label: "Hoje", icon: "campaign" },
+          { key: "todos", label: "Todos", icon: "people", count: contacts.length },
+        ]
+          .filter(Boolean)
+          .map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => changeTab(tab.key)}
+                className={`flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "bg-brand text-white shadow-sm"
+                    : "border border-ink-shadow/10 bg-white text-ink-2 hover:bg-surface"
+                }`}
+              >
+                <MaterialIcon icon={tab.icon} size={18} />
+                {tab.label}
+                {tab.count != null && <span className="font-mono-numbers opacity-80">{tab.count}</span>}
+              </button>
+            );
+          })}
+      </div>
+
+      {activeTab === "hoje" && (
+        <DailyActionsList
+          variant="full"
+          franchiseId={activeEvoId}
+          cidade={cidade}
+          onContactChanged={(id, patch) =>
+            setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
+          }
+          onVerSemTelefone={() => {
+            setActiveFilter("sem_telefone");
+            setSearchTerm("");
+            setSourceFilter("all");
+            setDateFilter("all");
+            changeTab("todos");
+          }}
+        />
+      )}
+
+      {/* Create Contact Dialog */}
+      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain">
+          <DialogHeader>
+            <DialogTitle className="font-plus-jakarta">Novo Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-ink">Nome *</Label>
+              <Input
+                value={newContactForm.nome}
+                onChange={(e) => setNewContactForm({ ...newContactForm, nome: e.target.value })}
+                placeholder="Nome do cliente"
+                className="bg-surface-line border-none rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-ink">Telefone</Label>
+              <Input
+                type="tel"
+                inputMode="tel"
+                value={newContactForm.telefone}
+                onChange={(e) => setNewContactForm({ ...newContactForm, telefone: e.target.value })}
+                placeholder="(14) 99999-9999"
+                className="bg-surface-line border-none rounded-xl"
+              />
+              <p className="text-xs text-ink-2/70">De outro país? Comece com + e o código do país (ex.: +1 321 438 4841).</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-ink">Endereço</Label>
+              <Input
+                value={newContactForm.endereco}
+                onChange={(e) => setNewContactForm({ ...newContactForm, endereco: e.target.value })}
+                placeholder="Rua das Flores, 123"
+                className="bg-surface-line border-none rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-ink">Bairro</Label>
+              <Input
+                value={newContactForm.bairro}
+                onChange={(e) => setNewContactForm({ ...newContactForm, bairro: e.target.value })}
+                placeholder="Ex: Centro"
+                className="bg-surface-line border-none rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-ink">Observações</Label>
+              <Textarea
+                value={newContactForm.notas}
+                onChange={(e) => setNewContactForm({ ...newContactForm, notas: e.target.value })}
+                placeholder="Anotações sobre o cliente..."
+                rows={3}
+                className="bg-surface-line border-none rounded-xl resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsCreating(false)} className="rounded-xl">
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={isSaving || !newContactForm.nome?.trim()}
+                className="bg-brand hover:bg-brand-dark text-white rounded-xl"
+              >
+                {isSaving ? "Criando..." : "Criar Contato"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {activeTab === "todos" && <>
+      <ContactFilterChips contacts={baseContacts} activeFilter={activeFilter} onChange={setActiveFilter} />
+
+      {/* Search + Filters */}
+      <FilterBar
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Buscar por nome ou telefone..."
+        filters={[
+          {
+            key: "sourceFilter",
+            label: "Origem",
+            value: sourceFilter,
+            onChange: setSourceFilter,
+            options: [
+              { value: "all", label: "Todas origens" },
+              { value: "manual", label: "Manual" },
+              { value: "bot", label: "Bot" },
+            ],
+          },
+          {
+            key: "dateFilter",
+            label: "Último contato",
+            value: dateFilter,
+            onChange: setDateFilter,
+            options: [
+              { value: "all", label: "Qualquer data" },
+              { value: "7d", label: "Últimos 7 dias" },
+              { value: "30d", label: "Últimos 30 dias" },
+              { value: "90d", label: "Últimos 90 dias" },
+            ],
+          },
+        ]}
+        sortOptions={[
+          { value: "recent", label: "Mais recentes" },
+          { value: "name", label: "Nome A-Z" },
+          { value: "purchases", label: "Mais compras" },
+          { value: "spent", label: "Maior gasto" },
+        ]}
+        sortValue={sortBy}
+        onSortChange={setSortBy}
+      />
+
+      {/* Export CSV */}
+      {filteredContacts.length > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-ink-2/70">
+            {filteredContacts.length} cliente{filteredContacts.length !== 1 ? "s" : ""}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-8 rounded-xl border-ink-shadow/10"
+            onClick={() => {
+              const headers = ["Nome", "Telefone", "Marca", "Origem", "Total Compras", "Valor Total", "Última Compra", "Último Contato", "Não Chamar", "Endereço", "Bairro"];
+              const escape = (v) => {
+                const s = String(v ?? "");
+                return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+              };
+              const rows = filteredContacts.map((c) => [
+                escape(sanitizeCSVCell(c.nome || c.customer_name || "")),
+                escape(sanitizeCSVCell(c.telefone ? formatPhone(c.telefone) : "")),
+                escape(sanitizeCSVCell(marcaDoCliente(c.purchase_count).label)),
+                escape(sanitizeCSVCell(c.source || "manual")),
+                c.purchase_count ?? 0,
+                escape((parseFloat(c.total_spent) || 0).toFixed(2).replace(".", ",")),
+                c.last_purchase_at ? format(new Date(c.last_purchase_at), "dd/MM/yyyy") : "",
+                c.last_contact_at ? c.last_contact_at.substring(0, 10).split("-").reverse().join("/") : "",
+                c.do_not_contact_at ? "Sim" : "",
+                escape(sanitizeCSVCell(c.endereco || "")),
+                escape(sanitizeCSVCell(c.bairro || "")),
+              ].join(","));
+              const csv = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `clientes_${format(new Date(), "yyyy-MM-dd")}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success(`${filteredContacts.length} clientes exportados`);
+            }}
+          >
+            <MaterialIcon icon="download" size={14} />
+            Exportar CSV
+          </Button>
+        </div>
+      )}
+
+      {/* Contact Cards Grid */}
+      {filteredContacts.length === 0 ? (
+        <EmptyState
+          icone="group"
+          titulo="Nenhum contato encontrado"
+          texto={
+            searchTerm || activeFilter !== "todos" || sourceFilter !== "all" || dateFilter !== "all"
+              ? "Tente ajustar seus filtros ou busca."
+              : "Os contatos das suas vendas e conversas aparecerão aqui."
+          }
+          acao={
+            searchTerm || activeFilter !== "todos" || sourceFilter !== "all" || dateFilter !== "all"
+              ? {
+                  rotulo: "Limpar filtros",
+                  onClick: () => {
+                    setSearchTerm("");
+                    setActiveFilter("todos");
+                    setSourceFilter("all");
+                    setDateFilter("all");
+                  },
+                }
+              : { rotulo: "Novo Cliente", onClick: () => setIsCreating(true) }
+          }
+          className="py-16"
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredContacts.slice(0, visibleCount).map((contact) => {
+            const name = getContactName(contact);
+            const phone = getContactPhone(contact);
+            const hasPurchases = (contact.purchase_count || 0) > 0;
+
+            return (
+              <div
+                key={contact.id}
+                onClick={(e) => {
+                  if (e.target.closest('button, a')) return;
+                  openEdit(contact);
+                }}
+                className="bg-white rounded-2xl border border-ink-shadow/5 shadow-sm p-4 flex flex-col gap-3 hover:shadow-md hover:border-brand/20 transition-all cursor-pointer"
+              >
+                {/* Top row: name, phone, badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-plus-jakarta font-semibold text-ink truncate text-base">
+                      {name}
+                    </h3>
+                    <p className="truncate text-sm text-ink-2 font-mono-numbers">
+                      {formatPhone(phone)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {(() => {
+                      const src = contact.source || "manual";
+                      const srcCfg = SOURCE_CONFIG[src] || SOURCE_CONFIG.manual;
+                      return (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold ${srcCfg.bg} ${srcCfg.text}`}>
+                          {srcCfg.label}
+                        </span>
+                      );
+                    })()}
+                    <CustomerMark purchases={contact.purchase_count} />
+                    {contact.do_not_contact_at && (
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-surface-line px-2 py-1 text-xs text-ink-3">
+                        <MaterialIcon icon="block" size={14} />
+                        Não chamar
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <Recency days={diasEntre(contact.last_purchase_at)} />
+
+                {/* Purchase info or lead info */}
+                <div className="text-sm text-ink-2">
+                  {hasPurchases ? (
+                    <div className="flex items-center gap-1.5">
+                      <MaterialIcon icon="shopping_bag" size={16} className="text-ok shrink-0" />
+                      <span>
+                        {contact.purchase_count}{" "}
+                        {contact.purchase_count === 1 ? "compra" : "compras"}
+                        {contact.total_spent ? ` · ${formatCurrency(contact.total_spent)} total` : ""}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <MaterialIcon icon="schedule" size={16} className="text-ink-2 shrink-0" />
+                      <span>
+                        Chegou
+                        {contact.created_at
+                          ? ` · há ${timeAgo(contact.created_at)}`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bairro */}
+                {contact.bairro && (
+                  <div className="flex items-center gap-1.5 text-sm text-ink-2">
+                    <MaterialIcon icon="location_on" size={16} className="shrink-0" />
+                    <span className="truncate">{contact.bairro}</span>
+                  </div>
+                )}
+
+                {/* Notes preview */}
+                {contact.notas && (
+                  <p className="text-xs text-ink-2/70 line-clamp-2 italic">
+                    {contact.notas.length > 80
+                      ? contact.notas.slice(0, 80) + "..."
+                      : contact.notas}
+                  </p>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-ink-shadow/5">
+                  {phone ? (
+                    <>
+                      <a
+                        href={getWhatsAppLink(phone)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
+                      >
+                        <MaterialIcon icon="chat" size={16} />
+                        <span className="hidden sm:inline">WhatsApp</span>
+                        <span className="sm:hidden">Zap</span>
+                      </a>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => openEdit(contact)}
+                      className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok/10 text-ok-ink hover:bg-ok/20 transition-colors"
+                      title="Adicionar telefone para usar WhatsApp"
+                    >
+                      <MaterialIcon icon="phone" size={16} />
+                      <span className="hidden sm:inline">+ Telefone</span>
+                      <span className="sm:hidden">+ Tel</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => navigateToSales(contact)}
+                    className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-brand-gold/10 text-brand-gold-ink hover:bg-brand-gold/20 transition-colors"
+                  >
+                    <MaterialIcon icon="point_of_sale" size={16} />
+                    <span className="hidden sm:inline">+ Venda</span>
+                    <span className="sm:hidden">Venda</span>
+                  </button>
+                  <button
+                    onClick={() => openEdit(contact)}
+                    className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-surface-line text-ink-2 hover:bg-surface-line/80 transition-colors ml-auto"
+                    title="Editar contato"
+                  >
+                    <MaterialIcon icon="edit" size={16} />
+                    <span className="hidden sm:inline">Editar</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {filteredContacts.length > visibleCount && (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          className="min-h-11 w-full rounded-xl border border-ink-shadow/10 bg-white px-4 text-sm font-semibold text-ink-2 transition-colors hover:bg-surface"
+        >
+          Mostrar mais{" "}
+          <span className="font-mono-numbers text-ink-3">
+            (faltam {filteredContacts.length - visibleCount})
+          </span>
+        </button>
+      )}
+      </>}
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editingContact}
+        onOpenChange={(open) => {
+          if (!open) setEditingContact(null);
+        }}
+      >
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-plus-jakarta">Editar Contato</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {/* Nome */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-nome" className="text-ink">Nome</Label>
+              <Input
+                id="edit-nome"
+                value={editForm.nome || ""}
+                onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
+                className="bg-surface-line border-none rounded-xl"
+              />
+            </div>
+
+            {/* Telefone */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-telefone" className="text-ink">Telefone</Label>
+              <Input
+                id="edit-telefone"
+                type="tel"
+                inputMode="tel"
+                value={editForm.telefone || ""}
+                onChange={(e) => setEditForm({ ...editForm, telefone: e.target.value })}
+                placeholder="(11) 99999-9999"
+                className="bg-surface-line border-none rounded-xl"
+              />
+              <p className="text-xs text-ink-2/70">De outro país? Comece com + e o código do país (ex.: +1 321 438 4841).</p>
+            </div>
+
+            {/* Endereco */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-endereco" className="text-ink">Endereço</Label>
+              <Input
+                id="edit-endereco"
+                value={editForm.endereco || ""}
+                onChange={(e) => setEditForm({ ...editForm, endereco: e.target.value })}
+                placeholder="Rua das Flores, 123"
+                className="bg-surface-line border-none rounded-xl"
+              />
+            </div>
+
+            {/* Bairro */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-bairro" className="text-ink">Bairro</Label>
+              <Input
+                id="edit-bairro"
+                value={editForm.bairro || ""}
+                onChange={(e) => setEditForm({ ...editForm, bairro: e.target.value })}
+                placeholder="Ex: Centro"
+                className="bg-surface-line border-none rounded-xl"
+              />
+            </div>
+
+            {/* Cliente pediu para não receber mensagem: sai de "Quem chamar hoje" */}
+            <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-ink-shadow/10 p-3 text-sm text-ink">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+                checked={!!editForm.do_not_contact_at}
+                onChange={(event) =>
+                  setEditForm({
+                    ...editForm,
+                    do_not_contact_at: event.target.checked ? new Date().toISOString() : null,
+                  })
+                }
+              />
+              <span>
+                <span className="block font-medium">Não chamar mais</span>
+                <span className="block text-xs text-ink-3">Não aparece em &quot;Quem chamar hoje&quot;.</span>
+              </span>
+            </label>
+
+            {/* Robô não responde este número (fornecedor, família, maquininha) */}
+            {bloqueioEdit.carregado && (
+              <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-ink-shadow/10 p-3 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
+                  checked={!!editForm.robo_bloqueado}
+                  onChange={(event) => setEditForm({ ...editForm, robo_bloqueado: event.target.checked })}
+                />
+                <span>
+                  <span className="block font-medium">Robô não responde este número</span>
+                  <span className="block text-xs text-ink-3">Para quem não é cliente: fornecedor, família, maquininha. Você continua conversando normalmente.</span>
+                </span>
+              </label>
+            )}
+
+            {/* Notas */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-notas" className="text-ink">Notas</Label>
+              <Textarea
+                id="edit-notas"
+                value={editForm.notas || ""}
+                onChange={(e) => setEditForm({ ...editForm, notas: e.target.value })}
+                rows={3}
+                className="bg-surface-line border-none rounded-xl resize-none"
+              />
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center pt-2">
+              {confirmDelete === editingContact?.id ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-ink-2">Excluir?</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmDelete(null)}
+                    className="rounded-xl text-xs h-8"
+                  >
+                    Não
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => { setConfirmDelete(null); handleDelete(editingContact); }}
+                    disabled={!!deletingContactId}
+                    className="bg-err hover:bg-brand text-white rounded-xl text-xs h-8"
+                  >
+                    {deletingContactId ? "Excluindo..." : "Sim, excluir"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConfirmDelete(editingContact?.id)}
+                  className="text-err hover:text-brand hover:bg-err-soft rounded-xl text-xs h-8 px-2"
+                >
+                  <MaterialIcon icon="delete" className="text-base mr-1" />
+                  Excluir
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => { setEditingContact(null); setConfirmDelete(null); }}
+                  className="rounded-xl"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="bg-brand hover:bg-brand-dark text-white font-bold rounded-xl"
+                >
+                  {isSaving ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -1,0 +1,700 @@
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { parseDateOnly } from "./dateOnly";
+import { getItemWeightKg, formatWeightKg } from "./productWeight";
+import { emUnidadesDePedido, qtdTexto, precoDaUnidade } from "./caixaFechada";
+
+const GROUP_ORDER = [
+  "Canelone", "Conchiglione", "Massa", "Nhoque",
+  "Fatiado", "Rondelli Fatiado", "Rondelli Rolo", "Sofioli", "Molho",
+];
+
+function getGroupKey(productName) {
+  const name = productName || "Outros";
+  const words = name.split(" ");
+  if (words[0].toLowerCase() === "rondelli") {
+    const lower = name.toLowerCase();
+    if (lower.includes("fatiado")) return "Rondelli Fatiado";
+    if (lower.includes("rolo")) return "Rondelli Rolo";
+    return "Rondelli";
+  }
+  return words[0];
+}
+
+function groupItems(items, editedQuantities) {
+  const groupMap = {};
+  items.forEach((item) => {
+    const qty = Number(editedQuantities?.[item.id] ?? item.quantity ?? 0);
+    if (!qty || qty <= 0) return;
+    const key = getGroupKey(item.product_name);
+    if (!groupMap[key]) groupMap[key] = { label: key.toUpperCase(), items: [] };
+    groupMap[key].items.push({ ...item, finalQty: qty });
+  });
+  const groups = Object.values(groupMap);
+  groups.sort((a, b) => {
+    const normalize = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    const labelA = a.label.split(" ").map(normalize).join(" ");
+    const labelB = b.label.split(" ").map(normalize).join(" ");
+    const ai = GROUP_ORDER.indexOf(labelA);
+    const bi = GROUP_ORDER.indexOf(labelB);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  groups.forEach((g) => g.items.sort((a, b) => a.product_name.localeCompare(b.product_name)));
+  return groups;
+}
+
+function fmtBRL(v) {
+  if (v == null) return "---";
+  return "R$ " + Number(v).toFixed(2).replace(".", ",");
+}
+
+function fmtDate(d) {
+  if (!d) return "---";
+  // estimated_delivery (DATE) precisa de parseDateOnly para evitar shift UTC.
+  // ordered_at (TIMESTAMPTZ) cai no fallback new Date().
+  const dt = parseDateOnly(d) || new Date(d);
+  try { return format(dt, "dd/MM/yyyy", { locale: ptBR }); }
+  catch { return String(d); }
+}
+
+function formatPhoneBR(raw) {
+  if (!raw) return "";
+  let d = String(raw).replace(/\D/g, "");
+  if (d.length >= 12 && d.startsWith("55")) d = d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return String(raw);
+}
+
+function getDisplayName(productName) {
+  if (productName && productName.includes("Fatiado") && !productName.startsWith("Fatiado")) {
+    return "Fatiado " + productName.replace(/\s*Fatiado\s*/, " ").trim();
+  }
+  return productName;
+}
+
+/**
+ * Renders a single picking sheet page onto the jsPDF doc.
+ * Returns the doc (for chaining).
+ */
+function renderPickingPage(doc, autoTable, { order, items, franchiseName, ownerName, phone, address, editedQuantities, weightMap }) {
+  const pw = 210;
+  const m = 8;
+  const usable = pw - m * 2;
+  const shortId = order.id.slice(0, 8).toUpperCase();
+
+  // ── Header ──
+  let y = m;
+  doc.setFontSize(18);
+  doc.setTextColor(185, 28, 28);
+  doc.setFont("helvetica", "bold");
+  const brandLabel = franchiseName ? franchiseName.toUpperCase() : "MAXI MASSAS";
+  doc.text(brandLabel, m, y + 5);
+
+  doc.setFontSize(12);
+  doc.setTextColor(40, 40, 40);
+  doc.text(`PED-${shortId}`, pw - m, y + 5, { align: "right" });
+
+  doc.setFontSize(10);
+  doc.setTextColor(140, 110, 50);
+  doc.setFont("helvetica", "normal");
+  doc.text("FICHA DE SEPARACAO", m, y + 11);
+
+  y += 15;
+  doc.setDrawColor(185, 28, 28);
+  doc.setLineWidth(0.6);
+  doc.line(m, y, pw - m, y);
+  y += 4;
+
+  // ── Card de entrega (endereço + contato) em destaque pro motorista ──
+  // Endereço em primeiro plano (é o que ele usa pra navegar); telefone ao lado.
+  const fmtPhone = formatPhoneBR(phone);
+  const dateL1 = `Pedido: ${fmtDate(order.ordered_at)}`;
+  const dateL2 = `Entrega: ${fmtDate(order.estimated_delivery)}`;
+
+  {
+    const padX = 5;
+    const padY = 4;
+    const eyeH = 3.4;   // altura do rótulo (eyebrow)
+    const addrLH = 5.0; // altura de linha do endereço
+    const ownerLH = 4.8;
+    const rightColW = 60;
+    const leftX = m + padX;
+    const rightX = pw - m - padX - rightColW;
+    const addrW = rightX - 8 - leftX; // gap de 8mm entre colunas
+    // Endereço em branco NUNCA sai calado: o motorista tem que ver que falta cadastro
+    // (foi assim que Leme e Itapevi saíram sem endereço sem ninguém perceber, 23/08/2026).
+    const addrMissing = !String(address || "").trim();
+    // mede a quebra JÁ na fonte de render (11pt bold) — senão a linha estoura a coluna
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    const addrLines = addrMissing
+      ? ["ENDERECO NAO CADASTRADO - confira no painel"]
+      : doc.splitTextToSize(String(address), addrW);
+    const owner = String(ownerName || "").trim();
+
+    // altura do card = maior coluna + respiro
+    const leftH = eyeH + addrLines.length * addrLH + (owner ? ownerLH : 0);
+    const rightH = (fmtPhone ? eyeH + 6 : 0) + 4.2 + 4.2; // tel + 2 datas
+    const cardH = Math.max(leftH, rightH) + padY * 2;
+
+    // fundo + barra de acento
+    doc.setFillColor(247, 245, 242);
+    doc.roundedRect(m, y, usable, cardH, 1.8, 1.8, "F");
+    doc.setFillColor(185, 28, 28);
+    doc.rect(m, y, 1.6, cardH, "F");
+
+    // ── Coluna esquerda: ENDEREÇO (destaque) + quem recebe ──
+    let ly = y + padY + 2.4;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(6.8);
+    doc.setTextColor(185, 28, 28);
+    doc.text("ENDERECO DE ENTREGA", leftX, ly);
+    ly += eyeH;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    if (addrMissing) doc.setTextColor(185, 28, 28);
+    else doc.setTextColor(30, 30, 30);
+    doc.text(addrLines, leftX, ly + 0.8);
+    ly += addrLines.length * addrLH;
+    if (owner) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(90, 90, 90);
+      doc.text(`RECEBER COM: ${owner}`, leftX, ly + 0.6);
+    }
+
+    // ── Coluna direita: TELEFONE + datas ──
+    let ry = y + padY + 2.4;
+    if (fmtPhone) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.8);
+      doc.setTextColor(185, 28, 28);
+      doc.text("TEL. RESPONSAVEL", rightX, ry);
+      ry += eyeH;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.setTextColor(30, 30, 30);
+      doc.text(fmtPhone, rightX, ry + 1.2);
+      ry += 8;
+    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(115, 115, 115);
+    doc.text(dateL1, rightX, ry);
+    ry += 4.2;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(70, 70, 70);
+    doc.text(dateL2, rightX, ry);
+
+    y += cardH + 3;
+  }
+
+  // ── Items Table ──
+  const groups = groupItems(items, editedQuantities);
+  const tableBody = [];
+  let totalUnits = 0;
+  let totalItems = 0;
+  let totalValue = 0;
+  let totalWeight = 0;
+
+  groups.forEach((group) => {
+    tableBody.push([
+      { content: group.label, colSpan: 5, styles: { fillColor: [230, 230, 230], fontStyle: "bold", fontSize: 7.5, textColor: [100, 100, 100], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
+    ]);
+
+    group.items.forEach((item) => {
+      totalItems++;
+      totalUnits += emUnidadesDePedido(item.product_name, item.finalQty);
+      totalValue += item.finalQty * Number(item.unit_price || 0);
+      const w = getItemWeightKg(item, weightMap);
+      if (w != null) totalWeight += item.finalQty * w;
+      tableBody.push([
+        "",
+        getDisplayName(item.product_name) || "---",
+        qtdTexto(item.product_name, item.finalQty),
+        "",
+        fmtBRL(precoDaUnidade(item.product_name, item.unit_price)),
+      ]);
+    });
+  });
+
+  const chk = 3.5;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["SEP", "PRODUTO", "QTD", "CONF", "UNIT"]],
+    body: tableBody,
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 1, bottom: 1, left: 2, right: 2 },
+      lineColor: [180, 180, 180],
+      lineWidth: 0.15,
+      textColor: [30, 30, 30],
+    },
+    headStyles: {
+      fillColor: [185, 28, 28],
+      textColor: 255,
+      fontStyle: "bold",
+      fontSize: 8,
+      halign: "center",
+      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
+    },
+    columnStyles: {
+      0: { cellWidth: 14, halign: "center" },
+      1: { cellWidth: usable - 14 - 16 - 14 - 18, fontSize: 10 },
+      2: { cellWidth: 16, halign: "center", fontStyle: "bold", fontSize: 10 },
+      3: { cellWidth: 14, halign: "center" },
+      4: { cellWidth: 18, halign: "right", fontSize: 10 },
+    },
+    alternateRowStyles: { fillColor: [248, 247, 247] },
+    showHead: "everyPage",
+    margin: { left: m, right: m },
+    didDrawCell: (data) => {
+      if (data.section !== "body") return;
+      if (data.column.index !== 0 && data.column.index !== 3) return;
+      const raw = data.row.raw;
+      if (Array.isArray(raw) && raw.length === 1 && raw[0]?.colSpan) return;
+      const cx = data.cell.x + data.cell.width / 2;
+      const cy = data.cell.y + data.cell.height / 2;
+      doc.setDrawColor(120, 120, 120);
+      doc.setLineWidth(0.25);
+      doc.rect(cx - chk / 2, cy - chk / 2, chk, chk);
+    },
+  });
+
+  // ── Footer ──
+  const tableEnd = doc.lastAutoTable || doc.previousAutoTable;
+  let fy = (tableEnd ? tableEnd.finalY : y + 20) + 4;
+
+  doc.setDrawColor(185, 28, 28);
+  doc.setLineWidth(0.4);
+  doc.line(m, fy, pw - m, fy);
+  fy += 4;
+
+  doc.setFontSize(8);
+  doc.setTextColor(40, 40, 40);
+  doc.setFont("helvetica", "normal");
+  let summary = `${totalItems} itens  |  ${totalUnits} vol  |  ${fmtBRL(totalValue)}`;
+  if (totalWeight > 0) summary += `  |  Peso total: ${formatWeightKg(totalWeight)}`;
+  if (order.freight_cost && Number(order.freight_cost) > 0) {
+    summary += `  |  Frete: ${fmtBRL(order.freight_cost)}  |  Total: ${fmtBRL(totalValue + Number(order.freight_cost))}`;
+  }
+  doc.text(summary, m, fy);
+
+  if (order.notes) {
+    fy += 4;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text(doc.splitTextToSize(`Obs: ${order.notes}`, usable), m, fy);
+    fy += 4;
+  }
+
+  // Signatures
+  fy += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(80, 80, 80);
+  doc.setFontSize(7);
+  doc.setDrawColor(120, 120, 120);
+  doc.setLineWidth(0.2);
+
+  const sig1 = m + 5;
+  const sig2 = pw / 2 + 10;
+  const sw = 55;
+
+  doc.line(sig1, fy, sig1 + sw, fy);
+  doc.text("Separado por", sig1, fy + 4);
+
+  doc.line(sig2, fy, sig2 + sw, fy);
+  doc.text("Conferido por", sig2, fy + 4);
+}
+
+/**
+ * Renders the consolidated summary page for bulk picking sheets.
+ */
+function renderSummaryPage(doc, autoTable, ordersWithItems, weightMap) {
+  const pw = 210;
+  const m = 8;
+  const usable = pw - m * 2;
+
+  // ── Header ──
+  let y = m;
+  doc.setFontSize(16);
+  doc.setTextColor(185, 28, 28);
+  doc.setFont("helvetica", "bold");
+  doc.text("MAXI MASSAS", m, y + 5);
+
+  doc.setFontSize(10);
+  doc.setTextColor(140, 110, 50);
+  doc.setFont("helvetica", "normal");
+  doc.text("RESUMO CONSOLIDADO", m, y + 11);
+
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text(format(new Date(), "dd/MM/yyyy", { locale: ptBR }), pw - m, y + 5, { align: "right" });
+
+  y += 15;
+  doc.setDrawColor(185, 28, 28);
+  doc.setLineWidth(0.6);
+  doc.line(m, y, pw - m, y);
+  y += 4;
+
+  // ── Franchise list ──
+  const franchiseNames = [...new Set(ordersWithItems.map((o) => o.franchiseName))];
+  doc.setFontSize(8);
+  doc.setTextColor(60, 60, 60);
+  doc.setFont("helvetica", "normal");
+  doc.text(`${ordersWithItems.length} pedidos  |  ${franchiseNames.join(", ")}`, m, y);
+  y += 5;
+
+  // ── Aggregate all items by product ──
+  const productMap = {};
+  ordersWithItems.forEach(({ items }) => {
+    items.forEach((item) => {
+      const qty = Number(item.quantity ?? 0);
+      if (qty <= 0) return;
+      const key = (item.product_name || "").trim().toLowerCase();
+      if (!productMap[key]) {
+        productMap[key] = { product_name: item.product_name, unit_price: Number(item.unit_price || 0), totalQty: 0 };
+      }
+      productMap[key].totalQty += qty;
+    });
+  });
+
+  // Group using same logic as individual sheets
+  const aggregatedItems = Object.values(productMap).map((p) => ({
+    ...p,
+    id: p.product_name,
+    quantity: p.totalQty,
+  }));
+  const groups = groupItems(aggregatedItems, null);
+
+  // ── Table ──
+  const tableBody = [];
+  let grandTotalUnits = 0;
+  let grandTotalItems = 0;
+  let grandTotalValue = 0;
+  let grandTotalWeight = 0;
+
+  groups.forEach((group) => {
+    tableBody.push([
+      { content: group.label, colSpan: 4, styles: { fillColor: [230, 230, 230], fontStyle: "bold", fontSize: 7.5, textColor: [100, 100, 100], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
+    ]);
+
+    group.items.forEach((item) => {
+      grandTotalItems++;
+      grandTotalUnits += emUnidadesDePedido(item.product_name, item.finalQty);
+      const lineValue = item.finalQty * Number(item.unit_price || 0);
+      grandTotalValue += lineValue;
+      const w = getItemWeightKg(item, weightMap);
+      if (w != null) grandTotalWeight += item.finalQty * w;
+      tableBody.push([
+        getDisplayName(item.product_name) || "---",
+        qtdTexto(item.product_name, item.finalQty),
+        fmtBRL(precoDaUnidade(item.product_name, item.unit_price)),
+        fmtBRL(lineValue),
+      ]);
+    });
+  });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["PRODUTO", "QTD TOTAL", "UNIT", "VALOR"]],
+    body: tableBody,
+    styles: {
+      fontSize: 9,
+      cellPadding: { top: 1.2, bottom: 1.2, left: 2, right: 2 },
+      lineColor: [180, 180, 180],
+      lineWidth: 0.15,
+      textColor: [30, 30, 30],
+    },
+    headStyles: {
+      fillColor: [185, 28, 28],
+      textColor: 255,
+      fontStyle: "bold",
+      fontSize: 8,
+      halign: "center",
+      cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 },
+    },
+    columnStyles: {
+      0: { cellWidth: usable - 22 - 22 - 26, fontSize: 10 },
+      1: { cellWidth: 22, halign: "center", fontStyle: "bold", fontSize: 10 },
+      2: { cellWidth: 22, halign: "right", fontSize: 9 },
+      3: { cellWidth: 26, halign: "right", fontStyle: "bold", fontSize: 10 },
+    },
+    alternateRowStyles: { fillColor: [248, 247, 247] },
+    showHead: "everyPage",
+    margin: { left: m, right: m },
+  });
+
+  // ── Grand totals ──
+  const tableEnd = doc.lastAutoTable || doc.previousAutoTable;
+  let fy = (tableEnd ? tableEnd.finalY : y + 20) + 4;
+
+  doc.setDrawColor(185, 28, 28);
+  doc.setLineWidth(0.6);
+  doc.line(m, fy, pw - m, fy);
+  fy += 5;
+
+  doc.setFontSize(11);
+  doc.setTextColor(30, 30, 30);
+  doc.setFont("helvetica", "bold");
+  doc.text(`TOTAL:  ${grandTotalItems} produtos  |  ${grandTotalUnits} volumes  |  ${fmtBRL(grandTotalValue)}`, m, fy);
+
+  if (grandTotalWeight > 0) {
+    fy += 5;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(185, 28, 28);
+    doc.text(`PESO TOTAL DA CARGA: ${formatWeightKg(grandTotalWeight)}`, m, fy);
+    doc.setTextColor(30, 30, 30);
+  }
+
+  // Freight totals
+  const totalFreight = ordersWithItems.reduce((sum, { order }) => sum + Number(order.freight_cost || 0), 0);
+  if (totalFreight > 0) {
+    fy += 5;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Frete total: ${fmtBRL(totalFreight)}  |  Total geral: ${fmtBRL(grandTotalValue + totalFreight)}`, m, fy);
+  }
+}
+
+async function loadPdfLibs() {
+  const [jspdfModule, autoTableModule] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const jsPDF = jspdfModule.jsPDF || jspdfModule.default;
+  const autoTable = autoTableModule.default;
+  return { jsPDF, autoTable };
+}
+
+/**
+ * Compact A4 picking sheet — designed to fit on a single page.
+ */
+export async function generatePickingSheet({ order, items, franchiseName, ownerName, phone, address, editedQuantities, weightMap }) {
+  const { jsPDF, autoTable } = await loadPdfLibs();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  renderPickingPage(doc, autoTable, { order, items, franchiseName, ownerName, phone, address, editedQuantities, weightMap });
+
+  const dateStr = format(new Date(), "yyyyMMdd");
+  const shortId = order.id.slice(0, 8).toUpperCase();
+  doc.save(`Ficha_Separacao_${shortId}_${dateStr}.pdf`);
+}
+
+/**
+ * Bulk picking sheets — one page per order + consolidated summary page.
+ */
+export async function generateBulkPickingSheet(ordersWithItems, weightMap) {
+  const { jsPDF, autoTable } = await loadPdfLibs();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  ordersWithItems.forEach((data, idx) => {
+    if (idx > 0) doc.addPage();
+    renderPickingPage(doc, autoTable, { order: data.order, items: data.items, franchiseName: data.franchiseName, ownerName: data.ownerName, phone: data.phone, address: data.address, weightMap });
+  });
+
+  // Consolidated summary as last page
+  doc.addPage();
+  renderSummaryPage(doc, autoTable, ordersWithItems, weightMap);
+
+  const dateStr = format(new Date(), "yyyyMMdd");
+  doc.save(`Fichas_Separacao_${dateStr}.pdf`);
+}
+
+function fmtAgoraBrasilia(now) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+    }).format(now).replace(",", "");
+  } catch {
+    return format(now, "dd/MM/yyyy HH:mm", { locale: ptBR });
+  }
+}
+
+/**
+ * Pedido à fábrica impresso pela UNIDADE para conferir a chegada (S14.4, 28/09/2026 — pedido da
+ * franqueada de Ubatuba). Mesmo agrupamento/nomes da ficha de separação do admin; duas versões:
+ *   comValores=false -> "só quantidades": NENHUM valor em reais (quem recebe confere sem ver preço)
+ *   comValores=true  -> com preço unitário, total por linha e total do pedido (controle dela)
+ * A coluna RECEBIDO fica em branco para anotar à mão (vira a tela "Chegou meu pedido?" na S15).
+ */
+function renderConferencePage(doc, autoTable, { order, items, franchiseName, comValores, weightMap, now }) {
+  const pw = 210;
+  const m = 10;
+  const usable = pw - m * 2;
+  const shortId = String(order.id || "").slice(0, 8).toUpperCase();
+
+  // ── Header ──
+  let y = m;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.setTextColor(30, 30, 30);
+  doc.text("PEDIDO A FABRICA - CONFERENCIA", m, y + 5);
+  doc.setFontSize(11);
+  doc.text(`PED-${shortId}`, pw - m, y + 5, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  doc.text(franchiseName ? String(franchiseName) : "Maxi Massas", m, y + 11);
+  doc.text(`Feito em ${fmtDate(order.ordered_at)}`, pw - m, y + 11, { align: "right" });
+  if (order.estimated_delivery) {
+    doc.text(`Previsao de entrega: ${fmtDate(order.estimated_delivery)}`, pw - m, y + 16, { align: "right" });
+  }
+
+  y += 20;
+  doc.setDrawColor(30, 30, 30);
+  doc.setLineWidth(0.5);
+  doc.line(m, y, pw - m, y);
+  y += 4;
+
+  // ── Tabela ──
+  const groups = groupItems(items, null);
+  const nCols = comValores ? 6 : 4;
+  const body = [];
+  let totalItems = 0;
+  let totalUnits = 0;
+  let totalValue = 0;
+  let totalWeight = 0;
+
+  groups.forEach((group) => {
+    body.push([
+      { content: group.label, colSpan: nCols, styles: { fillColor: [235, 235, 235], fontStyle: "bold", fontSize: 7.5, textColor: [80, 80, 80], cellPadding: { top: 0.8, bottom: 0.8, left: 2, right: 2 } } },
+    ]);
+    group.items.forEach((item) => {
+      totalItems++;
+      totalUnits += emUnidadesDePedido(item.product_name, item.finalQty);
+      const unit = Number(item.unit_price || 0);
+      totalValue += item.finalQty * unit;
+      const w = getItemWeightKg(item, weightMap);
+      if (w != null) totalWeight += item.finalQty * w;
+      const row = ["", getDisplayName(item.product_name) || "---", qtdTexto(item.product_name, item.finalQty), ""];
+      if (comValores) row.push(fmtBRL(precoDaUnidade(item.product_name, unit)), fmtBRL(item.finalQty * unit));
+      body.push(row);
+    });
+  });
+
+  const head = comValores
+    ? [["OK", "PRODUTO", "PEDIDO", "RECEBIDO", "UNIT", "TOTAL"]]
+    : [["OK", "PRODUTO", "PEDIDO", "RECEBIDO"]];
+  const columnStyles = comValores
+    ? {
+        0: { cellWidth: 11, halign: "center" },
+        1: { cellWidth: usable - 11 - 18 - 22 - 20 - 24, fontSize: 10 },
+        2: { cellWidth: 18, halign: "center", fontStyle: "bold", fontSize: 10.5 },
+        3: { cellWidth: 22, halign: "center" },
+        4: { cellWidth: 20, halign: "right", fontSize: 9 },
+        5: { cellWidth: 24, halign: "right", fontSize: 9.5 },
+      }
+    : {
+        0: { cellWidth: 11, halign: "center" },
+        1: { cellWidth: usable - 11 - 22 - 28, fontSize: 10.5 },
+        2: { cellWidth: 22, halign: "center", fontStyle: "bold", fontSize: 11 },
+        3: { cellWidth: 28, halign: "center" },
+      };
+
+  const chk = 3.5;
+  autoTable(doc, {
+    startY: y,
+    head,
+    body,
+    theme: "grid",
+    styles: { fontSize: 9.5, cellPadding: { top: 1.6, bottom: 1.6, left: 2, right: 2 }, lineColor: [60, 60, 60], lineWidth: 0.2, textColor: [20, 20, 20] },
+    headStyles: { fillColor: [225, 225, 225], textColor: [20, 20, 20], fontStyle: "bold", fontSize: 8.5, halign: "center" },
+    columnStyles,
+    showHead: "everyPage",
+    margin: { left: m, right: m },
+    didDrawCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 0) return;
+      const raw = data.row.raw;
+      if (Array.isArray(raw) && raw.length === 1 && raw[0]?.colSpan) return;
+      const cx = data.cell.x + data.cell.width / 2;
+      const cy = data.cell.y + data.cell.height / 2;
+      doc.setDrawColor(90, 90, 90);
+      doc.setLineWidth(0.25);
+      doc.rect(cx - chk / 2, cy - chk / 2, chk, chk);
+    },
+  });
+
+  // ── Resumo ──
+  const tableEnd = doc.lastAutoTable || doc.previousAutoTable;
+  let fy = (tableEnd ? tableEnd.finalY : y + 20) + 6;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10.5);
+  doc.setTextColor(20, 20, 20);
+  let resumo = `${totalItems} ${totalItems === 1 ? "produto" : "produtos"}  |  ${totalUnits} vol`;
+  if (totalWeight > 0) resumo += `  |  Peso total: ${formatWeightKg(totalWeight)}`;
+  doc.text(resumo, m, fy);
+
+  if (comValores) {
+    fy += 5.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    // null = a fábrica ainda não lançou; 0 é lançado de verdade (acréscimo/retirada) e soma no total.
+    const freteBruto = order.freight_cost;
+    const freteLancado = freteBruto !== null && freteBruto !== undefined && freteBruto !== ""
+      && Number.isFinite(Number(freteBruto));
+    let valores = `Produtos: ${fmtBRL(totalValue)}`;
+    if (freteLancado) {
+      const frete = Number(freteBruto);
+      valores += `  |  Frete: ${fmtBRL(frete)}  |  Total: ${fmtBRL(totalValue + frete)}`;
+    } else {
+      valores += "  |  Frete: a confirmar pela fabrica";
+    }
+    doc.text(valores, m, fy);
+  }
+
+  // Observação é texto livre (pode ter valor em reais): só sai na versão COM valores (P3, ponto 6).
+  if (comValores && order.notes) {
+    fy += 6;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8.5);
+    doc.setTextColor(70, 70, 70);
+    const linhas = doc.splitTextToSize(`Obs: ${order.notes}`, usable);
+    doc.text(linhas, m, fy);
+    fy += (linhas.length - 1) * 4;
+  }
+
+  // ── Conferência à mão ──
+  fy += 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(30, 30, 30);
+  doc.setDrawColor(60, 60, 60);
+  doc.setLineWidth(0.2);
+  const col2 = pw / 2 + 4;
+  doc.text("Faltou ou veio a mais:", m, fy);
+  doc.text("Conferido por:", col2, fy);
+  doc.line(m, fy + 8, pw / 2 - 6, fy + 8);
+  doc.line(m, fy + 16, pw / 2 - 6, fy + 16);
+  doc.line(col2, fy + 8, pw - m, fy + 8);
+  doc.text("Data: ____ / ____ / ________", col2, fy + 16);
+
+  // ── Rodapé ──
+  doc.setFontSize(7.5);
+  doc.setTextColor(90, 90, 90);
+  const versao = comValores ? "Com valores (controle da unidade)." : "Sem valores (versao para conferencia).";
+  doc.text(`${versao} Impresso pelo app Maxi em ${fmtAgoraBrasilia(now || new Date())}.`, m, 287);
+}
+
+/** Monta o PDF de conferência e devolve o doc (sem salvar) — usado pelo teste. */
+export async function buildConferenceSheet({ order, items, franchiseName, comValores = false, weightMap, now }) {
+  const { jsPDF, autoTable } = await loadPdfLibs();
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  renderConferencePage(doc, autoTable, { order, items, franchiseName, comValores: comValores === true, weightMap, now });
+  return doc;
+}
+
+/** Imprime (baixa) o pedido à fábrica da unidade para conferir a chegada. */
+export async function generateConferenceSheet(args) {
+  const doc = await buildConferenceSheet(args);
+  const dateStr = format(new Date(), "yyyyMMdd");
+  const shortId = String(args.order?.id || "").slice(0, 8).toUpperCase();
+  const sufixo = args.comValores === true ? "com_valores" : "so_quantidades";
+  doc.save(`Pedido_${shortId}_${sufixo}_${dateStr}.pdf`);
+}

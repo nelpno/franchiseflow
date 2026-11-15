@@ -1,0 +1,160 @@
+import { addMonths } from "date-fns";
+
+/**
+ * Franchise utilities — centraliza lógica de filtro e lookup de franquias.
+ * Resolve a inconsistência UUID vs evolution_instance_id.
+ */
+
+/**
+ * Filtra franquias que o usuário pode acessar.
+ * Verifica tanto UUID (id) quanto evolution_instance_id,
+ * porque managed_franchise_ids pode conter qualquer um dos dois.
+ */
+export function getAvailableFranchises(franchises, currentUser) {
+  if (!currentUser || !franchises) return [];
+  if (currentUser.role === "admin" || currentUser.role === "manager") return franchises;
+
+  const ids = currentUser.managed_franchise_ids || [];
+  return franchises.filter(
+    (f) => ids.includes(f.id) || ids.includes(f.evolution_instance_id)
+  );
+}
+
+/**
+ * Encontra a franquia principal do usuário (primeira da lista).
+ *
+ * ⚠️ Só use quando o usuário tem UMA franquia. Para telas, use
+ * `resolveActiveFranchise` — "a primeira da lista" mostra a unidade errada
+ * para quem gerencia duas (a ordem vem do banco, não da escolha do usuário).
+ */
+export function getPrimaryFranchise(franchises, currentUser) {
+  const available = getAvailableFranchises(franchises, currentUser);
+  return available[0] || null;
+}
+
+/**
+ * Resolve a franquia ATIVA de uma tela: a que está no seletor global do topo
+ * (`selectedFranchise` do AuthContext), validada contra o que o usuário pode ver.
+ *
+ * Com 2+ franquias NUNCA cai na primeira da lista. Devolver `available[0]`
+ * enquanto a seleção não chegou faz a tela abrir a unidade errada em silêncio —
+ * foi o bug de 05/08/2026 (Emerson, Araras + Limeira na mesma conta): o topo
+ * dizia "Araras" e "Meu Vendedor"/"Meus Clientes" mostravam Limeira.
+ *
+ * Retorna `null` = "ainda não dá pra saber". Quem chama deve esperar (loading),
+ * não adivinhar. Na prática o Layout preenche a seleção logo após o primeiro
+ * carregamento, então o null é transitório.
+ */
+export function resolveActiveFranchise(franchises, currentUser, selectedFranchise) {
+  const available = getAvailableFranchises(franchises, currentUser);
+  if (available.length === 0) return null;
+
+  if (selectedFranchise) {
+    // Casa por id OU evolution_instance_id: o objeto salvo pode vir de outro
+    // carregamento (localStorage) e não ser a mesma referência da lista atual.
+    const match = available.find(
+      (f) =>
+        (selectedFranchise.id && f.id === selectedFranchise.id) ||
+        (selectedFranchise.evolution_instance_id &&
+          f.evolution_instance_id === selectedFranchise.evolution_instance_id)
+    );
+    if (match) return match;
+  }
+
+  return available.length === 1 ? available[0] : null;
+}
+
+/**
+ * Labels amigáveis para métodos de pagamento.
+ */
+export const PAYMENT_METHODS = [
+  { value: "pix", label: "PIX", icon: "qr_code_2" },
+  { value: "credit", label: "Crédito", icon: "credit_card" },
+  { value: "debit", label: "Débito", icon: "credit_card" },
+  { value: "nfc", label: "Aproximação/NFC", icon: "contactless" },
+  { value: "payment_link", label: "Link de Pagamento", icon: "link" },
+  { value: "meal_voucher", label: "Vale-refeição (VR/Sodexo)", icon: "restaurant" },
+  { value: "cash", label: "Dinheiro", icon: "payments" },
+];
+
+// Legacy mapping: old "card_machine" maps to credit+debit for backward compat
+export const LEGACY_PAYMENT_MAP = { card_machine: ["credit", "debit"] };
+
+/**
+ * Returns the human-readable label for a payment_method value.
+ * Falls back to "—" when the value is unknown or empty.
+ */
+export function getPaymentMethodLabel(value) {
+  if (!value) return "—";
+  // O robô ainda grava "card_machine" (maquininha na retirada/entrega): 141 vendas em 30 dias (06/10/2026).
+  if (value === "card_machine") return "Maquininha";
+  return PAYMENT_METHODS.find((m) => m.value === value)?.label || value;
+}
+
+/**
+ * Labels para tipo de chave PIX.
+ */
+export const PIX_KEY_TYPES = [
+  { value: "cpf", label: "CPF" },
+  { value: "cnpj", label: "CNPJ" },
+  { value: "phone", label: "Telefone" },
+  { value: "email", label: "E-mail" },
+  { value: "random", label: "Chave aleatória" },
+];
+
+/**
+ * Nome padronizado de franquia.
+ * - compact (default): retorna string — "Bauru", "Itápolis Centro"
+ * - full: retorna { primary, owner, city } para layouts detalhados
+ *
+ * Strip automático de "Maxi Massas" do franchise_name (cadastrado com prefixo).
+ * Fallback: config.franchise_name → franchise.city → franchise.owner_name → "Franquia"
+ */
+function stripBrandPrefix(name) {
+  if (!name) return name;
+  return name.replace(/^Maxi\s*Massas\s*/i, "").trim() || name;
+}
+
+export function getFranchiseDisplayName(franchise, config, mode = "compact") {
+  const raw =
+    config?.franchise_name || franchise?.city || franchise?.owner_name || "Franquia";
+  const primary = stripBrandPrefix(raw);
+
+  if (mode === "compact") return primary;
+
+  return {
+    primary,
+    owner: franchise?.owner_name || "",
+    city: franchise?.city || "",
+  };
+}
+
+/**
+ * Dias da semana para chips.
+ */
+export const WEEKDAYS = [
+  { value: "seg", label: "Seg" },
+  { value: "ter", label: "Ter" },
+  { value: "qua", label: "Qua" },
+  { value: "qui", label: "Qui" },
+  { value: "sex", label: "Sex" },
+  { value: "sab", label: "Sáb" },
+  { value: "dom", label: "Dom" },
+];
+
+// Marketing — taxa de imposto sobre valor arrecadado (14%)
+export const MARKETING_TAX_RATE = 0.14;
+export const marketingLiquid = (amount) => amount * (1 - MARKETING_TAX_RATE);
+// Para MOSTRAR na tela. `MARKETING_TAX_RATE * 100` em ponto flutuante da
+// 14.000000000000002, e isso estava impresso em duas telas de marketing.
+export const MARKETING_TAX_PCT = Math.round(MARKETING_TAX_RATE * 1000) / 10;
+
+/**
+ * Mês-alvo de marketing: últimos 5 dias do mês → próximo mês, senão mês atual.
+ * Retorna Date — caller formata com format(date, "yyyy-MM").
+ */
+export function getMarketingTargetMonth(now = new Date()) {
+  const day = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return day > daysInMonth - 5 ? addMonths(now, 1) : now;
+}

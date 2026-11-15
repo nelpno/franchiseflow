@@ -1,0 +1,676 @@
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { MarketingPayment, MarketingMetaDeposit } from "@/entities/all";
+import { safeHref } from "@/lib/safeHref";
+import MarketingRetornoPanel from "@/components/marketing/MarketingRetornoPanel";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { supabase } from "@/api/supabaseClient";
+import { useAuth } from "@/lib/AuthContext";
+import { format, addMonths } from "date-fns";
+import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
+import { ptBR } from "date-fns/locale";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
+import { formatBRL } from "@/lib/formatters";
+import { MARKETING_TAX_PCT, marketingLiquid } from "@/lib/franchiseUtils";
+import MetaDepositDialog from "./MetaDepositDialog";
+import { FranchiseConfiguration } from "@/entities/all";
+
+function capitalizeFirst(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function generateMonthOptions() {
+  const options = [];
+  const now = new Date();
+  for (let i = -3; i <= 1; i++) {
+    const d = addMonths(now, i);
+    options.push({
+      value: format(d, "yyyy-MM"),
+      label: capitalizeFirst(format(d, "MMMM yyyy", { locale: ptBR })),
+    });
+  }
+  return options;
+}
+
+// Tokens do padrão (R1: nada de hex cru) — cada status casa com uma classe pronta.
+const STATUS_CONFIG = {
+  confirmed: { label: "Confirmado", classe: "text-ok-ink bg-ok/10", icon: "check_circle" },
+  pending: { label: "Pendente", classe: "text-brand-gold-ink bg-brand-gold-soft", icon: "schedule" },
+  rejected: { label: "Recusado", classe: "text-err bg-err/10", icon: "error" },
+  not_paid: { label: "Nao pagou", classe: "text-err bg-err/10", icon: "cancel" },
+};
+
+// `onChanged` (opcional): avisa quem mostra este painel dentro de "Mais ações" — o
+// VerbaAlvoPanel passa a própria recarga (overview + filas), senão confirmar/recusar/cancelar
+// por aqui deixava as filas do painel principal congeladas (achado Codex 26/09).
+// `modoHistorico` (opcional): usado dentro da VerbaAlvoPanel — "Arrecadado" e "Não pagaram"
+// já estão no painel principal (achado "media" 26/09: os dois lugares mostravam o mesmo
+// número), então aqui escondemos esses dois e o filtro correspondente, deixando só o que É
+// exclusivo daqui: depósitos no Meta, retorno de anúncio, falta subir e cancelar pagamento.
+export default function MarketingPaymentsAdmin({ franchises = [], onChanged, modoHistorico = false }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const mountedRef = useRef(true);
+  const [loading, setLoading] = useState(true);
+  const [payments, setPayments] = useState([]);
+  const [deposits, setDeposits] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(
+    () => format(getMarketingTargetMonth(), "yyyy-MM")
+  );
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [showDepositDialog, setShowDepositDialog] = useState(false);
+  const [rejectDialog, setRejectDialog] = useState(null); // { paymentId }
+  const [rejectReason, setRejectReason] = useState("");
+  const [cancelDialog, setCancelDialog] = useState(null); // { payment }
+  const [actionLoading, setActionLoading] = useState(null);
+  const [configs, setConfigs] = useState([]);
+
+  const monthOptions = generateMonthOptions();
+
+  // Map evolution_instance_id → franchise_name from configs
+  const configNameMap = React.useMemo(() => {
+    const map = {};
+    configs.forEach((c) => {
+      if (c.franchise_evolution_instance_id && c.franchise_name) {
+        map[c.franchise_evolution_instance_id] = c.franchise_name;
+      }
+    });
+    return map;
+  }, [configs]);
+
+  const getFranchiseDisplayName = useCallback((f) => {
+    return configNameMap[f.evolution_instance_id] || `Maxi Massas ${f.city || ""}`.trim();
+  }, [configNameMap]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [paymentsResult, depositsResult, configsResult] = await Promise.allSettled([
+        MarketingPayment.filter({ reference_month: selectedMonth }, "created_at", 200),
+        MarketingMetaDeposit.filter({ reference_month: selectedMonth }, "deposit_date", 100),
+        FranchiseConfiguration.list("franchise_name", 200),
+      ]);
+      if (!mountedRef.current) return;
+      setPayments(paymentsResult.status === "fulfilled" ? paymentsResult.value : []);
+      setDeposits(depositsResult.status === "fulfilled" ? depositsResult.value : []);
+      setConfigs(configsResult.status === "fulfilled" ? configsResult.value : []);
+    } catch (err) {
+      console.error("Erro ao carregar dados investimento:", err);
+      toast.error("Erro ao carregar dados de investimento");
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    loadData();
+    return () => { mountedRef.current = false; };
+  }, [loadData]);
+
+  // ─── Calculos ───
+  const confirmedPayments = payments.filter((p) => p.status === "confirmed");
+  const totalCollected = confirmedPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+  const totalLiquid = marketingLiquid(totalCollected);
+  const totalDeposited = deposits.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+  const balance = totalCollected - totalDeposited;
+  const paidCount = payments.filter((p) => p.status !== "rejected" && p.kind !== "complemento").length;
+
+  // A fila do mes: pagou e a campanha AINDA nao foi subida no Meta.
+  //
+  // "Confirmar o pagamento" e "subir a campanha" viraram dois momentos diferentes e o banco
+  // so tinha um campo para os dois. Medido em 08/09/2026: 39 das 55 confirmacoes de setembro
+  // cairam no MESMO minuto que outra — confirmacao em lote, e subir campanha no Meta nao leva
+  // segundos. Entao `confirmed` significa "recebi o pagamento", e quem responde "ja subi?" e
+  // o campaign_raised_at.
+  const subidas = confirmedPayments.filter((p) => p.campaign_raised_at);
+  const faltaSubir = confirmedPayments.filter((p) => !p.campaign_raised_at);
+  const liquidoFaltaSubir = marketingLiquid(
+    faltaSubir.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0)
+  );
+  const naoPagaramCount = franchises.length - paidCount;
+
+  // ─── Merge franquias + pagamentos ───
+  const franchiseRows = franchises.map((f) => {
+    const payment = payments.find((p) => p.franchise_id === f.evolution_instance_id && p.kind !== "complemento");
+    let status = "not_paid";
+    if (payment) status = payment.status;
+    // `subiu` NAO e um status: e uma segunda dimensao sobre o pagamento confirmado. Manter
+    // separado evita repetir o erro de um campo so respondendo duas perguntas.
+    const subiu = Boolean(payment?.campaign_raised_at);
+    return { franchise: f, payment, status, subiu };
+  });
+  // Valor adicional do mês (kind 'complemento', 03/10/2026): linha própria, para confirmar e
+  // marcar a campanha separado do mensal.
+  for (const f of franchises) {
+    for (const p of payments) {
+      if (p.franchise_id !== f.evolution_instance_id || p.kind !== "complemento") continue;
+      franchiseRows.push({ franchise: f, payment: p, status: p.status, subiu: Boolean(p.campaign_raised_at), adicional: true });
+    }
+  }
+
+  // Sort: pending > confirmed > not_paid > rejected
+  const statusOrder = { pending: 0, confirmed: 1, not_paid: 2, rejected: 3 };
+  franchiseRows.sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9));
+
+  // Filter
+  const filteredRows =
+    filterStatus === "all"
+      ? franchiseRows
+      : filterStatus === "falta_subir"
+        ? franchiseRows.filter((r) => r.status === "confirmed" && !r.subiu)
+        : franchiseRows.filter((r) => r.status === filterStatus);
+
+  // ─── Acoes ───
+  const handleConfirm = async (paymentId) => {
+    setActionLoading(paymentId);
+    try {
+      await MarketingPayment.update(paymentId, { status: "confirmed", rejection_reason: null });
+      toast.success("Pagamento confirmado!");
+      await loadData();
+      if (onChanged) await onChanged();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Erro ao confirmar pagamento."));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleToggleSubiu = async (payment) => {
+    setActionLoading(payment.id);
+    const jaSubiu = Boolean(payment.campaign_raised_at);
+    try {
+      await MarketingPayment.update(payment.id, {
+        campaign_raised_at: jaSubiu ? null : new Date().toISOString(),
+        campaign_raised_by: jaSubiu ? null : user?.id || null,
+      });
+      toast.success(jaSubiu ? "Voltou para a fila." : "Campanha marcada como subida.");
+      await loadData();
+      if (onChanged) await onChanged();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Nao foi possivel marcar a campanha."));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectDialog) return;
+    setActionLoading(rejectDialog.paymentId);
+    try {
+      await MarketingPayment.update(rejectDialog.paymentId, {
+        status: "rejected",
+        rejection_reason: rejectReason.trim() || null,
+      });
+      toast.success("Pagamento recusado");
+      setRejectDialog(null);
+      setRejectReason("");
+      await loadData();
+      if (onChanged) await onChanged();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Erro ao recusar pagamento."));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancelDialog?.payment) return;
+    const payment = cancelDialog.payment;
+    setActionLoading(payment.id);
+    try {
+      // 1. Apaga o payment primeiro — trigger AFTER DELETE remove a expense vinculada.
+      await MarketingPayment.delete(payment.id);
+
+      // 2. Tenta apagar o comprovante. Falha aqui só deixa arquivo órfão; não bloquear UX.
+      if (payment.proof_url) {
+        try {
+          const marker = "/marketing-comprovantes/";
+          const idx = payment.proof_url.indexOf(marker);
+          if (idx !== -1) {
+            const path = decodeURIComponent(
+              payment.proof_url.slice(idx + marker.length).split("?")[0]
+            );
+            const { error: storageError } = await supabase.storage
+              .from("marketing-comprovantes")
+              .remove([path]);
+            if (storageError) console.warn("Storage remove falhou:", storageError);
+          }
+        } catch (storageErr) {
+          console.warn("Storage remove exception:", storageErr);
+        }
+      }
+
+      toast.success("Pagamento cancelado. Franquia pode lançar novamente.");
+      setCancelDialog(null);
+      await loadData();
+      if (onChanged) await onChanged();
+    } catch (err) {
+      toast.error(safeErrorMessage(err, "Erro ao cancelar pagamento"));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const monthLabel = monthOptions.find((m) => m.value === selectedMonth)?.label || selectedMonth;
+
+  if (loading) {
+    return (
+      <div className="space-y-4 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+        </div>
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 mt-4">
+      {/* ─── Filtros ─── */}
+      <div className="flex flex-wrap gap-3">
+        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <SelectTrigger className="w-48 border-surface-line">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {monthOptions.map((m) => (
+              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-40 border-surface-line">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="pending">Pendentes</SelectItem>
+            <SelectItem value="confirmed">Confirmados</SelectItem>
+            <SelectItem value="falta_subir">Pagos — falta subir</SelectItem>
+            {!modoHistorico && <SelectItem value="not_paid">Nao pagaram</SelectItem>}
+            <SelectItem value="rejected">Recusados</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* ─── Resumo do Mes ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* "Arrecadado" some no modo histórico: o mesmo número já está no painel principal
+            (VerbaAlvoPanel) — repeti-lo aqui é o que a revisão de 26/09 achou "dado_sobrando". */}
+        {!modoHistorico && (
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-ink-3 mb-1">Arrecadado</p>
+              <p className="text-lg font-bold text-ink">{formatBRL(totalCollected)}</p>
+              <p className="text-xs text-ink-3 mt-1">{paidCount} de {franchises.length} pagaram</p>
+              {naoPagaramCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("not_paid")}
+                  className="mt-1 text-xs font-semibold text-brand hover:underline min-h-[24px]"
+                >
+                  ver {naoPagaramCount} que não pagaram
+                </button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+        {/* O card do liquido e o lugar semanticamente certo para a fila de subida: ele JA e
+            sobre quanto vai para campanha. Por isso nao entra card novo — a tela continua com
+            os mesmos 4. */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs text-ink-3 mb-1">Liquido Campanha</p>
+            <p className="text-lg font-bold text-ink">{formatBRL(totalLiquid)}</p>
+            {confirmedPayments.length === 0 ? (
+              <p className="text-xs text-ink-3 mt-1">-{MARKETING_TAX_PCT}% imposto</p>
+            ) : faltaSubir.length === 0 ? (
+              <p className="text-xs text-ok-ink mt-1 font-medium">
+                {subidas.length} subidas — nenhuma na fila
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setFilterStatus("falta_subir")}
+                className="mt-1 text-left min-h-[24px]"
+              >
+                <span className="text-xs font-semibold text-brand hover:underline">
+                  falta subir {faltaSubir.length}
+                </span>
+                <span className="block text-xs text-ink-3">
+                  {formatBRL(liquidoFaltaSubir)} esperando
+                </span>
+              </button>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs text-ink-3 mb-1">Depositado Meta</p>
+            <p className="text-lg font-bold text-ink">{formatBRL(totalDeposited)}</p>
+            <p className="text-xs text-ink-3 mt-1">{deposits.length} deposito{deposits.length !== 1 ? "s" : ""}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <p className="text-xs text-ink-3 mb-1">Saldo a Depositar</p>
+            <p className={`text-lg font-bold ${balance > 0 ? "text-brand-gold-ink" : "text-ok-ink"}`}>
+              {formatBRL(Math.max(0, balance))}
+            </p>
+            {balance <= 0 && <p className="text-xs text-ok-ink mt-1">Tudo depositado</p>}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Retorno da verba: o que o anuncio devolveu, por unidade */}
+      <div className="pt-2">
+        <MarketingRetornoPanel month={selectedMonth} />
+      </div>
+
+      {/* ─── Depositos Meta ─── */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-plus-jakarta font-bold text-sm text-ink">
+              Depositos Meta
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-brand text-brand"
+              onClick={() => setShowDepositDialog(true)}
+            >
+              <MaterialIcon icon="add" size={14} className="mr-1" />
+              Registrar Deposito
+            </Button>
+          </div>
+
+          {deposits.length === 0 ? (
+            <p className="text-xs text-ink-3 py-4 text-center">
+              Nenhum deposito registrado em {monthLabel}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {deposits.map((d) => (
+                <div key={d.id} className="flex items-center justify-between py-2 border-b border-surface-line last:border-0">
+                  <div className="flex items-center gap-3">
+                    <MaterialIcon icon="account_balance" size={16} className="text-ink-3" />
+                    <div>
+                      <p className="text-sm font-medium text-ink">
+                        {formatBRL(parseFloat(d.amount))}
+                      </p>
+                      {d.notes && <p className="text-xs text-ink-3">{d.notes}</p>}
+                    </div>
+                  </div>
+                  <span className="text-xs text-ink-3">
+                    {format(new Date(d.deposit_date + "T12:00:00"), "dd/MM/yyyy")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Tabela Franquias ─── */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4">
+          <h3 className="font-plus-jakarta font-bold text-sm text-ink mb-3">
+            Franquias — {monthLabel}
+          </h3>
+
+          {/* Header desktop */}
+          <div className="hidden md:grid grid-cols-12 gap-2 pb-2 border-b border-surface-line text-xs font-medium text-ink-3">
+            <div className="col-span-3">Franquia</div>
+            <div className="col-span-2 text-right">Valor Pago</div>
+            <div className="col-span-2 text-right">Campanha</div>
+            <div className="col-span-2 text-center">Status</div>
+            <div className="col-span-3 text-center">Acoes</div>
+          </div>
+
+          {filteredRows.length === 0 ? (
+            <p className="text-xs text-ink-3 py-8 text-center">
+              Nenhuma franquia encontrada com esse filtro
+            </p>
+          ) : (
+            <div className="divide-y divide-surface-line">
+              {filteredRows.map((row) => {
+                const { franchise: f, payment: p, status, subiu, adicional } = row;
+                const cfg = STATUS_CONFIG[status];
+                const amount = p ? parseFloat(p.amount) || 0 : 0;
+                const liquid = p ? marketingLiquid(amount) : 0;
+                const isLoading = actionLoading === p?.id;
+
+                return (
+                  <div
+                    key={p?.id || f.id}
+                    className="py-3 md:grid md:grid-cols-12 md:gap-2 md:items-center flex flex-col gap-2"
+                  >
+                    {/* Franquia */}
+                    <div className="md:col-span-3">
+                      <p className="text-sm font-medium text-ink">
+                        {getFranchiseDisplayName(f)}
+                      </p>
+                      <p className="text-xs text-ink-3">{adicional ? "Valor adicional" : <>{f.owner_name || f.city}{f.state_uf ? ` — ${f.state_uf}` : ""}</>}</p>
+                    </div>
+
+                    {/* Valor */}
+                    <div className="md:col-span-2 md:text-right">
+                      <span className="text-sm text-ink">
+                        {p ? formatBRL(amount) : "—"}
+                      </span>
+                    </div>
+
+                    {/* Campanha (liquido) */}
+                    <div className="md:col-span-2 md:text-right">
+                      <span className="text-sm text-ink-2">
+                        {p ? formatBRL(liquid) : "—"}
+                      </span>
+                    </div>
+
+                    {/* Status + se a campanha ja subiu (duas coisas diferentes) */}
+                    <div className="md:col-span-2 md:text-center flex flex-wrap md:justify-center items-center gap-1">
+                      <span
+                        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.classe}`}
+                      >
+                        <MaterialIcon icon={cfg.icon} size={14} />
+                        {cfg.label}
+                      </span>
+                      {status === "confirmed" && (
+                        subiu ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-ok-ink bg-ok/10"
+                            title={
+                              p?.campaign_raised_at
+                                ? `Subida em ${format(new Date(p.campaign_raised_at), "dd/MM 'às' HH:mm")}`
+                                : undefined
+                            }
+                          >
+                            <MaterialIcon icon="campaign" size={14} />
+                            Subida
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-brand bg-brand/10">
+                            <MaterialIcon icon="pending" size={14} />
+                            Falta subir
+                          </span>
+                        )
+                      )}
+                    </div>
+
+                    {/* Acoes */}
+                    <div className="md:col-span-3 flex items-center justify-center gap-1">
+                      {p && status === "confirmed" && (
+                        <Button
+                          size="sm"
+                          variant={subiu ? "ghost" : "outline"}
+                          className={
+                            subiu
+                              ? "h-8 px-2 text-xs text-ink-3 hover:bg-surface-2"
+                              : "h-8 px-2 text-xs border-brand text-brand hover:bg-brand/5"
+                          }
+                          onClick={() => handleToggleSubiu(p)}
+                          disabled={isLoading}
+                          title={subiu ? "Desmarcar — volta para a fila" : "Marcar que subi no Meta"}
+                        >
+                          <MaterialIcon icon={subiu ? "undo" : "campaign"} size={16} className="mr-1" />
+                          {subiu ? "Desfazer" : "Subi"}
+                        </Button>
+                      )}
+                      {p && status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-ok-ink hover:bg-ok/10"
+                            onClick={() => handleConfirm(p.id)}
+                            disabled={isLoading}
+                            title="Confirmar"
+                          >
+                            <MaterialIcon icon="check" size={18} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-err hover:bg-err/10"
+                            onClick={() => setRejectDialog({ paymentId: p.id })}
+                            disabled={isLoading}
+                            title="Recusar"
+                          >
+                            <MaterialIcon icon="close" size={18} />
+                          </Button>
+                        </>
+                      )}
+                      {p?.proof_url && (
+                        <a
+                          href={safeHref(p.proof_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-md text-ink-3 hover:bg-surface-line"
+                          title="Ver comprovante"
+                        >
+                          <MaterialIcon icon="visibility" size={18} />
+                        </a>
+                      )}
+                      {p && isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-err hover:bg-err/10"
+                          onClick={() => setCancelDialog({ payment: p })}
+                          disabled={isLoading}
+                          title="Cancelar pagamento"
+                        >
+                          <MaterialIcon icon="delete_forever" size={18} />
+                        </Button>
+                      )}
+                      {!p && (
+                        <span className="text-xs text-ink-3">—</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── Dialogs ─── */}
+      <MetaDepositDialog
+        open={showDepositDialog}
+        onOpenChange={setShowDepositDialog}
+        referenceMonth={selectedMonth}
+        onSaved={loadData}
+      />
+
+      <Dialog open={!!rejectDialog} onOpenChange={(open) => { if (!open) setRejectDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Recusar Pagamento</DialogTitle>
+            <DialogDescription>Informe o motivo da recusa (opcional)</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Label className="text-sm">Motivo</Label>
+            <Textarea
+              placeholder="Ex: Comprovante ilegivel"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={2}
+              className="border-surface-line resize-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialog(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleReject}
+              disabled={!!actionLoading}
+              className="bg-err hover:bg-brand text-white"
+            >
+              Recusar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!cancelDialog}
+        onOpenChange={(open) => { if (!open && !actionLoading) setCancelDialog(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar pagamento de marketing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação apaga o pagamento, a despesa lançada na DRE e o comprovante.
+              A franquia poderá lançar um novo valor para o mês. Não é possível desfazer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!actionLoading}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={!!actionLoading}
+              className="bg-err hover:bg-brand text-white"
+            >
+              {actionLoading ? "Cancelando..." : "Cancelar pagamento"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

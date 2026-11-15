@@ -1,0 +1,988 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { getSaleNetValue } from "@/lib/financialCalcs";
+import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
+import { useNavigate } from "react-router-dom";
+import { Sale, DailySummary, InventoryItem, getFranchiseRanking, getFranchiseRankingMonthly, getFranchiseFunnelStats, getFranchiseBotPulse, PurchaseOrder, FranchiseConfiguration, MarketingPayment, OnboardingChecklist, getOnboardingFacts } from "@/entities/all";
+import { montarJornada } from "@/lib/onboardingJourney";
+import { useAuth } from "@/lib/AuthContext";
+import { format, subDays, startOfWeek, startOfMonth, endOfMonth, differenceInDays, addMonths, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { toast } from "sonner";
+import { formatBRLInteger } from "@/lib/formatters";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { PointOfSaleIcon } from "./CriticalIcons";
+import StatsCard from "./StatsCard";
+import FranchiseeGreeting from "./FranchiseeGreeting";
+import DailyGoalProgress from "./DailyGoalProgress";
+import MiniRevenueChart from "./MiniRevenueChart";
+import RankingStreak from "./RankingStreak";
+import DailyActionsList from "@/components/clientes/DailyActionsList";
+import { cidadeDaUnidade } from "@/lib/customerActions";
+import FinancialObligationsCard from "./FinancialObligationsCard";
+import FirstStepsCard from "./FirstStepsCard";
+import PriorityAction from "./PriorityAction";
+import OpenOrderStrip from "./OpenOrderStrip";
+import MensalidadeFaixa from "./MensalidadeFaixa";
+import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
+import CustomDateRangeSheet from "./CustomDateRangeSheet";
+import ConversionCard from "./ConversionCard";
+import ConversionDetailSheet from "./ConversionDetailSheet";
+import { useSubscriptionStatus } from "@/hooks/useSubscriptionStatus";
+import EmptyState from "@/components/shared/EmptyState";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao, escolherMarketing, mesAlvoMarketing } from "@/lib/inicioMes";
+import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
+import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
+
+const MONTH_OFFSET_MIN = -2;
+
+function formatMonthLabel(offset) {
+  const raw = format(addMonths(new Date(), offset), "MMM/yyyy", { locale: ptBR });
+  const cleaned = raw.replace(".", "");
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+export default function FranchiseeDashboard() {
+  const { user, selectedFranchise: ctxFranchise } = useAuth();
+  const navigate = useNavigate();
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef(null);
+  const hasLoadedOnceRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [franchise, setFranchise] = useState(null);
+  const [allSales, setAllSales] = useState([]);
+  const [summaries, setSummaries] = useState([]);
+  const [ranking, setRanking] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [botPulse, setBotPulse] = useState(null);
+  const [franchiseConfig, setFranchiseConfig] = useState(null);
+  const [marketingPayments, setMarketingPayments] = useState([]);
+  const [period, setPeriod] = useState("today");
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [customRange, setCustomRange] = useState(null);
+  const [customSheetOpen, setCustomSheetOpen] = useState(false);
+  const [monthlyRanking, setMonthlyRanking] = useState(null);
+  const [onboardingChecklist, setOnboardingChecklist] = useState(null);
+  const [onboardingFacts, setOnboardingFacts] = useState(null);
+  const [funnel, setFunnel] = useState(null);
+  const [funnelLoading, setFunnelLoading] = useState(true);
+  const [funnelOpen, setFunnelOpen] = useState(false);
+  const { subscription, checkPaymentNow, isChecking } = useSubscriptionStatus();
+  const [prioritySheetOpen, setPrioritySheetOpen] = useState(false);
+  // S18.1 (28/09/2026): Início nova atrás da chave ui_v2. Desligada = a Início de sempre.
+  const uiV2Chave = useFeatureFlag(FEATURE_KEYS.UI_V2);
+  const uiV2 = uiV2Chave && user?.role === "franchisee";
+  // S18.3 (P3, vale sem a chave): o do mês-alvo entre os 3 últimos (verba do mês seguinte já
+  // registrada não esconde a do mês-alvo). Mês-alvo do MESMO jeito que o cartão de cada Início
+  // calcula: Brasília na nova, relógio do aparelho na de sempre.
+  const marketingPayment = escolherMarketing(
+    marketingPayments, uiV2 ? mesAlvoMarketing() : getMarketingTargetMonth()
+  );
+  // Vendas mais antigas que a janela principal (só com a chave): evolução de 6 meses e o
+  // "a receber" com o mesmo recorte da tela Vendas. Carrega 1 vez, fora do polling.
+  const [historico, setHistorico] = useState({ status: "idle", sales: [], chave: null });
+  // P3 S18 (#1, #2): cada carga registra PARA QUAL unidade veio, com que corte, o dia do ranking
+  // e o que falhou — a Início nova nunca desenha dado de outra unidade nem trata falha como zero.
+  // Só a Início nova lê isto; a de sempre segue igual.
+  const [cargaV2, setCargaV2] = useState({ evo: null, falhas: [], corte: null, diaRanking: null });
+  const uiV2Ref = useRef(uiV2);
+  uiV2Ref.current = uiV2;
+  const [rankingMesV2, setRankingMesV2] = useState({ evo: null, mes: null, status: "idle", dado: null });
+  const [recargaRankingMes, setRecargaRankingMes] = useState(0);
+  const [recargaHistorico, setRecargaHistorico] = useState(0);
+  const ultimaCargaHistoricoRef = useRef(0);
+  const [funnelTag, setFunnelTag] = useState(null); // "unidade|início|fim" da conversão carregada
+  const [onboardingEvo, setOnboardingEvo] = useState(null); // unidade da trilha carregada
+  const timerRevalidarRef = useRef(null);
+
+  // Computed inside loadData to stay fresh after midnight
+  const getToday = () => format(new Date(), "yyyy-MM-dd");
+  const getYesterday = () => format(subDays(new Date(), 1), "yyyy-MM-dd");
+
+  const franchiseId = ctxFranchise?.id;
+
+  // O Layout resolve a unidade DEPOIS do primeiro render, entao `ctxFranchise` nasce
+  // null mesmo para quem tem unidade. Desligar o loading aqui pintava "R$ 0,00" nos
+  // quatro cards antes de existir qualquer dado — zero falso que a franqueada le como
+  // "nao vendi nada hoje" e sai da tela (auditoria 07/09/2026: 75% de quickback e 11%
+  // de tempo ativo na home mobile).
+  const temUnidadeVinculada = (user?.managed_franchise_ids?.length ?? 0) > 0;
+  const [resolveUnidadeExpirou, setResolveUnidadeExpirou] = useState(false);
+
+  useEffect(() => {
+    if (franchiseId || !temUnidadeVinculada) return;
+    // rede de seguranca: nao dependurar a tela em skeleton para sempre
+    const t = setTimeout(() => setResolveUnidadeExpirou(true), 10000);
+    return () => clearTimeout(t);
+  }, [franchiseId, temUnidadeVinculada]);
+
+  const loadData = useCallback(async () => {
+    if (!franchiseId) {
+      // segue no skeleton enquanto a unidade nao chega
+      if (temUnidadeVinculada && !resolveUnidadeExpirou) return;
+      setIsLoading(false);
+      return;
+    }
+
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
+    if (!hasLoadedOnceRef.current) setIsLoading(true);
+    setLoadError(null);
+    // Safety timeout: garante que loading é desligado mesmo se queries travarem
+    const safetyTimer = setTimeout(() => {
+      if (mountedRef.current) {
+        // S18 P3-2 #1: esta carga ainda é a vigente e não foi cancelada (troca de unidade ou
+        // desmontagem abortam antes)? Então foi TEMPO ESGOTADO: a Início nova mostra "não
+        // consegui carregar" + tentar de novo para a unidade consultada, nunca esqueleto eterno.
+        const estourouEsta = abortControllerRef.current === controller && !controller.signal.aborted;
+        console.warn('[Dashboard] Safety timeout fired — forçando fim do loading');
+        controller.abort();
+        setIsLoading(false);
+        hasLoadedOnceRef.current = true;
+        if (estourouEsta) {
+          setCargaV2({ evo: ctxFranchise?.evolution_instance_id ?? null, falhas: [], tempoEsgotado: true, corte: null, diaRanking: null });
+        }
+      }
+    }, 10000);
+    try {
+      setFranchise(ctxFranchise);
+
+      const today = getToday();
+      const yesterday = getYesterday();
+      // Janela cobre o mês mais antigo navegável (offset -2) INTEIRO + seu comparativo (-3),
+      // senão o dia 1 do mês antigo cai fora e total/delta% saem parciais. ~3 meses ≈ 90d.
+      const cutoff90d = format(startOfMonth(subMonths(new Date(), 3)), "yyyy-MM-dd");
+      // P3 S18 #3: com a chave, o corte e o dia do ranking vêm do dia civil de Brasília (o mesmo
+      // dos cálculos da Início nova). Sem a chave, o relógio do aparelho, como sempre.
+      const janelasV2 = uiV2Ref.current ? janelasInicio() : null;
+      const corteVendas = janelasV2 ? janelasV2.inicioJanela : cutoff90d;
+      const diaRanking = janelasV2 ? janelasV2.hoje : today;
+      const evoId = ctxFranchise?.evolution_instance_id;
+      const results = await Promise.allSettled([
+        evoId ? Sale.filter({ franchise_id: evoId }, "-sale_date", null,
+          { columns: 'id, franchise_id, value, delivery_fee, discount_amount, card_fee_amount, sale_date, contact_id, created_at, payment_method, source, payment_confirmed', signal, fetchAll: true, gte: { sale_date: corteVendas } })
+          : Promise.resolve([]),                          // [0] sales últimos 90d (+ source for bot filter)
+        // S18: 120 linhas (era 30) — a sequência de "dias batendo a meta" compara cada dia com a
+        // meta DAQUELE dia (média dos 30 anteriores a ele). A meta de hoje segue igual.
+        evoId ? DailySummary.filter({ franchise_id: evoId }, "-date", RESUMOS_PARA_SEQUENCIA,
+          { columns: 'id, franchise_id, date, sales_count, sales_value, unique_contacts', signal })
+          : Promise.resolve([]),                          // [1] summaries (MiniRevenueChart, dailyGoal)
+        evoId ? InventoryItem.filter({ franchise_id: evoId }, null, null,
+          { columns: 'id, franchise_id, product_name, quantity, min_stock', signal })
+          : Promise.resolve([]),                          // [2] inventory
+        evoId ? getFranchiseBotPulse(evoId, { signal }) : Promise.resolve(null),
+                                                          // [3] pulso do robô (última conversa)
+        Promise.resolve([]),                              // [4] livre (contatos saíram em 17/09/2026: a lista do dia tem RPC própria)
+        evoId ? getFranchiseRanking(diaRanking, evoId, { signal }) : Promise.resolve(null), // [5] ranking
+        evoId ? PurchaseOrder.filter({ franchise_id: evoId }, "-ordered_at", 50, { signal })
+          : Promise.resolve([]),                          // [6] purchase orders (health: reposição)
+        evoId ? FranchiseConfiguration.filter({ franchise_evolution_instance_id: evoId }, null, 1, { signal })
+          : Promise.resolve([]),                          // [7] config (health: setup/whatsapp)
+        evoId ? MarketingPayment.filter({ franchise_id: evoId, kind: "mensal" }, "-reference_month", 3, { signal })
+          : Promise.resolve([]),                          // [8] marketing payment (priority action)
+      ]);
+
+      if (!mountedRef.current || signal.aborted) return;
+
+      const getValue = (i) => results[i].status === "fulfilled" ? results[i].value : [];
+      const allSalesData = getValue(0);
+      const summariesData = getValue(1);
+      const inventoryData = getValue(2);
+
+      const queryNames = ["vendas","resumos","estoque","robô","contatos","ranking","pedidos","config","marketing"];
+      const failedQueries = results
+        .map((r, i) => r.status === "rejected" ? queryNames[i] : null)
+        .filter(Boolean);
+      if (failedQueries.length > 0) {
+        console.warn("Dashboard queries falharam:", failedQueries);
+        toast.error(`Alguns dados não carregaram: ${failedQueries.join(", ")}`);
+      }
+
+      setAllSales(allSalesData);
+      setSummaries(summariesData);
+
+      setInventory(inventoryData);
+
+      setBotPulse(results[3].status === "fulfilled" ? results[3].value : null);
+      setPurchaseOrders(getValue(6));
+      setFranchiseConfig(getValue(7)?.[0] || null);
+      setMarketingPayments(getValue(8) || []);
+
+
+
+      // Ranking — index [5]
+      setRanking(results[5].status === "fulfilled" ? results[5].value : null);
+      setCargaV2({ evo: evoId, falhas: failedQueries, corte: corteVendas, diaRanking });
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      if (!mountedRef.current) return;
+      console.error("Erro ao carregar dashboard:", err);
+      const msg = safeErrorMessage(err, "Erro ao carregar o painel");
+      setLoadError(msg);
+      toast.error(msg);
+    } finally {
+      clearTimeout(safetyTimer);
+      if (mountedRef.current) {
+        setIsLoading(false);
+        hasLoadedOnceRef.current = true;
+      }
+    }
+  }, [franchiseId, temUnidadeVinculada, resolveUnidadeExpirou]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    loadData();
+    return () => {
+      mountedRef.current = false;
+      abortControllerRef.current?.abort();
+    };
+  }, [loadData]);
+
+  useVisibilityPolling(loadData, 300000);
+
+  const evoId = franchise?.evolution_instance_id;
+
+  // S18: janela do histórico = do corte da caixa "A receber" da tela Vendas (6 meses) até a
+  // véspera do corte da janela principal (1º dia do 3º mês anterior, em Brasília). As duas não
+  // se cruzam; a chave muda na virada do mês e o efeito roda de novo.
+  const janelas = uiV2 ? janelasInicio() : null;
+  const janelaHistorico = uiV2 && evoId ? `${evoId}|${janelas.historicoDesde}|${janelas.historicoAte}` : null;
+  useEffect(() => {
+    if (!janelaHistorico) return undefined;
+    const [evo, desde, ate] = janelaHistorico.split("|");
+    const controller = new AbortController();
+    ultimaCargaHistoricoRef.current = Date.now();
+    // revalidar a MESMA janela mantém o que já está na tela até a resposta chegar
+    setHistorico((prev) => (prev.chave === janelaHistorico && prev.status === "ok"
+      ? prev
+      : { status: "loading", sales: [], chave: janelaHistorico }));
+    Sale.filter({ franchise_id: evo }, "-sale_date", null, {
+      columns: 'id, franchise_id, value, delivery_fee, discount_amount, sale_date, created_at, payment_confirmed',
+      signal: controller.signal, fetchAll: true, gte: { sale_date: desde }, lte: { sale_date: ate },
+    })
+      .then((rows) => {
+        if (mountedRef.current && !controller.signal.aborted) setHistorico({ status: "ok", sales: rows || [], chave: janelaHistorico });
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted || !mountedRef.current) return;
+        console.warn("Início: histórico de vendas não carregou", err);
+        setHistorico({ status: "erro", sales: [], chave: janelaHistorico });
+      });
+    return () => controller.abort();
+  }, [janelaHistorico, recargaHistorico]);
+
+  // P3 S18 #5: venda editada, recebida ou apagada em outra tela/aba — ao voltar para a Início o
+  // histórico é lido de novo (no máximo 1 vez por minuto). Abrir a Início de novo também relê.
+  // P3-2 #3: voltar ANTES do minuto agenda a releitura para o fim do intervalo (um timer só,
+  // cancelado na troca de unidade e ao sair da tela) — antes o pedido se perdia.
+  useEffect(() => {
+    if (!uiV2) return undefined;
+    const aoVoltar = () => {
+      if (document.visibilityState !== "visible") return;
+      const plano = planoRevalidacao({ agora: Date.now(), ultimaCarga: ultimaCargaHistoricoRef.current });
+      if (plano.ja) {
+        setRecargaHistorico((n) => n + 1);
+        return;
+      }
+      if (timerRevalidarRef.current) return; // já agendada
+      timerRevalidarRef.current = setTimeout(() => {
+        timerRevalidarRef.current = null;
+        setRecargaHistorico((n) => n + 1);
+      }, plano.esperarMs);
+    };
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      document.removeEventListener("visibilitychange", aoVoltar);
+      clearTimeout(timerRevalidarRef.current);
+      timerRevalidarRef.current = null;
+    };
+  }, [uiV2, evoId]);
+
+  // P3 S18 #4: ranking do mês da Início nova pela competência de BRASÍLIA — vira com o mês mesmo
+  // com a tela aberta; o anterior é limpo e só aparece o que veio desta unidade e deste mês.
+  const mesV2 = janelas?.mes || null;
+  useEffect(() => {
+    if (!uiV2 || !evoId || !mesV2) return undefined;
+    const controller = new AbortController();
+    setRankingMesV2({ evo: evoId, mes: mesV2, status: "loading", dado: null, anterior: null });
+    // Posição FECHADA do mês passado (01/10/2026, Mogi: "onde está o ranking do mês passado?").
+    // Falha nela não derruba o cartão: só some a linha.
+    const mesAnterior = format(subMonths(new Date(`${mesV2}-01T12:00:00`), 1), "yyyy-MM");
+    Promise.allSettled([
+      getFranchiseRankingMonthly(mesV2, evoId, { signal: controller.signal }),
+      getFranchiseRankingMonthly(mesAnterior, evoId, { signal: controller.signal }),
+    ]).then(([atual, anterior]) => {
+      if (!mountedRef.current || controller.signal.aborted) return;
+      if (atual.status === "rejected") {
+        setRankingMesV2({ evo: evoId, mes: mesV2, status: "erro", dado: null, anterior: null });
+        return;
+      }
+      const dadoAnterior = anterior.status === "fulfilled" && anterior.value?.rank_position ? anterior.value : null;
+      setRankingMesV2({ evo: evoId, mes: mesV2, status: "ok", dado: atual.value, anterior: dadoAnterior ? { ...dadoAnterior, mes: mesAnterior } : null });
+    });
+    return () => controller.abort();
+  }, [uiV2, evoId, mesV2, recargaRankingMes]);
+
+  // A 1ª carga pode ter saído antes de a chave responder (cortes pelo relógio do aparelho): se
+  // ela não cobre o 3º mês anterior de Brasília, recarrega uma vez com os cortes certos.
+  const cargaCobre = !janelas || !cargaV2.corte || cargaV2.corte <= janelas.inicioJanela;
+  useEffect(() => {
+    if (uiV2 && cargaV2.evo && cargaV2.evo === evoId && !cargaCobre) loadData();
+  }, [uiV2, cargaV2.evo, evoId, cargaCobre, loadData]);
+
+  const tentarDeNovoV2 = useCallback(() => {
+    // depois de tempo esgotado, a nova tentativa mostra o esqueleto (não o erro parado)
+    setCargaV2((c) => (c.tempoEsgotado ? { ...c, evo: null } : c));
+    loadData();
+    setRecargaHistorico((n) => n + 1);
+    setRecargaRankingMes((n) => n + 1);
+  }, [loadData]);
+
+  // Primeiros passos: efeito LEVE e separado, fora do polling de 5min (status do
+  // checklist não muda nesse ritmo). Só para franqueada — CS também cai no
+  // FranchiseeDashboard (Dashboard.jsx: "!isAdmin"), mas a trilha é da franquia dela,
+  // não da equipe. Falha aqui NUNCA trava a Início — sem checklist, sem cartão.
+  useEffect(() => {
+    if (!evoId || user?.role !== "franchisee") {
+      setOnboardingChecklist(null);
+      setOnboardingFacts(null);
+      setOnboardingEvo(evoId ?? null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [checklists, facts] = await Promise.all([
+          OnboardingChecklist.filter({ franchise_id: evoId }, null, 1),
+          getOnboardingFacts(evoId),
+        ]);
+        if (cancelled) return;
+        setOnboardingChecklist(checklists?.[0] || null);
+        setOnboardingFacts(facts);
+        setOnboardingEvo(evoId);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn("Primeiros passos: falha ao carregar checklist/fatos", err);
+        setOnboardingChecklist(null);
+        setOnboardingFacts(null);
+        setOnboardingEvo(evoId);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [evoId, user?.role]);
+
+  const primeirosPassosAtivo = !!onboardingChecklist && onboardingChecklist.status !== "approved";
+  const modoReduzidoPrimeirosPassos = primeirosPassosAtivo && !onboardingFacts?.first_sale_at;
+
+  // S18 P3-2 #2: a Início nova confere a unidade SELECIONADA no contexto no próprio render (o
+  // estado local `franchise` só muda quando a carga começa): carga e trilha têm de ser dela.
+  // Sem a chave, nada disto muda o que aparece.
+  const evoSelecionada = ctxFranchise?.evolution_instance_id ?? null;
+  const onboardingDestaUnidade = !uiV2 || onboardingEvo === evoSelecionada;
+  const estadoCargaV2 = estadoDaCargaV2({ carga: cargaV2, evoSelecionada, evoLocal: evoId, cobre: cargaCobre, onboardingEvo });
+
+  const jornadaPrimeirosPassos = useMemo(() => {
+    if (!primeirosPassosAtivo) return null;
+    return montarJornada({
+      franchise,
+      config: franchiseConfig,
+      facts: onboardingFacts,
+      items: onboardingChecklist?.items,
+    });
+  }, [primeirosPassosAtivo, franchise, franchiseConfig, onboardingFacts, onboardingChecklist]);
+
+  // Helper: compute revenue from sales array
+  const calcRevenue = useCallback((sales) =>
+    sales.reduce((sum, s) => sum + getSaleNetValue(s), 0),
+  []);
+
+  // Derive today/yesterday from allSales — recalculates when allSales changes (polling refresh)
+  const todaySales = useMemo(() => {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    return allSales.filter((s) => s.sale_date === todayStr);
+  }, [allSales]);
+  const yesterdaySales = useMemo(() => {
+    const yesterdayStr = format(subDays(new Date(), 1), "yyyy-MM-dd");
+    return allSales.filter((s) => s.sale_date === yesterdayStr);
+  }, [allSales]);
+
+  // Stats based on selected period — uses allSales directly (real-time, not cron)
+  const stats = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd");
+
+    if (period === "today") {
+      const current = allSales.filter((s) => s.sale_date === today);
+      const prev = allSales.filter((s) => s.sale_date === yesterday);
+      const salesCount = current.length;
+      const prevSalesCount = prev.length;
+      const revenue = calcRevenue(current);
+      const prevRevenue = calcRevenue(prev);
+      const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
+      const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
+      return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
+    }
+
+    let cutoff, endCutoff, prevCutoff, prevEndCutoff;
+    if (period === "week") {
+      const now = new Date();
+      const wkStart = startOfWeek(now, { weekStartsOn: 1 });
+      const days = differenceInDays(now, wkStart) + 1;
+      cutoff = format(wkStart, "yyyy-MM-dd");
+      endCutoff = format(now, "yyyy-MM-dd");
+      prevCutoff = format(subDays(wkStart, days), "yyyy-MM-dd");
+      prevEndCutoff = format(subDays(wkStart, 1), "yyyy-MM-dd");
+    } else if (period === "month") {
+      const refDate = addMonths(new Date(), monthOffset);
+      const mStart = startOfMonth(refDate);
+      const mEnd = endOfMonth(refDate);
+      const prevMStart = startOfMonth(subMonths(mStart, 1));
+      const prevMEnd = endOfMonth(subMonths(mStart, 1));
+      cutoff = format(mStart, "yyyy-MM-dd");
+      endCutoff = format(mEnd, "yyyy-MM-dd");
+      prevCutoff = format(prevMStart, "yyyy-MM-dd");
+      prevEndCutoff = format(prevMEnd, "yyyy-MM-dd");
+    } else if (period === "custom" && customRange?.start && customRange?.end) {
+      const days = differenceInDays(customRange.end, customRange.start) + 1;
+      cutoff = format(customRange.start, "yyyy-MM-dd");
+      endCutoff = format(customRange.end, "yyyy-MM-dd");
+      prevCutoff = format(subDays(customRange.start, days), "yyyy-MM-dd");
+      prevEndCutoff = format(subDays(customRange.start, 1), "yyyy-MM-dd");
+    } else {
+      const days = 7;
+      cutoff = format(subDays(new Date(), days - 1), "yyyy-MM-dd");
+      endCutoff = format(new Date(), "yyyy-MM-dd");
+      prevCutoff = format(subDays(new Date(), days * 2 - 1), "yyyy-MM-dd");
+      prevEndCutoff = format(subDays(new Date(), days), "yyyy-MM-dd");
+    }
+
+    const currentSales = allSales.filter((s) => s.sale_date >= cutoff && s.sale_date <= endCutoff);
+    const prevSales = allSales.filter((s) => s.sale_date >= prevCutoff && s.sale_date <= prevEndCutoff);
+
+    const salesCount = currentSales.length;
+    const prevSalesCount = prevSales.length;
+    const revenue = calcRevenue(currentSales);
+    const prevRevenue = calcRevenue(prevSales);
+    const avgTicket = salesCount > 0 ? revenue / salesCount : 0;
+    const prevAvgTicket = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
+
+    return { salesCount, prevSalesCount, revenue, prevRevenue, avgTicket, prevAvgTicket };
+  }, [period, monthOffset, customRange, allSales, calcRevenue]);
+
+  const todayRevenue = calcRevenue(todaySales);
+
+  const dailyGoal = useMemo(() => {
+    if (!summaries.length || !evoId) return null;
+    const now = new Date();
+    const thirtyDaysAgo = subDays(now, 30);
+    const recentDays = summaries.filter((s) => {
+      if (s.franchise_id !== evoId) return false;
+      const d = new Date(s.date);
+      return d >= thirtyDaysAgo && d < now;
+    });
+    if (recentDays.length < 7) return null;
+    // Group by date to get unique days (avoid dividing by rows)
+    const byDate = {};
+    recentDays.forEach((s) => {
+      byDate[s.date] = (byDate[s.date] || 0) + (parseFloat(s.sales_value) || 0);
+    });
+    const dailyTotals = Object.values(byDate);
+    if (dailyTotals.length < 7) return null;
+    const avg = dailyTotals.reduce((a, b) => a + b, 0) / dailyTotals.length;
+    return Math.round(avg * 1.10);
+  }, [summaries, evoId]);
+
+  // Ranking mensal entre franquias — fora do useVisibilityPolling de propósito.
+  // Só dispara quando filtro muda. AbortController evita race em ◀◀◀ rápido.
+  useEffect(() => {
+    // S18: com a chave, o ranking do mês é o da Início nova (efeito acima, por Brasília)
+    if (!evoId || uiV2) return;
+    const controller = new AbortController();
+    let yearMonth;
+    if (period === "month") {
+      yearMonth = format(addMonths(new Date(), monthOffset), "yyyy-MM");
+    } else if (period === "custom" && customRange?.start) {
+      yearMonth = format(customRange.start, "yyyy-MM");
+    } else {
+      yearMonth = format(new Date(), "yyyy-MM");
+    }
+    getFranchiseRankingMonthly(yearMonth, evoId, { signal: controller.signal })
+      .then((r) => { if (mountedRef.current) setMonthlyRanking(r); })
+      .catch(() => { /* abort ou erro silencioso — mantém último valor */ });
+    return () => controller.abort();
+  }, [evoId, period, monthOffset, customRange?.start, uiV2]);
+
+  // Janela do funil — SEMPRE mensal (ou a faixa personalizada). Conversão de um dia
+  // ou de uma semana não tem significado estatístico, então os filtros Hoje/Semana
+  // caem no mês corrente em vez de recortar a amostra.
+  // No mês corrente o fim é HOJE, não o último dia do mês: senão compararia julho
+  // parcial contra junho inteiro e subestimaria o mês em curso.
+  const funnelRange = useMemo(() => {
+    if (period === "custom" && customRange?.start && customRange?.end) {
+      return {
+        start: format(customRange.start, "yyyy-MM-dd"),
+        end: format(customRange.end, "yyyy-MM-dd"),
+        label: `${format(customRange.start, "dd/MM")} – ${format(customRange.end, "dd/MM")}`,
+      };
+    }
+    const offset = period === "month" ? monthOffset : 0;
+    const ref = addMonths(new Date(), offset);
+    const mEnd = endOfMonth(ref);
+    const today = new Date();
+    const end = mEnd > today ? today : mEnd;
+    return {
+      start: format(startOfMonth(ref), "yyyy-MM-dd"),
+      end: format(end, "yyyy-MM-dd"),
+      label: formatMonthLabel(offset),
+    };
+  }, [period, monthOffset, customRange]);
+
+  // S18 P3-2 #4: com a chave, a conversão é a do mês de BRASÍLIA até hoje (a mesma competência
+  // do cartão do mês); sem a chave, a janela de sempre.
+  const conversaoV2 = uiV2 ? janelaConversao(janelas) : null;
+  const janelaFunil = conversaoV2 || funnelRange;
+
+  // Funil — fora do useVisibilityPolling (métrica mensal, não muda a cada 5min).
+  useEffect(() => {
+    if (!evoId) return;
+    const controller = new AbortController();
+    setFunnelLoading(true);
+    getFranchiseFunnelStats(evoId, janelaFunil.start, janelaFunil.end, { signal: controller.signal })
+      .then((f) => {
+        if (!mountedRef.current) return;
+        setFunnel(f);
+        // S18: a Início nova só mostra a conversão desta unidade e desta janela
+        setFunnelTag(`${evoId}|${janelaFunil.start}|${janelaFunil.end}`);
+        setFunnelLoading(false);
+      })
+      .catch(() => { if (mountedRef.current) setFunnelLoading(false); });
+    return () => controller.abort();
+  }, [evoId, janelaFunil.start, janelaFunil.end]);
+
+  // "Configurado" e "ativo" sao coisas DIFERENTES — ate 07/09/2026 o app tratava as
+  // duas como a mesma, e por isso `botActive` nunca ficava falso: bastava existir
+  // linha em franchise_configurations. Medido no banco naquele dia: 8 franquias
+  // vendendo, com o robo sem UMA conversa ha 7+ dias, viam "Tudo em dia!".
+  const botConfigured = !!(franchiseConfig && evoId);
+  const botActive = botConfigured && (botPulse?.conversations_7d ?? 0) > 0;
+
+  // null = nunca conversou (unidade nova, nao e "robo parado")
+  const botSilentDays = botPulse?.last_conversation_at
+    ? differenceInDays(new Date(), new Date(botPulse.last_conversation_at))
+    : null;
+
+  // Unidade que ainda nao vendeu esta em implantacao: nao alarmar. Mesma guarda
+  // (`d_sale is not null`) que o radar do CS usa no SQL.
+  const hasRecentSales = useMemo(() => {
+    const cutoff = format(subDays(new Date(), 30), "yyyy-MM-dd");
+    return allSales.some(sale => sale.sale_date >= cutoff);
+  }, [allSales]);
+
+  if (isLoading && uiV2) return <InicioV2Esqueleto />;
+
+  if (isLoading) {
+    // S8.3 (28/09/2026): esqueleto no formato final da tela — mesma ordem de blocos que o
+    // corpo real (saudação, filtro de período, 4 cards, meta do dia, ação prioritária,
+    // "Quem chamar hoje", ranking/sequência, gráfico, obrigações) — pra não pular o layout
+    // quando os dados chegam. Sem ícone nenhum aqui: o esqueleto pinta antes de qualquer
+    // fonte carregar, e ícone de fonte nesse momento é a palavra crua na tela.
+    return (
+      <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none space-y-4 bg-surface">
+        {/* Saudação */}
+        <div className="mb-2 space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+
+        {/* Filtro de período (Hoje/Semana/Mês/Personalizado) */}
+        <Skeleton className="h-10 w-64 rounded-xl" />
+
+        {/* 4 cards de KPI */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+
+        {/* Meta do dia */}
+        <Skeleton className="h-16 rounded-xl" />
+
+        {/* Ação prioritária */}
+        <Skeleton className="h-20 rounded-xl" />
+
+        {/* Quem chamar hoje (compacto, algumas linhas) */}
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+          <Skeleton className="h-14 rounded-xl" />
+        </div>
+
+        {/* Ranking + sequência */}
+        <Skeleton className="h-32 rounded-xl" />
+
+        {/* Gráfico de evolução */}
+        <Skeleton className="h-48 rounded-xl" />
+
+        {/* Obrigações financeiras */}
+        <Skeleton className="h-16 rounded-xl" />
+      </div>
+    );
+  }
+
+  // Sem unidade resolvida: dizer isso em voz alta. Antes daqui a tela caia direto no
+  // corpo do dashboard e mostrava quatro "R$ 0,00" como se fossem numeros reais.
+  if (!franchiseId) {
+    return (
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-surface">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <MaterialIcon icon="storefront" className="text-5xl text-ink-3" aria-hidden="true" />
+          <p className="text-ink-2 text-center max-w-xs">
+            {temUnidadeVinculada
+              ? "Não consegui carregar sua unidade. Verifique a conexão e tente de novo."
+              : "Nenhuma unidade vinculada a este acesso. Fale com a franqueadora."}
+          </p>
+          {temUnidadeVinculada && (
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 px-4 py-2 min-h-[44px] border border-ink-4 rounded-lg text-sm text-ink-2 hover:bg-white"
+            >
+              <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" aria-hidden="true" />
+              Tentar novamente
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-surface">
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <MaterialIcon icon="cloud_off" className="text-5xl text-ink-3" />
+          <p className="text-ink-2 text-center">{loadError}</p>
+          <button onClick={loadData} className="mt-2 px-4 py-2 border border-ink-4 rounded-lg text-sm text-ink-2 hover:bg-white">
+            <MaterialIcon icon="refresh" className="mr-2 text-lg align-middle" />
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pt-4 pb-4 px-4 md:px-12 max-w-lg mx-auto md:max-w-none bg-surface">
+      <div className="mb-4">
+        <div className="flex items-start justify-between">
+          <FranchiseeGreeting
+            userName={user?.full_name}
+            franchiseName={franchise ? `Unidade ${franchise.city}` : null}
+          />
+        </div>
+      </div>
+
+      {primeirosPassosAtivo && onboardingDestaUnidade && <FirstStepsCard jornada={jornadaPrimeirosPassos} />}
+
+      {modoReduzidoPrimeirosPassos && onboardingDestaUnidade && (
+        // Unidade ainda não vendeu: a Início normal (KPIs zerados, ranking, Quem chamar
+        // hoje...) só confunde quem ainda está montando a loja. Fica só o essencial +
+        // uma dica de para onde olhar quando a 1ª venda chegar.
+        <div className="mb-4 rounded-2xl bg-surface-2 p-3.5 flex items-center gap-3">
+          <span className="w-11 h-11 rounded-2xl bg-white text-brand flex items-center justify-center shrink-0">
+            <MaterialIcon icon="arrow_downward" size={22} />
+          </span>
+          <p className="text-[15px] leading-relaxed text-ink-2">
+            <span className="md:hidden">
+              Quando chegar a primeira venda, toque em <strong className="text-ink">Vender</strong>, aqui embaixo.
+            </span>
+            <span className="hidden md:inline">
+              Quando chegar a primeira venda, toque no botão <strong className="text-ink">Nova Venda</strong>.
+            </span>
+          </p>
+        </div>
+      )}
+
+      {!uiV2 && !modoReduzidoPrimeirosPassos && (
+      <>
+      {(() => {
+        const monthLabel = formatMonthLabel(monthOffset);
+        const prevDisabled = monthOffset <= MONTH_OFFSET_MIN;
+        const nextDisabled = monthOffset >= 0;
+        const isMonthActive = period === "month";
+        const isCustomActive = period === "custom" && !!customRange;
+        const customLabel = isCustomActive
+          ? `${format(customRange.start, "dd/MM")} – ${format(customRange.end, "dd/MM")}`
+          : "Personalizado";
+
+        return (
+          <div className="flex gap-1 bg-ink-shadow/5 p-1 rounded-xl mb-4 overflow-x-auto sm:w-fit sm:max-w-full">
+            {["today", "week"].map((value) => (
+              <button
+                key={value}
+                onClick={() => setPeriod(value)}
+                className={`px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 rounded-lg whitespace-nowrap min-h-[40px] ${
+                  period === value
+                    ? "font-bold text-white bg-brand shadow-sm"
+                    : "font-medium text-ink/70"
+                }`}
+              >
+                {value === "today" ? "Hoje" : "Semana"}
+              </button>
+            ))}
+
+            <div
+              className={`flex items-center rounded-lg whitespace-nowrap transition-colors min-h-[40px] ${
+                isMonthActive ? "bg-brand text-white shadow-sm" : "text-ink/70"
+              }`}
+            >
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                onClick={() => {
+                  setPeriod("month");
+                  setMonthOffset((o) => Math.max(MONTH_OFFSET_MIN, o - 1));
+                }}
+                disabled={prevDisabled}
+                className={`flex items-center justify-center min-w-[32px] min-h-[40px] rounded-l-lg transition-opacity ${
+                  prevDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-black/10"
+                }`}
+              >
+                <MaterialIcon icon="chevron_left" size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label={`Filtrar por ${monthLabel}`}
+                onClick={() => setPeriod("month")}
+                className="px-2 py-1.5 text-xs font-plus-jakarta font-bold tabular-nums hover:bg-black/5 transition-colors min-w-[80px] text-center"
+              >
+                {monthLabel}
+              </button>
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                onClick={() => {
+                  setPeriod("month");
+                  setMonthOffset((o) => Math.min(0, o + 1));
+                }}
+                disabled={nextDisabled}
+                className={`flex items-center justify-center min-w-[32px] min-h-[40px] rounded-r-lg transition-opacity ${
+                  nextDisabled ? "opacity-30 cursor-not-allowed" : "hover:bg-black/10"
+                }`}
+              >
+                <MaterialIcon icon="chevron_right" size={18} />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCustomSheetOpen(true)}
+              className={`px-2 sm:px-3 py-1.5 text-sm font-plus-jakarta transition-all active:scale-95 rounded-lg whitespace-nowrap min-h-[40px] flex items-center gap-1 ${
+                isCustomActive
+                  ? "font-bold text-white bg-brand shadow-sm"
+                  : "font-medium text-ink/70"
+              }`}
+              aria-label="Período personalizado"
+              title="Período personalizado"
+            >
+              <MaterialIcon icon="event" size={16} />
+              {isCustomActive ? (
+                <span className="tabular-nums">{customLabel}</span>
+              ) : (
+                <span className="hidden sm:inline">Personalizado</span>
+              )}
+            </button>
+          </div>
+        );
+      })()}
+
+      {stats.salesCount === 0 ? (
+        /* Sem venda no periodo, o grid de quatro zeros parece defeito. Melhor dizer o que
+           aconteceu e onde lancar a primeira. */
+        <section className="mb-6 rounded-2xl bg-white border border-surface-line">
+          <EmptyState
+            icone="point_of_sale"
+            titulo={period === "today" ? "Nenhuma venda hoje ainda" : "Nenhuma venda no período"}
+            texto={
+              period === "today"
+                ? "Assim que a primeira venda entrar, ela aparece aqui."
+                : "Troque o período acima ou lance a venda que faltou."
+            }
+            acao={{ rotulo: "Lançar venda", onClick: () => navigate("/Vendas?action=nova-venda") }}
+          />
+        </section>
+      ) : (
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
+        <StatsCard
+          title={period === "today" ? "Vendas Hoje" : "Vendas"}
+          value={stats.salesCount}
+          rawValue={stats.salesCount}
+          previousValue={stats.prevSalesCount}
+          trend={stats.salesCount > stats.prevSalesCount ? 'up' : stats.salesCount < stats.prevSalesCount ? 'down' : null}
+          // S12.5: "Vendas Hoje" abre a lista já em Hoje (a lista só lê o parâmetro com ui_v2)
+          href={period === "today" ? "/Vendas?periodo=hoje" : "/Vendas"}
+        />
+        <StatsCard
+          title="Faturamento"
+          value={formatBRLInteger(stats.revenue)}
+          rawValue={stats.revenue}
+          previousValue={stats.prevRevenue}
+          trend={stats.revenue > stats.prevRevenue ? 'up' : stats.revenue < stats.prevRevenue ? 'down' : null}
+          href="/Gestao?tab=resultado"
+        />
+        <StatsCard
+          title="Valor Médio"
+          value={formatBRLInteger(stats.avgTicket)}
+          rawValue={stats.avgTicket}
+          previousValue={stats.prevAvgTicket}
+          trend={stats.avgTicket > stats.prevAvgTicket ? 'up' : stats.avgTicket < stats.prevAvgTicket ? 'down' : null}
+          href="/Vendas"
+        />
+        <ConversionCard
+          funnel={funnel}
+          loading={funnelLoading}
+          onClick={() => setFunnelOpen(true)}
+        />
+      </section>
+      )}
+
+      {(period === "today" || (period === "month" && monthOffset === 0)) && (
+        <DailyGoalProgress todayRevenue={todayRevenue} dailyGoal={dailyGoal} />
+      )}
+
+      <MensalidadeFaixa subscription={subscription} />
+
+      <OpenOrderStrip purchaseOrders={purchaseOrders} />
+
+      <PriorityAction
+        marketingPayment={marketingPayment}
+        botActive={botActive}
+        botConfigured={botConfigured}
+        botSilentDays={botSilentDays}
+        hasRecentSales={hasRecentSales}
+        subscription={subscription}
+        onOpenPaymentSheet={() => setPrioritySheetOpen(true)}
+      />
+
+      {/* Quem chamar hoje: carrega sozinho (fora do polling de 5 min) */}
+      <DailyActionsList variant="compact" franchiseId={evoId} cidade={cidadeDaUnidade(franchise)} />
+
+      <RankingStreak
+        ranking={ranking}
+        monthlyRanking={monthlyRanking}
+        period={period}
+        monthLabel={
+          period === "month"
+            ? formatMonthLabel(monthOffset)
+            : period === "custom" && customRange?.start
+            ? format(customRange.start, "MMM/yyyy", { locale: ptBR }).replace(".", "")
+            : formatMonthLabel(0)
+        }
+        isCurrentMonth={period !== "month" || monthOffset === 0}
+        summaries={summaries}
+        franchiseId={evoId}
+        dailyGoal={dailyGoal}
+      />
+
+      <MiniRevenueChart
+        summaries={summaries}
+        franchiseId={evoId}
+        todayRevenue={todayRevenue}
+        allSales={allSales}
+        period={period}
+        monthOffset={monthOffset}
+        customRange={customRange}
+      />
+      </>
+      )}
+
+      {/* S18.1: Início nova (chave ui_v2). Com a chave desligada nada daqui roda. */}
+      {uiV2 && (
+        <InicioV2
+          modoReduzido={modoReduzidoPrimeirosPassos}
+          evoId={evoId}
+          franchise={franchise}
+          allSales={allSales}
+          historico={historico.chave === janelaHistorico ? historico : { status: "loading", sales: [] }}
+          estadoCarga={estadoCargaV2}
+          falhas={cargaV2.falhas}
+          janelas={janelas}
+          summaries={summaries}
+          ranking={ranking}
+          rankingDiaOk={cargaV2.diaRanking === janelas?.hoje}
+          rankingDiaFalhou={cargaV2.falhas.includes("ranking")}
+          rankingMes={rankingMesV2.evo === evoId && rankingMesV2.mes === mesV2 ? rankingMesV2 : { status: "loading" }}
+          onTentarDeNovo={tentarDeNovoV2}
+          purchaseOrders={purchaseOrders}
+          subscription={subscription}
+          checkPaymentNow={checkPaymentNow}
+          isChecking={isChecking}
+          marketingPayment={marketingPayment}
+          botActive={botActive}
+          botConfigured={botConfigured}
+          botSilentDays={botSilentDays}
+          hasRecentSales={hasRecentSales}
+          funnel={conversaoV2 && funnelTag === `${evoSelecionada}|${conversaoV2.start}|${conversaoV2.end}` ? funnel : null}
+          funnelRange={conversaoV2}
+        />
+      )}
+
+      {!uiV2 && <FinancialObligationsCard marketingPayment={marketingPayment} />}
+
+      {!uiV2 && !modoReduzidoPrimeirosPassos && (
+      <>
+      <SubscriptionPaymentSheet
+        open={prioritySheetOpen}
+        onOpenChange={setPrioritySheetOpen}
+        subscription={subscription}
+        checkPaymentNow={checkPaymentNow}
+        isChecking={isChecking}
+      />
+
+      <ConversionDetailSheet
+        open={funnelOpen}
+        onOpenChange={setFunnelOpen}
+        funnel={funnel}
+        range={funnelRange}
+        label={funnelRange.label}
+      />
+
+      <CustomDateRangeSheet
+        open={customSheetOpen}
+        onOpenChange={setCustomSheetOpen}
+        currentRange={customRange}
+        onApply={(range) => {
+          setCustomRange(range);
+          setPeriod("custom");
+        }}
+        onClear={() => {
+          setCustomRange(null);
+          setPeriod("today");
+        }}
+      />
+      </>
+      )}
+
+      {/* CTA — hidden on mobile (FAB "Vender" in bottom nav handles it) */}
+      <div className="hidden md:flex fixed bottom-10 right-10 z-50">
+        <Button
+          onClick={() => navigate("/Vendas?action=nova-venda")}
+          className="h-12 bg-brand hover:bg-brand-dark text-white font-bold rounded-xl shadow-lg flex items-center gap-2 px-6"
+        >
+          <PointOfSaleIcon size={18} />
+          Nova Venda
+        </Button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,1709 @@
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Sale, SaleItem, Expense, InventoryItem, AuditLog, PurchaseOrder, getMarketingAttribution, getFranchiseFunnelStats } from "@/entities/all";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import ExpenseForm from "@/components/minha-loja/ExpenseForm";
+import LancarCompraSheet from "@/components/minha-loja/LancarCompraSheet";
+import ExportButtons from "@/components/shared/ExportButtons";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import {
+  format,
+  subMonths,
+  addMonths,
+  isSameMonth,
+  parseISO,
+  subDays,
+  endOfMonth,
+  startOfMonth,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  calculatePnL,
+  calcularEstoqueResumo,
+  getEstadoFinanceiro,
+  isInMonth,
+  getTopProducts,
+  getSaleNetValue,
+} from "@/lib/financialCalcs";
+import { formatBRL, formatBRLCompactResultado as formatBRLCompact } from "@/lib/formatters";
+import { janelaResultado } from "@/lib/resultadoWindow";
+import {
+  INICIO_SEM_LIMITE,
+  MODO_MES,
+  MODO_PERSONALIZADO,
+  intervaloDoPeriodo,
+  intervaloCobre,
+  uniaoIntervalos,
+  montarResultadoPeriodo,
+} from "@/lib/periodoResultado";
+import { getCategoryMeta } from "@/lib/expenseCategories";
+import { SALES_EXPORT_COLUMNS, SALES_EXPORT_QUERY_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
+import { EXPENSES_EXPORT_COLUMNS, buildExpensesExportRows, sortExpenses } from "@/lib/expensesExport";
+import { SALE_PNL_COLUMNS } from "@/entities/columns";
+import ErrorState from "@/components/shared/ErrorState";
+import { Skeleton } from "@/components/ui/skeleton";
+import { safeErrorMessage } from "@/lib/safeErrorMessage";
+import { listarFranquias } from "@/lib/franchisesCache";
+import { montarRelatorioMensal, montarBlocoAnuncio, montarResultadoMes, anuncioComBase } from "@/lib/monthlyReport";
+import { gerarRelatorioMensalPdf } from "@/lib/monthlyReportPdf";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
+import ResultadoV2 from "@/components/minha-loja/resultado/ResultadoV2";
+import CustomDateRangeSheet from "@/components/dashboard/CustomDateRangeSheet";
+import { parseDateOnly } from "@/lib/dateOnly";
+
+import { registrarEvento } from "@/lib/telemetria";
+// --------------------------------------------------------------- helpers
+// formatBRL vem de @/lib/formatters. formatBRLCompact AQUI é formatBRLCompactResultado (S8-P3,
+// 28/09/2026) — a versão que preserva o número exato de sempre nesta tela (2 casas entre
+// R$1.000-9.999, negativo com valor absoluto). NÃO trocar pelo formatBRLCompact genérico: ele
+// tem outra precisão (sempre 1 casa) e não trata negativo — ver o comentário em formatters.js.
+
+// Banner color → Tailwind class lookup
+const BANNER_COLORS = {
+  green: { bg: "bg-green-50", border: "border-green-200", text: "text-green-900", icon: "text-green-600" },
+  blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-900", icon: "text-blue-600" },
+  amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-900", icon: "text-amber-600" },
+  red: { bg: "bg-red-50", border: "border-red-200", text: "text-red-900", icon: "text-red-600" },
+};
+
+// --------------------------------------------------------------- HeroMetric
+function HeroMetric({ pnl, prevPnl, monthLabel, onPrevMonth, onNextMonth, isCurrentMonth, onBaixarRelatorio, gerandoRelatorio }) {
+  const lucro = pnl.lucroCaixa;
+  const lucroAnterior = prevPnl?.lucroCaixa || 0;
+  const deltaPct = lucroAnterior !== 0
+    ? Math.round(((lucro - lucroAnterior) / Math.abs(lucroAnterior)) * 100)
+    : null;
+  const isPositive = lucro >= 0;
+
+  return (
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 overflow-hidden">
+      <CardContent className="p-5 md:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onPrevMonth}
+            className="rounded-xl"
+            aria-label="Mês anterior"
+            title="Mês anterior"
+          >
+            <MaterialIcon icon="chevron_left" size={22} className="text-ink-2" />
+          </Button>
+          <div className="text-center">
+            <p className="text-xs font-bold uppercase tracking-widest text-ink-2/70 font-plus-jakarta">
+              Como foi
+            </p>
+            <h2 className="text-base md:text-lg font-bold text-ink font-plus-jakarta capitalize mt-0.5">
+              {monthLabel}
+            </h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onNextMonth}
+            disabled={isCurrentMonth}
+            className="rounded-xl"
+            aria-label="Próximo mês"
+            title="Próximo mês"
+          >
+            <MaterialIcon icon="chevron_right" size={22} className={isCurrentMonth ? "text-ink-4" : "text-ink-2"} />
+          </Button>
+        </div>
+
+        <div className="text-center py-1">
+          <p className="text-xs text-ink-2 uppercase tracking-widest font-plus-jakarta mb-2">
+            Lucro do mês
+          </p>
+          <div className={`text-4xl md:text-5xl font-bold font-mono-numbers tracking-tight ${
+            isPositive ? "text-ink" : "text-err"
+          }`}>
+            {formatBRL(lucro)}
+          </div>
+          {deltaPct !== null && (
+            <div className="flex items-center justify-center gap-1.5 mt-2.5">
+              <MaterialIcon
+                icon={deltaPct >= 0 ? "trending_up" : "trending_down"}
+                size={16}
+                className={deltaPct >= 0 ? "text-ok" : "text-err"}
+              />
+              <span className="text-xs text-ink-2">
+                <span className={`font-bold ${deltaPct >= 0 ? "text-ok-ink" : "text-err"}`}>
+                  {deltaPct > 0 ? "+" : ""}{deltaPct}%
+                </span>{" "}vs mês anterior ({formatBRL(lucroAnterior)})
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* No topo, e não junto do "Exportar vendas" lá embaixo: foi lá que a franqueada de
+            Itápolis procurou e só achou a lista de vendas (11/09/2026). */}
+        {onBaixarRelatorio && (
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={onBaixarRelatorio}
+              disabled={gerandoRelatorio}
+              className="rounded-xl gap-1.5 min-h-[44px]"
+            >
+              <MaterialIcon icon="picture_as_pdf" size={18} />
+              {gerandoRelatorio ? "Gerando relatório..." : "Baixar relatório do mês"}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- ContextualBanner
+function ContextualBanner({ estado }) {
+  const colors = BANNER_COLORS[estado.cor] || BANNER_COLORS.green;
+  return (
+    <div className={`rounded-2xl border ${colors.border} ${colors.bg} p-4 md:p-5 flex items-start gap-3`}>
+      <div className={`shrink-0 mt-0.5 ${colors.icon}`}>
+        <MaterialIcon icon={estado.icone} size={26} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className={`text-base font-bold font-plus-jakarta ${colors.text}`}>{estado.titulo}</h3>
+        <p className={`text-sm mt-1 ${colors.text} opacity-90`}>{estado.mensagem}</p>
+      </div>
+    </div>
+  );
+}
+
+// --------------------------------------------------------------- CardEmEstoque
+function CardEmEstoque({ estoque, paradosCount, onClickEstoque, onLancarCompra }) {
+  return (
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-md transition-shadow">
+      <CardContent className="p-5 flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 bg-brand-gold/10 rounded-lg">
+            <MaterialIcon icon="inventory_2" size={16} className="text-brand-gold-ink" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+            Em Estoque
+          </span>
+        </div>
+
+        <div className="flex-1">
+          <div className="text-3xl font-bold text-ink font-mono-numbers mb-0.5">
+            {formatBRL(estoque.vendaPotencial)}
+          </div>
+          <p className="text-xs text-ink-2 mb-3">a vender</p>
+
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center justify-between text-ink-2">
+              <span>Custo</span>
+              <span className="font-mono-numbers font-medium text-sm">{formatBRL(estoque.custoTotal)}</span>
+            </div>
+            <div className="flex items-center justify-between text-ink-2">
+              <span>Markup médio</span>
+              <span className={`font-mono-numbers font-medium text-sm ${estoque.markupMedioPct >= 0 ? "text-ok-ink" : "text-err"}`}>
+                {estoque.markupMedioPct >= 0 ? "+" : ""}{estoque.markupMedioPct}%
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-ink-2">
+              <span>Produtos ativos</span>
+              <span className="font-mono-numbers font-medium text-sm">{estoque.qtdProdutosAtivos}</span>
+            </div>
+          </div>
+
+          {paradosCount > 0 && onClickEstoque && (
+            <button
+              onClick={onClickEstoque}
+              className="mt-3 pt-3 border-t border-ink-shadow/5 w-full flex items-center justify-between text-xs text-brand-gold-ink hover:text-brand-gold-ink transition-colors group"
+            >
+              <span className="flex items-center gap-1.5">
+                <MaterialIcon icon="ac_unit" size={14} className="text-brand-gold" />
+                <span className="font-medium">
+                  {paradosCount} parado{paradosCount > 1 ? "s" : ""} há 28+ dias
+                </span>
+              </span>
+              <MaterialIcon icon="arrow_forward" size={14} className="opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+            </button>
+          )}
+        </div>
+
+        <Button
+          size="sm"
+          onClick={onLancarCompra}
+          className="w-full gap-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs mt-4"
+        >
+          <MaterialIcon icon="add_shopping_cart" size={16} />
+          Lançar compra
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- CardCaixa
+function CardCaixa({ pnl, onLancarDespesa }) {
+  const { vendas, freteCobrado, totalDescontos, totalRecebido, taxasCartao, outrasDespesas, lucroCaixa } = pnl;
+  const saiu = taxasCartao + outrasDespesas;
+  const isPositive = lucroCaixa >= 0;
+
+  return (
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-md transition-shadow">
+      <CardContent className="p-5 flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 bg-ok/10 rounded-lg">
+            <MaterialIcon icon="account_balance_wallet" size={16} className="text-[#15803d]" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+            Caixa do mês
+          </span>
+        </div>
+
+        <div className="flex-1">
+          <div className={`text-3xl font-bold font-mono-numbers mb-0.5 ${isPositive ? "text-ink" : "text-err"}`}>
+            {formatBRL(lucroCaixa)}
+          </div>
+          <p className="text-xs text-ink-2 mb-3">saldo</p>
+
+          {/* ENTROU detalhado */}
+          <div className="space-y-1 text-xs mb-3">
+            <div className="flex items-center justify-between text-ink">
+              <span className="flex items-center gap-1 font-semibold text-sm">
+                <MaterialIcon icon="arrow_upward" size={14} className="text-ok" />
+                Entrou
+              </span>
+              <span className="font-mono-numbers font-bold text-ok-ink text-sm">{formatBRL(totalRecebido)}</span>
+            </div>
+            <div className="flex items-center justify-between text-ink-2 pl-4">
+              <span className="text-xs">└ Vendas</span>
+              <span className="font-mono-numbers text-xs">{formatBRL(vendas)}</span>
+            </div>
+            {freteCobrado > 0 && (
+              <div className="flex items-center justify-between text-ink-2 pl-4">
+                <span className="text-xs">└ Frete cobrado</span>
+                <span className="font-mono-numbers text-xs">{formatBRL(freteCobrado)}</span>
+              </div>
+            )}
+            {totalDescontos > 0 && (
+              <div className="flex items-center justify-between text-ink-2 pl-4">
+                <span className="text-xs">└ (-) Descontos</span>
+                <span className="font-mono-numbers text-xs text-err">-{formatBRL(totalDescontos)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* SAIU sumarizado */}
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center justify-between text-ink">
+              <span className="flex items-center gap-1 font-semibold text-sm">
+                <MaterialIcon icon="arrow_downward" size={14} className="text-err" />
+                Saiu
+              </span>
+              <span className="font-mono-numbers font-bold text-err text-sm">-{formatBRL(saiu)}</span>
+            </div>
+            <p className="text-xs text-ink-2/60 pl-4 italic">
+              detalhe abaixo em "Onde foi o dinheiro"
+            </p>
+          </div>
+        </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onLancarDespesa}
+          className="w-full gap-1.5 rounded-xl text-xs mt-4 border-ink-shadow/20"
+        >
+          <MaterialIcon icon="add" size={16} />
+          Lançar despesa
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- CardMaisVendidos
+function CardMaisVendidos({ topProducts, onSeeAll }) {
+  if (!topProducts.length) {
+    return (
+      <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+        <CardContent className="p-5 flex flex-col h-full">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+              <MaterialIcon icon="emoji_events" size={16} className="text-brand-gold-ink" />
+            </div>
+            <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+              Mais vendidos
+            </span>
+          </div>
+          <p className="text-xs text-ink-2 flex-1 flex items-center justify-center text-center py-6">
+            Sem vendas neste mês.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5 hover:shadow-md transition-shadow">
+      <CardContent className="p-5 flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+            <MaterialIcon icon="emoji_events" size={16} className="text-brand-gold-ink" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+            Mais vendidos
+          </span>
+        </div>
+
+        <div className="flex-1 space-y-3">
+          {topProducts.slice(0, 3).map((p, i) => (
+            <div key={p.name} className="flex items-start gap-2.5">
+              <span className="text-base font-bold text-brand-gold w-5 text-center font-mono-numbers shrink-0">
+                {i + 1}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink truncate leading-tight">{p.name}</p>
+                <div className="flex items-center gap-2 text-xs text-ink-2 mt-0.5">
+                  <span className="font-mono-numbers">{p.quantity} un</span>
+                  <span className="opacity-30">·</span>
+                  <span className="font-mono-numbers">{formatBRL(p.revenue)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="text-xs text-brand hover:text-brand-dark font-medium mt-4 flex items-center gap-1 self-start"
+          >
+            Ver todas as vendas
+            <MaterialIcon icon="arrow_forward" size={14} />
+          </button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- OndeFoiODinheiro
+function OndeFoiODinheiro({ expenses, taxasCartao, onLancarDespesa }) {
+  const { byCategory, total } = useMemo(() => {
+    const map = new Map();
+    for (const e of expenses) {
+      const cat = e.category || "outros";
+      map.set(cat, (map.get(cat) || 0) + (parseFloat(e.amount) || 0));
+    }
+    if (taxasCartao > 0) {
+      // Mostra taxas de cartão como linha separada (não está em expenses, vem das vendas)
+      map.set("__taxas_cartao__", taxasCartao);
+    }
+    const totalSum = Array.from(map.values()).reduce((s, v) => s + v, 0);
+    const sorted = Array.from(map.entries())
+      .map(([cat, amount]) => ({ cat, amount }))
+      .sort((a, b) => b.amount - a.amount);
+    return { byCategory: sorted, total: totalSum };
+  }, [expenses, taxasCartao]);
+
+  if (!byCategory.length) {
+    return (
+      <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+        <CardContent className="p-5 md:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-1.5 bg-brand/10 rounded-lg">
+              <MaterialIcon icon="pie_chart" size={16} className="text-brand" />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+              Onde foi o dinheiro
+            </h3>
+          </div>
+          <p className="text-xs text-ink-2 text-center py-4">
+            Nenhuma despesa neste mês ainda.
+          </p>
+          <div className="flex justify-center">
+            <Button onClick={onLancarDespesa} variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs border-ink-shadow/20">
+              <MaterialIcon icon="add" size={16} />
+              Lançar primeira despesa
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+      <CardContent className="p-5 md:p-6">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-brand/10 rounded-lg">
+              <MaterialIcon icon="pie_chart" size={16} className="text-brand" />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+              Onde foi o dinheiro
+            </h3>
+          </div>
+          <span className="text-sm text-ink-2 font-mono-numbers">
+            Total {formatBRL(total)}
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {byCategory.map(({ cat, amount }) => {
+            const meta = cat === "__taxas_cartao__"
+              ? { label: "Taxas de cartão", icon: "credit_card", color: "#dc2626" }
+              : getCategoryMeta(cat);
+            const pct = total > 0 ? (amount / total) * 100 : 0;
+            return (
+              <div key={cat} className="flex items-center gap-3">
+                <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${meta.color}15` }}>
+                  <MaterialIcon icon={meta.icon} size={16} style={{ color: meta.color }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-ink">{meta.label}</span>
+                    <span className="text-sm font-semibold text-ink font-mono-numbers">{formatBRL(amount)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-surface-line rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: meta.color }}
+                      />
+                    </div>
+                    <span className="text-xs text-ink-2 font-mono-numbers w-10 text-right">
+                      {pct.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-ink-shadow/5">
+          <Button onClick={onLancarDespesa} variant="outline" size="sm" className="gap-1.5 rounded-xl text-xs border-ink-shadow/20">
+            <MaterialIcon icon="add" size={16} />
+            Lançar despesa
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- EvolucaoCard
+function EvolucaoCard({ evolucao }) {
+  const [expanded, setExpanded] = useState(true);
+
+  const stats = useMemo(() => {
+    if (!evolucao.length) return null;
+    const lucros = evolucao.map(e => e.lucro);
+    const maxLucro = Math.max(...lucros);
+    const maxLucroMes = evolucao.find(e => e.lucro === maxLucro)?.mes;
+    const lucroAtual = lucros[lucros.length - 1];
+    const lucroPrimeiro = lucros[0];
+    const tendencia = lucroAtual > lucroPrimeiro ? "📈" : lucroAtual < lucroPrimeiro ? "📉" : "→";
+    const mesesPositivos = lucros.filter(l => l > 0).length;
+    return { maxLucro, maxLucroMes, tendencia, mesesPositivos, total: evolucao.length };
+  }, [evolucao]);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    const item = payload[0].payload;
+    const margem = item.margemPct || 0;
+    return (
+      <div className="bg-white border border-ink-shadow/10 rounded-xl shadow-lg px-3 py-2 text-xs">
+        <p className="font-bold text-ink capitalize mb-1">{label}</p>
+        <div className="space-y-0.5">
+          <p className="text-ink-2">
+            Receita: <span className="font-mono-numbers font-medium text-ink">{formatBRL(item.receita)}</span>
+          </p>
+          <p className="text-ink-2">
+            Lucro:{" "}
+            <span className={`font-mono-numbers font-medium ${item.lucro >= 0 ? "text-ok-ink" : "text-err"}`}>
+              {formatBRL(item.lucro)}
+            </span>
+            {item.receita > 0 && (
+              <span className={`ml-1.5 text-xs ${margem >= 0 ? "text-ok-ink" : "text-err"}`}>
+                ({margem >= 0 ? "+" : ""}{margem.toFixed(1)}% margem)
+              </span>
+            )}
+          </p>
+          {item.mediaMovel != null && (
+            <p className="text-ink-2 text-xs pt-1 mt-1 border-t border-ink-shadow/5">
+              Média 3m: <span className="font-mono-numbers font-medium">{formatBRL(item.mediaMovel)}</span>
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (!evolucao.length) return null;
+
+  return (
+    <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+      <CardContent className="p-5 md:p-6">
+        <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+              <MaterialIcon icon="show_chart" size={16} className="text-brand-gold-ink" />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+              Evolução · últimos 6 meses
+            </h3>
+          </div>
+          <MaterialIcon icon={expanded ? "expand_less" : "expand_more"} size={20} className="text-ink-2" />
+        </button>
+
+        {expanded && (
+          <>
+            {stats && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-5">
+                <div className="bg-surface rounded-xl p-3">
+                  <p className="text-xs uppercase tracking-wider text-ink-2/70 font-medium mb-0.5">
+                    Maior lucro
+                  </p>
+                  <p className="text-sm font-bold text-ink font-mono-numbers">
+                    {formatBRLCompact(stats.maxLucro)}
+                  </p>
+                  <p className="text-xs text-ink-2 capitalize">{stats.maxLucroMes}</p>
+                </div>
+                <div className="bg-surface rounded-xl p-3">
+                  <p className="text-xs uppercase tracking-wider text-ink-2/70 font-medium mb-0.5">
+                    Tendência
+                  </p>
+                  <p className="text-sm font-bold text-ink">{stats.tendencia}</p>
+                  <p className="text-xs text-ink-2">
+                    {stats.mesesPositivos}/{stats.total} meses no azul
+                  </p>
+                </div>
+                <div className="bg-surface rounded-xl p-3 col-span-2 md:col-span-1">
+                  <p className="text-xs uppercase tracking-wider text-ink-2/70 font-medium mb-0.5">
+                    Crescimento
+                  </p>
+                  <p className="text-sm font-bold text-ink font-mono-numbers">
+                    {evolucao[0].lucro > 0
+                      ? `${Math.round(((evolucao[evolucao.length-1].lucro - evolucao[0].lucro) / Math.abs(evolucao[0].lucro)) * 100)}%`
+                      : "—"}
+                  </p>
+                  <p className="text-xs text-ink-2">{evolucao[0].mes} → {evolucao[evolucao.length-1].mes}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="h-56 md:h-64 -ml-1 md:-ml-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolucao} margin={{ top: 10, right: 4, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e9e8e9" vertical={false} />
+                  <XAxis
+                    dataKey="mes"
+                    stroke="#4a3d3d"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => v.charAt(0).toUpperCase() + v.slice(1)}
+                  />
+                  <YAxis
+                    yAxisId="left"
+                    stroke="#1b1c1d"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    width={36}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#b91c1c"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    width={36}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1b1c1d", fillOpacity: 0.04 }} />
+                  <Bar yAxisId="left" dataKey="receita" name="Receita" fill="#1b1c1d" fillOpacity={0.3} radius={[6, 6, 0, 0]} barSize={28} />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="mediaMovel"
+                    name="Média 3m"
+                    stroke="#b91c1c"
+                    strokeOpacity={0.35}
+                    strokeWidth={1.5}
+                    strokeDasharray="4 4"
+                    dot={false}
+                    activeDot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="lucro"
+                    name="Lucro"
+                    stroke="#b91c1c"
+                    strokeWidth={2.5}
+                    dot={{ fill: "#b91c1c", r: 3.5 }}
+                    activeDot={{ r: 5, fill: "#991b1b" }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 mt-2 text-xs text-ink-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded bg-ink/30" />
+                <span>Receita <span className="text-ink/60">(esq)</span></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-brand" />
+                <span>Lucro <span className="text-brand/70">(dir)</span></span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-0.5 bg-brand/35" style={{ borderTop: "1.5px dashed #b91c1c", height: 0, opacity: 0.6 }} />
+                <span className="text-ink-2/70">Média 3 meses</span>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- ResumoAnoCard
+function ResumoAnoCard({ resumo }) {
+  // Só faz sentido com 2+ meses de dado no ano (senão é igual ao "Lucro do mês")
+  if (!resumo || resumo.mesesComDado < 2) return null;
+
+  const isPositive = resumo.totalLucro >= 0;
+
+  const AccTooltip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null;
+    const it = payload[0].payload;
+    return (
+      <div className="bg-white border border-ink-shadow/10 rounded-xl shadow-lg px-3 py-2 text-xs">
+        <p className="font-bold text-ink capitalize mb-1">{it.mes}</p>
+        <p className="text-ink-2">
+          Acumulado:{" "}
+          <span className="font-mono-numbers font-medium text-ok-ink">{formatBRL(it.acumulado)}</span>
+        </p>
+        <p className="text-ink-2">
+          No mês:{" "}
+          <span className={`font-mono-numbers font-medium ${it.lucro >= 0 ? "text-ok-ink" : "text-err"}`}>
+            {formatBRL(it.lucro)}
+          </span>
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="bg-gradient-to-br from-surface to-white rounded-2xl shadow-sm border border-brand-gold/25 overflow-hidden">
+      <CardContent className="p-5 md:p-6">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-brand-gold/15 rounded-lg">
+              <MaterialIcon icon="savings" size={16} className="text-brand-gold-ink" />
+            </div>
+            <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+              Acumulado em {resumo.year}
+            </h3>
+          </div>
+          {/* ink-3 solido (nao ink-2 com opacidade): opacidade em cima de ink-2 cai a
+              ~2:1 de contraste, abaixo do AA para texto pequeno. */}
+          <span className="text-xs text-ink-3 capitalize">
+            jan → {resumo.ultimoMes}
+          </span>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs text-ink-2 uppercase tracking-widest font-plus-jakarta mb-1">
+              Lucro do ano
+            </p>
+            <div className={`text-3xl md:text-4xl font-bold font-mono-numbers tracking-tight ${
+              isPositive ? "text-ok-ink" : "text-err"
+            }`}>
+              {formatBRL(resumo.totalLucro)}
+            </div>
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-2.5 text-xs text-ink-2">
+              <span className="flex items-center gap-1">
+                <MaterialIcon icon="emoji_events" size={13} className="text-brand-gold" />
+                Melhor mês:{" "}
+                <span className="font-semibold text-ink capitalize">{resumo.melhor.mes}</span>{" "}
+                ({formatBRLCompact(resumo.melhor.lucro)})
+              </span>
+              <span className="flex items-center gap-1">
+                <MaterialIcon icon="check_circle" size={13} className="text-ok" />
+                {resumo.mesesAzul}/{resumo.mesesComDado} meses no azul
+              </span>
+              <span className="flex items-center gap-1">
+                <MaterialIcon icon="calculate" size={13} className="text-ink-2/60" />
+                Média {formatBRLCompact(resumo.mediaMes)}/mês
+              </span>
+            </div>
+          </div>
+
+          {/* Mini-curva acumulada — sensação de "construindo ao longo do ano" */}
+          <div className="h-24 w-full md:w-64 shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={resumo.cumulativo} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
+                <defs>
+                  <linearGradient id="accFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#16a34a" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#16a34a" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="mes" hide />
+                <YAxis hide domain={[(min) => Math.min(0, min), (max) => Math.max(0, max)]} />
+                <Tooltip content={<AccTooltip />} cursor={{ stroke: "#16a34a", strokeOpacity: 0.25 }} />
+                <Area
+                  type="monotone"
+                  dataKey="acumulado"
+                  baseValue={0}
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                  fill="url(#accFill)"
+                  dot={false}
+                  activeDot={{ r: 4, fill: "#15803d" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --------------------------------------------------------------- main TabResultado
+// #34: o admin chega aqui pelo link "Resultado" do Fechamento com o MÊS que estava vendo
+// (?mes=yyyy-MM) — sem isso a tela sempre abria no mês atual e o admin perdia o contexto
+// de onde clicou. 'yyyy-MM' -> Date do dia 1 daquele mês; formato errado cai no mês atual.
+function mesInicial(initialMonth) {
+  if (!/^\d{4}-\d{2}$/.test(String(initialMonth || ""))) return new Date();
+  const d = parseISO(`${initialMonth}-01`);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+export default function TabResultado({ franchiseId, currentUser, contacts = [], hideFranchiseeLinks = false, initialMonth = null }) {
+  const navigate = useNavigate();
+  const [selectedMonth, setSelectedMonth] = useState(() => mesInicial(initialMonth));
+  // Período da tela nova (13/10/2026, pedido do Alex): { modo: "mes" } | { modo: "total" } |
+  // { modo: "personalizado", de, ate } ('yyyy-MM-dd'). Só a tela nova (ui_v2) troca o modo; a
+  // antiga fica sempre no mês. Regras em @/lib/periodoResultado.
+  const [periodo, setPeriodo] = useState({ modo: MODO_MES });
+  const [datasAbertas, setDatasAbertas] = useState(false);
+  const [sales, setSales] = useState([]);
+  const [saleItems, setSaleItems] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erroDeCarga, setErroDeCarga] = useState(null);
+
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const [lancarCompraOpen, setLancarCompraOpen] = useState(false);
+  const [gerandoRelatorio, setGerandoRelatorio] = useState(false);
+  // S17 (28/09/2026): tela nova do Resultado e PDF novo SÓ com a chave ui_v2. Desligada =
+  // tudo abaixo que depende de uiV2 não roda, e a tela é a de sempre.
+  // Chave da unidade EXIBIDA (P3: no admin, Financeiro › Por unidade, a do contexto é outra).
+  const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2, franchiseId);
+  // Pedidos à fábrica para o aviso "compra da fábrica ainda não lançada" (S17.2). null = não
+  // carregou: o aviso some em vez de afirmar algo sem dado. Poucas linhas por unidade.
+  const [purchaseOrders, setPurchaseOrders] = useState(null);
+  const [pedidosVersao, setPedidosVersao] = useState(0);
+  // P3 S17 (item 3): a leitura dos pedidos FALHOU (≠ ainda carregando) — a tela e o PDF dizem
+  // que não deu para conferir, nunca silêncio.
+  const [pedidosFalharam, setPedidosFalharam] = useState(false);
+
+  // S8.2 (28/09/2026): antes buscava TODO o histórico de vendas/despesas da franquia
+  // (fetchAll sem data) só pra mostrar 1 mês + evolução de 6 meses + acumulado do ano —
+  // franquia com anos de dado ia crescendo pra sempre. Agora busca só a janela de 13 meses pra
+  // trás do mês em tela (cobre evolucaoData -6m e anoResumo jan→mês, com folga); navegar dentro
+  // do que já foi carregado não refaz a busca. A janela nunca ENCOLHE, só cresce (UNIÃO com o
+  // que já tinha) — janela de largura fixa "só o necessário" faria toda navegação de mês
+  // buscar de novo (deslocar 1 mês desloca as duas pontas). Totais continuam SOMA COMPLETA dos
+  // registros carregados (não é amostra); ordenação estável já vem do tie-breaker `id` que o
+  // fetchAll aplica sozinho (src/entities/all.js). Cálculo em @/lib/resultadoWindow (testado
+  // com fixture: soma na janela == soma no histórico inteiro, pro mês exibido).
+  const loadedRangeRef = useRef(null); // { start, end } em 'yyyy-MM-dd', última janela buscada
+  // Janela que está NA TELA (estado, para a renderização enxergar). Diferente do ref, também vale
+  // depois de falha parcial (gasto/estoque): os dados de venda chegaram e a tela pode mostrar.
+  // Enquanto ela não cobre o que o modo/mês pede, a tela fica no esqueleto em vez de montar o
+  // quadro com dados parciais (revisão 01e370d, item 3).
+  const [janelaNaTela, setJanelaNaTela] = useState(null);
+
+  // Fora do modo Mês, a busca precisa cobrir o período inteiro ("Desde o início" = sem piso).
+  // Strings soltas nas dependências: o objeto mudaria de identidade a cada render.
+  // Personalizado inválido (não deveria chegar aqui: a folha valida) cai no mês, nunca na tela antiga.
+  const intervaloPeriodo = periodo.modo === MODO_MES ? null : intervaloDoPeriodo(periodo);
+  const periodoDe = intervaloPeriodo?.de ?? null;
+  const periodoAte = intervaloPeriodo?.ate ?? null;
+  const janelaDaTela = periodoDe ? { start: periodoDe, end: periodoAte } : janelaResultado(selectedMonth);
+  const janelaPendente = !!franchiseId && !intervaloCobre(janelaNaTela, janelaDaTela);
+
+  const loadData = useCallback(async (opts = {}) => {
+    if (!franchiseId) return;
+    const { targetMonth = selectedMonth, force = false } = opts;
+    // Mês: 13 meses para trás (S8.2). Período: as datas dele. Navegando, a janela só cresce.
+    // force (salvou/apagou gasto, tentar de novo): busca só o que o modo ATUAL pede, senão
+    // depois de abrir "Desde o início" todo salvamento no Mês rebuscava o histórico inteiro.
+    const necessaria = periodoDe ? { start: periodoDe, end: periodoAte } : janelaResultado(targetMonth);
+    if (!force && intervaloCobre(loadedRangeRef.current, necessaria)) return;
+    const { start: neededStart, end: neededEnd } = force ? necessaria : uniaoIntervalos(loadedRangeRef.current, necessaria);
+
+    setLoading(true);
+    setErroDeCarga(null);
+    try {
+      const results = await Promise.allSettled([
+        Sale.filter(
+          { franchise_id: franchiseId },
+          null,
+          null,
+          {
+            columns: `id, sale_date, ${SALE_PNL_COLUMNS}, contact_id, source, net_value, ${SALES_EXPORT_QUERY_COLUMNS}`,
+            fetchAll: true,
+            gte: { sale_date: neededStart },
+            lte: { sale_date: neededEnd },
+          }
+        ),
+        Expense.filter({ franchise_id: franchiseId }, null, null, {
+          fetchAll: true,
+          gte: { expense_date: neededStart },
+          lte: { expense_date: neededEnd },
+        }),
+        InventoryItem.filter(
+          { franchise_id: franchiseId },
+          null,
+          null,
+          { columns: 'id, product_name, quantity, cost_price, sale_price, min_stock, active', fetchAll: true }
+        ),
+        AuditLog.filter({ franchise_id: franchiseId }, "-created_at", 20,
+          { columns: 'id, action, details, created_at, user_name, entity_type' }),
+      ]);
+
+      const get = (r) => r.status === "fulfilled" ? r.value : [];
+      const salesData = get(results[0]);
+
+      // SaleItem em segundo round (depende dos sale IDs).
+      // Chunk de 500 ids/request pra não estourar o limite de URL do PostgREST — o
+      // histórico inteiro da franquia num único .in() quebrava em franquia grande.
+      // Os pedaços vão em paralelo ("Desde o início" pode ter dezenas).
+      const saleIds = salesData.map(s => s.id);
+      const SALE_ID_CHUNK = 500;
+      const chunks = [];
+      for (let i = 0; i < saleIds.length; i += SALE_ID_CHUNK) chunks.push(saleIds.slice(i, i + SALE_ID_CHUNK));
+      const partes = await Promise.all(chunks.map((chunk) =>
+        SaleItem.filter({ sale_id: chunk }, null, null,
+          { columns: 'id, sale_id, inventory_item_id, quantity, unit_price, cost_price, product_name', fetchAll: true })
+          .catch((err) => {
+            console.warn('SaleItems chunk falhou:', err);
+            return [];
+          })
+      ));
+      const saleItemsData = partes.flat();
+
+      setSales(salesData);
+      setSaleItems(saleItemsData);
+      setExpenses(get(results[1]));
+      setInventoryItems(get(results[2]));
+      setAuditLogs(get(results[3]));
+
+      const failed = results.map((r, i) => r.status === "rejected" ? ["vendas", "despesas", "estoque", "auditoria"][i] : null).filter(Boolean);
+      // Vendas é o que sustenta a tela inteira: sem ela, estado de erro — não um DRE zerado,
+      // que o franqueado leria como "não vendi nada".
+      if (results[0].status === "rejected") {
+        loadedRangeRef.current = null;
+        setJanelaNaTela(null);
+        setErroDeCarga(safeErrorMessage(results[0].reason, "Não foi possível carregar as vendas do período."));
+      } else {
+        setJanelaNaTela({ start: neededStart, end: neededEnd });
+        if (failed.length) {
+          // A memória agora é só desta carga: um ref antigo e maior faria a próxima troca de
+          // modo achar que já tem tudo e o esqueleto nunca sairia.
+          loadedRangeRef.current = null;
+          toast.error(`Alguns dados não carregaram: ${failed.join(", ")}`);
+        } else {
+          loadedRangeRef.current = { start: neededStart, end: neededEnd };
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao carregar dados:", e);
+      setErroDeCarga(safeErrorMessage(e, "Erro ao carregar os dados do resultado."));
+    } finally {
+      setLoading(false);
+    }
+  }, [franchiseId, selectedMonth, periodoDe, periodoAte]);
+
+  // Dispara ao trocar de franquia e sempre que a navegação de mês sair da janela carregada
+  // (loadData decide sozinho se precisa buscar de novo, olhando loadedRangeRef; a identidade
+  // do callback já muda exatamente nesses dois casos, por causa do useCallback acima).
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const buscarPedidos = useCallback(
+    (signal) => PurchaseOrder.filter({ franchise_id: franchiseId }, null, null, {
+      columns: "id, status, total_amount, freight_cost, ordered_at, delivered_at",
+      fetchAll: true,
+      signal,
+    }),
+    [franchiseId]
+  );
+
+  useEffect(() => {
+    if (!uiV2 || !franchiseId) return undefined;
+    const controller = new AbortController();
+    buscarPedidos(controller.signal)
+      .then((rows) => { if (!controller.signal.aborted) { setPurchaseOrders(rows); setPedidosFalharam(false); } })
+      .catch(() => { if (!controller.signal.aborted) { setPurchaseOrders(null); setPedidosFalharam(true); } });
+    return () => controller.abort();
+  }, [uiV2, franchiseId, pedidosVersao, buscarPedidos]);
+
+  // Lookup de contatos para resolver nome do cliente no export
+  const contactsMap = useMemo(() => {
+    const map = {};
+    (contacts || []).forEach((c) => { map[c.id] = c; });
+    return map;
+  }, [contacts]);
+
+  // Filtros do mês selecionado
+  const monthSales = useMemo(() => sales.filter(s => isInMonth(s.sale_date || s.created_at, selectedMonth)), [sales, selectedMonth]);
+  const monthSaleIds = useMemo(() => new Set(monthSales.map(s => s.id)), [monthSales]);
+  const monthSaleItems = useMemo(() => saleItems.filter(si => monthSaleIds.has(si.sale_id)), [saleItems, monthSaleIds]);
+  const monthExpenses = useMemo(() => expenses.filter(e => isInMonth(e.expense_date || e.created_at, selectedMonth)), [expenses, selectedMonth]);
+
+  // Mês anterior (para HeroMetric delta)
+  const prevMonthDate = useMemo(() => subMonths(selectedMonth, 1), [selectedMonth]);
+  const prevMonthSales = useMemo(() => sales.filter(s => isInMonth(s.sale_date || s.created_at, prevMonthDate)), [sales, prevMonthDate]);
+  const prevMonthSaleIds = useMemo(() => new Set(prevMonthSales.map(s => s.id)), [prevMonthSales]);
+  const prevMonthSaleItems = useMemo(() => saleItems.filter(si => prevMonthSaleIds.has(si.sale_id)), [saleItems, prevMonthSaleIds]);
+  const prevMonthExpenses = useMemo(() => expenses.filter(e => isInMonth(e.expense_date || e.created_at, prevMonthDate)), [expenses, prevMonthDate]);
+
+  // PnL atual e anterior
+  const pnl = useMemo(() => calculatePnL(monthSales, monthSaleItems, monthExpenses), [monthSales, monthSaleItems, monthExpenses]);
+  // Lista na ordem da data (mais recente primeiro) — antes saía na ordem do id, aleatória.
+  const monthExpensesSorted = useMemo(() => sortExpenses(monthExpenses), [monthExpenses]);
+  const expensesExportData = useMemo(() => buildExpensesExportRows(monthExpenses, { includeTotalsRow: true }), [monthExpenses]);
+  const prevPnl = useMemo(() => calculatePnL(prevMonthSales, prevMonthSaleItems, prevMonthExpenses), [prevMonthSales, prevMonthSaleItems, prevMonthExpenses]);
+
+  // S17: modelo único da tela nova e do PDF novo (montarResultadoMes). Só calcula com a chave
+  // e no modo Mês (fora dele a tela usa o modeloPeriodo; o PDF monta o seu na hora do clique).
+  const modeloV2 = useMemo(
+    () => (uiV2 && !periodoDe ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders, mesSelecionado: selectedMonth }) : null),
+    [uiV2, periodoDe, sales, saleItems, expenses, purchaseOrders, selectedMonth]
+  );
+
+  // Desde o início / Personalizado (só na tela nova): mesmo formato do modeloV2, sem comparação.
+  const modeloPeriodo = useMemo(
+    () => (uiV2 && periodoDe
+      ? montarResultadoPeriodo({ sales, saleItems, expenses, periodo, de: periodoDe, ate: periodoAte })
+      : null),
+    [uiV2, sales, saleItems, expenses, periodo, periodoDe, periodoAte]
+  );
+  const periodoDespesasOrdenadas = useMemo(
+    () => (modeloPeriodo ? sortExpenses(modeloPeriodo.recorte.expenses) : []),
+    [modeloPeriodo]
+  );
+  const periodoExportDespesas = useMemo(
+    () => (modeloPeriodo ? buildExpensesExportRows(modeloPeriodo.recorte.expenses, { includeTotalsRow: true }) : []),
+    [modeloPeriodo]
+  );
+  const periodoExportVendas = useMemo(
+    () => (modeloPeriodo ? buildSalesExportRows(modeloPeriodo.recorte.sales, contactsMap, { includeTotalsRow: true }) : []),
+    [modeloPeriodo, contactsMap]
+  );
+
+  // Resumo de estoque (atual)
+  const estoqueResumo = useMemo(() => calcularEstoqueResumo(inventoryItems), [inventoryItems]);
+
+  // Média mensal de receita (últimos 6 meses, exclui o atual se for o mês corrente sem dados)
+  const mediaMensalReceita = useMemo(() => {
+    const counts = {};
+    for (let i = 0; i < 6; i++) {
+      const d = subMonths(selectedMonth, i);
+      const key = format(d, "yyyy-MM");
+      counts[key] = sales
+        .filter(s => isInMonth(s.sale_date || s.created_at, d))
+        .reduce((sum, s) => sum + getSaleNetValue(s), 0);
+    }
+    const values = Object.values(counts).filter(v => v > 0);
+    return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+  }, [sales, selectedMonth]);
+
+  // Estado financeiro (banner)
+  const estadoFinanceiro = useMemo(
+    () => getEstadoFinanceiro({
+      lucroCaixa: pnl.lucroCaixa,
+      valorEstoqueVenda: estoqueResumo.vendaPotencial,
+      mediaMensalReceita,
+    }),
+    [pnl.lucroCaixa, estoqueResumo.vendaPotencial, mediaMensalReceita]
+  );
+
+  // Top produtos
+  const topProducts = useMemo(() => getTopProducts(monthSaleItems, 5), [monthSaleItems]);
+
+  // Vendas por produto de data a data (Bragança, 30/09/2026): mesma régua do mês — vendas por
+  // sale_date, itens pelo sale_id em blocos de 500. Erro sobe: a tela avisa e mantém o que tinha.
+  const carregarProdutosDoPeriodo = useCallback(async (de, ate) => {
+    if (!franchiseId) return [];
+    const vendas = await Sale.filter({ franchise_id: franchiseId }, null, null, {
+      columns: "id, sale_date",
+      fetchAll: true,
+      gte: { sale_date: de },
+      lte: { sale_date: ate },
+    });
+    const ids = vendas.map((s) => s.id);
+    const itens = [];
+    for (let i = 0; i < ids.length; i += 500) {
+      const parte = await SaleItem.filter({ sale_id: ids.slice(i, i + 500) }, null, null, {
+        columns: "id, sale_id, quantity, unit_price, product_name",
+        fetchAll: true,
+      });
+      itens.push(...parte);
+    }
+    return getTopProducts(itens, Infinity);
+  }, [franchiseId]);
+
+  // Parados no freezer (28+ dias sem venda, com estoque > 0)
+  const paradosCount = useMemo(() => {
+    const cutoff = format(subDays(new Date(), 28), "yyyy-MM-dd");
+    const recentSaleIds = new Set(
+      sales.filter(s => (s.sale_date || s.created_at || "").substring(0, 10) >= cutoff).map(s => s.id)
+    );
+    const soldItemIds = new Set(
+      saleItems.filter(si => recentSaleIds.has(si.sale_id)).map(si => si.inventory_item_id)
+    );
+    return inventoryItems.filter(i => i.active !== false && (parseFloat(i.quantity) || 0) > 0 && !soldItemIds.has(i.id)).length;
+  }, [sales, saleItems, inventoryItems]);
+
+  // Evolução 6 meses: Receita (barras) + Lucro (linha) + Média móvel 3m (linha tracejada)
+  const evolucaoData = useMemo(() => {
+    const data = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(selectedMonth, i);
+      const monthKey = format(d, "MMM", { locale: ptBR }).replace(".", "");
+      const mSales = sales.filter(s => isInMonth(s.sale_date || s.created_at, d));
+      const mSaleIds = new Set(mSales.map(s => s.id));
+      const mSaleItems = saleItems.filter(si => mSaleIds.has(si.sale_id));
+      const mExpenses = expenses.filter(e => isInMonth(e.expense_date || e.created_at, d));
+      const monthPnL = calculatePnL(mSales, mSaleItems, mExpenses);
+      const margemPct = monthPnL.totalRecebido > 0
+        ? (monthPnL.lucroCaixa / monthPnL.totalRecebido) * 100
+        : 0;
+      data.push({
+        mes: monthKey,
+        receita: monthPnL.totalRecebido,
+        lucro: monthPnL.lucroCaixa,
+        margemPct,
+        isCurrent: i === 0,
+      });
+    }
+
+    // Média móvel 3 meses do lucro (tendência suavizada)
+    for (let i = 0; i < data.length; i++) {
+      const window = data.slice(Math.max(0, i - 2), i + 1);
+      const avg = window.reduce((s, d) => s + d.lucro, 0) / window.length;
+      data[i].mediaMovel = window.length >= 2 ? avg : null;
+    }
+
+    const hasData = data.filter(d => d.receita > 0).length;
+    return hasData >= 2 ? data : [];
+  }, [sales, saleItems, expenses, selectedMonth]);
+
+  // Acumulado no ano: jan → mês selecionado (mesmo ano). Soma o lucro de caixa
+  // mês a mês para mostrar quanto a franquia já construiu no ano + curva cumulativa.
+  const anoResumo = useMemo(() => {
+    const year = selectedMonth.getFullYear();
+    const monthIdx = selectedMonth.getMonth(); // 0..11
+    const meses = [];
+    for (let m = 0; m <= monthIdx; m++) {
+      const d = new Date(year, m, 1);
+      const mSales = sales.filter(s => isInMonth(s.sale_date || s.created_at, d));
+      const ids = new Set(mSales.map(s => s.id));
+      const mItems = saleItems.filter(si => ids.has(si.sale_id));
+      const mExp = expenses.filter(e => isInMonth(e.expense_date || e.created_at, d));
+      const p = calculatePnL(mSales, mItems, mExp);
+      meses.push({
+        mes: format(d, "MMM", { locale: ptBR }).replace(".", ""),
+        lucro: p.lucroCaixa,
+        temDado: mSales.length > 0 || mExp.length > 0,
+      });
+    }
+    const comDado = meses.filter(m => m.temDado);
+    const totalLucro = meses.reduce((s, m) => s + m.lucro, 0);
+    const mesesAzul = comDado.filter(m => m.lucro > 0).length;
+    const melhor = comDado.reduce((b, m) => (m.lucro > (b?.lucro ?? -Infinity) ? m : b), null);
+    const mediaMes = comDado.length ? totalLucro / comDado.length : 0;
+    let acc = 0;
+    const cumulativo = meses.map(m => {
+      acc += m.lucro;
+      return { mes: m.mes, acumulado: acc, lucro: m.lucro };
+    });
+    return {
+      year,
+      totalLucro,
+      mesesAzul,
+      mesesComDado: comDado.length,
+      melhor: melhor || { mes: meses[meses.length - 1]?.mes ?? "", lucro: 0 },
+      mediaMes,
+      cumulativo,
+      ultimoMes: meses[meses.length - 1]?.mes ?? "",
+    };
+  }, [sales, saleItems, expenses, selectedMonth]);
+
+  // ─── Handlers
+  const handlePrevMonth = () => setSelectedMonth(m => subMonths(m, 1));
+  const handleNextMonth = () => {
+    const next = addMonths(selectedMonth, 1);
+    if (next <= new Date()) setSelectedMonth(next);
+  };
+  // Personalizado só vira o modo quando as datas são aplicadas (fechar a folha não muda nada).
+  const handleEscolherModo = (modo) => {
+    if (modo === MODO_PERSONALIZADO) {
+      setDatasAbertas(true);
+      return;
+    }
+    setPeriodo({ modo });
+  };
+  const faixaAtual = useMemo(
+    () => (periodo.modo === MODO_PERSONALIZADO
+      ? { start: parseDateOnly(periodo.de), end: parseDateOnly(periodo.ate) }
+      : null),
+    [periodo]
+  );
+  const handleAplicarDatas = ({ start, end }) => {
+    setPeriodo({ modo: MODO_PERSONALIZADO, de: format(start, "yyyy-MM-dd"), ate: format(end, "yyyy-MM-dd") });
+  };
+  const handleLancarDespesa = () => { setEditingExpense(null); setExpenseDialogOpen(true); };
+  const handleEditExpense = (exp) => { setEditingExpense(exp); setExpenseDialogOpen(true); };
+  const handleExpenseSaved = () => { setExpenseDialogOpen(false); setEditingExpense(null); loadData({ force: true }); setPedidosVersao((v) => v + 1); };
+  const handleDeleteExpense = async (id) => {
+    try {
+      await Expense.delete(id);
+      toast.success("Despesa excluída!");
+      setDeleteConfirmId(null);
+      loadData({ force: true });
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao excluir despesa.");
+    }
+  };
+  // No admin (FinanceiroPorUnidade), /Gestao e /Vendas redirecionam pro Dashboard — não são
+  // dele. hideFranchiseeLinks tira os dois links; o resto da tela é igual à do franqueado.
+  const handleClickEstoque = hideFranchiseeLinks ? null : () => navigate("/Gestao?tab=estoque");
+  const handleLancarCompra = () => setLancarCompraOpen(true);
+  const handleVerVendas = hideFranchiseeLinks ? null : () => navigate("/Vendas");
+
+  // Relatório do mês em PDF: os mesmos dados que a tela já carregou (nenhuma consulta nova
+  // de venda/despesa) + o retorno do anúncio, buscado só no clique — 1 chamada leve por mês.
+  const handleBaixarRelatorio = async () => {
+    if (gerandoRelatorio) return;
+    setGerandoRelatorio(true);
+    try {
+      // S17.2: com a chave, o PDF sai do MESMO modelo da tela (montarResultadoMes).
+      // P3 S17 (item 3): o PDF não depende de os pedidos já terem chegado na tela — busca na hora
+      // do clique; falhou = o PDF diz que não deu para conferir.
+      let pedidosDoPdf = null;
+      let pedidosDoPdfFalharam = false;
+      if (uiV2) {
+        try {
+          pedidosDoPdf = await buscarPedidos();
+          setPurchaseOrders(pedidosDoPdf);
+          setPedidosFalharam(false);
+        } catch {
+          pedidosDoPdfFalharam = true;
+        }
+      }
+      const modelo = uiV2 ? montarResultadoMes({ sales, saleItems, expenses, purchaseOrders: pedidosDoPdf, mesSelecionado: selectedMonth }) : null;
+      const relatorio = modelo ? modelo.relatorio : montarRelatorioMensal({ sales, saleItems, expenses, mesSelecionado: selectedMonth });
+      // O anúncio só entra com o robô com base (has_bot_data nos 3 meses do relatório).
+      const inicioFunil = parseISO(`${relatorio.meses[0].chave}-01`);
+      const fimFunil = isSameMonth(selectedMonth, new Date()) ? new Date() : endOfMonth(selectedMonth);
+      const [franquias, anuncioBruto, funil] = await Promise.all([
+        listarFranquias().catch(() => []),
+        // undefined = não carregou (o PDF avisa); null = a unidade não anunciou nesses meses
+        Promise.all(relatorio.meses.map((m) => getMarketingAttribution(m.chave, franchiseId).then((r) => r?.[0] || null)))
+          .then(montarBlocoAnuncio)
+          .catch(() => undefined),
+        uiV2
+          ? getFranchiseFunnelStats(franchiseId, format(startOfMonth(inicioFunil), "yyyy-MM-dd"), format(fimFunil, "yyyy-MM-dd")).catch(() => undefined)
+          : Promise.resolve(null),
+      ]);
+      const anuncio = uiV2 ? anuncioComBase(anuncioBruto, funil) : anuncioBruto;
+      const unidade = franquias.find((f) => f.evolution_instance_id === franchiseId);
+      await gerarRelatorioMensalPdf({
+        relatorio,
+        anuncio,
+        avisoFabrica: modelo ? (pedidosDoPdfFalharam ? { naoConferido: true } : modelo.avisoFabrica) : undefined,
+        textoNovo: uiV2,
+        nomeUnidade: unidade?.name || "Maxi Massas",
+        mesSelecionado: selectedMonth,
+      });
+      toast.success("Relatório baixado!");
+      // S6.4: medir quantas unidades baixam o relatório (Clarity > Eventos inteligentes).
+      try { registrarEvento("relatorio_mes_baixado"); } catch { /* telemetria não pode derrubar o download */ }
+    } catch (e) {
+      console.error("Erro ao gerar relatório:", e);
+      try { registrarEvento("relatorio_mes_erro"); } catch { /* idem */ }
+      toast.error(safeErrorMessage(e, "Não foi possível gerar o relatório."));
+    } finally {
+      setGerandoRelatorio(false);
+    }
+  };
+
+  // Fornecedores recentes para autocomplete
+  const recentSuppliers = useMemo(() => {
+    const set = new Set();
+    for (const e of expenses.slice(0, 50)) {
+      if (e.supplier && e.supplier.trim()) set.add(e.supplier.trim());
+    }
+    return Array.from(set).slice(0, 10);
+  }, [expenses]);
+
+  const monthLabel = format(selectedMonth, "MMMM yyyy", { locale: ptBR });
+  const isCurrentMonth = isSameMonth(selectedMonth, new Date());
+
+  // Export columns/data — fonte única em src/lib/salesExport.js
+  const exportColumns = SALES_EXPORT_COLUMNS;
+  const exportData = useMemo(
+    () => buildSalesExportRows(monthSales, contactsMap, { includeTotalsRow: true }),
+    [monthSales, contactsMap]
+  );
+
+  const hasData = monthSales.length > 0 || monthExpenses.length > 0;
+
+  // Diálogos (gasto, compra fora da fábrica, excluir) — os mesmos nas duas telas.
+  const dialogos = (
+    <>
+    {/* Expense form dialog */}
+    <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
+      <DialogContent onInteractOutside={(e) => e.preventDefault()} className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-md p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="font-plus-jakarta">
+            {editingExpense ? (uiV2 ? "Editar gasto" : "Editar despesa") : (uiV2 ? "Registrar gasto" : "Lançar despesa")}
+          </DialogTitle>
+        </DialogHeader>
+        <ExpenseForm
+          expense={editingExpense}
+          franchiseId={franchiseId}
+          currentUser={currentUser}
+          onSave={handleExpenseSaved}
+          onCancel={() => setExpenseDialogOpen(false)}
+        />
+      </DialogContent>
+    </Dialog>
+
+    {/* Lançar Compra externa */}
+    <LancarCompraSheet
+      open={lancarCompraOpen}
+      onOpenChange={setLancarCompraOpen}
+      franchiseId={franchiseId}
+      inventoryItems={inventoryItems}
+      recentSuppliers={recentSuppliers}
+      onSaved={() => loadData({ force: true })}
+    />
+
+    {/* Delete confirmation */}
+    <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full sm:max-w-sm p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle className="font-plus-jakarta">Excluir despesa?</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-ink-2">Esta ação não pode ser desfeita.</p>
+        <div className="flex gap-3 mt-4">
+          <Button variant="outline" className="flex-1" onClick={() => setDeleteConfirmId(null)}>Cancelar</Button>
+          <Button className="flex-1 bg-brand hover:bg-brand-dark text-white" onClick={() => handleDeleteExpense(deleteConfirmId)}>
+            Excluir
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
+  );
+
+  // Esqueleto no lugar do spinner: a tela demora e o esqueleto ja mostra o formato
+  const esqueleto = (
+    <div className="space-y-5">
+      <Skeleton className="h-32 rounded-2xl" />
+      <Skeleton className="h-40 rounded-2xl" />
+      <div className="grid grid-cols-2 gap-3">
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-24 rounded-2xl" />
+      </div>
+      <Skeleton className="h-56 rounded-2xl" />
+    </div>
+  );
+
+  if (loading) return esqueleto;
+
+  if (erroDeCarga) {
+    const erro = (
+      <ErrorState
+        titulo="Não deu para carregar o resultado"
+        texto={erroDeCarga}
+        // P2 (revisão S8-P3, 28/09/2026): loadData([evento do clique]) sem force pode achar
+        // que a janela já está coberta (loadedRangeRef de um sucesso ANTERIOR, mesmo que a
+        // tentativa mais recente pra esse mês tenha falhado) e não refazer a consulta nenhuma —
+        // o botão pareceria não fazer nada, com o erro preso na tela pra sempre. force:true
+        // ignora a checagem de cobertura e busca de novo.
+        onTentarNovamente={() => loadData({ force: true })}
+      />
+    );
+    // Período longo que não carregou: saída para o mês, que busca de novo do zero (a carga que
+    // falhou zerou as vendas da tela, então a janela antiga não vale mais).
+    if (periodo.modo === MODO_MES) return erro;
+    return (
+      <div className="space-y-3">
+        {erro}
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            className="min-h-[44px] rounded-xl"
+            onClick={() => {
+              loadedRangeRef.current = null;
+              setJanelaNaTela(null);
+              setErroDeCarga(null);
+              setPeriodo({ modo: MODO_MES });
+            }}
+          >
+            Voltar para o mês
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Trocou de modo ou de mês e a carga ainda não começou (o efeito roda depois deste render):
+  // os dados na memória não cobrem o período, então nada de quadro com número parcial.
+  if (janelaPendente) return esqueleto;
+
+  const folhaDatas = (
+    <CustomDateRangeSheet
+      open={datasAbertas}
+      onOpenChange={setDatasAbertas}
+      currentRange={faixaAtual}
+      onApply={handleAplicarDatas}
+      onClear={() => setPeriodo({ modo: MODO_MES })}
+      maxDays={null}
+      minDate={INICIO_SEM_LIMITE}
+      descricao="De tal a tal data. A data final vai até hoje."
+    />
+  );
+
+  if (uiV2 && modeloPeriodo) {
+    return (
+      <>
+        <ResultadoV2
+          modelo={modeloPeriodo}
+          hasData={modeloPeriodo.temDado}
+          monthLabel={modeloPeriodo.periodo.rotulo}
+          isCurrentMonth
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onBaixarRelatorio={null}
+          gerandoRelatorio={false}
+          estoque={estoqueResumo}
+          paradosCount={paradosCount}
+          onClickEstoque={handleClickEstoque}
+          despesas={periodoDespesasOrdenadas}
+          onEditarDespesa={handleEditExpense}
+          onExcluirDespesa={setDeleteConfirmId}
+          onRegistrarGasto={handleLancarDespesa}
+          onLancarCompra={handleLancarCompra}
+          exportDespesas={{
+            data: periodoExportDespesas,
+            columns: EXPENSES_EXPORT_COLUMNS,
+            filename: `despesas-${modeloPeriodo.periodo.de}-a-${modeloPeriodo.periodo.ate}`,
+            title: `Despesas — ${modeloPeriodo.periodo.rotulo}`,
+            evento: "planilha_despesas",
+          }}
+          exportVendas={{
+            count: modeloPeriodo.recorte.sales.length,
+            data: periodoExportVendas,
+            columns: exportColumns,
+            filename: `vendas-${modeloPeriodo.periodo.de}-a-${modeloPeriodo.periodo.ate}`,
+            title: `Vendas — ${modeloPeriodo.periodo.rotulo}`,
+            evento: "planilha_resultado",
+          }}
+          auditLogs={auditLogs}
+          carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
+          mostrarDicaClientes={!hideFranchiseeLinks}
+          pedidosNaoConferidos={false}
+          onEscolherModo={handleEscolherModo}
+          onAbrirPersonalizado={() => setDatasAbertas(true)}
+        />
+        {dialogos}
+        {folhaDatas}
+      </>
+    );
+  }
+
+  if (uiV2 && modeloV2) {
+    return (
+      <>
+        <ResultadoV2
+          modelo={modeloV2}
+          hasData={hasData}
+          monthLabel={monthLabel}
+          isCurrentMonth={isCurrentMonth}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onBaixarRelatorio={sales.length > 0 || expenses.length > 0 ? handleBaixarRelatorio : null}
+          gerandoRelatorio={gerandoRelatorio}
+          estoque={estoqueResumo}
+          paradosCount={paradosCount}
+          onClickEstoque={handleClickEstoque}
+          despesas={monthExpensesSorted}
+          onEditarDespesa={handleEditExpense}
+          onExcluirDespesa={setDeleteConfirmId}
+          onRegistrarGasto={handleLancarDespesa}
+          onLancarCompra={handleLancarCompra}
+          exportDespesas={{
+            data: expensesExportData,
+            columns: EXPENSES_EXPORT_COLUMNS,
+            filename: `despesas-${format(selectedMonth, "yyyy-MM")}`,
+            title: `Despesas — ${monthLabel}`,
+            evento: "planilha_despesas",
+          }}
+          exportVendas={{
+            count: monthSales.length,
+            data: exportData,
+            columns: exportColumns,
+            filename: `vendas-${format(selectedMonth, "yyyy-MM")}`,
+            title: `Vendas — ${monthLabel}`,
+            evento: "planilha_resultado",
+          }}
+          auditLogs={auditLogs}
+          carregarProdutosDoPeriodo={carregarProdutosDoPeriodo}
+          mostrarDicaClientes={!hideFranchiseeLinks}
+          pedidosNaoConferidos={pedidosFalharam}
+          onEscolherModo={handleEscolherModo}
+        />
+        {dialogos}
+        {folhaDatas}
+      </>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <HeroMetric
+        pnl={pnl}
+        prevPnl={prevPnl}
+        monthLabel={monthLabel}
+        onBaixarRelatorio={sales.length > 0 || expenses.length > 0 ? handleBaixarRelatorio : null}
+        gerandoRelatorio={gerandoRelatorio}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        isCurrentMonth={isCurrentMonth}
+      />
+
+      {!hasData ? (
+        <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+          <CardContent className="p-8 text-center">
+            <MaterialIcon icon="analytics" size={48} className="text-ink-4 mb-3 mx-auto" />
+            <h3 className="text-base font-medium text-ink mb-1 font-plus-jakarta">
+              Vazio por enquanto
+            </h3>
+            <p className="text-sm text-ink-2 mb-4">
+              Lance sua primeira venda do mês ou registre uma despesa pra ver seu resultado.
+            </p>
+            <Button onClick={handleLancarDespesa} variant="outline" className="gap-1.5 rounded-xl">
+              <MaterialIcon icon="add" size={16} />
+              Lançar despesa
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <ResumoAnoCard resumo={anoResumo} />
+
+          <ContextualBanner estado={estadoFinanceiro} />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardEmEstoque
+              estoque={estoqueResumo}
+              paradosCount={paradosCount}
+              onClickEstoque={handleClickEstoque}
+              onLancarCompra={handleLancarCompra}
+            />
+            <CardCaixa pnl={pnl} onLancarDespesa={handleLancarDespesa} />
+            <CardMaisVendidos topProducts={topProducts} onSeeAll={handleVerVendas} />
+          </div>
+
+          <OndeFoiODinheiro
+            expenses={monthExpenses}
+            taxasCartao={pnl.taxasCartao}
+            onLancarDespesa={handleLancarDespesa}
+          />
+
+          <EvolucaoCard evolucao={evolucaoData} />
+
+          {/* Despesas list (mantida) */}
+          <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+            <CardContent className="p-5 md:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+                  Despesas do mês
+                </h3>
+                <div className="flex items-center gap-2">
+                  <ExportButtons
+                    data={expensesExportData}
+                    columns={EXPENSES_EXPORT_COLUMNS}
+                    filename={`despesas-${format(selectedMonth, "yyyy-MM")}`}
+                    title={`Despesas — ${monthLabel}`}
+                    evento="planilha_despesas"
+                  />
+                  <Button size="sm" onClick={handleLancarDespesa} className="gap-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs">
+                    <MaterialIcon icon="add" size={16} />
+                    Adicionar
+                  </Button>
+                </div>
+              </div>
+
+              {monthExpenses.length === 0 ? (
+                <p className="text-sm text-ink-2 text-center py-6">Nenhuma despesa neste mês.</p>
+              ) : (
+                <div className="space-y-2">
+                  {monthExpensesSorted.map((exp) => {
+                    const meta = getCategoryMeta(exp.category);
+                    const isAuto = exp.source && exp.source !== "manual";
+                    return (
+                      <div key={exp.id} className="flex items-center gap-3 p-3 rounded-xl bg-surface border border-ink-shadow/5">
+                        <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: `${meta.color}15` }}>
+                          <MaterialIcon icon={meta.icon} size={16} style={{ color: meta.color }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-medium text-ink truncate">{exp.description}</p>
+                            {isAuto && (
+                              <span className="text-[11px] bg-brand-gold/15 text-brand-gold-ink px-1.5 py-0.5 rounded-full font-medium">
+                                auto
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-ink-2">
+                            {meta.label}
+                            {exp.supplier && ` · ${exp.supplier}`}
+                            {exp.expense_date && ` · ${format(parseISO(exp.expense_date), "dd/MM/yyyy")}`}
+                          </p>
+                        </div>
+                        <span className="text-sm font-semibold text-ink font-mono-numbers shrink-0">
+                          {formatBRL(exp.amount)}
+                        </span>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => handleEditExpense(exp)} className="p-1.5 rounded-lg hover:bg-brand-gold/10 text-ink-2 hover:text-brand-gold-ink">
+                            <MaterialIcon icon="edit" size={16} />
+                          </button>
+                          <button onClick={() => setDeleteConfirmId(exp.id)} className="p-1.5 rounded-lg hover:bg-brand/10 text-ink-2 hover:text-brand">
+                            <MaterialIcon icon="delete" size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Export Vendas (mantido) */}
+          {monthSales.length > 0 && (
+            <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+                      Exportar vendas
+                    </h3>
+                    <p className="text-xs text-ink-2/70 mt-1">
+                      {monthSales.length} venda{monthSales.length !== 1 ? "s" : ""} em {monthLabel}
+                    </p>
+                  </div>
+                  <ExportButtons
+                    data={exportData}
+                    columns={exportColumns}
+                    filename={`vendas-${format(selectedMonth, "yyyy-MM")}`}
+                    title={`Vendas — ${monthLabel}`}
+                    evento="planilha_resultado"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Audit log (mantido, colapsado) */}
+          {auditLogs.length > 0 && (
+            <Card className="bg-white rounded-2xl shadow-sm border border-ink-shadow/5">
+              <CardContent className="p-5 md:p-6">
+                <button onClick={() => setShowAuditLogs(v => !v)} className="flex items-center justify-between w-full">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-ink-2/80 font-plus-jakarta">
+                    Histórico de ações
+                  </h3>
+                  <MaterialIcon icon={showAuditLogs ? "expand_less" : "expand_more"} size={20} className="text-ink-2" />
+                </button>
+
+                {showAuditLogs && (
+                  <div className="mt-4 space-y-2">
+                    {auditLogs.map((log) => (
+                      <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-surface border border-ink-shadow/5">
+                        <div className="p-1.5 bg-brand/10 rounded-lg shrink-0 mt-0.5">
+                          <MaterialIcon
+                            icon={log.action === "create" ? "add_circle" : log.action === "update" ? "edit" : "delete"}
+                            size={14}
+                            className="text-brand"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-ink">
+                            <span className="font-medium">{log.user_name || "Usuário"}</span>{" "}
+                            {{ create: "criou", update: "editou", delete: "excluiu" }[log.action] || log.action}{" "}
+                            {{ sale: "venda", expense: "despesa" }[log.entity_type] || log.entity_type}
+                            {log.details?.value && <span className="text-ink-2"> ({formatBRL(log.details.value)})</span>}
+                            {log.details?.amount && <span className="text-ink-2"> ({formatBRL(log.details.amount)})</span>}
+                            {log.details?.description && <span className="text-ink-2"> — {log.details.description}</span>}
+                          </p>
+                          <p className="text-xs text-ink-2/70 mt-0.5">
+                            {log.created_at ? format(parseISO(log.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {dialogos}
+    </div>
+  );
+}

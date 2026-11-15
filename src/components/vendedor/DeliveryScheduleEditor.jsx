@@ -1,0 +1,310 @@
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import DeliveryFeeEditor from "@/components/vendedor/DeliveryFeeEditor";
+import { WEEKDAYS } from "@/lib/franchiseUtils";
+
+const inputClass = "bg-surface-line border-none rounded-xl px-3 py-2 focus:ring-2 focus:ring-brand/20 text-sm outline-none w-28 text-center";
+
+const timeOptions = Array.from({ length: 35 }, (_, i) => {
+  const h = Math.floor(i / 2) + 6;
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${String(h).padStart(2, "0")}:${m}`;
+});
+
+function generateLabel(days) {
+  if (!days || days.length === 0) return "";
+  const ordered = [...days].sort(
+    (a, b) => WEEKDAYS.findIndex((w) => w.value === a) - WEEKDAYS.findIndex((w) => w.value === b)
+  );
+  if (ordered.length === 7) return "Todos os dias";
+  if (ordered.length === 1) return WEEKDAYS.find((w) => w.value === ordered[0])?.label || ordered[0];
+
+  // Check consecutive weekdays
+  const indices = ordered.map((d) => WEEKDAYS.findIndex((w) => w.value === d));
+  const isConsecutive = indices.every((idx, i) => i === 0 || idx === indices[i - 1] + 1);
+  if (isConsecutive) {
+    const first = WEEKDAYS[indices[0]]?.label;
+    const last = WEEKDAYS[indices[indices.length - 1]]?.label;
+    return `${first}-${last}`;
+  }
+  return ordered.map((d) => WEEKDAYS.find((w) => w.value === d)?.label).join(", ");
+}
+
+function formatFeeRulesSummary(chargesFee, feeRules) {
+  if (!chargesFee) return "frete grátis";
+  if (!feeRules) return "";
+
+  if (feeRules?.mode === "modality") {
+    const rules = feeRules.rules || [];
+    return rules
+      .filter((r) => r.label && r.fee)
+      .map((r) => `${r.label}: R$${r.fee}`)
+      .join(", ");
+  }
+  const rules = Array.isArray(feeRules) ? feeRules : [];
+  return rules
+    .filter((r) => r.max_km && r.fee)
+    .map((r) => `até ${r.max_km}km R$${r.fee}`)
+    .join(", ");
+}
+
+export default function DeliveryScheduleEditor({ value = [], onChange }) {
+  // Sem horário salvo, a faixa abaixo é só SUGESTÃO: antes ela aparecia como se estivesse salva,
+  // a franqueada terminava as etapas e o QR do WhatsApp não gerava (working_days vazio).
+  const semHorarioSalvo = value.length === 0;
+  const ranges = value.length > 0
+    ? value
+    : [{ days: ["seg", "ter", "qua", "qui", "sex", "sab", "dom"], delivery_start: "06:00", delivery_end: "23:00", charges_fee: true, fee_rules: [{ max_km: "", fee: "" }] }];
+
+  const usedDays = ranges.flatMap((r) => r.days);
+  const availableDays = WEEKDAYS.filter((d) => !usedDays.includes(d.value));
+
+  const updateRange = (index, field, val) => {
+    const updated = ranges.map((r, i) => (i === index ? { ...r, [field]: val } : r));
+    onChange(updated);
+  };
+
+  const toggleDay = (rangeIndex, day) => {
+    const range = ranges[rangeIndex];
+    const newDays = range.days.includes(day)
+      ? range.days.filter((d) => d !== day)
+      : [...range.days, day];
+
+    if (newDays.length === 0) {
+      onChange(ranges.filter((_, i) => i !== rangeIndex));
+      return;
+    }
+    updateRange(rangeIndex, "days", newDays);
+  };
+
+  const addRange = () => {
+    if (availableDays.length === 0) return;
+    onChange([
+      ...ranges,
+      {
+        days: [availableDays[0].value],
+        delivery_start: "09:00",
+        delivery_end: "14:00",
+        charges_fee: true,
+        fee_rules: ranges[0]?.fee_rules || [{ max_km: "", fee: "" }],
+      },
+    ]);
+  };
+
+  const removeRange = (index) => {
+    onChange(ranges.filter((_, i) => i !== index));
+  };
+
+  const formatPreview = () => {
+    if (ranges.length === 0) return "Não definido";
+    return ranges
+      .map((r) => {
+        const label = generateLabel(r.days);
+        const time = `${r.delivery_start || "?"}-${r.delivery_end || "?"}`;
+        const fee = formatFeeRulesSummary(r.charges_fee, r.fee_rules);
+        const cutoff = r.order_cutoff
+          ? `, pedidos até ${r.order_cutoff} (após, entrega no próximo dia)`
+          : "";
+        return `${label}: ${time}${fee ? `, ${fee}` : ""}${cutoff}`;
+      })
+      .join(" | ");
+  };
+
+  return (
+    <div className="space-y-4">
+      {semHorarioSalvo && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl bg-warn-soft border border-warn/30">
+          <p className="text-xs text-warn-ink flex-1">
+            Ainda não há horário de entrega salvo. O de baixo é só uma sugestão: ajuste ou use como está.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange(ranges)}
+            className="px-3 py-2 rounded-lg bg-brand text-white text-xs font-bold hover:bg-brand-dark whitespace-nowrap"
+          >
+            Usar este horário
+          </button>
+        </div>
+      )}
+      {ranges.map((range, index) => (
+        <div key={index} className="bg-white rounded-xl p-3 sm:p-4 border border-surface-line/10 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-ink-2">
+              {generateLabel(range.days) || `Faixa ${index + 1}`}
+            </span>
+            {ranges.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeRange(index)}
+                className="text-xs text-brand hover:underline flex items-center gap-1"
+              >
+                <MaterialIcon icon="close" size={14} />
+                Remover
+              </button>
+            )}
+          </div>
+
+          {/* Day chips */}
+          <div className="flex flex-wrap gap-2">
+            {WEEKDAYS.map((day) => {
+              const isSelected = range.days.includes(day.value);
+              const isUsedElsewhere =
+                !isSelected && ranges.some((r, i) => i !== index && r.days.includes(day.value));
+              return (
+                <button
+                  key={day.value}
+                  type="button"
+                  disabled={isUsedElsewhere}
+                  onClick={() => toggleDay(index, day.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                    isSelected
+                      ? "bg-brand text-white"
+                      : isUsedElsewhere
+                      ? "bg-surface-line text-ink-2/30 cursor-not-allowed"
+                      : "bg-surface-line text-ink-2 hover:bg-surface-2"
+                  }`}
+                >
+                  {day.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Time selects */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-ink-2/60">Entrega das</span>
+            <select
+              className={inputClass}
+              value={range.delivery_start || ""}
+              onChange={(e) => updateRange(index, "delivery_start", e.target.value)}
+            >
+              <option value="">--</option>
+              {timeOptions.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <span className="text-xs text-ink-2/60">às</span>
+            <select
+              className={inputClass}
+              value={range.delivery_end || ""}
+              onChange={(e) => updateRange(index, "delivery_end", e.target.value)}
+            >
+              <option value="">--</option>
+              {timeOptions.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Fee toggle */}
+          <label className="flex items-center gap-3 p-3 rounded-xl bg-surface cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={range.charges_fee !== false}
+                onChange={(e) => updateRange(index, "charges_fee", e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-surface-line rounded-full peer-checked:bg-brand transition-colors" />
+              <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm peer-checked:translate-x-4 transition-transform" />
+            </div>
+            <span className="text-xs font-semibold text-ink-2">Cobro taxa de entrega</span>
+          </label>
+
+          {/* Fee rules */}
+          {range.charges_fee !== false ? (
+            <DeliveryFeeEditor
+              value={range.fee_rules}
+              onChange={(val) => updateRange(index, "fee_rules", val)}
+            />
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-ok-soft border border-ok/30">
+              <MaterialIcon icon="local_shipping" size={20} className="text-ok" />
+              <span className="text-sm font-semibold text-ok-ink">Entrega grátis nessa faixa</span>
+            </div>
+          )}
+
+          {/* Horário limite para pedidos */}
+          <div className="space-y-2 mt-2 p-3 rounded-xl bg-surface">
+            <p className="text-xs font-semibold text-ink-2">
+              Quando você aceita pedidos para essa faixa?
+            </p>
+
+            <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/60 transition-colors">
+              <input
+                type="radio"
+                name={`cutoff-${index}`}
+                checked={!range.order_cutoff}
+                onChange={() => updateRange(index, "order_cutoff", "")}
+                className="mt-0.5 accent-brand"
+              />
+              <div>
+                <span className="text-sm font-medium text-ink-2">Pedido chegou, eu entrego</span>
+                <p className="text-[10px] text-ink-2/50">Aceito pedidos a qualquer hora dentro do horário da faixa</p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-white/60 transition-colors">
+              <input
+                type="radio"
+                name={`cutoff-${index}`}
+                checked={!!range.order_cutoff}
+                onChange={() => updateRange(index, "order_cutoff", range.delivery_start || "17:00")}
+                className="mt-0.5 accent-brand"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-ink-2">Só entrego pedidos feitos até um horário</span>
+                {range.order_cutoff && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-xs text-ink-2/60">Pedidos até:</span>
+                    <select
+                      className={inputClass}
+                      value={range.order_cutoff}
+                      onChange={(e) => updateRange(index, "order_cutoff", e.target.value)}
+                    >
+                      {timeOptions.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </label>
+
+            {range.order_cutoff && (
+              <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-warn-soft border border-warn/30">
+                <MaterialIcon icon="info" size={14} className="text-warn-ink shrink-0" />
+                <p className="text-[10px] text-warn-ink">
+                  Pedidos após {range.order_cutoff} serão entregues no próximo dia disponível desta faixa
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Add range button */}
+      {availableDays.length > 0 && (
+        <button
+          type="button"
+          onClick={addRange}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-surface-line/30 text-sm font-medium text-ink-2 hover:border-brand/30 hover:text-brand transition-colors flex items-center justify-center gap-2"
+        >
+          <MaterialIcon icon="add" size={18} />
+          Adicionar dias com horário diferente
+        </button>
+      )}
+
+      {/* Preview */}
+      {ranges.length > 0 && (
+        <div className="bg-surface rounded-xl p-3">
+          <p className="text-[10px] uppercase tracking-widest font-bold text-ink-2/50 mb-1">
+            O vendedor vai dizer:
+          </p>
+          <p className="text-xs text-ink-2 italic">
+            "Entregamos {formatPreview()}"
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
