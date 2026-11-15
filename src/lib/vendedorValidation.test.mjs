@@ -96,8 +96,9 @@ assert.equal(semTitular.erros.length, 0);
 assert.match(semTitular.avisos[0], /Pix no cardápio.*titular/);
 assert.match(validarEtapa(3, { ...pixCard, pix_key_type: "" }, ["pix_key_type"]).avisos.join(" "), /tipo da chave/);
 assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", pix_no_cardapio: false }, ["pix_holder_name"])));
-assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", pickup_pay_on_pickup: true }, ["pix_holder_name"])));
-assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", pix_on_delivery: true }, ["pix_holder_name"]))); // Pix na entrega vale na retirada: paga ao buscar, sem código
+// 15/11/2026: quem recebe na hora também mostra o Pix no cardápio (opcional para o cliente): o aviso do titular vale igual
+assert.match(validarEtapa(3, { ...pixCard, pix_holder_name: "", pickup_pay_on_pickup: true }, ["pix_holder_name"]).avisos.join(" "), /titular/);
+assert.match(validarEtapa(3, { ...pixCard, pix_holder_name: "", pix_on_delivery: true }, ["pix_holder_name"]).avisos.join(" "), /titular/);
 assert.ok(ok(validarEtapa(3, { ...pixCard, pix_holder_name: "", payment_pickup: ["cash"] }, ["pix_holder_name"])));
 assert.equal(validarEtapa(3, { ...base, payment_link: "meu link" }, ["payment_link"]).erros.length, 0);
 assert.equal(validarEtapa(3, { ...base, payment_link: "meu link" }, ["payment_link"]).avisos.length, 1);

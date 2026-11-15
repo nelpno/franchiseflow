@@ -851,7 +851,6 @@ function FranchiseSettingsContent() {
   // Pix marcado na retirada (a tela exige lista própria da retirada: não herda a da entrega)
   const pixNaRetirada = hasPickup && (formData.payment_pickup || []).includes('pix');
   // paga ao buscar: "Na hora da retirada" ou "Pix na entrega" (que vale também na retirada): o cardápio não mostra código (o banco ignora a opção)
-  const pagaNaHora = !!(formData.pickup_pay_on_pickup || formData.pix_on_delivery);
   const usaLink = metodosMarcados.some((pm) => pm.value === 'payment_link');
   const metodosComTaxa = metodosMarcados.filter((pm) => pm.value !== 'cash');
 
@@ -1348,18 +1347,12 @@ function FranchiseSettingsContent() {
                     <FieldHint text="Na hora da retirada: o pedido entra em Vendas como “a receber” e você cobra quando o cliente buscar. Se o cliente sumir, exclua a venda. A entrega não muda." />
                   </div>
                 )}
-                {hasPickup && pixNaRetirada && pagaNaHora && (
-                  <p className="text-xs text-ink-3 flex items-start gap-1.5">
-                    <MaterialIcon icon="info" size={14} className="mt-0.5 shrink-0" />
-                    <span>{formData.pickup_pay_on_pickup ? 'Com “Na hora da retirada”' : 'Com “Pix na entrega” ligado'} não há código Pix no cardápio: o cliente paga ao buscar.</span>
-                  </p>
-                )}
-                {hasPickup && pixNaRetirada && !pagaNaHora && (
+                {hasPickup && pixNaRetirada && (
                   <div>
                     <ToggleCard
                       icon="qr_code_2"
                       label="Pix no cardápio: mostrar o código Pix na retirada"
-                      description="Ligado, quem escolhe retirada e Pix no cardápio digital vê o botão Copiar código Pix, com o valor do pedido já preenchido e o nome de quem recebe. O cliente paga e manda o comprovante no WhatsApp; o robô só pede o comprovante e confere o valor. A sua chave Pix fica dentro do código (quem colar no banco a vê, como já vê ao receber a chave pelo robô). Entrega não muda."
+                      description="Ligado, quem escolhe retirada e Pix no cardápio digital vê o botão Copiar código Pix, com o valor do pedido já preenchido e o nome de quem recebe. O cliente paga e manda o comprovante no WhatsApp; o robô só pede o comprovante e confere o valor. É opcional para o cliente: quem não copiar paga como sempre (inclusive ao buscar, se você recebe na hora). A sua chave Pix fica dentro do código (quem colar no banco a vê, como já vê ao receber a chave pelo robô). Entrega não muda."
                       checked={formData.pix_no_cardapio ?? false}
                       onChange={(val) => handleInputChange('pix_no_cardapio', val)}
                     />
