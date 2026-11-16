@@ -533,9 +533,13 @@ export default function SaleForm({
   // Cliente vinha VAZIO; a franqueada digitava o nome e o salvar criava um contato NOVO sem telefone (6 vendas desde
   // 08/11, ex. Imirim 15/11 11:30): o cliente perdia o histórico, a fidelidade e a venda saía do funil do cardápio.
   // Agora busca o contato da venda pelo id; sem contato, mostra o telefone gravado na venda (o salvar acha/cria por ele).
+  const contatoVendaBuscadoRef = useRef(null); // busca 1 vez por venda (a lista de contatos recarrega e não pode refazer a consulta)
   useEffect(() => {
     if (!sale || usuarioMexeuContatoRef.current) return;
     if (sale.contact_id && contacts.some((ct) => ct.id === sale.contact_id)) return;
+    const chave = `${sale.id}|${sale.contact_id || ""}`;
+    if (contatoVendaBuscadoRef.current === chave) return;
+    contatoVendaBuscadoRef.current = chave;
     let cancelado = false;
     (async () => {
       let c = null;
@@ -546,7 +550,11 @@ export default function SaleForm({
           c = null;
         }
       }
-      if (cancelado || usuarioMexeuContatoRef.current) return;
+      if (cancelado) {
+        contatoVendaBuscadoRef.current = null; // desmontou antes de responder: a próxima montagem busca de novo
+        return;
+      }
+      if (usuarioMexeuContatoRef.current) return;
       if (c) {
         setContactSearch(c.nome || formatPhone(c.telefone));
         setContactPhone(c.telefone || null);
