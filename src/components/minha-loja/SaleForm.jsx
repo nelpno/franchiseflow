@@ -529,6 +529,36 @@ export default function SaleForm({
       .finally(() => setLoadingItems(false));
   }, [sale, contacts]);
 
+  // 16/11/2026 (auditoria do cardápio): ao editar uma venda do robô cujo contato não está na lista carregada, o campo
+  // Cliente vinha VAZIO; a franqueada digitava o nome e o salvar criava um contato NOVO sem telefone (6 vendas desde
+  // 08/11, ex. Imirim 15/11 11:30): o cliente perdia o histórico, a fidelidade e a venda saía do funil do cardápio.
+  // Agora busca o contato da venda pelo id; sem contato, mostra o telefone gravado na venda (o salvar acha/cria por ele).
+  useEffect(() => {
+    if (!sale || usuarioMexeuContatoRef.current) return;
+    if (sale.contact_id && contacts.some((ct) => ct.id === sale.contact_id)) return;
+    let cancelado = false;
+    (async () => {
+      let c = null;
+      if (sale.contact_id) {
+        try {
+          [c] = await Contact.filter({ id: sale.contact_id }, null, 1, { columns: "id, nome, telefone, endereco, bairro" });
+        } catch {
+          c = null;
+        }
+      }
+      if (cancelado || usuarioMexeuContatoRef.current) return;
+      if (c) {
+        setContactSearch(c.nome || formatPhone(c.telefone));
+        setContactPhone(c.telefone || null);
+      } else if (!sale.contact_id && isValidPhone(sale.contact_phone || "")) {
+        setContactSearch(formatPhone(sale.contact_phone));
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [sale, contacts]);
+
   // Data restaurada do rascunho enquanto a chave ui_v2 ainda não era conhecida (ver abaixo).
   const dataRestauradaRef = useRef(null);
   const aplicarDataDoRascunho = (saleDateDoRascunho, salvoEm) => {
