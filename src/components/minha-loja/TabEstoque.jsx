@@ -57,24 +57,41 @@ const UNIT_OPTIONS = [
   { value: "pacote", label: "Pacote" },
 ];
 
-const CATEGORY_OPTIONS = [
-  "Massas",
-  "Molhos",
-  "Outros",
+const CATEGORY_OPTIONS = ["Massas", "Molhos", "Queijo ralado", "Pão de queijo", "Outros"];
+
+// Grupo e categoria saem do NOME e da ORIGEM, a mesma regra do cardápio digital (site/pedido cardapio.js) e da arte
+// (lib/cardapioArte.js). 16/11/2026 (Paulo, Guarulhos): a categoria escolhida à mão não valia em lugar nenhum e estava
+// bagunçada na rede (pão de queijo em "Massas", massa em "Outros"). Massa criada pela unidade (prato pronto, outra
+// marca) não é da linha Maxi: fica em Outros. O nome do item da fábrica é travado, então a origem é confiável.
+const SECOES = [
+  { grupo: "Canelone", re: /^canel+on/i, massa: true },
+  { grupo: "Conchiglione", re: /^conchiglione/i, massa: true },
+  { grupo: "Massa", re: /^massa\b/i, massa: true },
+  { grupo: "Nhoque", re: /^nhoque/i, massa: true },
+  { grupo: "Rondelli", re: /^rondel+i/i, massa: true },
+  { grupo: "Sofioli", re: /^sofioli/i, massa: true },
+  { grupo: "Molho", re: /^(molho|passata)\b/i, categoria: "Molhos" },
+  { grupo: "Queijo ralado", re: /^queijo\b.*\bralado\b/i, categoria: "Queijo ralado" },
+  { grupo: "Pão de queijo", re: /^p[ãa]o\s+(de\s+)?(queijo|qjo)\b/i, categoria: "Pão de queijo" },
 ];
-
-const MASSA_PREFIXES = ["canelone", "conchiglione", "massa", "nhoque", "rondelli", "sofioli"];
-const MOLHO_PREFIXES = ["molho"];
-
-function getCategoryFromName(name) {
-  if (!name) return "";
-  const lower = name.toLowerCase().trim();
-  if (MASSA_PREFIXES.some((p) => lower.startsWith(p))) return "Massas";
-  if (MOLHO_PREFIXES.some((p) => lower.startsWith(p))) return "Molhos";
-  return "Outros";
+function secaoDe(name, propria) {
+  const s = SECOES.find((x) => x.re.test(String(name || "").trim()));
+  return s && !(propria && s.massa) ? s : null;
 }
+function getCategoryFromName(name, propria = false) {
+  if (!name) return "";
+  const s = secaoDe(name, propria);
+  return s ? s.categoria || "Massas" : "Outros";
+}
+const categoriaDe = (item) => getCategoryFromName(item?.product_name, !!item?.created_by_franchisee);
+// No banco fica o vocabulário antigo (Massas | Molhos | Outros): o robô vendedor lê a categoria e marca "Outros" como
+// "sem descrição" (não inventa o que é o pão de queijo). "Pão de queijo" e "Queijo ralado" são só da tela.
+const categoriaParaGravar = (name, propria) => {
+  const c = getCategoryFromName(name, propria);
+  return c === "Massas" || c === "Molhos" ? c : "Outros";
+};
 
-const GROUP_ORDER = ["Canelone", "Conchiglione", "Massa", "Nhoque", "Fatiado", "Rondelli", "Sofioli", "Molho"];
+const GROUP_ORDER = SECOES.map((x) => x.grupo);
 
 // Agrupa por tipo de produto (1a palavra do nome) — usado na lista normal e no modo contagem.
 function groupItemsByType(list) {
@@ -82,8 +99,7 @@ function groupItemsByType(list) {
   const groupMap = {};
 
   list.forEach((item) => {
-    const firstWord = item.product_name.split(" ")[0];
-    const groupKey = GROUP_ORDER.includes(firstWord) ? firstWord : "Outros";
+    const groupKey = secaoDe(item.product_name, !!item.created_by_franchisee)?.grupo || "Outros";
     if (!groupMap[groupKey]) {
       groupMap[groupKey] = { label: groupKey, items: [] };
       groups.push(groupMap[groupKey]);
@@ -311,7 +327,7 @@ export default function TabEstoque({
   const filteredItems = useMemo(() => items.filter((item) => {
     if (item.active === false) return false; // hidden items shown separately
 
-    const itemCategory = item.category || getCategoryFromName(item.product_name);
+    const itemCategory = categoriaDe(item);
     const matchesSearch =
       !searchTerm ||
       item.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -367,7 +383,7 @@ export default function TabEstoque({
   // mas ainda respeita busca e categoria para achar o produto rapido.
   const countableItems = useMemo(() => items.filter((item) => {
     if (item.active === false) return false;
-    const itemCategory = item.category || getCategoryFromName(item.product_name);
+    const itemCategory = categoriaDe(item);
     const matchesSearch =
       !searchTerm ||
       item.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -495,12 +511,18 @@ export default function TabEstoque({
   const [selectedFromCatalog, setSelectedFromCatalog] = useState(false);
   // Comparar nomes de produto: sem diferença de maiúsculas e de espaços repetidos (29/09).
   const normalizarNome = (nome) => String(nome || "").toLowerCase().replace(/\s+/g, " ").trim();
+  // Origem do produto no formulário (a mesma conta do salvar): editando = a do item; novo = nome fora da tabela da fábrica.
+  const propriaNoForm = editingItem
+    ? !!editingItem.created_by_franchisee
+    : !isAdmin && (standardCatalog.length > 0
+      ? !standardCatalog.some((p) => normalizarNome(p.product_name) === normalizarNome(formData.product_name))
+      : !selectedFromCatalog);
 
   const handleSelectStandard = (product) => {
     setFormData((prev) => ({
       ...prev,
       product_name: product.product_name,
-      category: product.category || getCategoryFromName(product.product_name),
+      category: getCategoryFromName(product.product_name),
       unit: product.unit || "un",
       cost_price: product.cost_price ? String(product.cost_price) : "",
       sale_price: product.sale_price ? String(product.sale_price) : "",
@@ -523,7 +545,7 @@ export default function TabEstoque({
     setEditingItem(item);
     setFormData({
       product_name: item.product_name || "",
-      category: item.category || getCategoryFromName(item.product_name),
+      category: categoriaDe(item),
       quantity: String(item.quantity ?? ""),
       unit: item.unit || "un",
       min_stock: String(item.min_stock ?? ""),
@@ -546,7 +568,7 @@ export default function TabEstoque({
       const payload = {
         franchise_id: franchiseId,
         product_name: formData.product_name.trim(),
-        category: formData.category || null,
+        category: categoriaParaGravar(formData.product_name, propriaNoForm),
         unit: formData.unit,
         min_stock: parseInt(formData.min_stock, 10) || 0,
         cost_price: parseFloat(formData.cost_price) || null,
@@ -605,6 +627,8 @@ export default function TabEstoque({
         const nomeDaFabrica = standardCatalog.length > 0
           ? !!daTabela
           : selectedFromCatalog; // catálogo não carregou: vale a escolha na sugestão, como antes
+        // categoria pela origem que vai ser GRAVADA (a do formulário é só a prévia)
+        payload.category = categoriaParaGravar(payload.product_name, !isAdmin && !nomeDaFabrica);
         const newItem = await InventoryItem.create({
           ...payload,
           // Produto da fábrica = nome IGUAL ao da tabela (escolhido na sugestão ou digitado igual);
@@ -1033,7 +1057,7 @@ export default function TabEstoque({
       const giro = giroByItem[item.id] || 0;
       return [
         sanitizeCSVCell(item.product_name),
-        sanitizeCSVCell(item.category || getCategoryFromName(item.product_name)),
+        sanitizeCSVCell(categoriaDe(item)),
         item.quantity,
         sanitizeCSVCell(item.unit),
         item.min_stock,
@@ -1631,7 +1655,7 @@ export default function TabEstoque({
                               {item.product_name}
                             </h4>
                             <p className="text-xs text-ink-2">
-                              {item.category || getCategoryFromName(item.product_name)} · {getUnitLabel(item.unit)}
+                              {categoriaDe(item)} · {getUnitLabel(item.unit)}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 ml-2">
@@ -1883,7 +1907,7 @@ export default function TabEstoque({
                               </TableCell>
 
                               <TableCell className="text-sm text-ink-2">
-                                {item.category || getCategoryFromName(item.product_name)}
+                                {categoriaDe(item)}
                               </TableCell>
 
                               {/* Quantity - inline edit */}
@@ -2105,7 +2129,7 @@ export default function TabEstoque({
           item={countMode ? null : itemAberto}
           info={itemAberto ? infoV2[itemAberto.id] : null}
           intervaloDias={pedidosUnidade.intervalo.dias}
-          categoria={itemAberto ? itemAberto.category || getCategoryFromName(itemAberto.product_name) : ""}
+          categoria={itemAberto ? categoriaDe(itemAberto) : ""}
           onFechar={() => setItemAbertoId(null)}
           onEditar={() => { const it = itemAberto; setItemAbertoId(null); if (it) handleOpenEditDialog(it); }}
           onOcultar={() => { const it = itemAberto; setItemAbertoId(null); if (it) handleToggleActive(it); }}
@@ -2179,27 +2203,11 @@ export default function TabEstoque({
             {/* Category */}
             <div className="space-y-2">
               <Label className="text-ink">Categoria</Label>
-              <Select
-                value={formData.category || "none"}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    category: val === "none" ? "" : val,
-                  }))
-                }
-              >
-                <SelectTrigger className="bg-surface-line border-none rounded-xl">
-                  <SelectValue placeholder="Selecione a categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sem categoria</SelectItem>
-                  {CATEGORY_OPTIONS.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* 16/11/2026: sai do nome e da origem, a mesma regra do cardápio; escolher à mão não valia em lugar nenhum */}
+              <p className="rounded-xl bg-surface-line px-3 py-2 text-sm text-ink">
+                {formData.product_name.trim() ? getCategoryFromName(formData.product_name, propriaNoForm) : "—"}
+              </p>
+              <p className="text-xs text-ink-3">Automática pelo nome. Massa que não é da fábrica, como prato pronto, fica em Outros.</p>
             </div>
 
             {/* Quantity and Unit — Quantidade some quando editando pelo menu do modo

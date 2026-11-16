@@ -39,9 +39,17 @@ const DEMAIS = [
   { chave: "pao", titulo: "Pão de queijo", re: /^p[ãa]o\s+(de\s+)?(queijo|qjo\.?)\s*/i },
 ];
 
-// produto da linha da Maxi (o que entra na arte sem marcar "Incluir outros produtos")
+// produto da linha da Maxi (o que entra na arte sem marcar "Incluir outros produtos"). 16/11/2026: item criado pela
+// unidade (propria, RPC cardapio_painel 16a) nunca é da linha: prato pronto e massa de outra marca saíam como sabor Maxi.
+const ehPropria = (p) => p?.propria === true;
+// Massas da Maxi em DEMAIS: produto da unidade com esse nome vai para "Outros produtos" (molho, queijo e pão são por tipo).
+const MASSA_DEMAIS = new Set(["nhoque_batata", "pastel", "lasanha"]);
 const ehDaLinha = (nome) =>
   RECHEADAS.some((f) => f.re.test(nome)) || ehMariolla(nome) || DEMAIS.some((f) => f.re.test(nome) && (!f.so || f.so.test(nome)));
+// item da unidade entra na arte (sem "Incluir outros") só nas seções por tipo: molho, queijo ralado, pão de queijo
+const entraSemOutros = (p, nome) => (ehPropria(p)
+  ? DEMAIS.some((f) => !MASSA_DEMAIS.has(f.chave) && f.re.test(nome) && (!f.so || f.so.test(nome)))
+  : ehDaLinha(nome));
 
 const UNIDADES_PESO = [
   { re: /^(kg|kl|quilos?)$/i, un: "kg", fator: 1000 },
@@ -141,8 +149,8 @@ export function entraNoCardapio(p, agora = new Date()) {
 export function escondidosDaArte(produtos, { incluirOutros = false, agora = new Date() } = {}) {
   return (produtos || [])
     .filter((p) => p?.visivel === false && entraNoCardapio({ ...p, visivel: true }, agora))
+    .filter((p) => { const nome = String(p.produto || "").trim(); return nome && (incluirOutros || entraSemOutros(p, nome)); })
     .map((p) => String(p.produto || "").trim())
-    .filter((nome) => nome && (incluirOutros || ehDaLinha(nome)))
     .sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
@@ -161,7 +169,7 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
 
   const usados = new Set();
   for (const fam of RECHEADAS) {
-    const itens = lista.filter((p) => fam.re.test(String(p.produto || "").trim()));
+    const itens = lista.filter((p) => !ehPropria(p) && fam.re.test(String(p.produto || "").trim()));
     itens.forEach((p) => usados.add(p));
     const principal = [];
     const resto = new Map(); // variante + peso -> itens
@@ -186,15 +194,15 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
   for (const p of lista) {
     if (usados.has(p)) continue;
     const nome = String(p.produto || "").trim();
-    if (ehMariolla(nome)) { mariolla.push({ rotulo: pesoDe(nome)?.texto || "Molho", preco: Number(p.preco) }); continue; }
+    if (ehMariolla(nome) && !ehPropria(p)) { mariolla.push({ rotulo: pesoDe(nome)?.texto || "Molho", preco: Number(p.preco) }); continue; }
     const fam = DEMAIS.find((f) => f.re.test(nome) && (!f.so || f.so.test(nome)));
-    if (!fam) { outros.push(p); continue; }
+    if (!fam || (ehPropria(p) && MASSA_DEMAIS.has(fam.chave))) { outros.push(p); continue; }
     if (!porDemais.has(fam.chave)) porDemais.set(fam.chave, []);
     const peso = pesoDe(nome);
     let sabor = saborDe(nome, fam.re);
     if (fam.chave === "queijo") sabor = comoEsta(nome.replace(peso?.bruto || "", " ").replace(/^queijo\s+/i, ""));
     const rotulo = [sabor, peso?.texto].filter(Boolean).join(" ") || peso?.texto || grafia(nome);
-    porDemais.get(fam.chave).push({ rotulo, preco: Number(p.preco) });
+    porDemais.get(fam.chave).push({ rotulo, preco: Number(p.preco), propria: ehPropria(p) });
   }
 
   const semRepetir = (itens, ordem) => {
@@ -206,11 +214,14 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
   };
   const destaques = [];
   const paes = porDemais.get("pao");
-  if (paes?.length) {
-    const dugab = lista.some((p) => DEMAIS.find((f) => f.chave === "pao").re.test(String(p.produto || "").trim()) && ehPaoDugab(p.produto));
+  // destaque com a foto do pacote só se a unidade tem o pão da fábrica; só pão de outra marca vira lista simples
+  const paoDaFabrica = paes?.some((i) => !i.propria);
+  if (paes?.length && paoDaFabrica) {
+    const dugab = lista.some((p) => !ehPropria(p) && DEMAIS.find((f) => f.chave === "pao").re.test(String(p.produto || "").trim()) && ehPaoDugab(p.produto));
     destaques.push({
       chave: "pao", ...DESTAQUES.pao, texto: dugab ? DESTAQUES.pao.texto : "",
-      linhas: semRepetir(paes, (a, b) => a.preco - b.preco || a.rotulo.localeCompare(b.rotulo, "pt-BR")),
+      // só o pão da fábrica fica sob a foto do pacote; o de outra marca vai para a lista "Outros pães de queijo"
+      linhas: semRepetir(paes.filter((i) => !i.propria), (a, b) => a.preco - b.preco || a.rotulo.localeCompare(b.rotulo, "pt-BR")),
     });
   }
   if (mariolla.length) {
@@ -219,10 +230,11 @@ export function montarCardapio(produtos, { incluirOutros = false, agora = new Da
 
   const grupos = [...gruposRecheada];
   for (const fam of DEMAIS) {
-    if (fam.chave === "pao") continue;
-    const itens = porDemais.get(fam.chave);
+    const pao = fam.chave === "pao";
+    const itens = pao && paoDaFabrica ? paes.filter((i) => i.propria) : porDemais.get(fam.chave);
     if (!itens?.length) continue;
-    grupos.push({ chave: fam.chave, titulo: fam.titulo, tipo: "lista", linhas: semRepetir(itens, (a, b) => b.preco - a.preco) });
+    const titulo = pao && paoDaFabrica ? "Outros pães de queijo" : fam.titulo;
+    grupos.push({ chave: pao && paoDaFabrica ? "pao-outros" : fam.chave, titulo, tipo: "lista", linhas: semRepetir(itens, (a, b) => b.preco - a.preco) });
   }
   if (incluirOutros && outros.length) {
     grupos.push({

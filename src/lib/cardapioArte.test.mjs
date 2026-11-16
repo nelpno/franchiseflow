@@ -171,4 +171,37 @@ t("escondidos que ficaram fora da arte: só os que entrariam visíveis, da linha
   assert.match(JSON.stringify(vis.principais.find((x) => x.chave === "sofioli")), /4 queijos/);
 });
 
+t("produto da unidade (propria) nunca vira sabor Maxi nem ganha foto da Maxi (16/11/2026)", () => {
+  const prods = [
+    P("Rondelli 4 Queijos - 700g Rolo", 45), // fábrica
+    P("Rondelli de Quatro Queijos molho parisiense - 500g", 35, { propria: true }), // prato pronto (Guarulhos)
+    P("Sofioli de Costela 500g", 47.9, { propria: true }), // outra marca (Piratininga)
+    P("Nhoque de Batata molho ao sugo - 500g", 18, { propria: true }),
+    P("Molho de Tomate Sugo - 500g", 16, { propria: true }), // não é o Mariolla
+    P("Pão de Queijo Tradicional Premium 1 kg", 33.9, { propria: true }), // outra marca: sem destaque/foto da Dugab
+  ];
+  const c = montarCardapio(prods, { agora: AGORA });
+  const txt = JSON.stringify(c);
+  assert.doesNotMatch(txt, /parisiense|costela/i, "prato pronto e outra marca fora da linha Maxi");
+  assert.equal(c.principais.find((x) => x.chave === "rondelli").linhas.length, 1, "só o rondelli da fábrica");
+  assert.equal(c.destaques.find((d) => d.chave === "mariolla"), undefined, "molho da unidade não vira Mariolla");
+  assert.equal(c.destaques.find((d) => d.chave === "pao"), undefined, "pão de outra marca não ganha o destaque com foto");
+  assert.match(JSON.stringify(c.grupos.find((g) => g.chave === "pao")), /premium/i, "pão de outra marca fica em lista simples");
+  assert.equal(c.outros, 3, "prato pronto, Sofioli de Costela e nhoque ao sugo vão para Outros produtos");
+  const comOutros = montarCardapio(prods, { agora: AGORA, incluirOutros: true });
+  assert.match(JSON.stringify(comOutros.grupos.find((g) => g.chave === "outros")), /parisiense/);
+  // controle: o mesmo nome vindo da fábrica (propria ausente) continua sabor Maxi
+  const fab = montarCardapio([P("Sofioli de Costela 500g", 47.9)], { agora: AGORA });
+  assert.match(JSON.stringify(fab.grupos.concat(fab.principais)), /costela/i);
+  // pão da fábrica junto com o de outra marca: destaque mantido
+  const ambos = montarCardapio([P("Pão de Queijo Tradicional - 1kg", 29.9), P("Pão de Queijo Tradicional Premium 1 kg", 33.9, { propria: true })], { agora: AGORA });
+  const dPao = ambos.destaques.find((d) => d.chave === "pao");
+  assert.ok(dPao);
+  assert.doesNotMatch(JSON.stringify(dPao.linhas), /premium/i, "pão de outra marca não fica sob a foto da Dugab");
+  assert.match(JSON.stringify(ambos.grupos.find((g) => g.chave === "pao-outros")), /Outros pães de queijo.*premium/i);
+  assert.equal(A.escondidosDaArte([P("Rondelli ao sugo - 500g", 30, { visivel: false, propria: true })], { agora: AGORA }).length, 0);
+  // queijo ralado da unidade entra na arte (seção por tipo): escondido, aparece no aviso
+  assert.deepEqual(A.escondidosDaArte([P("Queijo Ralado Vigor 50g", 9, { visivel: false, propria: true })], { agora: AGORA }), ["Queijo Ralado Vigor 50g"]);
+});
+
 console.log(`cardapioArte: ${n} testes ok`);
