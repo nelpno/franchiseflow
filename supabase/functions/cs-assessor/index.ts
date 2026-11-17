@@ -925,7 +925,13 @@ async function transcreve(bytes: Uint8Array, mime: string, nome: string): Promis
       custo = (aud * 6 + txt * 2.5 + Number(u.output_tokens || 0) * 10) / 1e6;
     } else if (u.seconds) custo = (Number(u.seconds) / 60) * 0.006;
     else custo = Math.max(0.002, (bytes.length / 16000 / 60) * 0.006);
-    return { texto: String(j.text || "").trim(), custo, modelo };
+    // Áudio mudo ou só ruído: o modelo às vezes "inventa" texto em outro alfabeto (chinês, árabe...);
+    // em português falado isso nunca é fala real. Menos de 60% das letras latinas = descarta.
+    let texto = String(j.text || "").trim();
+    const letras = texto.match(/\p{L}/gu) || [];
+    const latinas = texto.match(/\p{Script=Latin}/gu) || [];
+    if (letras.length > 0 && latinas.length / letras.length < 0.6) texto = "";
+    return { texto, custo, modelo };
   }
   throw new Error(`transcricao falhou: ${ultimoErro}`);
 }
