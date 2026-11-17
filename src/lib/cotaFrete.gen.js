@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: 0f5080d0afe77ef27daae4a54a28f6f16dd3b1de3e7763aa6f91c42b93b559d2
+// sha256 da fonte: 75e4509e6bfbbdf8c47a279f80692c012f35ca9178047475475217d7b28aa32f
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -170,7 +170,7 @@ function cotaOpcao(tipo, taxa) {
     tipo: tipo.nome,
     taxa: taxa,
     janela: cotaHora(tipo.inicio) + ' às ' + cotaHora(tipo.fim),
-    prazo: tipo.promessa === 'minutos' && tipo.minutos ? 'em até ' + tipo.minutos + ' min depois de confirmado' : 'dentro da janela, sem hora marcada',
+    prazo: tipo.promessa === 'minutos' && tipo.minutos ? 'em até ' + tipo.minutos + ' min depois de confirmado' : 'dentro da janela',
     pedidos_ate: cotaHora(tipo.corte || tipo.fim)
   };
 }
@@ -190,6 +190,7 @@ function cotaEspecial(lista, data) {
   for (var i = 0; i < (lista || []).length; i++) {
     var x = lista[i];
     if (!x || !/^\d{4}-\d{2}-\d{2}$/.test(String(x.de || ''))) continue;
+    if (x.ate && !/^\d{4}-\d{2}-\d{2}$/.test(String(x.ate))) continue; // mesma validação do Customer Context (__HE)
     if (x.vale && x.vale !== 'ambos' && x.vale !== 'entrega') continue;
     if (x.tipo !== 'fechado' && !(x.tipo === 'horario' && cotaMin(x.abre) != null && cotaMin(x.fecha) != null && cotaMin(x.abre) < cotaMin(x.fecha))) continue;
     if (data >= x.de && data <= (x.ate || x.de)) return x;
@@ -205,8 +206,9 @@ function cotaTiposDoDia(grupo, esp) {
   return grupo.tipos.map(function (t) {
     var ini = Math.max(cotaMin(t.inicio), a), fim = Math.min(cotaMin(t.fim), f);
     if (!(ini < fim)) return null;
-    var corte = cotaMin(t.corte) != null ? Math.min(cotaMin(t.corte), fim) : null;
-    return Object.assign({}, t, { inicio: cotaHoraMin(ini), fim: cotaHoraMin(fim), corte: corte != null ? cotaHoraMin(corte) : t.corte });
+    // corte só vale se cair dentro da janela nova (mesma regra do Customer Context); fora dela, vale o fim
+    var c = cotaMin(t.corte), corte = c != null && c > ini && c < fim ? c : null;
+    return Object.assign({}, t, { inicio: cotaHoraMin(ini), fim: cotaHoraMin(fim), corte: corte != null ? cotaHoraMin(corte) : null });
   }).filter(Boolean);
 }
 function cotaRotuloEspecial(x) {
@@ -310,6 +312,15 @@ function cotarFrete(pricing, destino, agora, extra) {
     if (de > ate) return;
     espLista.push(cotaDataCurta(de) + (ate !== de ? ' a ' + cotaDataCurta(ate) : '') + ': ' + cotaRotuloEspecial(x));
   });
+  // hoje com horário diferente: as opções de hoje já recortadas (a tabela em grupos é a da semana)
+  if (espHoje && espHoje.tipo === 'horario' && gHoje && !hojeForaDoDia) {
+    var gH = grupos.find(function (g) { return g._g === gHoje; });
+    var tiposH = cotaTiposDoDia(gHoje, espHoje);
+    saida.hoje.opcoes = (gH ? gH.opcoes : []).map(function (o) {
+      var t = tiposH.find(function (x) { return x.nome === o.tipo; });
+      return t && abertosHoje.indexOf(o.tipo) !== -1 ? Object.assign({}, o, { janela: cotaHora(t.inicio) + ' às ' + cotaHora(t.fim), pedidos_ate: cotaHora(t.corte || t.fim) }) : null;
+    }).filter(Boolean);
+  }
   if (espLista.length) {
     saida.horario_especial = espLista;
     saida.instrucao += ' Nas datas de horario_especial vale ele, não a tabela da semana: fechado = sem entrega nesse dia; horário diferente = entrega só dentro dele.';

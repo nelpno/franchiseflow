@@ -149,8 +149,8 @@ assert.deepEqual(chaves(zonasRuins, { estruturado: true }), ["z0.nomes", "z1.val
 assert.equal(fraseDoGrupo(GUARUJA.grupos[0]),
   "De segunda a sexta, tem a programada, das 16h às 19h, por R$ 10 e a imediata, das 10h às 19h, que chega em até 60 min, por R$ 15. Pedidos até as 17h.");
 assert.equal(fraseDoGrupo(m.grupos[0]),
-  "De segunda a sexta, entregamos das 10h às 19h, dentro da janela, sem hora marcada, por R$ 6 até 3 km, R$ 9 até 6 km e R$ 12 até 10 km. Pedidos até as 17h.");
-assert.equal(fraseDoGrupo(m.grupos[2]), "No domingo, entregamos das 10h às 12h, dentro da janela, sem hora marcada, sem taxa.");
+  "De segunda a sexta, entregamos das 10h às 19h, por R$ 6 até 3 km, R$ 9 até 6 km e R$ 12 até 10 km. Pedidos até as 17h.");
+assert.equal(fraseDoGrupo(m.grupos[2]), "No domingo, entregamos das 10h às 12h, sem taxa.");
 assert.equal(textoTaxa({ modo: "fixa", valor: 10.5 }), "por R$ 10,50");
 // com bairros na lista a taxa do grupo só vale fora dela (Ubatuba lia "por R$ 20" como preço fechado, 24/09)
 const ubaSemana = { dias: ["seg", "ter", "qua", "qui", "sex"], tipos: [{ nome: "Entrega", inicio: "08:30", fim: "18:00", corte: "17:00", promessa: "minutos", minutos: 60, taxa: { modo: "especial", texto: "bairro fora da lista da unidade" } }] };

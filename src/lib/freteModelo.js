@@ -358,7 +358,7 @@ export function fraseDoGrupo(grupo, { temBairros = false } = {}) {
   let corpo;
   if (tipos.length === 1) {
     const t = tipos[0];
-    corpo = `entregamos ${janela(t)}${t.promessa === "minutos" && numero(t.minutos) > 0 ? `, em até ${numero(t.minutos)} min depois de confirmado` : ", dentro da janela, sem hora marcada"}, ${taxa(t)}`;
+    corpo = `entregamos ${janela(t)}${t.promessa === "minutos" && numero(t.minutos) > 0 ? `, em até ${numero(t.minutos)} min depois de confirmado` : ""}, ${taxa(t)}`;
   } else {
     const partes = tipos.map((t) => `a ${String(t.nome || "entrega").trim().toLowerCase()}, ${janela(t)}${prazo(t)}, ${taxa(t)}`);
     corpo = `tem ${partes.slice(0, -1).join("; ")} e ${partes.at(-1)}`;

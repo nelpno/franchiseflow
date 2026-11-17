@@ -136,7 +136,7 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
         )}
       </div>
       <p className={dica}>
-        {emMin ? `O robô promete a entrega em até esse tempo (de ${PRAZO_MIN} a ${PRAZO_MAX} min), contado do pedido confirmado; o cardápio oferece "o quanto antes" com o mesmo prazo.` : "Sem hora marcada: o robô diz que a entrega passa dentro da janela, e o cardápio não oferece \"o quanto antes\"."}
+        {emMin ? `O robô promete a entrega em até esse tempo (de ${PRAZO_MIN} a ${PRAZO_MAX} min), contado do pedido confirmado; o cardápio oferece "o quanto antes" com o mesmo prazo.` : "Dentro da janela: o robô diz só a janela de entrega, sem hora exata, e o cardápio não oferece \"o quanto antes\"."}
       </p>
     </div>
   );
