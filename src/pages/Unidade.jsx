@@ -23,6 +23,7 @@ import RoutineGrid from "@/components/unidade/RoutineGrid";
 import ConversasCard, { notasRelevantes } from "@/components/unidade/ConversasCard";
 import MobileActionBar from "@/components/unidade/MobileActionBar";
 import RegistrarConversaDialog from "@/components/unidade/RegistrarConversaDialog";
+import AssessorChat from "@/components/customer-success/AssessorChat";
 
 const CS_ROLES = ["admin", "manager", "customer_success"];
 
@@ -226,6 +227,10 @@ export default function Unidade() {
         assumindo={assumindo}
         userId={user?.id}
       />
+
+      <div className="flex justify-end">
+        <AssessorChat franchiseEvo={evo} nomeUnidade={nomeCurto(unit.franchise_name)} onRegistrado={load} />
+      </div>
 
       {ultimoCombinado && (
         <div className={TOM_MAXI}>

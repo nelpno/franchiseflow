@@ -22,6 +22,7 @@ import { useAdminNetworkOverview } from "@/hooks/useAdminNetworkOverview";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import MuralCard from "@/components/customer-success/MuralCard";
 import QuickAddCard from "@/components/customer-success/QuickAddCard";
+import AssessorChat from "@/components/customer-success/AssessorChat";
 
 // Preferências de tela do Celso (29/09): cartão fechado e coluna Resolvidos recolhida ficam
 // lembradas neste aparelho. localStorage pode falhar (aba anônima): aí vale o padrão.
@@ -226,6 +227,7 @@ export default function CustomerSuccess() {
                 Progresso do CS →
               </Link>
             )}
+            <AssessorChat onRegistrado={reload} />
             <AcaoPrincipal icone="add" rotulo="Novo cartão" onClick={() => setQuickAddOpen(true)} sempreComTexto />
           </div>
         }

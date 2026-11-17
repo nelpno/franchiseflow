@@ -15,6 +15,7 @@ arrow_back
 arrow_downward
 arrow_forward
 arrow_upward
+assistant
 attach_file
 auto_awesome
 auto_fix_high
@@ -111,6 +112,7 @@ logout
 mail
 menu
 menu_book
+mic
 military_tech
 money_off
 monitor_heart
