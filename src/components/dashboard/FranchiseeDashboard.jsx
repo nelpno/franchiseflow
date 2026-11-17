@@ -25,6 +25,7 @@ import FinancialObligationsCard from "./FinancialObligationsCard";
 import FirstStepsCard from "./FirstStepsCard";
 import PriorityAction from "./PriorityAction";
 import OpenOrderStrip from "./OpenOrderStrip";
+import EncomendasDaSemana from "./inicio/EncomendasDaSemana";
 import MensalidadeFaixa from "./MensalidadeFaixa";
 import SubscriptionPaymentSheet from "@/components/shared/SubscriptionPaymentSheet";
 import CustomDateRangeSheet from "./CustomDateRangeSheet";
@@ -863,6 +864,8 @@ export default function FranchiseeDashboard() {
       <MensalidadeFaixa subscription={subscription} />
 
       <OpenOrderStrip purchaseOrders={purchaseOrders} />
+
+      <EncomendasDaSemana evoId={evoId} className="mb-4" />
 
       <PriorityAction
         marketingPayment={marketingPayment}

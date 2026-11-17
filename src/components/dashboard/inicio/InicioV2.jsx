@@ -27,6 +27,7 @@ import { InicioRanking, InicioMetaDia } from "./InicioRankingMeta";
 import InicioEvolucao from "./InicioEvolucao";
 import InicioAgora from "./InicioAgora";
 import InicioQuemChamar from "./InicioQuemChamar";
+import EncomendasDaSemana from "./EncomendasDaSemana";
 import InicioAtalhos from "./InicioAtalhos";
 import InicioErro from "./InicioErro";
 import InicioNovidadeCardapio from "./InicioNovidadeCardapio";
@@ -194,6 +195,7 @@ export default function InicioV2({
           onOpenPaymentSheet={() => setPagamentoAberto(true)}
           onTentarDeNovo={onTentarDeNovo}
         />
+        <EncomendasDaSemana evoId={evoId} />
         <InicioQuemChamar evoId={evoId} franchise={franchise} />
         <InicioAtalhos />
       </div>

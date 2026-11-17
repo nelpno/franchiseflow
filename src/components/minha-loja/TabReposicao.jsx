@@ -30,6 +30,7 @@ import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { useAuth } from "@/lib/AuthContext";
 import PurchaseOrderForm from "./PurchaseOrderForm";
 import PurchaseOrderHistory from "./PurchaseOrderHistory";
+import { EncomendasAviso } from "./EncomendasNoPedido";
 
 import { registrarEvento } from "@/lib/telemetria";
 export default function TabReposicao({
@@ -197,6 +198,9 @@ export default function TabReposicao({
 
   return (
     <div className="space-y-6">
+      {/* Encomendas abertas (17/11/2026): lembrete antes de montar o pedido; o bloco de somar fica dentro do formulário */}
+      <EncomendasAviso franchiseId={franchiseId} />
+
       {/* S25 — Reposição num bloco só (chave ui_v2) */}
       {uiV2 && (
         <ReposicaoV2

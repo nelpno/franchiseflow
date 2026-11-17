@@ -265,6 +265,8 @@ export const SaleItem = createEntity('sale_items');
 export const Expense = createEntity('expenses');
 export const PurchaseOrder = createEntity('purchase_orders');
 export const PurchaseOrderItem = createEntity('purchase_order_items');
+// Encomendas (17/11/2026): pedido do cliente para data futura; não mexe em estoque nem faturamento (lib/encomendas.js)
+export const Encomenda = createEntity('encomendas');
 export const AuditLog = createEntity('audit_logs');
 export const MarketingPayment = createEntity('marketing_payments');
 export const MarketingMetaDeposit = createEntity('marketing_meta_deposits');

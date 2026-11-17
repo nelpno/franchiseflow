@@ -1,5 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import { PurchaseOrder, PurchaseOrderItem, getPedidoModelo, getPrecosPedidoFabrica } from "@/entities/all";
+import { PurchaseOrder, PurchaseOrderItem, Encomenda, getPedidoModelo, getPrecosPedidoFabrica } from "@/entities/all";
+import { useQueryClient } from "@tanstack/react-query";
+import { chaveEncomendas } from "@/hooks/useEncomendas";
+import { somaPorProduto } from "@/lib/encomendas";
+import EncomendasNoPedido from "./EncomendasNoPedido";
 import { quantidadesDoModelo } from "@/lib/pedidoModelo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -262,6 +266,16 @@ export default function PurchaseOrderForm({
     return init;
   });
 
+  // Encomendas somadas a este pedido (17/11/2026): ids que viram "pedida" quando o envio der certo.
+  // Moram no rascunho junto das quantidades (fechar e voltar não deixa somar de novo); sem
+  // nenhuma quantidade no pedido, a lista zera (ver efeito depois de hasAnyQty).
+  const queryClient = useQueryClient();
+  const [encSomadas, setEncSomadas] = useState(() =>
+    !initialQuantities && Array.isArray(draft.current?.encomendas) ? draft.current.encomendas : []
+  );
+  const encSomadasRef = useRef(encSomadas);
+  encSomadasRef.current = encSomadas;
+
   const draftMescladoCount = useMemo(() => {
     if (!uiV2 || !initialQuantities || !draft.current?.quantities) return 0;
     return standardProducts.filter(
@@ -277,7 +291,7 @@ export default function PurchaseOrderForm({
     const hasData = Object.values(qtys).some(v => v > 0) || n.trim().length > 0;
     try {
       if (hasData) {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, clientId: clientIdRef.current, savedAt: Date.now() }));
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ quantities: qtys, notes: n, clientId: clientIdRef.current, encomendas: encSomadasRef.current, savedAt: Date.now() }));
       } else {
         localStorage.removeItem(DRAFT_KEY);
       }
@@ -286,7 +300,7 @@ export default function PurchaseOrderForm({
 
 
 
-  useEffect(() => { saveDraft(quantities, notes); }, [quantities, notes, saveDraft]);
+  useEffect(() => { saveDraft(quantities, notes); }, [quantities, notes, encSomadas, saveDraft]);
 
   const clearDraft = () => {
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* sem storage: nada a limpar */ }
@@ -517,6 +531,61 @@ export default function PurchaseOrderForm({
 
   const hasAnyQty = standardProducts.some((item) => (quantities[item.id] || 0) > 0);
 
+  // Pedido sem nenhuma quantidade (zerou, limpou, enviou): nada está "somado".
+  useEffect(() => {
+    if (!hasAnyQty && encSomadas.length > 0) setEncSomadas([]);
+  }, [hasAnyQty, encSomadas.length]);
+
+  // "Somar ao pedido" (bloco de encomendas): acrescenta a soma por produto às quantidades, em caixas
+  // inteiras onde a fábrica só vende caixa. Produto da encomenda que não é do catálogo da fábrica
+  // (criado pela unidade) não entra: o aviso diz quais.
+  const somarEncomendas = (encomendasEscolhidas) => {
+    const porId = new Map(standardProducts.map((p) => [p.id, p]));
+    const somar = {};
+    const fora = [];
+    for (const r of somaPorProduto(encomendasEscolhidas)) {
+      if (r.inventory_item_id && porId.has(r.inventory_item_id)) somar[r.inventory_item_id] = r.qtd;
+      else fora.push(r.nome);
+    }
+    const ids = Object.keys(somar);
+    if (ids.length === 0) {
+      toast.error("Nenhum produto dessas encomendas faz parte do pedido à fábrica.");
+      return;
+    }
+    usuarioMexeuRef.current = true;
+    ids.forEach((id) => digitadosRef.current.add(id));
+    setQuantities((prev) => {
+      const next = { ...prev };
+      ids.forEach((id) => {
+        next[id] = emCaixasInteiras(porId.get(id).product_name, (parseInt(prev[id], 10) || 0) + somar[id]);
+      });
+      return next;
+    });
+    setEncSomadas((prev) => [...new Set([...prev, ...encomendasEscolhidas.map((e) => e.id)])]);
+    toast.success(encomendasEscolhidas.length === 1 ? "Encomenda somada ao pedido." : `${encomendasEscolhidas.length} encomendas somadas ao pedido.`);
+    if (fora.length > 0) toast.warning(`Não entraram no pedido (produto da unidade): ${fora.join(", ")}.`, { duration: 8000 });
+  };
+
+  // Pedido enviado: as encomendas somadas passam para "pedida à fábrica". Falha aqui não desfaz o pedido.
+  const marcarEncomendasPedidas = async (pedidoId) => {
+    // Só as que ainda estão "abertas" (outra aba pode ter cancelado ou entregue no meio); sem cache, todas.
+    const cache = queryClient.getQueryData(chaveEncomendas(franchiseId));
+    const ids = cache
+      ? encSomadasRef.current.filter((id) => cache.find((e) => e.id === id)?.status === "aberta")
+      : encSomadasRef.current;
+    if (!ids.length) return;
+    const agora = new Date().toISOString();
+    const res = await Promise.allSettled(
+      ids.map((id) => Encomenda.update(id, { status: "pedida", purchase_order_id: pedidoId || null, pedida_em: agora }))
+    );
+    const falhas = res.filter((r) => r.status === "rejected").length;
+    if (falhas > 0) {
+      console.error("Erro ao marcar encomendas como pedidas:", res.filter((r) => r.status === "rejected").map((r) => r.reason?.message));
+      toast.warning("O pedido foi enviado, mas não consegui marcar algumas encomendas como pedidas. Confira em Vendas › Encomendas.", { duration: 10000 });
+    }
+    queryClient.invalidateQueries({ queryKey: chaveEncomendas(franchiseId) });
+  };
+
   const handleSubmit = async () => {
     if (!hasAnyQty) return;
     if (submittingRef.current) return;
@@ -600,6 +669,7 @@ export default function PurchaseOrderForm({
           { id: toastId }
         );
       }
+      await marcarEncomendasPedidas(resultado.id);
       // NÃO resetar submittingRef — componente vai desmontar via onSave
       if (onSave) onSave();
     } catch (error) {
@@ -751,6 +821,15 @@ export default function PurchaseOrderForm({
                 Fazer pedido novo
               </button>
             </div>
+          )}
+          {!revisando && (
+            <EncomendasNoPedido
+              franchiseId={franchiseId}
+              produtosDoPedido={standardProducts}
+              somadas={encSomadas}
+              onSomar={somarEncomendas}
+              disabled={isSubmitting}
+            />
           )}
           {revisando ? (
             <section aria-labelledby="titulo-revisao" className="space-y-3">
@@ -1051,6 +1130,13 @@ export default function PurchaseOrderForm({
 
   return (
     <div className="space-y-4">
+      <EncomendasNoPedido
+        franchiseId={franchiseId}
+        produtosDoPedido={standardProducts}
+        somadas={encSomadas}
+        onSomar={somarEncomendas}
+        disabled={isSubmitting}
+      />
       {/* Pedido modelo da Maxi (1º pedido) */}
       {primeiroPedido && pedidoModeloItens && (
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-[#fbf6e6] border border-[#ecdca8]">

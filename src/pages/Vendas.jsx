@@ -13,6 +13,10 @@ import FranchisePicker from "@/components/shared/FranchisePicker";
 import { toast } from "sonner";
 import { format, subMonths } from "date-fns";
 import TabLancar from "@/components/minha-loja/TabLancar";
+import TabEncomendas from "@/components/minha-loja/TabEncomendas";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useEncomendas } from "@/hooks/useEncomendas";
+import { ativasOrdenadas } from "@/lib/encomendas";
 
 const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, desconto_origem, desconto_codigo, card_fee_amount, card_fee_percent, fee_passed_to_customer, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, contact_phone, customer_address, customer_neighborhood, delivery_method, net_value, capi_sent';
 // capi_sent (P3 S12, sem chave): sem ele o aviso "essa venda já foi contada no anúncio" antes de
@@ -34,6 +38,14 @@ export default function Vendas() {
   const contactIdParam = rawContactId && /^[0-9a-f-]{36}$/i.test(rawContactId) ? rawContactId : null;
   // S12.5: "Vendas hoje" da Início abre a lista em Hoje (só vale com a chave ui_v2; o TabLancar decide).
   const periodoParam = searchParams.get("periodo") === "hoje" ? "today" : null;
+  // Encomendas (17/11/2026): aba dentro de Vendas (?aba=encomendas, link do cartão da Início).
+  // "Nova venda" (?action=nova-venda, FAB) sempre cai na aba de vendas.
+  const aba = !actionParam && searchParams.get("aba") === "encomendas" ? "encomendas" : "vendas";
+  const trocarAba = (valor) => {
+    const next = new URLSearchParams(searchParams);
+    if (valor === "encomendas") next.set("aba", "encomendas"); else next.delete("aba");
+    setSearchParams(next, { replace: true });
+  };
 
   const [currentUser, setCurrentUser] = useState(null);
   const [franchises, setFranchises] = useState([]);
@@ -166,6 +178,9 @@ export default function Vendas() {
   );
 
   const franchiseId = primaryFranchise?.evolution_instance_id;
+  // Mesma consulta da aba e do cartão da Início (cache compartilhado): aqui só serve para o contador da aba.
+  const { encomendas } = useEncomendas(franchiseId);
+  const encomendasAtivas = useMemo(() => ativasOrdenadas(encomendas).length, [encomendas]);
 
   useEffect(() => {
     franchiseIdRef.current = franchiseId || null;
@@ -289,27 +304,51 @@ export default function Vendas() {
           </div>
         </div>
 
-        <TabLancar
-          franchiseId={franchiseId}
-          franchiseName={primaryFranchise.name}
-          unitWhatsApp={unitWhatsApp}
-          unitInstagram={unitInstagram}
-          currentUser={currentUser}
-          sales={franchiseSales}
-          contacts={franchiseContacts}
-          inventoryItems={franchiseInventory}
-          historicoLoading={loadingHistorico}
-          onRefresh={handleRefreshSales}
-          autoOpenForm={actionParam === "nova-venda"}
-          onFormOpened={() => {
-            if (actionParam) {
-              setSearchParams({}, { replace: true });
-            }
-          }}
-          initialContactId={contactIdParam}
-          initialPhone={phoneParam}
-          initialPeriod={periodoParam}
-        />
+        <Tabs value={aba} onValueChange={trocarAba}>
+          <TabsList className="mb-3">
+            <TabsTrigger value="vendas">Vendas</TabsTrigger>
+            <TabsTrigger value="encomendas">
+              Encomendas
+              {encomendasAtivas > 0 && (
+                <span className="rounded-full bg-[#f59e0b]/20 px-1.5 py-0.5 text-[11px] font-bold text-[#92400e]">
+                  {encomendasAtivas}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="vendas" className="mt-0">
+            <TabLancar
+              franchiseId={franchiseId}
+              franchiseName={primaryFranchise.name}
+              unitWhatsApp={unitWhatsApp}
+              unitInstagram={unitInstagram}
+              currentUser={currentUser}
+              sales={franchiseSales}
+              contacts={franchiseContacts}
+              inventoryItems={franchiseInventory}
+              historicoLoading={loadingHistorico}
+              onRefresh={handleRefreshSales}
+              autoOpenForm={actionParam === "nova-venda"}
+              onFormOpened={() => {
+                if (actionParam) {
+                  setSearchParams({}, { replace: true });
+                }
+              }}
+              initialContactId={contactIdParam}
+              initialPhone={phoneParam}
+              initialPeriod={periodoParam}
+            />
+          </TabsContent>
+          <TabsContent value="encomendas" className="mt-0">
+            <TabEncomendas
+              franchiseId={franchiseId}
+              currentUser={currentUser}
+              contacts={franchiseContacts}
+              inventoryItems={franchiseInventory}
+              onRefreshSales={handleRefreshSales}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

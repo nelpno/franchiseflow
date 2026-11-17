@@ -391,6 +391,10 @@ export default function SaleForm({
   onCancel,
   initialContactId = null,
   initialPhone = null,
+  // "Virou venda" (encomendas, 17/11/2026): venda NOVA pré-preenchida pela encomenda
+  // ({ itens:[{inventory_item_id,nome,qtd}], observacoes, nome, telefone }; lib/encomendas.js).
+  // O cliente vem por initialContactId/initialPhone. Com ele o rascunho antigo NÃO é restaurado.
+  prefill = null,
   onDirtyChange,
   onEnviandoChange,
 }) {
@@ -580,6 +584,7 @@ export default function SaleForm({
   useEffect(() => {
     if (isEditing || draftRestoredRef.current || !franchiseId) return;
     draftRestoredRef.current = true;
+    if (prefill) return; // venda vinda de uma encomenda: o rascunho antigo não pisa nos itens dela
 
     const draft = loadDraft(franchiseId);
     if (!draft) return;
@@ -652,6 +657,42 @@ export default function SaleForm({
       duration: 6000,
     });
   }, [isEditing, franchiseId, contacts]);
+
+  // ---- "Virou venda": preenche itens (com preço e custo do estoque da unidade), observação e cliente ----
+  const prefillAplicadoRef = useRef(false);
+  useEffect(() => {
+    if (isEditing || !prefill || prefillAplicadoRef.current) return;
+    prefillAplicadoRef.current = true;
+    const linhas = [];
+    const faltando = [];
+    for (const it of prefill.itens || []) {
+      const inv =
+        (it.inventory_item_id && inventoryItems.find((p) => p.id === it.inventory_item_id)) ||
+        inventoryItems.find((p) => p.product_name === it.nome);
+      if (!inv) { faltando.push(it.nome || "produto"); continue; }
+      linhas.push({
+        inventory_item_id: inv.id,
+        product_name: inv.product_name,
+        quantity: it.qtd,
+        unit_price: inv.sale_price || 0,
+        cost_price: inv.cost_price || 0,
+      });
+    }
+    if (linhas.length > 0) setItems(linhas);
+    if (prefill.observacoes) setObservacoes(prefill.observacoes);
+    if (!prefill.contactId) {
+      // Sem cliente cadastrado: telefone (acha ou cria o contato ao registrar) ou só o nome.
+      if (prefill.telefone) {
+        setContactSearch(prefill.telefone);
+        if (prefill.nome) setNewContactName(prefill.nome);
+      } else if (prefill.nome) {
+        setContactSearch(prefill.nome);
+      }
+    }
+    if (faltando.length > 0) {
+      toast.warning(`Não achei no estoque: ${faltando.join(", ")}. Adicione à mão se for vender.`, { duration: 8000 });
+    }
+  }, [isEditing, prefill, inventoryItems]);
 
   // Chave chegou DEPOIS de o rascunho ser restaurado: normaliza a data agora, só se ela ainda
   // é a que veio do rascunho (se a franqueada já trocou, respeita).
