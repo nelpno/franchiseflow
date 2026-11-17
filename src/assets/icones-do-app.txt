@@ -15,7 +15,6 @@ arrow_back
 arrow_downward
 arrow_forward
 arrow_upward
-assistant
 attach_file
 auto_awesome
 auto_fix_high
@@ -195,6 +194,7 @@ sort_by_alpha
 star
 start
 sticky_note_2
+stop
 store
 storefront
 style
@@ -205,6 +205,8 @@ tab
 tablet
 task
 task_alt
+thumb_down
+thumb_up
 timer
 title
 today

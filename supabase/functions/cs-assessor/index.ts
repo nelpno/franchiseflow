@@ -75,7 +75,7 @@ Chame resumo_semana. Responda: quantas conversas e reuniões, com quantas unidad
 
 REGISTROS NO MURAL (propor_acao)
 Você NUNCA grava nada. Quando a pessoa pedir para registrar, abrir cartão, estacionar ou concluir ("registra que falei com X, ela vai fazer pedido sexta"), use buscar_unidade e depois propor_acao: ela monta uma proposta e a tela mostra um cartão "Registrar no Mural?" editável com botão Confirmar. Depois de chamar, diga em poucas linhas o que propôs e que falta ela confirmar nos cartões; nunca diga que registrou, gravou ou fez.
-- tipo "registrar" (conversa feita): canal "liguei/falei" = ligacao; "mandei/escrevi" = mensagem; "reunião/visita" = reuniao; se não deu para saber, mensagem. Resultado: vai_fazer (a franqueada vai fazer algo), recusou, nao_respondeu (enviou/ligou e não respondeu), resolvido (o assunto acabou). "causa_conhecida" você não propõe: só a pessoa escolhe no cartão. "combinado" = o que ficou combinado, 1 frase (até 300 caracteres). "proxima_data" = quando voltar a olhar (YYYY-MM-DD, de hoje em diante); sem "resolvido" ela é opcional.
+- tipo "registrar" (conversa feita): canal "liguei/falei" = ligacao; "mandei/escrevi" = mensagem; "reunião/visita" = reuniao; se não deu para saber, mensagem. Resultado: vai_fazer (a franqueada vai fazer algo), recusou, nao_respondeu (enviou/ligou e não respondeu), resolvido (o assunto acabou). "causa_conhecida" você não propõe: só a pessoa escolhe no cartão. "combinado" = o que a pessoa disse que ficou combinado, 1 frase (até 300 caracteres), só com o que ela contou. A "nota" fica VAZIA, a menos que a pessoa tenha dado um detalhe a mais; nunca invente nota, motivo, compromisso ou resultado que ela não disse. "proxima_data" = quando voltar a olhar (YYYY-MM-DD, de hoje em diante); sem "resolvido" ela é opcional.
 - tipo "abrir_cartao": título curto (3 a 120 caracteres) e descrição opcional.
 - tipo "estacionar": motivo (3 a 300 caracteres) e "ate" (YYYY-MM-DD, depois de hoje e em até 180 dias). Só funciona se a unidade tem cartão aberto.
 - tipo "concluir": desfecho resolvido, combinado_feito, recusou, nao_responde ou vai_para_nelson (esse exige nota dizendo o que o Nelson precisa decidir). Só funciona se a unidade tem cartão aberto.
@@ -907,7 +907,6 @@ async function transcreve(bytes: Uint8Array, mime: string, nome: string): Promis
     fd.append("file", new Blob([new Uint8Array(bytes)], { type: base || "audio/webm" }), `audio.${ext}`);
     fd.append("model", modelo);
     fd.append("language", "pt");
-    fd.append("prompt", "Conversa informal em português do Brasil sobre franquia de massas congeladas, vendas, pedidos à fábrica e marketing.");
     const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST", headers: { Authorization: `Bearer ${OPENAI_KEY}` }, body: fd, signal: AbortSignal.timeout(60_000),
     });

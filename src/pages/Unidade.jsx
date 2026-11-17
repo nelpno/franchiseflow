@@ -226,11 +226,8 @@ export default function Unidade() {
         onAssumir={assumirCartao}
         assumindo={assumindo}
         userId={user?.id}
+        acaoExtra={<AssessorChat franchiseEvo={evo} nomeUnidade={nomeCurto(unit.franchise_name)} onRegistrado={load} />}
       />
-
-      <div className="flex justify-end">
-        <AssessorChat franchiseEvo={evo} nomeUnidade={nomeCurto(unit.franchise_name)} onRegistrado={load} />
-      </div>
 
       {ultimoCombinado && (
         <div className={TOM_MAXI}>

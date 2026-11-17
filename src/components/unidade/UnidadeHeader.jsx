@@ -5,7 +5,7 @@ import { TIER } from "@/components/customer-success/tierConfig";
 import { IDADE_NOVA_DIAS, nomeCurto } from "@/lib/networkOverview";
 import { idadeUnidade } from "@/lib/adminFormat";
 
-export default function UnidadeHeader({ unit, diagnostico, podeVerFinanceiro = true, onAssumir, assumindo = false, userId = null }) {
+export default function UnidadeHeader({ unit, diagnostico, podeVerFinanceiro = true, onAssumir, assumindo = false, userId = null, acaoExtra = null }) {
   const location = useLocation();
   // O tier vem do cache de saúde (calculado 1x/dia, às 13:32) — pode estar
   // desatualizado. A régua única (diagnostico.motivo, do MESMO cálculo que Unidades/
@@ -76,7 +76,10 @@ export default function UnidadeHeader({ unit, diagnostico, podeVerFinanceiro = t
       {/* Item 30, 26/09: no celular esses 3 links empurravam a ação (diagnóstico/mensagem)
           para baixo — ficam só no desktop aqui; UnidadeNav() reaparece no fim da página
           (só no celular), depois do ConversasCard. */}
-      {podeVerFinanceiro && <div className="hidden md:block"><UnidadeNav unit={unit} stateFicha={stateFicha} /></div>}
+      <div className="flex flex-col items-start gap-2 md:items-end">
+        {acaoExtra}
+        {podeVerFinanceiro && <div className="hidden md:block"><UnidadeNav unit={unit} stateFicha={stateFicha} /></div>}
+      </div>
     </header>
   );
 }
