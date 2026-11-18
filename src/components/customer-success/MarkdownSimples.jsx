@@ -38,15 +38,17 @@ export default function MarkdownSimples({ texto }) {
     const l = bruta.trimEnd();
     const h = l.match(/^(#{1,4})\s+(.*)$/);
     const ul = l.match(/^\s*[-*•]\s+(.*)$/);
-    const ol = l.match(/^\s*\d+[.)]\s+(.*)$/);
+    const ol = l.match(/^\s*(\d+)[.)]\s+(.*)$/);
     if (!l.trim()) { fechaParagrafo(); fechaLista(); continue; }
     if (h) { fechaParagrafo(); fechaLista(); blocos.push({ tipo: "h", texto: h[2] }); continue; }
     if (ul || ol) {
       fechaParagrafo();
       const ordenada = !!ol;
       if (lista && lista.ordenada !== ordenada) fechaLista();
-      lista ??= { ordenada, itens: [] };
-      lista.itens.push((ul || ol)[1]);
+      // O modelo costuma separar itens numerados com linha em branco: cada item vira uma <ol> nova,
+      // então a lista começa no número que veio no texto (senão tudo aparece como "1.").
+      lista ??= { ordenada, itens: [], inicio: ol ? Number(ol[1]) : 1 };
+      lista.itens.push(ul ? ul[1] : ol[2]);
       continue;
     }
     // continuação indentada de item de lista
@@ -64,7 +66,7 @@ export default function MarkdownSimples({ texto }) {
         if (b.tipo === "lista") {
           const Tag = b.ordenada ? "ol" : "ul";
           return (
-            <Tag key={i} className={`${b.ordenada ? "list-decimal" : "list-disc"} space-y-1 pl-5`}>
+            <Tag key={i} start={b.ordenada && b.inicio !== 1 ? b.inicio : undefined} className={`${b.ordenada ? "list-decimal" : "list-disc"} space-y-1 pl-5`}>
               {b.itens.map((it, k) => <li key={k}>{inline(it, `l${i}-${k}`)}</li>)}
             </Tag>
           );

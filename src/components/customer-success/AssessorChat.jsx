@@ -218,7 +218,7 @@ function Painel({ chave, franchiseEvo, nomeUnidade, onRegistrado }) {
       relogio = setInterval(() => setSegundos((s) => { if (s + 1 >= MAX_GRAVACAO_S) gravRef.current?.parar(false); return s + 1; }), 1000);
     } catch (e) {
       setGravando(false);
-      toast.error(e?.name === "NotAllowedError" ? "Libere o microfone no navegador para gravar." : "Não consegui acessar o microfone.");
+      toast.error(e?.name === "NotAllowedError" ? "Microfone bloqueado: clique no cadeado ao lado do endereço do site, ligue o Microfone e recarregue a página." : "Não consegui acessar o microfone.");
     }
   };
   const alternarGravacao = () => { if (gravando) gravRef.current?.parar(false); else iniciarGravacao(); };
