@@ -311,4 +311,25 @@ test("Falar hoje mostra 8 antes do 'Ver mais'", () => {
   assert.equal(FALAR_HOJE_VISIVEIS, 8);
 });
 
+test("um cartão por unidade: Jardim Ipê com automático + pedido do cardápio vira um só (Celso 18/11)", () => {
+  const cards = [
+    { id: "x1", franchise_id: "outra", lane: "falar_hoje", source: "auto" },
+    { id: "m1", franchise_id: "sp1", lane: "falar_hoje", source: "manual", title: "Oferecer o cardápio digital", created_at: "2026-11-17" },
+    { id: "a1", franchise_id: "sp1", lane: "esperando", source: "auto", created_at: "2026-07-13" },
+    { id: "r1", franchise_id: "sp1", lane: "resolvidos", source: "auto" },
+    { id: "a2", franchise_id: "soro", lane: "esperando", source: "auto", created_at: "2026-09-07" },
+    { id: "m2", franchise_id: "soro", lane: "esperando", source: "manual", created_at: "2026-11-17" },
+  ];
+  const g = agruparPorRaia(cards);
+  // raia mais urgente manda: o pedido em Falar hoje leva o automático junto
+  assert.deepEqual(g.falar_hoje.map((c) => c.id), ["x1", "m1"]);
+  assert.deepEqual(g.falar_hoje[1].extras.map((c) => c.id), ["a1"]);
+  // mesma raia: o automático é o principal
+  assert.deepEqual(g.esperando.map((c) => c.id), ["a2"]);
+  assert.deepEqual(g.esperando[0].extras.map((c) => c.id), ["m2"]);
+  // resolvido não se junta; unidade com 1 cartão fica sem extras
+  assert.deepEqual(g.resolvidos.map((c) => c.id), ["r1"]);
+  assert.equal(g.falar_hoje[0].extras, undefined);
+});
+
 console.log(`csMural.test.mjs: ${n} testes OK`);

@@ -42,6 +42,42 @@ const MOTIVO_PARA_MENSAGEM = {
   sem_comprar: "stopped_buying",
 };
 
+// Outro cartão aberto da MESMA unidade, mostrado dentro deste (juntarPorUnidade, 18/11/2026):
+// título, descrição quando aberto, e Registrar/Concluir que gravam no cartão dele.
+function ExtraDoCartao({ extra, nome, aberto, onMudou }) {
+  const [registrar, setRegistrar] = useState(false);
+  const [modo, setModo] = useState(null);
+  const ev = (n, d) => registrarEvento(n, { detalhe: ["extra", d].filter(Boolean).join("|") });
+  return (
+    <div className="mt-2 rounded-xl border border-surface-line bg-surface/50 px-3 py-2">
+      <p className="text-sm font-semibold text-ink">
+        {extra.title || "Outro cartão"}
+        {extra.lane === "estacionado" && <span className="font-normal text-ink-3"> · estacionado</span>}
+      </p>
+      {aberto && extra.description && <p className="mt-0.5 line-clamp-3 text-sm text-ink-3">{extra.description}</p>}
+      <div className="mt-1 flex flex-wrap gap-3">
+        <button type="button" className={LINK_ACAO} onClick={() => { ev("mural_registrar_aberto"); setRegistrar(true); }}>Registrar</button>
+        <button type="button" className={LINK_ACAO} onClick={() => { ev("mural_concluir_aberto"); setModo("concluir"); }}>Concluir</button>
+      </div>
+      <RegistrarSheet
+        open={registrar}
+        onOpenChange={setRegistrar}
+        franchiseId={extra.franchise_id}
+        taskId={extra.id}
+        nomeUnidade={nome}
+        onSalvo={() => { ev("mural_registrado"); toast.success("Conversa registrada."); onMudou?.(); }}
+      />
+      <CartaoAcoesDialog
+        modo={modo}
+        open={!!modo}
+        onOpenChange={(v) => { if (!v) setModo(null); }}
+        task={extra}
+        onFeito={(m, desfecho) => { ev(`mural_${m || "acao"}_feito`, desfecho); onMudou?.(); }}
+      />
+    </div>
+  );
+}
+
 // `compacto` (29/09, pedido do Celso): o cartão fechado mostra só nome, motivo, UMA frase e os
 // botões; a seta abre o resto (venda, acordo, combinado, ficha, mais ações). Menos rolagem.
 export default function MuralCard({ card, lane, onMudou, compacto = false }) {
@@ -180,6 +216,10 @@ export default function MuralCard({ card, lane, onMudou, compacto = false }) {
       {lane === "com_nelson" && card.escalated_note && <p className="mt-1 text-sm text-ink-3">"{card.escalated_note}"</p>}
       {lane === "estacionado" && card.parked_reason && <p className="mt-1 text-sm text-ink-3">Estacionado: {card.parked_reason}</p>}
       </>)}
+
+      {(card.extras || []).map((x) => (
+        <ExtraDoCartao key={x.id} extra={x} nome={nome} aberto={aberto} onMudou={onMudou} />
+      ))}
 
       {!somenteLeitura && (
         <div className={`${aberto ? "mt-3" : "mt-2"} grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center`}>

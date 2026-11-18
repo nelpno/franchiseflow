@@ -77,7 +77,7 @@ export const RAIAS_EXTRA = [
  */
 export function agruparPorRaia(cards) {
   const porRaia = { falar_hoje: [], esperando: [], resolvidos: [], resolveu_sozinho: [], com_nelson: [], estacionado: [] };
-  (cards || []).forEach((c) => {
+  juntarPorUnidade(cards).forEach((c) => {
     if (c.lane === "resolvidos" && c.closed_reason === "resolveu_sozinho") {
       porRaia.resolveu_sozinho.push(c);
       return;
@@ -85,6 +85,38 @@ export function agruparPorRaia(cards) {
     if (porRaia[c.lane]) porRaia[c.lane].push(c);
   });
   return porRaia;
+}
+
+// Um cartão por unidade (Celso, 18/11/2026: "tem cartões duplicados"). Unidade com 2+ cartões
+// ABERTOS (ex.: o automático "Cuidar da…" + o pedido "Oferecer o cardápio digital") vira um só:
+// fica o da raia mais urgente (empate: o automático, depois o mais antigo) e os outros entram
+// nele como `extras`, cada um com Registrar e Concluir próprios. Resolvidos não se juntam.
+const ORDEM_RAIA = { falar_hoje: 0, esperando: 1, com_nelson: 2, estacionado: 3 };
+export function juntarPorUnidade(cards) {
+  const lista = cards || [];
+  const abertosPorUnidade = new Map();
+  lista.forEach((c) => {
+    if (!c?.franchise_id || !(c.lane in ORDEM_RAIA)) return;
+    const g = abertosPorUnidade.get(c.franchise_id) || [];
+    g.push(c);
+    abertosPorUnidade.set(c.franchise_id, g);
+  });
+  const principalDe = new Map();
+  abertosPorUnidade.forEach((g, fid) => {
+    if (g.length < 2) return;
+    const [principal, ...extras] = [...g].sort((a, b) =>
+      ORDEM_RAIA[a.lane] - ORDEM_RAIA[b.lane]
+      || (ehCartaoManual(a) ? 1 : 0) - (ehCartaoManual(b) ? 1 : 0)
+      || String(a.created_at || "").localeCompare(String(b.created_at || "")));
+    principalDe.set(fid, { ...principal, extras });
+  });
+  const out = [];
+  lista.forEach((c) => {
+    const p = c?.franchise_id && principalDe.get(c.franchise_id);
+    if (!p || !(c.lane in ORDEM_RAIA)) { out.push(c); return; }
+    if (c.id === p.id) out.push(p); // mantém a posição do principal (a ordem vem do banco)
+  });
+  return out;
 }
 
 // ---------- Data "hoje" (SP) para o vencimento de combinado ----------
