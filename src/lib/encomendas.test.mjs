@@ -3,7 +3,7 @@
 import assert from "node:assert";
 import {
   diasAte, rotuloPrazo, itensValidos, totalUnidades, somaPorProduto,
-  ativasOrdenadas, abertasParaPedido, daSemana, prefillDaVenda, validarEncomenda,
+  ativasOrdenadas, abertasParaPedido, daSemana, prefillDaVenda, validarEncomenda, cabeInteira, cobertasPeloPedido,
 } from "./encomendas.js";
 
 const HOJE = "2026-11-17";
@@ -67,5 +67,23 @@ assert.match(validarEncomenda({ ...ok, entregar_em: "" }, HOJE), /data/i);
 assert.match(validarEncomenda({ ...ok, entregar_em: "2026-11-16" }, HOJE), /passou/);
 assert.equal(validarEncomenda({ ...ok, entregar_em: HOJE }, HOJE), null); // hoje vale
 assert.match(validarEncomenda({ ...ok, itens: [{ nome: "x", qtd: 0 }] }, HOJE), /produto/);
+
+// cabe inteira no pedido da fábrica: todo item tem produto do catálogo
+const catalogo = new Set(["c", "n"]);
+assert.equal(cabeInteira({ itens: [{ inventory_item_id: "c", nome: "x", qtd: 1 }] }, catalogo), true);
+assert.equal(cabeInteira({ itens: [{ inventory_item_id: "c", nome: "x", qtd: 1 }, { inventory_item_id: "z", nome: "y", qtd: 1 }] }, catalogo), false);
+assert.equal(cabeInteira({ itens: [{ nome: "sem id", qtd: 1 }] }, catalogo), false);
+assert.equal(cabeInteira({ itens: [] }, catalogo), false);
+
+// cobertas pelo pedido final: quantidade do produto >= a da encomenda (acumulando, entrega mais próxima primeiro)
+const E1 = { id: "e1", entregar_em: "2026-11-20", itens: [{ inventory_item_id: "c", nome: "c", qtd: 20 }] };
+const E2 = { id: "e2", entregar_em: "2026-12-19", itens: [{ inventory_item_id: "c", nome: "c", qtd: 280 }, { inventory_item_id: "n", nome: "n", qtd: 10 }] };
+assert.deepEqual(cobertasPeloPedido([E1, E2], { c: 300, n: 10 }), ["e1", "e2"]);
+assert.deepEqual(cobertasPeloPedido([E1, E2], { c: 20, n: 10 }), ["e1"]);            // E2 não cabe no que sobrou
+assert.deepEqual(cobertasPeloPedido([E1, E2], { c: 299, n: 10 }), ["e1"]);           // 1 a menos: não cobre a maior
+assert.deepEqual(cobertasPeloPedido([E1, E2], { c: 300, n: 0 }), ["e1"]);            // produto zerado no pedido final
+assert.deepEqual(cobertasPeloPedido([E1], { c: "" }), []);                           // quantidade vazia
+assert.deepEqual(cobertasPeloPedido([E2, E1], { c: 300, n: 10 }), ["e1", "e2"]);     // independe da ordem de entrada
+assert.deepEqual(cobertasPeloPedido([{ id: "x", entregar_em: "2026-11-20", itens: [{ nome: "sem id", qtd: 1 }] }], { c: 99 }), []);
 
 console.log("encomendas: ok");

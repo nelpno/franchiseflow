@@ -399,6 +399,8 @@ export default function SaleForm({
   onEnviandoChange,
 }) {
   const isEditing = !!sale;
+  // "Virou venda" (prefill) NUNCA mexe no rascunho de venda da franqueada: nem restaura nem grava.
+  const salvaRascunho = (dados) => { if (!prefill) saveDraft(franchiseId, dados); };
   // S6.2: com a chave ui_v2, venda nova nasce recebida; "Ainda vou receber" segura como a receber.
   const uiV2 = useFeatureFlag(FEATURE_KEYS.UI_V2);
   const [aindaVouReceber, setAindaVouReceber] = useState(false);
@@ -662,6 +664,9 @@ export default function SaleForm({
   const prefillAplicadoRef = useRef(false);
   useEffect(() => {
     if (isEditing || !prefill || prefillAplicadoRef.current) return;
+    // Só aplica com o estoque carregado: com a lista ainda vazia nenhum item casava e a janela
+    // ficava sem produtos (o efeito roda de novo quando o estoque chega).
+    if (!inventoryItems || inventoryItems.length === 0) return;
     prefillAplicadoRef.current = true;
     const linhas = [];
     const faltando = [];
@@ -790,7 +795,7 @@ export default function SaleForm({
   );
 
   useEffect(() => {
-    if (isEditing || !franchiseId) return;
+    if (isEditing || !franchiseId || prefill) return; // prefill: sem autosave (não sobrescreve o rascunho dela)
 
     // Skip saving if form is completely empty (default state)
     const hasContent =
@@ -801,7 +806,7 @@ export default function SaleForm({
 
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      saveDraft(franchiseId, { ...draftData, clientSaleId: clientSaleIdRef.current });
+      salvaRascunho({ ...draftData, clientSaleId: clientSaleIdRef.current });
     }, 1000);
 
     return () => {
@@ -820,7 +825,7 @@ export default function SaleForm({
       (contactSearch && contactSearch.trim().length > 0);
     if (!hasContent) return;
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
-    saveDraft(franchiseId, { ...draftData, aindaVouReceber: val, clientSaleId: clientSaleIdRef.current });
+    salvaRascunho({ ...draftData, aindaVouReceber: val, clientSaleId: clientSaleIdRef.current });
   };
 
   // ---- S12.4: edição com mudança sem salvar (o TabLancar pergunta antes de fechar) ----
@@ -1220,7 +1225,7 @@ export default function SaleForm({
     // (aba fechada, celular sem bateria), reabrir reaproveita o id e a RPC não grava de novo.
     if (!isEditing) {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
-      saveDraft(franchiseId, { ...draftData, clientSaleId: clientSaleIdRef.current });
+      salvaRascunho({ ...draftData, clientSaleId: clientSaleIdRef.current });
     }
 
     // S6.2: decidido uma vez por envio; vai no p_sale_data e a RPC grava junto com a venda
@@ -1334,8 +1339,8 @@ export default function SaleForm({
       // Evento do anúncio da venda que nasceu recebida (o workflow pula se capi_sent=true).
       if (savedSaleId && vaiNascerRecebida) fireCapiOnConfirm(savedSaleId);
 
-      // Success — clear draft and notify
-      clearDraft(franchiseId);
+      // Success — clear draft and notify (prefill nunca tocou no rascunho: o dela fica)
+      if (!prefill) clearDraft(franchiseId);
       clientSaleIdRef.current = null;
       // id POR VENDA: a lista (TabLancar) troca este aviso pelo mesmo com o botão Comprovante, sem mostrar 2×
       // (id fixo herdava o botão da venda anterior: o sonner mescla as propriedades — P3 7c)
@@ -1357,7 +1362,7 @@ export default function SaleForm({
       console.error("Erro ao salvar venda após retentativas:", error);
       // Ensure draft is saved so user doesn't lose data
       if (!isEditing) {
-        saveDraft(franchiseId, { ...draftData, clientSaleId: clientSaleIdRef.current });
+        salvaRascunho({ ...draftData, clientSaleId: clientSaleIdRef.current });
       }
       // Erro de REGRA tem motivo e a pessoa precisa dele: "nao foi possivel salvar"
       // com botao "Tentar novamente" manda ela repetir o que nunca vai passar.
@@ -2109,7 +2114,7 @@ export default function SaleForm({
               onClick={() => {
                 setAvisoRepetida(null);
                 if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
-                clearDraft(franchiseId);
+                if (!prefill) clearDraft(franchiseId);
                 clientSaleIdRef.current = null;
                 onCancel?.();
               }}

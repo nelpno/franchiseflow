@@ -113,3 +113,40 @@ export function validarEncomenda({ cliente_nome, entregar_em, itens }, hojeStr) 
   if (itensValidos(itens).length === 0) return "Adicione pelo menos um produto com quantidade.";
   return null;
 }
+
+/** A encomenda inteira cabe no pedido à fábrica? (todo item tem produto e o produto é do catálogo da fábrica) */
+export function cabeInteira(encomenda, idsDoPedido) {
+  const itens = itensValidos(encomenda?.itens);
+  return itens.length > 0 && itens.every((it) => it.inventory_item_id && idsDoPedido.has(it.inventory_item_id));
+}
+
+/**
+ * Quais encomendas o pedido FINAL ainda cobre: o produto está no pedido com quantidade ≥ à da
+ * encomenda (somando as já cobertas antes dela, da entrega mais próxima para a mais distante).
+ * Quem não é coberta inteira fica de fora e continua "aberta".
+ * @param {Array} encomendas  as somadas ao pedido
+ * @param {Object} quantidades  { inventory_item_id: qtd } do pedido final
+ */
+export function cobertasPeloPedido(encomendas, quantidades) {
+  const usado = {};
+  const cobertas = [];
+  const ordenadas = [...(encomendas || [])].sort((a, b) => String(a.entregar_em).localeCompare(String(b.entregar_em)));
+  for (const enc of ordenadas) {
+    const itens = itensValidos(enc.itens);
+    if (itens.length === 0) continue;
+    const precisa = {};
+    let valida = true;
+    for (const it of itens) {
+      if (!it.inventory_item_id) { valida = false; break; }
+      precisa[it.inventory_item_id] = (precisa[it.inventory_item_id] || 0) + it.qtd;
+    }
+    if (!valida) continue;
+    const cabe = Object.entries(precisa).every(
+      ([id, q]) => (usado[id] || 0) + q <= (parseInt(quantidades?.[id], 10) || 0)
+    );
+    if (!cabe) continue;
+    for (const [id, q] of Object.entries(precisa)) usado[id] = (usado[id] || 0) + q;
+    cobertas.push(enc.id);
+  }
+  return cobertas;
+}

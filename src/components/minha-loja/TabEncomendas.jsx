@@ -55,12 +55,14 @@ export default function TabEncomendas({
   inventoryItems = [],
   onRefreshSales,
 }) {
-  const { encomendas, isLoading, isError, refetch, invalidar } = useEncomendas(franchiseId);
+  const { encomendas, isLoading, isError, refetch, invalidar } = useEncomendas(franchiseId, { escopo: "historico" });
   const [filtro, setFiltro] = useState("ativas");
   const [formAberto, setFormAberto] = useState(false);
   const [editando, setEditando] = useState(null);
   const [vendaDe, setVendaDe] = useState(null); // encomenda que virou venda (formulário de venda aberto)
   const [cancelando, setCancelando] = useState(null);
+  const [entregando, setEntregando] = useState(null); // "Já entreguei" (sem criar venda)
+  const [entregandoEmCurso, setEntregandoEmCurso] = useState(false);
   const [cancelandoEmCurso, setCancelandoEmCurso] = useState(false);
   const [resumoAberto, setResumoAberto] = useState(true);
   const vendaEnviandoRef = useRef(false);
@@ -90,23 +92,59 @@ export default function TabEncomendas({
     setVendaDe(null);
   };
 
+  // Marca como entregue (e guarda o sale_id da venda, quando há). Uma nova tentativa automática: a venda
+  // já está gravada, e encomenda sem sale_id nem status voltaria a oferecer "Virou venda" (venda em dobro).
+  const marcarEntregue = async (enc, saleId) => {
+    const patch = { status: "entregue", entregue_em: new Date().toISOString(), ...(saleId ? { sale_id: saleId } : {}) };
+    try {
+      return await Encomenda.update(enc.id, patch);
+    } catch (primeiroErro) {
+      console.warn("Marcar entregue falhou, tentando de novo:", primeiroErro?.message);
+      return Encomenda.update(enc.id, patch);
+    }
+  };
+
   const aoSalvarVenda = async (saleId) => {
     const enc = vendaDe;
     vendaEnviandoRef.current = false;
     setVendaDe(null);
     try {
-      await Encomenda.update(enc.id, {
-        status: "entregue",
-        sale_id: saleId || null,
-        entregue_em: new Date().toISOString(),
-      });
+      await marcarEntregue(enc, saleId);
       toast.success("Encomenda entregue e lançada como venda.");
     } catch (err) {
       console.error("Erro ao marcar encomenda como entregue:", err);
-      toast.error("A venda foi registrada, mas não consegui marcar a encomenda como entregue. Marque a mão em Encomendas.");
+      // Última chance: grava só o vínculo com a venda (some o "Virou venda") e deixa o botão de tentar de novo.
+      Encomenda.update(enc.id, { sale_id: saleId || null }).catch(() => {});
+      toast.error("A venda foi registrada, mas não consegui marcar a encomenda como entregue.", {
+        duration: 15000,
+        action: {
+          label: "Tentar de novo",
+          onClick: () => {
+            marcarEntregue(enc, saleId)
+              .then(() => { toast.success("Encomenda entregue."); invalidar(); })
+              .catch(() => toast.error("Ainda não deu. Use o botão Já entreguei na encomenda."));
+          },
+        },
+      });
     }
     invalidar();
     onRefreshSales?.();
+  };
+
+  const confirmarEntregue = async () => {
+    if (!entregando || entregandoEmCurso) return;
+    setEntregandoEmCurso(true);
+    try {
+      await marcarEntregue(entregando, null);
+      toast.success("Encomenda marcada como entregue.");
+      setEntregando(null);
+      invalidar();
+    } catch (err) {
+      console.error("Erro ao marcar encomenda como entregue:", err);
+      toast.error(safeErrorMessage(err, "Não foi possível marcar como entregue."));
+    } finally {
+      setEntregandoEmCurso(false);
+    }
   };
 
   const confirmarCancelar = async () => {
@@ -287,9 +325,20 @@ export default function TabEncomendas({
 
                   {ativa && (
                     <div className="flex flex-wrap items-center gap-2 border-t border-ink-shadow/5 pt-3">
-                      <Button size="sm" onClick={() => abrirVenda(enc)} className="gap-1.5 h-10 bg-brand hover:bg-brand-dark text-white">
-                        <MaterialIcon icon="point_of_sale" size={16} />
-                        Virou venda
+                      {enc.sale_id ? (
+                        <span className="flex items-center gap-1 text-xs text-ok-ink">
+                          <MaterialIcon icon="check_circle" size={16} />
+                          Venda já registrada
+                        </span>
+                      ) : (
+                        <Button size="sm" onClick={() => abrirVenda(enc)} className="gap-1.5 h-10 bg-brand hover:bg-brand-dark text-white">
+                          <MaterialIcon icon="point_of_sale" size={16} />
+                          Virou venda
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => setEntregando(enc)} className="gap-1.5 h-10 text-ink-2">
+                        <MaterialIcon icon="check_circle" size={16} />
+                        Já entreguei
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => abrirEdicao(enc)} className="gap-1.5 h-10 text-ink-2">
                         <MaterialIcon icon="edit" size={16} />
@@ -349,6 +398,29 @@ export default function TabEncomendas({
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!entregando} onOpenChange={(open) => { if (!open && !entregandoEmCurso) setEntregando(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-plus-jakarta">Marcar como entregue?</AlertDialogTitle>
+            <AlertDialogDescription className="text-ink-2">
+              {entregando?.sale_id
+                ? "A venda desta encomenda já está registrada. Só o status muda para entregue."
+                : "Isto NÃO cria venda: não baixa o estoque nem entra no faturamento. Use quando a entrega já foi lançada por fora. Para lançar a venda agora, toque em Virou venda."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={entregandoEmCurso}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmarEntregue(); }}
+              disabled={entregandoEmCurso}
+              className="bg-brand hover:bg-brand-dark text-white"
+            >
+              {entregandoEmCurso ? "Salvando..." : "Marcar como entregue"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!cancelando} onOpenChange={(open) => { if (!open && !cancelandoEmCurso) setCancelando(null); }}>
         <AlertDialogContent>
@@ -426,6 +498,12 @@ function FormEncomenda({ onFechar, encomenda, franchiseId, currentUser, contacts
 
   const salvar = async () => {
     if (salvandoRef.current) return;
+    // Produto escolhido com quantidade vazia, zero ou fracionada: avisa em vez de a linha sumir calada.
+    const ruim = itens.find((it) => it.inventory_item_id && (!/^\d+$/.test(String(it.qtd).trim()) || parseInt(it.qtd, 10) <= 0));
+    if (ruim) {
+      toast.error(`Informe a quantidade de ${ruim.nome || "cada produto"} (número inteiro maior que zero) ou remova a linha.`);
+      return;
+    }
     const dados = {
       cliente_nome: nome,
       entregar_em: entregarEm,
@@ -487,6 +565,12 @@ function FormEncomenda({ onFechar, encomenda, franchiseId, currentUser, contacts
         </DialogHeader>
 
         <div className="space-y-4">
+          {encomenda?.status === "pedida" && (
+            <p role="status" className="flex items-start gap-2 rounded-xl border border-warn/40 bg-warn-soft px-3 py-2 text-sm text-ink">
+              <MaterialIcon icon="local_shipping" size={18} className="mt-0.5 shrink-0 text-brand-gold-ink" />
+              <span>Já foi pedida à fábrica: mudar aqui não muda o pedido.</span>
+            </p>
+          )}
           <div className="space-y-1.5 relative">
             <Label htmlFor="enc-cliente">Cliente</Label>
             <Input

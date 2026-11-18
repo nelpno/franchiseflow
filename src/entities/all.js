@@ -151,12 +151,16 @@ function createEntity(tableName) {
       return data || [];
     },
 
-    async update(id, data) {
+    // `where` (opcional): condições extras `eq` no mesmo UPDATE (ex.: { status: 'aberta' } para nunca
+    // reabrir encomenda cancelada). Nenhuma linha casa = erro PGRST116 (single), como sempre.
+    async update(id, data, { where } = {}) {
+      let query = supabase
+        .from(tableName)
+        .update(data)
+        .eq('id', id);
+      if (where) for (const [col, val] of Object.entries(where)) query = query.eq(col, val);
       const { data: updated, error } = await withTimeout(
-        supabase
-          .from(tableName)
-          .update(data)
-          .eq('id', id)
+        query
           .select()
           .single(),
         30000 // 30s — Supabase Free tier pode ser lento sob carga

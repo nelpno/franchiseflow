@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { PurchaseOrder, PurchaseOrderItem, Encomenda, getPedidoModelo, getPrecosPedidoFabrica } from "@/entities/all";
 import { useQueryClient } from "@tanstack/react-query";
-import { chaveEncomendas } from "@/hooks/useEncomendas";
-import { somaPorProduto } from "@/lib/encomendas";
+import { chaveEncomendas, chaveEncomendasPrefixo } from "@/hooks/useEncomendas";
+import { somaPorProduto, cabeInteira, cobertasPeloPedido } from "@/lib/encomendas";
 import EncomendasNoPedido from "./EncomendasNoPedido";
 import { quantidadesDoModelo } from "@/lib/pedidoModelo";
 import { Card, CardContent } from "@/components/ui/card";
@@ -538,20 +538,24 @@ export default function PurchaseOrderForm({
 
   // "Somar ao pedido" (bloco de encomendas): acrescenta a soma por produto às quantidades, em caixas
   // inteiras onde a fábrica só vende caixa. Produto da encomenda que não é do catálogo da fábrica
-  // (criado pela unidade) não entra: o aviso diz quais.
+  // (criado pela unidade) NÃO entra: a encomenda que tem um produto assim fica de fora INTEIRA
+  // (nem soma nem vira "somada") e continua aberta; o aviso diz qual e por quê.
   const somarEncomendas = (encomendasEscolhidas) => {
     const porId = new Map(standardProducts.map((p) => [p.id, p]));
-    const somar = {};
-    const fora = [];
-    for (const r of somaPorProduto(encomendasEscolhidas)) {
-      if (r.inventory_item_id && porId.has(r.inventory_item_id)) somar[r.inventory_item_id] = r.qtd;
-      else fora.push(r.nome);
+    const idsDoPedido = new Set(porId.keys());
+    const inteiras = encomendasEscolhidas.filter((e) => cabeInteira(e, idsDoPedido));
+    const deFora = encomendasEscolhidas.filter((e) => !inteiras.includes(e));
+    if (deFora.length > 0) {
+      const nomes = deFora.map((e) => e.cliente_nome).join(", ");
+      toast.warning(`Não somei a encomenda de ${nomes}: tem produto que não é da fábrica. Some à mão e ela segue aberta.`, { duration: 9000 });
     }
-    const ids = Object.keys(somar);
-    if (ids.length === 0) {
-      toast.error("Nenhum produto dessas encomendas faz parte do pedido à fábrica.");
+    if (inteiras.length === 0) {
+      if (deFora.length === 0) toast.error("Escolha ao menos uma encomenda.");
       return;
     }
+    const somar = {};
+    for (const r of somaPorProduto(inteiras)) somar[r.inventory_item_id] = r.qtd;
+    const ids = Object.keys(somar);
     usuarioMexeuRef.current = true;
     ids.forEach((id) => digitadosRef.current.add(id));
     setQuantities((prev) => {
@@ -561,29 +565,32 @@ export default function PurchaseOrderForm({
       });
       return next;
     });
-    setEncSomadas((prev) => [...new Set([...prev, ...encomendasEscolhidas.map((e) => e.id)])]);
-    toast.success(encomendasEscolhidas.length === 1 ? "Encomenda somada ao pedido." : `${encomendasEscolhidas.length} encomendas somadas ao pedido.`);
-    if (fora.length > 0) toast.warning(`Não entraram no pedido (produto da unidade): ${fora.join(", ")}.`, { duration: 8000 });
+    setEncSomadas((prev) => [...new Set([...prev, ...inteiras.map((e) => e.id)])]);
+    toast.success(inteiras.length === 1 ? "Encomenda somada ao pedido." : `${inteiras.length} encomendas somadas ao pedido.`);
   };
 
   // Pedido enviado: as encomendas somadas passam para "pedida à fábrica". Falha aqui não desfaz o pedido.
   const marcarEncomendasPedidas = async (pedidoId) => {
-    // Só as que ainda estão "abertas" (outra aba pode ter cancelado ou entregue no meio); sem cache, todas.
+    // Só vira "pedida" a que ainda está "aberta" E cujos produtos seguem no pedido FINAL com quantidade
+    // ≥ à da encomenda (ela pode ter zerado o produto depois de somar). As outras continuam abertas.
+    // Sem o cache das encomendas não dá para conferir: nenhuma é marcada (ficam abertas, que é o lado seguro).
     const cache = queryClient.getQueryData(chaveEncomendas(franchiseId));
-    const ids = cache
-      ? encSomadasRef.current.filter((id) => cache.find((e) => e.id === id)?.status === "aberta")
-      : encSomadasRef.current;
+    if (!cache || encSomadasRef.current.length === 0) return;
+    const somadas = cache.filter((e) => e.status === "aberta" && encSomadasRef.current.includes(e.id));
+    const ids = cobertasPeloPedido(somadas, quantities);
     if (!ids.length) return;
     const agora = new Date().toISOString();
+    // `where: { status: "aberta" }` no próprio UPDATE: nunca reabre encomenda cancelada/entregue em outra aba
+    // (PGRST116 = nenhuma linha casou = já mudou; não é falha).
     const res = await Promise.allSettled(
-      ids.map((id) => Encomenda.update(id, { status: "pedida", purchase_order_id: pedidoId || null, pedida_em: agora }))
+      ids.map((id) => Encomenda.update(id, { status: "pedida", purchase_order_id: pedidoId || null, pedida_em: agora }, { where: { status: "aberta" } }))
     );
-    const falhas = res.filter((r) => r.status === "rejected").length;
+    const falhas = res.filter((r) => r.status === "rejected" && r.reason?.code !== "PGRST116").length;
     if (falhas > 0) {
       console.error("Erro ao marcar encomendas como pedidas:", res.filter((r) => r.status === "rejected").map((r) => r.reason?.message));
       toast.warning("O pedido foi enviado, mas não consegui marcar algumas encomendas como pedidas. Confira em Vendas › Encomendas.", { duration: 10000 });
     }
-    queryClient.invalidateQueries({ queryKey: chaveEncomendas(franchiseId) });
+    queryClient.invalidateQueries({ queryKey: chaveEncomendasPrefixo(franchiseId) });
   };
 
   const handleSubmit = async () => {
