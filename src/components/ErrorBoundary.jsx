@@ -1,4 +1,5 @@
 import React from 'react';
+import { registrarEvento } from '@/lib/telemetria';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,8 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error Boundary capturou erro:', error, errorInfo);
+    // 19/11/2026: tela quebrada fica visível em app_eventos (antes só no console de quem viu)
+    try { registrarEvento('erro_app', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
 
     // Auto-reload on chunk load failures (happens after new deploys)
     const isChunkError = error?.message?.includes('dynamically imported module')

@@ -1,4 +1,5 @@
 import React from 'react';
+import { registrarEvento } from '@/lib/telemetria';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 
@@ -14,6 +15,7 @@ class PageErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('[PageErrorBoundary] Erro na página:', error, errorInfo);
+    try { registrarEvento('erro_tela', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
   }
 
   handleRetry = () => {

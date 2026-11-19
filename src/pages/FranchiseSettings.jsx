@@ -1503,11 +1503,12 @@ function FranchiseSettingsContent() {
               {/* Junção 10/11/2026: a promoção inteira mora no Cardápio digital (vale para o robô e o cardápio). Aqui só
                   mostra o que o robô oferece. Chave do cardápio desligada na unidade (emergência): o texto volta a ser editável. */}
               {promocaoNoCardapio ? (
-                <div id="mr-promocao" className="scroll-mt-24 rounded-xl bg-surface-2 p-3 text-sm text-ink space-y-1" data-promo-mr>
+                // 19/11/2026: a caixa inteira é o link (o texto recebia toque esperando editar: 36 cliques sem resposta em 7 dias)
+                <Link id="mr-promocao" to="/CardapioDigital?bloco=promocao" className="block scroll-mt-24 rounded-xl bg-surface-2 p-3 text-sm text-ink space-y-1 hover:bg-surface-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand" data-promo-mr>
                   <p className="text-xs font-semibold text-ink-2">Promoção que o robô oferece:</p>
                   <p className="whitespace-pre-line">{editingConfig?.promotions_combo ? `“${editingConfig.promotions_combo}”` : "Nenhuma promoção agora."}</p>
-                  <Link to="/CardapioDigital?bloco=promocao" className="inline-flex min-h-10 items-center font-semibold text-brand-dark hover:underline">Mudar em Cardápio digital › Promoção →</Link>
-                </div>
+                  <span className="inline-flex min-h-10 items-center font-semibold text-brand-dark">Mudar em Cardápio digital › Promoção →</span>
+                </Link>
               ) : (
                 <div>
                   <label className={labelClass}>Promoções ativas (o robô oferece uma vez por conversa) <HelpTip tip="promocoes" /></label>

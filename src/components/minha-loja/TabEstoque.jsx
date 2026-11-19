@@ -2204,8 +2204,9 @@ export default function TabEstoque({
             <div className="space-y-2">
               <Label className="text-ink">Categoria</Label>
               {/* 16/11/2026: sai do nome e da origem, a mesma regra do cardápio; escolher à mão não valia em lugar nenhum */}
-              <p className="rounded-xl bg-surface-line px-3 py-2 text-sm text-ink">
-                {formData.product_name.trim() ? getCategoryFromName(formData.product_name, propriaNoForm) : "—"}
+              {/* 19/11/2026: era caixa cinza com cara de campo e recebia toque (28 cliques sem resposta em 7 dias): agora é texto */}
+              <p className="text-sm font-semibold text-ink">
+                {formData.product_name.trim() ? getCategoryFromName(formData.product_name, propriaNoForm) : "Escreva o nome do produto"}
               </p>
               <p className="text-xs text-ink-3">Automática pelo nome. Massa que não é da fábrica, como prato pronto, fica em Outros.</p>
             </div>

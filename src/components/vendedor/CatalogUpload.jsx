@@ -224,11 +224,14 @@ export default function CatalogUpload({ value, onChange, franchiseId }) {
       {value ? (
         /* Preview */
         <div className="relative rounded-xl overflow-hidden border border-surface-line/10 bg-white">
-          <img
-            src={value}
-            alt="Catálogo"
-            className="w-full max-h-80 object-contain bg-surface"
-          />
+          {/* 19/11/2026: tocar na imagem abre em tamanho cheio (era toque sem resposta) */}
+          <a href={value} target="_blank" rel="noopener noreferrer" title="Abrir em tamanho cheio">
+            <img
+              src={value}
+              alt="Catálogo"
+              className="w-full max-h-80 object-contain bg-surface cursor-zoom-in"
+            />
+          </a>
           <div className="absolute top-3 right-3 flex gap-2">
             <button
               type="button"

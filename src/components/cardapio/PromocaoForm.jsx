@@ -427,8 +427,8 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <p className={ROTULO_CAMPO}>Preço normal</p>
-                    <p className="flex h-11 items-center rounded-xl bg-surface-2 px-3 text-sm tabular-nums text-ink-2">
-                      {normal != null ? `${brl(normal)} (soma sozinho)` : "Escolha os produtos"}
+                    <p className="flex min-h-11 items-center text-sm tabular-nums text-ink-2">
+                      {normal != null ? `${brl(normal)}, a soma dos produtos (automático)` : "Escolha os produtos"}
                     </p>
                   </div>
                   <div>

@@ -172,7 +172,10 @@ export default function GerarCardapioDialog({ open, onOpenChange, franchiseId, o
 
         {estado === "pronto" && previa && (
           <div className="space-y-3">
-            <img src={previa} alt="Prévia do cardápio" className="w-full max-w-sm mx-auto rounded-lg border border-surface-line/20 shadow-sm" />
+            <a href={previa} target="_blank" rel="noopener noreferrer" title="Abrir em tamanho cheio" className="block">
+              <img src={previa} alt="Prévia do cardápio" className="w-full max-w-sm mx-auto rounded-lg border border-surface-line/20 shadow-sm cursor-zoom-in" />
+            </a>
+            <p className="text-xs text-ink-3 text-center">Toque na imagem para ver em tamanho cheio.</p>
             <p className="text-xs text-ink-2 text-center">
               {total} produtos. Os que estão escondidos ou em falta há mais de 30 dias ficam de fora.
             </p>
