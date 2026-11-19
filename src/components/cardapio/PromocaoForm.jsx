@@ -437,6 +437,13 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                       onChange={(e) => setRegra((r) => ({ ...r, preco: e.target.value === "" ? null : e.target.value }))} />
                     {desconto != null && desconto > 0 && <p className="mt-1 text-xs text-ink-3">{desconto}% de desconto (máximo 35%).</p>}
                   </div>
+                  {/* 19/11/2026 (Bárbara, Jd. Santa Maria): kit de Natal com bolsa térmica ficava acima da soma e era recusado.
+                      Item extra (bolsa, embalagem) vira produto do Estoque e entra no kit; Itápolis já faz assim. */}
+                  {normal > 0 && Number(regra.preco) > 0 && Number(regra.preco) >= normal && (
+                    <p className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink sm:col-span-2">
+                      O kit está acima da soma dos produtos ({brl(normal)}). Tem bolsa térmica, embalagem ou outro item no kit? Cadastre ele no Estoque, com o preço de venda, e escolha ele aqui em “O que vem no kit”.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
