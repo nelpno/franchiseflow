@@ -427,13 +427,13 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Caminho A — cadastrar produto próprio**
 1. Toque em **Estoque** (no celular, na barra de baixo; no computador, no menu à esquerda) e em **Adicionar**, acima da lista.
    - Imagem: botões acima da lista. Contorno em **Adicionar**. (existe: `produto-proprio-1.webp`)
-2. Em **Nome do Produto**, escreva o nome do que você vende. Depois, a quantidade que você tem, o custo (quanto você paga por uma unidade) e o preço de venda (quanto o cliente paga por uma unidade).
+2. Em **Nome do Produto**, escreva o nome do que você vende. Depois, a quantidade que você tem, o custo (quanto você paga por uma unidade) e o preço de venda (quanto o cliente paga por uma unidade). A **Categoria** aparece só como texto e muda sozinha pelo nome. Serve também para o que não é massa (bolsa térmica, embalagem, vinho, cesta): cadastre com preço e quantidade e ponha no kit da promoção.
    - Imagem: formulário "Adicionar Produto". (existe: `produto-proprio-2.webp`)
 3. Toque em **Adicionar**, no fim do formulário. Aparece "Produto adicionado ao estoque." Pronto.
    - Imagem: fim do formulário. Contorno em **Adicionar**. (existe: `produto-proprio-3.webp`)
 
 **Caminho B — ocultar um produto**
-4. Toque no produto na lista e em **Ocultar**. Aparece "Produto oculto" e o robô para de oferecer.
+4. Toque no produto na lista e em **Ocultar**. Aparece "Produto oculto" e o robô para de oferecer; some também do cardápio digital e da reposição. Produto que já teve venda não pode ser excluído (some dos relatórios): o aviso traz o botão **Ocultar agora**. O histórico fica.
    - Imagem: produto aberto. Contorno em **Ocultar**. (existe: `produto-proprio-4.webp`)
 5. O produto sai da lista e vai para o fim da tela, em "produto oculto". Para voltar a vender, toque ali e em **Reativar**.
    - Imagem: fim da lista, produtos ocultos aberto. Contorno em **Reativar**. (existe: `produto-proprio-5.webp`)
@@ -1031,8 +1031,9 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: quadro Resultado (números cobertos). Círculo em **30 dias**.
 7. Em **Produtos no cardápio**, desligue o interruptor **Mostrar** para esconder um produto e ligue para ele voltar. Filtros: **Em falta**, **Todos**, **Escondidos**.
    - Imagem: lista de produtos. Seta no interruptor **Mostrar**.
-8. Em **Promoção do cardápio**, toque em **Criar promoção com produtos**, escolha **Leve N e ganhe %** (ou **Kit com preço fechado**, que por enquanto aparece só como texto no topo), preencha e toque em **Salvar promoção**. **Encerrar promoção** para. Sem promoção com produtos, o cliente vê só a frase de **Promoção no cardápio** (o texto do Meu robô é para o robô).
+8. Em **Promoção**, toque em **Criar promoção** e escolha **Kit com preço fechado**, **Leve N e ganhe %** ou **Escrever do meu jeito**. Kit e Leve N podem ser até 3 ao mesmo tempo. Toque em **Salvar promoção**: vale para o cardápio e para o robô. **Encerrar promoção** para. No Meu robô, o quadro "Promoção que o robô oferece" é um link que volta para Cardápio digital › Promoção.
    - Imagem: formulário da promoção. Seta em **Salvar promoção**.
+9. Kit com sabor à escolha (ex.: Kit de Natal = 1 nhoque 1 kg + 1 massa recheada 700g à escolha + 2 molhos + 1 queijo + 1 bolsa térmica): em **O que vem no kit**, toque em **produto** para os itens fechados e em **item à escolha** para a massa: nome (ex.: Massa recheada 700g), produtos que o cliente pode escolher (mínimo 2) e quantas vêm. O cliente escolhe o sabor em "Escolha:" no cartão do kit; o robô lista os sabores à venda. O Preço normal conta o item à escolha pela opção mais cara; o Preço do kit fica abaixo dele, com no máximo 35% de desconto. Bolsa térmica, embalagem, vinho ou cesta: cadastre no Estoque, com preço de venda e quantidade, e ponha no kit; quando acabar, o kit sai do cardápio sozinho. Preço do kit acima da soma: o app avisa.
 
 **Deu certo quando:** o cardápio está "no ar", o link está na bio e no Google, e o quadro Antes de divulgar diz "Tudo em dia para vender".
 
