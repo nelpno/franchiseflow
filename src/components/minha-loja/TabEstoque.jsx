@@ -672,9 +672,13 @@ export default function TabEstoque({
         code === "23503" ||
         /foreign key|violates foreign key|sale_items|purchase_order_items/i.test(msg);
       if (isFkViolation) {
-        toast.error(
-          "Este produto tem vendas ou pedidos no histórico. Use o botão ocultar (👁️) em vez de excluir."
-        );
+        // 19/11/2026 (Dilma, 16/11): ela queria excluir e o aviso só mandava procurar o botão; agora oculta daqui mesmo
+        setDeleteConfirmId(null);
+        toast.error("Este produto tem vendas no histórico e não pode ser excluído, senão some dos seus relatórios.", {
+          description: "Ocultar tira do cardápio, do robô e da reposição. O histórico fica.",
+          duration: 12000,
+          action: item.active === false ? undefined : { label: "Ocultar agora", onClick: () => handleToggleActive(item) },
+        });
       } else if (msg.includes("permissão")) {
         toast.error("Sem permissão para excluir este produto.");
       } else {
