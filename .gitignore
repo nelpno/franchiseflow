@@ -51,3 +51,8 @@ plan_content.tmp.txt
 # Supabase scratch/backup (runtime artifacts, contem dados de clientes)
 supabase/.temp/
 supabase/scripts/backups/
+
+# Faxina 19/11/2026: backup de funcao antes de mexer, prints de teste e SQL com telefone de franqueado (repo publico)
+docs/db-backups/
+docs/prints-*/
+supabase/2026-10-06-billing-phone-lembrete-cobranca.sql

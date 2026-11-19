@@ -6,7 +6,7 @@ pacote de contexto (`00-CONTEXTO.md` + `00b-CLARITY-3DIAS.md`) e uma missão que
 **Cabeçalho comum a todos** (colado no início de cada prompt):
 
 > Você está auditando o FranchiseFlow, o dashboard de gestão da rede Maxi Massas.
-> Diretório: `c:/Users/nelpn/OneDrive/Arquivos e Documentos/Agents/MaxiMassas/apps/dashboard`.
+> Diretório: `C:/dev/Maxi Massas/apps/dashboard`.
 >
 > **Leia PRIMEIRO, na ordem:** `docs/auditoria-2026-09/00-CONTEXTO.md` (fatos medidos, as 2 personas,
 > as regras que você não pode violar e o formato obrigatório de cada achado),

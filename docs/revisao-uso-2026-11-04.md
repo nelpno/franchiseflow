@@ -24,6 +24,6 @@ Peso da abertura (gzip, live): 276 KB (era 248 KB em 07/09).
 ## Achados
 1. **Conferir entrega (S15) está desligada desde sempre**: o gatilho lê a chave `conferir_entrega`, que não existe em `feature_flags`. 109 pedidos entregues em 45 dias, 1 conferido. Código morto: `ConferirEntregaCard`, `AguardandoConferenciaSection`, `conferenciaEntrega.js`, cron `s15-entregas-sem-resposta`.
 2. **"Estoque baixo" = ruído**: 1.562 avisos em 30 dias para 63 franqueados (~25 por pessoa), 28% lidos.
-3. **Robô grava venda que a franqueada apaga**: 98 de 975 vendas do robô (10%) apagadas em 30 dias, por 37 unidades; só 27 tinham outra venda do mesmo cliente (duplicata). As outras 71 parecem venda que não aconteceu.
+3. **Robô grava venda que a franqueada apaga**: 98 de 975 vendas do robô (10%) apagadas em 30 dias, por 37 unidades; só 27 tinham outra venda do mesmo cliente (duplicata). As outras 71 parecem venda que não aconteceu. ✅ Diagnosticado em 04/11 (`bots/vendedor/analises/2026-11-04-vendas-robo-apagadas.md`: 79 exclusões reais; 18 cópias do robô; consertos C, E e B no ar, A e D pendentes).
 4. **Ajuda desatualizada**: `pedido-fabrica` ainda diz frete "10%, mín. R$ 250, máx. R$ 350" (a tela mostra R$ 350 desde 22/10, e a rede foi avisada em 02/11); não fala do Pix pedido pelo WhatsApp na entrega nem do pão de queijo em caixa de 12. `pagamentos` diz R$ 150 (vai a R$ 220 em jan/2027).
 5. **"Isso resolveu?" e os eventos (manual baixado, modelo de pedido, relatório) só existem no painel do Clarity**: ninguém leu (a S21.3 previa leitura mensal).
