@@ -3,7 +3,7 @@
 // (apps/dashboard/.tmp/cardapio-2026-11-10/fixture-promos.mjs --sql, evo sem estoque = sem "(de R$ ...)").
 // Fixture: os 26 textos de promoção da rede em 10/11/2026 convertidos à mão; 7 cabem nos 2 tipos da v1.
 import assert from "node:assert/strict";
-import { erroDaRegra, textoDaRegra, precoNormal, limparRegra, regraAtiva, regraVazia, regrasAtivas, trocaRegra, tiraRegra, produtosDivididos, textoDasRegras, MAX_PROMOS } from "./promocaoRegras.js";
+import { erroDaRegra, textoDaRegra, precoNormal, limparRegra, regraAtiva, regraVazia, regrasAtivas, trocaRegra, tiraRegra, produtosDivididos, textoDasRegras, MAX_PROMOS, itemVendavel, nomesDoItem, listaOu } from "./promocaoRegras.js";
 
 let n = 0; const t = (nome, f) => { f(); n++; };
 const R = (tipo, nome, itens, extra) => ({ tipo, nome, itens: itens.map(([product_name, qtd]) => ({ product_name, qtd })), vale_ate: null, ...extra });
@@ -138,6 +138,85 @@ t("produtos divididos entre promoções (aviso na tela)", () => {
   assert.deepEqual(d[0].com, ["Kit Natal 2"]);
   assert.deepEqual(produtosDivididos([K1, K2, K3], 2), [], "o Kit Rondelli não divide nada");
   assert.deepEqual(produtosDivididos([K1], 0), []);
+});
+
+// ---------- 19/11/2026: item à escolha no kit (site/pedido/supabase/2026-11-19-kit-item-escolha.sql) ----------
+// Esperados = saída do banco novo numa transação que não grava (site/pedido/tests/prova-kit-escolha.mjs --textos, estoque real do Imirim em 19/11).
+const NRM = NR, NRC = "Nhoque Recheado com Calabresa - 700g", RO5 = "Rondelli 4 Queijos - 500g Fatiado", LAS = "Massa de Lasanha - 500g";
+const MAR = "Molho de Tomate Mariolla - 250g", C4Q = "Canelone 4 Queijos - 700g", NB5 = "Nhoque de Batata - 500g", ESC = "Molho Caseiro - 500g";
+const ESTOQUE19 = [
+  { produto: NB, preco: 30 }, { produto: NB5, preco: 16 }, { produto: MAR, preco: 12 }, { produto: MC, preco: 11 }, { produto: NRM, preco: 42 },
+  { produto: NRC, preco: 40 }, { produto: RO5, preco: 34 }, { produto: LAS, preco: 14 }, { produto: RO, preco: 42 }, { produto: C4Q, preco: 42 },
+  { produto: ESC, preco: 18, visivel: false },
+];
+const fx = (product_name, qtd = 1) => ({ product_name, qtd });
+const esc = (rotulo, opcoes, qtd = 1) => ({ escolha: true, rotulo, opcoes, qtd });
+const kit = (nome, itens, preco, extra = {}) => ({ tipo: "kit", nome, itens, preco, vale_ate: null, ...extra });
+const E1 = kit("Kit Natal à escolha", [fx(NB), esc("Massa recheada 700g", [NRM, RO5, LAS]), fx(MAR, 2)], 80);
+const E2 = kit("2 massas à escolha", [esc("Massa recheada 700g", [NRM, NRC, C4Q], 2)], 76);
+const E3 = kit("Kit Molhos", [fx(NB), esc("Molho 250g", [MAR, MC])], 36, { vale_ate: "2026-12-31" });
+
+t("item à escolha: texto igual ao do banco (opções à venda, '(de R$)' pela mais cara)", () => {
+  assert.equal(textoDaRegra(E1, ESTOQUE19), "Kit Natal à escolha: 1 Nhoque de Batata - 1kg + 1 Massa recheada 700g à escolha (Nhoque Recheado com Mussarela - 700g, Rondelli 4 Queijos - 500g Fatiado ou Massa de Lasanha - 500g) + 2 Molho de Tomate Mariolla - 250g por R$ 80,00 (de R$ 96,00).");
+  assert.equal(textoDaRegra(E2, ESTOQUE19), "2 massas à escolha: 2 Massa recheada 700g à escolha (Nhoque Recheado com Mussarela - 700g, Nhoque Recheado com Calabresa - 700g ou Canelone 4 Queijos - 700g) por R$ 76,00 (de R$ 84,00).");
+  assert.equal(textoDaRegra(E3, ESTOQUE19), "Kit Molhos: 1 Nhoque de Batata - 1kg + 1 Molho 250g à escolha (Molho de Tomate Mariolla - 250g ou Molho Caseiro 250g) por R$ 36,00 (de R$ 42,00). Válido até 31/12/2026.");
+  assert.equal(textoDaRegra(E1, []), "Kit Natal à escolha: 1 Nhoque de Batata - 1kg + 1 Massa recheada 700g à escolha (Nhoque Recheado com Mussarela - 700g, Rondelli 4 Queijos - 500g Fatiado ou Massa de Lasanha - 500g) + 2 Molho de Tomate Mariolla - 250g por R$ 80,00.", "sem estoque: todas as opções, sem 'de R$'");
+  const semRondelli = ESTOQUE19.map((p) => (p.produto === RO5 ? { ...p, visivel: false } : p));
+  assert.equal(textoDaRegra(E1, semRondelli), "Kit Natal à escolha: 1 Nhoque de Batata - 1kg + 1 Massa recheada 700g à escolha (Nhoque Recheado com Mussarela - 700g ou Massa de Lasanha - 500g) + 2 Molho de Tomate Mariolla - 250g por R$ 80,00 (de R$ 96,00).", "opção escondida sai do texto (igual ao banco)");
+  assert.equal(textoDasRegras([E1, E2, E3], ESTOQUE19).split("\n").length, 3);
+  assert.equal(textoDaRegra(K1, ESTOQUE12), "Kit Natal 1: 1 Nhoque de Batata - 1kg + 1 Nhoque Recheado com Mussarela - 700g + 1 Molho Caseiro 250g por R$ 70,00 (de R$ 83,00).", "kit fixo: como sempre");
+});
+
+t("item à escolha: preço normal pela opção mais cara; ainda vende com UMA opção à venda", () => {
+  assert.equal(precoNormal(E1, ESTOQUE19), 96);
+  assert.equal(precoNormal(E2, ESTOQUE19), 84);
+  assert.equal(precoNormal(kit("x", [esc("Massa", ["Não existe", "Nem esta"])], 10), ESTOQUE19), null);
+  assert.equal(itemVendavel(E1.itens[1], ESTOQUE19), true);
+  assert.equal(itemVendavel(esc("Molho", [ESC, "Não existe"]), ESTOQUE19), false, "só opção escondida ou fora = não vende");
+  assert.equal(itemVendavel(fx(NB), ESTOQUE19), true);
+  assert.deepEqual(nomesDoItem(E1.itens[1]), [NRM, RO5, LAS]);
+  assert.deepEqual(nomesDoItem(fx(NB)), [NB]);
+  assert.equal(listaOu(["A", "B", "C"]), "A, B ou C");
+  assert.equal(listaOu(["A", "B"]), "A ou B");
+  assert.equal(listaOu(["A"]), "A");
+});
+
+t("item à escolha: mesmas mensagens e ordem do promocao_regra_erro (casos de prova-kit-escolha.mjs § 9)", () => {
+  const H = "2026-11-19";
+  const LEVE = { tipo: "percentual", nome: "Leve 3 nhoques", itens: [fx(NB), fx(NB5)], min_qtd: 3, pct: 10, vale_ate: null };
+  const casos = [
+    [E1, null], [E2, null],
+    [kit("Kit x", [fx(NB), esc("Ma", [NRM, RO5])], 60), "Dê um nome ao item à escolha (ex.: Massa recheada 700g)."],
+    [kit("Kit x", [fx(NB), esc("M".repeat(41), [NRM, RO5])], 60), "Dê um nome ao item à escolha (ex.: Massa recheada 700g)."],
+    [kit("Kit x", [fx(NB), esc("Massa recheada", [NRM])], 60), "Escolha pelo menos 2 opções para o item à escolha."],
+    [kit("Kit x", [fx(NB), { escolha: true, rotulo: "Massa recheada", qtd: 1 }], 60), "Escolha pelo menos 2 opções para o item à escolha."],
+    [kit("Kit x", [fx(NB), esc("Massa recheada", Array.from({ length: 31 }, (_, i) => "Produto " + i))], 60), "No máximo 30 opções no item à escolha."],
+    [kit("Kit x", [fx(NB), esc("Massa recheada", [NRM, 5])], 60), "Promoção em formato inválido."],
+    [{ ...LEVE, itens: [fx(NB), esc("Massa recheada", [NRM, RO5])] }, "Item à escolha só vale no kit."],
+    [kit("Kit x", [fx(NRM), esc("Massa recheada", [NRM, RO5])], 60), "O mesmo produto aparece duas vezes."],
+    [kit("Kit x", [esc("Massa A", [NRM, RO5]), esc("Massa B", [NRC, RO5])], 60), "O mesmo produto aparece duas vezes."],
+    [kit("Kit x", [fx(NB), esc("Massa recheada", [NRM, "Sofioli de Marte - 700g"])], 60), 'O produto "Sofioli de Marte - 700g" não está no seu estoque.'],
+    [kit("Kit x", [fx(NB), esc("Molho", [MAR, ESC])], 35), `O produto "${ESC}" está escondido do cardápio.`],
+    [kit("Kit x", [fx(NB), esc("Massa recheada", [NRM, RO5], 0)], 60), "Quantidade de cada produto: de 1 a 20."],
+    [kit("Kit x", [fx(NB), esc("Massa recheada", [NRM, RO5], 21)], 60), "Quantidade de cada produto: de 1 a 20."],
+    [kit("Kit x", [esc("Massa recheada", [NRM, RO5])], 35), "O kit precisa de pelo menos 2 itens."],
+    [{ ...E1, preco: 96 }, "O preço do kit precisa ser menor que o preço normal."],
+    [{ ...E1, preco: 62.4 }, null],
+    [{ ...E1, preco: 62 }, "O desconto passou de 35%."],
+    [kit("Kit x", [fx(NB), fx(NB5), fx(MAR), fx(MC), fx(RO), fx(C4Q), esc("Massa recheada", [NRM, RO5])], 200), "No máximo 6 produtos na promoção."],
+    [kit("Kit x", [fx("Xis"), esc("Massa recheada", [NRM, "Ypsilon"])], 60), 'O produto "Xis" não está no seu estoque.'],
+  ];
+  casos.forEach(([r, esperado], i) => assert.equal(erroDaRegra(r, ESTOQUE19, H), esperado, `caso ${i}`));
+});
+
+t("item à escolha: limparRegra guarda escolha/rotulo/opcoes/qtd; produtos divididos olham as opções", () => {
+  assert.deepEqual(limparRegra({ ...E1, preco: "80" }).itens[1], { escolha: true, rotulo: "Massa recheada 700g", opcoes: [NRM, RO5, LAS], qtd: 1 });
+  assert.deepEqual(limparRegra({ ...E1, itens: [{ escolha: true, rotulo: "  Massa  ", opcoes: [NRM, RO5], qtd: "2", extra: 1 }] }).itens[0], { escolha: true, rotulo: "Massa", opcoes: [NRM, RO5], qtd: 2 });
+  assert.deepEqual(limparRegra(K1), { tipo: "kit", nome: "Kit Natal 1", itens: K1.itens, vale_ate: null, preco: 70 }, "kit fixo: como sempre");
+  const d = produtosDivididos([E1, E2, K1], 0);
+  assert.deepEqual(d.map((x) => x.produto), [NB, NRM]);
+  assert.deepEqual(d[1].com, ["2 massas à escolha", "Kit Natal 1"]);
+  assert.deepEqual(produtosDivididos([E1, E2, K1], 1).map((x) => x.produto), [NRM]);
 });
 
 console.log(`promocaoRegras: ${n} testes ok`);

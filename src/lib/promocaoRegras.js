@@ -2,6 +2,9 @@
 // A franqueada escolhe da lista, não digita regra. Dois tipos na v1:
 //   kit        {tipo:"kit", nome, itens:[{product_name, qtd}], preco, vale_ate}
 //   percentual {tipo:"percentual", nome, itens:[{product_name, qtd:1}], min_qtd, pct, vale_ate}
+// 19/11/2026: item À ESCOLHA, só no kit: {escolha:true, rotulo:"Massa recheada 700g", opcoes:["<nome do estoque>", ...], qtd}.
+//   O preço normal conta a opção MAIS CARA; o banco (promocao_aplicar) conta a opção que o cliente pediu
+//   (site/pedido/supabase/2026-11-19-kit-item-escolha.sql).
 // O BANCO é quem manda: o trigger franchise_configurations_promocao_texto valida (promocao_regras_erro) e grava o texto
 // que o robô lê (promocao_texto) em promotions_combo. Aqui fica a MESMA regra e o MESMO texto, para a prévia e para
 // avisar antes de salvar (site/pedido/supabase/2026-11-10-cardapio-rede.sql). Mudou um lado, mude o outro:
@@ -11,6 +14,9 @@ export const TETO_DESCONTO = 0.35; // o mesmo teto do robô
 export const MAX_ITENS = 6;
 export const MAX_PROMOS = 3; // 12/11/2026: até 3 promoções ao mesmo tempo (o banco recusa a 4ª)
 export const NOME_MAX = 40;
+export const ROTULO_MAX = 40; // nome do item à escolha (3 a 40)
+export const MIN_OPCOES = 2;
+export const MAX_OPCOES = 30;
 
 export const TIPOS = [
   { id: "kit", rotulo: "Kit com preço fechado" },
@@ -26,13 +32,51 @@ export function precoDe(produtos, nome) {
   return p ? Number(p.preco) : null;
 }
 
-/** "Preço normal" do kit = soma dos preços de agora × quantidade (nunca inventado). null se faltar preço. */
+/** Item à escolha? (só `escolha === true`, como o `x->'escolha' = 'true'` do banco) */
+export const ehEscolha = (it) => !!it && typeof it === "object" && it.escolha === true;
+
+/** Os nomes do estoque que o item aceita: fixo = [product_name]; à escolha = as opções (igual a public.promocao_item_nomes). */
+export function nomesDoItem(it) {
+  if (ehEscolha(it)) return Array.isArray(it.opcoes) ? it.opcoes.map((o) => String(o)) : [];
+  return [it?.product_name];
+}
+
+/** Maior preço entre os nomes (null se nenhum tem preço). */
+function maiorPreco(produtos, nomes, achar = precoDe) {
+  let max = null;
+  for (const n of nomes) {
+    const p = achar(produtos, n);
+    if (p != null && (max == null || p > max)) max = p;
+  }
+  return max;
+}
+
+/** Preço de um produto À VENDA (ativo, com preço, visível no cardápio): o maior entre linhas de mesmo nome, como o max() do banco. */
+function precoVendavel(produtos, nome) {
+  const ps = (produtos || []).filter((x) => x.produto === nome && x.ativo !== false && Number(x.preco) > 0 && x.visivel !== false).map((x) => Number(x.preco));
+  return ps.length ? Math.max(...ps) : null;
+}
+
+/** O item ainda vende? Fixo: o produto à venda; à escolha: pelo menos uma opção (igual a public.promocao_regra_itens_ok). */
+export function itemVendavel(it, produtos) {
+  return nomesDoItem(it).some((n) => precoVendavel(produtos, n) != null);
+}
+
+/** "A", "A ou B", "A, B ou C" (igual a public.promocao_lista_ou) */
+export function listaOu(nomes) {
+  const l = nomes || [];
+  if (l.length <= 1) return l[0] ?? "";
+  return `${l.slice(0, -1).join(", ")} ou ${l[l.length - 1]}`;
+}
+
+/** "Preço normal" do kit = soma dos preços de agora × quantidade (nunca inventado); item à escolha conta a opção mais cara.
+ *  null se faltar preço. */
 export function precoNormal(regra, produtos) {
   const itens = regra?.itens || [];
   if (!itens.length) return null;
   let soma = 0;
   for (const it of itens) {
-    const p = precoDe(produtos, it.product_name);
+    const p = ehEscolha(it) ? maiorPreco(produtos, nomesDoItem(it)) : precoDe(produtos, it.product_name);
     if (p == null) return null;
     soma += p * (Number(it.qtd) || 0);
   }
@@ -71,9 +115,10 @@ export function produtosDivididos(regras, indice) {
   const lista = regrasAtivas(regras);
   const eu = lista[indice];
   if (!eu) return [];
-  return (eu.itens || []).map((it) => ({
-    produto: it.product_name,
-    com: lista.filter((o, j) => j !== indice && (o.itens || []).some((x) => x.product_name === it.product_name)).map((o) => String(o.nome || "").trim()),
+  // 19/11: as opções do item à escolha contam como produtos da promoção
+  return (eu.itens || []).flatMap(nomesDoItem).map((produto) => ({
+    produto,
+    com: lista.filter((o, j) => j !== indice && (o.itens || []).some((x) => nomesDoItem(x).includes(produto))).map((o) => String(o.nome || "").trim()),
   })).filter((x) => x.com.length);
 }
 
@@ -93,17 +138,34 @@ export function erroDaRegra(regra, produtos, hojeISO, outras = []) {
   const itens = Array.isArray(regra.itens) ? regra.itens : [];
   if (!itens.length) return "Escolha pelo menos um produto.";
   if (itens.length > MAX_ITENS) return "No máximo 6 produtos na promoção.";
-  if (new Set(itens.map((i) => i.product_name)).size !== itens.length) return "O mesmo produto aparece duas vezes.";
+  // 19/11: item à escolha (só no kit): nome e opções
+  for (const it of itens) {
+    if (!ehEscolha(it)) continue;
+    if (regra.tipo !== "kit") return "Item à escolha só vale no kit.";
+    const rotulo = String(it.rotulo ?? "").trim();
+    if (rotulo.length < 3 || rotulo.length > ROTULO_MAX) return "Dê um nome ao item à escolha (ex.: Massa recheada 700g).";
+    if (!Array.isArray(it.opcoes) || it.opcoes.length < MIN_OPCOES) return "Escolha pelo menos 2 opções para o item à escolha.";
+    if (it.opcoes.length > MAX_OPCOES) return "No máximo 30 opções no item à escolha.";
+    if (it.opcoes.some((o) => typeof o !== "string")) return "Promoção em formato inválido.";
+  }
+  // todo nome (fixos e opções de todos os itens) uma vez só
+  const nomes = itens.flatMap(nomesDoItem);
+  if (new Set(nomes).size !== nomes.length) return "O mesmo produto aparece duas vezes.";
   let normal = 0;
   let total = 0;
   for (const it of itens) {
     if (!inteiro(it.qtd) || Number(it.qtd) < 1 || Number(it.qtd) > 20) return "Quantidade de cada produto: de 1 a 20.";
-    const p = precoDe(produtos, it.product_name);
-    if (p == null) return `O produto "${String(it.product_name || "").slice(0, 60)}" não está no seu estoque.`;
-    // escondido do cardápio não entra (o kit sumiria de tudo, robô incluído); nome repetido: vale o visível, como no SQL
-    const visivel = (produtos || []).some((x) => x.produto === it.product_name && x.ativo !== false && Number(x.preco) > 0 && x.visivel !== false);
-    if (!visivel) return `O produto "${String(it.product_name || "").slice(0, 60)}" está escondido do cardápio.`;
-    normal += p * Number(it.qtd);
+    // fixo: o produto; à escolha: cada opção como se fosse um item fixo (o preço normal usa a mais cara)
+    let max = null;
+    for (const nome of nomesDoItem(it)) {
+      const p = precoDe(produtos, nome);
+      if (p == null) return `O produto "${String(nome || "").slice(0, 60)}" não está no seu estoque.`;
+      // escondido do cardápio não entra (o kit sumiria de tudo, robô incluído); nome repetido: vale o visível, como no SQL
+      const visivel = (produtos || []).some((x) => x.produto === nome && x.ativo !== false && Number(x.preco) > 0 && x.visivel !== false);
+      if (!visivel) return `O produto "${String(nome || "").slice(0, 60)}" está escondido do cardápio.`;
+      if (max == null || p > max) max = p;
+    }
+    normal += max * Number(it.qtd);
     total += Number(it.qtd);
   }
   if (regra.vale_ate) {
@@ -137,10 +199,16 @@ export function textoDaRegra(regra, produtos) {
   const itens = Array.isArray(regra.itens) ? regra.itens : [];
   const ate = regra.vale_ate && /^\d{4}-\d{2}-\d{2}$/.test(regra.vale_ate) ? ` Válido até ${ddmmaaaa(regra.vale_ate)}.` : "";
   if (regra.tipo === "kit") {
-    const lista = itens.map((i) => `${i.qtd} ${i.product_name}`).join(" + ");
+    // item à escolha: "<qtd> <rótulo> à escolha (<opções à venda>)"; nenhuma à venda = todas (o banco também)
+    const parte = (i) => {
+      if (!ehEscolha(i)) return `${i.qtd} ${i.product_name}`;
+      const vendaveis = nomesDoItem(i).filter((n) => precoVendavel(produtos, n) != null);
+      return `${i.qtd} ${String(i.rotulo ?? "").trim()} à escolha (${listaOu(vendaveis.length ? vendaveis : nomesDoItem(i))})`;
+    };
+    const lista = itens.map(parte).join(" + ");
     const preco = arred(Number(regra.preco));
-    // como o SQL: soma só o que achou no estoque (sum ignora nulo)
-    const achados = itens.map((i) => ({ p: precoDe(produtos, i.product_name), q: Number(i.qtd) || 0 })).filter((x) => x.p != null);
+    // como o SQL: soma só o que achou no estoque (sum ignora nulo); item à escolha = a opção à venda mais cara
+    const achados = itens.map((i) => ({ p: ehEscolha(i) ? maiorPreco(produtos, nomesDoItem(i), precoVendavel) : precoDe(produtos, i.product_name), q: Number(i.qtd) || 0 })).filter((x) => x.p != null);
     const normal = achados.length ? arred(achados.reduce((s, x) => s + x.p * x.q, 0)) : null;
     return `${String(regra.nome || "").trim()}: ${lista} por R$ ${reais(preco)}`
       + (normal != null && normal > preco ? ` (de R$ ${reais(normal)})` : "")
@@ -161,7 +229,9 @@ export function limparRegra(regra) {
   const base = {
     tipo: regra.tipo,
     nome: String(regra.nome || "").trim(),
-    itens: (regra.itens || []).map((i) => ({ product_name: i.product_name, qtd: regra.tipo === "percentual" ? 1 : Number(i.qtd) || 1 })),
+    itens: (regra.itens || []).map((i) => (ehEscolha(i)
+      ? { escolha: true, rotulo: String(i.rotulo ?? "").trim(), opcoes: Array.isArray(i.opcoes) ? [...i.opcoes] : [], qtd: Number(i.qtd) || 1 }
+      : { product_name: i.product_name, qtd: regra.tipo === "percentual" ? 1 : Number(i.qtd) || 1 })),
     vale_ate: regra.vale_ate || null,
   };
   if (regra.tipo === "kit") return { ...base, preco: arred(Number(regra.preco)) };

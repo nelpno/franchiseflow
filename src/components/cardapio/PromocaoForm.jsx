@@ -9,7 +9,10 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CARTAO, CHIP, CHIP_ATIVO, CHIP_INATIVO, H2, H3_CARTAO } from "@/components/shared/adminUi";
-import { TIPOS, erroDaRegra, limparRegra, precoNormal, regraVazia, reais, textoDaRegra, trocaRegra, tiraRegra, regrasAtivas, produtosDivididos, MAX_ITENS, MAX_PROMOS, NOME_MAX } from "@/lib/promocaoRegras";
+import {
+  TIPOS, erroDaRegra, limparRegra, precoNormal, regraVazia, reais, textoDaRegra, trocaRegra, tiraRegra, regrasAtivas, produtosDivididos,
+  ehEscolha, nomesDoItem, itemVendavel, MAX_ITENS, MAX_PROMOS, NOME_MAX, ROTULO_MAX, MIN_OPCOES, MAX_OPCOES,
+} from "@/lib/promocaoRegras";
 import { PROMO_CLIENTE_MAX, avisoTextoPromocao, detalhesDoRobo, nomeCurtoProduto, sugestaoPromocaoCliente, textoPromocaoRobo, vencimentoPromocao } from "@/lib/cardapioDigital";
 
 const CAMPO = "h-11 w-full rounded-xl border border-surface-line bg-white px-3 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-brand/30";
@@ -54,6 +57,135 @@ function EscolherProduto({ aberto, onFechar, produtos, jaEscolhidos, onEscolher 
   );
 }
 
+const semAcento = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+
+// Um item do kit em poucas palavras: "1 Nhoque de Batata 1kg" ou "1 Massa recheada 700g à escolha"
+function itemCurto(i) {
+  return ehEscolha(i) ? `${i.qtd} ${String(i.rotulo || "").trim()} à escolha` : `${i.qtd} ${nomeCurtoProduto(i.product_name)}`;
+}
+
+// A opção mais cara de um item à escolha (a que o "de R$" conta e a que o cardápio já deixa marcada)
+function opcaoMaisCara(i, produtos) {
+  let melhor = null;
+  for (const n of nomesDoItem(i)) {
+    const p = (produtos || []).find((x) => x.produto === n);
+    if (p && (!melhor || Number(p.preco) > Number(melhor.preco))) melhor = p;
+  }
+  return melhor;
+}
+
+// 19/11/2026: item à escolha do kit ("1 massa recheada 700g à escolha"): nome, as opções do Estoque e quantas.
+// O preço normal conta a opção mais cara; no pedido vale a que o cliente escolher (a conta é do banco, promocao_aplicar).
+function ItemEscolha({ aberto, onFechar, produtos, inicial, bloqueados, onSalvar }) {
+  const [rotulo, setRotulo] = useState("");
+  const [opcoes, setOpcoes] = useState([]);
+  const [qtd, setQtd] = useState(1);
+  const [busca, setBusca] = useState("");
+  const [tentou, setTentou] = useState(false);
+  useEffect(() => {
+    if (!aberto) return;
+    setRotulo(inicial?.rotulo || "");
+    setOpcoes(Array.isArray(inicial?.opcoes) ? [...inicial.opcoes] : []);
+    setQtd(Number(inicial?.qtd) || 1);
+    setBusca("");
+    setTentou(false);
+  }, [aberto, inicial]);
+  // escondido do cardápio não entra; mas a opção já marcada que foi escondida (ou saiu do Estoque) aparece, para poder desmarcar
+  const lista = useMemo(() => {
+    const q = semAcento(busca.trim());
+    return (produtos || [])
+      .filter((p) => !bloqueados.includes(p.produto) && (p.visivel !== false || opcoes.includes(p.produto)))
+      .filter((p) => !q || semAcento(p.produto).includes(q));
+  }, [produtos, bloqueados, busca, opcoes]);
+  const foraDoEstoque = opcoes.filter((n) => !(produtos || []).some((p) => p.produto === n));
+  const rot = rotulo.trim();
+  // as mesmas mensagens do banco (promocao_regra_erro); o resto (estoque, preço do kit) é conferido no formulário
+  const erro = rot.length < 3 || rot.length > ROTULO_MAX ? "Dê um nome ao item à escolha (ex.: Massa recheada 700g)."
+    : opcoes.length < MIN_OPCOES ? "Escolha pelo menos 2 opções para o item à escolha."
+      : opcoes.length > MAX_OPCOES ? "No máximo 30 opções no item à escolha." : "";
+  const alterna = (nome) => setOpcoes((o) => (o.includes(nome) ? o.filter((x) => x !== nome) : [...o, nome]));
+  const naoMarcadas = lista.filter((p) => !opcoes.includes(p.produto));
+  const maisCara = opcaoMaisCara({ escolha: true, opcoes }, produtos);
+  const salvar = () => {
+    setTentou(true);
+    if (erro) return;
+    onSalvar({ escolha: true, rotulo: rot, opcoes, qtd });
+    onFechar();
+  };
+  return (
+    <Dialog open={aberto} onOpenChange={(v) => { if (!v) onFechar(); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Item à escolha</DialogTitle>
+          <DialogDescription>O cliente escolhe um destes produtos. O preço normal do kit conta o mais caro.</DialogDescription>
+        </DialogHeader>
+        <div>
+          <label className={ROTULO_CAMPO} htmlFor="escolha-rotulo">Nome do item</label>
+          <input id="escolha-rotulo" className={CAMPO} maxLength={ROTULO_MAX} value={rotulo} placeholder="Ex.: Massa recheada 700g"
+            onChange={(e) => setRotulo(e.target.value)} />
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-ink">Quantas vêm no kit</p>
+          <div className="inline-flex items-center rounded-full border border-surface-line">
+            <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface disabled:opacity-40"
+              aria-label="Menos" disabled={qtd <= 1} onClick={() => setQtd((n) => Math.max(1, n - 1))}>
+              <MaterialIcon icon="remove" size={16} aria-hidden="true" />
+            </button>
+            <span className="w-8 text-center font-semibold tabular-nums" aria-live="polite">{qtd}</span>
+            <button type="button" className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface disabled:opacity-40"
+              aria-label="Mais" disabled={qtd >= 20} onClick={() => setQtd((n) => Math.min(20, n + 1))}>
+              <MaterialIcon icon="add" size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-ink">
+            Opções ({opcoes.length} marcada{opcoes.length === 1 ? "" : "s"})
+            {maisCara && <span className="font-normal text-ink-3"> · conta {brl(maisCara.preco)}</span>}
+          </p>
+          <label className="sr-only" htmlFor="escolha-busca">Buscar produto</label>
+          <input id="escolha-busca" className={CAMPO} placeholder="Buscar (ex.: 700g, recheado)" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          {busca.trim() && naoMarcadas.length > 1 && opcoes.length + naoMarcadas.length <= MAX_OPCOES && (
+            <button type="button" className="text-sm font-semibold text-brand-dark underline-offset-2 hover:underline"
+              onClick={() => setOpcoes((o) => [...o, ...naoMarcadas.map((p) => p.produto)])}>
+              Marcar as {naoMarcadas.length} da busca
+            </button>
+          )}
+          <ul className="max-h-[40vh] divide-y divide-surface-line overflow-y-auto" data-escolha-lista>
+            {foraDoEstoque.map((n) => (
+              <li key={`fora-${n}`}>
+                <label className="flex min-h-11 w-full cursor-pointer items-center gap-3 px-1 py-2 text-sm hover:bg-surface">
+                  <input type="checkbox" className="h-5 w-5 shrink-0 accent-brand" checked onChange={() => alterna(n)} />
+                  <span className="min-w-0 flex-1 text-ink-3 line-through">{n}</span>
+                  <span className="shrink-0 text-xs font-semibold text-warn-ink">Saiu do Estoque</span>
+                </label>
+              </li>
+            ))}
+            {lista.map((p) => (
+              <li key={p.id}>
+                <label className="flex min-h-11 w-full cursor-pointer items-center gap-3 px-1 py-2 text-sm hover:bg-surface">
+                  <input type="checkbox" className="h-5 w-5 shrink-0 accent-brand" checked={opcoes.includes(p.produto)} onChange={() => alterna(p.produto)} />
+                  <span className="min-w-0 flex-1 text-ink">{p.produto}</span>
+                  {p.visivel === false
+                    ? <span className="shrink-0 text-xs font-semibold text-warn-ink">Escondido</span>
+                    : p.zerado && <span className="shrink-0 text-xs font-semibold text-warn-ink">Em falta</span>}
+                  <span className="shrink-0 tabular-nums text-ink-2">{brl(p.preco)}</span>
+                </label>
+              </li>
+            ))}
+            {!lista.length && <li className="py-4 text-sm text-ink-3">Nenhum produto com esse nome.</li>}
+          </ul>
+        </div>
+        {tentou && erro && <p className="text-sm font-semibold text-err" role="alert">{erro}</p>}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button type="button" className={`${BTN_PRIMARIO} min-h-11`} onClick={salvar}>{inicial ? "Salvar item" : "Pôr no kit"}</button>
+          <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={onFechar}>Cancelar</button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PreviaCliente({ regra, produtos, texto, kitNoCardapio }) {
   const normal = precoNormal(regra, produtos);
   if (regra.tipo === "kit" && kitNoCardapio) {
@@ -63,7 +195,16 @@ function PreviaCliente({ regra, produtos, texto, kitNoCardapio }) {
           Promoção{regra.vale_ate ? ` até ${regra.vale_ate.slice(8, 10)}/${regra.vale_ate.slice(5, 7)}` : ""}
         </span>
         <p className="mt-1 font-plus-jakarta text-base font-bold text-ink">{regra.nome || "Nome do kit"}</p>
-        <p className="text-sm text-ink-2">{regra.itens.map((i) => `${i.qtd} ${nomeCurtoProduto(i.product_name)}`).join(" + ") || "Escolha os produtos"}</p>
+        <p className="text-sm text-ink-2">{regra.itens.map(itemCurto).join(" + ") || "Escolha os produtos"}</p>
+        {/* item à escolha: no cardápio, uma caixinha por item, já na opção mais cara */}
+        {regra.itens.filter(ehEscolha).map((i, k) => (
+          <p key={k} className="mt-1 flex items-center gap-2 text-xs text-ink-2" data-previa-escolha>
+            <span className="shrink-0">{regra.itens.filter(ehEscolha).length > 1 ? `${String(i.rotulo || "").trim()}:` : "Escolha:"}</span>
+            <span className="min-w-0 flex-1 truncate rounded-lg border border-surface-line bg-surface px-2 py-1">
+              {opcaoMaisCara(i, produtos) ? nomeCurtoProduto(opcaoMaisCara(i, produtos).produto) : "—"} ▾
+            </span>
+          </p>
+        ))}
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="text-sm">
             {normal != null && <s className="text-ink-3">{brl(normal)}</s>}{" "}
@@ -95,7 +236,7 @@ function resumoDaRegra(r, produtos) {
     const normal = precoNormal(r, produtos);
     return (
       <>
-        {r.itens.map((i) => `${i.qtd} ${nomeCurtoProduto(i.product_name)}`).join(" + ")}
+        {r.itens.map(itemCurto).join(" + ")}
         {" · "}
         {normal != null && normal > Number(r.preco) && <s className="text-ink-3">{brl(normal)}</s>}{" "}
         <b className="text-brand-dark">{brl(r.preco)}</b>
@@ -131,6 +272,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
   const [cliente, setCliente] = useState(clienteInicial);
   const [detalhes, setDetalhes] = useState(() => detalhesDoRobo(textoLivre, clienteInicial()));
   const [escolhendo, setEscolhendo] = useState(false);
+  const [itemEscolha, setItemEscolha] = useState(null); // null = fechado; -1 = novo item à escolha; n = editar o item n do kit
   const [tentou, setTentou] = useState(false);
   const [confirmarFim, setConfirmarFim] = useState(null); // índice da promoção a encerrar
 
@@ -189,16 +331,29 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
   const desconto = regra.tipo === "kit" && normal && Number(regra.preco) > 0 ? Math.round((1 - Number(regra.preco) / normal) * 100) : null;
   const avisoRobo = livre ? avisoTextoPromocao(detalhes) : "";
   // aviso (não bloqueia): esta promoção usa produto que outra também usa
+  // (as opções de um item à escolha contam como produtos da promoção)
+  const meusNomes = regra.itens.flatMap(nomesDoItem);
   const divide = !livre && regra.itens.length
-    ? [...new Set(outras.flatMap((o) => (o.itens || []).filter((x) => regra.itens.some((i) => i.product_name === x.product_name)).map(() => String(o.nome || "").trim())))]
+    ? [...new Set(outras.filter((o) => (o.itens || []).some((x) => nomesDoItem(x).some((n) => meusNomes.includes(n)))).map((o) => String(o.nome || "").trim()))]
     : [];
+  const temEscolha = regra.tipo === "kit" && regra.itens.some(ehEscolha);
   const mudarTipo = (t) => {
     if (t === "livre") { abrirLivre(); return; }
     setTipo(t);
-    setRegra((r) => ({ ...regraVazia(t), nome: r.nome, itens: r.itens.map((i) => ({ ...i, qtd: t === "percentual" ? 1 : i.qtd })), vale_ate: r.vale_ate }));
+    // item à escolha só existe no kit: no "Leve N" ele sai
+    setRegra((r) => ({ ...regraVazia(t), nome: r.nome, itens: r.itens.filter((i) => t === "kit" || !ehEscolha(i)).map((i) => ({ ...i, qtd: t === "percentual" ? 1 : i.qtd })), vale_ate: r.vale_ate }));
   };
-  const setQtd = (nome, d) => setRegra((r) => ({ ...r, itens: r.itens.map((i) => (i.product_name === nome ? { ...i, qtd: Math.min(20, Math.max(1, (Number(i.qtd) || 1) + d)) } : i)) }));
-  const tirar = (nome) => setRegra((r) => ({ ...r, itens: r.itens.filter((i) => i.product_name !== nome) }));
+  const setQtd = (nome, d) => setRegra((r) => ({ ...r, itens: r.itens.map((i) => (!ehEscolha(i) && i.product_name === nome ? { ...i, qtd: Math.min(20, Math.max(1, (Number(i.qtd) || 1) + d)) } : i)) }));
+  const tirar = (nome) => setRegra((r) => ({ ...r, itens: r.itens.filter((i) => ehEscolha(i) || i.product_name !== nome) }));
+  const tirarIndice = (k) => setRegra((r) => ({ ...r, itens: r.itens.filter((_, j) => j !== k) }));
+  const salvarEscolha = (item) => setRegra((r) => ({
+    ...r,
+    itens: typeof itemEscolha === "number" && itemEscolha >= 0 ? r.itens.map((x, j) => (j === itemEscolha ? item : x)) : [...r.itens, item],
+  }));
+  // na caixa do item à escolha não aparecem os produtos que já estão em OUTRO item do kit (o mesmo produto não entra duas vezes)
+  const bloqueadosEscolha = regra.itens.filter((_, j) => j !== itemEscolha).flatMap(nomesDoItem);
+  // item zerado: fixo zerado, ou item à escolha com todas as opções zeradas
+  const zerado = (i) => nomesDoItem(i).every((n) => produtos.find((p) => p.produto === n)?.zerado);
   const salvar = () => {
     setTentou(true);
     if (erro) return;
@@ -218,7 +373,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
           {lista.map((r, i) => {
             const divididos = produtosDivididos(lista, i);
             const outrosNomes = [...new Set(divididos.flatMap((d) => d.com))];
-            const sumiu = (r.itens || []).some((it) => { const p = produtos.find((x) => x.produto === it.product_name); return !p || p.visivel === false; });
+            const sumiu = (r.itens || []).some((it) => !itemVendavel(it, produtos)); // item à escolha: só quando TODAS as opções saíram
             const v = r.vale_ate ? vencimentoPromocao(r, null, hojeISO) : null;
             return (
               <div key={`${i}-${r.nome}`} className={`${CARTAO} space-y-2`} data-promo-cartao>
@@ -330,7 +485,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
               ))}
             </div>
             {!livre && temLivre && (
-              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, o seu texto de agora sai. Para ter mais de uma promoção escrita do seu jeito (ex.: kit em que o cliente escolhe as massas), volte em Escrever do meu jeito e escreva todas no mesmo texto.</p>
+              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, o seu texto de agora sai. Para ter mais de uma promoção escrita do seu jeito, volte em Escrever do meu jeito e escreva todas no mesmo texto.</p>
             )}
             {livre && lista.length === 1 && (
               <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, “{lista[0].nome}” é encerrada e o seu texto fica no lugar.</p>
@@ -340,7 +495,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
           {livre ? (
             <>
               <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">
-                É um texto só: tem mais de uma promoção? Escreva todas aqui, uma embaixo da outra (ex.: Kit Natal 1 e Kit Natal 2). Kit em que o cliente escolhe as massas fica aqui; kit com produtos fixos pode ir em Kit com preço fechado.
+                É um texto só: tem mais de uma promoção? Escreva todas aqui, uma embaixo da outra (ex.: Kit Natal 1 e Kit Natal 2). Kit em que o cliente escolhe a massa também cabe em Kit com preço fechado, com “item à escolha”.
               </p>
               <div>
                 <label htmlFor="promo-cliente" className={ROTULO_CAMPO}>O que o cliente lê no cardápio (até {PROMO_CLIENTE_MAX} letras)</label>
@@ -380,7 +535,22 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
               <div>
                 <p className={ROTULO_CAMPO}>{regra.tipo === "kit" ? "O que vem no kit" : "Produto(s) da promoção"}</p>
                 <ul className="flex flex-wrap gap-2">
-                  {regra.itens.map((i) => (
+                  {regra.itens.map((i, k) => (ehEscolha(i) ? (
+                    <li key={`escolha-${k}`} className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-2xl border border-brand/40 bg-brand-soft pl-3 text-sm text-ink" data-promo-escolha>
+                      <span className="min-w-0 py-1">
+                        <span className="font-semibold">{itemCurto(i)}</span>
+                        <span className="text-ink-2"> · {nomesDoItem(i).length} opç{nomesDoItem(i).length === 1 ? "ão" : "ões"}</span>
+                      </span>
+                      <button type="button" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-surface"
+                        aria-label={`Editar ${i.rotulo}`} onClick={() => setItemEscolha(k)}>
+                        <MaterialIcon icon="edit" size={16} aria-hidden="true" />
+                      </button>
+                      <button type="button" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-surface"
+                        aria-label={`Tirar ${i.rotulo}`} onClick={() => tirarIndice(k)}>
+                        <MaterialIcon icon="close" size={16} aria-hidden="true" />
+                      </button>
+                    </li>
+                  ) : (
                     <li key={i.product_name} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-surface-line bg-white pl-3 text-sm text-ink">
                       {regra.tipo === "kit" && (
                         <>
@@ -401,7 +571,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                         <MaterialIcon icon="close" size={16} aria-hidden="true" />
                       </button>
                     </li>
-                  ))}
+                  )))}
                   {regra.itens.length < MAX_ITENS && (
                     <li>
                       <button type="button" className={`${BTN_SECUNDARIO} min-h-11 rounded-full`} onClick={() => setEscolhendo(true)}>
@@ -409,7 +579,17 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                       </button>
                     </li>
                   )}
+                  {regra.tipo === "kit" && regra.itens.length < MAX_ITENS && (
+                    <li>
+                      <button type="button" className={`${BTN_SECUNDARIO} min-h-11 rounded-full`} onClick={() => setItemEscolha(-1)} data-promo-add-escolha>
+                        <MaterialIcon icon="add" size={18} aria-hidden="true" /> item à escolha
+                      </button>
+                    </li>
+                  )}
                 </ul>
+                {regra.tipo === "kit" && !temEscolha && (
+                  <p className="mt-1 text-xs text-ink-3">O cliente escolhe o sabor? Use “item à escolha” (ex.: 1 massa recheada 700g à escolha).</p>
+                )}
                 {divide.length > 0 && (
                   <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2" data-promo-divide-form>
                     Esta promoção divide produtos com {divide.map((n) => `“${n}”`).join(" e ")}. Pode: se o cliente pedir as duas, o sistema escolhe a combinação que dá mais desconto.
@@ -417,7 +597,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                 )}
               </div>
 
-              {regra.tipo === "kit" && regra.itens.some((i) => produtos.find((p) => p.produto === i.product_name)?.zerado) && (
+              {regra.tipo === "kit" && regra.itens.some(zerado) && (
                 <p className="rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink">
                   Um produto do kit está zerado: o kit só aparece no cardápio depois que você repor. O robô continua oferecendo pelo texto.
                 </p>
@@ -430,6 +610,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                     <p className="flex min-h-11 items-center text-sm tabular-nums text-ink-2">
                       {normal != null ? `${brl(normal)}, a soma dos produtos (automático)` : "Escolha os produtos"}
                     </p>
+                    {temEscolha && <p className="text-xs text-ink-3" data-promo-nota-escolha>Item à escolha conta pela opção mais cara.</p>}
                   </div>
                   <div>
                     <label className={ROTULO_CAMPO} htmlFor="promo-preco">Preço do kit</label>
@@ -495,8 +676,12 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
       )}
 
       <EscolherProduto aberto={escolhendo} onFechar={() => setEscolhendo(false)} produtos={paraEscolher}
-        jaEscolhidos={regra.itens.map((i) => i.product_name)}
+        jaEscolhidos={meusNomes}
         onEscolher={(nome) => setRegra((r) => ({ ...r, itens: [...r.itens, { product_name: nome, qtd: 1 }] }))} />
+
+      <ItemEscolha aberto={itemEscolha !== null} onFechar={() => setItemEscolha(null)} produtos={produtos}
+        inicial={typeof itemEscolha === "number" && itemEscolha >= 0 ? regra.itens[itemEscolha] : null}
+        bloqueados={bloqueadosEscolha} onSalvar={salvarEscolha} />
 
       <AlertDialog open={confirmarFim !== null} onOpenChange={(v) => { if (!v) setConfirmarFim(null); }}>
         <AlertDialogContent>
