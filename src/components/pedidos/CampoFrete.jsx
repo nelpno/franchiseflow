@@ -1,14 +1,14 @@
 // Campo de frete editável direto na lista (sem abrir o pedido). Salva sozinho ao sair do
 // campo; Enter pula para o frete do próximo pedido, Esc desfaz o que foi digitado.
-// A sugestão da regra (min 250, max 350, 10%) aparece pré-preenchida só em "Para
-// confirmar" e nunca troca um valor já salvo. Frete zero é legítimo (acréscimo de outro
+// A sugestão (R$ 350 por pedido, ou a regra local da unidade longe: último frete pago acima
+// de R$ 350) aparece pré-preenchida só em "Para confirmar" e nunca troca um valor já salvo. Frete zero é legítimo (acréscimo de outro
 // pedido ou retirada): "Sem frete" resolve com 1 toque, e "Usar R$ X" traz a regra de volta.
 // `acrescimo` (26/09): quando a unidade já tem outro pedido pendente/confirmado mais
 // antigo, a sugestão vira 0 (não a regra) e a dica avisa que é acréscimo. `ultimoFrete`
-// mostra o que a unidade pagou da última vez, com um botão para reusar o valor.
+// (último frete pago pela unidade) só entra quando passa de R$ 350: aí é a regra local.
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
-import { estadoFrete, freteSugerido, parseFrete, FRETE_MIN, FRETE_MAX } from "./pedidosHelpers";
+import { estadoFrete, freteSugerido, freteEhLocal, parseFrete } from "./pedidosHelpers";
 
 function focarProximo(atual) {
   const campos = Array.from(document.querySelectorAll("[data-frete-input]"));
@@ -23,9 +23,10 @@ function focarProximo(atual) {
 }
 
 export default function CampoFrete({ order, rascunho, sugerir, status, onRascunho, onSalvar, nomeUnidade, acrescimo, dataPedidoBase, ultimoFrete }) {
-  const { texto, origem } = estadoFrete(order, rascunho, { sugerir, acrescimo });
+  const { texto, origem } = estadoFrete(order, rascunho, { sugerir, acrescimo, ultimoFrete });
   const valorAtual = parseFrete(texto);
-  const sugestao = freteSugerido(order.total_amount);
+  const sugestao = freteSugerido(order.total_amount, ultimoFrete);
+  const local = freteEhLocal(ultimoFrete);
   const semFrete = origem !== "sugerido" && origem !== "acrescimo" && Number.isFinite(valorAtual) && valorAtual === 0;
   const invalido = !Number.isFinite(valorAtual);
 
@@ -63,26 +64,11 @@ export default function CampoFrete({ order, rascunho, sugerir, status, onRascunh
   } else if (origem === "acrescimo") {
     dica = <span className="text-ink-3">sem frete: acréscimo do pedido de {dataPedidoBase || "outra data"}</span>;
   } else if (origem === "sugerido") {
-    // Regra + último frete pago pela unidade (achado 26/09: a sugestão de R$ 250 era
-    // aceita às cegas mesmo quando a unidade sempre pagou menos).
     dica = (
-      <span className="flex flex-col gap-0.5 text-ink-3">
-        <span>
-          regra: {formatBRL(FRETE_MIN)} (mín. {formatBRL(FRETE_MIN)}, máx. {formatBRL(FRETE_MAX)})
-        </span>
-        {ultimoFrete && (
-          <span>
-            último desta unidade: {formatBRL(ultimoFrete.valor)} em {new Date(ultimoFrete.data).toLocaleDateString("pt-BR")}{" "}
-            <button
-              type="button"
-              onMouseDown={manterFoco}
-              onClick={() => usarValor(String(ultimoFrete.valor))}
-              className="font-semibold text-brand-dark hover:underline"
-            >
-              Usar {formatBRL(ultimoFrete.valor)}
-            </button>
-          </span>
-        )}
+      <span className="text-ink-3">
+        {local
+          ? `regra local: ${formatBRL(sugestao)} (último desta unidade em ${new Date(ultimoFrete.data).toLocaleDateString("pt-BR")})`
+          : `regra: ${formatBRL(sugestao)} por pedido`}
       </span>
     );
   } else if (semFrete || origem === "vazio") {

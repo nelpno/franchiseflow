@@ -3,6 +3,7 @@
 // madrugada). O fluxo é pendente -> confirmado -> entregue. "em_rota"/"cancelado" seguem
 // existindo no banco (cancelamento continua possível) mas não aparecem nas 3 seções.
 import { differenceInCalendarDays, parseISO } from "date-fns";
+import { FRETE_POR_PEDIDO } from "../../lib/freteFabrica.js";
 
 export const CAPACIDADE_CAMINHAO_KG = 1500;
 
@@ -145,21 +146,23 @@ export function isDeletable(order) {
   return order?.status === "pendente" || order?.status === "cancelado";
 }
 
-// --- Frete na lista (fluxo em lote, 26/09) ---
+// --- Frete na lista (fluxo em lote, 26/09; regra por local desde 22/11/2026) ---
 //
-// Regra das franquias desde 30/08/2026: min(350, max(250, 10% do pedido)). A sugestão é
-// arredondada para a dezena de reais, que é como o frete vem sendo digitado (R$ 300 para
-// um pedido de R$ 3.001; R$ 270 para R$ 2.702). É SÓ sugestão: frete zero é legítimo
-// (acréscimo de outro pedido ou retirada) e o valor combinado por distância existe (R$ 400,
-// R$ 450). Nunca sobrescreve o que já foi digitado.
-export const FRETE_MIN = 250;
-export const FRETE_MAX = 350;
-export const FRETE_PCT = 0.1;
+// Sugestão = R$ 350 por pedido (COF V3 / Contrato V4, a mesma que a franqueada vê na Reposição,
+// `lib/freteFabrica.js`). Unidade longe paga mais (Litoral R$ 400, Assis R$ 450, Ubatuba e
+// Uberlândia R$ 500): quando o último frete pago pela unidade passa de R$ 350, ele é a regra
+// local e vira a sugestão. Pedido do Nelson (22/11/2026): "350 ou sem frete", o resto ele
+// edita na mão. É SÓ sugestão: nunca sobrescreve o que já foi digitado; acréscimo sugere 0.
+export const FRETE_PADRAO = FRETE_POR_PEDIDO;
 
-export function freteSugerido(totalAmount) {
-  const total = parseFloat(totalAmount) || 0;
-  const bruto = Math.min(FRETE_MAX, Math.max(FRETE_MIN, FRETE_PCT * total));
-  return Math.round(bruto / 10) * 10;
+export function freteSugerido(_totalAmount, ultimoFrete) {
+  const local = Number(ultimoFrete?.valor);
+  return Number.isFinite(local) && local > FRETE_PADRAO ? local : FRETE_PADRAO;
+}
+
+// true quando a sugestão veio da regra local (último frete da unidade acima do padrão).
+export function freteEhLocal(ultimoFrete) {
+  return freteSugerido(0, ultimoFrete) !== FRETE_PADRAO;
 }
 
 // --- Acréscimo (mesma unidade já tem outro pedido em aberto) ---
@@ -219,23 +222,23 @@ export function freteParaTexto(v) {
 // O que o campo mostra e de onde veio: "digitando" (rascunho não salvo), "salvo" (banco),
 // "acrescimo" (unidade já tem outro pedido aberto: sugere 0, nunca a regra) ou "sugerido"
 // (banco vazio e a seção pré-preenche — só "Para confirmar"). Sem nada: "vazio".
-export function estadoFrete(order, rascunho, { sugerir, acrescimo } = {}) {
+export function estadoFrete(order, rascunho, { sugerir, acrescimo, ultimoFrete } = {}) {
   if (rascunho !== undefined) return { texto: rascunho, origem: "digitando" };
   const salvo = freteSalvo(order);
   if (salvo !== null) return { texto: freteParaTexto(salvo), origem: "salvo" };
   if (sugerir && acrescimo) return { texto: "0", origem: "acrescimo" };
-  if (sugerir) return { texto: freteParaTexto(freteSugerido(order?.total_amount)), origem: "sugerido" };
+  if (sugerir) return { texto: freteParaTexto(freteSugerido(order?.total_amount, ultimoFrete)), origem: "sugerido" };
   return { texto: "", origem: "vazio" };
 }
 
 // Frete que vai junto no "Confirmar": rascunho > salvo > acréscimo (0) > sugerido. Nunca
 // troca um valor já salvo. NaN = rascunho inválido (a ação para e avisa).
-export function freteNaConfirmacao(order, rascunho, { acrescimo } = {}) {
+export function freteNaConfirmacao(order, rascunho, { acrescimo, ultimoFrete } = {}) {
   if (rascunho !== undefined) return parseFrete(rascunho);
   const salvo = freteSalvo(order);
   if (salvo !== null) return salvo;
   if (acrescimo) return 0;
-  return freteSugerido(order?.total_amount);
+  return freteSugerido(order?.total_amount, ultimoFrete);
 }
 
 // Último frete pago pela unidade (histórico de entregue/confirmado, freight_cost > 0),

@@ -372,8 +372,8 @@ export default function PurchaseOrders() {
 
   // Frete que entra no resumo de cada seção (o que vai para o banco se a ação rodar agora).
   const freteNaSecao1 = useCallback(
-    (o) => freteNaConfirmacao(o, rascunhos[o.id], { acrescimo: ehAcrescimo(o, maisAntigoPorUnidade) }),
-    [rascunhos, maisAntigoPorUnidade]
+    (o) => freteNaConfirmacao(o, rascunhos[o.id], { acrescimo: ehAcrescimo(o, maisAntigoPorUnidade), ultimoFrete: ultimoFretePorUnidadeMap.get(o.franchise_id) }),
+    [rascunhos, maisAntigoPorUnidade, ultimoFretePorUnidadeMap]
   );
   const freteNaSecao2 = useCallback(
     (o) => (rascunhos[o.id] !== undefined ? parseFrete(rascunhos[o.id]) : freteSalvo(o) || 0),
@@ -473,7 +473,7 @@ export default function PurchaseOrders() {
   // "Confirmar N (e gerar fichas)": grava status + frete (digitado > salvo > sugerido) de
   // uma vez e, se pedido, já baixa as fichas dos que confirmaram.
   const confirmarLote = async (lista, { gerarFichas }) => {
-    const comFrete = lista.map((o) => ({ o, frete: freteNaConfirmacao(o, rascunhos[o.id], { acrescimo: ehAcrescimo(o, maisAntigoPorUnidade) }) }));
+    const comFrete = lista.map((o) => ({ o, frete: freteNaConfirmacao(o, rascunhos[o.id], { acrescimo: ehAcrescimo(o, maisAntigoPorUnidade), ultimoFrete: ultimoFretePorUnidadeMap.get(o.franchise_id) }) }));
     const invalidos = comFrete.filter((x) => !Number.isFinite(x.frete));
     if (invalidos.length > 0) {
       toast.error(`Confira o frete de ${nomesDe(invalidos.map((x) => x.o))}: use só números, como 250 ou 250,50.`);

@@ -15,6 +15,7 @@ import {
   filtrarPorTermo,
   isDeletable,
   freteSugerido,
+  freteEhLocal,
   parseFrete,
   freteSalvo,
   freteParaTexto,
@@ -123,15 +124,17 @@ assert.strictEqual(isDeletable({ status: "cancelado" }), true);
 assert.strictEqual(isDeletable({ status: "confirmado" }), false);
 assert.strictEqual(isDeletable({ status: "entregue" }), false);
 
-// freteSugerido: min(350, max(250, 10%)) arredondado para a dezena (como o Nelson digita)
-assert.strictEqual(freteSugerido(135), 250);          // pedido pequeno: piso
-assert.strictEqual(freteSugerido(2500), 250);
-assert.strictEqual(freteSugerido(2702.3), 270);       // real: digitado 270
-assert.strictEqual(freteSugerido(3001.3), 300);       // real: digitado 300
-assert.strictEqual(freteSugerido(2592.7), 260);       // real: digitado 260
-assert.strictEqual(freteSugerido(9652.2), 350);       // teto
-assert.strictEqual(freteSugerido("3600.80"), 350);
-assert.strictEqual(freteSugerido(null), 250);
+// freteSugerido (22/11/2026): R$ 350 por pedido; regra local = último frete da unidade acima de 350
+assert.strictEqual(freteSugerido(135), 350);
+assert.strictEqual(freteSugerido(9652.2), 350);
+assert.strictEqual(freteSugerido(null), 350);
+assert.strictEqual(freteSugerido(1673.3, { valor: 200, data: "2026-03-29" }), 350); // último baixo não vale
+assert.strictEqual(freteSugerido(2281.5, { valor: 400, data: "2026-11-05" }), 400); // Litoral
+assert.strictEqual(freteSugerido(10067.7, { valor: 450, data: "2026-10-27" }), 450); // Assis
+assert.strictEqual(freteSugerido(3000, { valor: 350, data: "2026-11-05" }), 350);
+assert.strictEqual(freteEhLocal({ valor: 500 }), true);
+assert.strictEqual(freteEhLocal({ valor: 330 }), false);
+assert.strictEqual(freteEhLocal(undefined), false);
 
 // parseFrete
 assert.strictEqual(parseFrete(""), 0);                // vazio = sem frete
@@ -157,14 +160,16 @@ assert.strictEqual(freteParaTexto(null), "");
 const pNovo = { total_amount: 3001.3, freight_cost: null };
 const pDistancia = { total_amount: 3001.3, freight_cost: 450 };
 const pZero = { total_amount: 3001.3, freight_cost: 0 };
-assert.deepStrictEqual(estadoFrete(pNovo, undefined, { sugerir: true }), { texto: "300", origem: "sugerido" });
+assert.deepStrictEqual(estadoFrete(pNovo, undefined, { sugerir: true }), { texto: "350", origem: "sugerido" });
+assert.deepStrictEqual(estadoFrete(pNovo, undefined, { sugerir: true, ultimoFrete: { valor: 400 } }), { texto: "400", origem: "sugerido" });
 assert.deepStrictEqual(estadoFrete(pNovo, undefined, { sugerir: false }), { texto: "", origem: "vazio" });
 assert.deepStrictEqual(estadoFrete(pDistancia, undefined, { sugerir: true }), { texto: "450", origem: "salvo" });
 assert.deepStrictEqual(estadoFrete(pZero, undefined, { sugerir: true }), { texto: "0", origem: "salvo" });
 assert.deepStrictEqual(estadoFrete(pDistancia, "4", { sugerir: true }), { texto: "4", origem: "digitando" });
 
 // freteNaConfirmacao: rascunho > salvo > sugerido; zero digitado vale
-assert.strictEqual(freteNaConfirmacao(pNovo, undefined), 300);
+assert.strictEqual(freteNaConfirmacao(pNovo, undefined), 350);
+assert.strictEqual(freteNaConfirmacao(pNovo, undefined, { ultimoFrete: { valor: 450 } }), 450);
 assert.strictEqual(freteNaConfirmacao(pDistancia, undefined), 450);
 assert.strictEqual(freteNaConfirmacao(pZero, undefined), 0);
 assert.strictEqual(freteNaConfirmacao(pNovo, ""), 0);

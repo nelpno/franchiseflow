@@ -4,7 +4,8 @@
 // ("R$ 350,00 por pedido; outro valor só se combinado por escrito antes do pedido, em razão da
 // distância"). Pedido do Alex: a fórmula antiga min(350, max(250, 10%)) contradizia a COF.
 // O valor que vale é o que a fábrica LANÇA no pedido (purchase_orders.freight_cost, à mão;
-// a sugestão da fábrica em pedidosHelpers.freteSugerido continua na fórmula antiga):
+// a sugestão da fábrica em pedidosHelpers.freteSugerido usa estes R$ 350, ou a regra local
+// da unidade longe, desde 22/11/2026):
 // aqui é só a estimativa que a franqueada vê antes de enviar. Frete zero no lançado é
 // legítimo (acréscimo de outro pedido ou retirada) — por isso a tela diz "estimado".
 
