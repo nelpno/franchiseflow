@@ -657,6 +657,23 @@ export default function TabEstoque({
 
   // --- Delete product ---
 
+  // 22/11/2026: item da fábrica apagado some do pedido (Noemi e Grajaú apagaram o pão de queijo).
+  // Franqueada só oculta; o banco também barra (trg_guard_inventory_delete).
+  const avisarItemDaFabrica = (item) => {
+    setDeleteConfirmId(null);
+    toast.error("Produto da fábrica não pode ser excluído, senão some do seu pedido à fábrica.", {
+      description: "Se não quiser vender, oculte: sai do cardápio e do robô e continua no pedido.",
+      duration: 12000,
+      action: item.active === false ? undefined : { label: "Ocultar agora", onClick: () => handleToggleActive(item) },
+    });
+  };
+
+  const pedirExclusao = (item) => {
+    if (!item) return;
+    if (!isAdmin && item.created_by_franchisee === false) return avisarItemDaFabrica(item);
+    setDeleteConfirmId(item.id);
+  };
+
   const handleDelete = async (item) => {
     try {
       await InventoryItem.delete(item.id);
@@ -671,7 +688,9 @@ export default function TabEstoque({
       const isFkViolation =
         code === "23503" ||
         /foreign key|violates foreign key|sale_items|purchase_order_items/i.test(msg);
-      if (isFkViolation) {
+      if (error?.hint === "item_fabrica" || msg.includes("Produto da fábrica")) {
+        avisarItemDaFabrica(item);
+      } else if (isFkViolation) {
         // 19/11/2026 (Dilma, 16/11): ela queria excluir e o aviso só mandava procurar o botão; agora oculta daqui mesmo
         setDeleteConfirmId(null);
         toast.error("Este produto tem vendas no histórico e não pode ser excluído, senão some dos seus relatórios.", {
@@ -1687,7 +1706,7 @@ export default function TabEstoque({
                               variant="ghost"
                               size="icon"
                               className="h-11 w-11 text-ink-4 hover:text-brand"
-                              onClick={() => setDeleteConfirmId(item.id)}
+                              onClick={() => pedirExclusao(item)}
                               aria-label="Excluir produto"
                               title="Excluir produto"
                             >
@@ -2057,7 +2076,7 @@ export default function TabEstoque({
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 md:h-8 md:w-8 text-ink-4 hover:text-brand"
-                                    onClick={() => setDeleteConfirmId(item.id)}
+                                    onClick={() => pedirExclusao(item)}
                                     aria-label="Excluir produto"
                                     title="Excluir produto"
                                   >
@@ -2137,7 +2156,7 @@ export default function TabEstoque({
           onFechar={() => setItemAbertoId(null)}
           onEditar={() => { const it = itemAberto; setItemAbertoId(null); if (it) handleOpenEditDialog(it); }}
           onOcultar={() => { const it = itemAberto; setItemAbertoId(null); if (it) handleToggleActive(it); }}
-          onExcluir={() => { const it = itemAberto; setItemAbertoId(null); if (it) setDeleteConfirmId(it.id); }}
+          onExcluir={() => { const it = itemAberto; setItemAbertoId(null); if (it) pedirExclusao(it); }}
           onContar={() => { setItemAbertoId(null); handleEnterCountMode(); }}
         />
       )}
@@ -2463,7 +2482,7 @@ export default function TabEstoque({
               variant="outline"
               className="justify-start gap-2 h-12 rounded-xl border-brand/30 text-brand"
               onClick={() => {
-                setDeleteConfirmId(itemMenuFor?.id);
+                pedirExclusao(itemMenuFor);
                 setItemMenuFor(null);
               }}
             >
