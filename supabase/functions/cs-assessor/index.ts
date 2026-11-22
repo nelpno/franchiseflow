@@ -31,7 +31,7 @@ const ESFORCO_PADRAO = ESFORCOS.includes(Deno.env.get("ASSESSOR_ESFORCO") || "")
 
 const MAX_VOLTAS = 8;
 const ORCAMENTO_MS = 110_000; // tempo total da pergunta; esgotado, volta final sem ferramentas
-const MAX_RESULTADO = 12000; // caracteres por resultado de ferramenta
+const MAX_RESULTADO = 16000; // caracteres por resultado de ferramenta (relatorio_completo chega a ~10 mil)
 const TETO_DIARIO_USD = 2;
 const FOLGA_MINIMA_USD = 0.1; // bloqueia quando faltar menos que isso para o teto
 const MAX_CORPO = 14_000_000; // bytes do corpo (áudio e imagens em base64)
@@ -68,6 +68,19 @@ Quando a resposta for uma lista, ranking ou tabela de unidades (quem está sem c
 
 PACOTE DE REUNIÃO ("prepara a reunião com X")
 Devolva uma página com: (1) situação em 5 números; (2) o que mudou nos últimos 30 dias; (3) o que já foi combinado (cartões do Mural, últimas anotações e acordos); (4) 3 pontos para levar; (5) 1 pergunta para abrir a conversa. Para isso use unidade_360 e historico_cs, e mural_cs se precisar. O objetivo da reunião é ajudar a franqueada a vender, não cobrar: os pontos partem do dado. "Prepara as reuniões de hoje" ou "das 3 primeiras": chame agenda_do_dia e depois unidade_360 e historico_cs das primeiras unidades em paralelo; devolva um mini pacote (3 a 4 linhas) de cada uma.
+
+RELATÓRIO COMPLETO ("relatório da X", "relatório completo", "análise da unidade", "material para a reunião com X")
+Chame buscar_unidade e depois relatorio_completo e historico_cs em paralelo. É o material que o CS leva para a conversa com a franqueada. Monte nesta ordem, com títulos curtos (##):
+1. Título (#) = a tese em uma frase, não o nome da unidade (ex.: "Sorocaba: o robô não vende o que não está no freezer"). Logo abaixo, em itálico: "Material do CS · dados até dd/mm".
+2. Os meses lado a lado: UMA tabela markdown com os 3 últimos meses em colunas (o corrente com "até dd/mm") e estas linhas: pessoas que escreveram; vendas; faturamento; faturamento por dia; R$ por pessoa que escreveu; % com resposta humana; chegaram ao pagamento. Abaixo, em 1 a 2 linhas: posição na rede em R$ por pessoa (Nª de N, mediana da rede) no último mês fechado e no atual. Mês corrente é parcial: compare por dia ou pelas quinzenas, nunca o total.
+3. A causa nº 1 e, se houver, mais uma ou duas: cada uma com o número que a prova. Onde procurar: estoque (zerados, campeões de venda zerados, dias desde o último pedido entregue); atendimento (% com resposta humana da unidade contra a régua da rede); anúncio × por conta (conversão de cada um: se a do anúncio caiu e a de por conta não, o problema não é o tráfego); checkout (chegaram ao pagamento e não compraram); produtos que caíram (cruzar com os últimos pedidos à fábrica); verba (mês sem verba ou paga tarde: a campanha ficou parada até o pagamento); quinzenas (mudou no meio do mês). Cite até 2 falas reais de "o_cliente_escreveu" quando ajudarem.
+4. O que ela fez de bom, para abrir a conversa: só o que o dado mostra.
+5. Alertas, só se houver: comprovantes sem venda lançada (dinheiro parado ou venda não lançada; abrir a conversa antes de cobrar) e mesma mensagem para vários contatos (risco de perder o número; perguntar "você manda a mesma mensagem para vários clientes?", nunca acusar de disparo).
+6. Ressalvas para quando ela contestar: venda fora do app não aparece; "o robô disse que acabou" sozinho não prova falta de estoque; mês parcial; o que for mão dupla.
+7. O que combinar, em ordem, cada item com número-alvo e data (ex.: "responder à mão 30% de quem escreve até dezembro; hoje 17%").
+8. Decisão para o Nelson (verba, cobrança, prazo), só se os dados pedirem; senão omita.
+A tabela dos meses é a única tabela; o resto em listas curtas. Até ~450 palavras. No fim, 1 linha: dá para imprimir ou salvar em PDF pelo botão Imprimir. Sem número que não veio da ferramenta. Este relatório é interno (CS e diretoria): não é para mandar à franqueada como está.
+Como ler o relatorio_completo: faturamento = venda LANÇADA no app (valor − desconto + entrega) pela data da venda; pessoas_que_escreveram = telefones distintos que mandaram mensagem ao robô no mês (quem só recebeu disparo não conta); pct_resposta_humana = dos que escreveram, quantos tiveram resposta de uma pessoa DEPOIS de escrever; vieram_do_anuncio = contato com marca de clique em anúncio do Meta (o resto escreveu por conta); robo_disse_que_acabou = conversas em que o robô disse que não tinha (confirme com estoque e campeões zerados); os meses e a posição na rede são calculados de madrugada (o mês corrente vai até ontem; "dias" já desconta hoje); a régua mostra o R$ por pessoa mediano das unidades em cada faixa de resposta humana no último mês fechado.
 
 AGENDA DO DIA ("o que faço hoje?", "por onde começo?")
 Chame agenda_do_dia (planilha=true). Responda com no máximo 8 itens, na ordem que a ferramenta devolve (Falar hoje, retornos vencidos, combinados com data de hoje). Cada item em 3 linhas curtas: **Unidade** (dono) · quem abordar; o que falar, em 1 linha, partindo do motivo e do último combinado; o número-chave (ex.: dias sem vender, venda dos últimos 28 dias, risco no mês). Diga quantos itens ficaram de fora (restantes). Rotule cada item pelo campo que a ferramenta devolve (Falar hoje, retorno vencido ou combinado de hoje); nunca chame de "vencido" um item que é Falar hoje. No fim, ofereça o "mini relatório" (pacote de reunião) de qualquer um deles. Não use o termo "raia" com a pessoa: diga "Falar hoje", "Esperando" etc.
@@ -507,6 +520,15 @@ function criaFerramentas(sb: Cliente) {
       return saida;
     },
 
+    async relatorio_completo(a) {
+      const evo = String(a.evo ?? "");
+      if (!EVO.test(evo)) return { erro: "evo inválido; use o franchise_id de buscar_unidade" };
+      const { data, error } = await sb.rpc("get_cs_relatorio_unidade", { p_evo: evo });
+      if (error) return { erro: error.message };
+      if (!data) return { erro: "sem permissão ou unidade não encontrada" };
+      return data;
+    },
+
     async historico_cs(a) {
       const evo = String(a.evo ?? "");
       if (!EVO.test(evo)) return { erro: "evo inválido; use o franchise_id de buscar_unidade" };
@@ -804,6 +826,11 @@ function criaFerramentas(sb: Cliente) {
       },
     },
     {
+      name: "relatorio_completo",
+      description: "Relatório completo de UMA unidade (o mesmo da análise que a diretoria fazia à mão): 6 meses lado a lado (pessoas que escreveram, vendas, faturamento por dia, R$ por pessoa, % de resposta humana, chegaram ao pagamento, anúncio × por conta, robô disse que acabou, compras à fábrica, verba), posição na rede, régua da resposta humana, quinzenas, estoque e campeões zerados, produtos que caíram, últimos pedidos, alerta de disparo, comprovantes sem venda lançada e falas reais de clientes. Use para 'relatório', 'relatório completo', 'análise da unidade', 'material para a reunião'.",
+      parameters: { type: "object", properties: { evo: { type: "string", description: "franchise_id de buscar_unidade" } }, required: ["evo"] },
+    },
+    {
       name: "historico_cs",
       description: "Eventos do CS de uma unidade (contatos, reuniões, resultados, combinados, anotações) e acordos (cs_agreements). Responde 'o que foi combinado com X'.",
       parameters: { type: "object", properties: { evo: { type: "string" }, dias: { type: "integer", description: "janela em dias (padrão 180)" } }, required: ["evo"] },
@@ -872,7 +899,7 @@ async function chamaOpenAI(cfg: { modelo: string; esforco: string }, input: any[
         ...(reasoning ? { reasoning } : {}),
         store: false,
         include: ["reasoning.encrypted_content"],
-        prompt_cache_key: "cs-assessor-v2",
+        prompt_cache_key: "cs-assessor-v3",
         max_output_tokens: 4000,
       }),
       signal: AbortSignal.timeout(Math.max(timeoutMs, 3000)),

@@ -1,5 +1,6 @@
 // Markdown mínimo e seguro para a resposta do Assessor do CS: títulos (#), listas (-, *, 1.),
-// **negrito**, *itálico*, `código` e parágrafos. Só monta elementos React (nunca HTML cru).
+// **negrito**, *itálico*, `código`, parágrafos e tabela simples (| a | b |, desde 22/11/2026, para
+// os "meses lado a lado" do relatório completo). Só monta elementos React (nunca HTML cru).
 import { Fragment } from "react";
 
 function inline(texto, chave) {
@@ -24,6 +25,12 @@ export default function MarkdownSimples({ texto }) {
   const blocos = [];
   let lista = null; // { ordenada, itens }
   let paragrafo = [];
+  let tabela = null; // linhas de células
+
+  const fechaTabela = () => {
+    if (tabela && tabela.length) blocos.push({ tipo: "tabela", linhas: tabela });
+    tabela = null;
+  };
 
   const fechaParagrafo = () => {
     if (paragrafo.length) blocos.push({ tipo: "p", linhas: paragrafo });
@@ -39,6 +46,14 @@ export default function MarkdownSimples({ texto }) {
     const h = l.match(/^(#{1,4})\s+(.*)$/);
     const ul = l.match(/^\s*[-*•]\s+(.*)$/);
     const ol = l.match(/^\s*(\d+)[.)]\s+(.*)$/);
+    if (/^\s*\|.*\|\s*$/.test(l)) {
+      fechaParagrafo(); fechaLista();
+      const celulas = l.trim().slice(1, -1).split("|").map((c) => c.trim());
+      if (celulas.every((c) => /^:?-{2,}:?$/.test(c))) continue; // linha |---|---|
+      (tabela ??= []).push(celulas);
+      continue;
+    }
+    fechaTabela();
     if (!l.trim()) { fechaParagrafo(); fechaLista(); continue; }
     if (h) { fechaParagrafo(); fechaLista(); blocos.push({ tipo: "h", texto: h[2] }); continue; }
     if (ul || ol) {
@@ -58,11 +73,31 @@ export default function MarkdownSimples({ texto }) {
   }
   fechaParagrafo();
   fechaLista();
+  fechaTabela();
 
   return (
     <div className="space-y-2 text-sm leading-relaxed text-ink">
       {blocos.map((b, i) => {
         if (b.tipo === "h") return <h4 key={i} className="pt-1 font-plus-jakarta text-sm font-bold text-ink">{inline(b.texto, `h${i}`)}</h4>;
+        if (b.tipo === "tabela") {
+          const [cab, ...corpo] = b.linhas;
+          return (
+            <div key={i} className="max-w-full overflow-x-auto">
+              <table className="min-w-full border-collapse text-xs tabular-nums">
+                <thead>
+                  <tr>{cab.map((c, k) => <th key={k} className="border-b border-surface-line px-2 py-1 text-left font-semibold text-ink-2">{inline(c, `t${i}h${k}`)}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {corpo.map((ln, r) => (
+                    <tr key={r} className="border-b border-surface-line/60">
+                      {ln.map((c, k) => <td key={k} className={`px-2 py-1 ${k === 0 ? "text-left" : "text-right"}`}>{inline(c, `t${i}r${r}c${k}`)}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
         if (b.tipo === "lista") {
           const Tag = b.ordenada ? "ol" : "ul";
           return (

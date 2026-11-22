@@ -36,6 +36,8 @@ export function markdownParaTexto(md) {
     .replace(/`([^`]+)`/g, "$1")
     .replace(/^#{1,4}\s+/gm, "")
     .replace(/^\s*[*•]\s+/gm, "- ")
+    .replace(/^[ \t]*\|([ \t]*:?-{2,}:?[ \t]*\|)+[ \t]*\n?/gm, "") // linha |---|---| da tabela
+    .replace(/^[ \t]*\|(.*)\|[ \t]*$/gm, (_, meio) => meio.split("|").map((c) => c.trim()).join(" | "))
     .trim();
 }
 
