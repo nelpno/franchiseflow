@@ -4,6 +4,7 @@ import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { InventoryItem, getStandardProductCatalog, updateInventoryCountIfUnchanged } from "@/entities/all";
 import { sanitizeCSVCell } from "@/lib/csvSanitize";
+import { buildExportWorksheet } from "@/lib/exportSheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,6 @@ import { usePedidosDaUnidade } from "@/hooks/usePedidosDaUnidade";
 import { ResumoEstoque, ListaEstoqueV2, ItemEstoqueSheet } from "./EstoqueV2";
 import EmptyState from "@/components/shared/EmptyState";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CHIP, CHIP_ATIVO, CHIP_INATIVO } from "@/components/shared/adminUi";
-import { ptBR } from "date-fns/locale";
 import {
   validateCount,
   applyStep,
@@ -1056,61 +1056,50 @@ export default function TabEstoque({
     }
   };
 
-  // --- CSV export ---
-
-  const handleExportCSV = () => {
+  // --- Exportar planilha ---
+  // 22/11/2026: era CSV com vírgula; no Excel/Planilhas em português o "Sofioli Ricota, Nozes e
+  // Uva-passa" quebrava em duas colunas (Limeira). Agora sai .xlsx com número de verdade.
+  const handleExportCSV = async () => {
     if (filteredItems.length === 0) {
       toast.error("Nenhum item para exportar.");
       return;
     }
-
-    const headers = [
-      "Produto",
-      "Categoria",
-      "Quantidade",
-      "Unidade",
-      "Estoque Mínimo",
-      "Preço Custo",
-      "Preço Venda",
-      "Vendas por semana",
-      "Última Atualização",
+    const num = (v) => (v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
+    const columns = [
+      { key: "produto", header: "Produto", type: "text" },
+      { key: "categoria", header: "Categoria", type: "text" },
+      { key: "quantidade", header: "Quantidade", type: "brl" },
+      { key: "unidade", header: "Unidade", type: "text" },
+      { key: "minimo", header: "Estoque Mínimo", type: "brl" },
+      { key: "custo", header: "Preço Custo", type: "brl" },
+      { key: "venda", header: "Preço Venda", type: "brl" },
+      { key: "giro", header: "Vendas por semana", type: "brl" },
+      { key: "atualizado", header: "Última Atualização", type: "datetime" },
     ];
-
-    const rows = filteredItems.map((item) => {
-      const giro = giroByItem[item.id] || 0;
-      return [
-        sanitizeCSVCell(item.product_name),
-        sanitizeCSVCell(categoriaDe(item)),
-        item.quantity,
-        sanitizeCSVCell(item.unit),
-        item.min_stock,
-        item.cost_price ?? "",
-        item.sale_price ?? "",
-        giro.toFixed(1),
-        item.updated_at
-          ? format(new Date(item.updated_at), "dd/MM/yyyy HH:mm", {
-              locale: ptBR,
-            })
-          : "",
-      ];
-    });
-
-    const csvContent = [headers, ...rows]
-      .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
-
-    const blob = new Blob(["\uFEFF" + csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `estoque_${format(new Date(), "yyyy-MM-dd")}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exportado com sucesso.");
+    const data = filteredItems.map((item) => ({
+      produto: sanitizeCSVCell(item.product_name),
+      categoria: sanitizeCSVCell(categoriaDe(item)),
+      quantidade: num(item.quantity),
+      unidade: sanitizeCSVCell(item.unit),
+      minimo: num(item.min_stock),
+      custo: num(item.cost_price),
+      venda: num(item.sale_price),
+      giro: Math.round((giroByItem[item.id] || 0) * 10) / 10,
+      atualizado: item.updated_at ? new Date(item.updated_at) : null,
+    }));
+    try {
+      const XLSX = await import("xlsx");
+      const { saveAs } = await import("file-saver");
+      const ws = buildExportWorksheet(XLSX, data, columns);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Estoque");
+      const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      saveAs(new Blob([buf], { type: "application/octet-stream" }), `estoque_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Planilha exportada.");
+    } catch (err) {
+      console.error("Erro ao exportar planilha:", err);
+      toast.error("Erro ao exportar a planilha.");
+    }
   };
 
   // --- Helpers ---
@@ -1271,9 +1260,9 @@ export default function TabEstoque({
                 <MaterialIcon icon="checklist" size={18} aria-hidden="true" />
                 Contar estoque
               </button>
-              <button type="button" onClick={handleExportCSV} className={`${BTN_SECUNDARIO} min-h-11 min-w-11 px-3`} title="Baixar planilha do estoque (CSV)">
+              <button type="button" onClick={handleExportCSV} className={`${BTN_SECUNDARIO} min-h-11 min-w-11 px-3`} title="Baixar planilha do estoque (Excel)">
                 <MaterialIcon icon="upload" size={18} aria-hidden="true" />
-                <span className="sr-only sm:not-sr-only">CSV</span>
+                <span className="sr-only sm:not-sr-only">Excel</span>
               </button>
               <button type="button" onClick={handleOpenAddDialog} className={`${BTN_PRIMARIO} min-h-11`}>
                 <MaterialIcon icon="add" size={18} aria-hidden="true" />
@@ -1331,7 +1320,7 @@ export default function TabEstoque({
               size="sm"
             >
               <MaterialIcon icon="upload" size={16} />
-              CSV
+              Excel
             </Button>
             <Button
               onClick={handleOpenAddDialog}
