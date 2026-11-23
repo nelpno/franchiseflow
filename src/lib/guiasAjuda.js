@@ -267,6 +267,27 @@ export const GUIAS = [
     ],
     whatsapp: "Precisa cadastrar um cliente ou corrigir o telefone? Este guia mostra onde.",
   },
+  {
+    slug: "credito-cliente",
+    publico: PUBLICO.franqueado,
+    titulo: "Dar e usar crédito do cliente",
+    resumo: "O cliente deixou o troco, pagou a mais ou faltou produto: o app guarda o crédito e desconta na próxima compra.",
+    tempo: "1 minuto",
+    icone: "savings",
+    area: "Clientes",
+    sinonimos: ["crédito", "troco", "pagou a mais", "saldo do cliente", "deixou de crédito", "permuta"],
+    dica: "Lance o crédito na hora, pelo celular, mesmo na entrega: não precisa mais anotar na observação da venda.",
+    erroComum: "Esquecer de tocar em \"Usar\" quando o cliente volta. Ao escolher o cliente na venda, olhe o Desconto: se ele tem crédito, aparece ali.",
+    passos: [
+      { titulo: "Abra o crédito do cliente", texto: "Toque em Mais, em Meus Clientes, busque o cliente e toque em Crédito, no cartão dele. Quem já tem crédito ganha o selo verde com o valor.", botao: "Crédito", imagem: "/tutoriais/credito-cliente-1.webp" },
+      { titulo: "Dê o crédito", texto: "Digite o valor, escolha o motivo (troco que ficou, pagou a mais, faltou produto, permuta ou outro) e toque em Dar crédito. Se quiser, escreva uma anotação.", botao: "Dar crédito", imagem: "/tutoriais/credito-cliente-2.webp" },
+      { titulo: "Na próxima venda, veja o Desconto", texto: "Lance a venda e escolha o cliente. Se ele tem crédito, a linha Desconto mostra o valor. Toque nela para abrir.", botao: "Desconto", imagem: "/tutoriais/credito-cliente-3.webp" },
+      { titulo: "Toque em Usar", texto: "Entra o que couber nos produtos (o frete não entra). Se sobrar, o resto fica guardado para a próxima compra. Tocou sem querer? Toque em Não usar.", botao: "Usar", imagem: "/tutoriais/credito-cliente-4.webp" },
+      { titulo: "Confira o total e registre", texto: "O resumo mostra a linha Crédito do cliente e o total já descontado. O cliente paga só o resto. Toque em Registrar venda.", botao: "Registrar venda", imagem: "/tutoriais/credito-cliente-5.webp" },
+      { titulo: "Errou? Desfaça", texto: "Valor errado: na janela do crédito, toque na lixeira do lançamento e lance de novo. Crédito já usado numa venda: abra a venda, toque em Não usar e salve. Apagar a venda devolve o crédito sozinho.", imagem: "/tutoriais/credito-cliente-6.webp" },
+    ],
+    whatsapp: "O cliente deixou o troco ou pagou a mais? Agora o app guarda esse crédito e desconta na próxima compra. Veja como:",
+  },
   // ------------------------------------------------------------------ Estoque e pedido à fábrica
   {
     slug: "contar-estoque",

@@ -110,13 +110,13 @@ export default function CreditoClienteDialog({ contact, saldo = 0, onOpenChange,
               {formatCurrency(saldo)}
             </p>
             <p className="text-xs text-ink-2">
-              {saldo > 0 ? "Para usar: na venda dele, abra Desconto e toque em \"Usar\"." : "Sem crédito para usar."}
+              {saldo > 0 ? "Para usar: na próxima venda deste cliente, abra Desconto e toque em \"Usar\"." : "Sem crédito para usar."}
             </p>
           </div>
 
           {/* Dar crédito */}
           <div className="space-y-3 rounded-xl border border-ink-shadow/10 p-3">
-            <p className="text-sm font-semibold text-ink">Dar crédito</p>
+            <p className="text-sm font-semibold text-ink">Novo crédito</p>
             <div>
               <Label htmlFor="credito-valor" className="text-sm">Valor (R$)</Label>
               <Input id="credito-valor" type="number" inputMode="decimal" min={0} step={0.01} value={valor}

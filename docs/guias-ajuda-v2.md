@@ -1,7 +1,7 @@
 # Guia de Ajuda do franqueado (v2) — texto final
 
 > Fechado em 29/09/2026 (S24.1, Onda 7b) contra as telas FINAIS, com a chave `ui_v2` ligada (ligada na rede desde 28/09). Todos os rótulos foram conferidos no código (`src/`); nenhuma marca `[tela nova]`, `[conferir]` ou `[decisão Nelson]` sobrou.
-> Os 34 guias (31 da S24.1 + `inicio` e `vendas-por-produto`, Onda 7c, + `cardapio-digital`, 10/11/2026) estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
+> Os 35 guias (31 da S24.1 + `inicio` e `vendas-por-produto`, Onda 7c, + `cardapio-digital`, 10/11/2026, + `credito-cliente`, 23/11/2026) estão no app em `src/lib/guiasAjuda.js` (mesmos slugs, mesma ordem de passos). O que vale é a tela: mudou a tela, mude o guia e este documento juntos.
 > Público: franqueada leiga, 55+, no celular. Cada passo = uma ação. **Negrito** = nome exato do botão ou do título na tela.
 > Fotos: `public/tutoriais/<slug>-<n>.webp`, onde `<n>` é o número do passo NESTE documento. Exceções antigas: `primeiros-passos-*` e `quem-chamar-hoje-*` (numeração própria, já ligadas no app).
 >
@@ -42,6 +42,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Clientes**
 9. Chamar clientes (Quem chamar hoje) — `clientes`
 10. Cadastrar ou corrigir um cliente — `cadastrar-cliente`
+35. Dar e usar crédito do cliente — `credito-cliente`
 
 **Estoque e pedido à fábrica**
 11. Contar o estoque — `contar-estoque` (alias `estoque`)
@@ -360,6 +361,35 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 **Dica:** telefone só com DDD e número, sem o 55. Cliente de outro país: comece com + e o código do país.
 
 **Erro comum:** cadastrar a mesma pessoa duas vezes. Antes de criar, busque o nome e o telefone. Se aparecer "Contato com este telefone já existe", use o cadastro que já está lá.
+
+**Se não resolver:** Falar com a Maxi (guia 30).
+
+---
+
+## 35. Dar e usar crédito do cliente
+`slug: credito-cliente` · **Onde começa:** Mais › Meus Clientes › **Crédito** (no cartão do cliente) · **Tempo:** 1 minuto
+
+**Quando usar:** o cliente deixou o troco, pagou a mais, faltou produto ou foi uma permuta, e o valor fica para a próxima compra (23/11/2026, pedido do Ricardo, Tatuapé).
+
+**Passos**
+1. Toque em **Mais**, em **Meus Clientes**, busque o cliente e toque em **Crédito**, no cartão dele. Quem já tem crédito ganha o selo verde com o valor.
+   - Imagem: cartão do cliente. Contorno no selo **Crédito R$ 20,00** e no botão **Crédito**. (existe: `credito-cliente-1.webp`)
+2. Digite o valor, escolha o motivo (troco que ficou, pagou a mais, faltou produto, permuta ou outro) e toque em **Dar crédito**.
+   - Imagem: janela "Crédito do cliente". Contorno em **Dar crédito**. (existe: `credito-cliente-2.webp`)
+3. Na próxima venda, escolha o cliente. Se ele tem crédito, a linha **Desconto** mostra o valor. Toque nela para abrir.
+   - Imagem: venda nova. Contorno na linha **Desconto** com "Crédito R$ 20,00". (existe: `credito-cliente-3.webp`)
+4. Toque em **Usar**. Entra o que couber nos produtos (o frete não entra); o que sobrar fica guardado. Tocou sem querer? **Não usar**.
+   - Imagem: bloco Desconto aberto. Contorno em **Usar**. (existe: `credito-cliente-4.webp`)
+5. Confira o resumo: a linha **Crédito do cliente** e o total já descontado. Toque em **Registrar venda**.
+   - Imagem: resumo da venda. Contorno no quadro do total. (existe: `credito-cliente-5.webp`)
+6. Errou o valor? Na janela do crédito, toque na lixeira do lançamento e lance de novo. Crédito já usado numa venda: abra a venda, toque em **Não usar** e salve. Apagar a venda devolve o crédito sozinho.
+   - Imagem: lista "Créditos lançados". Contorno na lixeira. (existe: `credito-cliente-6.webp`)
+
+**Deu certo quando:** o cartão do cliente mostra o selo com o saldo, e a venda com crédito mostra a linha "Crédito do cliente" no recibo.
+
+**Dica:** lance o crédito na hora, pelo celular, mesmo na entrega: não precisa mais anotar na observação da venda.
+
+**Erro comum:** esquecer de tocar em **Usar** quando o cliente volta. Ao escolher o cliente na venda, olhe o Desconto: se ele tem crédito, aparece ali.
 
 **Se não resolver:** Falar com a Maxi (guia 30).
 

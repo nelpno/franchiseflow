@@ -1465,7 +1465,10 @@ export default function SaleForm({
   }
 
   // Mobile section summaries
-  const discountSummary = discountAmount > 0 ? `−${formatCurrency(discountAmount)}` : "Nenhum";
+  // Seção fechada no celular: o crédito disponível aparece no resumo, senão ninguém lembra dele (23/11/2026).
+  const discountSummary = discountAmount > 0
+    ? `−${formatCurrency(discountAmount)}`
+    : creditoLigado && creditoDisponivel > 0 ? `Crédito ${formatCurrency(creditoDisponivel)}` : "Nenhum";
   const paymentSummary = PAYMENT_METHODS.find(p => p.value === paymentMethod)?.label || "—";
   // No celular a seção fica fechada: o resumo é o único lugar onde a falta do endereço
   // aparece sem abrir nada.
