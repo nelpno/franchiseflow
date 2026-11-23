@@ -172,13 +172,23 @@ export function ListaEstoqueV2({ grupos, infoDe, onAbrir }) {
 
 // ---------------------------------------------------------------------------- detalhe do produto
 
-function Dado({ rotulo, valor, apoio }) {
+// 23/11/2026: com onEditar o dado vira botão (preço, custo e mínimo recebiam toque sem resposta; abre o Editar produto)
+function Dado({ rotulo, valor, apoio, onEditar }) {
+  const corpo = (
+    <>
+      <span className="flex items-center justify-between gap-1 text-xs font-semibold text-ink-3">
+        {rotulo}
+        {onEditar && <MaterialIcon icon="edit" size={14} className="text-ink-3" aria-hidden="true" />}
+      </span>
+      <span className="mt-0.5 block font-semibold tabular-nums text-ink">{valor}</span>
+      {apoio && <span className="mt-0.5 block text-xs text-ink-3">{apoio}</span>}
+    </>
+  );
+  if (!onEditar) return <div className="rounded-xl bg-surface-2 px-3 py-2.5">{corpo}</div>;
   return (
-    <div className="rounded-xl bg-surface-2 px-3 py-2.5">
-      <p className="text-xs font-semibold text-ink-3">{rotulo}</p>
-      <p className="mt-0.5 font-semibold tabular-nums text-ink">{valor}</p>
-      {apoio && <p className="mt-0.5 text-xs text-ink-3">{apoio}</p>}
-    </div>
+    <button type="button" onClick={onEditar} aria-label={`Editar ${rotulo.toLowerCase()}`} className="rounded-xl bg-surface-2 px-3 py-2.5 text-left transition-colors hover:bg-surface-line">
+      {corpo}
+    </button>
   );
 }
 
@@ -215,12 +225,13 @@ export function ItemEstoqueSheet({
             </SheetHeader>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className={ROTULO}>Tem agora</p>
-                <p className={`mt-1 font-plus-jakarta text-3xl font-extrabold tabular-nums ${qtd < 0 ? "text-err" : "text-ink"}`}>
+              {/* 23/11/2026: o número grande recebia toque (parece editável): abre o Editar produto, que tem a Quantidade */}
+              <button type="button" onClick={onEditar} aria-label="Editar quantidade" className="-m-1 rounded-xl p-1 text-left transition-colors hover:bg-surface-2">
+                <span className={`${ROTULO} flex items-center gap-1`}>Tem agora <MaterialIcon icon="edit" size={14} className="text-ink-3" aria-hidden="true" /></span>
+                <span className={`mt-1 block font-plus-jakarta text-3xl font-extrabold tabular-nums ${qtd < 0 ? "text-err" : "text-ink"}`}>
                   {fmtQtd(qtd)} <span className="text-base font-semibold text-ink-2">{item.unit || "un"}</span>
-                </p>
-              </div>
+                </span>
+              </button>
               <div>
                 <p className={ROTULO}>Vende</p>
                 <p className="mt-1 text-sm text-ink">{s && s.porSemana > 0 ? `${textoVenda(s).replace("vende ", "")}` : "Sem venda nos últimos 3 meses"}</p>
@@ -251,8 +262,8 @@ export function ItemEstoqueSheet({
             )}
 
             <div className="grid grid-cols-2 gap-2">
-              <Dado rotulo="Preço de venda" valor={parseFloat(item.sale_price) > 0 ? formatBRL(item.sale_price) : "Sem preço"} />
-              <Dado rotulo="Custo" valor={parseFloat(item.cost_price) > 0 ? formatBRL(item.cost_price) : "—"} />
+              <Dado rotulo="Preço de venda" valor={parseFloat(item.sale_price) > 0 ? formatBRL(item.sale_price) : "Sem preço"} onEditar={onEditar} />
+              <Dado rotulo="Custo" valor={parseFloat(item.cost_price) > 0 ? formatBRL(item.cost_price) : "—"} onEditar={onEditar} />
               <Dado
                 rotulo="Markup"
                 valor={markup === null ? "—" : `${Math.round(markup)}%`}
@@ -260,6 +271,7 @@ export function ItemEstoqueSheet({
               />
               <Dado
                 rotulo="Mínimo"
+                onEditar={onEditar}
                 valor={fmtQtd(item.min_stock)}
                 apoio={info?.daFabrica ? "para o que vende, a sugestão nunca fica abaixo disso" : "abaixo disso, aparece como acabando"}
               />
