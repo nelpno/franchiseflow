@@ -32,7 +32,7 @@ import { PAYMENT_METHODS, getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { generateReceiptImage, generateReceiptPdf, isMobileDevice, preloadReceiptPdf, shareImage, printReceipt } from "@/lib/shareUtils";
 import { getSaleNetValue } from "@/lib/financialCalcs";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
-import { rotuloDesconto } from "@/lib/cupom";
+import { linhasDesconto } from "@/lib/cupom";
 import { formatPhone, getWhatsAppLink } from "@/lib/whatsappUtils";
 import { SALES_EXPORT_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { fireCapiOnConfirm, fireCapiBatch } from "@/lib/capiManual";
@@ -938,12 +938,13 @@ export default function TabLancar({
                       {sale.delivery_fee > 0 && ` + ${formatCurrency(sale.delivery_fee)} frete`}
                     </p>
                   )}
-                  {sale.discount_amount > 0 && sale.desconto_origem && (
-                    <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${sale.desconto_origem === "cupom" ? "bg-ok-soft text-ok-ink" : "bg-surface-2 text-ink-2"}`}
-                      data-desconto-origem={sale.desconto_origem}>
-                      {rotuloDesconto(sale)} −{formatCurrency(sale.discount_amount)}
-                    </span>
-                  )}
+                  {sale.discount_amount > 0 && (sale.desconto_origem || Number(sale.credito_usado) > 0) &&
+                    linhasDesconto(sale).map((l) => (
+                      <span key={l.rotulo} className={`mt-0.5 mr-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${sale.desconto_origem === "cupom" || l.credito ? "bg-ok-soft text-ok-ink" : "bg-surface-2 text-ink-2"}`}
+                        data-desconto-origem={l.credito ? "credito" : sale.desconto_origem}>
+                        {l.rotulo} −{formatCurrency(l.valor)}
+                      </span>
+                    ))}
                 </div>
 
                 {/* Confirmation toggle chip */}
@@ -1072,16 +1073,14 @@ export default function TabLancar({
                 {/* Financial breakdown */}
                 {(sale.card_fee_amount > 0 || sale.delivery_fee > 0 || sale.discount_amount > 0) && (
                   <div className="border-t border-ink-shadow/5 pt-2 space-y-1 text-sm">
-                    {sale.discount_amount > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-ink-2">
-                          {rotuloDesconto(sale)}{sale.discount_type === "percent" && sale.discount_input ? ` (${sale.discount_input}%)` : ""}
-                        </span>
+                    {linhasDesconto(sale).map((l) => (
+                      <div key={l.rotulo} className="flex justify-between">
+                        <span className="text-ink-2">{l.rotulo}</span>
                         <span className="text-err font-mono-numbers">
-                          − {formatCurrency(sale.discount_amount)}
+                          − {formatCurrency(l.valor)}
                         </span>
                       </div>
-                    )}
+                    ))}
                     {sale.delivery_fee > 0 && (
                       <div className="flex justify-between">
                         <span className="text-ink-2">Frete cobrado</span>

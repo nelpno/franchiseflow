@@ -59,8 +59,26 @@ export function rotuloDesconto(sale) {
   if (o === "promocao") return "Promoção";
   if (o === "fidelidade") return "Fidelidade";
   if (o === "cashback") return "Cashback";
+  if (o === "credito") return "Crédito do cliente";
   if (o === "manual" || o === "outro") return "Desconto combinado";
   return "Desconto";
+}
+
+// Linhas de desconto de uma venda para lista e recibo: o crédito do cliente (sales.credito_usado, 23/11/2026) fica
+// DENTRO do discount_amount, mas sai numa linha própria. [{ rotulo, valor, credito }] (vazio = sem desconto).
+export function linhasDesconto(sale) {
+  const total = Number(sale?.discount_amount) || 0;
+  if (total <= 0) return [];
+  const credito = Math.min(Math.max(Number(sale?.credito_usado) || 0, 0), total);
+  const resto = Math.round((total - credito) * 100) / 100;
+  const linhas = [];
+  if (resto > 0) {
+    const rotulo = sale?.desconto_origem === "credito" ? "Desconto" : rotuloDesconto(sale);
+    const pct = sale?.discount_type === "percent" && sale?.discount_input ? ` (${sale.discount_input}%)` : "";
+    linhas.push({ rotulo: rotulo + pct, valor: resto, credito: false });
+  }
+  if (credito > 0) linhas.push({ rotulo: "Crédito do cliente", valor: credito, credito: true });
+  return linhas;
 }
 
 export const MOTIVOS_DESCONTO = [

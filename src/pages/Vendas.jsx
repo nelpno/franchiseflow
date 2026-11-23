@@ -18,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useEncomendas } from "@/hooks/useEncomendas";
 import { ativasOrdenadas } from "@/lib/encomendas";
 
-const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, desconto_origem, desconto_codigo, card_fee_amount, card_fee_percent, fee_passed_to_customer, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, contact_phone, customer_address, customer_neighborhood, delivery_method, net_value, capi_sent';
+const SALES_COLUMNS = 'id, sale_number, value, delivery_fee, discount_amount, discount_type, discount_input, desconto_origem, desconto_codigo, credito_usado, card_fee_amount, card_fee_percent, fee_passed_to_customer, sale_date, contact_id, franchise_id, source, payment_method, payment_confirmed, confirmed_at, created_at, observacoes, customer_name, contact_phone, customer_address, customer_neighborhood, delivery_method, net_value, capi_sent';
 // capi_sent (P3 S12, sem chave): sem ele o aviso "essa venda já foi contada no anúncio" antes de
 // excluir nunca aparecia (deletingSale.capi_sent vinha sempre undefined).
 const SALES_LOOKBACK_MONTHS = 6;

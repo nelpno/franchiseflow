@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Sale, SaleItem, Contact, AuditLog, FranchiseConfiguration } from "@/entities/all";
+import { Sale, SaleItem, Contact, AuditLog, FranchiseConfiguration, ClienteCreditoSaldo } from "@/entities/all";
 import { supabase } from "@/api/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import { fireCapiOnConfirm } from "@/lib/capiManual";
 import { acharVendaDoRobo, janelaDeBusca } from "@/lib/vendaRepetida";
 import { dataDoRascunho, assinaturaEdicao } from "@/lib/rascunhoVenda";
 import { MOTIVOS_DESCONTO, limparCodigo } from "@/lib/cupom";
+import { creditoDisponivelNaVenda, origemDoDesconto } from "@/lib/creditoCliente";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -459,6 +460,11 @@ export default function SaleForm({
   // Motivo do desconto (11/11/2026, cupom Fase 1): "" | promocao | cupom | manual; com cupom, o código. Venda à mão com cupom conta como uso (1 por telefone).
   const [descontoMotivo, setDescontoMotivo] = useState("");
   const [descontoCodigo, setDescontoCodigo] = useState("");
+  // Crédito do cliente (23/11/2026): "Usar" liga; o valor é o que couber (calcSale). saldoCredito = saldo da view,
+  // que na edição já descontou o crédito DESTA venda (por isso creditoDisponivelNaVenda soma de volta).
+  const creditoLigado = useFeatureFlag(FEATURE_KEYS.CREDITO_CLIENTE, franchiseId);
+  const [usarCredito, setUsarCredito] = useState(false);
+  const [saldoCredito, setSaldoCredito] = useState(0);
 
   // Sale date
   const [saleDate, setSaleDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -499,8 +505,10 @@ export default function SaleForm({
     setDeliveryFee(sale.delivery_fee ?? 0);
     setDiscountType(sale.discount_type || "fixed");
     setDiscountInput(sale.discount_input ?? 0);
-    setDescontoMotivo(sale.desconto_origem || "");
+    // "credito" não é opção do select (o crédito tem a linha "Usar" própria)
+    setDescontoMotivo(sale.desconto_origem && sale.desconto_origem !== "credito" ? sale.desconto_origem : "");
     setDescontoCodigo(sale.desconto_codigo || "");
+    setUsarCredito(Number(sale.credito_usado) > 0);
     if (sale.sale_date) setSaleDate(sale.sale_date);
     setObservacoes(sale.observacoes || "");
     setContactId(sale.contact_id || null);
@@ -612,6 +620,7 @@ export default function SaleForm({
     if (draft.customerNeighborhood) setCustomerNeighborhood(draft.customerNeighborhood);
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
+    if (draft.contactId && draft.usarCredito) setUsarCredito(true); // o valor sai do saldo de agora; o banco confere
     // S12.4: rascunho de outro dia volta com a data de HOJE (chave ligada). Se a chave ainda
     // não chegou, restaura como sempre e guarda o que restaurou: o efeito abaixo corrige quando
     // ela ligar, desde que a franqueada não tenha mexido na data (P3).
@@ -651,6 +660,7 @@ export default function SaleForm({
           setDiscountInput(0);
           setDescontoMotivo("");
           setDescontoCodigo("");
+          setUsarCredito(false);
           setObservacoes("");
           setAindaVouReceber(false);
           toast.success("Rascunho descartado");
@@ -790,8 +800,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes, aindaVouReceber }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, saleDate, observacoes, aindaVouReceber]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, usarCredito, saleDate, observacoes, aindaVouReceber }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, usarCredito, saleDate, observacoes, aindaVouReceber]
   );
 
   useEffect(() => {
@@ -832,9 +842,9 @@ export default function SaleForm({
   const assinaturaAtual = useMemo(
     () =>
       isEditing
-        ? assinaturaEdicao({ items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, saleDate, observacoes })
+        ? assinaturaEdicao({ items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, usarCredito, saleDate, observacoes })
         : null,
-    [isEditing, items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, saleDate, observacoes]
+    [isEditing, items, contactId, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, usarCredito, saleDate, observacoes]
   );
   // A base só é tirada um render DEPOIS de venda, itens e configuração chegarem: a taxa (%)
   // é recalculada pela tabela da unidade no mesmo lote em que a configuração chega, e a
@@ -857,7 +867,23 @@ export default function SaleForm({
   // Ela estava aqui dentro, em quatro useMemo sem teste nenhum, e a regra de "quais metodos
   // tem taxa" estava copiada em QUATRO pontos deste arquivo — o calculo, dois campos do
   // payload e a linha do resumo. `cobraTaxa` agora e a mesma decisao nos quatro.
-  const { subtotal, effectiveDeliveryFee, discountAmount, cardFeeAmount, netValue, cobraTaxa } =
+  // Saldo do cliente escolhido (só com a chave ligada; sem ela a edição ainda mantém o crédito que a venda já usava).
+  useEffect(() => {
+    setSaldoCredito(0);
+    if (!creditoLigado || !contactId) return;
+    let cancelado = false;
+    ClienteCreditoSaldo.filter({ contact_id: contactId }, null, 1, { columns: "contact_id, saldo" })
+      .then(([linha]) => { if (!cancelado) setSaldoCredito(Number(linha?.saldo) || 0); })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [creditoLigado, contactId]);
+  const creditoDisponivel = creditoDisponivelNaVenda({
+    saldo: saldoCredito,
+    creditoDaVenda: Number(sale?.credito_usado) || 0,
+    mesmoCliente: !!contactId && contactId === sale?.contact_id,
+  });
+
+  const { subtotal, effectiveDeliveryFee, discountAmount, descontoManual, creditoUsado, cardFeeAmount, netValue, cobraTaxa } =
     useMemo(
       () =>
         calcSale({
@@ -870,10 +896,11 @@ export default function SaleForm({
           cardFeePercent,
           hasPaymentFeesConfig: Boolean(paymentFees),
           feePassedToCustomer,
+          creditoDisponivel: usarCredito ? creditoDisponivel : 0,
         }),
       [
         items, discountInput, discountType, deliveryMethod, deliveryFee,
-        paymentMethod, cardFeePercent, paymentFees, feePassedToCustomer,
+        paymentMethod, cardFeePercent, paymentFees, feePassedToCustomer, usarCredito, creditoDisponivel,
       ]
     );
 
@@ -911,6 +938,7 @@ export default function SaleForm({
   // Contact select
   const handleContactSelect = (contact) => {
     usuarioMexeuContatoRef.current = true;
+    if (contact.id !== contactId) setUsarCredito(false);
     setContactId(contact.id);
     setContactSearch(contact.nome || formatPhone(contact.telefone));
     setContactPhone(contact.telefone || null);
@@ -930,6 +958,7 @@ export default function SaleForm({
     usuarioMexeuContatoRef.current = true;
     setContactSearch(val);
     if (contactId) {
+      setUsarCredito(false);
       setContactId(null); // user is typing again, clear selection
       setContactPhone(undefined);
       setMissingPhone("");
@@ -1257,8 +1286,10 @@ export default function SaleForm({
         discount_amount: discountAmount || 0,
         discount_type: discountInput > 0 ? discountType : null,
         discount_input: discountInput > 0 ? discountInput : null,
-        desconto_origem: discountAmount > 0 && descontoMotivo ? descontoMotivo : null,
-        desconto_codigo: discountAmount > 0 && descontoMotivo === "cupom" ? limparCodigo(descontoCodigo) || null : null,
+        // Crédito do cliente fica DENTRO do discount_amount; credito_usado diz quanto (o banco trava acima do saldo).
+        credito_usado: creditoUsado || 0,
+        desconto_origem: origemDoDesconto({ descontoManual, creditoUsado, motivoManual: descontoMotivo }),
+        desconto_codigo: descontoManual > 0 && descontoMotivo === "cupom" ? limparCodigo(descontoCodigo) || null : null,
         net_value: netValue,
         sale_date: saleDate,
         observacoes: observacoes || null,
@@ -1739,12 +1770,32 @@ export default function SaleForm({
             placeholder={discountType === "percent" ? "0" : "0,00"}
           />
         </div>
-        {discountAmount > 0 && (
+        {descontoManual > 0 && (
           <p className="text-xs text-ink-3">
-            −{formatCurrency(discountAmount)} no subtotal
+            −{formatCurrency(descontoManual)} no subtotal
           </p>
         )}
-        {discountAmount > 0 && (
+        {(creditoDisponivel > 0 || creditoUsado > 0) && (creditoLigado || usarCredito) && (
+          <div className="mt-2 flex items-center justify-between gap-3 rounded-xl bg-ok-soft px-3 py-2" data-credito-cliente>
+            <div className="min-w-0 text-sm">
+              <p className="font-semibold text-ok-ink">
+                Crédito do cliente: {formatCurrency(creditoDisponivel)}
+              </p>
+              {usarCredito && (
+                <p className="text-xs text-ink-2">
+                  {creditoUsado > 0
+                    ? <>−{formatCurrency(creditoUsado)} nesta venda{creditoDisponivel - creditoUsado > 0.004 ? ` · sobram ${formatCurrency(creditoDisponivel - creditoUsado)}` : ""}</>
+                    : "Adicione os produtos para usar o crédito."}
+                </p>
+              )}
+            </div>
+            <Button type="button" size="sm" variant={usarCredito ? "outline" : "default"} className="shrink-0 min-h-[40px]"
+              onClick={() => setUsarCredito((v) => !v)}>
+              {usarCredito ? "Não usar" : "Usar"}
+            </Button>
+          </div>
+        )}
+        {descontoManual > 0 && (
           <div className="mt-2 space-y-2">
             <label className="block text-sm font-semibold text-ink" htmlFor="venda-motivo-desconto">Motivo do desconto</label>
             <select id="venda-motivo-desconto" value={descontoMotivo} onChange={(e) => setDescontoMotivo(e.target.value)}
@@ -1988,13 +2039,21 @@ export default function SaleForm({
           </span>
         </div>
 
-        {discountAmount > 0 && (
+        {descontoManual > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-ink-2">
               Desconto{discountType === "percent" ? ` (${discountInput}%)` : ""}
             </span>
             <span className="font-medium text-err font-mono-numbers">
-              − {formatCurrency(discountAmount)}
+              − {formatCurrency(descontoManual)}
+            </span>
+          </div>
+        )}
+        {creditoUsado > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-ink-2">Crédito do cliente</span>
+            <span className="font-medium text-err font-mono-numbers">
+              − {formatCurrency(creditoUsado)}
             </span>
           </div>
         )}

@@ -2,7 +2,7 @@ import React from "react";
 import { getPaymentMethodLabel } from "@/lib/franchiseUtils";
 import { formatPhone } from "@/lib/whatsappUtils";
 import { formatBRL as formatCurrency } from "@/lib/formatters";
-import { rotuloDesconto } from "@/lib/cupom";
+import { linhasDesconto } from "@/lib/cupom";
 import {
   resolveDeliveryLabel,
   formatReceiptAddressLine,
@@ -334,8 +334,10 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
           </div>
         )}
 
-        {discountAmount > 0 && (
+        {/* Crédito do cliente sai numa linha própria (fica dentro do discount_amount; lib/cupom.js linhasDesconto) */}
+        {linhasDesconto(sale).map((l) => (
           <div
+            key={l.rotulo}
             style={{
               display: "flex",
               flexWrap: "wrap",
@@ -343,17 +345,12 @@ const SaleReceipt = React.forwardRef(function SaleReceipt(
               color: "#dc2626",
             }}
           >
-            <span>
-              {rotuloDesconto(sale)}
-              {sale.discount_type === "percent" && sale.discount_input
-                ? ` (${sale.discount_input}%)`
-                : ""}
-            </span>
+            <span>{l.rotulo}</span>
             <span className="r-valor" style={{ fontVariantNumeric: "tabular-nums" }}>
-              −{formatCurrency(discountAmount)}
+              −{formatCurrency(l.valor)}
             </span>
           </div>
-        )}
+        ))}
 
         {showCardFeeRow && (
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between" }}>

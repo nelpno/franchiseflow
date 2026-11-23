@@ -95,10 +95,18 @@ export function calcSale({
   cardFeePercent = 0,
   hasPaymentFeesConfig = false,
   feePassedToCustomer = false,
+  // Crédito do cliente (23/11/2026) que a venda PODE usar (0 = não usar). Entra no desconto, depois do desconto
+  // digitado, com teto no subtotal (nunca paga frete). `creditoUsado` diz quanto do discountAmount é crédito.
+  creditoDisponivel = 0,
 } = {}) {
   const subtotal = calcSubtotal(items);
   const frete = calcDeliveryFee({ deliveryMethod, deliveryFee });
-  const discountAmount = calcDiscountAmount({ discountInput, discountType, subtotal });
+  const descontoManual = calcDiscountAmount({ discountInput, discountType, subtotal });
+  const creditoUsado = Math.max(
+    0,
+    Math.min(Math.round((Number(creditoDisponivel) || 0) * 100) / 100, Math.round((subtotal - descontoManual) * 100) / 100)
+  );
+  const discountAmount = creditoUsado > 0 ? Math.round((descontoManual + creditoUsado) * 100) / 100 : descontoManual;
   const cobraTaxa = chargesCardFee({ paymentMethod, cardFeePercent, hasPaymentFeesConfig });
   const cardFeeAmount = calcCardFeeAmount({
     subtotal,
@@ -115,5 +123,5 @@ export function calcSale({
     deliveryFee: frete,
     feePassedToCustomer,
   });
-  return { subtotal, effectiveDeliveryFee: frete, discountAmount, cardFeeAmount, netValue, cobraTaxa };
+  return { subtotal, effectiveDeliveryFee: frete, discountAmount, descontoManual, creditoUsado, cardFeeAmount, netValue, cobraTaxa };
 }

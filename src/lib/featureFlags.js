@@ -11,8 +11,11 @@
 //                      desligada por unidade = freio de emergência (menu some, página em pausa, robô sem link). Admin vê sempre.
 //   cardapio_kit — promoção estruturada (kit/leve N) no cardápio do cliente; lida DENTRO da RPC cardapio_unidade.
 //                  Só liga depois da prova do robô com a linha "Promoção:" do #PED- (ESPEC 5.1 A4).
+//   credito_cliente — crédito do cliente (troco que fica, pagou a mais): selo + "Dar crédito" em Meus clientes e "Usar" na
+//                     venda (23/11/2026, ligada na rede). Desligar esconde as telas; o saldo e a trava do banco continuam.
 
 export const FEATURE_KEYS = Object.freeze({
+  CREDITO_CLIENTE: "credito_cliente",
   UI_V2: "ui_v2",
   PIX_NA_BAIXA: "pix_na_baixa",
   CHAMAR_UBER: "chamar_uber",

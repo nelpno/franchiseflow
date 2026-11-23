@@ -44,6 +44,7 @@ export function assinaturaEdicao(f) {
     discountInput: n(f.discountInput),
     descontoMotivo: f.descontoMotivo || "",
     descontoCodigo: (f.descontoCodigo || "").trim(),
+    usarCredito: !!f.usarCredito,
     saleDate: f.saleDate || null,
     observacoes: (f.observacoes || "").trim(),
   });

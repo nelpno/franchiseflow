@@ -271,6 +271,15 @@ export const PurchaseOrder = createEntity('purchase_orders');
 export const PurchaseOrderItem = createEntity('purchase_order_items');
 // Encomendas (17/11/2026): pedido do cliente para data futura; não mexe em estoque nem faturamento (lib/encomendas.js)
 export const Encomenda = createEntity('encomendas');
+// Crédito do cliente (23/11/2026; supabase/2026-11-23-credito-cliente.sql): entradas + saldo por cliente (view).
+// Apagar entrada só pela RPC (confere que o crédito não foi usado); a tabela não aceita delete direto.
+export const ClienteCredito = createEntity('cliente_creditos');
+export const ClienteCreditoSaldo = createEntity('cliente_credito_saldos');
+export async function apagarClienteCredito(id) {
+  const { data, error } = await withTimeout(supabase.rpc('cliente_credito_apagar', { p_id: id }), 30000);
+  if (error) throw error;
+  return data;
+}
 export const AuditLog = createEntity('audit_logs');
 export const MarketingPayment = createEntity('marketing_payments');
 export const MarketingMetaDeposit = createEntity('marketing_meta_deposits');

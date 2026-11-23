@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Contact, Sale } from "@/entities/all";
+import { Contact, Sale, ClienteCreditoSaldo } from "@/entities/all";
+import CreditoClienteDialog from "@/components/clientes/CreditoClienteDialog";
+import { mapaDeSaldos } from "@/lib/creditoCliente";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
@@ -138,6 +142,24 @@ export default function MyContacts() {
     [franchises, currentUser, selectedFranchise]
   );
   const activeEvoId = activeFranchise?.evolution_instance_id;
+  // Crédito do cliente (23/11/2026): saldo por cliente (view cliente_credito_saldos) + janela "Dar crédito".
+  const creditoLigado = useFeatureFlag(FEATURE_KEYS.CREDITO_CLIENTE, activeEvoId);
+  const [saldosCredito, setSaldosCredito] = useState({});
+  const [creditoContato, setCreditoContato] = useState(null);
+  const saldosPedidoRef = useRef(0); // resposta atrasada de outra unidade não pisa na atual
+  const carregarSaldos = useCallback(async () => {
+    const pedido = ++saldosPedidoRef.current;
+    if (!creditoLigado || (!isAdmin && !activeEvoId)) { setSaldosCredito({}); return; }
+    try {
+      const linhas = isAdmin && !activeEvoId
+        ? await ClienteCreditoSaldo.list(null, null, { fetchAll: true, columns: "contact_id, saldo" })
+        : await ClienteCreditoSaldo.filter({ franchise_id: activeEvoId }, null, null, { fetchAll: true, columns: "contact_id, saldo" });
+      if (pedido === saldosPedidoRef.current) setSaldosCredito(mapaDeSaldos(linhas));
+    } catch {
+      if (pedido === saldosPedidoRef.current) setSaldosCredito({}); // sem saldo na tela não impede nada: a venda confere no banco
+    }
+  }, [creditoLigado, isAdmin, activeEvoId]);
+  useEffect(() => { carregarSaldos(); }, [carregarSaldos]);
   // "Hoje" (quem chamar) é a aba padrão do franqueado. Admin sem unidade escolhida só tem "Todos".
   const abaParam = searchParams.get("aba");
   const activeTab =
@@ -805,6 +827,13 @@ export default function MyContacts() {
                       );
                     })()}
                     <CustomerMark purchases={contact.purchase_count} />
+                    {creditoLigado && saldosCredito[contact.id] > 0 && (
+                      <button type="button" onClick={() => setCreditoContato(contact)} data-credito-selo
+                        className="inline-flex items-center gap-1 rounded-lg bg-ok-soft px-2 py-0.5 text-[11px] font-bold text-ok-ink">
+                        <MaterialIcon icon="savings" size={14} />
+                        Crédito {formatCurrency(saldosCredito[contact.id])}
+                      </button>
+                    )}
                     {contact.do_not_contact_at && (
                       <span className="inline-flex items-center gap-1 rounded-lg bg-surface-line px-2 py-1 text-xs text-ink-3">
                         <MaterialIcon icon="block" size={14} />
@@ -891,6 +920,17 @@ export default function MyContacts() {
                     <span className="hidden sm:inline">+ Venda</span>
                     <span className="sm:hidden">Venda</span>
                   </button>
+                  {creditoLigado && (
+                    <button
+                      type="button"
+                      onClick={() => setCreditoContato(contact)}
+                      className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-ok-soft text-ok-ink hover:bg-ok/20 transition-colors"
+                      title="Crédito do cliente (troco que ficou, pagou a mais)"
+                    >
+                      <MaterialIcon icon="savings" size={16} />
+                      <span>Crédito</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => openEdit(contact)}
                     className="min-h-11 flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium bg-surface-line text-ink-2 hover:bg-surface-line/80 transition-colors ml-auto"
@@ -1032,8 +1072,12 @@ export default function MyContacts() {
             {/* Action buttons */}
             <div className="flex items-center pt-2">
               {confirmDelete === editingContact?.id ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-ink-2">Excluir?</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-ink-2">
+                    {saldosCredito[editingContact?.id] > 0
+                      ? `Tem ${formatCurrency(saldosCredito[editingContact.id])} de crédito, que some junto. Excluir?`
+                      : "Excluir?"}
+                  </span>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1082,6 +1126,13 @@ export default function MyContacts() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CreditoClienteDialog
+        contact={creditoContato}
+        saldo={creditoContato ? saldosCredito[creditoContato.id] || 0 : 0}
+        onOpenChange={(open) => { if (!open) setCreditoContato(null); }}
+        onChanged={carregarSaldos}
+      />
     </div>
   );
 }
