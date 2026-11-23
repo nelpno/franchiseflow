@@ -114,3 +114,18 @@ assert.match(validarEtapa(1, { ...base, personal_phone_extra: "98765" }, ["perso
 assert.match(validarEtapa(1, { ...base, personal_phone_extra: "5513974088382" }, ["personal_phone_extra"]).erros[0], /igual ao primeiro/);
 
 console.log("vendedorValidation: ok");
+
+// ── entrega só "Dentro da janela" com janela longa = aviso (23/11/2026); 3 h (Bauru) ou "Em até X min" = nada ──
+{
+  const longa = { ...base, delivery_schedule: [{ ...base.delivery_schedule[0], delivery_start: "09:00", delivery_end: "18:00", order_cutoff: "17:00" }] };
+  const r = validarEtapa(2, longa, Object.keys(longa));
+  assert.equal(r.erros.length, 0, JSON.stringify(r));
+  assert.equal(r.avisos.length, 1, JSON.stringify(r));
+  assert.ok(r.avisos[0].includes("das 9h às 18h") && r.avisos[0].includes("Em até X min"), r.avisos[0]);
+  assert.ok(ok(validarEtapa(2, { ...longa, avg_prep_time_minutes: 60 }, [])), "com prazo em minutos não avisa");
+  assert.ok(ok(validarEtapa(2, { ...longa, has_delivery: false, has_pickup: true, payment_pickup: ["pix"] }, [])), "sem entrega não avisa");
+  assert.ok(ok(validarEtapa(2, base, [])), "janela de 3 h não avisa");
+  const meia = { ...base, delivery_schedule: [{ ...base.delivery_schedule[0], delivery_start: "09:30", delivery_end: "17:45", order_cutoff: "17:00" }] };
+  assert.ok(validarEtapa(2, meia, []).avisos[0].includes("das 9h30 às 17h45"));
+}
+console.log("ok: janela longa");

@@ -14,6 +14,25 @@ import { validateDeliverySchedule, rotuloDias } from "./configSave.js";
 import { modoDoFrete, legadoParaModelo, problemasDoModelo } from "./freteModelo.js";
 import { hojeBRT, problemasHorarioEspecial, normalizarInstagram, instagramValido } from "./horarioEspecial.js";
 
+// Acima disso a janela não responde "em quanto tempo chega" (Bauru, 3 h, é a operação dela e fica de fora).
+const JANELA_LONGA_MIN = 180;
+const horaCurta = (hhmm) => String(hhmm || "").replace(/^0?(\d{1,2}):(\d{2}).*$/, (_, h, m) => (m === "00" ? `${h}h` : `${h}h${m}`));
+function entregaSoNaJanelaLonga(f) {
+  if (f.has_delivery === false) return null;
+  const modo = modoDoFrete(f);
+  if (modo === "modalidade") return null;
+  const modelo = modo === "estruturado" ? f.delivery_pricing : f._frete_modelo || legadoParaModelo(f);
+  const tipos = (modelo?.grupos || []).filter((g) => (g?.dias || []).length).flatMap((g) => g.tipos || []);
+  if (!tipos.length || tipos.some((t) => t?.promessa === "minutos")) return null;
+  let maior = null;
+  for (const t of tipos) {
+    const ini = minutos(t?.inicio), fim = minutos(t?.fim);
+    if (ini !== null && fim !== null && fim - ini > JANELA_LONGA_MIN && (!maior || fim - ini > maior.dur)) maior = { dur: fim - ini, t };
+  }
+  return maior &&
+    `A entrega está "Dentro da janela" (das ${horaCurta(maior.t.inicio)} às ${horaCurta(maior.t.fim)}): quando o cliente pergunta em quanto tempo chega, o robô só diz essa janela. Se você entrega em até um tempo depois do pedido, marque "Em até X min" em Como chega.`;
+}
+
 const digitos = (v) => String(v ?? "").replace(/\D/g, "");
 const vazio = (v) => v === null || v === undefined || String(v).trim() === "";
 const minutos = (hhmm) => {
@@ -164,6 +183,9 @@ const REGRAS = [
       return p.length > 0 && `${p[0].msg}${p.length > 1 ? ` (e mais ${p.length - 1})` : ""}`;
     },
   },
+  // Entrega só "Dentro da janela" com janela longa (23/11/2026, 16 unidades): "quando chega?" vira "entre 9h e 18h".
+  // Só aviso: a janela é escolha válida (Bauru 16h–19h não aparece); some quando alguém marca "Em até X min".
+  { etapa: 2, soAviso: true, campos: ["_frete_modelo", "delivery_pricing", "delivery_schedule", "avg_prep_time_minutes"], checar: entregaSoNaJanelaLonga },
   { etapa: 2, campos: ["pickup_schedule", "has_custom_pickup_hours", "has_pickup"], checar: (f) => !!f.has_pickup && retiradaInvertida(f.pickup_schedule) },
   { etapa: 2, campos: ["horario_especial"], checar: (f) => problemasHorarioEspecial(f.horario_especial, hojeBRT())[0] || null },
 
