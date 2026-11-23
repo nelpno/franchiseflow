@@ -533,8 +533,20 @@ export default function TabEstoque({
 
   // --- Add product ---
 
+  // 23/11/2026: clique fora da janela era 36% dos cliques mortos do Estoque no PC (Clarity, 96 em 7 dias).
+  // Sem mudança, fecha; com mudança, fica aberta e avisa (o clique deixa de ser "sem resposta").
+  const formAoAbrir = useRef(null);
+  const handleClickForaDoForm = (e) => {
+    const mudou = JSON.stringify(formData) !== formAoAbrir.current;
+    if (isSubmitting || mudou) {
+      e.preventDefault();
+      if (!isSubmitting) toast.info("Salve ou cancele a edição para fechar.", { id: "form-estoque-fora" });
+    }
+  };
+
   const handleOpenAddDialog = () => {
     setEditingItem(null);
+    formAoAbrir.current = JSON.stringify({ ...EMPTY_FORM });
     setFormData({ ...EMPTY_FORM });
     setShowSuggestions(false);
     setSelectedFromCatalog(false);
@@ -543,7 +555,7 @@ export default function TabEstoque({
 
   const handleOpenEditDialog = (item) => {
     setEditingItem(item);
-    setFormData({
+    const inicial = {
       product_name: item.product_name || "",
       category: categoriaDe(item),
       quantity: String(item.quantity ?? ""),
@@ -551,7 +563,9 @@ export default function TabEstoque({
       min_stock: String(item.min_stock ?? ""),
       cost_price: String(item.cost_price ?? ""),
       sale_price: String(item.sale_price ?? ""),
-    });
+    };
+    formAoAbrir.current = JSON.stringify(inicial);
+    setFormData(inicial);
     setShowAddDialog(true);
   };
 
@@ -2152,7 +2166,7 @@ export default function TabEstoque({
 
       {/* Add/Edit product dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent onInteractOutside={(e) => e.preventDefault()} className="sm:max-w-md rounded-2xl">
+        <DialogContent onInteractOutside={handleClickForaDoForm} className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-plus-jakarta text-ink">
               <MaterialIcon icon="inventory_2" size={20} className="text-brand" />
@@ -2338,7 +2352,15 @@ export default function TabEstoque({
                 />
                 {formData.cost_price && parseFloat(formData.cost_price) > 0 && (
                   <p className="text-xs text-ink-2">
-                    Sugerido: {formatBRL(parseFloat(formData.cost_price) * 2)} (100% markup)
+                    {/* 23/11/2026: o "Sugerido" recebia clique (Clarity: 11 em 7 dias); agora preenche o preço */}
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, sale_price: (Math.round(parseFloat(prev.cost_price) * 200) / 100).toFixed(2) }))}
+                      className="font-semibold text-brand underline-offset-2 hover:underline"
+                    >
+                      Usar o sugerido: {formatBRL(parseFloat(formData.cost_price) * 2)}
+                    </button>{" "}
+                    (100% markup)
                     {formData.sale_price && parseFloat(formData.sale_price) > 0 && (
                       <span className={`ml-2 font-bold ${
                         ((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price) * 100) >= 80
