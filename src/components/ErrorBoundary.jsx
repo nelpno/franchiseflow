@@ -1,5 +1,6 @@
 import React from 'react';
 import { registrarEvento } from '@/lib/telemetria';
+import { recarregarSeVersaoVelha } from '@/lib/versaoVelha';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,19 +20,8 @@ class ErrorBoundary extends React.Component {
     // 19/11/2026: tela quebrada fica visível em app_eventos (antes só no console de quem viu)
     try { registrarEvento('erro_app', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
 
-    // Auto-reload on chunk load failures (happens after new deploys)
-    const isChunkError = error?.message?.includes('dynamically imported module')
-      || error?.message?.includes('Failed to fetch')
-      || error?.message?.includes('Loading chunk')
-      || error?.name === 'ChunkLoadError';
-
-    if (isChunkError && !sessionStorage.getItem('chunk_reload')) {
-      sessionStorage.setItem('chunk_reload', '1');
-      window.location.reload();
-      return;
-    }
-    // Clear flag so future deploys can auto-reload again
-    sessionStorage.removeItem('chunk_reload');
+    // Versão velha depois de deploy: recarrega uma vez (regra em lib/versaoVelha.js)
+    recarregarSeVersaoVelha(error);
   }
 
   handleReset = () => {

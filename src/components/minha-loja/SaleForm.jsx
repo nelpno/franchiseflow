@@ -1785,8 +1785,8 @@ export default function SaleForm({
 
         {cobraTaxa && (
           <div className="mt-2 p-3 bg-surface rounded-xl border border-ink-shadow/5 flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <Label className="text-sm text-ink-2 whitespace-nowrap">Taxa (%)</Label>
+            <label className="flex items-center gap-3 cursor-text">
+              <span className="text-sm font-medium text-ink-2 whitespace-nowrap">Taxa (%)</span>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -1800,7 +1800,7 @@ export default function SaleForm({
               <span className="text-sm text-ink-2 font-mono-numbers">
                 = {formatCurrency(cardFeeAmount)}
               </span>
-            </div>
+            </label>
             <div className="flex items-start justify-between gap-3 pt-2 border-t border-ink-shadow/5">
               <div className="flex flex-col">
                 <Label className="text-sm text-ink-2 cursor-pointer" htmlFor="fee-passed-toggle">
@@ -1909,8 +1909,9 @@ export default function SaleForm({
               )}
             </div>
 
-            <div className="flex items-center gap-3">
-              <Label className="text-sm text-ink-2 whitespace-nowrap">Frete (R$)</Label>
+            {/* Linha inteira é <label>: o toque fora do campo estreito focava nada (23/11/2026: 26 toques mortos de 11 pessoas em 3 dias) */}
+            <label className="flex items-center gap-3 cursor-text">
+              <span className="text-sm font-medium text-ink-2 whitespace-nowrap">Frete (R$)</span>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -1921,7 +1922,7 @@ export default function SaleForm({
                 className="w-28 bg-white text-right font-mono-numbers"
                 placeholder="0,00"
               />
-            </div>
+            </label>
 
             {deliveryFeeOptions.length > 1 && (
               <div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { registrarEvento } from '@/lib/telemetria';
+import { ehErroDeVersaoVelha, recarregarSeVersaoVelha } from '@/lib/versaoVelha';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 
@@ -16,9 +17,12 @@ class PageErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('[PageErrorBoundary] Erro na página:', error, errorInfo);
     try { registrarEvento('erro_tela', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
+    // Versão velha depois de deploy: o import que falhou fica em cache, então "Tentar novamente" não resolve; recarrega.
+    recarregarSeVersaoVelha(error);
   }
 
   handleRetry = () => {
+    if (ehErroDeVersaoVelha(this.state.error)) { window.location.reload(); return; }
     this.setState({ hasError: false, error: null });
   };
 
