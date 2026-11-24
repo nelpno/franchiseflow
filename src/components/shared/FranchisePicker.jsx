@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "@/lib/AuthContext";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { nomeDaUnidade } from "@/lib/franchiseUtils";
 
 /**
  * Mostrado quando o usuário gerencia 2+ unidades e nenhuma está selecionada.
@@ -29,7 +30,7 @@ export default function FranchisePicker({ franchises = [], title = "Selecione a 
             className="flex items-center justify-center gap-2 px-5 py-3 min-h-[48px] rounded-xl bg-white border-2 border-brand/20 text-brand font-bold text-sm hover:border-brand active:scale-[0.98] transition-all"
           >
             <MaterialIcon icon="storefront" size={18} />
-            {f.city || f.name || "Franquia"}
+            {nomeDaUnidade(f)}
           </button>
         ))}
       </div>

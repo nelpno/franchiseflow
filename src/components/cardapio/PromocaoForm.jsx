@@ -518,7 +518,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
               Encerrar promoção
             </button>
             <button type="button" className={`${BTN_SECUNDARIO} min-h-11`} onClick={abrirNova} disabled={salvando}>
-              <MaterialIcon icon="add" size={18} aria-hidden="true" /> Criar kit ou leve N
+              <MaterialIcon icon="add" size={18} aria-hidden="true" /> Criar kit, leve N ou brinde
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@
 // dia + dias seguidos. Regras em src/lib/inicioMes.js (deltaRanking, metaDoDia,
 // diasSeguidosBatendoMeta) — as mesmas do RankingStreak da Início de sempre.
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import MaterialIcon from "@/components/ui/MaterialIcon";
@@ -84,9 +84,15 @@ export function InicioMetaDia({ hoje, metaHoje, sequencia, resumosOk = true, onT
   const pct = temMeta ? Math.min(100, Math.round((total / metaHoje) * 100)) : 0;
   const batida = temMeta && total >= metaHoje;
   const dias = sequencia?.dias || 0;
+  const navigate = useNavigate();
+  // Cartão inteiro abre as vendas de hoje (24/11/2026: tocavam no valor e nada acontecia).
+  const abrirHoje = (e) => {
+    if (e.target.closest("button, a, input, label, [role=button]")) return;
+    navigate("/Vendas?periodo=hoje");
+  };
 
   return (
-    <section className={CARTAO} aria-label="Meta do dia">
+    <section className={`${CARTAO} cursor-pointer transition-shadow hover:shadow-md`} aria-label="Meta do dia" onClick={abrirHoje}>
       <div className="flex items-center justify-between gap-2">
         <span className={ROTULO}>Hoje</span>
         {batida && (

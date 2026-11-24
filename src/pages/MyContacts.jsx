@@ -7,7 +7,7 @@ import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { getAvailableFranchises, resolveActiveFranchise, nomeDaUnidade } from "@/lib/franchiseUtils";
 import FranchisePicker from "@/components/shared/FranchisePicker";
 import EmptyState from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -542,7 +542,7 @@ export default function MyContacts() {
               {/* Com 2+ unidades, dizer QUAL está na tela evita a confusão de achar
                   que o cliente da outra unidade "vazou" para cá. */}
               {availableFranchises.length > 1 && activeFranchise
-                ? ` · ${activeFranchise.city || activeFranchise.name}`
+                ? ` · ${nomeDaUnidade(activeFranchise)}`
                 : ""}
             </p>
           </div>

@@ -20,7 +20,7 @@ const DESCRICOES_PASSO = {
   robo: "uns 15 minutos",
   espaco: "freezer, embalagens e preço de venda",
   pedido: "com o pedido modelo da Maxi",
-  lancamento: "divulgue e lance pelo botão Vender",
+  lancamento: "divulgue e lance pelo botão Nova venda",
 };
 
 export default function OnboardingWelcome() {

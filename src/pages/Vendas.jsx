@@ -3,7 +3,7 @@ import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Franchise, Sale, InventoryItem, Contact, FranchiseConfiguration } from "@/entities/all";
 import { normalizarInstagram, instagramValido } from "@/lib/horarioEspecial";
 import { useAuth } from "@/lib/AuthContext";
-import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { getAvailableFranchises, resolveActiveFranchise, nomeDaUnidade } from "@/lib/franchiseUtils";
 import { resolveUnitWhatsApp } from "@/lib/receiptUtils";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Button } from "@/components/ui/button";
@@ -299,7 +299,7 @@ export default function Vendas() {
           <div>
             <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Vendas</h1>
             <p className="text-sm text-ink-2">
-              {primaryFranchise.city || primaryFranchise.name}
+              {nomeDaUnidade(primaryFranchise)}
             </p>
           </div>
         </div>

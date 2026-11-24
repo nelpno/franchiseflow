@@ -424,9 +424,9 @@ export const JOURNEY_STEPS = [
         id: "primeira_venda",
         tipo: "auto",
         titulo: "Lançar a primeira venda",
-        resumo: "Lance pelo botão Vender e vincule o cliente.",
+        resumo: "Lance pelo botão Nova venda e vincule o cliente.",
         texto:
-          "Lance pelo botão Vender e vincule o cliente: é assim que a lista Quem chamar hoje começa a funcionar.",
+          "Lance pelo botão Nova venda e vincule o cliente: é assim que a lista Quem chamar hoje começa a funcionar.",
         destinos: [{ tipo: "app", href: "/Vendas?action=nova-venda&de=primeiros-passos", rotulo: "Lançar venda" }],
       },
     ],

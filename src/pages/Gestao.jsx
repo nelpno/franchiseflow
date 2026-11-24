@@ -3,7 +3,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { format, subDays } from "date-fns";
 import { User, InventoryItem, SaleItem, Contact } from "@/entities/all";
 import { useAuth } from "@/lib/AuthContext";
-import { getAvailableFranchises, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { getAvailableFranchises, resolveActiveFranchise, nomeDaUnidade } from "@/lib/franchiseUtils";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { useVisibilityPolling } from "@/hooks/useVisibilityPolling";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -281,7 +281,7 @@ export default function Gestao() {
           <div>
             <h1 className="text-2xl font-bold text-ink font-plus-jakarta">Gestão</h1>
             <p className="text-sm text-ink-2">
-              {primaryFranchise.city || primaryFranchise.name}
+              {nomeDaUnidade(primaryFranchise)}
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
 // S18.1 — 1º bloco da Início nova: "o mês, você contra você" (chave ui_v2).
 // Números prontos de montarInicioMes/textosInicioMes (src/lib/inicioMes.js).
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRLInteger } from "@/lib/formatters";
 import { textosInicioMes } from "@/lib/inicioMes";
@@ -29,13 +29,20 @@ function linhaConversao(funnel) {
 }
 
 export default function InicioMesCard({ mes, funnel, onAbrirConversao }) {
+  const navigate = useNavigate();
   const t = textosInicioMes(mes, formatBRLInteger);
   if (!t) return null;
   const conversao = linhaConversao(funnel);
   const semVenda = mes.vendas === 0;
+  // O cartão inteiro abre o Resultado (24/11/2026): a franqueada tocava no valor do mês e nada
+  // acontecia. Botão e link de dentro seguem com a ação deles.
+  const abrirResultado = (e) => {
+    if (e.target.closest("button, a, input, label, [role=button]")) return;
+    navigate("/Gestao?tab=resultado");
+  };
 
   return (
-    <section className={`${CARTAO} lg:col-span-2`} aria-label="O mês até hoje">
+    <section className={`${CARTAO} lg:col-span-2 cursor-pointer transition-shadow hover:shadow-md`} aria-label="O mês até hoje" onClick={abrirResultado}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={ROTULO}>{t.titulo}</span>
         {t.selo && (

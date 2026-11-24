@@ -51,25 +51,26 @@ export function ResumoEstoque({ resumo, sugestaoStatus, onTentarDeNovo, onContar
   const { acabando, negativos, valorCusto, valorVenda, paraPedir } = resumo;
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-      <div className={`${CARTAO} col-span-2 md:col-span-1`}>
-        <p className={ROTULO}>Acabando</p>
-        {sugestaoStatus === "erro" ? (
-          <>
-            <p className="mt-2 text-sm text-ink-2">Não deu para ver seus pedidos abertos.</p>
-            <button type="button" onClick={onTentarDeNovo} className={LINK_ACAO}>Tentar de novo</button>
-          </>
-        ) : (
-          <>
-            <p className="mt-2 font-plus-jakarta text-2xl font-extrabold tabular-nums text-ink sm:text-3xl">
-              {sugestaoStatus === "ok" ? acabando : "…"}
-              <span className="ml-1.5 text-base font-semibold text-ink-2">{acabando === 1 ? "produto" : "produtos"}</span>
-            </p>
-            <Link to="/Gestao?tab=reposicao" className={LINK_ACAO}>
-              {paraPedir > 0 ? `Ver o que pedir (${paraPedir}) →` : "Ver a reposição →"}
-            </Link>
-          </>
-        )}
-      </div>
+      {sugestaoStatus === "erro" ? (
+        <div className={`${CARTAO} col-span-2 md:col-span-1`}>
+          <p className={ROTULO}>Acabando</p>
+          <p className="mt-2 text-sm text-ink-2">Não deu para ver seus pedidos abertos.</p>
+          <button type="button" onClick={onTentarDeNovo} className={LINK_ACAO}>Tentar de novo</button>
+        </div>
+      ) : (
+        // O cartão inteiro leva à Reposição (24/11/2026): a franqueada tocava no número "17 produtos"
+        // e só o link de baixo respondia.
+        <Link to="/Gestao?tab=reposicao" className={`${CARTAO} col-span-2 md:col-span-1 block transition-shadow hover:shadow-md active:scale-[0.99]`}>
+          <p className={ROTULO}>Acabando</p>
+          <p className="mt-2 font-plus-jakarta text-2xl font-extrabold tabular-nums text-ink sm:text-3xl">
+            {sugestaoStatus === "ok" ? acabando : "…"}
+            <span className="ml-1.5 text-base font-semibold text-ink-2">{acabando === 1 ? "produto" : "produtos"}</span>
+          </p>
+          <span className={LINK_ACAO}>
+            {paraPedir > 0 ? `Ver o que pedir (${paraPedir}) →` : "Ver a reposição →"}
+          </span>
+        </Link>
+      )}
       <div className={CARTAO}>
         <p className={ROTULO}>Valor em estoque</p>
         <p className="mt-2 font-plus-jakarta text-xl font-extrabold tabular-nums text-ink sm:text-2xl">{formatBRL(valorCusto)}</p>

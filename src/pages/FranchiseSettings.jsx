@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { PAYMENT_METHODS, PIX_KEY_TYPES, resolveActiveFranchise } from "@/lib/franchiseUtils";
+import { PAYMENT_METHODS, PIX_KEY_TYPES, resolveActiveFranchise, nomeDaUnidade } from "@/lib/franchiseUtils";
 import { useAuth } from "@/lib/AuthContext";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { assembleUnitAddress, foldStreetNumber, stripCityUf } from "@/lib/addressUtils";
@@ -968,7 +968,7 @@ function FranchiseSettingsContent() {
               {/* Com 2+ unidades, dizer QUAL está aberta — o wizard mostra o nome
                   da unidade nos campos, e sem isso não dá pra ter certeza. */}
               {availableFranchisesForUser.length > 1 && currentFranchise
-                ? `Unidade ${currentFranchise.city || currentFranchise.name}`
+                ? `Unidade ${nomeDaUnidade(currentFranchise)}`
                 : "Configure o assistente de vendas da sua unidade"}
             </p>
           </div>

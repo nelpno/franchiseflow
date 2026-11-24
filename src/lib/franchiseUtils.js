@@ -115,6 +115,17 @@ function stripBrandPrefix(name) {
   return name.replace(/^Maxi\s*Massas\s*/i, "").trim() || name;
 }
 
+/**
+ * Nome curto da unidade para a franqueada ("Jaraguá", "Santo André / Homero Thon").
+ * 24/11/2026: as telas mostravam a CIDADE, e 32 unidades dividem cidade com outras
+ * (12 em "São Paulo - SP"): a Início dizia "Unidade São Paulo - SP" para todas elas.
+ */
+export function nomeDaUnidade(franchise) {
+  const nome = stripBrandPrefix(franchise?.name);
+  if (nome && !/^maxi\s*massas$/i.test(nome)) return nome;
+  return franchise?.city || nome || "Minha unidade";
+}
+
 export function getFranchiseDisplayName(franchise, config, mode = "compact") {
   const raw =
     config?.franchise_name || franchise?.city || franchise?.owner_name || "Franquia";

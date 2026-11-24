@@ -143,6 +143,21 @@ export function seletorDe(el) {
   return partes.join(" > ").slice(0, 200);
 }
 
+// O toque começa no pointerdown: é ali que o campo perde o foco e a lista aberta (busca de produto,
+// menu) fecha. Medir só a partir do click contava "tocar no vazio para sair do campo" como clique
+// sem resposta (24/11/2026: era o nº 1 da rede, 51 pessoas na Nova venda). Por isso o foco e a
+// mudança na tela valem desde o pointerdown.
+let toque = null;
+function aoTocar() {
+  try {
+    if (toque) toque.obs.disconnect();
+    const t = { foco: document.activeElement, mudou: false, em: Date.now() };
+    t.obs = new MutationObserver(() => { t.mudou = true; t.obs.disconnect(); });
+    t.obs.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+    toque = t;
+  } catch { /* telemetria */ }
+}
+
 function aoClicar(ev) {
   try {
     if (!ev.isTrusted || ev.detail > 1) return;
@@ -151,7 +166,11 @@ function aoClicar(ev) {
     if (alvo.closest(IGNORAR)) return;
 
     const hrefAntes = window.location.href;
-    const focoAntes = document.activeElement;
+    // Só vale o pointerdown deste mesmo gesto (clique por teclado tem detail 0 e não tem toque).
+    const doToque = ev.detail > 0 && toque && Date.now() - toque.em < 3000 ? toque : null;
+    toque = null;
+    if (doToque?.mudou) return; // o toque já mudou a tela (fechou lista, tirou foco com efeito)
+    const focoAntes = doToque ? doToque.foco : document.activeElement;
     let mudou = false;
     const obs = new MutationObserver(() => { mudou = true; obs.disconnect(); });
     obs.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
@@ -159,7 +178,8 @@ function aoClicar(ev) {
     setTimeout(() => {
       try {
         obs.disconnect();
-        if (mudou || window.location.href !== hrefAntes || document.activeElement !== focoAntes) return;
+        if (doToque) doToque.obs.disconnect();
+        if (mudou || doToque?.mudou || window.location.href !== hrefAntes || document.activeElement !== focoAntes) return;
         if (String(window.getSelection?.() || "").length > 0) return; // estava selecionando texto
         const pareceClicavel = getComputedStyle(alvo).cursor === "pointer";
         const tipo = pareceClicavel ? "parece" : "outro";
@@ -189,6 +209,7 @@ export function ligarTelemetria() {
     token = sessao?.access_token || null;
     if (token && fila.length) agendar();
   });
+  document.addEventListener("pointerdown", aoTocar, true);
   document.addEventListener("click", aoClicar, true);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") agendar(true);

@@ -36,7 +36,7 @@ import EmptyState from "@/components/shared/EmptyState";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao, escolherMarketing, mesAlvoMarketing } from "@/lib/inicioMes";
-import { getMarketingTargetMonth } from "@/lib/franchiseUtils";
+import { getMarketingTargetMonth, nomeDaUnidade } from "@/lib/franchiseUtils";
 import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
@@ -688,7 +688,7 @@ export default function FranchiseeDashboard() {
         <div className="flex items-start justify-between">
           <FranchiseeGreeting
             userName={user?.full_name}
-            franchiseName={franchise ? `Unidade ${franchise.city}` : null}
+            franchiseName={franchise ? `Unidade ${nomeDaUnidade(franchise)}` : null}
           />
         </div>
       </div>
@@ -705,7 +705,7 @@ export default function FranchiseeDashboard() {
           </span>
           <p className="text-[15px] leading-relaxed text-ink-2">
             <span className="md:hidden">
-              Quando chegar a primeira venda, toque em <strong className="text-ink">Vender</strong>, aqui embaixo.
+              Quando chegar a primeira venda, toque em <strong className="text-ink">Nova venda</strong>, aqui embaixo.
             </span>
             <span className="hidden md:inline">
               Quando chegar a primeira venda, toque no botão <strong className="text-ink">Nova Venda</strong>.

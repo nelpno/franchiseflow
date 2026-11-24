@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "@/lib/AuthContext";
 import MaterialIcon from "@/components/ui/MaterialIcon";
+import { nomeDaUnidade } from "@/lib/franchiseUtils";
 
 /**
  * Dropdown selector for users with multiple franchises.
@@ -20,7 +21,7 @@ export default function FranchiseSelector({ franchises, encolher = false }) {
       <div className={`${mw}flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand/5 text-sm font-medium text-brand`}>
         <MaterialIcon icon="storefront" size={16} className={encolher ? "shrink-0" : undefined} />
         <span className={`${mw}truncate max-w-[160px]`}>
-          {franchises[0].city || franchises[0].name || "Minha Franquia"}
+          {nomeDaUnidade(franchises[0])}
         </span>
       </div>
     );
@@ -47,7 +48,7 @@ export default function FranchiseSelector({ franchises, encolher = false }) {
         >
           {franchises.map((f) => (
             <option key={f.id} value={f.id}>
-              {f.city || f.name || "Franquia"}
+              {nomeDaUnidade(f)}
             </option>
           ))}
         </select>
