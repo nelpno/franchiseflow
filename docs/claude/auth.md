@@ -10,4 +10,4 @@
 - NUNCA `window.location.href` após signIn — `onAuthStateChange` cuida do redirect
 - `profileLoadFailed` + `retryProfile()`: se perfil falha 2x, mostra retry UI (8s timeout)
 - `resetPasswordForEmail` devolve SUCESSO para e-mail que NÃO existe (anti-enumeração): nunca exibir "email enviado"; mostrar o endereço digitado ("Se X estiver cadastrado...").
-- "Não chegou o e-mail" do Auth: a prova está em `query_logs` source `auth_logs` (`POST /recover` ~1 ms sem `auth_event` = nada enviado; ~3,5 s com `user_recovery_requested` = saiu). `auth.audit_log_entries` (sempre vazia) e `recovery_sent_at` mentem. SMTP `fabrica@`, 30/h. → memória `project-diagnostico-email-auth-supabase`
+- "Não chegou o e-mail" do Auth: a prova está em `query_logs` source `auth_logs` (`POST /recover` ~1 ms sem `auth_event` = nada enviado; ~3,5 s com `user_recovery_requested` = saiu). `auth.audit_log_entries` (sempre vazia) e `recovery_sent_at` mentem. SMTP `smtp.gmail.com` `fabrica@`, 30/h, 60 s entre envios, OTP 1 h; estouro = 429, nunca 200 calado. O `referer` do log do GoTrue é o `redirect_to`, não a tela da pessoa. Vale igual para convite e magic link (caso de Bauru, 12/08/2026)
