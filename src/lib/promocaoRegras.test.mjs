@@ -3,7 +3,7 @@
 // (apps/dashboard/.tmp/cardapio-2026-11-10/fixture-promos.mjs --sql, evo sem estoque = sem "(de R$ ...)").
 // Fixture: os 26 textos de promoção da rede em 10/11/2026 convertidos à mão; 7 cabem nos 2 tipos da v1.
 import assert from "node:assert/strict";
-import { erroDaRegra, textoDaRegra, precoNormal, limparRegra, regraAtiva, regraVazia, regrasAtivas, trocaRegra, tiraRegra, produtosDivididos, textoDasRegras, MAX_PROMOS, itemVendavel, nomesDoItem, listaOu } from "./promocaoRegras.js";
+import { erroDaRegra, textoDaRegra, precoNormal, limparRegra, regraAtiva, regraVazia, regrasAtivas, trocaRegra, tiraRegra, produtosDivididos, textoDasRegras, MAX_PROMOS, itemVendavel, nomesDoItem, listaOu, regraVendavel } from "./promocaoRegras.js";
 
 let n = 0; const t = (nome, f) => { f(); n++; };
 const R = (tipo, nome, itens, extra) => ({ tipo, nome, itens: itens.map(([product_name, qtd]) => ({ product_name, qtd })), vale_ate: null, ...extra });
@@ -217,6 +217,55 @@ t("item à escolha: limparRegra guarda escolha/rotulo/opcoes/qtd; produtos divid
   assert.deepEqual(d.map((x) => x.produto), [NB, NRM]);
   assert.deepEqual(d[1].com, ["2 massas à escolha", "Kit Natal 1"]);
   assert.deepEqual(produtosDivididos([E1, E2, K1], 1).map((x) => x.produto), [NRM]);
+});
+
+// 24/11/2026: "Compre N, ganhe 1 brinde" (Suzano). Textos e mensagens esperados = saída do banco (public.promocao_texto_um /
+// promocao_regra_erro) com o estoque da Suzano em 24/11 (site/pedido/supabase/2026-11-24a-promocao-brinde.sql, teste em transação desfeita).
+const SUZ_700 = ["Canelone 4 Queijos - 700g", "Canelone Brócolis e Mussarela - 700g", "Canelone Frango e Requeijão - 700g", "Canelone Presunto e Mussarela - 700g",
+  "Conchiglione 4 Queijos - 700g", "Conchiglione Brócolis e Mussarela - 700g", "Conchiglione Frango e Requeijão - 700g", "Conchiglione Presunto e Mussarela - 700g",
+  "Nhoque Recheado com 4 Queijos - 700g", "Nhoque Recheado com Calabresa - 700g", "Nhoque Recheado com Mussarela - 700g", "Nhoque Recheado com Presunto e Mussarela - 700g",
+  "Rondelli 4 Queijos - 700g Rolo", "Rondelli Brócolis e Mussarela - 700g Rolo", "Rondelli Frango e Requeijão - 700g Rolo", "Rondelli Presunto e Mussarela - 700g Rolo",
+  "Sofioli 4 Queijos - 700g", "Sofioli Brócolis e Mussarela - 700g", "Sofioli Frango e Requeijão - 700g", "Sofioli Presunto e Mussarela - 700g"];
+const SUZ = [
+  ...SUZ_700.map((p, i) => ({ id: i, produto: p, preco: /4 Queijos|Mussarela - 700g$/.test(p) && !/Brócolis|Presunto/.test(p) ? 44.9 : 39.9, ativo: true })),
+  { id: 90, produto: "Nhoque de Batata - 500g", preco: 19.9, ativo: true },
+  { id: 91, produto: "Bolsa Térmica", preco: 15.45, ativo: true, visivel: false },
+  { id: 92, produto: "Massa de Pastel - 500g (rolo)", preco: 14.9, ativo: true },
+  { id: 93, produto: "Nhoque Recheado com 4 Queijos - 700g", preco: 44.9, ativo: true },
+];
+const BF = { tipo: "brinde", nome: "Black Friday", min_qtd: 4, itens: SUZ_700.map((p) => ({ product_name: p, qtd: 1 })), brinde: { product_name: "Nhoque de Batata - 500g" }, vale_ate: "2026-11-27" };
+
+t("brinde: texto igual ao do banco", () => {
+  assert.equal(textoDaRegra(BF, SUZ), "Black Friday: na compra de 4 ou mais, somando " + SUZ_700.slice(0, -1).join(", ") + " ou " + SUZ_700[19]
+    + ", ganhe 1 Nhoque de Batata - 500g grátis. Limite de 1 brinde por pedido. Válido até 27/11/2026.");
+  assert.equal(textoDaRegra({ ...BF, itens: [{ product_name: "Canelone Frango e Requeijão - 700g", qtd: 1 }] }, SUZ),
+    "Black Friday: na compra de 4 ou mais Canelone Frango e Requeijão - 700g, ganhe 1 Nhoque de Batata - 500g grátis. Limite de 1 brinde por pedido. Válido até 27/11/2026.");
+});
+
+t("brinde: mesmas mensagens do promocao_regra_erro", () => {
+  const H = "2026-11-24";
+  const casos = [
+    [BF, null],
+    [{ ...BF, min_qtd: 1 }, "Quantas: de 2 a 10."],
+    [{ ...BF, brinde: null }, "Escolha o produto do brinde."],
+    [{ ...BF, brinde: { product_name: SUZ_700[0] } }, "O brinde não pode ser um dos produtos que contam."],
+    [{ ...BF, brinde: { product_name: "Xyz" } }, 'O brinde "Xyz" não está no seu estoque.'],
+    [{ ...BF, brinde: { product_name: "Bolsa Térmica" } }, 'O brinde "Bolsa Térmica" está escondido do cardápio.'],
+    [{ tipo: "brinde", nome: "Teste", min_qtd: 2, itens: [{ product_name: "Massa de Pastel - 500g (rolo)", qtd: 1 }], brinde: { product_name: "Nhoque Recheado com 4 Queijos - 700g" } }, "O brinde passou de 35% da compra mínima."],
+    [{ ...BF, itens: Array.from({ length: 31 }, (_, i) => ({ product_name: "P" + i, qtd: 1 })) }, "No máximo 30 produtos na promoção."],
+    [{ ...BF, itens: [...BF.itens, { escolha: true, rotulo: "Massa", opcoes: ["a", "b"], qtd: 1 }] }, "Item à escolha só vale no kit."],
+  ];
+  casos.forEach(([r, esperado], i) => assert.equal(erroDaRegra(r, SUZ, H), esperado, `caso ${i}`));
+});
+
+t("brinde: limparRegra e regraVendavel (um sabor escondido não derruba; sem o brinde, para)", () => {
+  assert.deepEqual(limparRegra({ ...BF, itens: [{ product_name: "A", qtd: 3 }], pct: 9, preco: 1 }),
+    { tipo: "brinde", nome: "Black Friday", itens: [{ product_name: "A", qtd: 1 }], vale_ate: "2026-11-27", min_qtd: 4, brinde: { product_name: "Nhoque de Batata - 500g" } });
+  assert.equal(regraVendavel(BF, SUZ), true);
+  assert.equal(regraVendavel({ ...BF, itens: [...BF.itens, { product_name: "Bolsa Térmica", qtd: 1 }] }, SUZ), true);
+  assert.equal(regraVendavel({ ...BF, brinde: { product_name: "Bolsa Térmica" } }, SUZ), false);
+  assert.equal(regraVendavel({ tipo: "kit", itens: [{ product_name: SUZ_700[0], qtd: 1 }, { product_name: "Bolsa Térmica", qtd: 1 }] }, SUZ), false);
+  assert.equal(regraVazia("brinde").brinde, null);
 });
 
 console.log(`promocaoRegras: ${n} testes ok`);
