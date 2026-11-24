@@ -32,6 +32,9 @@ import { acharVendaDoRobo, janelaDeBusca } from "@/lib/vendaRepetida";
 import { dataDoRascunho, assinaturaEdicao } from "@/lib/rascunhoVenda";
 import { MOTIVOS_DESCONTO, limparCodigo } from "@/lib/cupom";
 import { creditoDisponivelNaVenda, origemDoDesconto } from "@/lib/creditoCliente";
+import { kitsDaVenda, observacaoComKit } from "@/lib/kitNaVenda";
+import { registrarEvento } from "@/lib/telemetria";
+import KitNaVendaDialog from "./KitNaVendaDialog";
 
 // ---------------------------------------------------------------------------
 // Draft helpers (localStorage)
@@ -466,6 +469,10 @@ export default function SaleForm({
   const [usarCredito, setUsarCredito] = useState(false);
   const [saldoCredito, setSaldoCredito] = useState(0);
 
+  // Kit da promoção (24/11/2026): os kits de promocao_regras entram na venda à mão (lib/kitNaVenda.js)
+  const [promocaoRegras, setPromocaoRegras] = useState([]);
+  const [kitAberto, setKitAberto] = useState(false);
+
   // Sale date
   const [saleDate, setSaleDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
 
@@ -620,6 +627,8 @@ export default function SaleForm({
     if (draft.customerNeighborhood) setCustomerNeighborhood(draft.customerNeighborhood);
     if (draft.discountType) setDiscountType(draft.discountType);
     if (draft.discountInput != null) setDiscountInput(draft.discountInput);
+    if (draft.descontoMotivo) setDescontoMotivo(draft.descontoMotivo);
+    if (draft.descontoCodigo) setDescontoCodigo(draft.descontoCodigo);
     if (draft.contactId && draft.usarCredito) setUsarCredito(true); // o valor sai do saldo de agora; o banco confere
     // S12.4: rascunho de outro dia volta com a data de HOJE (chave ligada). Se a chave ainda
     // não chegou, restaura como sempre e guarda o que restaurou: o efeito abaixo corrige quando
@@ -770,6 +779,7 @@ export default function SaleForm({
 
   // ---- Load payment_fees + charges_card_fee_to_customer from franchise config ----
   useEffect(() => {
+    setPromocaoRegras([]); // trocou de unidade: kit da anterior não fica
     if (!franchiseId) return;
     FranchiseConfiguration.filter({ franchise_evolution_instance_id: franchiseId })
       .then((configs) => {
@@ -780,6 +790,7 @@ export default function SaleForm({
         // so o robo a lia. Na venda manual o campo nascia vazio e 622 entregas em 90
         // dias sairam com frete R$ 0 (que e receita perdida no DRE).
         setDeliveryFeeOptions(parseDeliveryFeeOptions(cfg?.delivery_fee_rules));
+        setPromocaoRegras(Array.isArray(cfg?.promocao_regras) ? cfg.promocao_regras : []);
         const charges = cfg?.charges_card_fee_to_customer ?? false;
         setFranchiseChargesFee(charges);
         // Sale NOVA: default vem da config. Sale EDIT: useEffect de hydrate já cuidou disso.
@@ -800,8 +811,8 @@ export default function SaleForm({
 
   // ---- Draft: auto-save with 1s debounce (new sale only) ----
   const draftData = useMemo(
-    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, usarCredito, saleDate, observacoes, aindaVouReceber }),
-    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, usarCredito, saleDate, observacoes, aindaVouReceber]
+    () => ({ items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, usarCredito, saleDate, observacoes, aindaVouReceber }),
+    [items, contactId, contactSearch, paymentMethod, cardFeePercent, feePassedToCustomer, deliveryMethod, deliveryFee, customerAddress, customerNeighborhood, discountType, discountInput, descontoMotivo, descontoCodigo, usarCredito, saleDate, observacoes, aindaVouReceber]
   );
 
   useEffect(() => {
@@ -910,6 +921,36 @@ export default function SaleForm({
       ...prev,
       { inventory_item_id: "", product_name: "", quantity: 1, unit_price: 0, cost_price: 0 },
     ]);
+  };
+
+  // Kit da promoção: os produtos entram como linhas normais (a bolsa baixa o estoque pelo trigger de sale_items)
+  // e a diferença até o preço do kit SOMA no Desconto em R$, com motivo "Promoção" (desconto_origem = promocao).
+  const kitsAtivos = useMemo(() => kitsDaVenda(promocaoRegras, format(new Date(), "yyyy-MM-dd")), [promocaoRegras]);
+  // O desconto do kit SOMA no Desconto em R$; não mistura com desconto em % nem com outro motivo (cupom etc.)
+  const abrirKit = () => {
+    if (descontoManual > 0 && discountType === "percent") {
+      toast.error("Esta venda tem desconto em %. Para pôr o kit, deixe o desconto em R$ (ou zere).");
+      return;
+    }
+    if (descontoManual > 0 && descontoMotivo && descontoMotivo !== "promocao") {
+      const rotulo = MOTIVOS_DESCONTO.find((m) => m.id === descontoMotivo)?.rotulo || descontoMotivo;
+      toast.error(`Esta venda já tem desconto de ${rotulo.toLowerCase()}. Zere esse desconto antes de pôr o kit.`);
+      return;
+    }
+    setKitAberto(true);
+  };
+  const aplicarKit = ({ nome, novosItens, desconto, linhaObs }) => {
+    if (novosItens) setItems(novosItens);
+    if (desconto > 0) {
+      const atual = discountType === "fixed" ? Number(discountInput) || 0 : 0;
+      setDiscountType("fixed");
+      setDiscountInput(Math.round((atual + desconto) * 100) / 100);
+      setDescontoMotivo("promocao");
+    }
+    setObservacoes((o) => observacaoComKit(o, linhaObs));
+    setKitAberto(false);
+    toast.success(desconto > 0 ? `${nome} na venda, com ${formatCurrency(desconto)} de desconto` : `${nome} na venda`);
+    try { registrarEvento(novosItens ? "venda_kit" : "venda_kit_so_desconto"); } catch { /* telemetria */ }
   };
 
   const handleRemoveItem = (index) => {
@@ -1728,6 +1769,28 @@ export default function SaleForm({
           <MaterialIcon icon="add" size={16} />
           Adicionar produto
         </Button>
+        {kitsAtivos.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={abrirKit}
+            className="ml-2 gap-1.5 text-brand border-brand/30 hover:bg-brand/5"
+            data-kit-botao
+          >
+            <MaterialIcon icon="shopping_basket" size={16} />
+            Kit da promoção
+          </Button>
+        )}
+        <KitNaVendaDialog
+          open={kitAberto}
+          onOpenChange={setKitAberto}
+          kits={kitsAtivos}
+          inventoryItems={inventoryItems}
+          items={items}
+          deEncomenda={!!prefill}
+          onAplicar={aplicarKit}
+        />
       </div>
 
       {/* Discount */}
