@@ -166,7 +166,7 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
 
 ## 4. Lançar uma venda
 `slug: vendas` · **Onde começa:** botão redondo **Nova venda**, no meio da barra de baixo (no computador: Vendas › **Nova Venda**) · **Tempo:** 2 a 4 minutos
-> Fotos (S21.1): `vendas-1.webp`..`vendas-6.webp`, uma por passo.
+> Fotos (S21.1): `vendas-1.webp`..`vendas-6.webp` e `vendas-kit.webp` (passo 4, 24/11/2026).
 
 **Quando usar:** você vendeu fora do robô (telefone, conhecido, balcão) e quer que a venda conte no mês e desconte do estoque.
 
@@ -177,11 +177,13 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: campo **Cliente** com uma sugestão. (existe: `vendas-2.webp`)
 3. Em **Produtos**, busque cada produto e digite a quantidade em **Qtd.**. Para mais um produto, toque em **Adicionar produto**.
    - Imagem: produtos da venda. (existe: `vendas-3.webp`)
-4. Em **Pagamento**, toque em como o cliente pagou (PIX, Dinheiro, Crédito…). O cliente ainda vai pagar? Ligue **Ainda vou receber**, logo abaixo.
+4. Vendeu um kit da promoção? Toque em **Kit da promoção**, embaixo dos produtos, escolha o kit e o sabor de cada item à escolha e toque em **Pôr o kit na venda**. Os produtos entram na venda (a bolsa também, e sai do Estoque) e a diferença até o preço do kit vai para o **Desconto**, com o motivo Promoção. Levou dois kits? Faça de novo. O botão só aparece quando a unidade tem kit no Cardápio digital (desde 24/11/2026).
+   - Imagem: janela do kit com os sabores escolhidos. Contorno em **Pôr o kit na venda**. (existe: `vendas-kit.webp`)
+5. Em **Pagamento**, toque em como o cliente pagou (PIX, Dinheiro, Crédito…). O cliente ainda vai pagar? Ligue **Ainda vou receber**, logo abaixo.
    - Imagem: botões de pagamento. (existe: `vendas-4.webp`)
-5. Em **Entrega**, toque no botão **Entrega** se foi entrega. Confira o endereço e o **Frete (R$)**. O frete entra no valor da venda.
+6. Em **Entrega**, toque no botão **Entrega** se foi entrega. Confira o endereço e o **Frete (R$)**. O frete entra no valor da venda.
    - Imagem: bloco Entrega. (existe: `vendas-5.webp`)
-6. Confira o total no rodapé e toque em **Registrar venda**. Aparece "Venda registrada!", com o botão **Comprovante**.
+7. Confira o total no rodapé e toque em **Registrar venda**. Aparece "Venda registrada!", com o botão **Comprovante**.
    - Imagem: rodapé com o total. Seta em **Registrar venda**. (existe: `vendas-6.webp`)
 
 **Deu certo quando:** aparece "Venda registrada!" e a venda está na lista de **Vendas**, com o valor certo.
