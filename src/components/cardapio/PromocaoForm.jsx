@@ -151,9 +151,9 @@ function ItemEscolha({ aberto, onFechar, produtos, inicial, bloqueados, onSalvar
   }, [produtos, bloqueados, busca, opcoes]);
   const foraDoEstoque = opcoes.filter((n) => !(produtos || []).some((p) => p.produto === n));
   const rot = rotulo.trim();
-  // as mesmas mensagens do banco (promocao_regra_erro); o resto (estoque, preço do kit) é conferido no formulário
+  // o banco (promocao_regra_erro) diz "opções"; aqui fala em sabores (24/11/2026, Jacqueline leu "2 opções" como "2 massas" e desistiu do kit)
   const erro = rot.length < 3 || rot.length > ROTULO_MAX ? "Dê um nome ao item à escolha (ex.: Massa recheada 700g)."
-    : opcoes.length < MIN_OPCOES ? "Escolha pelo menos 2 opções para o item à escolha."
+    : opcoes.length < MIN_OPCOES ? "Marque pelo menos 2 sabores: o cliente escolhe entre eles. Kit com um sabor só? Cancele e use “+ produto”."
       : opcoes.length > MAX_OPCOES ? "No máximo 30 opções no item à escolha." : "";
   const alterna = (nome) => setOpcoes((o) => (o.includes(nome) ? o.filter((x) => x !== nome) : [...o, nome]));
   const naoMarcadas = lista.filter((p) => !opcoes.includes(p.produto));
@@ -169,7 +169,7 @@ function ItemEscolha({ aberto, onFechar, produtos, inicial, bloqueados, onSalvar
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Item à escolha</DialogTitle>
-          <DialogDescription>O cliente escolhe um destes produtos. O preço normal do kit conta o mais caro.</DialogDescription>
+          <DialogDescription>Marque todos os sabores que o cliente pode escolher. O preço normal do kit conta o mais caro.</DialogDescription>
         </DialogHeader>
         <div>
           <label className={ROTULO_CAMPO} htmlFor="escolha-rotulo">Nome do item</label>
@@ -197,6 +197,9 @@ function ItemEscolha({ aberto, onFechar, produtos, inicial, bloqueados, onSalvar
           </p>
           <label className="sr-only" htmlFor="escolha-busca">Buscar produto</label>
           <input id="escolha-busca" className={CAMPO} placeholder="Buscar (ex.: 700g, recheado)" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          {opcoes.length < MIN_OPCOES && !busca.trim() && (
+            <p className="text-xs text-ink-3" data-escolha-dica>Dica: busque “700g” e toque em “Marcar as … da busca” para marcar todos os sabores de uma vez.</p>
+          )}
           {busca.trim() && naoMarcadas.length > 1 && opcoes.length + naoMarcadas.length <= MAX_OPCOES && (
             <button type="button" className="text-sm font-semibold text-brand-dark underline-offset-2 hover:underline"
               onClick={() => setOpcoes((o) => [...o, ...naoMarcadas.map((p) => p.produto)])}>
@@ -262,7 +265,8 @@ function PreviaCliente({ regra, produtos, texto, kitNoCardapio }) {
             {normal != null && <s className="text-ink-3">{brl(normal)}</s>}{" "}
             <b className="font-plus-jakarta text-xl font-extrabold text-brand-dark">{regra.preco ? brl(regra.preco) : "R$ —"}</b>
           </p>
-          <span className="inline-flex min-h-11 items-center rounded-xl bg-brand px-3 text-sm font-semibold text-white">Pôr o kit no pedido</span>
+          {/* desenho do botão do cardápio, não clica aqui (24/11/2026: tocado 3× sem resposta); tracejado para não parecer botão */}
+          <span className="pointer-events-none inline-flex min-h-11 select-none items-center rounded-xl border-2 border-dashed border-brand/50 px-3 text-sm font-semibold text-brand-dark" aria-hidden="true">Pôr o kit no pedido</span>
         </div>
       </div>
     );
@@ -500,7 +504,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
             <p className="text-xs font-bold uppercase tracking-wide text-ink-3">O cliente lê no cardápio</p>
             {exibida
               ? <p className="mt-1 rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-dark" data-promo-previa>{exibida}</p>
-              : <p className="mt-1 rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink" data-promo-sem-frase>Nada ainda: falta a frase para o cliente. Toque em Editar promoção.</p>}
+              : <p className="mt-1 rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink" data-promo-sem-frase>Nada ainda. Para aparecer no cardápio, toque em Editar promoção e escreva uma frase curta (ex.: Combos a partir de R$ 69). O robô continua com o texto abaixo.</p>}
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-ink-3">O robô oferece</p>
@@ -543,7 +547,10 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
               ))}
             </div>
             {!livre && temLivre && (
-              <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, o seu texto de agora sai. Para ter mais de uma promoção escrita do seu jeito, volte em Escrever do meu jeito e escreva todas no mesmo texto.</p>
+              // 24/11/2026: era cinza e passou batido (Santo André salvou 1 kit, os outros kits e combos sumiram do robô, encerrou e ficou sem nada)
+              <p className="mt-2 rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink" data-promo-aviso-texto>
+                Atenção: ao salvar, o robô para de oferecer o seu texto de agora (todos os kits e combos escritos nele). Aqui cabem até {MAX_PROMOS}. Quer manter tudo e só aparecer no cardápio? Escolha Escrever do meu jeito.
+              </p>
             )}
             {livre && lista.length === 1 && (
               <p className="mt-2 rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">Ao salvar, “{lista[0].nome}” é encerrada e o seu texto fica no lugar.</p>
@@ -609,21 +616,22 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                       </button>
                     </li>
                   ) : (
-                    <li key={i.product_name} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-surface-line bg-white pl-3 text-sm text-ink">
+                    // max-w-full + nome min-w-0 (24/11/2026): nome longo ("Molho Tomate ao sugo 500ml ( caseiro ...") vazava do cartão a 390 px e escondia o X
+                    <li key={i.product_name} className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-full border border-surface-line bg-white pl-3 text-sm text-ink">
                       {regra.tipo === "kit" && (
                         <>
                           <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-ink-2 hover:bg-surface disabled:opacity-40"
                             aria-label={`Menos ${i.product_name}`} disabled={Number(i.qtd) <= 1} onClick={() => setQtd(i.product_name, -1)}>
                             <MaterialIcon icon="remove" size={16} aria-hidden="true" />
                           </button>
-                          <span className="tabular-nums font-semibold">{i.qtd} ×</span>
+                          <span className="shrink-0 whitespace-nowrap tabular-nums font-semibold">{i.qtd} ×</span>
                           <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-ink-2 hover:bg-surface"
                             aria-label={`Mais ${i.product_name}`} onClick={() => setQtd(i.product_name, 1)}>
                             <MaterialIcon icon="add" size={16} aria-hidden="true" />
                           </button>
                         </>
                       )}
-                      <span className="max-w-[16rem] truncate">{i.product_name}</span>
+                      <span className="min-w-0 max-w-[16rem] flex-1 truncate">{i.product_name}</span>
                       <button type="button" className="flex h-10 w-10 items-center justify-center rounded-full text-ink-3 hover:bg-surface"
                         aria-label={`Tirar ${i.product_name}`} onClick={() => tirar(i.product_name)}>
                         <MaterialIcon icon="close" size={16} aria-hidden="true" />
@@ -742,11 +750,11 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <p className={ROTULO_CAMPO}>Como o cliente vê</p>
+                  <p className={ROTULO_CAMPO}>Como o cliente vê <span className="font-normal text-ink-3">(prévia, só para ver)</span></p>
                   <PreviaCliente regra={regra} produtos={produtos} texto={texto} kitNoCardapio={!!painel?.kit_no_cardapio} />
                 </div>
                 <div>
-                  <p className={ROTULO_CAMPO}>Como o robô vai dizer</p>
+                  <p className={ROTULO_CAMPO}>Como o robô vai dizer <span className="font-normal text-ink-3">(prévia)</span></p>
                   <p className="rounded-2xl bg-surface-2 p-3 text-sm text-ink">{texto || (!regra.itens.length ? "Escolha os produtos para ver a frase." : regra.tipo === "brinde" ? "Escolha o brinde para ver a frase." : "Digite o preço do kit para ver a frase.")}</p>
                 </div>
               </div>
