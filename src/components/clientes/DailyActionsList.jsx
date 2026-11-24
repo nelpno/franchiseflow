@@ -9,11 +9,17 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
-import { ACTION_ORDER, ACTION_TYPES, montarMensagem, nomeExibicao } from "@/lib/customerActions";
+import {
+  ACTION_ORDER,
+  ACTION_TYPES,
+  INTERVALO_CHAMADA_MS,
+  montarMensagem,
+  nomeExibicao,
+  variantesDoDia,
+} from "@/lib/customerActions";
 import { createPageUrl } from "@/utils";
 import { ActionCard, CompactRow, DayProgress, HandledRow, MonthSummary } from "./ActionCards";
 
-const DICA_KEY = "qch_dica_whatsapp_v1";
 const RECARGA_MIN_MS = 60000;
 
 // Gravações em fila por cliente, no nível do módulo: o "Desfazer" do toast e a
@@ -34,17 +40,22 @@ async function esperarFilas() {
   while (filas.size) await Promise.allSettled([...filas.values()]);
 }
 
-function lerDica() {
+// Hora do último "Chamar" da unidade, para o intervalo sobreviver a recarregar a página.
+// Armazenamento é opcional: sem ele o intervalo vale só enquanto a tela está aberta.
+const chaveUltimoChamado = (franchiseId) => `qch_ultimo_chamado:${franchiseId || ""}`;
+
+function lerUltimoChamado(franchiseId) {
   try {
-    return localStorage.getItem(DICA_KEY) !== "1";
+    const n = Number(localStorage.getItem(chaveUltimoChamado(franchiseId)));
+    return Number.isFinite(n) && n > 0 ? n : 0;
   } catch {
-    return true;
+    return 0;
   }
 }
 
-function fecharDica() {
+function gravarUltimoChamado(franchiseId, quando) {
   try {
-    localStorage.setItem(DICA_KEY, "1");
+    localStorage.setItem(chaveUltimoChamado(franchiseId), String(quando));
   } catch {
     // armazenamento é opcional
   }
@@ -62,7 +73,10 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
   const [error, setError] = useState(null);
   const [skipItem, setSkipItem] = useState(null);
   const [animar, setAnimar] = useState(true);
-  const [mostrarDica, setMostrarDica] = useState(lerDica);
+  // Intervalo entre chamados: o "Chamar" seguinte só libera INTERVALO_CHAMADA_MS depois do último.
+  const [ultimoChamado, setUltimoChamado] = useState(() => lerUltimoChamado(franchiseId));
+  const [agora, setAgora] = useState(() => Date.now());
+  const liberaEm = ultimoChamado ? ultimoChamado + INTERVALO_CHAMADA_MS : 0;
 
   const mounted = useRef(false);
   const loaded = useRef(false);
@@ -120,6 +134,18 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
     };
   }, [load]);
 
+  // Relógio só enquanto o intervalo corre (1 tique por segundo para a contagem).
+  useEffect(() => {
+    if (liberaEm <= Date.now()) return undefined;
+    setAgora(Date.now());
+    const t = setInterval(() => {
+      const n = Date.now();
+      setAgora(n);
+      if (n >= liberaEm) clearInterval(t);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [liberaEm]);
+
   // Troca (ou tira) um item mantendo a ordem original.
   const trocarItem = useCallback((contactId, novo) => {
     if (!mounted.current) return;
@@ -169,11 +195,15 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
   }, [load, trocarItem]);
 
   const chamar = useCallback((item) => {
+    const quando = Date.now();
+    setUltimoChamado(quando);
+    setAgora(quando);
+    gravarUltimoChamado(franchiseId, quando);
     gravar(item, "sent");
     toast.success(`${nomeExibicao(item)} marcado como chamado`, {
       action: { label: "Desfazer", onClick: () => gravar(item, null) },
     });
-  }, [gravar]);
+  }, [gravar, franchiseId]);
 
   const pularHoje = (item) => {
     setSkipItem(null);
@@ -195,7 +225,9 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
 
   const itens = data?.itens || [];
   const pendentes = itens.filter((i) => !i.status_hoje);
-  const mensagem = (item) => montarMensagem(item, { cidade });
+  const variantes = variantesDoDia(itens);
+  const mensagem = (item) => montarMensagem(item, { cidade, variante: variantes.get(String(item.contact_id)) ?? null });
+  const espera = liberaEm > agora ? liberaEm - agora : 0;
 
   if (loading) {
     return <Skeleton className={`${compact ? "h-44" : "h-72"} rounded-xl motion-reduce:animate-none`} />;
@@ -216,25 +248,24 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
   // Início: sem ninguém, o cartão nem aparece
   if (compact && itens.length === 0) return null;
 
-  const dica = mostrarDica && pendentes.length > 0 && (
+  // Fixa (sem "Entendi"): é o aviso que protege o número da unidade.
+  const dica = pendentes.length > 0 && (
     <div className="flex items-start gap-2 rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-ink">
       <MaterialIcon icon="lightbulb" size={18} className="mt-0.5 shrink-0" />
-      <p className="min-w-0 flex-1">
-        Mande pelo <strong>WhatsApp da unidade</strong> (o mesmo número do robô). Quando você escreve, o robô
-        pausa e deixa a conversa com você.
-      </p>
-      <button
-        type="button"
-        onClick={() => {
-          setMostrarDica(false);
-          fecharDica();
-        }}
-        className="min-h-11 shrink-0 px-1 font-semibold"
-      >
-        Entendi
-      </button>
+      {compact ? (
+        <p className="min-w-0 flex-1">
+          <strong>Um cliente por vez:</strong> o próximo Chamar libera em 3 minutos, para proteger o número da unidade.
+        </p>
+      ) : (
+        <p className="min-w-0 flex-1">
+          <strong>Chame um cliente por vez.</strong> Mensagem igual para vários clientes seguidos pode bloquear o
+          número da unidade, por isso o próximo Chamar libera em 3 minutos. Mande pelo WhatsApp da unidade: quando
+          você escreve, o robô pausa naquela conversa.
+        </p>
+      )}
     </div>
   );
+
 
   if (compact) {
     return (
@@ -254,7 +285,7 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
         {pendentes.length > 0 ? (
           <div className="space-y-3">
             {pendentes.slice(0, 3).map((item) => (
-              <CompactRow key={item.contact_id} item={item} message={mensagem(item)} onCall={chamar} />
+              <CompactRow key={item.contact_id} item={item} message={mensagem(item)} onCall={chamar} espera={espera} />
             ))}
           </div>
         ) : (
@@ -346,6 +377,7 @@ function DailyActionsContent({ franchiseId, cidade = "", variant = "full", onVer
                       item={item}
                       message={mensagem(item)}
                       onCall={chamar}
+                      espera={espera}
                       onSkip={setSkipItem}
                       animationDelay={animar ? (ordem.current.get(item.contact_id) || 0) * 40 : null}
                     />

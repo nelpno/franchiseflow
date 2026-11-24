@@ -2,7 +2,7 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { formatBRL } from "@/lib/formatters";
 import { getWhatsAppLink } from "@/lib/whatsappUtils";
-import { ACTION_TYPES, nomeCurtoProduto, nomeExibicao, primeiroNome } from "@/lib/customerActions";
+import { ACTION_TYPES, nomeCurtoProduto, nomeExibicao, primeiroNome, textoEspera } from "@/lib/customerActions";
 import { CustomerMark, Recency } from "./CustomerBadges";
 
 const FAIXA = { quente: "bg-brand", frio: "bg-brand-gold", normal: "bg-surface-line" };
@@ -72,7 +72,26 @@ export function Avatar({ item, size = "h-10 w-10" }) {
 }
 
 // Botão verde do WhatsApp: abre a conversa com o texto pronto e registra a ação.
-export function CallButton({ item, message, onCall, compact = false }) {
+// `espera` (ms) > 0 = intervalo entre chamados correndo: o botão vira contagem e não abre nada.
+export function CallButton({ item, message, onCall, compact = false, espera = 0 }) {
+  if (espera > 0) {
+    return (
+      <span
+        role="status"
+        aria-label={`Próximo cliente em ${textoEspera(espera)}`}
+        className={`flex shrink-0 cursor-not-allowed items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-surface-2 font-semibold text-ink-3 ${
+          compact ? "h-11 px-3 text-sm" : "h-12 w-full px-3 text-[15px]"
+        }`}
+      >
+        <MaterialIcon icon="schedule" size={18} />
+        {compact ? <span className="font-mono-numbers">{textoEspera(espera)}</span> : (
+          <span>
+            Próximo em <span className="font-mono-numbers">{textoEspera(espera)}</span>
+          </span>
+        )}
+      </span>
+    );
+  }
   return (
     <a
       href={getWhatsAppLink(item.telefone, message)}
@@ -90,7 +109,7 @@ export function CallButton({ item, message, onCall, compact = false }) {
 }
 
 // Cartão completo (aba Hoje)
-export function ActionCard({ item, message, onCall, onSkip, animationDelay }) {
+export function ActionCard({ item, message, onCall, onSkip, animationDelay, espera = 0 }) {
   const tipo = ACTION_TYPES[item.tipo] || ACTION_TYPES.quase_comprou;
   const favorito = nomeCurtoProduto(item.favorito);
   const animar = animationDelay != null;
@@ -153,7 +172,7 @@ export function ActionCard({ item, message, onCall, onSkip, animationDelay }) {
 
       <div className="mt-3 flex items-center gap-2">
         <div className="min-w-0 flex-1">
-          <CallButton item={item} message={message} onCall={onCall} />
+          <CallButton item={item} message={message} onCall={onCall} espera={espera} />
         </div>
         <button
           type="button"
@@ -196,7 +215,7 @@ export function HandledRow({ item, onUndo }) {
 }
 
 // Linha enxuta da tela Início
-export function CompactRow({ item, message, onCall }) {
+export function CompactRow({ item, message, onCall, espera = 0 }) {
   const tipo = ACTION_TYPES[item.tipo] || ACTION_TYPES.quase_comprou;
   return (
     <div className="flex min-w-0 items-center gap-3">
@@ -210,7 +229,7 @@ export function CompactRow({ item, message, onCall }) {
         <p className="truncate font-plus-jakarta font-semibold text-ink">{nomeExibicao(item)}</p>
         <p className="line-clamp-2 text-xs text-ink-2">{tipo.motivo(item)}</p>
       </div>
-      <CallButton item={item} message={message} onCall={onCall} compact />
+      <CallButton item={item} message={message} onCall={onCall} compact espera={espera} />
     </div>
   );
 }

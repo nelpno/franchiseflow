@@ -6,6 +6,8 @@ import {
   PALAVRAS_PROIBIDAS,
   cidadeDaUnidade,
   diasEntre,
+  INTERVALO_CHAMADA_MS,
+  N_VARIANTES,
   escolherVariante,
   filtrarClientes,
   marcaDoCliente,
@@ -14,6 +16,8 @@ import {
   nomeExibicao,
   primeiroNome,
   textoDias,
+  textoEspera,
+  variantesDoDia,
   textoQuando,
   tomDaRecencia,
 } from "./customerActions.js";
@@ -72,41 +76,92 @@ test("cidadeDaUnidade", () => {
 });
 
 // ---------- mensagem ----------
-// "b" cai na variante 0 e "a" na 1 (conferido abaixo)
 const PRODUTOS = ["Lasanha Bolonhesa - 1kg", null];
 for (const tipo of ACTION_ORDER) {
-  for (const variante of [0, 1]) {
+  for (let variante = 0; variante < N_VARIANTES; variante++) {
     for (const nome of ["MARIA Souza", "Dona Cida", null]) {
       for (const produto of PRODUTOS) {
         test(`mensagem ${tipo}/v${variante}/${nome}/${produto}`, () => {
-          const contact_id = variante === 0 ? "b" : "a";
-          assert.equal(escolherVariante(contact_id, 2), variante);
           const msg = montarMensagem(
-            { contact_id, tipo, nome, favorito: produto, ultimo_produto: produto },
-            { cidade: "Suzano" }
+            { contact_id: "x", tipo, nome, favorito: produto, ultimo_produto: produto },
+            { cidade: "Suzano", variante }
           );
           const saudacao = nome === "MARIA Souza" ? "Oi, Maria!" : nome === "Dona Cida" ? "Oi, Dona Cida!" : "Oi!";
           assert.ok(msg.startsWith(saudacao), msg);
-          assert.ok(msg.includes("Aqui é da Maxi Massas Suzano"), msg);
+          assert.ok(msg.includes(variante < 2 ? "Aqui é da Maxi Massas Suzano" : "Sou da Maxi Massas Suzano."), msg);
           const baixo = msg.toLowerCase();
           for (const proibido of ["undefined", "null", "{", "}", "  ", ...PALAVRAS_PROIBIDAS]) {
             assert.ok(!baixo.includes(proibido), `"${proibido}" em: ${msg}`);
           }
           // produto sem artigo (o gênero variaria) e sem a gramatura
-          assert.ok(!/\b(do|da|o|a) Lasanha/.test(msg), msg);
+          assert.ok(!/(do|da|o|a) Lasanha/.test(msg), msg);
           assert.ok(!msg.includes("1kg"), msg);
-          if (produto && tipo !== "quase_comprou" && !(tipo === "voltou_a_falar" && variante === 0) && !(tipo === "sumido" && variante === 0)) {
-            assert.ok(msg.includes("Lasanha Bolonhesa"), msg);
-          }
           assert.ok(!msg.includes("http"), "sem link na mensagem");
         });
       }
     }
   }
+  test(`mensagem ${tipo}: as ${N_VARIANTES} variantes são diferentes (com e sem produto)`, () => {
+    for (const produto of PRODUTOS) {
+      const msgs = new Set();
+      for (let variante = 0; variante < N_VARIANTES; variante++) {
+        msgs.add(montarMensagem({ contact_id: "x", tipo, nome: "Ana", favorito: produto, ultimo_produto: produto }, { variante }));
+      }
+      assert.equal(msgs.size, N_VARIANTES);
+    }
+  });
 }
 
+test("mensagem: produto aparece em repetir e primeira_compra", () => {
+  for (const tipo of ["repetir", "primeira_compra"]) {
+    for (let variante = 0; variante < N_VARIANTES; variante++) {
+      const msg = montarMensagem({ tipo, favorito: "Lasanha Bolonhesa - 1kg", ultimo_produto: "Lasanha Bolonhesa - 1kg" }, { variante });
+      assert.ok(msg.includes("Lasanha Bolonhesa"), msg);
+    }
+  }
+});
+
+test("variantesDoDia: mesmo motivo no mesmo dia nunca repete texto (até N_VARIANTES)", () => {
+  // caso Hortolândia 24/11/2026: 3 "quase comprou" + outros
+  const itens = [
+    { contact_id: "c3", tipo: "quase_comprou" },
+    { contact_id: "c1", tipo: "quase_comprou" },
+    { contact_id: "c2", tipo: "quase_comprou" },
+    { contact_id: "c9", tipo: "quase_comprou" },
+    { contact_id: "r1", tipo: "repetir" },
+    { contact_id: "r2", tipo: "repetir", status_hoje: "sent" },
+    { contact_id: null, tipo: "repetir" },
+  ];
+  for (const dia of ["2026-11-24T12:00:00Z", "2026-11-25T02:00:00Z", "2026-12-31T23:00:00Z"]) {
+    const v = variantesDoDia(itens, new Date(dia));
+    const quase = ["c1", "c2", "c3", "c9"].map((id) => v.get(id));
+    assert.equal(new Set(quase).size, 4, `${dia}: ${quase}`);
+    assert.notEqual(v.get("r1"), v.get("r2"));
+    const textos = ["c1", "c2", "c3", "c9"].map((id) => montarMensagem({ contact_id: id, tipo: "quase_comprou", nome: "Ana" }, { variante: v.get(id) }));
+    assert.equal(new Set(textos).size, 4);
+  }
+  // estável: a ordem da lista não muda a variante de ninguém
+  const a = variantesDoDia(itens, new Date("2026-11-24T12:00:00Z"));
+  const b = variantesDoDia([...itens].reverse(), new Date("2026-11-24T12:00:00Z"));
+  for (const [id, x] of a) assert.equal(b.get(id), x);
+  // o dia seguinte desloca o rodízio
+  const c = variantesDoDia(itens, new Date("2026-11-25T12:00:00Z"));
+  assert.notEqual(a.get("c1"), c.get("c1"));
+  assert.equal(variantesDoDia(null).size, 0);
+});
+
+test("textoEspera e intervalo", () => {
+  assert.equal(INTERVALO_CHAMADA_MS, 180000);
+  assert.equal(textoEspera(180000), "3:00");
+  assert.equal(textoEspera(161000), "2:41");
+  assert.equal(textoEspera(400), "0:01");
+  assert.equal(textoEspera(0), "0:00");
+  assert.equal(textoEspera(-5), "0:00");
+  assert.equal(textoEspera(undefined), "0:00");
+});
+
 test("mensagem sem cidade e tipo desconhecido", () => {
-  const msg = montarMensagem({ tipo: "repetir", contact_id: "b" });
+  const msg = montarMensagem({ tipo: "repetir", contact_id: "b" }, { variante: 0 });
   assert.ok(msg.includes("Aqui é da Maxi Massas 😊"), msg);
   assert.ok(montarMensagem({ tipo: "xyz", contact_id: "b" }).startsWith("Oi!"));
   assert.ok(montarMensagem(null).startsWith("Oi!"));

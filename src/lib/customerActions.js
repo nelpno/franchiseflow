@@ -119,15 +119,43 @@ export function escolherVariante(contactId, n) {
   return n > 0 ? hash % n : 0;
 }
 
+// Quantos textos cada motivo tem (todos com o mesmo número).
+export const N_VARIANTES = 4;
+
+// Texto igual para vários clientes seguidos é o padrão de disparo que bane o número
+// (Hortolândia 24/11/2026: 3 clientes do mesmo motivo receberam a mesma frase em 1 minuto).
+// Dentro do dia, os clientes do mesmo motivo recebem textos diferentes (até N_VARIANTES);
+// o dia desloca o rodízio para o 1º cliente de cada motivo não receber sempre o mesmo.
+// Devolve Map contact_id -> variante. Usa a lista inteira do dia (feitos inclusive),
+// então a prévia de um cliente não muda quando outro é chamado.
+export function variantesDoDia(itens, agora = new Date()) {
+  const dia = Math.floor(diaEmSP(agora) / 86400000);
+  const porTipo = new Map();
+  for (const item of itens || []) {
+    if (!item?.contact_id) continue;
+    const lista = porTipo.get(item.tipo) || [];
+    lista.push(String(item.contact_id));
+    porTipo.set(item.tipo, lista);
+  }
+  const mapa = new Map();
+  for (const ids of porTipo.values()) {
+    ids.sort();
+    ids.forEach((id, i) => mapa.set(id, (i + dia) % N_VARIANTES));
+  }
+  return mapa;
+}
+
 // Produto entra sem artigo ("repetir Lasanha Bolonhesa"): "do/da" erraria o gênero.
-export function montarMensagem(item, { cidade = "" } = {}) {
+// `variante` vem de variantesDoDia; sem ela, o hash do contato escolhe.
+export function montarMensagem(item, { cidade = "", variante: v = null } = {}) {
   const nome = primeiroNome(item?.nome);
   const fav = nomeCurtoProduto(item?.favorito);
   const ult = nomeCurtoProduto(item?.ultimo_produto);
-  const variante = escolherVariante(item?.contact_id, 2);
+  const variante = Number.isInteger(v) && v >= 0 ? v % N_VARIANTES : escolherVariante(item?.contact_id, N_VARIANTES);
 
   const saudacao = nome ? `Oi, ${nome}!` : "Oi!";
-  const unidade = `Aqui é da Maxi Massas${cidade ? ` ${cidade}` : ""} 😊`;
+  const loja = `Maxi Massas${cidade ? ` ${cidade}` : ""}`;
+  const unidade = variante < 2 ? `Aqui é da ${loja} 😊` : `Sou da ${loja}.`;
 
   const textos = {
     voltou_a_falar: [
@@ -135,10 +163,16 @@ export function montarMensagem(item, { cidade = "" } = {}) {
       fav
         ? `Vi sua mensagem por aqui. Vai de ${fav} de novo? Posso te ajudar com o pedido.`
         : "Vi sua mensagem por aqui. Quer que eu te ajude com o pedido?",
+      "Recebi sua mensagem. Quer que eu monte seu pedido agora?",
+      fav
+        ? `Que bom te ver por aqui de novo! Quer ${fav} ou prefere ver outros sabores?`
+        : "Que bom te ver por aqui de novo! Quer ajuda para escolher as massas?",
     ],
     quase_comprou: [
       "Ficou alguma dúvida sobre as massas? Posso te ajudar a escolher.",
       "Vi que você estava olhando nossas massas. Quer uma sugestão pra hoje?",
+      "Conseguiu escolher as massas? Se quiser, te conto quais saem mais por aqui.",
+      "Posso te ajudar com o pedido? Me diz quantas pessoas vão comer que eu te indico.",
     ],
     repetir: [
       fav
@@ -147,6 +181,12 @@ export function montarMensagem(item, { cidade = "" } = {}) {
       fav
         ? `Passando pra saber se você quer repetir ${fav}. É só me responder por aqui.`
         : "Passando pra saber se você quer repetir o pedido. É só me responder por aqui.",
+      fav
+        ? `Como está o estoque de ${fav} aí no freezer? Se quiser repor, é só me falar.`
+        : "Como estão as massas aí no freezer? Se quiser repor, é só me falar.",
+      fav
+        ? `Lembrei de você! Quer ${fav} de novo esta semana?`
+        : "Lembrei de você! Quer repetir as massas esta semana?",
     ],
     primeira_compra: [
       ult
@@ -155,18 +195,39 @@ export function montarMensagem(item, { cidade = "" } = {}) {
       ult
         ? `Queria saber se você gostou do seu pedido de ${ult}. Qualquer coisa, estou por aqui.`
         : "Queria saber se você gostou das massas. Qualquer coisa, estou por aqui.",
+      ult
+        ? `Deu tudo certo com ${ult}? Me conta como ficou.`
+        : "Deu tudo certo com as massas? Me conta como ficou.",
+      ult
+        ? `Como foi ${ult} aí em casa? Quero muito saber sua opinião.`
+        : "Como foram as massas aí em casa? Quero muito saber sua opinião.",
     ],
     sumido: [
       "Faz um tempinho que você não pede. Quer ver as opções desta semana?",
       fav
         ? `Sentimos sua falta por aqui. Que tal repetir ${fav}? É só me chamar.`
         : "Sentimos sua falta por aqui. Posso te ajudar com um pedido?",
+      fav
+        ? `Faz tempo que você não leva ${fav}. Quer que eu te mande os sabores de agora?`
+        : "Faz tempo que a gente não se fala. Quer que eu te mande os sabores de agora?",
+      "Passando pra dar um oi. Se bater vontade de massa, é só me chamar.",
     ],
   };
 
   const corpo = (textos[item?.tipo] || textos.quase_comprou)[variante];
-  const tudoBem = variante === 1 ? " Tudo bem?" : "";
+  const tudoBem = variante % 2 === 1 ? " Tudo bem?" : "";
   return `${saudacao}${tudoBem} ${unidade} ${corpo}`;
+}
+
+// ---------- intervalo entre chamados ----------
+// Um "Chamar" libera o próximo só depois deste tempo (rajada = disparo = número banido).
+// Medido em 30 dias até 24/11/2026: 192 de 255 dias com 4+ chamados foram em rajada (<2 min cada), 25 unidades.
+export const INTERVALO_CHAMADA_MS = 3 * 60 * 1000;
+
+// Milissegundos que faltam → "2:41" (arredonda para cima: nunca mostra 0:00 travado).
+export function textoEspera(ms) {
+  const s = Math.max(0, Math.ceil((Number(ms) || 0) / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
 // ---------- marca do cliente ----------

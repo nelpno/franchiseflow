@@ -243,6 +243,7 @@ export const GUIAS = [
       { titulo: "Tocou sem querer?", texto: "Ao tocar em Chamar, o cartão já fica marcado como feito, mesmo antes de você enviar. Para voltar atrás, use o aviso que aparece embaixo ou Desfazer, na linha do cliente, na aba Hoje.", botao: "Desfazer" },
       { titulo: "Não é hora de chamar", texto: "Escolha \"Só hoje\". Se o cliente pediu para não receber mensagens, escolha \"Não chamar mais\".", botao: "Pular", imagem: "/tutoriais/quem-chamar-hoje-4.webp" },
       { titulo: "No máximo 8 por dia", texto: "É de propósito: mensagem pessoal, uma de cada vez, vende mais e protege o seu número.", imagem: "/tutoriais/quem-chamar-hoje-5.webp" },
+      { titulo: "Um cliente por vez", texto: "Depois de tocar em Chamar, o próximo botão libera em 3 minutos e mostra a contagem. Mensagem igual para vários clientes seguidos é o que o WhatsApp entende como disparo e pode bloquear o número da unidade. Por isso cada cliente do dia recebe um texto diferente, e vale mudar mais um pouco com o seu jeito." },
       { titulo: "Acompanhe o resultado", texto: "No alto você vê quantas pessoas chamou no mês e quantas compraram até 7 dias depois." },
       { titulo: "Todos os clientes", texto: "O selo mostra quem é Fiel, Voltou, Novo ou Nunca comprou, e a bolinha colorida mostra há quanto tempo a pessoa comprou. Cliente sem telefone não entra na lista do dia: toque nele e complete o número.", botao: "Todos", imagem: "/tutoriais/quem-chamar-hoje-6.webp" },
     ],
