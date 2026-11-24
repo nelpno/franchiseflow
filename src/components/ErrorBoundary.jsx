@@ -1,6 +1,6 @@
 import React from 'react';
 import { registrarEvento } from '@/lib/telemetria';
-import { recarregarSeVersaoVelha } from '@/lib/versaoVelha';
+import { ehErroDaRecarga, estaRecarregando, recarregarSeVersaoVelha } from '@/lib/versaoVelha';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,10 +18,12 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     console.error('Error Boundary capturou erro:', error, errorInfo);
     // 19/11/2026: tela quebrada fica visível em app_eventos (antes só no console de quem viu)
-    try { registrarEvento('erro_app', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
-
     // Versão velha depois de deploy: recarrega uma vez (regra em lib/versaoVelha.js)
-    recarregarSeVersaoVelha(error);
+    // O evento vai ANTES de pedir a recarga (a fila sai com keepalive quando a página some).
+    const daRecarga = ehErroDaRecarga(error);
+    try { registrarEvento(daRecarga ? 'versao_velha' : 'erro_app', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
+    if (!estaRecarregando()) recarregarSeVersaoVelha(error);
+    if (estaRecarregando() && daRecarga) { this.forceUpdate(); setTimeout(() => this.forceUpdate(), 8500); }
   }
 
   handleReset = () => {
@@ -30,6 +32,13 @@ class ErrorBoundary extends React.Component {
   };
 
   render() {
+    if (this.state.hasError && estaRecarregando() && ehErroDaRecarga(this.state.error)) {
+      return (
+        <div className="flex min-h-screen items-center justify-center p-6 text-sm text-ink-2" role="status">
+          Atualizando o app…
+        </div>
+      );
+    }
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">

@@ -4,6 +4,10 @@
 // RPC cardapio_configurar { cupom: {ativo, pct, codigo, vale_ate} } (SQL site/pedido/supabase/2026-11-11b-cupom.sql). Desligado por padrão.
 // O interruptor grava na hora (com o que já está salvo); os campos gravam em "Salvar cupom".
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import MaterialIcon from "@/components/ui/MaterialIcon";
+import { copiarTexto } from "@/lib/assessorExport";
+import { registrarEvento } from "@/lib/telemetria";
 import Interruptor from "@/components/cardapio/Interruptor";
 import { BTN_PRIMARIO, CARTAO, CHIP, CHIP_ATIVO, CHIP_INATIVO, H2, H3_CARTAO, TOM_ATENCAO } from "@/components/shared/adminUi";
 import { CUPOM_PCTS, cupomDoPainel, erroCupom, fraseCupomCliente, limparCodigo } from "@/lib/cupom";
@@ -38,6 +42,14 @@ export default function CupomForm({ painel, hojeISO, salvando, onSalvar }) {
     const e = erroCupom({ pct: salvo.pct, codigo: salvo.codigo, vale_ate: salvo.vale_ate, ativo: ligar }, hojeISO);
     if (ligar && e) { setTentou(true); return; }
     onSalvar({ ativo: ligar, pct: salvo.pct, codigo: salvo.codigo, vale_ate: salvo.vale_ate }, ligar ? "ligado" : "desligado");
+  };
+  // 24/11/2026: 8 franqueadas tocavam na frase do cupom (parecia botão). Agora o toque copia o CÓDIGO, só com o
+  // cupom salvo e valendo. A frase inteira não: colada igual para vários clientes vira disparo e bane o número.
+  const copiavel = salvo.ativo && !salvo.vencido && !mudou && !!salvo.codigo;
+  const copiarCodigo = async () => {
+    const ok = await copiarTexto(salvo.codigo);
+    if (ok) { toast.success(`Código ${salvo.codigo} copiado. Escreva a mensagem do seu jeito para cada cliente.`); registrarEvento("cardapio_cupom_copiado"); }
+    else toast.error("Não deu para copiar. Toque e segure no código para copiar.");
   };
   const salvar = () => {
     setTentou(true);
@@ -100,7 +112,14 @@ export default function CupomForm({ painel, hojeISO, salvando, onSalvar }) {
 
         <div>
           <p className={ROTULO_CAMPO}>Como o cliente vê</p>
-          <p className="rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-dark">{fraseCupomCliente({ ...campos })}</p>
+          {copiavel ? (
+            <button type="button" onClick={copiarCodigo} className="flex min-h-11 w-full items-center justify-between gap-2 rounded-xl bg-brand-soft px-3 py-2 text-left text-sm font-semibold text-brand-dark transition-colors hover:bg-brand/15">
+              <span className="min-w-0">{fraseCupomCliente({ ...campos })}</span>
+              <span className="flex shrink-0 items-center gap-1 text-xs font-bold"><MaterialIcon icon="content_copy" size={16} aria-hidden="true" /> Copiar código</span>
+            </button>
+          ) : (
+            <p className="rounded-xl bg-brand-soft px-3 py-2 text-sm font-semibold text-brand-dark">{fraseCupomCliente({ ...campos })}</p>
+          )}
         </div>
 
         {tentou && erro && <p className="text-sm font-semibold text-err" role="alert">{erro}</p>}

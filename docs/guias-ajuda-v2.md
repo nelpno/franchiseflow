@@ -185,6 +185,8 @@ Nos caminhos dos guias, "›" quer dizer "toque em". Exemplo: "Mais › Pagament
    - Imagem: bloco Entrega. (existe: `vendas-5.webp`)
 7. Confira o total no rodapé e toque em **Registrar venda**. Aparece "Venda registrada!", com o botão **Comprovante**.
    - Imagem: rodapé com o total. Seta em **Registrar venda**. (existe: `vendas-6.webp`)
+8. À parte: pedido para outro dia? Em **Vendas**, toque na aba **Encomendas** e em **Nova encomenda**: cliente, produtos e o dia de entregar. A encomenda não baixa o Estoque nem entra no faturamento. No dia, toque em **Virou venda**: abre a venda já preenchida. Ao montar o pedido à fábrica, as encomendas aparecem num quadro amarelo: marque e toque em **Somar ao pedido** (desde 24/11/2026).
+   - Imagem: aba Encomendas com a encomenda aberta. Seta em **Nova encomenda**. (existe: `vendas-encomenda.webp`)
 
 **Deu certo quando:** aparece "Venda registrada!" e a venda está na lista de **Vendas**, com o valor certo.
 

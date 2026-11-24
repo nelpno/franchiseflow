@@ -128,7 +128,7 @@ export const GUIAS = [
     tempo: "2 a 4 minutos",
     icone: "point_of_sale",
     area: "Vender",
-    sinonimos: ["nova venda", "lançar venda", "registrar venda", "vender fora do robô", "vender no balcão", "vender kit", "kit de natal na venda"],
+    sinonimos: ["nova venda", "lançar venda", "registrar venda", "vender fora do robô", "vender no balcão", "vender kit", "kit de natal na venda", "encomenda", "pedido para outro dia", "virou venda"],
     dica: "Sempre escolha o cliente, com telefone. É assim que ele entra no Quem chamar hoje e que o anúncio aprende.",
     erroComum: "Deu erro ao registrar? Antes de lançar de novo, olhe em Vendas se a venda já entrou. Aviso \"O robô já lançou esta venda?\": se for a mesma, toque em \"É a mesma, não lançar\".",
     passos: [
@@ -139,6 +139,7 @@ export const GUIAS = [
       { titulo: "Escolha como o cliente pagou", texto: "No celular, toque em Pagamento para abrir e escolha a forma. O cliente ainda vai pagar? Ligue \"Ainda vou receber\", logo abaixo. Sem isso, a venda já entra como recebida.", botao: "Pagamento", imagem: "/tutoriais/vendas-4.webp" },
       { titulo: "Diga se foi entrega", texto: "No celular, toque em Entrega para abrir as opções. Na entrega, toque no botão Entrega e confira o endereço, o bairro e o Frete (R$). O frete entra no valor da venda.", botao: "Entrega", imagem: "/tutoriais/vendas-5.webp" },
       { titulo: "Confira e registre", texto: "Confira o total no rodapé. Aparece \"Venda registrada!\", com o botão Comprovante. A venda entra no Resultado do mês e desconta do Estoque.", botao: "Registrar venda", imagem: "/tutoriais/vendas-6.webp" },
+      { titulo: "À parte: pedido para outro dia?", texto: "Em Vendas, toque na aba Encomendas e em Nova encomenda: cliente, produtos e o dia de entregar. A encomenda não baixa o Estoque nem entra no faturamento. No dia, toque em Virou venda: abre a venda já preenchida, é só conferir e registrar. Ao montar o pedido à fábrica, as encomendas aparecem num quadro amarelo: marque e toque em Somar ao pedido.", botao: "Nova encomenda", imagem: "/tutoriais/vendas-encomenda.webp" },
     ],
     whatsapp: "Vai lançar uma venda? Este guia mostra, passo a passo, como preencher cliente, produtos, pagamento e entrega.",
   },

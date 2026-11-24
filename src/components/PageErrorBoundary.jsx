@@ -1,6 +1,6 @@
 import React from 'react';
 import { registrarEvento } from '@/lib/telemetria';
-import { ehErroDeVersaoVelha, recarregarSeVersaoVelha } from '@/lib/versaoVelha';
+import { ehErroDaRecarga, ehErroDeVersaoVelha, estaRecarregando, recarregarSeVersaoVelha } from '@/lib/versaoVelha';
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { Button } from '@/components/ui/button';
 
@@ -16,9 +16,12 @@ class PageErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('[PageErrorBoundary] Erro na página:', error, errorInfo);
-    try { registrarEvento('erro_tela', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
     // Versão velha depois de deploy: o import que falhou fica em cache, então "Tentar novamente" não resolve; recarrega.
-    recarregarSeVersaoVelha(error);
+    // O evento vai ANTES de pedir a recarga (a fila sai com keepalive quando a página some).
+    const daRecarga = ehErroDaRecarga(error);
+    try { registrarEvento(daRecarga ? 'versao_velha' : 'erro_tela', { detalhe: `${error?.name || 'Erro'}: ${error?.message || ''}` }); } catch { /* telemetria nunca derruba */ }
+    if (!estaRecarregando()) recarregarSeVersaoVelha(error);
+    if (estaRecarregando() && daRecarga) { this.forceUpdate(); setTimeout(() => this.forceUpdate(), 8500); }
   }
 
   handleRetry = () => {
@@ -27,6 +30,13 @@ class PageErrorBoundary extends React.Component {
   };
 
   render() {
+    if (this.state.hasError && estaRecarregando() && ehErroDaRecarga(this.state.error)) {
+      return (
+        <div className="flex min-h-[60vh] items-center justify-center p-6 text-sm text-ink-2" role="status">
+          Atualizando o app…
+        </div>
+      );
+    }
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-6">
