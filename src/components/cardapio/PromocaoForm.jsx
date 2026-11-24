@@ -399,7 +399,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
     setTipo(t);
     // item à escolha só existe no kit: no "Leve N" ele sai
     setRegra((r) => ({ ...regraVazia(t), nome: r.nome, itens: r.itens.filter((i) => t === "kit" || !ehEscolha(i)).map((i) => ({ ...i, qtd: t === "kit" ? i.qtd : 1 }))
-      .filter((i) => t !== "brinde" || i.product_name !== nomeDoBrinde(r)), vale_ate: r.vale_ate, ...(t === "brinde" && r.brinde ? { brinde: r.brinde } : {}) }));
+      .filter((i) => t !== "brinde" || i.product_name !== nomeDoBrinde(r)), vale_ate: r.vale_ate, ...(r.so_pix === true ? { so_pix: true } : {}), ...(t === "brinde" && r.brinde ? { brinde: r.brinde } : {}) }));
   };
   const setQtd = (nome, d) => setRegra((r) => ({ ...r, itens: r.itens.map((i) => (!ehEscolha(i) && i.product_name === nome ? { ...i, qtd: Math.min(20, Math.max(1, (Number(i.qtd) || 1) + d)) } : i)) }));
   const tirar = (nome) => setRegra((r) => ({ ...r, itens: r.itens.filter((i) => ehEscolha(i) || i.product_name !== nome) }));
@@ -726,6 +726,12 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                   </div>
                 </div>
               )}
+
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink" data-promo-so-pix>
+                <input type="checkbox" className="h-5 w-5 shrink-0 accent-brand" checked={regra.so_pix === true}
+                  onChange={(e) => setRegra((r) => ({ ...r, so_pix: e.target.checked }))} />
+                <span>Só no Pix <span className="text-ink-3">(o robô avisa o cliente)</span></span>
+              </label>
 
               <div className="sm:max-w-xs">
                 <label className={ROTULO_CAMPO} htmlFor="promo-ate">Vale até</label>

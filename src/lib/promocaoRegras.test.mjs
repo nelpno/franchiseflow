@@ -268,4 +268,14 @@ t("brinde: limparRegra e regraVendavel (um sabor escondido não derruba; sem o b
   assert.equal(regraVazia("brinde").brinde, null);
 });
 
+t("só no Pix: mesmo texto do banco (24/11b) e limparRegra guarda só quando marcado", () => {
+  assert.equal(textoDaRegra({ ...BF, itens: [{ product_name: "Canelone Frango e Requeijão - 700g", qtd: 1 }], so_pix: true }, SUZ),
+    "Black Friday: na compra de 4 ou mais Canelone Frango e Requeijão - 700g, ganhe 1 Nhoque de Batata - 500g grátis. Limite de 1 brinde por pedido. Pagamento só no Pix. Válido até 27/11/2026.");
+  assert.equal(textoDaRegra({ tipo: "percentual", nome: "Leve", min_qtd: 2, pct: 5, itens: [{ product_name: "Canelone Frango e Requeijão - 700g", qtd: 1 }], so_pix: false }, SUZ),
+    "Leve 2 Canelone Frango e Requeijão - 700g ou mais e ganhe 5% de desconto.");
+  assert.equal(limparRegra({ ...BF, so_pix: true }).so_pix, true);
+  assert.ok(!("so_pix" in limparRegra({ ...BF, so_pix: false })), "desmarcado não vai ao banco (texto igual ao de antes)");
+  assert.equal(erroDaRegra({ ...BF, so_pix: "sim" }, SUZ, "2026-11-24"), "Promoção em formato inválido.");
+});
+
 console.log(`promocaoRegras: ${n} testes ok`);

@@ -5,6 +5,8 @@
 //   brinde     {tipo:"brinde", nome, itens:[{product_name, qtd:1}] (os que contam, até 30), min_qtd, brinde:{product_name}, vale_ate}
 //     24/11/2026 (Suzano, Black Friday): "compre N, ganhe 1 brinde"; o brinde não conta para o N; desconto = preço de 1 brinde, limite 1
 //     por pedido, só com o brinde no pedido (site/pedido/supabase/2026-11-24a-promocao-brinde.sql)
+// 24/11/2026 (b): so_pix opcional em qualquer tipo: "Pagamento só no Pix." no texto do robô, antes da validade. Só texto: a cobrança
+//   e o cardápio não travam cartão (2026-11-24b-promocao-so-pix.sql). Pedido da Jennifer (Suzano).
 // 19/11/2026: item À ESCOLHA, só no kit: {escolha:true, rotulo:"Massa recheada 700g", opcoes:["<nome do estoque>", ...], qtd}.
 //   O preço normal conta a opção MAIS CARA; o banco (promocao_aplicar) conta a opção que o cliente pediu
 //   (site/pedido/supabase/2026-11-19-kit-item-escolha.sql).
@@ -151,6 +153,7 @@ export function erroDaRegra(regra, produtos, hojeISO, outras = []) {
   if (!regra || typeof regra !== "object") return "Promoção em formato inválido.";
   if (outras.length >= MAX_PROMOS) return "No máximo 3 promoções ao mesmo tempo. Encerre uma para criar outra.";
   if (outras.some((o) => chaveNome(o?.nome) === chaveNome(regra.nome))) return "Duas promoções com o mesmo nome. Dê um nome diferente a cada uma.";
+  if (regra.so_pix !== undefined && typeof regra.so_pix !== "boolean") return "Promoção em formato inválido.";
   if (!["kit", "percentual", "brinde"].includes(regra.tipo)) return "Escolha o tipo da promoção.";
   const nome = String(regra.nome || "").trim();
   if (nome.length < 3 || nome.length > NOME_MAX) return "O nome da promoção precisa ter de 3 a 40 letras.";
@@ -231,7 +234,8 @@ function ddmmaaaa(iso) {
 export function textoDaRegra(regra, produtos) {
   if (!regra || typeof regra !== "object") return null;
   const itens = Array.isArray(regra.itens) ? regra.itens : [];
-  const ate = regra.vale_ate && /^\d{4}-\d{2}-\d{2}$/.test(regra.vale_ate) ? ` Válido até ${ddmmaaaa(regra.vale_ate)}.` : "";
+  const ate = (regra.so_pix === true ? " Pagamento só no Pix." : "")
+    + (regra.vale_ate && /^\d{4}-\d{2}-\d{2}$/.test(regra.vale_ate) ? ` Válido até ${ddmmaaaa(regra.vale_ate)}.` : "");
   if (regra.tipo === "kit") {
     // item à escolha: "<qtd> <rótulo> à escolha (<opções à venda>)"; nenhuma à venda = todas (o banco também)
     const parte = (i) => {
@@ -275,6 +279,7 @@ export function limparRegra(regra) {
       ? { escolha: true, rotulo: String(i.rotulo ?? "").trim(), opcoes: Array.isArray(i.opcoes) ? [...i.opcoes] : [], qtd: Number(i.qtd) || 1 }
       : { product_name: i.product_name, qtd: regra.tipo === "kit" ? Number(i.qtd) || 1 : 1 })),
     vale_ate: regra.vale_ate || null,
+    ...(regra.so_pix === true ? { so_pix: true } : {}),
   };
   if (regra.tipo === "kit") return { ...base, preco: arred(Number(regra.preco)) };
   if (regra.tipo === "brinde") return { ...base, min_qtd: Number(regra.min_qtd), brinde: { product_name: nomeDoBrinde(regra) } };
