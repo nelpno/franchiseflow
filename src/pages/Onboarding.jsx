@@ -81,7 +81,6 @@ export default function Onboarding() {
   const [configsByEvoId, setConfigsByEvoId] = useState({});
   const [openStepId, setOpenStepId] = useState(null);
   const [adminNotesDraft, setAdminNotesDraft] = useState("");
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingStatusAction, setConfirmingStatusAction] = useState(false);
   const mountedRef = useRef(true);
   const stepRefs = useRef({});
@@ -299,7 +298,6 @@ export default function Onboarding() {
   const handleSelectFranchise = async (franchiseId) => {
     const franchise = franchises.find((f) => f.evolution_instance_id === franchiseId);
     if (!franchise) return;
-    setConfirmingDelete(false);
     setConfirmingStatusAction(false);
     setSelectedFranchise(franchise);
     setChecklist(null);
@@ -327,7 +325,6 @@ export default function Onboarding() {
     setItems({});
     setFacts(null);
     setFactsOk(false);
-    setConfirmingDelete(false);
     setConfirmingStatusAction(false);
   };
 
@@ -366,30 +363,9 @@ export default function Onboarding() {
     }
   };
 
-  const handleDeleteOnboarding = async () => {
-    if (!checklist) return;
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
-    const seq = loadSeqRef.current;
-    try {
-      await OnboardingChecklist.delete(checklist.id);
-      setAllChecklists((prev) => prev.filter((c) => c.id !== checklist.id));
-      // Já abriu outra unidade enquanto excluía: não mexe na tela dela.
-      if (seq !== loadSeqRef.current) return;
-      loadSeqRef.current += 1;
-      setChecklist(null);
-      setItems({});
-      setSelectedFranchise(null);
-      setFacts(null);
-      setFactsOk(false);
-    } catch (error) {
-      toast.error(safeErrorMessage(error, "Não foi possível excluir."));
-    } finally {
-      setConfirmingDelete(false);
-    }
-  };
+  // 24/11/2026: sem "Excluir onboarding". Apagar a linha sumia com a trilha sem rastro (quem, quando) e era
+  // usado no lugar de Concluir: 9 unidades concluídas em 18/09 e Vargem Grande/Uberaba/Santa Isabel ficaram sem linha.
+  // Para a unidade que já roda, use Concluir (set_onboarding_status grava quem e quando).
 
   const handleSetOnboardingStatus = async (newStatus) => {
     if (!checklist) return;
@@ -758,18 +734,6 @@ export default function Onboarding() {
                         <Button variant="ghost" size="sm" onClick={() => setConfirmingStatusAction(false)} className="min-h-[40px] text-xs text-ink-2">
                           Não
                         </Button>
-                      </div>
-                    )}
-                    {!confirmingDelete && (
-                      <Button variant="ghost" size="sm" onClick={handleDeleteOnboarding} className="text-err hover:text-err hover:bg-err-soft" title="Excluir onboarding">
-                        <MaterialIcon icon="delete" size={16} />
-                      </Button>
-                    )}
-                    {confirmingDelete && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-err">Excluir?</span>
-                        <Button variant="ghost" size="sm" onClick={handleDeleteOnboarding} className="text-err hover:bg-err-soft text-xs h-7">Sim</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setConfirmingDelete(false)} className="text-ink-2 text-xs h-7">Não</Button>
                       </div>
                     )}
                   </div>
