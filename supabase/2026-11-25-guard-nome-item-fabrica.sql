@@ -38,9 +38,11 @@ as $function$
 declare
   v_fab text;
 begin
+  -- INSERT: qualquer origem (marcar created_by_franchisee=false não fura; o app só cria item da fábrica
+  -- quando a unidade ainda não tem um, então não esbarra). UPDATE: o flag é travado pelo guard_inventory_cost.
   if current_user = 'authenticated'
-     and coalesce(new.created_by_franchisee, false) = true
-     and (tg_op = 'INSERT' or new.product_name is distinct from old.product_name)
+     and (tg_op = 'INSERT'
+          or (coalesce(new.created_by_franchisee, false) = true and new.product_name is distinct from old.product_name))
      and not coalesce((select public.is_admin_or_manager()), false) then
     select f.product_name into v_fab
       from inventory_items f
