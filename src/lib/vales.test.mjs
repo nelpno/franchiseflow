@@ -18,18 +18,21 @@ test("valesMarcados: só modalidades ligadas; retirada sem lista = a da entrega"
   assert.deepEqual(valesMarcados({ payment_delivery: [], payment_pickup: ["meal_voucher"] }, { hasDelivery: true, hasPickup: true }), { vr: true, va: false });
 });
 
-test("mexeuEmVale: só troca de vale conta", () => {
+test("mexeuEmVale: só o vale-alimentação conta como revisão", () => {
   assert.equal(mexeuEmVale(["pix"], ["pix", "cash"]), false);
   assert.equal(mexeuEmVale(["meal_voucher"], ["meal_voucher", "pix"]), false);
+  assert.equal(mexeuEmVale(["meal_voucher"], []), false, "desmarcar o refeição não revisa o alimentação");
+  assert.equal(mexeuEmVale([], ["meal_voucher"]), false);
   assert.equal(mexeuEmVale(["meal_voucher"], ["food_voucher"]), true);
-  assert.equal(mexeuEmVale([], ["food_voucher"]), true);
+  assert.equal(mexeuEmVale(["food_voucher"], []), true);
 });
 
 test("normalizarBandeiras: null fica null; lista na ordem do painel, sem lixo nem repetição", () => {
   assert.equal(normalizarBandeiras(null), null);
   assert.equal(normalizarBandeiras(undefined), null);
   assert.deepEqual(normalizarBandeiras([]), []);
-  assert.deepEqual(normalizarBandeiras(["Ticket", "xx", "Alelo", "Ticket", " VR "]), ["Alelo", "Ticket", "VR"]);
+  assert.deepEqual(normalizarBandeiras(["Ticket", "Alelo", "Ticket", " VR "]), ["Alelo", "Ticket", "VR"]);
+  assert.deepEqual(normalizarBandeiras(["Sodexo", "Alelo", '"x"\n']), ["Alelo", "Sodexo", "x"], "nome de fora fica, limpo, depois");
   assert.deepEqual(alternarBandeira(null, "Caju"), ["Caju"]);
   assert.deepEqual(alternarBandeira(["Caju"], "Caju"), []);
   assert.ok(VALE_BANDEIRAS.includes("Pluxee (Sodexo)"));

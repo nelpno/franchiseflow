@@ -82,7 +82,7 @@ export default function HorarioEspecialCard({ value, onChange, hasDelivery, hasP
               <label className="min-w-0 col-span-2 sm:col-span-1">
                 <span className={rotulo}>Qual motivo</span>
                 <input type="text" className={`${campo} w-full sm:w-48`} maxLength={MAX_MOTIVO} placeholder="Ex.: Inventário"
-                  value={x.motivo || ""} onChange={(e) => set(i, { motivo: e.target.value })} />
+                  value={x.motivo || ""} onChange={(e) => set(i, { _outro: true, motivo: e.target.value })} />
               </label>
             )}
             {duas && (
