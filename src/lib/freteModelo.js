@@ -3,7 +3,9 @@
  *
  * O cartão edita um MODELO no formato do delivery_pricing, que é o que o motor do robô lê:
  *   { versao: 1, raio_km, zonas: [{ nomes, valor, nao_atende }],
- *     grupos: [{ dias, tipos: [{ nome, inicio, fim, corte, promessa: "janela"|"minutos", minutos, taxa }] }] }
+ *     grupos: [{ dias, tipos: [{ nome, inicio, fim, corte, promessa: "janela"|"minutos"|"saidas", minutos, saidas, taxa }] }] }
+ *   saidas = ["11:00","15:00","18:00"] (26/11/2026, Uberaba): o entregador sai em rotas; no modo simples vai para o item do
+ *   delivery_schedule (o Customer Context do robô lê de lá). zonas[].dias = bairro atendido só nesses dias (vazio = todo dia).
  *   taxa = { modo: "fixa", valor }  (valor 0 = grátis)  |  { modo: "faixas", faixas: [{ ate, valor }] }
  *
  * Três situações (modoDoFrete):
@@ -17,6 +19,7 @@
  *                   o formato novo com a franqueada: texto livre não vira regra sem alguém confirmar.
  */
 import { rotuloDias } from "./configSave.js";
+import { parseSaidas, formatSaidas } from "./saidasEntrega.js";
 
 const ORDEM = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"];
 const NOME_DIA = { seg: "segunda", ter: "terça", qua: "quarta", qui: "quinta", sex: "sexta", sab: "sábado", dom: "domingo" };
@@ -76,22 +79,29 @@ export function legadoParaModelo(form) {
     versao: 1,
     raio_km: raio,
     zonas: [],
-    grupos: grupos.map((g) => ({
-      dias: ordenarDias(g?.days),
-      tipos: [{
-        nome: "Entrega",
-        inicio: g?.delivery_start || "",
-        fim: g?.delivery_end || "",
-        corte: g?.order_cutoff || "",
-        promessa: prazo > 0 ? "minutos" : "janela",
-        ...(prazo > 0 ? { minutos: prazo } : {}),
-        taxa: taxaDoLegado(g, raio),
-      }],
-    })),
+    grupos: grupos.map((g) => {
+      const saidas = Array.isArray(g?.saidas) ? parseSaidas(g.saidas.join(",")).saidas : [];
+      return {
+        dias: ordenarDias(g?.days),
+        tipos: [{
+          nome: "Entrega",
+          inicio: g?.delivery_start || "",
+          fim: g?.delivery_end || "",
+          corte: g?.order_cutoff || "",
+          ...(saidas.length ? { promessa: "saidas", saidas } : { promessa: prazo > 0 ? "minutos" : "janela", ...(prazo > 0 ? { minutos: prazo } : {}) }),
+          taxa: taxaDoLegado(g, raio),
+        }],
+      };
+    }),
   };
 }
 
 // ---------------------------------------------------------------- modelo -> campos antigos
+
+/** Saídas válidas do tipo (só com promessa "saidas"), "HH:MM" ordenadas. */
+export function saidasDoTipo(t) {
+  return t?.promessa === "saidas" && Array.isArray(t.saidas) ? parseSaidas(t.saidas.join(",")).saidas : [];
+}
 
 const valorTexto = (v) => (numero(v) === null ? "" : numero(v).toFixed(2));
 const kmTexto = (v) => (numero(v) === null ? "" : String(numero(v)));
@@ -157,6 +167,7 @@ export function modeloParaLegado(modelo, { estruturado = false } = {}) {
     const cobra = !tipos.every((t) => ehGratis(t.taxa)) ||
       (estruturado && (modelo?.zonas || []).some((z) => !z.nao_atende && !z.especial && numero(z.valor) > 0));
     const semCorte = tipos.every((t) => !preenchido(t.corte));
+    const saidas = saidasDoTipo(tipos.find((t) => saidasDoTipo(t).length));
     return {
       days: ordenarDias(g.dias),
       delivery_start: menorHora(tipos.map((t) => t.inicio)),
@@ -164,6 +175,7 @@ export function modeloParaLegado(modelo, { estruturado = false } = {}) {
       order_cutoff: semCorte ? "" : maiorHora(tipos.map((t) => t.corte || t.fim)),
       charges_fee: cobra,
       fee_rules: !cobra ? [] : estruturado ? rotulosDoGrupo(g, modelo.zonas) : linhasSimples(tipos[0]?.taxa, raio),
+      ...(saidas.length ? { saidas } : {}),
     };
   });
 
@@ -213,9 +225,15 @@ function limparTipo(t) {
   if (t.promessa === "minutos") {
     out.promessa = "minutos";
     out.minutos = numero(t.minutos);
+    delete out.saidas;
+  } else if (t.promessa === "saidas") {
+    out.promessa = "saidas";
+    out.saidas = saidasDoTipo(t);
+    delete out.minutos;
   } else {
     out.promessa = "janela";
     delete out.minutos;
+    delete out.saidas;
   }
   out.taxa = limparTaxa(t.taxa);
   return out;
@@ -225,6 +243,9 @@ function limparZona(z) {
   const out = { ...z, nomes: [...new Set((z.nomes || []).map((n) => String(n).trim()).filter(Boolean))] };
   if (z.nao_atende) out.nao_atende = true;
   else delete out.nao_atende;
+  const dias = ordenarDias(z.dias);
+  if (dias.length) out.dias = dias;
+  else delete out.dias;
   if (preenchido(z.valor)) out.valor = numero(z.valor);
   else if (!z.nao_atende) out.valor = null;
   else delete out.valor;
@@ -295,6 +316,12 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
           out.push({ chave: `${k}.taxa`, msg: `${rot}: preencha ao menos uma faixa de km com o valor.` });
         }
       }
+      if (t.promessa === "saidas") {
+        const sd = saidasDoTipo(t);
+        if (!sd.length) out.push({ chave: `${k}.saidas`, msg: `${rot}: escreva os horários de saída do entregador (ex.: 11:00, 15:00, 18:00).` });
+        const fora = ini !== null && fim !== null ? sd.filter((x) => minutosDe(x) < ini || minutosDe(x) > fim) : [];
+        if (fora.length) out.push({ chave: `${k}.saidas`, msg: `${rot}: a saída das ${formatSaidas(fora)} fica fora da janela (${horaCurta(t.inicio)} às ${horaCurta(t.fim)}).` });
+      }
       if (t.promessa === "minutos" && !(numero(t.minutos) > 0)) {
         out.push({ chave: `${k}.minutos`, msg: `${rot}: diga em até quantos minutos a entrega chega.` });
       } else if (t.promessa === "minutos" && !(numero(t.minutos) >= PRAZO_MIN && numero(t.minutos) <= PRAZO_MAX)) {
@@ -309,6 +336,10 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
       const nomes = (z.nomes || []).map((n) => String(n).trim()).filter(Boolean);
       if (!nomes.length) out.push({ chave: `z${zi}.nomes`, msg: `Bairros com taxa própria, linha ${zi + 1}: falta o nome do bairro.` });
       if (!z.nao_atende && !z.especial && numero(z.valor) === null) out.push({ chave: `z${zi}.valor`, msg: `Bairros com taxa própria, linha ${zi + 1}: falta o valor.` });
+      const diasEntrega = new Set((modelo?.grupos || []).flatMap((g) => g.dias || []));
+      if (diasEntrega.size && !z.nao_atende && (z.dias || []).length && !z.dias.some((d) => diasEntrega.has(d))) {
+        out.push({ chave: `z${zi}.dias`, msg: `${nomes[0] || "Bairro"}: só ${rotuloDias(z.dias)}, mas nesse dia não há entrega. Marque um dia de entrega.` });
+      }
       for (const n of nomes) {
         const key = n.toLowerCase();
         if (vistos.has(key) && vistos.get(key) !== zi) out.push({ chave: `z${zi}.nomes`, msg: `O bairro ${n} está em duas linhas de "Bairros com taxa própria".` });
@@ -352,13 +383,14 @@ export function textoTaxa(taxa) {
 export function fraseDoGrupo(grupo, { temBairros = false } = {}) {
   const tipos = (grupo?.tipos || []).filter((t) => preenchido(t.inicio) && preenchido(t.fim));
   if (!(grupo?.dias || []).length || !tipos.length) return "";
-  const prazo = (t) => (t.promessa === "minutos" && numero(t.minutos) > 0 ? `, que chega em até ${numero(t.minutos)} min` : "");
+  const rotas = (t) => (saidasDoTipo(t).length ? `, em rotas que saem às ${formatSaidas(saidasDoTipo(t))} (o pedido chega ao longo da rota)` : "");
+  const prazo = (t) => (t.promessa === "minutos" && numero(t.minutos) > 0 ? `, que chega em até ${numero(t.minutos)} min` : rotas(t));
   const janela = (t) => `das ${horaCurta(t.inicio)} às ${horaCurta(t.fim)}`;
   const taxa = (t) => (temBairros ? `fora da lista, ${textoTaxa(t.taxa)}` : textoTaxa(t.taxa));
   let corpo;
   if (tipos.length === 1) {
     const t = tipos[0];
-    corpo = `entregamos ${janela(t)}${t.promessa === "minutos" && numero(t.minutos) > 0 ? `, em até ${numero(t.minutos)} min depois de confirmado` : ""}, ${taxa(t)}`;
+    corpo = `entregamos ${janela(t)}${t.promessa === "minutos" && numero(t.minutos) > 0 ? `, em até ${numero(t.minutos)} min depois de confirmado` : rotas(t)}, ${taxa(t)}`;
   } else {
     const partes = tipos.map((t) => `a ${String(t.nome || "entrega").trim().toLowerCase()}, ${janela(t)}${prazo(t)}, ${taxa(t)}`);
     corpo = `tem ${partes.slice(0, -1).join("; ")} e ${partes.at(-1)}`;
@@ -390,8 +422,9 @@ export function novoGrupo(modelo) {
     dias: [livres[0]],
     tipos: [{
       nome: "Entrega", inicio: "09:00", fim: "14:00", corte: "",
-      promessa: t0?.promessa === "minutos" ? "minutos" : "janela",
+      promessa: t0?.promessa === "minutos" || t0?.promessa === "saidas" ? t0.promessa : "janela",
       ...(t0?.promessa === "minutos" ? { minutos: t0.minutos } : {}),
+      ...(t0?.promessa === "saidas" ? { saidas: [...(t0.saidas || [])] } : {}),
       taxa: t0?.taxa ? JSON.parse(JSON.stringify(t0.taxa)) : { modo: "faixas", faixas: [{ ate: "", valor: "" }] },
     }],
   };

@@ -3,9 +3,10 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import HelpTip from "@/components/shared/HelpTip";
 import { WEEKDAYS } from "@/lib/franchiseUtils";
 import { rotuloDias } from "@/lib/configSave";
-import { diasLivres, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro, PRAZO_MIN, PRAZO_MAX } from "@/lib/freteModelo";
+import { diasLivres, diasPorExtenso, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro, PRAZO_MIN, PRAZO_MAX } from "@/lib/freteModelo";
 import { agoraSaoPaulo, somaDias, rotuloCurto } from "@/lib/simulacoesRobo";
 import { cotarFrete } from "@/lib/cotaFrete.gen";
+import { parseSaidas } from "@/lib/saidasEntrega";
 
 // Cartão "Entrega" do Meu Vendedor (plano de frete 12/09/2026, Fase 5b). Edita o modelo de lib/freteModelo.js;
 // quem converte para o banco é a página. `estruturado` = unidade no frete calculado (tipos e bairros liberados).
@@ -118,14 +119,30 @@ function Taxa({ taxa, onChange, marcas, prefixo, estruturado, temBairros }) {
   );
 }
 
-function ComoChega({ promessa, minutos, onChange, invalido }) {
-  const emMin = promessa === "minutos";
+// Saídas fixas (26/11/2026, Uberaba): o texto fica como ela digitou; o que vale é o que o parseSaidas entende.
+function CampoSaidas({ saidas, onChange, invalido }) {
+  const [texto, setTexto] = useState(() => (saidas || []).join(", "));
+  const { invalidos } = parseSaidas(texto);
+  return (
+    <span className="flex flex-col gap-1">
+      <input aria-label="Horários de saída do entregador" inputMode="text" placeholder="11:00, 15:00, 18:00"
+        className={`${campo} w-48 font-mono${invalido || invalidos.length ? erroRing : ""}`} value={texto}
+        onChange={(e) => { setTexto(e.target.value); onChange({ promessa: "saidas", saidas: parseSaidas(e.target.value).saidas }); }}
+        onBlur={() => { const p = parseSaidas(texto); if (!p.invalidos.length) setTexto(p.saidas.join(", ")); }} />
+      {invalidos.length > 0 && <span className="text-[11px] text-err">Não entendi {invalidos.map((x) => `"${x}"`).join(", ")}. Escreva assim: 11:00, 15:00</span>}
+    </span>
+  );
+}
+
+function ComoChega({ promessa, minutos, saidas, onChange, invalido, invalidoSaidas }) {
+  const emMin = promessa === "minutos", emSaidas = promessa === "saidas", naJanela = !emMin && !emSaidas;
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1.5">
-        {/* os minutos ficam guardados: voltar para "Em até X min" devolve o número (só essa opção grava prazo) */}
-        <button type="button" className={pill(!emMin)} onClick={() => emMin && onChange({ promessa: "janela" })}>Dentro da janela</button>
+        {/* os minutos e as saídas ficam guardados: voltar para a opção devolve o que estava (só a opção escolhida grava) */}
+        <button type="button" className={pill(naJanela)} onClick={() => !naJanela && onChange({ promessa: "janela" })}>Dentro da janela</button>
         <button type="button" className={pill(emMin)} onClick={() => !emMin && onChange({ promessa: "minutos", minutos: numero(minutos) || 60 })}>Em até X min</button>
+        <button type="button" className={pill(emSaidas)} onClick={() => !emSaidas && onChange({ promessa: "saidas", saidas: saidas || [] })}>Saídas fixas</button>
         {emMin && (
           <span className="flex items-center gap-1.5">
             <input type="number" min={PRAZO_MIN} max={PRAZO_MAX} step="5" inputMode="numeric" aria-label={`Em até quantos minutos (de ${PRAZO_MIN} a ${PRAZO_MAX})`}
@@ -135,8 +152,11 @@ function ComoChega({ promessa, minutos, onChange, invalido }) {
           </span>
         )}
       </div>
+      {emSaidas && <CampoSaidas saidas={saidas} onChange={onChange} invalido={invalidoSaidas} />}
       <p className={dica}>
-        {emMin ? `O robô promete a entrega em até esse tempo (de ${PRAZO_MIN} a ${PRAZO_MAX} min), contado do pedido confirmado; o cardápio oferece "o quanto antes" com o mesmo prazo.` : "Dentro da janela: o robô diz só a janela de entrega, sem hora exata, e o cardápio não oferece \"o quanto antes\"."}
+        {emMin ? `O robô promete a entrega em até esse tempo (de ${PRAZO_MIN} a ${PRAZO_MAX} min), contado do pedido confirmado; o cardápio oferece "o quanto antes" com o mesmo prazo.`
+          : emSaidas ? "Hora em que o entregador SAI com os pedidos. O robô diz em qual saída vai o pedido (ex.: pedido às 14h vai na das 15h) e que chega ao longo da rota, sem prometer hora de chegada."
+          : "Dentro da janela: o robô diz só a janela de entrega, sem hora exata, e o cardápio não oferece \"o quanto antes\"."}
       </p>
     </div>
   );
@@ -186,7 +206,7 @@ function Tipo({ tipo, prefixo, estruturado, temBairros, podeRemover, onChange, o
       {estruturado && (
         <div>
           <span className={rotulo}>Como chega ao cliente</span>
-          <ComoChega promessa={tipo.promessa} minutos={tipo.minutos} onChange={set} invalido={marcas.has(`${prefixo}.minutos`)} />
+          <ComoChega promessa={tipo.promessa} minutos={tipo.minutos} saidas={tipo.saidas} onChange={set} invalido={marcas.has(`${prefixo}.minutos`)} invalidoSaidas={marcas.has(`${prefixo}.saidas`)} />
         </div>
       )}
       {erroMsg && <p className="text-[11px] text-err">{erroMsg}</p>}
@@ -279,12 +299,12 @@ function NomesBairro({ nomes, onChange, invalido }) {
   );
 }
 
-// o que o suporte cadastrou e a tela ainda não edita (dias, valor num dia, regra especial): aparece escrito
+// o que o suporte cadastrou e a tela ainda não edita (valor num dia, regra especial): aparece escrito. Os dias do bairro
+// viraram editáveis em 26/11/2026 (Indaiatuba: "região fora do raio só num dia da semana").
 const DIA_CURTO = { seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb", dom: "Dom" };
 function detalheDaZona(z) {
   const partes = [];
   if (z.fora_da_cidade) partes.push("vale para endereço fora da cidade");
-  if (z.dias?.length) partes.push(`entrega só ${rotuloDias(z.dias)}`);
   for (const [d, v] of Object.entries(z.por_dia || {})) partes.push(`${DIA_CURTO[d] || d}: ${dinheiro(v)}`);
   if (z.especial) partes.push(`o robô diz que a unidade confirma a taxa (${z.especial})`);
   return partes.length ? `${partes.join(" · ")}. Para mudar isso, fale com o suporte.` : "";
@@ -297,7 +317,7 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
     <div className="space-y-3 border-b border-surface-line/20 pb-4">
       <div>
         <p className="text-sm font-bold text-ink-2 flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria <HelpTip tip="bairrosTaxaPropria" /></p>
-        <p className={dica}>Cada bairro ou condomínio com o seu valor, em qualquer dia (R$ 0 é grátis). O que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
+        <p className={dica}>Cada bairro ou condomínio com o seu valor (R$ 0 é grátis), mesmo além do raio. Atende só em alguns dias? Marque em "Só em" (ex.: Jardim X só na quarta). O que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
       </div>
       {zonas.map((z, i) => (
         <div key={i} className="rounded-xl bg-surface p-2.5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
@@ -317,6 +337,22 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
               <MaterialIcon icon="close" size={18} />
             </button>
           </div>
+          {!z.nao_atende && !z.especial && (
+            <div className="sm:basis-full flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-ink-2/70">Só em:</span>
+              {WEEKDAYS.map((day) => {
+                const marcado = (z.dias || []).includes(day.value);
+                return (
+                  <button key={day.value} type="button" aria-pressed={marcado}
+                    onClick={() => set(i, { ...z, dias: marcado ? (z.dias || []).filter((d) => d !== day.value) : [...(z.dias || []), day.value] })}
+                    className={`px-2 py-1 rounded-full text-[11px] font-bold transition-all${marcas.has(`z${i}.dias`) ? erroRing : ""} ${marcado ? "bg-brand text-white" : "bg-white text-ink-2/70 hover:bg-surface-2"}`}>
+                    {day.label}
+                  </button>
+                );
+              })}
+              <span className="text-[11px] text-ink-2/60">{(z.dias || []).length ? `o robô diz que aqui a entrega é só ${diasPorExtenso(z.dias).toLowerCase()}` : "nenhum marcado = todo dia de entrega"}</span>
+            </div>
+          )}
           {detalheDaZona(z) && <p className="text-[11px] text-ink-2/70 sm:basis-full">{detalheDaZona(z)}</p>}
         </div>
       ))}
@@ -342,7 +378,7 @@ function primeiroDiaComEntrega(pricing, dias, agora) {
   return agora.data;
 }
 
-function Resultado({ r, km, raio }) {
+function Resultado({ r, km, raio, mostrarRota }) {
   if (!r) return null;
   const caixa = "rounded-xl border border-surface-line/35 bg-white p-3 space-y-1.5";
   if (r.estado === "ok") {
@@ -362,6 +398,7 @@ function Resultado({ r, km, raio }) {
         )) : (
           <p className="text-sm text-ink-2">{primeiraMaiuscula(dp.observacao)}.{r.proximo_dia_com_entrega ? ` Próximo dia com entrega: ${r.proximo_dia_com_entrega}.` : ""}</p>
         )}
+        {mostrarRota && r.hoje?.rota && <p className="text-xs font-semibold text-ink-2">Pedido feito nessa hora vai na {(r.hoje.rota.match(/rota das [^ (]+/) || [""])[0]} e chega ao longo da rota.</p>}
         {r.aviso && <p className="text-[11px] text-warn-ink">{r.aviso}</p>}
       </div>
     );
@@ -440,7 +477,7 @@ function TesteRapido({ modelo, estruturado }) {
           </select>
         </label>
       </div>
-      <Resultado r={r} km={kmNum} raio={pricing.raio_km} />
+      <Resultado r={r} km={kmNum} raio={pricing.raio_km} mostrarRota={entrega === pedeData} />
       {r?.estado === "ok" && (
         <div>
           <p className={rotulo}>Se o cliente pedir para outro dia</p>
@@ -510,7 +547,8 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
       {!estruturado && t0 && (
         <div className="rounded-xl bg-surface p-3">
           <span className={rotulo}>Como chega ao cliente (vale para todos os dias)</span>
-          <ComoChega promessa={t0.promessa} minutos={t0.minutos} onChange={comoChegaTodos} invalido={[...marcas].some((k) => k.endsWith(".minutos"))} />
+          <ComoChega promessa={t0.promessa} minutos={t0.minutos} saidas={t0.saidas} onChange={comoChegaTodos} invalido={[...marcas].some((k) => k.endsWith(".minutos"))}
+            invalidoSaidas={[...marcas].some((k) => k.endsWith(".saidas"))} />
         </div>
       )}
       {!estruturado && (

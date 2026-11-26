@@ -117,7 +117,9 @@ const CORD = { raio_km: null,
 const legC = modeloParaLegado(CORD, { estruturado: true });
 assert.ok(!legC.delivery_schedule[0].fee_rules.rules.some((r) => r.label.includes("Cordeirópolis")), "fora dos dias do bairro");
 assert.equal(legC.delivery_schedule[1].fee_rules.rules.find((r) => r.label.includes("São Vicente")).fee, "15.00");
-assert.deepEqual(problemasDoModelo(CORD, { estruturado: true }), [], "bairro com regra especial não precisa de valor");
+// 26/11/2026: bairro só em dia SEM entrega passou a ser aviso (este cadastro de teste tem Cordeirópolis qui/sáb e entrega só seg/dom)
+assert.deepEqual(problemasDoModelo(CORD, { estruturado: true }).map((p) => p.chave), ["z0.dias"], "bairro com regra especial não precisa de valor; bairro em dia sem entrega avisa");
+assert.deepEqual(problemasDoModelo({ ...CORD, grupos: [...CORD.grupos, { dias: ["qui"], tipos: CORD.grupos[1].tipos }] }, { estruturado: true }), [], "com a quinta de entrega, Cordeirópolis passa");
 assert.deepEqual(limparPricing(CORD).zonas[0].dias, ["qui", "sab"], "a limpeza não perde os dias do bairro");
 assert.deepEqual(limparPricing(CORD).zonas[1].por_dia, { dom: 15 });
 
@@ -171,3 +173,35 @@ assert.deepEqual(novoGrupo(soSemana).dias, ["sab"]);
 assert.deepEqual(novoGrupo(soSemana).tipos[0].taxa, soSemana.grupos[0].tipos[0].taxa, "copia a taxa do primeiro grupo");
 
 console.log("freteModelo: ok");
+
+// ---- 26/11/2026: saídas fixas (Uberaba) e bairro só em alguns dias (Indaiatuba)
+{
+  const { legadoParaModelo: l2m, modeloParaLegado: m2l, limparPricing: lp, problemasDoModelo: pm, fraseDoGrupo: fr } = await import("./freteModelo.js");
+  const leg = { max_delivery_radius_km: 15, avg_prep_time_minutes: null, delivery_schedule: [{ days: ["ter", "qui", "sex", "sab"], delivery_start: "08:00", delivery_end: "19:00", order_cutoff: "17:30", charges_fee: true, fee_rules: [{ max_km: "5", fee: "8.00" }, { max_km: "15", fee: "18.00" }], saidas: ["18:00", "11:00", "15:00"] }] };
+  const mod = l2m(leg);
+  assert.equal(mod.grupos[0].tipos[0].promessa, "saidas");
+  assert.deepEqual(mod.grupos[0].tipos[0].saidas, ["11:00", "15:00", "18:00"]);
+  const volta = m2l(mod);
+  assert.deepEqual(volta.delivery_schedule[0].saidas, ["11:00", "15:00", "18:00"], "ida e volta do modo simples mantém as saídas");
+  assert.equal(volta.avg_prep_time_minutes, null);
+  assert.match(fr(mod.grupos[0]), /em rotas que saem às 11h, 15h e 18h \(o pedido chega ao longo da rota\)/);
+  // sem saídas: o item do delivery_schedule não ganha a chave (unidades de hoje ficam iguais)
+  const semS = m2l(l2m({ ...leg, delivery_schedule: [{ ...leg.delivery_schedule[0], saidas: undefined }] }));
+  assert.equal("saidas" in semS.delivery_schedule[0], false);
+  // trocar para janela tira as saídas na limpeza
+  const jan = lp({ ...mod, grupos: [{ ...mod.grupos[0], tipos: [{ ...mod.grupos[0].tipos[0], promessa: "janela" }] }] });
+  assert.equal("saidas" in jan.grupos[0].tipos[0], false);
+  // validação: sem horário e fora da janela
+  const t0 = mod.grupos[0].tipos[0];
+  const comSaidas = (saidas) => ({ ...mod, grupos: [{ ...mod.grupos[0], tipos: [{ ...t0, saidas }] }] });
+  assert.deepEqual(pm(comSaidas([])).map((p) => p.chave), ["g0.t0.saidas"]);
+  assert.match(pm(comSaidas(["07:00", "11:00"]))[0].msg, /saída das 7h fica fora da janela \(8h às 19h\)/);
+  assert.deepEqual(pm(mod), []);
+  // bairro só na quarta: limpeza ordena e some quando vazio
+  const ind = { versao: 1, raio_km: 10, grupos: [{ dias: ["seg", "ter", "qua", "qui", "sex", "sab"], tipos: [{ nome: "Entrega", inicio: "09:00", fim: "18:00", promessa: "janela", taxa: { modo: "fixa", valor: 8 } }] }],
+    zonas: [{ nomes: ["Jardim Morada do Sol"], valor: 20, dias: ["qua"] }, { nomes: ["Centro"], valor: 5, dias: [] }] };
+  assert.deepEqual(lp(ind).zonas[0].dias, ["qua"]);
+  assert.equal("dias" in lp(ind).zonas[1], false);
+  assert.deepEqual(pm(ind, { estruturado: true }), []);
+  console.log("freteModelo 26/11 (saídas e bairro por dia): ok");
+}

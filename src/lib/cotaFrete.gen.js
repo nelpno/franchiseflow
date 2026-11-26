@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: 75e4509e6bfbbdf8c47a279f80692c012f35ca9178047475475217d7b28aa32f
+// sha256 da fonte: a06f271b3cac7e05656ccb0ef0703f7cb52cb9810ceafb3d6f3f5426321e0ddb
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -100,18 +100,25 @@ function cotaResolverDia(texto, agora) {
 
 // bairro com taxa própria: casa pelo nome inteiro dentro do bairro (palavra a palavra), o mais longo vence
 // ("Engenho d'Água" não pode cair em "Bairro do Engenho").
-function cotaAcharZona(zonas, texto) {
+// Bairro ganha da cidade (26/11/2026, Santos): o texto depois do número costuma trazer as duas coisas ("Humaitá, São Vicente")
+// e o nome mais longo era o da cidade, que tem taxa própria; o bairro marcado "não entrega" perdia. `cidades` = cidade do mapa
+// e da unidade: nome de zona igual a uma delas só vale quando nenhum outro nome casou.
+function cotaAcharZona(zonas, texto, cidades) {
   var b = ' ' + cotaBase(texto) + ' ';
   if (!b.trim()) return null;
-  var melhor = null;
+  var cid = (cidades || []).map(cotaBase).filter(Boolean);
+  var melhor = null, melhorCidade = null;
   (zonas || []).forEach(function (z) {
     if (z.fora_da_cidade) return;
     (z.nomes || []).forEach(function (nome) {
       var k = cotaBase(nome);
-      if (k && b.indexOf(' ' + k + ' ') !== -1 && (!melhor || k.length > melhor.k.length)) melhor = { zona: z, nome: nome, k: k };
+      if (!k || b.indexOf(' ' + k + ' ') === -1) return;
+      var achado = { zona: z, nome: nome, k: k };
+      if (cid.indexOf(k) !== -1) { if (!melhorCidade || k.length > melhorCidade.k.length) melhorCidade = achado; }
+      else if (!melhor || k.length > melhor.k.length) melhor = achado;
     });
   });
-  return melhor;
+  return melhor || melhorCidade;
 }
 
 // Cidade vizinha atendida com taxa própria (ex.: São Vicente, para Santos): o cliente nem sempre escreve a cidade,
@@ -165,12 +172,30 @@ function cotaTaxaDoTipo(tipo, km, raio, estimado) {
   return { estado: 'sem_preco' };
 }
 
+// Saídas fixas (26/11/2026, Uberaba): promessa 'saidas' + saidas ['11:00','15:00','18:00'] = o entregador sai em rotas.
+// O horário é de SAÍDA: o pedido chega ao longo da rota, sem hora exata. Saída a menos de 15 min não conta (não dá para separar).
+var COTA_SAIDA_FOLGA = 15;
+function cotaSaidas(tipo) {
+  return tipo && tipo.promessa === 'saidas' && Array.isArray(tipo.saidas)
+    ? tipo.saidas.filter(function (s) { return /^\d{1,2}:\d{2}$/.test(String(s)); }).slice().sort(function (a, b) { return cotaMin(a) - cotaMin(b); })
+    : [];
+}
+function cotaListaHoras(hs) {
+  var h = hs.map(cotaHora);
+  return h.length > 1 ? h.slice(0, -1).join(', ') + ' e ' + h[h.length - 1] : (h[0] || '');
+}
+function cotaProximaSaida(tipo, horaMin) {
+  return cotaSaidas(tipo).find(function (s) { return cotaMin(s) - horaMin >= COTA_SAIDA_FOLGA; }) || null;
+}
+
 function cotaOpcao(tipo, taxa) {
+  var sd = cotaSaidas(tipo);
   return {
     tipo: tipo.nome,
     taxa: taxa,
     janela: cotaHora(tipo.inicio) + ' às ' + cotaHora(tipo.fim),
-    prazo: tipo.promessa === 'minutos' && tipo.minutos ? 'em até ' + tipo.minutos + ' min depois de confirmado' : 'dentro da janela',
+    prazo: sd.length ? 'em rotas que saem às ' + cotaListaHoras(sd) + ' (horário de SAÍDA: o pedido chega ao longo da rota, sem hora exata)'
+      : tipo.promessa === 'minutos' && tipo.minutos ? 'em até ' + tipo.minutos + ' min depois de confirmado' : 'dentro da janela',
     pedidos_ate: cotaHora(tipo.corte || tipo.fim)
   };
 }
@@ -178,6 +203,7 @@ function cotaOpcao(tipo, taxa) {
 function cotaTiposAbertos(grupo, horaMin, esp) {
   return cotaTiposDoDia(grupo, esp).filter(function (t) {
     var limite = cotaMin(t.corte) != null ? cotaMin(t.corte) : cotaMin(t.fim);
+    if (cotaSaidas(t).length && !cotaProximaSaida(t, horaMin)) return false; // já saiu a última rota de hoje
     return horaMin < limite && horaMin < cotaMin(t.fim);
   }).map(function (t) { return t.nome; });
 }
@@ -208,7 +234,9 @@ function cotaTiposDoDia(grupo, esp) {
     if (!(ini < fim)) return null;
     // corte só vale se cair dentro da janela nova (mesma regra do Customer Context); fora dela, vale o fim
     var c = cotaMin(t.corte), corte = c != null && c > ini && c < fim ? c : null;
-    return Object.assign({}, t, { inicio: cotaHoraMin(ini), fim: cotaHoraMin(fim), corte: corte != null ? cotaHoraMin(corte) : null });
+    var r = Object.assign({}, t, { inicio: cotaHoraMin(ini), fim: cotaHoraMin(fim), corte: corte != null ? cotaHoraMin(corte) : null });
+    if (cotaSaidas(t).length) r.saidas = cotaSaidas(t).filter(function (s) { return cotaMin(s) >= ini && cotaMin(s) <= fim; }); // rotas fora do horário especial saem
+    return r;
   }).filter(Boolean);
 }
 function cotaRotuloEspecial(x) {
@@ -231,8 +259,9 @@ function cotarFrete(pricing, destino, agora, extra) {
     if (fora) zona = { zona: fora, nome: destino.cidade_mapa };
   }
   if (!zona) {
-    var zc = cotaAcharZona(zonas, destino.bairro_cliente);
-    var zm = cotaAcharZona(zonas, destino.bairro_mapa);
+    var cidades = [destino.cidade_mapa, extra.cidadeUnidade];
+    var zc = cotaAcharZona(zonas, destino.bairro_cliente, cidades);
+    var zm = cotaAcharZona(zonas, destino.bairro_mapa, cidades);
     if ((zc && zm && zc.zona !== zm.zona) || (!zc && zm && cotaBase(destino.bairro_cliente))) {
       return {
         estado: 'confirmar_bairro',
@@ -248,7 +277,7 @@ function cotarFrete(pricing, destino, agora, extra) {
   }
   if (zona && zona.zona.especial) {
     return { estado: 'regra_especial', bairro: zona.nome, regra: zona.zona.especial,
-      instrucao: 'Frete com regra especial (' + zona.zona.especial + '). Diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.' };
+      instrucao: 'Frete com regra especial (' + zona.zona.especial + '). Diga que a responsável da unidade confirma a taxa e responde por aqui, e acione avisa_franqueado. Nunca diga que VOCÊ vai retornar ou avisar depois. Não cite valor.' };
   }
   if (!zona && raio && km != null && km > raio) {
     return { estado: 'fora_da_area', distancia_km: km, instrucao: 'Endereço fora da área de entrega (' + String(km).replace('.', ',') + ' km; a unidade atende até ' + raio + ' km).' };
@@ -256,24 +285,30 @@ function cotarFrete(pricing, destino, agora, extra) {
 
   // 2. opções por grupo de dias (sempre todos os grupos: "e pra sábado?" já está respondido)
   var bloqueio = null, aproximado = false;
+  // bairro atendido só em alguns dias (26/11/2026, Indaiatuba): o grupo vale só nos dias EM COMUM com o bairro.
+  // Antes, grupo Seg a Sáb + bairro só na quarta saía "Seg a Sáb" para o bairro (o furo só não aparecia porque
+  // os grupos cadastrados batiam com os dias do bairro). Bairro sem dias = como sempre.
+  var diasDoBairro = zona && zona.zona.dias && zona.zona.dias.length ? zona.zona.dias : null;
+  var zonaNoDia = function (d) { return !diasDoBairro || diasDoBairro.indexOf(d) !== -1; };
   var grupos = pricing.grupos.map(function (g) {
     var opcoes = [];
+    var dias = diasDoBairro ? g.dias.filter(zonaNoDia) : g.dias;
     var foraDoDia = !!zona && !cotaZonaAtende(zona.zona, g.dias);
     if (!foraDoDia) g.tipos.forEach(function (t) {
-      var tx = zona ? { valor: cotaValorZona(zona.zona, g.dias) } : cotaTaxaDoTipo(t, km, raio, destino.estimado);
+      var tx = zona ? { valor: cotaValorZona(zona.zona, dias) } : cotaTaxaDoTipo(t, km, raio, destino.estimado);
       if (tx.estado) { if (!bloqueio) bloqueio = tx; return; }
       if (tx.aproximado) aproximado = true;
       opcoes.push(cotaOpcao(t, tx.valor));
     });
-    return { dias: cotaRotuloDias(g.dias), _dias: g.dias, opcoes: opcoes, _foraDoDia: foraDoDia, _g: g };
+    return { dias: cotaRotuloDias(dias), _dias: dias, opcoes: opcoes, _foraDoDia: foraDoDia, _g: g };
   });
   if (!grupos.some(function (g) { return g.opcoes.length; })) {
     var b = bloqueio || { estado: 'sem_preco' };
     var txt = {
-      sem_preco: 'Não há valor de frete cadastrado. Diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.',
+      sem_preco: 'Não há valor de frete cadastrado. Diga que a responsável da unidade confirma a taxa e responde por aqui, e acione avisa_franqueado. Nunca diga que VOCÊ vai retornar ou avisar depois. Não cite valor.',
       precisa_km: 'Falta a distância do endereço para calcular o frete.',
-      regra_especial: 'Frete com regra especial (' + (b.texto || '') + '). Diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.'
-    }[b.estado] || 'A unidade confirma a taxa.';
+      regra_especial: 'Frete com regra especial (' + (b.texto || '') + '). Diga que a responsável da unidade confirma a taxa e responde por aqui, e acione avisa_franqueado. Nunca diga que VOCÊ vai retornar ou avisar depois. Não cite valor.'
+    }[b.estado] || 'A responsável da unidade confirma a taxa e responde por aqui; nunca diga que VOCÊ vai retornar.';
     return { estado: b.estado, instrucao: txt };
   }
 
@@ -282,7 +317,7 @@ function cotarFrete(pricing, destino, agora, extra) {
   var espHoje = cotaEspecial(he, agora.data);
   var hojeDia = cotaDiaDaSemana(agora.data);
   var gHoje = pricing.grupos.find(function (g) { return g.dias.indexOf(hojeDia) !== -1; });
-  var hojeForaDoDia = grupos.some(function (g) { return g._foraDoDia && g._dias.indexOf(hojeDia) !== -1; });
+  var hojeForaDoDia = !!gHoje && !!zona && (!cotaZonaAtende(zona.zona, gHoje.dias) || !zonaNoDia(hojeDia));
   var abertosHoje = gHoje && !hojeForaDoDia ? cotaTiposAbertos(gHoje, cotaMin(agora.hora), espHoje) : [];
   var proximo = null;
   for (var i = 1; i <= 14 && !proximo; i++) {
@@ -290,8 +325,13 @@ function cotarFrete(pricing, destino, agora, extra) {
     if (grupos.some(function (g) { return g.opcoes.length && g._dias.indexOf(cotaDiaDaSemana(d)) !== -1 && cotaTiposDoDia(g._g, espD).length; })) proximo = cotaDataCurta(d);
   }
 
+  var rotaHoje = null;
+  if (gHoje && abertosHoje.length) cotaTiposDoDia(gHoje, espHoje).forEach(function (t) {
+    var s = abertosHoje.indexOf(t.nome) !== -1 ? cotaProximaSaida(t, cotaMin(agora.hora)) : null;
+    if (s && !rotaHoje) rotaHoje = { tipo: t.nome, saida: s };
+  });
   var obsHoje = !gHoje ? 'hoje não tem entrega' : hojeForaDoDia ? 'hoje não tem entrega para esse endereço' : (abertosHoje.length ? '' : 'os pedidos de hoje já fecharam');
-  if (espHoje) obsHoje = espHoje.tipo === 'fechado' ? 'hoje não tem entrega (horário especial: fechado hoje)' : !gHoje ? 'horário especial hoje (' + cotaRotuloEspecial(espHoje) + '), fora da tabela de frete: diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.' : (obsHoje ? obsHoje + '; ' : '') + 'horário especial hoje: ' + cotaRotuloEspecial(espHoje);
+  if (espHoje) obsHoje = espHoje.tipo === 'fechado' ? 'hoje não tem entrega (horário especial: fechado hoje)' : !gHoje ? 'horário especial hoje (' + cotaRotuloEspecial(espHoje) + '), fora da tabela de frete: diga que a responsável da unidade confirma a taxa e responde por aqui, e acione avisa_franqueado. Nunca diga que VOCÊ vai retornar ou avisar depois. Não cite valor.' : (obsHoje ? obsHoje + '; ' : '') + 'horário especial hoje: ' + cotaRotuloEspecial(espHoje);
   var saida = {
     estado: 'ok',
     bairro_com_taxa: zona ? zona.nome : null,
@@ -304,6 +344,10 @@ function cotarFrete(pricing, destino, agora, extra) {
     grupos: grupos.filter(function (g) { return g.opcoes.length; }).map(function (g) { return { dias: g.dias, opcoes: g.opcoes }; }),
     instrucao: 'Use a taxa e o prazo da opção do DIA DA ENTREGA combinado (cada grupo de dias tem a sua tabela). Para hoje, só os tipos em hoje.ainda_da_para. Não calcule nem misture linhas.'
   };
+  if (rotaHoje) {
+    saida.hoje.rota = 'pedido fechado agora vai na rota das ' + cotaHora(rotaHoje.saida) + ' (' + rotaHoje.tipo + ')';
+    saida.instrucao += ' Com rota (hoje.rota): diga em qual rota vai o pedido; o horário é de SAÍDA, chega ao longo da rota: nunca prometa hora de chegada.';
+  }
   // exceções de hoje até +14 dias (só aparece quando há): valem no lugar da tabela da semana nessas datas
   var lim = cotaSomaDias(agora.data, 14), espLista = [];
   he.forEach(function (x) {
@@ -329,8 +373,9 @@ function cotarFrete(pricing, destino, agora, extra) {
   // 4. data pedida pelo cliente (opcional)
   if (extra.dataEntrega) {
     var dia = cotaDiaDaSemana(extra.dataEntrega), espP = cotaEspecial(he, extra.dataEntrega);
-    var g = grupos.find(function (x) { return x._dias.indexOf(dia) !== -1; });
-    var opc = g ? g.opcoes : [];
+    var g = grupos.find(function (x) { return x._g.dias.indexOf(dia) !== -1; });
+    var gFora = !!g && (g._foraDoDia || !zonaNoDia(dia));
+    var opc = g && !gFora ? g.opcoes : [];
     if (g && espP) {
       var tiposP = cotaTiposDoDia(g._g, espP);
       opc = opc.map(function (o) {
@@ -339,11 +384,11 @@ function cotarFrete(pricing, destino, agora, extra) {
       }).filter(Boolean);
     }
     if (g && extra.dataEntrega === agora.data) opc = opc.filter(function (o) { return abertosHoje.indexOf(o.tipo) !== -1; });
-    var obsP = !g ? 'sem entrega nesse dia' : g._foraDoDia ? 'sem entrega nesse dia para esse endereço' : (opc.length ? '' : 'os pedidos para esse dia já fecharam');
-    if (espP) obsP = espP.tipo === 'fechado' ? 'sem entrega nesse dia (horário especial: fechado)' : !g ? 'horário especial nesse dia (' + cotaRotuloEspecial(espP) + '), fora da tabela de frete: diga que a unidade confirma a taxa e acione avisa_franqueado. Não cite valor.' : (obsP ? obsP + '; ' : '') + 'horário especial nesse dia: ' + cotaRotuloEspecial(espP);
+    var obsP = !g ? 'sem entrega nesse dia' : gFora ? 'sem entrega nesse dia para esse endereço' : (opc.length ? '' : 'os pedidos para esse dia já fecharam');
+    if (espP) obsP = espP.tipo === 'fechado' ? 'sem entrega nesse dia (horário especial: fechado)' : !g ? 'horário especial nesse dia (' + cotaRotuloEspecial(espP) + '), fora da tabela de frete: diga que a responsável da unidade confirma a taxa e responde por aqui, e acione avisa_franqueado. Nunca diga que VOCÊ vai retornar ou avisar depois. Não cite valor.' : (obsP ? obsP + '; ' : '') + 'horário especial nesse dia: ' + cotaRotuloEspecial(espP);
     saida.data_pedida = { dia: cotaDataCurta(extra.dataEntrega), opcoes: opc, observacao: obsP };
   }
-  if (aproximado) saida.aviso = 'Distância estimada perto do limite de uma faixa: diga que a unidade confirma o valor.';
+  if (aproximado) saida.aviso = 'Distância estimada perto do limite de uma faixa: diga que a responsável da unidade confirma o valor e responde por aqui (nunca diga que VOCÊ vai retornar).';
   return saida;
 }
 
