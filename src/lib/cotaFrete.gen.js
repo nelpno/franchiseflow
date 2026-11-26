@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: ed30a85671762aa78bed5b57f218804bcb70f7e4bf6b24d1da0134a7d41fe22f
+// sha256 da fonte: d98af4e3c60fa43cd5079f94c0a730f38aad556216376fa841db1b90b78f17e3
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -103,6 +103,18 @@ function cotaResolverDia(texto, agora) {
 // Bairro ganha da cidade (26/11/2026, Santos): o texto depois do número costuma trazer as duas coisas ("Humaitá, São Vicente")
 // e o nome mais longo era o da cidade, que tem taxa própria; o bairro marcado "não entrega" perdia. `cidades` = cidade do mapa
 // e da unidade: nome de zona igual a uma delas só vale quando nenhum outro nome casou.
+// Nome que perdeu o prefixo (26/11/2026, Santos: "Praia Grande" vira "grande") só casa quando o texto traz o nome inteiro
+// ou quando a palavra antes do resto não é outro nome: "Campo Grande" (bairro de Santos) caía em "Praia Grande, não entrega".
+function cotaCasaSemPrefixo(b, nomeInteiro, k) {
+  if (b.indexOf(' ' + nomeInteiro + ' ') !== -1) return true;
+  var i = b.indexOf(' ' + k + ' ');
+  while (i !== -1) {
+    var antes = b.slice(0, i).trim().split(' ').pop();
+    if (!antes || !/[a-z]{3,}/.test(antes) || COTA_PREFIXO.test(antes + ' ')) return true;
+    i = b.indexOf(' ' + k + ' ', i + 1);
+  }
+  return false;
+}
 function cotaAcharZona(zonas, texto, cidades) {
   var b = ' ' + cotaBase(texto) + ' ';
   if (!b.trim()) return null;
@@ -113,6 +125,7 @@ function cotaAcharZona(zonas, texto, cidades) {
     (z.nomes || []).forEach(function (nome) {
       var k = cotaBase(nome);
       if (!k || b.indexOf(' ' + k + ' ') === -1) return;
+      if (k !== cotaNorm(nome) && !cotaCasaSemPrefixo(b, cotaNorm(nome), k)) return;
       var achado = { zona: z, nome: nome, k: k };
       if (cid.indexOf(k) !== -1) { if (!melhorCidade || k.length > melhorCidade.k.length) melhorCidade = achado; }
       else if (!melhor || k.length > melhor.k.length) melhor = achado;
