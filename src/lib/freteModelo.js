@@ -150,7 +150,8 @@ function rotulosDoGrupo(grupo, zonas) {
     // mesma regra do motor: bairro atendido só em alguns dias (dias) e valor próprio num dia (por_dia)
     if (z.dias?.length && !(grupo.dias || []).some((d) => z.dias.includes(d))) continue;
     const doDia = (grupo.dias || []).map((d) => z.por_dia?.[d]).find((v) => numero(v) !== null);
-    for (const n of z.nomes || []) rules.push({ label: `Bairro ${n} (taxa fixa em qualquer janela)`, fee: valorTexto(doDia ?? z.valor) });
+    const quando = preenchido(z.inicio) && preenchido(z.fim) ? `só das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)}` : "taxa fixa em qualquer janela";
+    for (const n of z.nomes || []) rules.push({ label: `Bairro ${n} (${quando})`, fee: valorTexto(doDia ?? z.valor) });
   }
   return { mode: "modality", rules };
 }
@@ -246,6 +247,9 @@ function limparZona(z) {
   const dias = ordenarDias(z.dias);
   if (dias.length) out.dias = dias;
   else delete out.dias;
+  // horário próprio do bairro (26/11/2026): só vai ao banco com os dois lados (o motor ignora meio horário)
+  if (!z.nao_atende && preenchido(z.inicio) && preenchido(z.fim)) { out.inicio = z.inicio; out.fim = z.fim; }
+  else { delete out.inicio; delete out.fim; }
   if (preenchido(z.valor)) out.valor = numero(z.valor);
   else if (!z.nao_atende) out.valor = null;
   else delete out.valor;
@@ -339,6 +343,17 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
       const diasEntrega = new Set((modelo?.grupos || []).flatMap((g) => g.dias || []));
       if (diasEntrega.size && !z.nao_atende && (z.dias || []).length && !z.dias.some((d) => diasEntrega.has(d))) {
         out.push({ chave: `z${zi}.dias`, msg: `${nomes[0] || "Bairro"}: só ${rotuloDias(z.dias)}, mas nesse dia não há entrega. Marque um dia de entrega.` });
+      }
+      if (!z.nao_atende && !z.especial && (preenchido(z.inicio) || preenchido(z.fim))) {
+        const zi0 = minutosDe(z.inicio), zf = minutosDe(z.fim);
+        if (zi0 === null || zf === null) out.push({ chave: `z${zi}.horario`, msg: `${nomes[0] || "Bairro"}: preencha o horário inteiro (das __ às __) ou deixe os dois em branco.` });
+        else if (zi0 >= zf) out.push({ chave: `z${zi}.horario`, msg: `${nomes[0] || "Bairro"}: o horário termina (${z.fim}) antes de começar (${z.inicio}).` });
+        else {
+          // precisa cruzar a janela de entrega de ao menos um dia em que o bairro é atendido
+          const cruza = (modelo?.grupos || []).some((g) => (g.dias || []).some((d) => !(z.dias || []).length || z.dias.includes(d))
+            && (g.tipos || []).some((t) => minutosDe(t.inicio) !== null && minutosDe(t.fim) !== null && minutosDe(t.inicio) < zf && minutosDe(t.fim) > zi0));
+          if (!cruza) out.push({ chave: `z${zi}.horario`, msg: `${nomes[0] || "Bairro"}: das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)} fica fora do horário de entrega desses dias.` });
+        }
       }
       for (const n of nomes) {
         const key = n.toLowerCase();

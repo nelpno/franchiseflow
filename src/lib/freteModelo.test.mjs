@@ -221,3 +221,22 @@ console.log("freteModelo: ok");
   assert.deepEqual([ng.dias, ng.tipos[0].inicio, ng.tipos[0].fim, ng.tipos[0].saidas], [["qua"], "08:00", "18:00", ["10:30", "15:00", "18:00"]]);
   console.log("freteModelo 26/11b (saídas por grupo): ok");
 }
+
+// Indaiatuba 26/11 (tarde): bairro com horário próprio (Campo Bonito só na quarta, das 10h às 16h)
+{
+  const base = { versao: 1, raio_km: 10, grupos: [{ dias: ["seg", "ter", "qua", "qui", "sex", "sab", "dom"], tipos: [{ nome: "Entrega", inicio: "09:00", fim: "18:00", promessa: "janela", taxa: { modo: "fixa", valor: 8 } }] }] };
+  const com = (z) => ({ ...base, zonas: [{ nomes: ["Campo Bonito"], valor: 15, dias: ["qua"], ...z }] });
+  assert.deepEqual([limparPricing(com({ inicio: "10:00", fim: "16:00" })).zonas[0].inicio, limparPricing(com({ inicio: "10:00", fim: "16:00" })).zonas[0].fim], ["10:00", "16:00"]);
+  assert.equal("inicio" in limparPricing(com({ inicio: "10:00", fim: "" })).zonas[0], false, "meio horário não vai ao banco");
+  assert.equal("inicio" in limparPricing(com({ inicio: "10:00", fim: "16:00", nao_atende: true })).zonas[0], false);
+  assert.deepEqual(problemasDoModelo(com({ inicio: "10:00", fim: "16:00" }), { estruturado: true }), []);
+  assert.deepEqual(problemasDoModelo(com({}), { estruturado: true }), [], "sem horário segue valendo");
+  assert.match(problemasDoModelo(com({ inicio: "10:00" }), { estruturado: true })[0].msg, /horário inteiro/);
+  assert.match(problemasDoModelo(com({ inicio: "16:00", fim: "10:00" }), { estruturado: true })[0].msg, /termina/);
+  assert.match(problemasDoModelo(com({ inicio: "19:00", fim: "21:00" }), { estruturado: true })[0].msg, /fora do horário/);
+  const lim = limparPricing(com({ inicio: "10:00", fim: "16:00" }));
+  assert.deepEqual(limparPricing(lim), lim, "limpar é idempotente");
+  const txt = modeloParaLegado(lim, { estruturado: true });
+  assert.match(JSON.stringify(txt), /Bairro Campo Bonito \(só das 10h às 16h\)/);
+  console.log("freteModelo 26/11c (horário do bairro): ok");
+}

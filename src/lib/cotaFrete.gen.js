@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: a06f271b3cac7e05656ccb0ef0703f7cb52cb9810ceafb3d6f3f5426321e0ddb
+// sha256 da fonte: 2061685c8c2b54676099e7fdb648e71d8701a8a876d97a5edfeaa50086584372
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -281,6 +281,17 @@ function cotarFrete(pricing, destino, agora, extra) {
   }
   if (!zona && raio && km != null && km > raio) {
     return { estado: 'fora_da_area', distancia_km: km, instrucao: 'Endereço fora da área de entrega (' + String(km).replace('.', ',') + ' km; a unidade atende até ' + raio + ' km).' };
+  }
+
+  // bairro com horário próprio (26/11/2026, Indaiatuba: Campo Bonito só na quarta, das 10h às 16h): cada tipo de
+  // entrega tem a janela e o corte recortados para dentro do horário do bairro (o mesmo recorte do horário especial);
+  // tipo que não cabe sai. Bairro sem horário = como sempre.
+  var zi = zona ? zona.zona : null;
+  if (zi && cotaMin(zi.inicio) != null && cotaMin(zi.fim) != null && cotaMin(zi.inicio) < cotaMin(zi.fim)) {
+    var recorte = { tipo: 'horario', abre: zi.inicio, fecha: zi.fim };
+    pricing = Object.assign({}, pricing, { grupos: pricing.grupos.map(function (g) {
+      return Object.assign({}, g, { tipos: cotaTiposDoDia(g, recorte) });
+    }) });
   }
 
   // 2. opções por grupo de dias (sempre todos os grupos: "e pra sábado?" já está respondido)

@@ -3,7 +3,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import HelpTip from "@/components/shared/HelpTip";
 import { WEEKDAYS } from "@/lib/franchiseUtils";
 import { rotuloDias } from "@/lib/configSave";
-import { diasLivres, diasPorExtenso, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro, PRAZO_MIN, PRAZO_MAX } from "@/lib/freteModelo";
+import { diasLivres, diasPorExtenso, novoGrupo, novoTipo, fraseDoGrupo, ehGratis, numero, preenchido, limparPricing, dinheiro, horaCurta, PRAZO_MIN, PRAZO_MAX } from "@/lib/freteModelo";
 import { agoraSaoPaulo, somaDias, rotuloCurto } from "@/lib/simulacoesRobo";
 import { cotarFrete } from "@/lib/cotaFrete.gen";
 import { parseSaidas } from "@/lib/saidasEntrega";
@@ -327,7 +327,7 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
     <div className="space-y-3 border-b border-surface-line/20 pb-4">
       <div>
         <p className="text-sm font-bold text-ink-2 flex items-center gap-1.5"><MaterialIcon icon="location_on" size={16} />Bairros com taxa própria <HelpTip tip="bairrosTaxaPropria" /></p>
-        <p className={dica}>Cada bairro ou condomínio com o seu valor (R$ 0 é grátis), mesmo além do raio. Atende só em alguns dias? Marque em "Só em" (ex.: Jardim X só na quarta). O que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
+        <p className={dica}>Cada bairro ou condomínio com o seu valor (R$ 0 é grátis), mesmo além do raio. Atende só em alguns dias ou horários? Marque em "Só em" e "Horário" (ex.: Jardim X só na quarta, das 10h às 16h). O que não estiver aqui segue a taxa de cada dia, logo abaixo.</p>
       </div>
       {zonas.map((z, i) => (
         <div key={i} className="rounded-xl bg-surface p-2.5 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3">
@@ -361,6 +361,15 @@ function Bairros({ zonas, onChange, marcas, problemas }) {
                 );
               })}
               <span className="text-[11px] text-ink-2/60">{(z.dias || []).length ? `o robô diz que aqui a entrega é só ${diasPorExtenso(z.dias).toLowerCase()}` : "nenhum marcado = todo dia de entrega"}</span>
+            </div>
+          )}
+          {!z.nao_atende && !z.especial && (
+            <div className="sm:basis-full flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-ink-2/70">Horário:</span>
+              <SelectHora value={z.inicio} onChange={(v) => set(i, { ...z, inicio: v })} invalido={marcas.has(`z${i}.horario`)} ariaLabel="Início da entrega no bairro" />
+              <span className="text-xs text-ink-2/60">às</span>
+              <SelectHora value={z.fim} onChange={(v) => set(i, { ...z, fim: v })} invalido={marcas.has(`z${i}.horario`)} ariaLabel="Fim da entrega no bairro" />
+              <span className="text-[11px] text-ink-2/60">{z.inicio && z.fim ? `aqui a entrega é só das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)}` : "em branco = o horário de entrega do dia"}</span>
             </div>
           )}
           {detalheDaZona(z) && <p className="text-[11px] text-ink-2/70 sm:basis-full">{detalheDaZona(z)}</p>}
