@@ -598,7 +598,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
               </div>
 
               <div>
-                <p className={ROTULO_CAMPO}>{regra.tipo === "kit" ? "O que vem no kit" : regra.tipo === "brinde" ? `Produtos que contam (${regra.itens.length})` : "Produto(s) da promoção"}</p>
+                <p className={ROTULO_CAMPO}>{regra.tipo === "kit" ? "O que vem no kit" : regra.tipo === "brinde" || regra.itens.length > 1 ? `Produtos que contam (${regra.itens.length})` : "Produto(s) da promoção"}</p>
                 <ul className="flex flex-wrap gap-2">
                   {regra.itens.map((i, k) => (ehEscolha(i) ? (
                     <li key={`escolha-${k}`} className="inline-flex min-h-11 max-w-full items-center gap-1 rounded-2xl border border-brand/40 bg-brand-soft pl-3 text-sm text-ink" data-promo-escolha>
@@ -640,7 +640,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
                   )))}
                   {regra.itens.length < maxItens(regra.tipo) && (
                     <li>
-                      <button type="button" className={`${BTN_SECUNDARIO} min-h-11 rounded-full`} onClick={() => (regra.tipo === "brinde" ? setEscolhendoVarios(true) : setEscolhendo(true))}>
+                      <button type="button" className={`${BTN_SECUNDARIO} min-h-11 rounded-full`} onClick={() => (regra.tipo === "kit" ? setEscolhendo(true) : setEscolhendoVarios(true))}>
                         <MaterialIcon icon="add" size={18} aria-hidden="true" /> produto
                       </button>
                     </li>
@@ -779,7 +779,7 @@ export default function PromocaoForm({ painel, hojeISO, salvando, onSalvar, onSa
         onEscolher={(nome) => setRegra((r) => ({ ...r, itens: [...r.itens, { product_name: nome, qtd: 1 }] }))} />
 
       <EscolherVarios aberto={escolhendoVarios} onFechar={() => setEscolhendoVarios(false)} produtos={paraEscolher}
-        jaEscolhidos={meusNomes} bloqueados={nomeDoBrinde(regra) ? [nomeDoBrinde(regra)] : []} max={maxItens("brinde")}
+        jaEscolhidos={meusNomes} bloqueados={regra.tipo === "brinde" && nomeDoBrinde(regra) ? [nomeDoBrinde(regra)] : []} max={maxItens(regra.tipo)}
         onSalvar={(nomes) => setRegra((r) => ({ ...r, itens: nomes.map((product_name) => ({ product_name, qtd: 1 })) }))} />
 
       <EscolherProduto aberto={escolhendoBrinde} onFechar={() => setEscolhendoBrinde(false)} produtos={paraEscolher}

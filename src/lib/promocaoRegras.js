@@ -17,8 +17,8 @@
 
 export const TETO_DESCONTO = 0.35; // o mesmo teto do robô
 export const MAX_ITENS = 6;
-export const MAX_ITENS_BRINDE = 30; // "qualquer massa de 700g" (Suzano tem 20)
-export const maxItens = (tipo) => (tipo === "brinde" ? MAX_ITENS_BRINDE : MAX_ITENS);
+export const MAX_ITENS_BRINDE = 30; // "qualquer massa de 700g" (Suzano tem 20); 26/11/2026 também o Leve N (Vila Sônia)
+export const maxItens = (tipo) => (tipo === "kit" ? MAX_ITENS : MAX_ITENS_BRINDE);
 export const MAX_PROMOS = 3; // 12/11/2026: até 3 promoções ao mesmo tempo (o banco recusa a 4ª)
 export const NOME_MAX = 40;
 export const ROTULO_MAX = 40; // nome do item à escolha (3 a 40)
@@ -159,8 +159,8 @@ export function erroDaRegra(regra, produtos, hojeISO, outras = []) {
   if (nome.length < 3 || nome.length > NOME_MAX) return "O nome da promoção precisa ter de 3 a 40 letras.";
   const itens = Array.isArray(regra.itens) ? regra.itens : [];
   if (!itens.length) return "Escolha pelo menos um produto.";
-  if (regra.tipo === "brinde" && itens.length > MAX_ITENS_BRINDE) return "No máximo 30 produtos na promoção.";
-  if (regra.tipo !== "brinde" && itens.length > MAX_ITENS) return "No máximo 6 produtos na promoção.";
+  if (regra.tipo !== "kit" && itens.length > MAX_ITENS_BRINDE) return "No máximo 30 produtos na promoção.";
+  if (regra.tipo === "kit" && itens.length > MAX_ITENS) return "No máximo 6 produtos na promoção.";
   // 19/11: item à escolha (só no kit): nome e opções
   for (const it of itens) {
     if (!ehEscolha(it)) continue;

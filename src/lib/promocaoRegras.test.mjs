@@ -81,6 +81,12 @@ t("validação: mesmas mensagens e ordem do promocao_regras_erro", () => {
   assert.equal(erroDaRegra({ ...LEVE, pct: 5.5 }, IMIRIM, H), "Desconto: de 1% a 35%, número inteiro.");
   assert.equal(erroDaRegra({ ...LEVE, min_qtd: 1 }, IMIRIM, H), "Quantas: de 2 a 10.");
   assert.equal(erroDaRegra({ ...LEVE, tipo: "frete" }, IMIRIM, H), "Escolha o tipo da promoção.");
+  // 26/11/2026 (Vila Sônia): Leve N até 30 produtos, como o brinde; kit segue até 6 (mesmo corte do promocao_regra_erro, SQL 26d)
+  const M700 = Array.from({ length: 12 }, (_, k) => ({ produto: `Massa ${k + 1} - 700g`, preco: 40 }));
+  const muitos = M700.map((p) => ({ product_name: p.produto, qtd: 1 }));
+  assert.equal(erroDaRegra({ ...LEVE, nome: "Leve 2 de 700g", itens: muitos, min_qtd: 2, pct: 5 }, M700, H), null, "Leve N com 12 produtos passa");
+  assert.equal(erroDaRegra({ ...LEVE, itens: [...muitos, ...Array.from({ length: 19 }, (_, k) => ({ product_name: `X${k}`, qtd: 1 }))] }, M700, H), "No máximo 30 produtos na promoção.");
+  assert.equal(erroDaRegra({ ...KIT, itens: muitos.slice(0, 7), preco: 100 }, M700, H), "No máximo 6 produtos na promoção.");
 });
 
 t("limparRegra: só os campos do tipo; Leve N grava qtd 1; números como número", () => {
