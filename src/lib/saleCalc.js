@@ -23,7 +23,7 @@
  * Com a tabela, quem manda é o percentual dela (cardFeePercent > 0), não esta lista.
  * `card_machine` saiu da UI e por isso não está aqui.
  */
-export const FEEABLE_METHODS = ["credit", "debit", "nfc", "payment_link", "meal_voucher"];
+export const FEEABLE_METHODS = ["credit", "debit", "nfc", "payment_link", "meal_voucher", "food_voucher"];
 
 /** A venda cobra taxa de cartão? Com tabela de taxas, o percentual decide; sem ela, o método. */
 export function chargesCardFee({ paymentMethod, cardFeePercent, hasPaymentFeesConfig }) {

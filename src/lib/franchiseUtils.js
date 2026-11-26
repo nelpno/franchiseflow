@@ -73,8 +73,21 @@ export const PAYMENT_METHODS = [
   { value: "debit", label: "Débito", icon: "credit_card" },
   { value: "nfc", label: "Aproximação/NFC", icon: "contactless" },
   { value: "payment_link", label: "Link de Pagamento", icon: "link" },
-  { value: "meal_voucher", label: "Vale-refeição (VR/Sodexo)", icon: "restaurant" },
+  { value: "meal_voucher", label: "Vale-refeição", icon: "restaurant" },
+  { value: "food_voucher", label: "Vale-alimentação", icon: "shopping_basket" }, // 26/11/2026 (Bárbara, Jd. Santa Maria)
   { value: "cash", label: "Dinheiro", icon: "payments" },
+];
+
+/** Os dois vales: mesmas bandeiras (vale_bandeiras), pagos na hora, com taxa. */
+export const VALE_METODOS = ["meal_voucher", "food_voucher"];
+
+/**
+ * Bandeiras de vale que a franqueada marca (franchise_configurations.vale_bandeiras, TEXT[] com ESTES nomes).
+ * O robô lê o nome como está (Customer Context › __pagamentoFatos): renomear aqui muda o que ele diz ao cliente.
+ * Uma lista para os dois vales (refeição e alimentação). NULL no banco = vales ainda não revisados (ver o .sql de 26/11).
+ */
+export const VALE_BANDEIRAS = [
+  "Alelo", "Ticket", "VR", "Pluxee (Sodexo)", "Ben", "Caju", "Flash", "Swile", "iFood Benefícios", "Up Brasil", "VeroCard", "Green Card",
 ];
 
 // Legacy mapping: old "card_machine" maps to credit+debit for backward compat

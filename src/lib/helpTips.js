@@ -57,8 +57,8 @@ export const HELP_TIPS = {
   horarioEspecial: {
     titulo: "Horário especial",
     texto:
-      "Para um dia ou período fora do normal: feriado, viagem, evento. Vale só nessas datas: o horário da semana não muda e, depois da data, o especial some sozinho. Fechado: o robô não oferece esse dia, e quem pede para ele recebe outro dia aberto. Horário diferente: naquele dia o robô usa só o horário novo. Vale para entrega, retirada ou as duas. Não escreva horário em Promoções ativas.",
-    exemplo: "Sexta 06/11 com horário diferente das 9h às 15h: nessa sexta o robô diz que fecha às 15h; na sexta seguinte volta ao normal.",
+      "Para um dia ou período fora do normal: feriado, viagem, evento. Vale só nessas datas: o horário da semana não muda e, depois da data, o especial some sozinho. Fechado: o robô não oferece esse dia, e quem pede para ele recebe outro dia aberto. Horário diferente: naquele dia o robô usa só o horário novo. Vale para entrega, retirada ou as duas. O motivo é opcional: com ele, o robô conta ao cliente por que o horário mudou (feriado, férias, evento externo), para ele saber que é só nessas datas. Não escreva horário em Promoções ativas.",
+    exemplo: "Sexta 06/11 com horário diferente das 9h às 15h, motivo Evento externo: nessa sexta o robô diz que fecha às 15h porque a unidade está num evento; na sexta seguinte volta ao normal.",
   },
   // 06/11/2026: a linha vai no texto fixo da confirmação do pedido (EnviaPedidoFechado › Prepare Sale Data), só quando
   // o cliente não tinha compra na unidade (customerIntel.compras = 0). O modelo não vê; o prompt não mudou.
@@ -77,7 +77,7 @@ export const HELP_TIPS = {
   formaPagamento: {
     titulo: "Formas de pagamento",
     texto:
-      "Marque o que você aceita em cada modalidade. Na entrega o robô só aceita o que está marcado em Entrega; na retirada, só o que está em Retirada. Crédito, débito e aproximação são na maquininha, na hora: marque em Entrega só se o entregador leva a maquininha. Pix e link são pagos antes: o robô pede o comprovante e só fecha o pedido depois de recebê-lo.",
+      "Marque o que você aceita em cada modalidade. Na entrega o robô só aceita o que está marcado em Entrega; na retirada, só o que está em Retirada. Crédito, débito e aproximação são na maquininha, na hora: marque em Entrega só se o entregador leva a maquininha. Pix e link são pagos antes: o robô pede o comprovante e só fecha o pedido depois de recebê-lo. Vale-refeição e vale-alimentação são separados: marque só o que o seu CNPJ aceita, e as bandeiras logo abaixo.",
     exemplo: "Crédito marcado só em Retirada e Link em Entrega: na entrega o robô oferece o cartão pelo link, pago antes.",
   },
 };

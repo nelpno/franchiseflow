@@ -22,6 +22,8 @@ import WizardStepper from "@/components/vendedor/WizardStepper";
 import WizardStep from "@/components/vendedor/WizardStep";
 import DeliveryScheduleEditor from "@/components/vendedor/DeliveryScheduleEditor";
 import PaymentMatrix from "@/components/vendedor/PaymentMatrix";
+import ValeBandeiras from "@/components/vendedor/ValeBandeiras";
+import { valesMarcados, mexeuEmVale, normalizarBandeiras } from "@/lib/vales";
 import ComoRoboResponde from "@/components/vendedor/ComoRoboResponde";
 import EntregaCard from "@/components/vendedor/EntregaCard";
 import HorarioEspecialCard from "@/components/vendedor/HorarioEspecialCard";
@@ -72,6 +74,7 @@ const initialFormData = {
   charges_card_fee_to_customer: false,
   payment_delivery: [],
   payment_pickup: [],
+  vale_bandeiras: null, // null = vales não revisados (src/lib/vales.js)
   delivery_fee_rules: [{ max_km: '', fee: '' }],
   pix_key_type: '',
   pix_holder_name: '',
@@ -191,6 +194,7 @@ function buildDbPayload(form) {
   // Instagram: só o usuário (sem @ nem URL); o robô monta o link instagram.com/<usuário> na confirmação
   finalData.social_media_links = { ...(dbFields.social_media_links || {}), instagram: normalizarInstagram(dbFields.social_media_links?.instagram) };
   // Horário especial: vencido (até < hoje) sai ao salvar; "vale" vira ambos quando só há uma modalidade
+  finalData.vale_bandeiras = normalizarBandeiras(dbFields.vale_bandeiras);
   finalData.horario_especial = normalizarHorarioEspecial(dbFields.horario_especial, hojeBRT(), { hasDelivery: finalData.has_delivery !== false, hasPickup: !!finalData.has_pickup });
   // Frete calculado: tira linha em branco e normaliza números (idempotente com o que veio do banco)
   if (finalData.delivery_pricing && typeof finalData.delivery_pricing === 'object') {
@@ -437,6 +441,7 @@ function FranchiseSettingsContent() {
       has_pickup: config.has_pickup ?? false,
       payment_delivery: config.payment_delivery || [],
       payment_pickup: config.payment_pickup || [],
+      vale_bandeiras: normalizarBandeiras(config.vale_bandeiras),
       delivery_fee_rules: config.delivery_fee_rules || [{ max_km: '', fee: '' }],
       delivery_schedule: config.delivery_schedule || [],
       pix_key_type: config.pix_key_type || '',
@@ -676,6 +681,9 @@ function FranchiseSettingsContent() {
   };
 
   const handleInputChange = (field, value) => aplicarCampos({ [field]: value });
+  // Tabela de pagamento: mexer num vale conta como "revisou os vales" (vale_bandeiras null → [], src/lib/vales.js)
+  const mudarPagamento = (field, value) => aplicarCampos(
+    mexeuEmVale(formData[field], value) && !Array.isArray(formData.vale_bandeiras) ? { [field]: value, vale_bandeiras: [] } : { [field]: value });
 
   // Vários campos numa mudança só (o cartão "Entrega" mexe em 6-8 de uma vez): um render e um rascunho.
   const aplicarCampos = (patch) => {
@@ -853,6 +861,7 @@ function FranchiseSettingsContent() {
   // paga ao buscar: "Na hora da retirada" ou "Pix na entrega" (que vale também na retirada): o cardápio não mostra código (o banco ignora a opção)
   const usaLink = metodosMarcados.some((pm) => pm.value === 'payment_link');
   const metodosComTaxa = metodosMarcados.filter((pm) => pm.value !== 'cash');
+  const vales = valesMarcados(formData, { hasDelivery, hasPickup });
 
   if (isLoading) {
     return (
@@ -1313,9 +1322,12 @@ function FranchiseSettingsContent() {
                 methods={PAYMENT_METHODS}
                 entrega={hasDelivery ? (formData.payment_delivery || []) : null}
                 retirada={hasPickup ? (formData.payment_pickup || []) : null}
-                onChangeEntrega={(val) => handleInputChange('payment_delivery', val)}
-                onChangeRetirada={(val) => handleInputChange('payment_pickup', val)}
+                onChangeEntrega={(val) => mudarPagamento('payment_delivery', val)}
+                onChangeRetirada={(val) => mudarPagamento('payment_pickup', val)}
               />
+              {(vales.vr || vales.va) && (
+                <ValeBandeiras value={formData.vale_bandeiras} onChange={(val) => handleInputChange('vale_bandeiras', val)} vr={vales.vr} va={vales.va} />
+              )}
 
               {/* Junção 10/11/2026: "quando o cliente paga" num bloco só (antes: Pix na entrega aqui, reserva na etapa 4 e
                   pagar na retirada na etapa 2). Mesmas colunas, mesmo texto que o robô lê. */}

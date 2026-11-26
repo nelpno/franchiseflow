@@ -18,7 +18,7 @@ import { LEGACY_PAYMENT_MAP } from "./franchiseUtils.js";
 const DOW = ["dom", "seg", "ter", "qua", "qui", "sex", "sab"];
 const NOME = { seg: "segunda", ter: "terça", qua: "quarta", qui: "quinta", sex: "sexta", sab: "sábado", dom: "domingo" };
 const PAGAMENTO = { pix: "Pix", credit: "crédito", debit: "débito", nfc: "aproximação (NFC)", payment_link: "link de pagamento",
-  meal_voucher: "vale-refeição", cash: "dinheiro" };
+  meal_voucher: "vale-refeição", food_voucher: "vale-alimentação", cash: "dinheiro" };
 
 const ABREV = { seg: "Seg", ter: "Ter", qua: "Qua", qui: "Qui", sex: "Sex", sab: "Sáb", dom: "Dom" };
 
@@ -256,7 +256,35 @@ export function montarSimulacoes(form, hoje) {
       resposta: partes.join(" "),
     });
   }
+  const vale = simulacaoVale(form);
+  if (vale) itens.push(vale);
   return itens;
+}
+
+/**
+ * Cenário "Aceita vale?" (26/11/2026, Bárbara/Jd. Santa Maria): o que o robô responde pela MESMA regra do
+ * __pagamentoFatos do Customer Context (vale-refeição e vale-alimentação separados; bandeiras de vale_bandeiras;
+ * vale_bandeiras null = vales não revisados: o robô não afirma o vale-alimentação de quem só marcou o refeição).
+ */
+export function simulacaoVale(form) {
+  const listas = [form?.has_delivery !== false ? form?.payment_delivery : null, form?.has_pickup ? (form?.payment_pickup?.length ? form.payment_pickup : form?.payment_delivery) : null].filter(Boolean);
+  const tem = (v) => listas.some((l) => (l || []).includes(v));
+  const vr = tem("meal_voucher"), va = tem("food_voucher");
+  if (!vr && !va) return null;
+  const band = Array.isArray(form?.vale_bandeiras) ? form.vale_bandeiras.filter(Boolean) : [];
+  const revisado = Array.isArray(form?.vale_bandeiras);
+  const quais = [vr && "vale-refeição", va && "vale-alimentação"].filter(Boolean);
+  let resposta = `Aceitamos ${juntar(quais)}`;
+  resposta += band.length ? `, nas bandeiras ${juntar(band)}.` : ".";
+  if (vr && !va) resposta += revisado ? " Vale-alimentação não." : " O vale-alimentação, a unidade confirma para você.";
+  if (va && !vr) resposta += " Vale-refeição não.";
+  if (!band.length) resposta += " A bandeira do seu cartão, a unidade confirma para você.";
+  return {
+    rotulo: "Aceita vale?",
+    tag: !revisado ? "Revise os vales: o robô não sabe do vale-alimentação" : !band.length ? "Marque as bandeiras aceitas" : undefined,
+    pergunta: "Vocês aceitam vale? Quais bandeiras?",
+    resposta,
+  };
 }
 
 // Dias em que o robô abre, pela mesma regra do Customer Context: entrega = delivery_schedule com início e fim;
@@ -268,7 +296,7 @@ function diasAbertos(form, modalidade) {
   return new Set(deEntrega);
 }
 const juntarOu = (xs) => (xs.length <= 1 ? xs[0] || "" : `${xs.slice(0, -1).join(", ")} ou ${xs.at(-1)}`);
-const PAGA_NO_DIA = new Set(["cash", "credit", "debit", "nfc", "meal_voucher"]);
+const PAGA_NO_DIA = new Set(["cash", "credit", "debit", "nfc", "meal_voucher", "food_voucher"]);
 
 /** Cenário "Pede para outro dia, sem pagar agora": o 2º dia aberto a partir de hoje (até 14 dias). */
 export function simulacaoOutroDia(form, hoje) {

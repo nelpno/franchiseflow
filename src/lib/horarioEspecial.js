@@ -3,7 +3,9 @@
  * Funções puras. O formato é o que o robô lê (V5 › Customer Context, DistanceService › Cota Frete,
  * EnviaPedidoFechado › Prepare Sale Data): franchise_configurations.horario_especial =
  *   [{ de: "AAAA-MM-DD", ate: "AAAA-MM-DD", tipo: "fechado" | "horario", abre: "HH:MM", fecha: "HH:MM",
- *      vale: "ambos" | "entrega" | "retirada" }]
+ *      vale: "ambos" | "entrega" | "retirada", motivo?: "Férias" | "Evento externo" | … }]
+ * motivo (26/11/2026, pedido de Suzano): opcional, texto curto que o robô conta ao cliente ("fechado por férias"), para
+ * ele saber que é só naquela data. Sem motivo, o item sai igual ao de antes (sem a chave).
  * "Horário diferente" é de um dia só (de = ate), como na pesquisa de 06/11: os períodos pedidos eram todos "fechado".
  */
 
@@ -11,6 +13,15 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const HHMM = /^\d{2}:\d{2}$/;
 const minutos = (t) => (HHMM.test(String(t || "")) ? Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) : null);
 export const MAX_DIAS_PERIODO = 62;
+
+/** Motivos prontos do horário especial (o select da tela); "Outro" abre o campo de texto. */
+export const MOTIVOS_HORARIO_ESPECIAL = ["Feriado", "Férias", "Recesso", "Evento externo", "Manutenção"];
+export const MAX_MOTIVO = 40;
+
+/** Motivo como vai ao banco e ao robô: uma linha, sem aspas nem símbolos, até 40 letras; vazio = sem motivo. */
+export function limparMotivo(v) {
+  return String(v ?? "").replace(/[^\p{L}\p{N} .,()/-]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, MAX_MOTIVO).trim();
+}
 
 /** Hoje em São Paulo, "AAAA-MM-DD" (nunca toISOString: em BRT volta um dia depois das 21h). */
 export function hojeBRT(agora = new Date()) {
@@ -43,6 +54,8 @@ export function normalizarHorarioEspecial(lista, hoje, { hasDelivery = true, has
       const vale = duas && (x.vale === "entrega" || x.vale === "retirada") ? x.vale : "ambos";
       const out = { de: x.de, ate, tipo, vale };
       if (tipo === "horario") { out.abre = String(x.abre || ""); out.fecha = String(x.fecha || ""); }
+      const motivo = limparMotivo(x.motivo);
+      if (motivo) out.motivo = motivo;
       return out;
     })
     .filter((x) => !vencido(x, hoje))

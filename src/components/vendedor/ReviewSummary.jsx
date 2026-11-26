@@ -158,6 +158,8 @@ export default function ReviewSummary({ formData, onGoToStep }) {
         fields={[
           ...(hasDelivery ? [{ label: "Na entrega", value: paymentLabels(formData.payment_delivery), warning: !formData.payment_delivery?.length }] : []),
           ...(hasPickup ? [{ label: "Na retirada", value: paymentLabels(formData.payment_pickup), warning: !formData.payment_pickup?.length }] : []),
+          ...(usados.has("meal_voucher") || usados.has("food_voucher")
+            ? [{ label: "Bandeiras de vale", value: (formData.vale_bandeiras || []).join(", "), warning: !(formData.vale_bandeiras || []).length }] : []),
           ...(usados.has("pix")
             ? [
                 { label: "Chave Pix", value: formData.pix_key_data ? `${formData.pix_key_data}${pixTypeLabel ? ` (${pixTypeLabel})` : ""}` : "", warning: !formData.pix_key_data },

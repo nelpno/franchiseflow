@@ -1,6 +1,7 @@
 // node src/lib/horarioEspecial.test.mjs
 import assert from "node:assert/strict";
 import { hojeBRT, normalizarHorarioEspecial, problemasHorarioEspecial, normalizarInstagram, instagramValido, novoItem, vencido } from "./horarioEspecial.js";
+import * as MOD from "./horarioEspecial.js";
 
 const H = "2026-11-06";
 let n = 0; const t = (nome, f) => { f(); n++; };
@@ -60,6 +61,19 @@ t("instagram: só o usuário", () => {
   assert.equal(instagramValido(""), false);
   assert.equal(instagramValido("nome com espaço"), false);
   assert.equal(instagramValido("a".repeat(31)), false);
+});
+
+t("motivo (26/11/2026): opcional, limpo, sem a chave quando vazio; _outro da tela some", () => {
+  const { limparMotivo } = MOD;
+  const [a, b, c] = normalizarHorarioEspecial([
+    { de: "2026-11-20", tipo: "fechado", motivo: "Férias", _outro: true },
+    { de: "2026-11-21", tipo: "horario", abre: "10:00", fecha: "14:00", motivo: '  Evento "externo"\n  ' },
+    { de: "2026-11-22", tipo: "fechado", motivo: "   " },
+  ], H);
+  assert.deepEqual(a, { de: "2026-11-20", ate: "2026-11-20", tipo: "fechado", vale: "ambos", motivo: "Férias" });
+  assert.equal(b.motivo, "Evento externo");
+  assert.equal("motivo" in c, false, "sem motivo = item igual ao de antes");
+  assert.equal(limparMotivo("x".repeat(60)).length, 40);
 });
 
 console.log(`horarioEspecial: ${n} testes ok`);

@@ -44,8 +44,8 @@ const usaMetodo = (f, metodo) =>
   (entrega(f) && (f.payment_delivery || []).includes(metodo)) ||
   (!!f.has_pickup && (f.payment_pickup || []).includes(metodo));
 
-const METODOS_COM_TAXA = ["credit", "debit", "nfc", "payment_link", "meal_voucher"];
-const ROTULO_METODO = { credit: "Crédito", debit: "Débito", nfc: "Aproximação", payment_link: "Link", meal_voucher: "Vale-refeição" };
+const METODOS_COM_TAXA = ["credit", "debit", "nfc", "payment_link", "meal_voucher", "food_voucher"];
+const ROTULO_METODO = { credit: "Crédito", debit: "Débito", nfc: "Aproximação", payment_link: "Link", meal_voucher: "Vale-refeição", food_voucher: "Vale-alimentação" };
 
 // Palavra inteira, não pedaço: "Roberta" e "Maria" passam; "Ana IA", "Robô Ana" e "Assistente" não.
 const PALAVRAS_DE_ROBO = ["bot", "chatbot", "virtual", "assistente", "robo", "robô", "ia"];

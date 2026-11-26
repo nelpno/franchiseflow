@@ -1,11 +1,13 @@
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import HelpTip from "@/components/shared/HelpTip";
-import { hojeBRT, novoItem, vencido } from "@/lib/horarioEspecial";
+import { hojeBRT, novoItem, vencido, MOTIVOS_HORARIO_ESPECIAL, MAX_MOTIVO } from "@/lib/horarioEspecial";
 
 /**
  * Horário especial com data (06/11/2026): feriado, viagem, evento. Vale só nas datas; o horário da semana não muda.
  * Formato e regras: src/lib/horarioEspecial.js (o robô lê a mesma coluna, franchise_configurations.horario_especial).
  * Item vencido aparece riscado e sai ao salvar (buildDbPayload).
+ * Motivo (26/11/2026, Suzano): opcional; o robô conta ao cliente ("nesse dia estamos em evento externo"). "_outro" é só da
+ * tela (abre o campo de texto) e some no normalizar.
  */
 const campo = "bg-surface-line border-none rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/20";
 const rotulo = "block text-[11px] font-semibold text-ink-2 mb-1";
@@ -23,7 +25,7 @@ export default function HorarioEspecialCard({ value, onChange, hasDelivery, hasP
         <p className="text-sm font-bold text-ink-2 flex items-center gap-1.5">
           <MaterialIcon icon="calendar_clock" size={16} />Horário especial <HelpTip tip="horarioEspecial" />
         </p>
-        <p className={dica}>Um dia ou período fora do normal (feriado, viagem, evento). Vale só nessas datas; o horário da semana não muda.</p>
+        <p className={dica}>Um dia ou período fora do normal (feriado, viagem, evento). Vale só nessas datas; o horário da semana não muda. Com o motivo, o robô explica ao cliente que é só nesse dia.</p>
       </div>
       {lista.map((x, i) => {
         const passou = vencido(x, hoje);
@@ -63,6 +65,25 @@ export default function HorarioEspecialCard({ value, onChange, hasDelivery, hasP
                   <input type="time" className={`${campo} w-full sm:w-28`} value={x.fecha || ""} onChange={(e) => set(i, { fecha: e.target.value })} />
                 </label>
               </>
+            )}
+            <label className="min-w-0 col-span-2 sm:col-span-1">
+              <span className={rotulo}>Motivo (opcional)</span>
+              <select className={`${campo} w-full sm:w-44`}
+                value={x._outro || (x.motivo && !MOTIVOS_HORARIO_ESPECIAL.includes(x.motivo)) ? "outro" : x.motivo || ""}
+                onChange={(e) => (e.target.value === "outro"
+                  ? set(i, { _outro: true, motivo: MOTIVOS_HORARIO_ESPECIAL.includes(x.motivo) ? "" : x.motivo || "" })
+                  : set(i, { _outro: undefined, motivo: e.target.value || undefined }))}>
+                <option value="">Sem motivo</option>
+                {MOTIVOS_HORARIO_ESPECIAL.map((m) => <option key={m} value={m}>{m}</option>)}
+                <option value="outro">Outro…</option>
+              </select>
+            </label>
+            {(x._outro || (x.motivo && !MOTIVOS_HORARIO_ESPECIAL.includes(x.motivo))) && (
+              <label className="min-w-0 col-span-2 sm:col-span-1">
+                <span className={rotulo}>Qual motivo</span>
+                <input type="text" className={`${campo} w-full sm:w-48`} maxLength={MAX_MOTIVO} placeholder="Ex.: Inventário"
+                  value={x.motivo || ""} onChange={(e) => set(i, { motivo: e.target.value })} />
+              </label>
             )}
             {duas && (
               <label className="min-w-0 col-span-2 sm:col-span-1">
