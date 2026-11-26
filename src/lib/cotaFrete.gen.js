@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: a48f2aa03aae94725ad11c773a3031ed4f75a2bdfa2fa902ba04df35d2c7f400
+// sha256 da fonte: ed30a85671762aa78bed5b57f218804bcb70f7e4bf6b24d1da0134a7d41fe22f
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -235,7 +235,10 @@ function cotaTiposDoDia(grupo, esp) {
     // corte só vale se cair dentro da janela nova (mesma regra do Customer Context); fora dela, vale o fim
     var c = cotaMin(t.corte), corte = c != null && c > ini && c < fim ? c : null;
     var r = Object.assign({}, t, { inicio: cotaHoraMin(ini), fim: cotaHoraMin(fim), corte: corte != null ? cotaHoraMin(corte) : null });
-    if (cotaSaidas(t).length) r.saidas = cotaSaidas(t).filter(function (s) { return cotaMin(s) >= ini && cotaMin(s) <= fim; }); // rotas fora do horário especial saem
+    if (cotaSaidas(t).length) {
+      r.saidas = cotaSaidas(t).filter(function (s) { return cotaMin(s) >= ini && cotaMin(s) <= fim; }); // rotas fora do horário especial saem
+      if (!r.saidas.length) return null; // nenhuma rota cabe: o tipo sai (senão viraria "dentro da janela" sem entregador)
+    }
     return r;
   }).filter(Boolean);
 }
@@ -291,8 +294,11 @@ function cotarFrete(pricing, destino, agora, extra) {
   if (zi && cotaMin(zi.inicio) != null && cotaMin(zi.fim) != null && cotaMin(zi.inicio) < cotaMin(zi.fim)) {
     var recorte = { tipo: 'horario', abre: zi.inicio, fecha: zi.fim };
     pricing = Object.assign({}, pricing, { grupos: pricing.grupos.map(function (g) {
+      var antes = {};
+      g.tipos.forEach(function (t) { antes[t.nome] = t; });
       return Object.assign({}, g, { tipos: cotaTiposDoDia(g, recorte).map(function (t) {
-        return t.promessa === 'minutos' ? Object.assign({}, t, { promessa: 'janela', minutos: null }) : t;
+        var o = antes[t.nome], estreitou = !o || o.inicio !== t.inicio || o.fim !== t.fim;
+        return t.promessa === 'minutos' && estreitou ? Object.assign({}, t, { promessa: 'janela', minutos: null }) : t;
       }) });
     }) });
   }

@@ -150,8 +150,8 @@ function rotulosDoGrupo(grupo, zonas) {
     // mesma regra do motor: bairro atendido só em alguns dias (dias) e valor próprio num dia (por_dia)
     if (z.dias?.length && !(grupo.dias || []).some((d) => z.dias.includes(d))) continue;
     const doDia = (grupo.dias || []).map((d) => z.por_dia?.[d]).find((v) => numero(v) !== null);
-    const dia = z.dias?.length ? ` ${diasPorExtenso(z.dias).toLowerCase()}` : "";
-    const quando = preenchido(z.inicio) && preenchido(z.fim) ? `só${dia}, das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)}`
+    const dia = z.dias?.length && z.dias.length < 7 ? ` ${diasPorExtenso(z.dias).toLowerCase()}` : "";
+    const quando = preenchido(z.inicio) && preenchido(z.fim) ? `só${dia ? dia + "," : ""} das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)}`
       : dia ? `só${dia}` : "taxa fixa em qualquer janela";
     for (const n of z.nomes || []) rules.push({ label: `Bairro ${n} (${quando})`, fee: valorTexto(doDia ?? z.valor) });
   }
@@ -353,7 +353,12 @@ export function problemasDoModelo(modelo, { estruturado = false } = {}) {
         else {
           // precisa cruzar a janela de entrega de ao menos um dia em que o bairro é atendido
           const cruza = (modelo?.grupos || []).some((g) => (g.dias || []).some((d) => !(z.dias || []).length || z.dias.includes(d))
-            && (g.tipos || []).some((t) => minutosDe(t.inicio) !== null && minutosDe(t.fim) !== null && minutosDe(t.inicio) < zf && minutosDe(t.fim) > zi0));
+            && (g.tipos || []).some((t) => {
+              if (minutosDe(t.inicio) === null || minutosDe(t.fim) === null || !(minutosDe(t.inicio) < zf && minutosDe(t.fim) > zi0)) return false;
+              // saídas fixas: precisa de ao menos uma rota dentro do horário do bairro (senão o motor tira o tipo)
+              const sd = saidasDoTipo(t);
+              return !sd.length || sd.some((s) => minutosDe(s) >= Math.max(zi0, minutosDe(t.inicio)) && minutosDe(s) <= Math.min(zf, minutosDe(t.fim)));
+            }));
           if (!cruza) out.push({ chave: `z${zi}.horario`, msg: `${nomes[0] || "Bairro"}: das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)} fica fora do horário de entrega desses dias.` });
         }
       }

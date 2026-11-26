@@ -238,5 +238,11 @@ console.log("freteModelo: ok");
   assert.deepEqual(limparPricing(lim), lim, "limpar é idempotente");
   const txt = modeloParaLegado(lim, { estruturado: true });
   assert.match(JSON.stringify(txt), /Bairro Campo Bonito \(só na quarta, das 10h às 16h\)/);
+  // saídas fixas sem rota dentro do horário do bairro: não salva
+  const rota = { ...base, grupos: [{ ...base.grupos[0], tipos: [{ ...base.grupos[0].tipos[0], promessa: "saidas", saidas: ["11:00", "15:00", "18:00"] }] }] };
+  assert.match(problemasDoModelo({ ...rota, zonas: [{ nomes: ["Campo Bonito"], valor: 15, dias: ["qua"], inicio: "12:00", fim: "14:00" }] }, { estruturado: true })[0].msg, /fora do horário/);
+  assert.deepEqual(problemasDoModelo({ ...rota, zonas: [{ nomes: ["Campo Bonito"], valor: 15, dias: ["qua"], inicio: "10:00", fim: "16:00" }] }, { estruturado: true }), []);
+  // 7 dias marcados = sem "só todos os dias" no rótulo
+  assert.match(JSON.stringify(modeloParaLegado(limparPricing({ ...base, zonas: [{ nomes: ["X"], valor: 5, dias: ["seg","ter","qua","qui","sex","sab","dom"], inicio: "10:00", fim: "16:00" }] }), { estruturado: true })), /Bairro X \(só das 10h às 16h\)/);
   console.log("freteModelo 26/11c (horário do bairro): ok");
 }
