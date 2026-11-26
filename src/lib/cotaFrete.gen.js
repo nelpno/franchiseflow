@@ -1,5 +1,5 @@
 // GERADO por scripts/sync-cota-frete.mjs — NÃO EDITAR. Fonte: bots/vendedor/scripts/assets/cota-frete.js
-// sha256 da fonte: d98af4e3c60fa43cd5079f94c0a730f38aad556216376fa841db1b90b78f17e3
+// sha256 da fonte: e6f8cce2db86b3c8211dea5691f6cb25da0f00fd475fe69b8fa3ba3ed1950251
 /* eslint-disable */
 // === Motor de cotação de frete (fonte única) — plano de frete 12/09/2026 ===
 // Roda no Code node "Cota Frete" do DistanceService (colado antes da cola do n8n) e nos testes
@@ -105,13 +105,17 @@ function cotaResolverDia(texto, agora) {
 // e da unidade: nome de zona igual a uma delas só vale quando nenhum outro nome casou.
 // Nome que perdeu o prefixo (26/11/2026, Santos: "Praia Grande" vira "grande") só casa quando o texto traz o nome inteiro
 // ou quando a palavra antes do resto não é outro nome: "Campo Grande" (bairro de Santos) caía em "Praia Grande, não entrega".
-function cotaCasaSemPrefixo(b, nomeInteiro, k) {
-  if (b.indexOf(' ' + nomeInteiro + ' ') !== -1) return true;
-  var i = b.indexOf(' ' + k + ' ');
+// Antes do resto pode vir: nada, vírgula/hífen/barra (outro campo do endereço), número, uma letra, prefixo ("Vila") ou
+// complemento ("apto", "casa", "bloco"); qualquer outra palavra = outro lugar.
+var COTA_COMPLEMENTO = /^(ap|apt|apto|apartamento|casa|cs|bloco|bl|torre|sala|sl|lote|lt|quadra|qd|cep|fundos|frente|comp|complemento|edificio|ed|predio|n|no|numero|bairro|em|na|nº)$/;
+function cotaCasaSemPrefixo(texto, nomeInteiro, k) {
+  var t = ' ' + cotaNorm(String(texto || '').replace(/[,;\/|()–-]/g, ' zzsep ')) + ' ';
+  if (t.indexOf(' ' + nomeInteiro + ' ') !== -1) return true;
+  var i = t.indexOf(' ' + k + ' ');
   while (i !== -1) {
-    var antes = b.slice(0, i).trim().split(' ').pop();
-    if (!antes || !/[a-z]{3,}/.test(antes) || COTA_PREFIXO.test(antes + ' ')) return true;
-    i = b.indexOf(' ' + k + ' ', i + 1);
+    var antes = t.slice(0, i).trim().split(' ').pop();
+    if (!antes || antes === 'zzsep' || !/[a-z]/.test(antes) || antes.length === 1 || COTA_PREFIXO.test(antes + ' ') || COTA_COMPLEMENTO.test(antes)) return true;
+    i = t.indexOf(' ' + k + ' ', i + 1);
   }
   return false;
 }
@@ -125,7 +129,7 @@ function cotaAcharZona(zonas, texto, cidades) {
     (z.nomes || []).forEach(function (nome) {
       var k = cotaBase(nome);
       if (!k || b.indexOf(' ' + k + ' ') === -1) return;
-      if (k !== cotaNorm(nome) && !cotaCasaSemPrefixo(b, cotaNorm(nome), k)) return;
+      if (k !== cotaNorm(nome) && !cotaCasaSemPrefixo(texto, cotaNorm(nome), k)) return;
       var achado = { zona: z, nome: nome, k: k };
       if (cid.indexOf(k) !== -1) { if (!melhorCidade || k.length > melhorCidade.k.length) melhorCidade = achado; }
       else if (!melhor || k.length > melhor.k.length) melhor = achado;
