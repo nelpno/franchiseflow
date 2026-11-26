@@ -205,3 +205,19 @@ console.log("freteModelo: ok");
   assert.deepEqual(pm(ind, { estruturado: true }), []);
   console.log("freteModelo 26/11 (saídas e bairro por dia): ok");
 }
+
+// Uberaba 26/11: saídas por grupo de dias no modo simples (quarta sem a rota das 18h) e grupo novo herda a janela
+{
+  const ub = { delivery_schedule: [
+    { days: ["seg", "ter", "qui", "sex", "sab"], delivery_start: "08:00", delivery_end: "18:00", order_cutoff: "18:00", charges_fee: true, fee_rules: [{ max_km: "5", fee: "8" }], saidas: ["10:30", "15:00", "18:00"] },
+    { days: ["qua"], delivery_start: "08:00", delivery_end: "18:00", order_cutoff: "15:00", charges_fee: true, fee_rules: [{ max_km: "5", fee: "8" }], saidas: ["10:30", "15:00"] }],
+    max_delivery_radius_km: 10 };
+  const mu = legadoParaModelo(ub);
+  const volta = modeloParaLegado(mu).delivery_schedule;
+  assert.deepEqual(volta.map((g) => g.saidas), [["10:30", "15:00", "18:00"], ["10:30", "15:00"]], "cada grupo guarda as próprias saídas");
+  assert.deepEqual(problemasDoModelo(mu), []);
+  const so1 = legadoParaModelo({ ...ub, delivery_schedule: [{ ...ub.delivery_schedule[0] }] });
+  const ng = novoGrupo(so1);
+  assert.deepEqual([ng.dias, ng.tipos[0].inicio, ng.tipos[0].fim, ng.tipos[0].saidas], [["qua"], "08:00", "18:00", ["10:30", "15:00", "18:00"]]);
+  console.log("freteModelo 26/11b (saídas por grupo): ok");
+}

@@ -134,7 +134,9 @@ function CampoSaidas({ saidas, onChange, invalido }) {
   );
 }
 
-function ComoChega({ promessa, minutos, saidas, onChange, invalido, invalidoSaidas }) {
+// saidasNoGrupo: no modo simples o "como chega" vale para todos os dias, mas as saídas são de cada grupo de dias
+// (Uberaba 26/11: na quarta não tem a rota das 18h); o campo das saídas vai para dentro do grupo.
+function ComoChega({ promessa, minutos, saidas, onChange, invalido, invalidoSaidas, saidasNoGrupo = false }) {
   const emMin = promessa === "minutos", emSaidas = promessa === "saidas", naJanela = !emMin && !emSaidas;
   return (
     <div className="space-y-2">
@@ -152,9 +154,10 @@ function ComoChega({ promessa, minutos, saidas, onChange, invalido, invalidoSaid
           </span>
         )}
       </div>
-      {emSaidas && <CampoSaidas saidas={saidas} onChange={onChange} invalido={invalidoSaidas} />}
+      {emSaidas && !saidasNoGrupo && <CampoSaidas saidas={saidas} onChange={onChange} invalido={invalidoSaidas} />}
       <p className={dica}>
         {emMin ? `O robô promete a entrega em até esse tempo (de ${PRAZO_MIN} a ${PRAZO_MAX} min), contado do pedido confirmado; o cardápio oferece "o quanto antes" com o mesmo prazo.`
+          : emSaidas && saidasNoGrupo ? "Escreva as saídas do entregador em cada grupo de dias, acima: um dia com menos rotas vira um grupo separado. O robô diz em qual saída vai o pedido, sem prometer hora de chegada."
           : emSaidas ? "Hora em que o entregador SAI com os pedidos. O robô diz em qual saída vai o pedido (ex.: pedido às 14h vai na das 15h) e que chega ao longo da rota, sem prometer hora de chegada."
           : "Dentro da janela: o robô diz só a janela de entrega, sem hora exata, e o cardápio não oferece \"o quanto antes\"."}
       </p>
@@ -252,6 +255,13 @@ function Grupo({ grupo, gi, modelo, estruturado, onChange, onRemove, podeRemover
           onChange={(nt) => setTipo(ti, nt)} onRemove={() => onChange({ ...grupo, tipos: grupo.tipos.filter((_, j) => j !== ti) })}
           marcas={marcas} erroMsg={problemas.find((p) => p.chave.startsWith(`g${gi}.t${ti}.`))?.msg} />
       ))}
+      {!estruturado && grupo.tipos[0]?.promessa === "saidas" && (
+        <div className="rounded-xl bg-surface p-3">
+          <span className={rotulo}>Saídas do entregador nestes dias</span>
+          <CampoSaidas saidas={grupo.tipos[0].saidas} invalido={grupo.tipos.some((_, ti) => marcas.has(`g${gi}.t${ti}.saidas`))}
+            onChange={(p) => onChange({ ...grupo, tipos: grupo.tipos.map((t) => ({ ...t, ...p })) })} />
+        </div>
+      )}
       {estruturado && (
         <button type="button" onClick={() => onChange({ ...grupo, tipos: [...grupo.tipos, novoTipo(grupo.tipos[0])] })}
           className="flex items-center gap-1 text-xs font-semibold text-brand hover:text-brand-dark">
@@ -548,7 +558,7 @@ export default function EntregaCard({ modelo, onChange, estruturado, minOrder, o
         <div className="rounded-xl bg-surface p-3">
           <span className={rotulo}>Como chega ao cliente (vale para todos os dias)</span>
           <ComoChega promessa={t0.promessa} minutos={t0.minutos} saidas={t0.saidas} onChange={comoChegaTodos} invalido={[...marcas].some((k) => k.endsWith(".minutos"))}
-            invalidoSaidas={[...marcas].some((k) => k.endsWith(".saidas"))} />
+            invalidoSaidas={[...marcas].some((k) => k.endsWith(".saidas"))} saidasNoGrupo />
         </div>
       )}
       {!estruturado && (

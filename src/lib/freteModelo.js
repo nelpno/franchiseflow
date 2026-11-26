@@ -421,7 +421,8 @@ export function novoGrupo(modelo) {
   return {
     dias: [livres[0]],
     tipos: [{
-      nome: "Entrega", inicio: "09:00", fim: "14:00", corte: "",
+      // com saídas fixas copia a janela do 1º grupo: com 09–14 as saídas copiadas (15h, 18h) já nasciam "fora da janela" (Uberaba, 26/11)
+      nome: "Entrega", ...(t0?.promessa === "saidas" && t0.inicio && t0.fim ? { inicio: t0.inicio, fim: t0.fim, corte: t0.corte || "" } : { inicio: "09:00", fim: "14:00", corte: "" }),
       promessa: t0?.promessa === "minutos" || t0?.promessa === "saidas" ? t0.promessa : "janela",
       ...(t0?.promessa === "minutos" ? { minutos: t0.minutos } : {}),
       ...(t0?.promessa === "saidas" ? { saidas: [...(t0.saidas || [])] } : {}),
