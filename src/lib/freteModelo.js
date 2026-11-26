@@ -150,7 +150,9 @@ function rotulosDoGrupo(grupo, zonas) {
     // mesma regra do motor: bairro atendido só em alguns dias (dias) e valor próprio num dia (por_dia)
     if (z.dias?.length && !(grupo.dias || []).some((d) => z.dias.includes(d))) continue;
     const doDia = (grupo.dias || []).map((d) => z.por_dia?.[d]).find((v) => numero(v) !== null);
-    const quando = preenchido(z.inicio) && preenchido(z.fim) ? `só das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)}` : "taxa fixa em qualquer janela";
+    const dia = z.dias?.length ? ` ${diasPorExtenso(z.dias).toLowerCase()}` : "";
+    const quando = preenchido(z.inicio) && preenchido(z.fim) ? `só${dia}, das ${horaCurta(z.inicio)} às ${horaCurta(z.fim)}`
+      : dia ? `só${dia}` : "taxa fixa em qualquer janela";
     for (const n of z.nomes || []) rules.push({ label: `Bairro ${n} (${quando})`, fee: valorTexto(doDia ?? z.valor) });
   }
   return { mode: "modality", rules };

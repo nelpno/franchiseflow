@@ -237,6 +237,6 @@ console.log("freteModelo: ok");
   const lim = limparPricing(com({ inicio: "10:00", fim: "16:00" }));
   assert.deepEqual(limparPricing(lim), lim, "limpar é idempotente");
   const txt = modeloParaLegado(lim, { estruturado: true });
-  assert.match(JSON.stringify(txt), /Bairro Campo Bonito \(só das 10h às 16h\)/);
+  assert.match(JSON.stringify(txt), /Bairro Campo Bonito \(só na quarta, das 10h às 16h\)/);
   console.log("freteModelo 26/11c (horário do bairro): ok");
 }
