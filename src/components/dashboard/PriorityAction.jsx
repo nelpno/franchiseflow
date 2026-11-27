@@ -3,7 +3,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { mesAlvoMarketing } from "@/lib/inicioMes";
+import { mesAlvoMarketing, marketingDoMesAlvo } from "@/lib/inicioMes";
 
 const SCENARIOS = [
   {
@@ -67,22 +67,27 @@ const SCENARIOS = [
   },
   {
     key: "marketing",
-    check: ({ marketingPayment }) => !marketingPayment || marketingPayment.status === "rejected",
     // 27/11/2026 (Imirim): sem o mês, "pendente" no fim de novembro parecia ser de novembro.
     // Nos últimos 5 dias o mês-alvo já é o seguinte (mesAlvoMarketing): o cartão diz qual.
+    // Só vale o pagamento DO mês-alvo (a Início antiga passa o mais recente, que pode ser de
+    // outro mês): senão "dezembro recusada" sairia com o motivo de outubro.
+    check: ({ marketingPayment }) => {
+      const m = marketingDoMesAlvo(marketingPayment);
+      return !m || m.status === "rejected";
+    },
     render: ({ marketingPayment }) => {
+      const m = marketingDoMesAlvo(marketingPayment);
       const mes = format(mesAlvoMarketing(), "MMMM", { locale: ptBR });
+      const recusada = m?.status === "rejected";
       return {
-      icon: "campaign",
-      title: marketingPayment?.status === "rejected"
-        ? `Verba de marketing de ${mes} recusada`
-        : `Verba de marketing de ${mes} pendente`,
-      subtitle: marketingPayment?.status === "rejected"
-        ? marketingPayment.rejection_reason || "Verifique o comprovante"
-        : `Vale para ${mes} inteiro · mínimo R$ 200`,
-      cta: "Registrar",
-      navigateTo: "/Marketing",
-      colors: { bg: "#f0f4ff", border: "#c7d2fe", button: "#4f46e5" },
+        icon: "campaign",
+        title: recusada ? `Verba de marketing de ${mes} recusada` : `Verba de marketing de ${mes} pendente`,
+        subtitle: recusada
+          ? m.rejection_reason || "Verifique o comprovante"
+          : `Vale para ${mes} inteiro · mínimo R$ 200`,
+        cta: "Registrar",
+        navigateTo: "/Marketing",
+        colors: { bg: "#f0f4ff", border: "#c7d2fe", button: "#4f46e5" },
       };
     },
   },

@@ -36,7 +36,7 @@ import EmptyState from "@/components/shared/EmptyState";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_KEYS } from "@/lib/featureFlags";
 import { RESUMOS_PARA_SEQUENCIA, janelasInicio, estadoDaCargaV2, planoRevalidacao, janelaConversao, escolherMarketing, mesAlvoMarketing } from "@/lib/inicioMes";
-import { getMarketingTargetMonth, nomeDaUnidade } from "@/lib/franchiseUtils";
+import { nomeDaUnidade } from "@/lib/franchiseUtils";
 import InicioV2, { InicioV2Esqueleto } from "./inicio/InicioV2";
 
 const MONTH_OFFSET_MIN = -2;
@@ -83,7 +83,7 @@ export default function FranchiseeDashboard() {
   // registrada não esconde a do mês-alvo). Mês-alvo do MESMO jeito que o cartão de cada Início
   // calcula: Brasília na nova, relógio do aparelho na de sempre.
   const marketingPayment = escolherMarketing(
-    marketingPayments, uiV2 ? mesAlvoMarketing() : getMarketingTargetMonth()
+    marketingPayments, mesAlvoMarketing()
   );
   // Vendas mais antigas que a janela principal (só com a chave): evolução de 6 meses e o
   // "a receber" com o mesmo recorte da tela Vendas. Carrega 1 vez, fora do polling.
@@ -940,7 +940,7 @@ export default function FranchiseeDashboard() {
         />
       )}
 
-      {!uiV2 && <FinancialObligationsCard marketingPayment={marketingPayment} />}
+      {!uiV2 && <FinancialObligationsCard marketingPayment={marketingPayment} mesAlvo={mesAlvoMarketing()} />}
 
       {!uiV2 && !modoReduzidoPrimeirosPassos && (
       <>

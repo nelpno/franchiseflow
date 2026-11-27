@@ -189,8 +189,8 @@ export default function FinancialObligationsCard({ marketingPayment, ocultarMens
                 }`}
               >
                 {isRejected
-                  ? `Pagamento de ${targetMonthLabel} recusado`
-                  : `Investimento Marketing — ${targetMonthLabel}`}
+                  ? `Verba de marketing de ${targetMonthLabel.toLowerCase()} recusada`
+                  : `Verba de marketing — ${targetMonthLabel}`}
               </p>
               <p className="text-xs text-ink-3 mt-0.5">
                 {isRejected

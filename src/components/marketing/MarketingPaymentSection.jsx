@@ -280,7 +280,8 @@ export default function MarketingPaymentSection() {
               </h3>
               {/* 27/11/2026 (Imirim): dizer de qual mês é a verba; no fim do mês o padrão já é o seguinte */}
               <p className="text-xs text-ink-3">
-                Verba de {monthLabel.split(" ")[0].toLowerCase()}, roda o mês inteiro · mínimo {formatBRL(MIN_AMOUNT)}
+                Verba de {format(parseISO(`${selectedMonth}-15`), "MMMM", { locale: ptBR })}
+                {selectedMonth >= getDefaultMonth() ? ", roda o mês inteiro" : ""} · mínimo {formatBRL(minAmount)}
               </p>
             </div>
           </div>
