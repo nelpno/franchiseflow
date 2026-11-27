@@ -203,8 +203,11 @@ function ProductSearch({ products, selectedId, onSelect, placeholder = "Buscar p
             >
               <span>
                 {p.product_name}
-                {(p.quantity || 0) <= 0 && (
+                {/* 27/11/2026 (Suzano): a quantidade em estoque entre parênteses */}
+                {(p.quantity || 0) <= 0 ? (
                   <span className="text-brand text-xs ml-1.5 font-medium">(sem estoque)</span>
+                ) : (
+                  <span className="text-ink-2/70 text-xs ml-1.5 font-mono-numbers" data-estoque-busca>({p.quantity})</span>
                 )}
               </span>
               {p.sale_price > 0 && (

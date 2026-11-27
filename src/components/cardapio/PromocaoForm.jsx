@@ -251,15 +251,22 @@ function PreviaCliente({ regra, produtos, texto, kitNoCardapio }) {
         </span>
         <p className="mt-1 font-plus-jakarta text-base font-bold text-ink">{regra.nome || "Nome do kit"}</p>
         <p className="text-sm text-ink-2">{regra.itens.map(itemCurto).join(" + ") || "Escolha os produtos"}</p>
-        {/* item à escolha: no cardápio, uma caixinha por item, já na opção mais cara */}
-        {regra.itens.filter(ehEscolha).map((i, k) => (
-          <p key={k} className="mt-1 flex items-center gap-2 text-xs text-ink-2" data-previa-escolha>
-            <span className="shrink-0">{regra.itens.filter(ehEscolha).length > 1 ? `${String(i.rotulo || "").trim()}:` : "Escolha:"}</span>
-            <span className="min-w-0 flex-1 truncate rounded-lg border border-surface-line bg-surface px-2 py-1">
-              {opcaoMaisCara(i, produtos) ? nomeCurtoProduto(opcaoMaisCara(i, produtos).produto) : "—"} ▾
-            </span>
-          </p>
-        ))}
+        {/* item à escolha: no cardápio, uma caixinha por UNIDADE (27/11/2026: "2 massas à escolha" = 2 caixinhas, sabores diferentes), já na mais cara */}
+        {regra.itens.filter(ehEscolha).flatMap((i, k, todos) => {
+          const q = Math.max(1, Math.round(Number(i.qtd) || 1));
+          return Array.from({ length: q }, (_, u) => {
+            const ord = q > 1 ? `${u + 1}ª` : "";
+            const rot = todos.length > 1 ? `${String(i.rotulo || "").trim()}${ord ? ` (${ord})` : ""}:` : ord ? `${ord} escolha:` : "Escolha:";
+            return (
+              <p key={`${k}-${u}`} className="mt-1 flex items-center gap-2 text-xs text-ink-2" data-previa-escolha>
+                <span className="shrink-0">{rot}</span>
+                <span className="min-w-0 flex-1 truncate rounded-lg border border-surface-line bg-surface px-2 py-1">
+                  {opcaoMaisCara(i, produtos) ? nomeCurtoProduto(opcaoMaisCara(i, produtos).produto) : "—"} ▾
+                </span>
+              </p>
+            );
+          });
+        })}
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="text-sm">
             {normal != null && <s className="text-ink-3">{brl(normal)}</s>}{" "}
