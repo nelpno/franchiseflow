@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import ErrorState from "@/components/shared/ErrorState";
 import { CARTAO, CHIP, CHIP_ATIVO, CHIP_INATIVO, COMPARACAO, H2, LINK_ACAO, NUMERO_GRANDE, ROTULO } from "@/components/shared/adminUi";
-import { formatBRLInteger } from "@/lib/formatters";
+import { formatBRLInteger, formatPct } from "@/lib/formatters";
 import { nomeCurtoProduto } from "@/lib/cardapioDigital";
 
 export const PERIODOS = [
@@ -56,7 +56,7 @@ export default function ResultadoCards({ dias, onDias, resultado, carregando, er
           <div className="grid gap-3 sm:grid-cols-3">
             <Indicador rotulo="Viraram venda"
               valor={r.vendas ? `${r.vendas} · ${formatBRLInteger(r.valor)}` : "0"}
-              linha={r.vendas ? "em até 3 dias do pedido" : "Nenhuma venda ainda"}
+              linha={r.vendas ? `${formatPct((100 * r.vendas) / r.visitas, { casas: 0 })} das visitas, em até 3 dias do pedido` : "Nenhuma venda ainda"}
               acao={r.vendas ? <Link to="/Vendas" className={LINK_ACAO}>Ver vendas →</Link> : null} />
             <Indicador rotulo="Chegaram no seu WhatsApp" valor={r.chegaram}
               linha={r.enviados ? `${r.enviados} ${r.enviados === 1 ? "abriu" : "abriram"} o WhatsApp com o pedido; ${r.chegaram} ${r.chegaram === 1 ? "mandou" : "mandaram"}` : null} />

@@ -50,6 +50,7 @@ export function comparacaoCurta(atual, anterior) {
 export const MIN_VISITAS_SEM_PEDIDO = 15;
 export const MIN_PEDIDOS = 3;
 export const MIN_CONTATOS_ROBO = 30;
+export const MIN_VISITAS_CONVERSAO = 15; // conversão do cardápio por unidade só com essa base
 export const QUEDA_CONVERSAO_PP = 5;
 export const QUEDA_CONVERSAO_REL = 0.25; // e 25% da conversão anterior (5 pontos de 40% é ruído, de 15% não)
 export const DIAS_LIGADO_SEM_VISITA = 2;
@@ -72,6 +73,17 @@ export function conversaoRobo(m) {
   const c = num(m?.robo_contatos);
   if (c <= 0) return null;
   return (100 * num(m.robo_compraram)) / c;
+}
+
+/**
+ * Conversão do cardápio em % (pedidos que viraram venda ÷ visitas únicas); null sem visita.
+ * Visita única (RPC, 26/11/2026) = mesmo aparelho na mesma unidade conta 1 vez por dia; `aberturas` = abas.
+ * `min`: abaixo disso não há base (na unidade, 2 visitas e 3 vendas de pedido de outro dia davam "150%").
+ */
+export function conversaoCardapio(m, min = 1) {
+  const v = num(m?.visitas);
+  if (v <= 0 || v < min) return null;
+  return (100 * num(m.pedidos_viraram_venda)) / v;
 }
 
 /** Variação % de atual contra anterior; null quando a base é 0 (não inventa "+∞%"). */

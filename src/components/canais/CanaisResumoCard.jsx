@@ -9,7 +9,7 @@ import SectionTitle from "@/components/shared/SectionTitle";
 import { CARTAO, LINK_ACAO } from "@/components/shared/adminUi";
 import { formatPct } from "@/lib/formatters";
 import { useCanaisVenda } from "@/entities/canaisVenda";
-import { conversaoRobo, participacao, resumoAdesao, sinaisUnidade, textoFatia } from "@/lib/canaisVenda";
+import { conversaoCardapio, conversaoRobo, participacao, resumoAdesao, sinaisUnidade, textoFatia } from "@/lib/canaisVenda";
 import { brl, n, trecho, Comparacao } from "./canaisUi";
 
 const CANAIS = [
@@ -61,6 +61,8 @@ export default function CanaisResumoCard() {
 
   const convA = conversaoRobo(a);
   const convP = conversaoRobo(p);
+  const cardA = conversaoCardapio(a);
+  const cardP = conversaoCardapio(p);
 
   return (
     <section className="space-y-3" aria-labelledby="canais-hoje" data-canais-hoje>
@@ -85,7 +87,8 @@ export default function CanaisResumoCard() {
         </p>
         <p>
           <span className="font-semibold text-ink">Cardápio:</span> {n(a.visitas)} visitas → {n(a.pedidos_enviados)} pedidos montados →{" "}
-          {n(a.pedidos_chegaram)} chegaram no WhatsApp → {n(a.pedidos_viraram_venda)} viraram venda.
+          {n(a.pedidos_chegaram)} chegaram no WhatsApp → {n(a.pedidos_viraram_venda)} viraram venda
+          {cardA !== null && <> (<span className="font-semibold text-ink tabular-nums">{formatPct(cardA)}</span> das visitas{cardP !== null ? `; antes ${formatPct(cardP)}` : ""})</>}.
         </p>
         <p>
           Cardápio ligado em <span className="font-semibold text-ink">{n(ades.ligado)}</span> de {n(ades.total)} unidades

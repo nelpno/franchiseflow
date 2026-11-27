@@ -1,7 +1,7 @@
 // node src/lib/canaisVenda.test.mjs
 import assert from "node:assert/strict";
 import {
-  totalRs, totalVendas, conversaoRobo, variacaoPct, participacao, resumoAdesao, sinaisUnidade,
+  totalRs, totalVendas, conversaoRobo, conversaoCardapio, variacaoPct, participacao, resumoAdesao, sinaisUnidade,
   ordenarUnidades, periodoValido, filtroValido, ordemValida, FILTROS_LISTA, textoFatia, comparacaoCurta, baseComparacao,
 } from "./canaisVenda.js";
 
@@ -24,6 +24,9 @@ test("total soma os 3 canais uma vez (números do Imirim, 04 a 10/11)", () => {
 test("conversão e variação não inventam número sem base", () => {
   assert.equal(conversaoRobo(m()), null);
   assert.equal(Math.round(conversaoRobo(m({ robo_contatos: 129, robo_compraram: 17 })) * 10), 132);
+  assert.equal(conversaoCardapio(m()), null);
+  assert.equal(Math.round(conversaoCardapio(m({ visitas: 1410, pedidos_viraram_venda: 48 })) * 10), 34); // 7 dias da rede em 26/11
+  assert.equal(conversaoCardapio(m({ visitas: 2, pedidos_viraram_venda: 3 }), 15), null); // sem base não mostra 150%
   assert.equal(variacaoPct(10, 0), null);
   assert.equal(variacaoPct(150, 100), 50);
   assert.equal(participacao(m()), null);

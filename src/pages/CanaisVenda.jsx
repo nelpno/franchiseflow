@@ -18,8 +18,8 @@ import { useCanaisVenda, prefetchCanaisVenda, dadoVelho } from "@/entities/canai
 import { useAuth } from "@/lib/AuthContext";
 import {
   PERIODOS, periodoValido, filtroValido, ordemValida, FILTROS_LISTA, ORDENS, ESTADOS_CARDAPIO,
-  totalRs, totalVendas, conversaoRobo, participacao, resumoAdesao, sinaisUnidade, ordenarUnidades, textoFatia,
-  MIN_VISITAS_SEM_PEDIDO, MIN_PEDIDOS, MIN_CONTATOS_ROBO, QUEDA_CONVERSAO_PP, QUEDA_CONVERSAO_REL, DIAS_LIGADO_SEM_VISITA,
+  totalRs, totalVendas, conversaoRobo, conversaoCardapio, participacao, resumoAdesao, sinaisUnidade, ordenarUnidades, textoFatia,
+  MIN_VISITAS_SEM_PEDIDO, MIN_VISITAS_CONVERSAO, MIN_PEDIDOS, MIN_CONTATOS_ROBO, QUEDA_CONVERSAO_PP, QUEDA_CONVERSAO_REL, DIAS_LIGADO_SEM_VISITA,
 } from "@/lib/canaisVenda";
 import { brl, n, qtd, detalhePeriodo, Comparacao, ChipSinal } from "@/components/canais/canaisUi";
 
@@ -53,9 +53,11 @@ function celulaCardapio(u) {
   if (u.estado !== "ligado" && !Number(a.visitas) && !Number(a.pedidos_enviados)) {
     return { principal: ESTADOS_CARDAPIO[u.estado] || "Sem cardápio", apoio: "" };
   }
+  const conv = conversaoCardapio(a, MIN_VISITAS_CONVERSAO);
   return {
     principal: `${n(a.vendas_cardapio)} ${Number(a.vendas_cardapio) === 1 ? "venda" : "vendas"} · ${brl(a.rs_cardapio)}`,
-    apoio: `${qtd(a.visitas, "visita", "visitas")} → ${qtd(a.pedidos_enviados, "pedido", "pedidos")} → ${n(a.pedidos_chegaram)} ${Number(a.pedidos_chegaram) === 1 ? "chegou" : "chegaram"}`,
+    apoio: `${qtd(a.visitas, "visita", "visitas")} → ${qtd(a.pedidos_enviados, "pedido", "pedidos")} → ${n(a.pedidos_chegaram)} ${Number(a.pedidos_chegaram) === 1 ? "chegou" : "chegaram"}`
+      + (conv !== null ? ` · ${formatPct(conv)} viraram venda` : ""),
   };
 }
 
@@ -76,7 +78,7 @@ function LinhaUnidade({ u, voltarPara }) {
         <p className="mt-0.5 text-sm text-ink-3 md:hidden tabular-nums">
           {brl(totalRs(a))} · robô {conv === null ? "sem conversa" : formatPct(conv, { casas: 0 })} ·{" "}
           {u.estado === "ligado" || Number(a.visitas)
-            ? `cardápio ${qtd(a.visitas, "visita", "visitas")}, ${qtd(a.vendas_cardapio, "venda", "vendas")}`
+            ? `cardápio ${qtd(a.visitas, "visita", "visitas")}, ${qtd(a.vendas_cardapio, "venda", "vendas")}${conversaoCardapio(a, MIN_VISITAS_CONVERSAO) !== null ? ` (${formatPct(conversaoCardapio(a, MIN_VISITAS_CONVERSAO), { casas: 0 })})` : ""}`
             : (ESTADOS_CARDAPIO[u.estado] || "sem cardápio").toLowerCase()}
         </p>
       </div>
@@ -162,6 +164,8 @@ export default function CanaisVenda() {
   const ades = resumoAdesao(d?.adesao);
   const convA = conversaoRobo(a);
   const convP = conversaoRobo(p);
+  const cardA = conversaoCardapio(a);
+  const cardP = conversaoCardapio(p);
   const voltar = location.state?.from === "hoje" ? { to: "/Dashboard", label: "Hoje" } : undefined;
 
   const seletorPeriodo = (
@@ -226,10 +230,11 @@ export default function CanaisVenda() {
               <h2 id="funil-cardapio" className={H3_CARTAO}>Cardápio digital</h2>
               <p className="mt-1 text-sm text-ink-2">Do link aberto até a venda lançada do mesmo telefone em até 72 horas.</p>
               <ul className="mt-3">
-                <Passo rotulo="Visitas" valor={n(a.visitas)} antes={n(p?.visitas)} />
+                <Passo rotulo="Visitas (1 por aparelho por dia)" valor={n(a.visitas)} antes={n(p?.visitas)} />
                 <Passo rotulo="Pedidos montados" valor={n(a.pedidos_enviados)} antes={n(p?.pedidos_enviados)} />
                 <Passo rotulo="Chegaram no WhatsApp" valor={n(a.pedidos_chegaram)} antes={n(p?.pedidos_chegaram)} />
-                <Passo rotulo="Viraram venda" valor={n(a.pedidos_viraram_venda)} antes={n(p?.pedidos_viraram_venda)} ultimo />
+                <Passo rotulo="Viraram venda" valor={n(a.pedidos_viraram_venda)} antes={n(p?.pedidos_viraram_venda)} />
+                <Passo rotulo="Conversão (viraram venda ÷ visitas)" valor={cardA === null ? "—" : formatPct(cardA)} antes={cardP === null ? "—" : formatPct(cardP)} ultimo />
               </ul>
               <p className="mt-2 text-sm text-ink-3">
                 Vendas do cardápio fechadas pelo robô: {n(a.vendas_cardapio_robo)} de {n(a.vendas_cardapio)}; as outras a franqueada lançou.
@@ -292,7 +297,7 @@ export default function CanaisVenda() {
             <ul className="mt-2 list-disc space-y-1.5 pl-5">
               <li><b>Cada venda conta uma vez, num canal só</b> (pela data da venda). <b>Cardápio</b>: a venda do mesmo telefone lançada até 72 h depois de um pedido do cardápio chegar no WhatsApp, fechada pelo robô ou à mão (o pedido veio pronto do cardápio). <b>Robô</b>: venda que o robô lançou e não veio do cardápio. <b>À mão</b>: o resto.</li>
               <li><b>Pessoas que escreveram</b>: telefones diferentes que mandaram mensagem à unidade no período (disparo da franqueada não entra), sem quem mandou pedido do cardápio. <b>Compraram</b>: venda do mesmo telefone, de qualquer origem, lançada depois da 1ª mensagem e dentro do período.</li>
-              <li><b>Visitas</b>: aberturas do link do cardápio (sem os testes). <b>Pedidos montados</b>: pedidos enviados pelo cardápio; <b>chegaram</b>: o código #PED- apareceu numa mensagem recebida pela unidade. Se o cliente apagar o código, o pedido não é contado.</li>
+              <li><b>Visitas</b>: o mesmo celular ou computador conta uma vez por dia em cada unidade, mesmo que abra o link várias vezes (voltar do WhatsApp ou do Instagram abre de novo); sem os testes. Dois aparelhos iguais no mesmo dia podem contar como um. <b>Conversão do cardápio</b>: pedidos que viraram venda ÷ visitas (por unidade, só com {MIN_VISITAS_CONVERSAO}+ visitas). <b>Pedidos montados</b>: pedidos enviados pelo cardápio; <b>chegaram</b>: o código #PED- apareceu numa mensagem recebida pela unidade. Se o cliente apagar o código, o pedido não é contado.</li>
               <li><b>Sinais</b>: cardápio ligado há {DIAS_LIGADO_SEM_VISITA}+ dias sem visita; {MIN_VISITAS_SEM_PEDIDO}+ visitas e nenhum pedido; {MIN_PEDIDOS}+ pedidos montados sem chegar no WhatsApp; {MIN_PEDIDOS}+ pedidos que chegaram sem venda; conversão do robô {QUEDA_CONVERSAO_PP}+ pontos e {Math.round(QUEDA_CONVERSAO_REL * 100)}%+ abaixo do período anterior (com {MIN_CONTATOS_ROBO}+ pessoas nos dois).</li>
               <li>Comparação, como nas outras telas: <b>7 dias</b> contra os 7 antes e <b>este mês</b> contra o mesmo trecho do mês anterior, os dois cortados na mesma hora de agora (hoje ainda está em andamento); <b>mês anterior</b> contra o mês antes dele, inteiros. &quot;Novo&quot; = não havia nada (ou menos de 1/4 de agora) para comparar. As datas exatas ficam na linha de cima, ao lado do período. Venda com data futura (o robô grava a data da entrega) só entra quando a data chega.</li>
               <li>&quot;Compraram&quot; inclui cliente antigo que escreveu e comprou de novo: mede a conversa que vira venda, não só cliente novo.</li>
