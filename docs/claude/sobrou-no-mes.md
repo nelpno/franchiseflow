@@ -9,10 +9,18 @@
 Sobrou = Recebido − Taxas de cartão absorvidas − Despesas
 Recebido = Σ (value − discount_amount + delivery_fee)      das vendas do mês
 Taxas    = Σ card_fee_amount   das vendas do mês com fee_passed_to_customer ≠ true
-Despesas = Σ expenses.amount   do mês (todas as categorias)
+Despesas = Σ expenses.amount   do mês (todas as categorias, menos estoque_inicial)
 ```
 
 É **caixa puro**: não há custo de mercadoria (CMV). Compra à fábrica entra como despesa no mês em que vira despesa. Admin e franqueada veem o mesmo número.
+
+## Estoque inicial fica fora (27/11/2026)
+
+O pedido de ABERTURA da unidade é investimento, não gasto do mês (Verônica/Uberaba: setembro aparecia -R$ 3.285,72 com R$ 4.811,30 de estoque inicial; sem ele, +R$ 1.525,58).
+- Banco: `purchase_orders.estoque_inicial`. No INSERT o gatilho `a_po_estoque_inicial` decide sozinho: 1º pedido não cancelado da unidade E menos de 20 vendas. O valor do app é ignorado; trocar depois só equipe/banco (`update purchase_orders set estoque_inicial = ... where id = ...`), e o gatilho `po_estoque_inicial_despesas` recategoriza as despesas do pedido.
+- Na entrega, produto E frete nascem com `category = 'estoque_inicial'` ("Estoque inicial - Pedido #x", "Frete do estoque inicial #x").
+- App: `calculatePnL` tira essa categoria de `outrasDespesas`/`lucroCaixa` e devolve `estoqueInicial`; o Resultado mostra uma linha "Estoque inicial: R$ X ... fica fora do Sobrou", a lista de gastos marca "investimento, fora do Sobrou", o PDF põe uma nota. O formulário de gasto não oferece a categoria.
+- Backfill: 31 unidades abertas com o app no ar (criadas >= 30/03/2026, até 5 vendas antes da entrega; fora Americana, Mogi e Mauá). SQL e rollback: `supabase/2026-11-27-estoque-inicial.sql`.
 
 ## Qual mês
 

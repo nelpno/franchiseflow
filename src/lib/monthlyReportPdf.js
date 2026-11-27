@@ -175,6 +175,10 @@ export async function gerarRelatorioMensalPdf({ relatorio, anuncio, avisoFabrica
       : "Lucro em caixa = o que entrou menos o que saiu no mês. Ele sobe e desce com a data da compra na fábrica.",
     "Vendas e despesas são as lançadas no painel. Venda que não foi lançada não aparece aqui.",
   ];
+  const comEstoqueInicial = meses.filter((x) => x.estoqueInicial > 0);
+  if (comEstoqueInicial.length) {
+    notas.push(`Estoque inicial (pedido de abertura, pago com o investimento): ${comEstoqueInicial.map((x) => `${brl(x.estoqueInicial)} em ${x.rotulo}`).join(", ")}. Fica fora do ${textoNovo ? "Sobrou" : "lucro"} e dos gastos acima.`);
+  }
   if (anuncio) notas.push("Quem veio do anúncio: o robô marca a pessoa quando ela chega pelo clique no anúncio.");
   for (const n of notas) {
     const partes = doc.splitTextToSize(n, larg - 2 * m);

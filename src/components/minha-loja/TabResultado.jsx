@@ -56,7 +56,7 @@ import {
   uniaoIntervalos,
   montarResultadoPeriodo,
 } from "@/lib/periodoResultado";
-import { getCategoryMeta } from "@/lib/expenseCategories";
+import { getCategoryMeta, ehEstoqueInicial } from "@/lib/expenseCategories";
 import { SALES_EXPORT_COLUMNS, SALES_EXPORT_QUERY_COLUMNS, buildSalesExportRows } from "@/lib/salesExport";
 import { EXPENSES_EXPORT_COLUMNS, buildExpensesExportRows, sortExpenses } from "@/lib/expensesExport";
 import { SALE_PNL_COLUMNS } from "@/entities/columns";
@@ -409,6 +409,7 @@ function OndeFoiODinheiro({ expenses, taxasCartao, onLancarDespesa }) {
   const { byCategory, total } = useMemo(() => {
     const map = new Map();
     for (const e of expenses) {
+      if (ehEstoqueInicial(e)) continue; // investimento de abertura: fora do Sobrou (27/11/2026)
       const cat = e.category || "outros";
       map.set(cat, (map.get(cat) || 0) + (parseFloat(e.amount) || 0));
     }
@@ -968,7 +969,7 @@ export default function TabResultado({ franchiseId, currentUser, contacts = [], 
 
   const buscarPedidos = useCallback(
     (signal) => PurchaseOrder.filter({ franchise_id: franchiseId }, null, null, {
-      columns: "id, status, total_amount, freight_cost, ordered_at, delivered_at",
+      columns: "id, status, total_amount, freight_cost, ordered_at, delivered_at, estoque_inicial",
       fetchAll: true,
       signal,
     }),

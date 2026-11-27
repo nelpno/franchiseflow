@@ -239,6 +239,34 @@ test("regressão: caso real do Ricardo (118,50 com frete 7)", () => {
   assert.equal(getSaleNetValue({ value: 111.5, discount_amount: 0, delivery_fee: 7 }), 118.5);
 });
 
+// ─── Estoque inicial (27/11/2026) ───────────────────────────────────────────
+console.log("\n🏪 calculatePnL — estoque inicial fora do Sobrou");
+
+test("Uberaba set/2026: pedido de abertura sai do Sobrou e volta à parte", () => {
+  const sales = [{ value: 2087.4, discount_amount: 0, delivery_fee: 0, card_fee_amount: 1.32 }];
+  const expenses = [
+    { category: "estoque_inicial", amount: "4361.30" },
+    { category: "estoque_inicial", amount: "450.00" },
+    { category: "outros", amount: 560.5 },
+  ];
+  const r = calculatePnL(sales, [], expenses);
+  assert.equal(Math.round(r.estoqueInicial * 100) / 100, 4811.3);
+  assert.equal(Math.round(r.outrasDespesas * 100) / 100, 560.5);
+  assert.equal(Math.round(r.lucroCaixa * 100) / 100, 1525.58);
+});
+
+test("controle: a mesma compra como compra_produto/transporte continua no Sobrou", () => {
+  const sales = [{ value: 2087.4, discount_amount: 0, delivery_fee: 0, card_fee_amount: 1.32 }];
+  const expenses = [
+    { category: "compra_produto", amount: "4361.30" },
+    { category: "transporte", amount: "450.00" },
+    { category: "outros", amount: 560.5 },
+  ];
+  const r = calculatePnL(sales, [], expenses);
+  assert.equal(r.estoqueInicial, 0);
+  assert.equal(Math.round(r.lucroCaixa * 100) / 100, -3285.72);
+});
+
 // ─── Resultado ──────────────────────────────────────────────────────────────
 console.log(`\n${pass} passed · ${fail} failed`);
 process.exit(fail > 0 ? 1 : 0);

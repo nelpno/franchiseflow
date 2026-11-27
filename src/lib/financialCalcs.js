@@ -1,4 +1,5 @@
 import { isSameMonth, parseISO } from "date-fns";
+import { ehEstoqueInicial } from "./expenseCategories.js";
 
 /**
  * Checks if a date string falls within a given month.
@@ -27,6 +28,9 @@ export function getSaleNetValue(sale) {
  * Receita - Taxas de cartão - Todas as despesas. Compra de produto entra no mês
  * em que foi paga (NÃO usa CMV — admin e franqueado veem o mesmo número).
  *
+ * Estoque inicial (pedido de abertura, categoria `estoque_inicial`) é investimento: fica FORA de
+ * `outrasDespesas`/`lucroCaixa` e volta à parte em `estoqueInicial` (27/11/2026, Uberaba).
+ *
  * Param `_saleItems` mantido por compat de chamadas existentes; ignorado.
  */
 export function calculatePnL(sales, _saleItems, expenses) {
@@ -42,7 +46,13 @@ export function calculatePnL(sales, _saleItems, expenses) {
     (sum, s) => (s.fee_passed_to_customer ? sum : sum + (parseFloat(s.card_fee_amount) || 0)),
     0
   );
-  const outrasDespesas = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  let outrasDespesas = 0;
+  let estoqueInicial = 0;
+  for (const e of expenses) {
+    const v = parseFloat(e.amount) || 0;
+    if (ehEstoqueInicial(e)) estoqueInicial += v;
+    else outrasDespesas += v;
+  }
 
   const lucroCaixa = totalRecebido - taxasCartao - outrasDespesas;
   const margemCaixa = totalRecebido > 0 ? (lucroCaixa / totalRecebido) * 100 : 0;
@@ -54,6 +64,7 @@ export function calculatePnL(sales, _saleItems, expenses) {
     totalRecebido,
     taxasCartao,
     outrasDespesas,
+    estoqueInicial,
     lucroCaixa,
     margemCaixa,
     salesCount: sales.length,

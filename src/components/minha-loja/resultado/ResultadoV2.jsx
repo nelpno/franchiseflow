@@ -10,7 +10,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import ExportButtons from "@/components/shared/ExportButtons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatBRL, formatBRLCompactResultado } from "@/lib/formatters";
-import { getCategoryMeta } from "@/lib/expenseCategories";
+import { getCategoryMeta, ehEstoqueInicial } from "@/lib/expenseCategories";
 import { textoComparacaoSobrou, blocosDoResultado } from "@/lib/resultadoTela";
 import { buildProductsExportRows, productsExportColumns, produtosComPercentual } from "@/lib/productsExport";
 import { limitesDoMes, validarPeriodo, rotuloPeriodo } from "@/lib/periodoProdutos";
@@ -65,7 +65,7 @@ function EscolhaPeriodo({ modo, onEscolherModo }) {
 
 // --------------------------------------------------------------- topo: Sobrou, Entrou × Saiu
 function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, onBaixarRelatorio, gerandoRelatorio, onEscolherModo, onAbrirPersonalizado }) {
-  const { sobrou, entrou, saiu, nomeMes, comparacao, diaCorte, periodo } = modelo;
+  const { sobrou, entrou, saiu, nomeMes, comparacao, diaCorte, periodo, estoqueInicial } = modelo;
   const maior = Math.max(entrou, saiu, 1);
   const positivo = sobrou >= 0;
   const modo = periodo?.modo || "mes";
@@ -120,6 +120,16 @@ function Topo({ modelo, monthLabel, isCurrentMonth, onPrevMonth, onNextMonth, on
           <span className={CAP}>O que entrou menos o que saiu {periodo ? "no período" : "no mês"}. Venda ainda a receber já conta; o estoque não entra nessa conta.</span>
         </div>
       </div>
+
+      {estoqueInicial > 0 && (
+        <p className="flex items-start gap-2 rounded-xl bg-surface px-3 py-2.5 text-sm text-ink-2" role="note">
+          <MaterialIcon icon="storefront" size={18} className="mt-0.5 shrink-0 text-ink-3" aria-hidden="true" />
+          <span className="min-w-0">
+            <strong className="font-semibold text-ink">Estoque inicial: {formatBRL(estoqueInicial)}</strong> (pedido de abertura, com o frete).
+            Foi pago com o investimento inicial, então fica fora do Sobrou.
+          </span>
+        </p>
+      )}
 
       {periodo && <p className={CAP}>O relatório em PDF sai por mês: escolha Mês para baixar.</p>}
       {!periodo && onBaixarRelatorio && (
@@ -540,12 +550,13 @@ function GastosDoMes({ despesas, onEditar, onExcluir, onRegistrarGasto, exportDe
         {despesas.map((exp) => {
           const meta = getCategoryMeta(exp.category);
           const auto = exp.source && exp.source !== "manual";
+          const inicial = ehEstoqueInicial(exp);
           return (
             <div key={exp.id} className="flex items-center gap-2 px-4 py-2.5">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-ink">{exp.description || meta.label}</div>
                 <div className={CAP}>
-                  {exp.expense_date ? format(parseISO(exp.expense_date), emPeriodo ? "dd/MM/yy" : "dd/MM") : "—"}<span className="hidden md:inline"> · {meta.label}</span> · {auto ? "entra sozinho" : "você lançou"}
+                  {exp.expense_date ? format(parseISO(exp.expense_date), emPeriodo ? "dd/MM/yy" : "dd/MM") : "—"}<span className="hidden md:inline"> · {meta.label}</span> · {inicial ? "investimento, fora do Sobrou" : auto ? "entra sozinho" : "você lançou"}
                 </div>
               </div>
               <span className={`${VAL} shrink-0 text-sm`}>{formatBRL(exp.amount)}</span>

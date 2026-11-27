@@ -157,6 +157,7 @@ export function montarResultadoPeriodo({ sales = [], saleItems = [], expenses = 
     entrou: r.faturamento,
     saiu: r.saiu,
     sobrou: r.lucroCaixa,
+    estoqueInicial: r.estoqueInicial,
     comparacao: null,
     deOndeVeio: linhasDeOndeVeio(r),
     paraOndeFoi: r.paraOndeFoi,

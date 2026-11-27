@@ -16,8 +16,24 @@ export const EXPENSE_CATEGORIES = [
   { value: "outros", label: "Outros gastos", icon: "more_horiz", color: "#4a3d3d", help: "Despesas que não se encaixam nas demais" },
 ];
 
+// Pedido de ABERTURA (27/11/2026): investimento, fora do Sobrou no mês. Quem grava é o banco
+// (purchase_orders.estoque_inicial → despesa com esta categoria); a franqueada não escolhe no formulário.
+// Regra: supabase/2026-11-27-estoque-inicial.sql e docs/claude/sobrou-no-mes.md.
+export const CATEGORIA_ESTOQUE_INICIAL = "estoque_inicial";
+const META_ESTOQUE_INICIAL = {
+  value: CATEGORIA_ESTOQUE_INICIAL,
+  label: "Estoque inicial (investimento)",
+  icon: "storefront",
+  color: "#64748b",
+  help: "Pedido de abertura da unidade, pago com o investimento inicial. Não entra no Sobrou do mês.",
+};
+
+export function ehEstoqueInicial(expense) {
+  return expense?.category === CATEGORIA_ESTOQUE_INICIAL;
+}
+
 export const CATEGORY_BY_VALUE = Object.fromEntries(
-  EXPENSE_CATEGORIES.map((c) => [c.value, c])
+  [...EXPENSE_CATEGORIES, META_ESTOQUE_INICIAL].map((c) => [c.value, c])
 );
 
 export function getCategoryMeta(value) {

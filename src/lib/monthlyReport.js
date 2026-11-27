@@ -1,7 +1,7 @@
 import { format, getDate, isSameMonth, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { calculatePnL, getSaleNetValue, getTopProducts, isInMonth } from "./financialCalcs.js";
-import { getCategoryMeta } from "./expenseCategories.js";
+import { getCategoryMeta, ehEstoqueInicial } from "./expenseCategories.js";
 import { getPaymentMethodLabel } from "./franchiseUtils.js";
 
 /**
@@ -77,9 +77,12 @@ export function resumirMes(d, { sales = [], saleItems = [], expenses = [], ateDi
  */
 export function resumirLinhas({ mSales = [], mItems = [], mExp = [], ateDia = null } = {}) {
   const pnl = calculatePnL(mSales, mItems, mExp);
+  // Estoque inicial (pedido de abertura) é investimento: fora do "Para onde foi" e do Saiu,
+  // mostrado à parte (27/11/2026). `pnl.estoqueInicial` traz o valor.
+  const mExpDoMes = mExp.filter((e) => !ehEstoqueInicial(e));
 
   const despesasPorCategoria = {};
-  for (const e of mExp) {
+  for (const e of mExpDoMes) {
     const rotulo = getCategoryMeta(e.category).label;
     despesasPorCategoria[rotulo] = (despesasPorCategoria[rotulo] || 0) + num(e.amount);
   }
@@ -103,7 +106,7 @@ export function resumirLinhas({ mSales = [], mItems = [], mExp = [], ateDia = nu
   // o resto pela categoria; a taxa de cartão absorvida no fim. Soma = Saiu.
   const grupos = {};
   const pedidosFabrica = new Set();
-  for (const e of mExp) {
+  for (const e of mExpDoMes) {
     let chave;
     let rotulo;
     if (e.source === "purchase_order") {
@@ -145,6 +148,7 @@ export function resumirLinhas({ mSales = [], mItems = [], mExp = [], ateDia = nu
     valorMedio: mSales.length ? pnl.totalRecebido / mSales.length : 0,
     clientes: new Set(mSales.map((s) => s.contact_id).filter(Boolean)).size,
     despesas: pnl.outrasDespesas,
+    estoqueInicial: pnl.estoqueInicial,
     despesasPorCategoria,
     taxasCartao: pnl.taxasCartao,
     lucroCaixa: pnl.lucroCaixa,
@@ -273,7 +277,7 @@ export function avaliarComprasFabrica({ purchaseOrders, expenses = [], mesSeleci
     return !!dia && (isInMonth(dia, base) || isInMonth(dia, subMonths(base, 1)));
   };
   const aCaminhoLista = emAndamento
-    ? purchaseOrders.filter((p) => p.status !== "entregue" && p.status !== "cancelado" && recente(p))
+    ? purchaseOrders.filter((p) => p.status !== "entregue" && p.status !== "cancelado" && !p.estoque_inicial && recente(p))
     : [];
   const semGastoLista = purchaseOrders.filter(
     (p) => p.status === "entregue" && !comGasto.has(p.id) && isInMonth(dataUtc(p.delivered_at), mesSelecionado)
@@ -383,6 +387,7 @@ export function montarResultadoMes({
     entrou: mes.faturamento,
     saiu: mes.saiu,
     sobrou: mes.lucroCaixa,
+    estoqueInicial: mes.estoqueInicial,
     comparacao,
     deOndeVeio,
     paraOndeFoi: mes.paraOndeFoi,
