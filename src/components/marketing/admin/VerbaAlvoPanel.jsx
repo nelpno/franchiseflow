@@ -27,6 +27,7 @@ import MaterialIcon from "@/components/ui/MaterialIcon";
 import { toast } from "sonner";
 import MarketingPaymentsAdmin from "@/components/marketing/MarketingPaymentsAdmin";
 import MetaDepositDialog from "@/components/marketing/MetaDepositDialog";
+import ComprovanteLink from "@/components/marketing/ComprovanteLink";
 import ErrorState from "@/components/shared/ErrorState";
 import { CARTAO, LINK_ACAO } from "@/components/shared/adminUi";
 import {
@@ -392,14 +393,12 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
                 </div>
                 <div className="flex items-center gap-2">
                   {payment.proof_url && (
-                    <a
-                      href={safeHref(payment.proof_url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <ComprovanteLink
+                      url={payment.proof_url}
                       className="inline-flex min-h-10 items-center text-sm font-semibold text-warn-ink hover:underline"
                     >
                       Ver comprovante
-                    </a>
+                    </ComprovanteLink>
                   )}
                   <Button
                     size="sm"
@@ -449,14 +448,12 @@ export default function VerbaAlvoPanel({ franchises = [], filtro, onClearFiltro 
                   </div>
                   <div className="flex items-center gap-2">
                     {payment?.proof_url && (
-                      <a
-                        href={safeHref(payment.proof_url)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <ComprovanteLink
+                        url={payment.proof_url}
                         className="inline-flex min-h-10 items-center text-sm font-semibold text-brand-dark hover:underline"
                       >
                         Ver comprovante
-                      </a>
+                      </ComprovanteLink>
                     )}
                     {payment ? (
                       <Button

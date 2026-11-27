@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment } from "@/entities/all";
-import { safeHref } from "@/lib/safeHref";
+import ComprovanteLink from "@/components/marketing/ComprovanteLink";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
@@ -339,15 +339,13 @@ export default function MarketingPaymentSection() {
               </div>
               <div className="flex items-center gap-3">
                 {currentPayment.proof_url && (
-                  <a
-                    href={safeHref(currentPayment.proof_url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <ComprovanteLink
+                    url={currentPayment.proof_url}
                     className="flex items-center gap-1 text-xs text-brand hover:underline"
                   >
                     <MaterialIcon icon="receipt_long" size={16} />
                     Comprovante
-                  </a>
+                  </ComprovanteLink>
                 )}
                 {currentPayment.status === "confirmed" && (
                   <span className="flex items-center gap-1 text-xs font-medium text-ok-ink bg-ok/10 px-2 py-1 rounded-full">
@@ -438,9 +436,9 @@ export default function MarketingPaymentSection() {
                     </span>
                     <span className="flex items-center gap-2 shrink-0">
                       {x.proof_url && (
-                        <a href={safeHref(x.proof_url)} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                        <ComprovanteLink url={x.proof_url} className="text-brand hover:underline">
                           Comprovante
-                        </a>
+                        </ComprovanteLink>
                       )}
                       <span className={x.status === "confirmed" ? "text-ok-ink" : x.status === "rejected" ? "text-err" : "text-brand-gold-ink"}>
                         {x.status === "confirmed" ? "Confirmado" : x.status === "rejected" ? (x.rejection_reason || "Recusado") : "Aguardando"}

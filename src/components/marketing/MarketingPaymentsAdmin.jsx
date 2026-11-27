@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { MarketingPayment, MarketingMetaDeposit } from "@/entities/all";
-import { safeHref } from "@/lib/safeHref";
+import ComprovanteLink from "@/components/marketing/ComprovanteLink";
+import { caminhoDoComprovante, BUCKET_COMPROVANTES } from "@/lib/comprovantes";
 import MarketingRetornoPanel from "@/components/marketing/MarketingRetornoPanel";
 import { safeErrorMessage } from "@/lib/safeErrorMessage";
 import { supabase } from "@/api/supabaseClient";
@@ -255,14 +256,10 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
       // 2. Tenta apagar o comprovante. Falha aqui só deixa arquivo órfão; não bloquear UX.
       if (payment.proof_url) {
         try {
-          const marker = "/marketing-comprovantes/";
-          const idx = payment.proof_url.indexOf(marker);
-          if (idx !== -1) {
-            const path = decodeURIComponent(
-              payment.proof_url.slice(idx + marker.length).split("?")[0]
-            );
+          const path = caminhoDoComprovante(payment.proof_url);
+          if (path) {
             const { error: storageError } = await supabase.storage
-              .from("marketing-comprovantes")
+              .from(BUCKET_COMPROVANTES)
               .remove([path]);
             if (storageError) console.warn("Storage remove falhou:", storageError);
           }
@@ -574,15 +571,13 @@ export default function MarketingPaymentsAdmin({ franchises = [], onChanged, mod
                         </>
                       )}
                       {p?.proof_url && (
-                        <a
-                          href={safeHref(p.proof_url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <ComprovanteLink
+                          url={p.proof_url}
                           className="inline-flex items-center justify-center h-7 w-7 rounded-md text-ink-3 hover:bg-surface-line"
                           title="Ver comprovante"
                         >
                           <MaterialIcon icon="visibility" size={18} />
-                        </a>
+                        </ComprovanteLink>
                       )}
                       {p && isAdmin && (
                         <Button
