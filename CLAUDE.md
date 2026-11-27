@@ -11,7 +11,7 @@ npm run lint    # eslint --quiet — ⚠️ no-undef DESLIGADO (símbolo não-im
 npm run icons:check   # ícone fora do subset aparece como PALAVRA na tela (01/10: "insights" virou texto gigante); rodar antes do build
 node src/lib/financialCalcs.test.mjs   # 27 testes do dinheiro (DRE, taxa repassada × absorvida)
 node src/lib/franchiseUtils.test.mjs   # multi-unidade (resolveActiveFranchise)
-npm run test:unit   # ⏳ FALHA em cotaFrete.sync desde antes de 13/11 (cotaFrete.gen.js diverge do robô: `node scripts/sync-cota-frete.mjs`) e para ali; rode o teste do arquivo mexido direto
+npm run test:unit   # para no 1º que falha; em 27/11/2026 só o mensagemFranqueado (abaixo) falha, cotaFrete.sync passa. Todos um a um: for f in $(grep -o 'node [^ &"]*' package.json | awk '{print $2}'); do node "$f" >/dev/null 2>&1 || echo "FALHA $f"; done
 node src/lib/mensagemFranqueado.test.mjs   # ⏳ FALHA no "aviso de entrega (L3)" desde o guard de voz de 23/10 (já falhava antes de 3b441dc) e para ali: os testes seguintes não rodam
 node .tmp/deploy.mjs                   # force update do serviço no Portainer (depois do push)
 npx supabase functions deploy asaas-billing --no-verify-jwt --project-ref sulgicnqqopyhulglakd   # SUPABASE_ACCESS_TOKEN = SUPABASE_MANAGEMENT_TOKEN do .env; conferir tipos antes: npx deno check index.ts
