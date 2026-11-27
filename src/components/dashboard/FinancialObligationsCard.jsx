@@ -195,7 +195,7 @@ export default function FinancialObligationsCard({ marketingPayment, ocultarMens
               <p className="text-xs text-ink-3 mt-0.5">
                 {isRejected
                   ? marketingPaymentForMonth?.rejection_reason || "Reenvie seu comprovante"
-                  : "Registre seu investimento (min R$ 200)"}
+                  : `Vale para ${targetMonthLabel.toLowerCase()} inteiro · mínimo R$ 200`}
               </p>
             </div>
 

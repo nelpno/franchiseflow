@@ -278,7 +278,10 @@ export default function MarketingPaymentSection() {
               <h3 className="font-plus-jakarta font-bold text-sm text-ink">
                 Investimento em Marketing <HelpTip tip="verbaMarketing" />
               </h3>
-              <p className="text-xs text-ink-3">Minimo {formatBRL(MIN_AMOUNT)}/mes</p>
+              {/* 27/11/2026 (Imirim): dizer de qual mês é a verba; no fim do mês o padrão já é o seguinte */}
+              <p className="text-xs text-ink-3">
+                Verba de {monthLabel.split(" ")[0].toLowerCase()}, roda o mês inteiro · mínimo {formatBRL(MIN_AMOUNT)}
+              </p>
             </div>
           </div>
 

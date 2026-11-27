@@ -1,6 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import MaterialIcon from "@/components/ui/MaterialIcon";
 import { classifySubscription, SITUACAO } from "@/lib/subscriptionStatus";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { mesAlvoMarketing } from "@/lib/inicioMes";
 
 const SCENARIOS = [
   {
@@ -65,18 +68,23 @@ const SCENARIOS = [
   {
     key: "marketing",
     check: ({ marketingPayment }) => !marketingPayment || marketingPayment.status === "rejected",
-    render: ({ marketingPayment }) => ({
+    // 27/11/2026 (Imirim): sem o mês, "pendente" no fim de novembro parecia ser de novembro.
+    // Nos últimos 5 dias o mês-alvo já é o seguinte (mesAlvoMarketing): o cartão diz qual.
+    render: ({ marketingPayment }) => {
+      const mes = format(mesAlvoMarketing(), "MMMM", { locale: ptBR });
+      return {
       icon: "campaign",
       title: marketingPayment?.status === "rejected"
-        ? "Pagamento de marketing recusado"
-        : "Investimento de marketing pendente",
+        ? `Verba de marketing de ${mes} recusada`
+        : `Verba de marketing de ${mes} pendente`,
       subtitle: marketingPayment?.status === "rejected"
         ? marketingPayment.rejection_reason || "Verifique o comprovante"
-        : "Mínimo R$ 200",
+        : `Vale para ${mes} inteiro · mínimo R$ 200`,
       cta: "Registrar",
       navigateTo: "/Marketing",
       colors: { bg: "#f0f4ff", border: "#c7d2fe", button: "#4f46e5" },
-    }),
+      };
+    },
   },
   {
     // Robo CONFIGURADO que parou de responder. Vem antes do "ative seu robo" porque a
